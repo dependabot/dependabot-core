@@ -322,11 +322,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
           context "that the latest version does not satisfy" do
             let(:composer_json_req_string) { "^0.8.0" }
-            its([:requirement]) { is_expected.to eq("^0.8.0|^1.0.0") }
+            its([:requirement]) { is_expected.to eq("^0.8.0 || ^1.0.0") }
 
             context "with two digits" do
               let(:composer_json_req_string) { "^0.8" }
-              its([:requirement]) { is_expected.to eq("^0.8|^1.0") }
+              its([:requirement]) { is_expected.to eq("^0.8 || ^1.0") }
             end
           end
 
@@ -338,7 +338,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "on a version that is all zeros" do
             let(:latest_resolvable_version) { "0.0.2" }
             let(:composer_json_req_string) { "^0.0.0" }
-            its([:requirement]) { is_expected.to eq("^0.0.0|^0.0.2") }
+            its([:requirement]) { is_expected.to eq("^0.0.0 || ^0.0.2") }
           end
         end
 
@@ -359,11 +359,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
         context "and a *.* was previously specified" do
           let(:composer_json_req_string) { "0.*.*" }
-          its([:requirement]) { is_expected.to eq("0.*.*|1.*.*") }
+          its([:requirement]) { is_expected.to eq("0.*.* || 1.*.*") }
 
           context "with fewer digits than the new version" do
             let(:composer_json_req_string) { "0.*" }
-            its([:requirement]) { is_expected.to eq("0.*|1.*") }
+            its([:requirement]) { is_expected.to eq("0.* || 1.*") }
           end
 
           context "with just *" do
@@ -392,7 +392,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
           context "that the latest version does not satisfy" do
             let(:composer_json_req_string) { "~2.4.1" }
-            its([:requirement]) { is_expected.to eq("~2.4.1|~2.5.0") }
+            its([:requirement]) { is_expected.to eq("~2.4.1 || ~2.5.0") }
           end
 
           context "including a pre-release" do
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "specified with || and commas and invalid" do
             let(:composer_json_req_string) { "> 1.0, < 1.2 || ^2.0.0" }
             its([:requirement]) do
-              is_expected.to eq("> 1.0, < 1.2 || ^2.0.0|^1.0.0")
+              is_expected.to eq("> 1.0, < 1.2 || ^2.0.0 || ^1.0.0")
             end
           end
 
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
                 },
                 {
                   file: "another/composer.json",
-                  requirement: "0.*.*|1.*.*",
+                  requirement: "0.*.* || 1.*.*",
                   groups: [],
                   source: nil
                 }

@@ -45,9 +45,11 @@ module Dependabot
 
           attr_reader :requirements, :latest_version, :latest_resolvable_version
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirement(req)
             req_string = req[:requirement].strip
             or_string_reqs = req_string.split(OR_SEPARATOR)
+            or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
             numeric_or_string_reqs = or_string_reqs.
                                      reject { |r| r.start_with?("dev-") }
             branch_or_string_reqs = or_string_reqs.
@@ -59,14 +61,15 @@ module Dependabot
             return req if req_satisfied_by_latest_resolvable?(req_string)
 
             new_req =
-              if library? then updated_library_requirement(req)
-              else updated_app_requirement(req)
+              if library? then updated_library_requirement(req, or_separator)
+              else updated_app_requirement(req, or_separator)
               end
 
             new_req_string =
-              [new_req[:requirement], *branch_or_string_reqs].join(" || ")
+              [new_req[:requirement], *branch_or_string_reqs].join(or_separator)
             new_req.merge(requirement: new_req_string)
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def updated_alias(req)
             req_string = req[:requirement]
@@ -85,7 +88,7 @@ module Dependabot
             @library
           end
 
-          def updated_app_requirement(req)
+          def updated_app_requirement(req, or_separator)
             current_requirement = req[:requirement]
             reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
@@ -93,7 +96,7 @@ module Dependabot
               if reqs.count > 1
                 "^#{latest_resolvable_version}"
               elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
-                update_range_requirement(current_requirement)
+                update_range_requirement(current_requirement, or_separator)
               else
                 update_version_string(current_requirement)
               end
@@ -101,19 +104,19 @@ module Dependabot
             req.merge(requirement: updated_requirement)
           end
 
-          def updated_library_requirement(req)
+          def updated_library_requirement(req, or_separator)
             current_requirement = req[:requirement]
             reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
             updated_requirement =
               if reqs.any? { |r| r.start_with?("^") }
-                update_caret_requirement(current_requirement)
+                update_caret_requirement(current_requirement, or_separator)
               elsif reqs.any? { |r| r.start_with?("~") }
-                update_tilda_requirement(current_requirement)
+                update_tilda_requirement(current_requirement, or_separator)
               elsif reqs.any? { |r| r.include?("*") }
-                update_wildcard_requirement(current_requirement)
+                update_wildcard_requirement(current_requirement, or_separator)
               elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
-                update_range_requirement(current_requirement)
+                update_range_requirement(current_requirement, or_separator)
               else
                 update_version_string(current_requirement)
               end
@@ -146,7 +149,7 @@ module Dependabot
             Utils::Php::Requirement.requirements_array(requirement_string)
           end
 
-          def update_caret_requirement(req_string)
+          def update_caret_requirement(req_string, or_separator)
             caret_requirements =
               req_string.split(SEPARATOR).select { |r| r.start_with?("^") }
             version_parts = latest_resolvable_version.segments
@@ -161,10 +164,10 @@ module Dependabot
               i <= first_non_zero_index ? part : 0
             end.join(".")
 
-            req_string + "|^#{version}"
+            req_string + "#{or_separator}^#{version}"
           end
 
-          def update_tilda_requirement(req_string)
+          def update_tilda_requirement(req_string, or_separator)
             tilda_requirements =
               req_string.split(SEPARATOR).select { |r| r.start_with?("~") }
             precision = tilda_requirements.map { |r| r.split(".").count }.min
@@ -173,10 +176,10 @@ module Dependabot
             version_parts[-1] = 0
             version = version_parts.join(".")
 
-            req_string + "|~#{version}"
+            req_string + "#{or_separator}~#{version}"
           end
 
-          def update_wildcard_requirement(req_string)
+          def update_wildcard_requirement(req_string, or_separator)
             wildcard_requirements =
               req_string.split(SEPARATOR).select { |r| r.include?("*") }
             precision = wildcard_requirements.map do |r|
@@ -189,10 +192,10 @@ module Dependabot
             version_parts = latest_resolvable_version.segments.first(precision)
             version = version_parts.join(".")
 
-            req_string + "|#{version}#{'.*' * wildcard_count}"
+            req_string + "#{or_separator}#{version}#{'.*' * wildcard_count}"
           end
 
-          def update_range_requirement(req_string)
+          def update_range_requirement(req_string, or_separator)
             range_requirements =
               req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
@@ -207,7 +210,7 @@ module Dependabot
 
               req_string.sub(upper_bound.to_s, new_upper_bound.to_s)
             else
-              req_string + "|^#{latest_resolvable_version}"
+              req_string + "#{or_separator}^#{latest_resolvable_version}"
             end
           end
 
