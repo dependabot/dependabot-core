@@ -1,3 +1,8 @@
+## v0.73.38, 3 October 2018
+
+- PHP: Detect OR separator in use and replicate it
+- Docker: Add filter for SHA-like suffices to Docker version checking
+
 ## v0.73.37, 3 October 2018
 
 - Python: Better file updater requirement comparison
