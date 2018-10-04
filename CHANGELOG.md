@@ -1,3 +1,8 @@
+## v0.73.43, 4 October 2018
+
+- JS: Handle outdated git requirement in parser
+- JS: Handle yarn workspaces that use nohoist
+
 ## v0.73.42, 4 October 2018
 
 - JS: Use yarnrc file to build basis of npmrc file if present
