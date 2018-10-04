@@ -1,3 +1,7 @@
+## v0.73.39, 4 October 2018
+
+- Docker: Exclude versions that are just a SHA
+
 ## v0.73.38, 3 October 2018
 
 - PHP: Detect OR separator in use and replicate it
