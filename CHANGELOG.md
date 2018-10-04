@@ -1,3 +1,7 @@
+## v0.73.44, 4 October 2018
+
+- Elixir: Handle `nil` requirements in file preparer
+
 ## v0.73.43, 4 October 2018
 
 - JS: Handle outdated git requirement in parser
