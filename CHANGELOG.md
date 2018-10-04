@@ -1,3 +1,8 @@
+## v0.73.41, 4 October 2018
+
+- Python: Fetch Pipenv, Poetry and pip-tools files first
+- If multiple changelogs are present, pick one that includes the version
+
 ## v0.73.40, 4 October 2018
 
 - Docker: Don't try to handle SHA versions even if there is a 'latest' tag
