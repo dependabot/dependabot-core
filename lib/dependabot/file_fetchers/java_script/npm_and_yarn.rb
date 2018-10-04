@@ -20,6 +20,8 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_files
           fetched_files = []
           fetched_files << package_json
@@ -35,6 +37,8 @@ module Dependabot
 
           fetched_files.uniq
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def package_json
           @package_json ||= fetch_file_from_host("package.json")

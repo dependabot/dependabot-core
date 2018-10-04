@@ -22,6 +22,7 @@ module Dependabot
           def npmrc_content
             initial_content =
               if npmrc_file then complete_npmrc_from_credentials
+              elsif yarnrc_file then build_npmrc_from_yarnrc
               else build_npmrc_content_from_lockfile
               end
 
@@ -97,6 +98,19 @@ module Dependabot
             end
           end
 
+          def build_npmrc_from_yarnrc
+            content = ""
+
+            global_registry =
+              yarnrc_file.content.
+              lines.find { |line| line.match?(/^\s*registry\s/) }&.
+              match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
+              named_captures&.fetch("registry")
+
+            content += "registry = #{global_registry}\n" if global_registry
+            content
+          end
+
           def credential_lines_for_npmrc
             lines = []
             registry_credentials.each do |cred|
@@ -154,6 +168,10 @@ module Dependabot
 
           def npmrc_file
             @npmrc_file ||= dependency_files.find { |f| f.name == ".npmrc" }
+          end
+
+          def yarnrc_file
+            @yarnrc_file ||= dependency_files.find { |f| f.name == ".yarnrc" }
           end
 
           def yarn_lock

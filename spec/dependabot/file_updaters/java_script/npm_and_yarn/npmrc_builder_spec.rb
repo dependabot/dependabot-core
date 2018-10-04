@@ -45,10 +45,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
       content: fixture("javascript", "npmrc", npmrc_fixture_name)
     )
   end
+  let(:yarnrc) do
+    Dependabot::DependencyFile.new(
+      name: ".yarnrc",
+      content: fixture("javascript", "yarnrc", yarnrc_fixture_name)
+    )
+  end
   let(:manifest_fixture_name) { "package.json" }
   let(:npm_lock_fixture_name) { "package-lock.json" }
   let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:npmrc_fixture_name) { "auth_token" }
+  let(:yarnrc_fixture_name) { "global_registry" }
 
   describe "#npmrc_content" do
     subject(:npmrc_content) { npmrc_builder.npmrc_content }
@@ -89,6 +96,16 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                   "@dependabot:registry=https://npm.fury.io/dependabot/\n\n"
                 )
             end
+          end
+        end
+
+        context "and a yarnrc file" do
+          let(:dependency_files) { [package_json, yarn_lock, yarnrc] }
+
+          it "uses the yarnrc file registry" do
+            expect(npmrc_content).to eq(
+              "registry = https://npm-proxy.fury.io/password/dependabot/\n"
+            )
           end
         end
       end

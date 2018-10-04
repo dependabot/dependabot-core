@@ -6,7 +6,6 @@ module Dependabot
   module FileUpdaters
     module JavaScript
       class NpmAndYarn < Dependabot::FileUpdaters::Base
-        require_relative "npm_and_yarn/npmrc_builder"
         require_relative "npm_and_yarn/package_json_updater"
         require_relative "npm_and_yarn/npm_lockfile_updater"
         require_relative "npm_and_yarn/yarn_lockfile_updater"
