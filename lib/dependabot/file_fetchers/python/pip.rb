@@ -35,15 +35,15 @@ module Dependabot
         def fetch_files
           fetched_files = []
 
-          fetched_files << setup_file if setup_file
-          fetched_files << setup_cfg if setup_cfg
-          fetched_files << pip_conf if pip_conf
-
           fetched_files += pipenv_files
           fetched_files += pyproject_files
 
-          fetched_files += requirement_files if requirements_txt_files.any?
           fetched_files += requirements_in_files
+          fetched_files += requirement_files if requirements_txt_files.any?
+
+          fetched_files << setup_file if setup_file
+          fetched_files << setup_cfg if setup_cfg
+          fetched_files << pip_conf if pip_conf
 
           check_required_files_present
           fetched_files.uniq
