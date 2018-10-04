@@ -281,9 +281,16 @@ module Dependabot
           yarn_locks.each do |yarn_lock|
             parsed_yarn_lock = parse_yarn_lock(yarn_lock)
 
-            details =
+            details_candidates =
               parsed_yarn_lock.
-              select { |k, _| k.split(/(?<=\w)\@/).first == name }.
+              select { |k, _| k.split(/(?<=\w)\@/).first == name }
+
+            # If there's only one entry for this dependency, use it, even if
+            # the requirement in the lockfile doesn't match
+            details = details_candidates.first.last if details_candidates.one?
+
+            details ||=
+              details_candidates.
               find { |k, _| k.split(/(?<=\w)\@/)[1..-1].join("@") == req }&.
               last
 

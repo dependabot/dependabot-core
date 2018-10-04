@@ -845,6 +845,33 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                 }]
               )
             end
+
+            context "when the lockfile entry's requirement is outdated" do
+              let(:yarn_lock_fixture_name) do
+                "git_dependency_outdated_req.lock"
+              end
+
+              it { is_expected.to be_a(Dependabot::Dependency) }
+              its(:name) { is_expected.to eq("is-number") }
+              its(:version) do
+                is_expected.to eq("af885e2e890b9ef0875edd2b117305119ee5bdc5")
+              end
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: nil,
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number.git",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }]
+                )
+              end
+            end
           end
 
           context "with auth details" do
