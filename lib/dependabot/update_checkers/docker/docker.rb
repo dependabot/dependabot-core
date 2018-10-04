@@ -101,9 +101,12 @@ module Dependabot
           candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
           wants_prerelease = prerelease?(dependency.version)
-          candidate_tags.
+          latest_tag =
+            candidate_tags.
             reject { |tag| prerelease?(tag) && !wants_prerelease }.
             max_by { |tag| version_class.new(numeric_version_from(tag)) }
+
+          latest_tag || dependency.version
         end
 
         def comparable_tags_from_registry
@@ -112,7 +115,7 @@ module Dependabot
           tags_from_registry.
             select { |tag| tag.match?(NAME_WITH_VERSION) }.
             select { |tag| affix_of(tag) == original_affix }.
-            reject { |tag| commit_sha_suffix?(tag) && !latest_tag_exists? }
+            reject { |tag| commit_sha_suffix?(tag) }
         end
 
         def remove_version_downgrades(candidate_tags)
@@ -130,10 +133,6 @@ module Dependabot
           return false unless tag.match?(/(^|\-)[0-9a-f]{7,}$/)
 
           !tag.match?(/(^|\-)20[0-1]\d{5}$/)
-        end
-
-        def latest_tag_exists?
-          tags_from_registry.include?("latest")
         end
 
         def version_of_latest_tag
