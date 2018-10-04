@@ -1,3 +1,7 @@
+## v0.73.40, 4 October 2018
+
+- Docker: Don't try to handle SHA versions even if there is a 'latest' tag
+
 ## v0.73.39, 4 October 2018
 
 - Docker: Exclude versions that are just a SHA
