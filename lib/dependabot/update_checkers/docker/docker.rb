@@ -127,7 +127,9 @@ module Dependabot
           # can't order on those but will try to, so instead we should exclude
           # them (unless there's a `latest` version pushed to the registry, in
           # which case we'll use that to find the latest version)
-          tag.match?(/\-[0-9a-f]{7,}$/) && !tag.match?(/\-20[0-1]\d{5}$/)
+          return false unless tag.match?(/(^|\-)[0-9a-f]{7,}$/)
+
+          !tag.match?(/(^|\-)20[0-1]\d{5}$/)
         end
 
         def latest_tag_exists?
