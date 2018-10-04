@@ -96,6 +96,8 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def changelog
           return unless source
 
@@ -109,36 +111,67 @@ module Dependabot
             reject { |f| f.size > 1_000_000 }
 
           CHANGELOG_NAMES.each do |name|
-            file = files.select { |f| f.name =~ /#{name}/i }.max_by(&:size)
+            candidates = files.select { |f| f.name =~ /#{name}/i }
+            file = candidates.first if candidates.one?
+            file ||=
+              candidates.find do |f|
+                new_version = git_source? ? new_ref : dependency.version
+                new_version && fetch_file_text(f).include?(new_version)
+              end
+            file ||= candidates.max_by(&:size)
             return file if file
           end
 
           nil
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def full_changelog_text
           return unless changelog
 
-          @full_changelog_text ||=
-            if source.provider == "github"
-              # Hitting the download URL directly causes encoding problems
-              raw_content = github_client.contents(
-                source.repo,
-                path: changelog.path
-              ).content
-              Base64.decode64(raw_content).force_encoding("UTF-8").encode
-            else
-              Excon.get(
-                changelog.download_url,
-                user: bitbucket_credential&.fetch("username"),
-                password: bitbucket_credential&.fetch("password"),
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              ).body
-            end
-          return unless @full_changelog_text.valid_encoding?
+          fetch_file_text(changelog)
+        end
 
-          @full_changelog_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+        def fetch_file_text(file)
+          @file_text ||= {}
+          @file_text[file.path] ||=
+            case source.provider
+            when "github" then fetch_github_file(file)
+            when "gitlab" then fetch_gitlab_file(file)
+            when "bitbucket" then fetch_bitbucket_file(file)
+            else raise "Unsupported provider '#{source.provider}"
+            end
+          return unless @file_text[file.path].valid_encoding?
+
+          @file_text[file.path].force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+        end
+
+        def fetch_github_file(file)
+          # Hitting the download URL directly causes encoding problems
+          raw_content = github_client.contents(
+            source.repo,
+            path: file.path
+          ).content
+          Base64.decode64(raw_content).force_encoding("UTF-8").encode
+        end
+
+        def fetch_gitlab_file(file)
+          Excon.get(
+            file.download_url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          ).body
+        end
+
+        def fetch_bitbucket_file(file)
+          Excon.get(
+            file.download_url,
+            user: bitbucket_credential&.fetch("username"),
+            password: bitbucket_credential&.fetch("password"),
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          ).body
         end
 
         def old_version_changelog_line

@@ -103,15 +103,36 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                       headers: { "Content-Type" => "application/json" })
         end
 
-        it "gets the right URL" do
-          expect(subject).
-            to eq("https://github.com/scrapy/scrapy/blob/master/docs/news.rst")
-        end
+        context "when the file in docs mentions the version" do
+          let(:changelog_body) { fixture("github", "changelog_contents.json") }
+          let(:changelog_body_without_version) do
+            fixture("github", "changelog_contents_japanese.json")
+          end
 
-        it "caches the call to GitHub" do
-          finder.changelog_url
-          finder.changelog_url
-          expect(WebMock).to have_requested(:get, github_url).once
+          before do
+            stub_request(:get, github_url + "NEWS").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: changelog_body_without_version,
+                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "docs/news.rst").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: changelog_body,
+                        headers: { "Content-Type" => "application/json" })
+          end
+
+          it "gets the right URL" do
+            expect(subject).to eq(
+              "https://github.com/scrapy/scrapy/blob/master/docs/news.rst"
+            )
+          end
+
+          it "caches the call to GitHub" do
+            finder.changelog_url
+            finder.changelog_url
+            expect(WebMock).to have_requested(:get, github_url).once
+          end
         end
       end
 
@@ -124,11 +145,25 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             directory: "packages/stryker"
           )
         end
+        let(:changelog_body) { fixture("github", "changelog_contents.json") }
+        let(:changelog_body_without_version) do
+          fixture("github", "changelog_contents_japanese.json")
+        end
         before do
           stub_request(:get, github_url + "packages/stryker").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: fixture("github", "business_module_files.json"),
+                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "CHANGELOG.md").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: changelog_body_without_version,
+                      headers: { "Content-Type" => "application/json" })
+          stub_request(:get, github_url + "module/CHANGELOG.md").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: changelog_body,
                       headers: { "Content-Type" => "application/json" })
         end
 
