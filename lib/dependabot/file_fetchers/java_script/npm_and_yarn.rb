@@ -23,11 +23,12 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << package_json
-          fetched_files << npmrc if npmrc
           fetched_files << package_lock if package_lock && !ignore_package_lock?
           fetched_files << yarn_lock if yarn_lock
           fetched_files << shrinkwrap if shrinkwrap
           fetched_files << lerna_json if lerna_json
+          fetched_files << npmrc if npmrc
+          fetched_files << yarnrc if yarnrc
           fetched_files += workspace_package_jsons
           fetched_files += lerna_packages
           fetched_files += path_dependencies(fetched_files)
@@ -54,6 +55,11 @@ module Dependabot
         def npmrc
           @npmrc ||= fetch_file_if_present(".npmrc")&.
                      tap { |f| f.support_file = true }
+        end
+
+        def yarnrc
+          @yarnrc ||= fetch_file_if_present(".yarnrc")&.
+                      tap { |f| f.support_file = true }
         end
 
         def lerna_json

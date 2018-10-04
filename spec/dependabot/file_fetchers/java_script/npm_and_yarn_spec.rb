@@ -173,6 +173,31 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(package.json yarn.lock))
     end
+
+    context "with a .yarnrc file" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_yarn_with_config.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, File.join(url, ".yarnrc?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "npmrc_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the .yarnrc" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).to include(".yarnrc")
+      end
+    end
   end
 
   context "with an npm-shrinkwrap.json but no package-lock.json file" do
