@@ -766,6 +766,27 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           expect(file_fetcher_instance.files.map(&:name)).
             to include("packages/package2/package.json")
         end
+
+        context "that uses nohoist" do
+          before do
+            stub_request(:get, File.join(url, "package.json?ref=sha")).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture(
+                  "github",
+                  "package_json_with_nohoist_workspaces_content.json"
+                ),
+                headers: json_header
+              )
+          end
+
+          it "fetches package.json from the workspace dependencies" do
+            expect(file_fetcher_instance.files.count).to eq(5)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to include("packages/package2/package.json")
+          end
+        end
       end
 
       context "specified with a top-level wildcard" do

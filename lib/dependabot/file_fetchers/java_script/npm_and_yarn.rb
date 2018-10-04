@@ -192,7 +192,8 @@ module Dependabot
 
         def workspace_paths(workspace_object)
           paths_array =
-            if workspace_object.is_a?(Hash) then workspace_object["packages"]
+            if workspace_object.is_a?(Hash)
+              workspace_object.values_at("packages", "nohoist").flatten.compact
             elsif workspace_object.is_a?(Array) then workspace_object
             else raise "Unexpected workspace object"
             end
