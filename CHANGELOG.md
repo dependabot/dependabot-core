@@ -1,3 +1,7 @@
+## v0.73.42, 4 October 2018
+
+- JS: Use yarnrc file to build basis of npmrc file if present
+
 ## v0.73.41, 4 October 2018
 
 - Python: Fetch Pipenv, Poetry and pip-tools files first
