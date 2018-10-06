@@ -77,8 +77,15 @@ module Dependabot
         def latest_version_resolvable_with_full_unlock?
           return false unless latest_version
 
-          force_updater.updated_dependencies
-          true
+          updated_dependencies = force_updater.updated_dependencies
+
+          updated_dependencies.none? do |dep|
+            old_version = dep.previous_version
+            next unless Gem::Version.correct?(old_version)
+            next if Gem::Version.new(old_version).prerelease?
+
+            Gem::Version.new(dep.version).prerelease?
+          end
         rescue Dependabot::DependencyFileNotResolvable
           false
         end
