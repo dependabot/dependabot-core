@@ -1,3 +1,7 @@
+## v0.73.46, 6 October 2018
+
+- Python: Ensure Pipenv uses Pip 18.0
+
 ## v0.73.45, 6 October 2018
 
 - Ruby: Don't update to pre-release versions during full_unlock
