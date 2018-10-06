@@ -1,3 +1,8 @@
+## v0.73.45, 6 October 2018
+
+- Ruby: Don't update to pre-release versions during full_unlock
+- JS: Stricter source finding
+
 ## v0.73.44, 4 October 2018
 
 - Elixir: Handle `nil` requirements in file preparer
