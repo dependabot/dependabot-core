@@ -190,8 +190,11 @@ module Dependabot
                   # Initialize a git repo to appease pip-tools
                   IO.popen("git init", err: %i(child out)) if setup_files.any?
 
-                  run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                     "pyenv exec pipenv lock")
+                  run_pipenv_command(
+                    "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                    "pyenv exec pipenv run pip install pip==18.0 && "\
+                    "pyenv exec pipenv lock"
+                  )
 
                   result = { lockfile: File.read("Pipfile.lock") }
                   result[:lockfile] = post_process_lockfile(result[:lockfile])
@@ -228,10 +231,12 @@ module Dependabot
           def generate_updated_requirements_files
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r > req.txt"
             )
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r -d > dev-req.txt"
             )
           end
