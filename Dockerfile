@@ -45,7 +45,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.16.5
+    && gem install --no-ri --no-rdoc bundler -v 1.16.6
 
 
 ### PYTHON
@@ -121,7 +121,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.29.0
+# Install Rust 1.29.1
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
