@@ -1,3 +1,9 @@
+## v0.73.47, 7 October 2018
+
+- Bump Bundler and Rust versions in Dockerfile
+- Go: More robust git source lookup
+- JS: Handle npm bug (by serving a resolvability error)
+
 ## v0.73.46, 6 October 2018
 
 - Python: Ensure Pipenv uses Pip 18.0
