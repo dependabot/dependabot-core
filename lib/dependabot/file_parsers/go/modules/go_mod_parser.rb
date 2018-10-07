@@ -94,7 +94,7 @@ module Dependabot
           end
 
           def git_source(dep)
-            url = Utils::Go::PathConverter.git_source_for_path(dep["Path"])&.url
+            url = Utils::Go::PathConverter.git_url_for_path(dep["Path"])
 
             # Currently, we have no way of knowing whether the commit tagged
             # is being used because a branch is being followed or because a

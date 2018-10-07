@@ -96,12 +96,12 @@ module Dependabot
         def source_from_declaration(declaration)
           source = declaration["source"] || declaration["name"]
 
-          git_source = git_source(source)
+          git_source_url = git_source(source)
 
-          if git_source && git_declaration?(declaration)
+          if git_source_url && git_declaration?(declaration)
             {
               type: "git",
-              url: git_source.url,
+              url: git_source_url,
               branch: declaration["branch"],
               ref: declaration["revision"] || declaration["version"]
             }
@@ -132,7 +132,7 @@ module Dependabot
         end
 
         def git_source(path)
-          Dependabot::Utils::Go::PathConverter.git_source_for_path(path)
+          Dependabot::Utils::Go::PathConverter.git_url_for_path(path)
         end
 
         def parsed_file(file)

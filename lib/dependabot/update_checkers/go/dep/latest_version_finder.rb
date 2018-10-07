@@ -60,8 +60,8 @@ module Dependabot
                    map { |r| r.dig(:source, :source) }.compact.first
             path ||= dependency.name
 
-            source = git_source(path)
-            return unless source
+            source_url = git_source(path)
+            return unless source_url
 
             # Given a source, we want to find the latest tag. Piggy-back off the
             # logic in GitCommitChecker to do so.
@@ -72,7 +72,7 @@ module Dependabot
                 file: "Gopkg.toml",
                 groups: [],
                 requirement: nil,
-                source: { type: "git", url: source.url }
+                source: { type: "git", url: source_url }
               }],
               package_manager: dependency.package_manager
             )
@@ -108,7 +108,7 @@ module Dependabot
           end
 
           def git_source(path)
-            Dependabot::Utils::Go::PathConverter.git_source_for_path(path)
+            Dependabot::Utils::Go::PathConverter.git_url_for_path(path)
           end
 
           def version_from_tag(tag)
