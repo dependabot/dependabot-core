@@ -1,3 +1,9 @@
+## v0.73.48, 8 October 2018
+
+- Python: Bump pip from 18.0 to 18.1
+- Python: Bump pip-tools from 3.0.0 to 3.1.0
+- Rust: Handle dependencies with multiple sources in file fetcher
+
 ## v0.73.47, 7 October 2018
 
 - Bump Bundler and Rust versions in Dockerfile
