@@ -181,6 +181,23 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         end
       end
 
+      context "when a git source is also specified" do
+        let(:parent_fixture) do
+          fixture("github", "contents_cargo_manifest_path_deps_alt_source.json")
+        end
+
+        before do
+          stub_request(:get, url + "gen/photoslibrary1/Cargo.toml?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 200, body: path_dep_fixture, headers: json_header)
+        end
+
+        it "fetches the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml gen/photoslibrary1/Cargo.toml))
+        end
+      end
+
       context "with a directory" do
         let(:source) do
           Dependabot::Source.new(
@@ -256,6 +273,23 @@ RSpec.describe Dependabot::FileFetchers::Rust::Cargo do
         it "raises a DependencyFileNotFound error" do
           expect { file_fetcher_instance.files }.
             to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+
+      context "when a git source is also specified" do
+        let(:parent_fixture) do
+          fixture("github", "contents_cargo_manifest_path_deps_alt_source.json")
+        end
+
+        before do
+          stub_request(:get, url + "gen/photoslibrary1/Cargo.toml?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404, headers: json_header)
+        end
+
+        it "ignores that it can't fetch the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml))
         end
       end
     end

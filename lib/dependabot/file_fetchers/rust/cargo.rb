@@ -102,6 +102,8 @@ module Dependabot
                 previously_fetched_files: previously_fetched_files
               )
             [fetched_file, *grandchild_requirement_files]
+          rescue Dependabot::DependencyFileNotFound
+            raise if required_path?(file, path)
           end.compact
         end
 
@@ -157,6 +159,51 @@ module Dependabot
             File.join(path, "Cargo.toml")
           end
         end
+
+        # Check whether a path is required or not. It will not be required if
+        # an alternative source (i.e., a git source) is also specified
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        def required_path?(file, path)
+          # Paths specified in dependency declaration
+          FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+            parsed_file(file).fetch(type, {}).each do |_, details|
+              next unless details.is_a?(Hash)
+              next unless details["path"]
+              next unless path == File.join(details["path"], "Cargo.toml")
+
+              return true if details["git"].nil?
+            end
+          end
+
+          # Paths specified for target-specific dependencies
+          parsed_file(file).fetch("target", {}).each do |_, t_details|
+            FileParsers::Rust::Cargo::DEPENDENCY_TYPES.each do |type|
+              t_details.fetch(type, {}).each do |_, details|
+                next unless details.is_a?(Hash)
+                next unless details["path"]
+                next unless path == File.join(details["path"], "Cargo.toml")
+
+                return true if details["git"].nil?
+              end
+            end
+          end
+
+          # Paths specified as replacements
+          parsed_file(file).fetch("replace", {}).each do |_, details|
+            next unless details.is_a?(Hash)
+            next unless details["path"]
+            next unless path == File.join(details["path"], "Cargo.toml")
+
+            return true if details["git"].nil?
+          end
+
+          false
+        end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def expand_workspaces(path)
           path = Pathname.new(path).cleanpath.to_path
