@@ -1,3 +1,7 @@
+## v0.73.49, 8 October 2018
+
+- Make GitCommitChecker more lenient about multiple git sources
+
 ## v0.73.48, 8 October 2018
 
 - Python: Bump pip from 18.0 to 18.1
