@@ -1,3 +1,7 @@
+## v0.73.52, 8 October 2018
+
+- Prefer lower versions when parsing dependencies into DependencySet
+
 ## v0.73.51, 8 October 2018
 
 - JS: More multiple-source handling
