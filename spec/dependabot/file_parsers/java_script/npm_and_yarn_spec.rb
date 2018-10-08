@@ -1103,5 +1103,31 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
         end
       end
     end
+
+    describe "sub-dependencies" do
+      subject(:subdependencies) { dependencies.reject(&:top_level?) }
+
+      context "with a yarn.lock" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "yarn.lock",
+            content: lockfile_body
+          )
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+        end
+        let(:package_json_fixture_name) { "no_lockfile_change.json" }
+        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+
+        its(:length) { is_expected.to eq(389) }
+
+        describe "a repeated sub-dependency" do
+          subject { subdependencies.find { |d| d.name == "acorn" } }
+
+          its(:version) { is_expected.to eq("5.1.1") }
+        end
+      end
+    end
   end
 end
