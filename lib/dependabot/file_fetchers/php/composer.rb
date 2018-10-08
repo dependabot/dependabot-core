@@ -58,7 +58,11 @@ module Dependabot
                 end
               end
 
-              composer_json_files
+              # Mark the path dependencies as support files - we don't currently
+              # parse or update them.
+              composer_json_files.tap do |files|
+                files.each { |f| f.support_file = true }
+              end
             end
         end
 
