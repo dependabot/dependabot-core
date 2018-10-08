@@ -58,6 +58,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
         let(:dependency_name) { "sqlalchemy" }
         it { is_expected.to include("\nSQLAlchemy==1.11.5") }
         it { is_expected.to include("Flask-SQLAlchemy\n") }
+        it { is_expected.to include("zope.SQLAlchemy\n") }
       end
     end
   end
