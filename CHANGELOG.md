@@ -1,3 +1,7 @@
+## v0.73.50, 8 October 2018
+
+- PHP: Mark Composer path dependencies as support files
+
 ## v0.73.49, 8 October 2018
 
 - Make GitCommitChecker more lenient about multiple git sources
