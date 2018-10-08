@@ -1128,6 +1128,28 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           its(:version) { is_expected.to eq("5.1.1") }
         end
       end
+
+      context "with a package-lock.json" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: lockfile_body
+          )
+        end
+        let(:lockfile_body) do
+          fixture("javascript", "npm_lockfiles", yarn_lock_fixture_name)
+        end
+        let(:package_json_fixture_name) { "blank_requirement.json" }
+        let(:yarn_lock_fixture_name) { "blank_requirement.json" }
+
+        its(:length) { is_expected.to eq(22) }
+
+        describe "a repeated sub-dependency" do
+          subject { subdependencies.find { |d| d.name == "lodash" } }
+
+          its(:version) { is_expected.to eq("2.4.1") }
+        end
+      end
     end
   end
 end

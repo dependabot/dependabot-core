@@ -79,8 +79,10 @@ module Dependabot
             parse_yarn_lock(yarn_lock).each do |req, details|
               next unless details["version"]
 
-              # TODO: This isn't quite right, as it will only give us one
-              # version of each dependency (when in fact there are many)
+              # Note: The DependencySet will de-dupe our dependencies, so they
+              # end up unique by name. That's not a perfect representation of
+              # the nested nature of JS resolution, but it makes everything work
+              # comparably to other flat-resolution strategies
               dependency_set << Dependency.new(
                 name: req.split(/(?<=\w)\@/).first,
                 version: details["version"],
@@ -96,20 +98,14 @@ module Dependabot
         def package_lock_dependencies
           dependency_set = DependencySet.new
 
+          # Note: The DependencySet will de-dupe our dependencies, so they
+          # end up unique by name. That's not a perfect representation of
+          # the nested nature of JS resolution, but it makes everything work
+          # comparably to other flat-resolution strategies
           package_locks.each do |package_lock|
-            parse_package_lock(package_lock).
-              fetch("dependencies", {}).each do |name, details|
-                next unless details["version"]
-
-                # TODO: This isn't quite right, as it will only give us one
-                # version of each dependency (when in fact there are many)
-                dependency_set << Dependency.new(
-                  name: name,
-                  version: details["version"],
-                  package_manager: "npm_and_yarn",
-                  requirements: []
-                )
-              end
+            parsed_lockfile = parse_package_lock(package_lock)
+            deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
+            dependency_set += deps
           end
 
           dependency_set
@@ -118,21 +114,35 @@ module Dependabot
         def shrinkwrap_dependencies
           dependency_set = DependencySet.new
 
+          # Note: The DependencySet will de-dupe our dependencies, so they
+          # end up unique by name. That's not a perfect representation of
+          # the nested nature of JS resolution, but it makes everything work
+          # comparably to other flat-resolution strategies
           shrinkwraps.each do |shrinkwrap|
-            parse_shrinkwrap(shrinkwrap).
-              fetch("dependencies", {}).each do |name, details|
-                next unless details["version"]
-
-                # TODO: This isn't quite right, as it will only give us one
-                # version of each dependency (when in fact there are many)
-                dependency_set << Dependency.new(
-                  name: name,
-                  version: details["version"],
-                  package_manager: "npm_and_yarn",
-                  requirements: []
-                )
-              end
+            parsed_lockfile = parse_shrinkwrap(shrinkwrap)
+            deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
+            dependency_set += deps
           end
+
+          dependency_set
+        end
+
+        def recursively_fetch_npm_lock_dependencies(object_with_dependencies)
+          dependency_set = DependencySet.new
+
+          object_with_dependencies.
+            fetch("dependencies", {}).each do |name, details|
+              next unless details["version"]
+
+              dependency_set << Dependency.new(
+                name: name,
+                version: details["version"],
+                package_manager: "npm_and_yarn",
+                requirements: []
+              )
+
+              dependency_set += recursively_fetch_npm_lock_dependencies(details)
+            end
 
           dependency_set
         end
