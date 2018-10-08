@@ -1,3 +1,8 @@
+## v0.73.51, 8 October 2018
+
+- JS: More multiple-source handling
+- Python: Handle replacement for strings separated with a period
+
 ## v0.73.50, 8 October 2018
 
 - PHP: Mark Composer path dependencies as support files
