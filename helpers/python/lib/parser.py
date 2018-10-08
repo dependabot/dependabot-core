@@ -8,7 +8,7 @@ import re
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.download import PipSession
-from pip._internal.req.req_install import InstallRequirement
+from pip._internal.req.constructors import install_req_from_line
 
 def parse_requirements(directory):
     # Parse the requirements.txt
@@ -56,7 +56,7 @@ def parse_setup(directory):
     setup_packages = []
     if os.path.isfile(directory + '/setup.py'):
         def parse_requirement(req, req_type):
-            install_req = InstallRequirement.from_line(req)
+            install_req = install_req_from_line(req)
             if install_req.original_link:
                 return
             if install_req.is_pinned:
