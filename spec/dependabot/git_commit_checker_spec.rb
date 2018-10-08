@@ -38,17 +38,14 @@ RSpec.describe Dependabot::GitCommitChecker do
 
   let(:version) { "df9f605d7111b6814fe493cf8f41de3f9f0978b2" }
   let(:credentials) do
-    [
-      {
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      },
-      {
-        "some" => "irrelevant credential"
-      }
-    ]
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }, {
+      "some" => "irrelevant credential"
+    }]
   end
 
   describe "#git_dependency?" do
@@ -82,6 +79,39 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         it { is_expected.to eq(true) }
+      end
+
+      context "with multiple sources" do
+        let(:requirements) do
+          [
+            { file: "Gemfile", requirement: ">= 0", groups: [], source: s1 },
+            { file: "Gemfile", requirement: ">= 0", groups: [], source: s2 }
+          ]
+        end
+
+        let(:s1) { source }
+
+        context "both of which are git, with the same URL" do
+          let(:s2) do
+            {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: nil,
+              ref: nil
+            }
+          end
+
+          it { is_expected.to eq(true) }
+        end
+
+        context "with multiple source types" do
+          let(:s2) { { type: "path" } }
+
+          it "raises a helpful error" do
+            expect { checker.git_dependency? }.
+              to raise_error(/Multiple sources!/)
+          end
+        end
       end
     end
   end
