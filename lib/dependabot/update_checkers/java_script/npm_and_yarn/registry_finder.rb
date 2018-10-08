@@ -52,8 +52,8 @@ module Dependabot
 
           def registry_url
             protocol =
-              if dependency_source&.fetch(:type) == "private_registry"
-                dependency_source.fetch(:url).split("://").first
+              if private_registry_source_url
+                private_registry_source_url.split("://").first
               else
                 "https"
               end
@@ -82,12 +82,12 @@ module Dependabot
           end
 
           def locked_registry
-            source = dependency_source
-            return unless source
-            return unless source.fetch(:type) == "private_registry"
+            return unless private_registry_source_url
 
             lockfile_registry =
-              source.fetch(:url).gsub("https://", "").gsub("http://", "")
+              private_registry_source_url.
+              gsub("https://", "").
+              gsub("http://", "")
             detailed_registry =
               known_registries.
               find { |h| h["registry"].include?(lockfile_registry) }&.
@@ -122,12 +122,18 @@ module Dependabot
             dependency.name.gsub("/", "%2F")
           end
 
-          def dependency_source
+          def private_registry_source_url
             sources = dependency.requirements.
                       map { |r| r.fetch(:source) }.uniq.compact
-            return sources.first unless sources.count > 1
 
-            raise "Multiple sources! #{sources.join(', ')}"
+            # If there are multiple source types, or multiple source URLs, then
+            # it's unclear how we should proceed
+            if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
+              raise "Multiple sources! #{sources.join(', ')}"
+            end
+
+            # Otherwise we just take the URL of the first private registry
+            sources.find { |s| s[:type] == "private_registry" }&.fetch(:url)
           end
         end
       end
