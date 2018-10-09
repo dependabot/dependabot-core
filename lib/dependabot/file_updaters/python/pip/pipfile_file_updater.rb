@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "toml_converter"
 
 require "python_requirement_parser"
 require "dependabot/file_updaters/python/pip"
@@ -172,7 +173,9 @@ module Dependabot
               end
             end
 
-            TomlRB.dump(pipfile_object)
+            TomlConverter.convert_pipenv_outline_tables(
+              TomlRB.dump(pipfile_object)
+            )
           end
 
           def add_private_sources(pipfile_content)
@@ -192,7 +195,6 @@ module Dependabot
 
                   run_pipenv_command(
                     "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                    "pyenv exec pipenv run pip install pip==18.0 && "\
                     "pyenv exec pipenv lock"
                   )
 
@@ -231,12 +233,10 @@ module Dependabot
           def generate_updated_requirements_files
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r > req.txt"
             )
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r -d > dev-req.txt"
             )
           end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "toml_converter"
 
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip"
@@ -21,7 +22,9 @@ module Dependabot
               pipfile_sources.reject { |h| h["url"].include?("${") } +
               config_variable_sources(credentials)
 
-            TomlRB.dump(pipfile_object)
+            TomlConverter.convert_pipenv_outline_tables(
+              TomlRB.dump(pipfile_object)
+            )
           end
 
           def freeze_top_level_dependencies_except(dependencies, lockfile)
@@ -53,7 +56,9 @@ module Dependabot
               end
             end
 
-            TomlRB.dump(pipfile_object)
+            TomlConverter.convert_pipenv_outline_tables(
+              TomlRB.dump(pipfile_object)
+            )
           end
 
           private

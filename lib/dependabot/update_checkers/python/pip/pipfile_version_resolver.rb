@@ -2,6 +2,7 @@
 
 require "excon"
 require "toml-rb"
+require "toml_converter"
 
 require "dependabot/file_parsers/python/pip"
 require "dependabot/file_updaters/python/pip/pipfile_preparer"
@@ -76,7 +77,6 @@ module Dependabot
                   # to resolve the dependencies. That means this is slow.
                   run_pipenv_command(
                     "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                    "pyenv exec pipenv run pip install pip==18.0 && "\
                     "pyenv exec pipenv lock"
                   )
 
@@ -129,7 +129,7 @@ module Dependabot
             end
 
             if error.message.include?("Could not find a version") ||
-               error.message.include?("Warning: Python >")
+               error.message.include?("Not a valid python version")
               check_original_requirements_resolvable
             end
 
@@ -171,8 +171,7 @@ module Dependabot
                 IO.popen("git init", err: %i(child out)) if setup_files.any?
 
                 run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv run pip install "\
-                                   "pip==18.0 && pyenv exec pipenv lock")
+                                   "pyenv exec pipenv lock")
 
                 true
               rescue SharedHelpers::HelperSubprocessFailed => error
@@ -184,7 +183,7 @@ module Dependabot
                   raise DependencyFileNotResolvable, msg
                 end
 
-                if error.message.include?("Warning: Python >")
+                if error.message.include?("Not a valid python version")
                   msg = "Pipenv does not support specifying Python ranges "\
                     "(see https://github.com/pypa/pipenv/issues/1050 for more "\
                     "details)."
@@ -285,7 +284,9 @@ module Dependabot
               end
             end
 
-            TomlRB.dump(pipfile_object)
+            TomlConverter.convert_pipenv_outline_tables(
+              TomlRB.dump(pipfile_object)
+            )
           end
 
           def add_private_sources(pipfile_content)
