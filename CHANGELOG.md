@@ -1,3 +1,7 @@
+## v0.73.53, 9 October 2018
+
+- Update Pipenv to 2018.10.9
+
 ## v0.73.52, 8 October 2018
 
 - Prefer lower versions when parsing dependencies into DependencySet
