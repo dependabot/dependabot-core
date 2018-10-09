@@ -1,9 +1,11 @@
 const lockfileParser = require("../lib/lockfile-parser");
 const updater = require("../lib/updater");
+const subdependencyUpdater = require("../lib/subdependency-updater");
 
 const functionMap = {
   parseLockfile: lockfileParser.parse,
-  update: updater.updateDependencyFiles
+  update: updater.updateDependencyFiles,
+  updateSubdependency: subdependencyUpdater.updateDependencyFile
 };
 
 function output(obj) {

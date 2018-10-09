@@ -919,21 +919,32 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "for a sub-dependency" do
-      let(:dependency_files) { [package_json] }
-      let(:manifest_fixture_name) { "no_lockfile_change.json" }
-      let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+      context "using yarn" do
+        let(:dependency_files) { [package_json, yarn_lock] }
+        let(:manifest_fixture_name) { "no_lockfile_change.json" }
+        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "acorn",
-          version: "5.1.1",
-          requirements: [],
-          package_manager: "npm_and_yarn"
-        )
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "acorn",
+            version: "5.1.1",
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        let(:yarn_lock) do
+          Dependabot::DependencyFile.new(
+            name: "yarn.lock",
+            content:
+              fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+          )
+        end
+
+        # Note: The latest vision is 6.0.2, but we can't reach it as other
+        # dependencies constrain us
+        it { is_expected.to eq(Gem::Version.new("5.7.3")) }
       end
-
-      # TODO: Fix me!
-      it { is_expected.to be_nil }
     end
   end
 
