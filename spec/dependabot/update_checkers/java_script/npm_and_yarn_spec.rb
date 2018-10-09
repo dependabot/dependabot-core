@@ -35,9 +35,10 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", "package.json")
+      content: fixture("javascript", "package_files", manifest_fixture_name)
     )
   end
+  let(:manifest_fixture_name) { "package.json" }
 
   let(:credentials) do
     [{
@@ -153,11 +154,6 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       end
       it { is_expected.to be_truthy }
     end
-  end
-
-  describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
-    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
   end
 
   describe "#latest_version" do
@@ -918,6 +914,29 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     end
   end
 
+  describe "#latest_resolvable_version" do
+    subject { checker.latest_resolvable_version }
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+    context "for a sub-dependency" do
+      let(:dependency_files) { [package_json] }
+      let(:manifest_fixture_name) { "no_lockfile_change.json" }
+      let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      # TODO: Fix me!
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
@@ -1113,14 +1132,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     end
 
     context "with a library (that has a lockfile)" do
-      let(:package_json) do
-        # We've already stubbed hitting the registry for etag (since it's also
-        # the dependency we're checking in this spec)
-        Dependabot::DependencyFile.new(
-          name: "package.json",
-          content: fixture("javascript", "package_files", "etag.json")
-        )
-      end
+      # We've already stubbed hitting the registry for etag (since it's also
+      # the dependency we're checking in this spec)
+      let(:manifest_fixture_name) { "etag.json" }
 
       it "delegates to the RequirementsUpdater" do
         expect(described_class::RequirementsUpdater).

@@ -11,6 +11,7 @@ module Dependabot
         require_relative "npm_and_yarn/requirements_updater"
         require_relative "npm_and_yarn/library_detector"
         require_relative "npm_and_yarn/version_resolver"
+        require_relative "npm_and_yarn/subdependency_version_resolver"
 
         def latest_version
           return latest_version_for_git_dependency if git_dependency?
@@ -19,9 +20,13 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # Javascript doesn't have the concept of version conflicts, so the
-          # latest version is always resolvable.
-          latest_version
+          # JavaScript doesn't uses nested resolution, so the latest version is
+          # always resolvable if this is a top-level dependency.
+          return latest_version if dependency.top_level?
+
+          # Otherwise, if the dependency is indirect, its version is constrained
+          # by the requirements placed on it by dependencies lower down the tree
+          subdependency_version_resolver.latest_resolvable_version
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -118,6 +123,16 @@ module Dependabot
         def version_resolver
           @version_resolver ||=
             VersionResolver.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions
+            )
+        end
+
+        def subdependency_version_resolver
+          @subdependency_version_resolver ||=
+            SubdependencyVersionResolver.new(
               dependency: dependency,
               credentials: credentials,
               dependency_files: dependency_files,
