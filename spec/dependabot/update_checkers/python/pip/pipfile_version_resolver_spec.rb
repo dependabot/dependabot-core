@@ -167,6 +167,23 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
       end
 
+      context "that is implicit" do
+        let(:pipfile_fixture_name) { "required_python_implicit" }
+        let(:dependency_name) { "pytest" }
+        let(:dependency_version) { "3.4.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "Pipfile",
+            requirement: "==3.4.0",
+            groups: ["develop"],
+            source: nil
+          }]
+        end
+        let(:latest_version) { Gem::Version.new("3.8.1") }
+
+        it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+      end
+
       context "for a resolution that has caused trouble in the past" do
         let(:dependency_files) { [pipfile] }
         let(:pipfile_fixture_name) { "problematic_resolution" }
