@@ -128,7 +128,7 @@ module Dependabot
             end
 
             if error.message.include?("Could not find a version") ||
-               error.message.include?("Warning: Python >")
+               error.message.include?("Not a valid python version")
               check_original_requirements_resolvable
             end
 
@@ -182,7 +182,7 @@ module Dependabot
                   raise DependencyFileNotResolvable, msg
                 end
 
-                if error.message.include?("Warning: Python >")
+                if error.message.include?("Not a valid python version")
                   msg = "Pipenv does not support specifying Python ranges "\
                     "(see https://github.com/pypa/pipenv/issues/1050 for more "\
                     "details)."
