@@ -76,7 +76,6 @@ module Dependabot
                   # to resolve the dependencies. That means this is slow.
                   run_pipenv_command(
                     "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                    "pyenv exec pipenv run pip install pip==18.0 && "\
                     "pyenv exec pipenv lock"
                   )
 
@@ -171,8 +170,7 @@ module Dependabot
                 IO.popen("git init", err: %i(child out)) if setup_files.any?
 
                 run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv run pip install "\
-                                   "pip==18.0 && pyenv exec pipenv lock")
+                                   "pyenv exec pipenv lock")
 
                 true
               rescue SharedHelpers::HelperSubprocessFailed => error

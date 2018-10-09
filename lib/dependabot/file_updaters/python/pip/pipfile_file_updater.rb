@@ -192,7 +192,6 @@ module Dependabot
 
                   run_pipenv_command(
                     "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                    "pyenv exec pipenv run pip install pip==18.0 && "\
                     "pyenv exec pipenv lock"
                   )
 
@@ -231,12 +230,10 @@ module Dependabot
           def generate_updated_requirements_files
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r > req.txt"
             )
             run_pipenv_command(
               "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-              "pyenv exec pipenv run pip install pip==18.0 && "\
               "pyenv exec pipenv lock -r -d > dev-req.txt"
             )
           end
