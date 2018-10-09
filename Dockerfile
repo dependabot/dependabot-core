@@ -34,7 +34,8 @@ RUN apt-get update \
       xz-utils \
       tk-dev \
     && locale-gen en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8
 
 
 ### RUBY
@@ -55,9 +56,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
     && cd /usr/local/.pyenv && git checkout v1.2.7 && cd - \
-    && pyenv install 3.6.5 \
+    && pyenv install 3.6.6 \
     && pyenv install 2.7.15 \
-    && pyenv global 3.6.5
+    && pyenv global 3.6.6
 
 
 ### JAVASCRIPT
@@ -96,8 +97,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl -O https://dl.google.com/go/go1.11.linux-amd64.tar.gz \
-    && tar xvf go1.11.linux-amd64.tar.gz \
+RUN curl -O https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz \
+    && tar xvf go1.11.1.linux-amd64.tar.gz \
     && wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
     && mv dep-linux-amd64 go/bin/dep \
     && chmod +x go/bin/dep \
