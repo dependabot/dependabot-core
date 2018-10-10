@@ -1,3 +1,8 @@
+## v0.73.54, 10 October 2018
+
+- Bump Python and Go versions, and add LANG environment variable (Dockerfile)
+- JS: Add first version of Yarn subdependency updating
+
 ## v0.73.53, 9 October 2018
 
 - Update Pipenv to 2018.10.9
