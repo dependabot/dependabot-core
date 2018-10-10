@@ -6,6 +6,7 @@ require "dependabot/update_checkers/java_script/npm_and_yarn/registry_finder"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module JavaScript
@@ -26,20 +27,10 @@ module Dependabot
               return @updated_yarn_lock_content[yarn_lock.name]
             end
 
-            new_content =
-              SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files
-
-                updated_files =
-                  run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
-
-                updated_files.fetch("yarn.lock")
-              end
+            new_content = updated_yarn_lock(yarn_lock)
 
             @updated_yarn_lock_content[yarn_lock.name] =
               post_process_yarn_lockfile(new_content)
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            handle_yarn_lock_updater_error(error, yarn_lock)
           end
 
           private
@@ -51,19 +42,29 @@ module Dependabot
             dependencies.first
           end
 
+          def updated_yarn_lock(yarn_lock)
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+
+              updated_files =
+                run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
+
+              updated_files.fetch("yarn.lock")
+            end
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            handle_yarn_lock_updater_error(error, yarn_lock)
+          end
+
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def run_yarn_updater(path:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
-                SharedHelpers.run_helper_subprocess(
-                  command: "node #{yarn_helper_path}",
-                  function: "update",
-                  args: [
-                    Dir.pwd,
-                    dependency.name,
-                    dependency.version,
-                    requirements_for_path(dependency.requirements, path)
-                  ]
-                )
+                if dependency.top_level?
+                  run_yarn_top_level_updater(path: path)
+                else
+                  run_yarn_subdependency_updater
+                end
               end
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
@@ -76,6 +77,29 @@ module Dependabot
             raise if retry_count > 2
 
             sleep(rand(3.0..10.0)) && retry
+          end
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
+
+          def run_yarn_top_level_updater(path:)
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{yarn_helper_path}",
+              function: "update",
+              args: [
+                Dir.pwd,
+                dependency.name,
+                dependency.version,
+                requirements_for_path(dependency.requirements, path)
+              ]
+            )
+          end
+
+          def run_yarn_subdependency_updater
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{yarn_helper_path}",
+              function: "updateSubdependency",
+              args: [Dir.pwd, dependency.name]
+            )
           end
 
           def requirements_for_path(requirements, path)
@@ -134,6 +158,16 @@ module Dependabot
           end
 
           def write_temporary_dependency_files(update_package_json: true)
+            if dependency.top_level?
+              write_temporary_top_level_dependency_files(
+                update_package_json: update_package_json
+              )
+            else
+              write_temporary_subdependency_dependency_files
+            end
+          end
+
+          def write_temporary_top_level_dependency_files(update_package_json:)
             yarn_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, f.content)
@@ -161,6 +195,34 @@ module Dependabot
               updated_content = sanitized_package_json_content(updated_content)
               File.write(file.name, updated_content)
             end
+          end
+
+          def write_temporary_subdependency_dependency_files
+            yarn_locks.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, prepared_yarn_lockfile_content(f.content))
+            end
+
+            File.write(".npmrc", npmrc_content)
+
+            package_files.each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+
+              updated_content = file.content
+              updated_content = replace_ssh_sources(updated_content)
+
+              # A bug prevents Yarn recognising that a directory is part of a
+              # workspace if it is specified with a `./` prefix.
+              updated_content = remove_workspace_path_prefixes(updated_content)
+
+              updated_content = sanitized_package_json_content(updated_content)
+              File.write(file.name, updated_content)
+            end
+          end
+
+          def prepared_yarn_lockfile_content(content)
+            content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
           end
 
           def replace_ssh_sources(content)
@@ -308,3 +370,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

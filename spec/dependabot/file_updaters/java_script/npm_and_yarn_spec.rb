@@ -1112,6 +1112,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a sub-dependency" do
+        let(:manifest_fixture_name) { "no_lockfile_change.json" }
+        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.1.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_yarn_lock.content).
+            to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.3"))
+        end
+      end
+
       context "with resolutions" do
         let(:manifest_fixture_name) { "resolution_specified.json" }
         let(:yarn_lock_fixture_name) { "resolution_specified.lock" }
