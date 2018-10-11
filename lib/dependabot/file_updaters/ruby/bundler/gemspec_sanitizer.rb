@@ -107,6 +107,7 @@ module Dependabot
 
             def replace_file_reads(node)
               return unless node.is_a?(Parser::AST::Node)
+              return if node.children[1] == :version=
               return replace_file_read(node) if node_reads_a_file?(node)
 
               node.children.each { |child| replace_file_reads(child) }
