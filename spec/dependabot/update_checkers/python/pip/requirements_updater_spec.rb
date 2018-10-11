@@ -72,6 +72,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:requirement_txt_req_string) { "===1.4.0" }
             its([:requirement]) { is_expected.to eq("===1.5.0") }
           end
+
+          context "and used a single equals (Poetry)" do
+            let(:requirement_txt_req_string) { "=1.4.0" }
+            its([:requirement]) { is_expected.to eq("=1.5.0") }
+          end
         end
 
         context "and no requirement was specified" do

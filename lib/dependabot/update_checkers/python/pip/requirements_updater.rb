@@ -178,7 +178,7 @@ module Dependabot
             requirement_strings = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
-              if requirement_strings.any? { |r| r.start_with?("==") }
+              if requirement_strings.any? { |r| r.start_with?("=") }
                 find_and_update_equality_match(requirement_strings)
               elsif requirement_strings.any? { |r| r.start_with?("~=") }
                 tw_req = requirement_strings.find { |r| r.start_with?("~=") }
