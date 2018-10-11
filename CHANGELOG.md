@@ -1,3 +1,8 @@
+## v0.73.57, 11 October 2018
+
+- .NET: Handle dependency_urls tags that start with a number
+- Python: Handle single equality sign matcher (Poetry)
+
 ## v0.73.56, 11 October 2018
 
 - Ruby: Sanitize gemspec version property when assigned to `File.read(..)`
