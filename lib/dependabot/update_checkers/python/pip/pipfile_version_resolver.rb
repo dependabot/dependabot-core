@@ -374,20 +374,24 @@ module Dependabot
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
 
-          def run_pipenv_command(command)
+          def run_pipenv_command(cmd)
             raw_response = nil
-            IO.popen(command, err: %i(child out)) do |process|
-              raw_response = process.read
-            end
+            IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
 
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
             return if $CHILD_STATUS.success?
 
-            raise SharedHelpers::HelperSubprocessFailed.new(
-              raw_response,
-              command
-            )
+            raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            unless error.message.include?("InstallationError") ||
+                   error.message.include?("Could not find a version")
+              raise
+            end
+            raise if cmd.start_with?("pyenv local 2.7.15 &&")
+
+            cmd = "pyenv local 2.7.15 && " + cmd + " && pyenv local --unset"
+            retry
           end
 
           def check_env_sources_included_in_config_variables(env_sources)

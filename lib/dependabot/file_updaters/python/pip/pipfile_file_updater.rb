@@ -250,6 +250,15 @@ module Dependabot
             return if $CHILD_STATUS.success?
 
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            unless error.message.include?("InstallationError") ||
+                   error.message.include?("Could not find a version")
+              raise
+            end
+            raise if cmd.start_with?("pyenv local 2.7.15 &&")
+
+            cmd = "pyenv local 2.7.15 && " + cmd + " && pyenv local --unset"
+            retry
           end
 
           def write_temporary_dependency_files(pipfile_content)
