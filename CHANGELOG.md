@@ -1,3 +1,7 @@
+## v0.73.56, 11 October 2018
+
+- Ruby: Sanitize gemspec version property when assigned to `File.read(..)`
+
 ## v0.73.55, 11 October 2018
 
 - Python: Use git commit for pipenv
