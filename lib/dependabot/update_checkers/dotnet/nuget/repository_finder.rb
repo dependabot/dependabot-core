@@ -186,6 +186,7 @@ module Dependabot
             sources.each do |source_details|
               key = source_details.fetch(:key)
               next source_details[:token] = nil unless key
+              next source_details[:token] = nil if key.match?(/^\d/)
 
               tag = key.gsub(" ", "_x0020_")
               creds_nodes = doc.css("configuration > packageSourceCredentials "\
