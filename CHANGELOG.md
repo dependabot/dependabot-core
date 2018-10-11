@@ -1,3 +1,7 @@
+## v0.73.55, 11 October 2018
+
+- Python: Use git commit for pipenv
+
 ## v0.73.54, 10 October 2018
 
 - Bump Python and Go versions, and add LANG environment variable (Dockerfile)
