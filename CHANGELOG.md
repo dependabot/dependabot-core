@@ -1,3 +1,7 @@
+## v0.73.59, 12 October 2018
+
+- JS: Handle git dependencies without a resolution in the lockfile
+
 ## v0.73.58, 12 October 2018
 
 - JS: Handle git dependencies where the resolved source uses a slash, not a #
