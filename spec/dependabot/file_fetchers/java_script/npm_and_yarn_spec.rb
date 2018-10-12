@@ -750,6 +750,30 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
         expect(workspace_dep.type).to eq("file")
       end
 
+      context "specified using './packages/*'" do
+        before do
+          stub_request(:get, File.join(url, "package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "package_json_with_relative_workspaces.json"),
+              headers: json_header
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.count).to eq(5)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to include("packages/package2/package.json")
+
+          workspace_dep =
+            file_fetcher_instance.files.
+            find { |f| f.name == "packages/package1/package.json" }
+          expect(workspace_dep.type).to eq("file")
+        end
+      end
+
       context "specified using a hash" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha")).

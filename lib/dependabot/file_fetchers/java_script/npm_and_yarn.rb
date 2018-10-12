@@ -207,6 +207,7 @@ module Dependabot
 
         def expanded_paths(path)
           dir = directory.gsub(%r{(^/|/$)}, "")
+          path = path.gsub(%r{^\./}, "")
           unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
                            "."
 
