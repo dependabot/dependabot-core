@@ -1,3 +1,7 @@
+## v0.73.58, 12 October 2018
+
+- JS: Handle git dependencies where the resolved source uses a slash, not a #
+
 ## v0.73.57, 11 October 2018
 
 - .NET: Handle dependency_urls tags that start with a number
