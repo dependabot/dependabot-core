@@ -2,14 +2,14 @@
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
-require "dependabot/file_parsers/go/dep"
+require "dependabot/file_parsers/go/modules"
 require "dependabot/utils/go/path_converter"
 require "dependabot/errors"
 
 module Dependabot
   module FileParsers
     module Go
-      module Modules
+      class Modules
         class GoModParser
           GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/
 

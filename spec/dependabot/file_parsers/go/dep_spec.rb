@@ -225,23 +225,5 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
         end
       end
     end
-
-    context "with a go.mod" do
-      let(:files) { [go_mod] }
-      let(:go_mod) do
-        Dependabot::DependencyFile.new(
-          name: "go.mod",
-          content: fixture("go", "go_mods", "go.mod")
-        )
-      end
-
-      its(:length) { is_expected.to eq(5) }
-
-      describe "top level dependencies" do
-        subject(:dependencies) { parser.parse.select(&:top_level?) }
-
-        its(:length) { is_expected.to eq(2) }
-      end
-    end
   end
 end
