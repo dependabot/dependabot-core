@@ -19,16 +19,6 @@ module Dependabot
           end
 
           def dependency_set
-            dependency_set = Dependabot::FileParsers::Base::DependencySet.new
-            dependency_set += go_mod_dependencies
-            dependency_set
-          end
-
-          private
-
-          attr_reader :dependency_files, :credentials
-
-          def go_mod_dependencies
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
             i = 0
@@ -46,6 +36,10 @@ module Dependabot
 
             dependencies
           end
+
+          private
+
+          attr_reader :dependency_files, :credentials
 
           def dependency_from_details(details)
             source =

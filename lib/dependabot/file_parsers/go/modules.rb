@@ -1,15 +1,6 @@
 # frozen_string_literal: true
 
-require "toml-rb"
-
-require "dependabot/errors"
-require "dependabot/dependency"
-require "dependabot/shared_helpers"
-require "dependabot/source"
-
 require "dependabot/file_parsers/base"
-require "dependabot/utils/go/requirement"
-require "dependabot/utils/go/path_converter"
 
 module Dependabot
   module FileParsers
