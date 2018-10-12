@@ -211,6 +211,10 @@ module Dependabot
             return lock_version.split("#").last if lock_version&.include?("#")
             return lock_res.split("#").last if lock_res&.include?("#")
 
+            if lock_res.split("/").last.match?(/^[0-9a-f]{40}$/)
+              return lock_res.split("/").last
+            end
+
             return nil
           end
 
