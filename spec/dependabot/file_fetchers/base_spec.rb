@@ -69,6 +69,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq("aa218f56b14c9653891f9e74264a383fa43fefbd") }
 
+      context "when the repo is empty" do
+        before do
+          stub_request(:get, url + "/git/refs/heads/master").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 409,
+                      body: fixture("github", "git_repo_empty.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "with a target branch" do
         let(:branch) { "my_branch" }
 

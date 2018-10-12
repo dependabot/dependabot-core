@@ -61,6 +61,8 @@ module Dependabot
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
         raise Dependabot::BranchNotFound, branch
+      rescue Octokit::Conflict => error
+        raise unless error.message.include?("Repository is empty")
       end
 
       private
