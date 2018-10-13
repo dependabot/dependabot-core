@@ -1,3 +1,7 @@
+## v0.73.62, 13 October 2018
+
+- JS: Handle dist tags when updating the lockfile only
+
 ## v0.73.61, 13 October 2018
 
 - Handle unexpected 409s from GitHub when fetching files
