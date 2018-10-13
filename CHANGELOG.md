@@ -1,3 +1,7 @@
+## v0.73.61, 13 October 2018
+
+- Handle unexpected 409s from GitHub when fetching files
+
 ## v0.73.60, 12 October 2018
 
 - JS: Better expansion of workspace paths (fix paths starting './')
