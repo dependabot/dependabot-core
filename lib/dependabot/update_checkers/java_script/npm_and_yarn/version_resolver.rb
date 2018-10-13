@@ -40,6 +40,10 @@ module Dependabot
           def latest_resolvable_version_with_no_unlock
             return unless npm_details
 
+            if specified_dist_tag_requirement?
+              return version_from_dist_tags(npm_details)
+            end
+
             reqs = dependency.requirements.map do |r|
               Utils::JavaScript::Requirement.
                 requirements_array(r.fetch(:requirement))

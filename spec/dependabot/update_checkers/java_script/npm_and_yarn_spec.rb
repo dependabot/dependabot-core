@@ -972,6 +972,12 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
+      context "when a dist tag is specified" do
+        let(:req_string) { "latest" }
+
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      end
+
       context "when constrained" do
         let(:req_string) { "<= 1.5.0" }
         before do
