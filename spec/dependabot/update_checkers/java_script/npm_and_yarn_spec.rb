@@ -973,9 +973,20 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
       context "when a dist tag is specified" do
-        let(:req_string) { "latest" }
+        let(:req_string) { "stable" }
+        before do
+          stub_request(:get, registry_listing_url + "/1.5.1").
+            to_return(status: 200)
+        end
 
-        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.5.1")) }
+
+        context "that can't be found" do
+          let(:req_string) { "unknown" }
+
+          # If the dist tag can't be found then we use the `latest` dist tag
+          it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        end
       end
 
       context "when constrained" do
