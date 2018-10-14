@@ -16,8 +16,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_files
           fetched_files = []
           fetched_files << manifest if manifest
@@ -42,8 +40,6 @@ module Dependabot
           fetched_files << main if main
           fetched_files
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def manifest
           @manifest ||= fetch_file_if_present("Gopkg.toml")
