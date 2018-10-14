@@ -5,52 +5,43 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module FileFetchers
     module Go
-      class Dep < Dependabot::FileFetchers::Base
+      class Modules < Dependabot::FileFetchers::Base
         def self.required_files_in?(filenames)
-          (%w(Gopkg.toml Gopkg.lock) - filenames).empty?
+          filenames.include?("go.mod")
         end
 
         def self.required_files_message
-          "Repo must contain a Gopkg.toml and Gopkg.lock."
+          "Repo must contain a go.mod."
         end
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_files
-          fetched_files = []
-          fetched_files << manifest if manifest
-          fetched_files << lockfile if lockfile
-
-          unless manifest
+          unless go_mod
             raise(
               Dependabot::DependencyFileNotFound,
-              File.join(directory, "Gopkg.toml")
+              File.join(directory, "go.mod")
             )
           end
 
-          unless lockfile
-            raise(
-              Dependabot::DependencyFileNotFound,
-              File.join(directory, "Gopkg.lock")
-            )
-          end
+          fetched_files = [go_mod]
+
+          # Fetch the (optional) go.sum
+          fetched_files << go_sum if go_sum
 
           # Fetch the main.go file if present, as this will later identify
           # this repo as an app.
           fetched_files << main if main
+
           fetched_files
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
 
-        def manifest
-          @manifest ||= fetch_file_if_present("Gopkg.toml")
+        def go_mod
+          @go_mod ||= fetch_file_if_present("go.mod")
         end
 
-        def lockfile
-          @lockfile ||= fetch_file_if_present("Gopkg.lock")
+        def go_sum
+          @go_sum ||= fetch_file_if_present("go.sum")
         end
 
         def main
