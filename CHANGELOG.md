@@ -1,3 +1,7 @@
+## v0.73.63, 14 October 2018
+
+- Rust: Don't unlock version is support files during update check
+
 ## v0.73.62, 13 October 2018
 
 - JS: Handle dist tags when updating the lockfile only
