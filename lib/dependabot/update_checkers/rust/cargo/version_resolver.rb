@@ -13,6 +13,7 @@ module Dependabot
       class Cargo
         class VersionResolver
           BRANCH_NOT_FOUND_REGEX = /failed to find branch `(?<branch>[^`]+)`/
+
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
             @dependency_files = dependency_files

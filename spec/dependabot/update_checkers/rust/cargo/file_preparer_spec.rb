@@ -92,6 +92,16 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
           end
         end
 
+        context "with a support file (e.g., a path dependency manifest)" do
+          before { manifest.support_file = true }
+          let(:dependency_version) { nil }
+
+          it "does not update the requirement" do
+            expect(prepared_manifest_file.content).
+              to include('regex = "0.1.41"')
+          end
+        end
+
         context "with a blank requirement" do
           let(:manifest_fixture_name) { "blank_version" }
           let(:lockfile_fixture_name) { "blank_version" }

@@ -40,6 +40,10 @@ module Dependabot
       self.==(other)
     end
 
+    def support_file?
+      @support_file
+    end
+
     private
 
     def clean_directory(directory)

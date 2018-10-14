@@ -53,8 +53,11 @@ module Dependabot
           def manifest_content_for_update_check(file)
             content = file.content
 
-            content = replace_version_constraint(content, file.name)
-            content = replace_git_pin(content) if replace_git_pin?
+            unless file.support_file?
+              content = replace_version_constraint(content, file.name)
+              content = replace_git_pin(content) if replace_git_pin?
+            end
+
             content = replace_ssh_urls(content)
 
             content
