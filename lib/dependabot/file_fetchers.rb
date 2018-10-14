@@ -12,6 +12,7 @@ require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/file_fetchers/rust/cargo"
 require "dependabot/file_fetchers/dotnet/nuget"
 require "dependabot/file_fetchers/go/dep"
+require "dependabot/file_fetchers/go/modules"
 require "dependabot/file_fetchers/elm/elm_package"
 require "dependabot/file_fetchers/terraform/terraform"
 
@@ -32,6 +33,7 @@ module Dependabot
       when "cargo" then FileFetchers::Rust::Cargo
       when "nuget" then FileFetchers::Dotnet::Nuget
       when "dep" then FileFetchers::Go::Dep
+      when "go_modules" then FileFetchers::Go::Modules
       when "elm-package" then FileFetchers::Elm::ElmPackage
       when "terraform" then FileFetchers::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
