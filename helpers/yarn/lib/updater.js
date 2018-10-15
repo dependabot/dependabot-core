@@ -182,7 +182,10 @@ async function updateDependencyFile(
     path.join(directory, "yarn.lock"),
     replacedDeclarationYarnLock
   );
-  fs.writeFileSync(path.join(directory, requirements.file), originalPackageJson);
+  fs.writeFileSync(
+    path.join(directory, requirements.file),
+    originalPackageJson
+  );
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
   const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
   await install2.init();
