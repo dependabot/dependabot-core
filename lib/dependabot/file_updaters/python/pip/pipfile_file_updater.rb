@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-require "toml_converter"
 
 require "python_requirement_parser"
 require "dependabot/file_updaters/python/pip"
@@ -173,9 +172,7 @@ module Dependabot
               end
             end
 
-            TomlConverter.convert_pipenv_outline_tables(
-              TomlRB.dump(pipfile_object)
-            )
+            TomlRB.dump(pipfile_object)
           end
 
           def add_private_sources(pipfile_content)
