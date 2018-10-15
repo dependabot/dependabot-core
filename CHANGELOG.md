@@ -1,3 +1,7 @@
+## v0.73.64, 14 October 2018
+
+- JS: Ensure lockfile updates for Yarn workspace have the correct requirements
+
 ## v0.73.63, 14 October 2018
 
 - Rust: Don't unlock version is support files during update check
