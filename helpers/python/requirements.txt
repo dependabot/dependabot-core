@@ -1,6 +1,6 @@
 pip==18.1
 pip-tools==3.1.0
 hashin==0.13.4
--e git://github.com/pypa/pipenv.git@cae8bad0a86d8459a837d385c6d7863229e6e0b8#egg=pipenv
+pipenv==2018.10.13
 pipfile==0.0.2
 poetry==0.11.5
