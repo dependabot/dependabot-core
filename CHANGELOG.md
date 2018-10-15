@@ -1,3 +1,7 @@
+## v0.73.66, 15 October 2018
+
+- Python: Switch to Pipenv 2018.10.13
+
 ## v0.73.65, 15 October 2018
 
 - Python: Handle unfixable requirements gracefully
