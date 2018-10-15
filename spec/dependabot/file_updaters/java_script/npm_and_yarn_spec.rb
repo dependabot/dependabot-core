@@ -1223,7 +1223,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             f.name == "other_package/package.json"
           end
 
-          expect(lockfile.content).to include("lodash@1.3.1:")
+          expect(lockfile.content).to include("lodash@1.3.1, lodash@^1.3.1:")
           expect(lockfile.content).to_not include("lodash@^1.2.1:")
           expect(lockfile.content).to_not include("workspace-aggregator")
 
