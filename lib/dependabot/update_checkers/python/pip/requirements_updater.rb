@@ -4,6 +4,7 @@ require "dependabot/update_checkers/python/pip"
 require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module UpdateCheckers
     module Python
@@ -11,6 +12,8 @@ module Dependabot
         class RequirementsUpdater
           PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
           PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/
+
+          class UnfixableRequirement < StandardError; end
 
           attr_reader :requirements, :update_strategy,
                       :latest_version, :latest_resolvable_version
@@ -44,6 +47,7 @@ module Dependabot
 
           private
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_setup_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -62,7 +66,10 @@ module Dependabot
               end
 
             req.merge(requirement: new_requirement)
+          rescue UnfixableRequirement
+            req.merge(requirement: :unfixable)
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def updated_pipfile_requirement(req)
             # For now, we just proxy to updated_requirement. In future this
@@ -70,6 +77,7 @@ module Dependabot
             updated_requirement(req)
           end
 
+          # rubocop:disable Metrics/CyclomaticComplexity
           def updated_pyproject_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -90,7 +98,10 @@ module Dependabot
             when :bump_versions then update_pyproject_version(req)
             else raise "Unexpected update strategy: #{update_strategy}"
             end
+          rescue UnfixableRequirement
+            req.merge(requirement: :unfixable)
           end
+          # rubocop:enable Metrics/CyclomaticComplexity
 
           def update_pyproject_version(req)
             requirement_strings = req[:requirement].split(",").map(&:strip)
@@ -154,7 +165,7 @@ module Dependabot
           def widen_requirement_range(req_string)
             requirement_strings = req_string.split(",").map(&:strip)
 
-            if requirement_strings.any? { |r| r.match?(/(^==|^\d)[^*]*$/) }
+            if requirement_strings.any? { |r| r.match?(/(^=|^\d)[^*]*$/) }
               # If there is an equality operator, just update that.
               # (i.e., assume it's being used deliberately)
               find_and_update_equality_match(requirement_strings)
@@ -171,6 +182,7 @@ module Dependabot
             end
           end
 
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -190,7 +202,10 @@ module Dependabot
               end
 
             req.merge(requirement: new_requirement)
+          rescue UnfixableRequirement
+            req.merge(requirement: :unfixable)
           end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def new_version_satisfies?(req)
             requirement_class.
@@ -240,6 +255,8 @@ module Dependabot
                 op + update_greatest_version(r.to_s, latest_resolvable_version)
               when "!="
                 nil
+              when ">", ">="
+                raise UnfixableRequirement
               else
                 raise "Unexpected op for unsatisfied requirement: #{op}"
               end
@@ -341,3 +358,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

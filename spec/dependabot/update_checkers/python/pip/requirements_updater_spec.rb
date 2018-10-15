@@ -93,6 +93,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
           let(:requirement_txt_req_string) { ">=1.3.0" }
           it { is_expected.to eq(requirement_txt_req) }
 
+          context "that is too high" do
+            let(:requirement_txt_req_string) { ">=2.0.0" }
+            its([:requirement]) { is_expected.to eq(:unfixable) }
+          end
+
           context "that had a local version" do
             let(:requirement_txt_req_string) { ">=1.3.0+gc.1" }
             it { is_expected.to eq(requirement_txt_req) }
@@ -174,6 +179,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
         context "and a range requirement was specified" do
           let(:setup_py_req_string) { ">=1.3.0" }
           it { is_expected.to eq(setup_py_req) }
+
+          context "that is too high" do
+            let(:setup_py_req_string) { ">=2.0.0" }
+            its([:requirement]) { is_expected.to eq(:unfixable) }
+          end
 
           context "with an upper bound" do
             let(:setup_py_req_string) { ">=1.3.0, <=1.5.0" }
@@ -276,6 +286,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:pyproject_req_string) { ">=1.3.0" }
             it { is_expected.to eq(pyproject_req) }
 
+            context "that is too high" do
+              let(:pyproject_req_string) { ">=2.0.0" }
+              its([:requirement]) { is_expected.to eq(:unfixable) }
+            end
+
             context "that had a local version" do
               let(:pyproject_req_string) { ">=1.3.0+gc.1" }
               it { is_expected.to eq(pyproject_req) }
@@ -375,6 +390,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             context "that had a local version" do
               let(:pyproject_req_string) { ">=1.3.0+gc.1" }
               it { is_expected.to eq(pyproject_req) }
+            end
+
+            context "that is too high" do
+              let(:pyproject_req_string) { ">=2.0.0" }
+              its([:requirement]) { is_expected.to eq(:unfixable) }
             end
 
             context "with an upper bound" do
