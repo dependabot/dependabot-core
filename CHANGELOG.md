@@ -1,3 +1,7 @@
+## v0.73.65, 15 October 2018
+
+- Python: Handle unfixable requirements gracefully
+
 ## v0.73.64, 14 October 2018
 
 - JS: Ensure lockfile updates for Yarn workspace have the correct requirements
