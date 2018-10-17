@@ -46,7 +46,7 @@ module Dependabot
             end
 
             if lockfile && lockfile.content == updated_lockfile_content
-              raise "Expected pyproject.lock to change!"
+              raise "Expected lockfile to change!"
             end
 
             updated_files <<
@@ -139,6 +139,8 @@ module Dependabot
 
               run_poetry_command("pyenv exec poetry lock")
 
+              return File.read("poetry.lock") if File.exist?("poetry.lock")
+
               File.read("pyproject.lock")
             end
           end
@@ -214,8 +216,15 @@ module Dependabot
           end
 
           def lockfile
-            @lockfile ||=
-              dependency_files.find { |f| f.name == "pyproject.lock" }
+            @lockfile ||= pyproject_lock || poetry_lock
+          end
+
+          def pyproject_lock
+            dependency_files.find { |f| f.name == "pyproject.lock" }
+          end
+
+          def poetry_lock
+            dependency_files.find { |f| f.name == "poetry.lock" }
           end
         end
       end

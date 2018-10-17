@@ -67,6 +67,18 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PoetryFilesParser do
         expect(dependencies.map(&:name)).to_not include("python")
       end
 
+      context "that is called poetry.lock" do
+        let(:files) { [pyproject, poetry_lock] }
+        let(:poetry_lock) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: pyproject_lock_body
+          )
+        end
+
+        its(:length) { is_expected.to eq(36) }
+      end
+
       context "with a git dependency" do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
         let(:pyproject_lock_fixture_name) { "git_dependency.lock" }
