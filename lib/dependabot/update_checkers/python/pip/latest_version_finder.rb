@@ -81,7 +81,7 @@ module Dependabot
                   version =
                     filename.
                     gsub(/#{name_regex}-/i, "").
-                    split(/-|(\.tar\.gz)/).
+                    split(/-|(\.tar\.)/).
                     first
                   next unless version_class.correct?(version)
 
