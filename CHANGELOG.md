@@ -1,3 +1,8 @@
+## v0.73.67, 17 October 2018
+
+- Python: Support poetry.lock
+- Python: Less strict suffix removal
+
 ## v0.73.66, 15 October 2018
 
 - Python: Switch to Pipenv 2018.10.13
