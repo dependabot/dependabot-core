@@ -55,7 +55,11 @@ module Dependabot
                 # Calling `lock` avoids doing an install.
                 run_poetry_command("pyenv exec poetry lock")
 
-                updated_lockfile = TomlRB.parse(File.read("pyproject.lock"))
+                updated_lockfile =
+                  if File.exist?("poetry.lock") then File.read("poetry.lock")
+                  else File.read("pyproject.lock")
+                  end
+                updated_lockfile = TomlRB.parse(updated_lockfile)
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
               end
@@ -91,7 +95,7 @@ module Dependabot
           def freeze_other_dependencies(pyproject_content)
             FileUpdaters::Python::Pip::PyprojectPreparer.
               new(pyproject_content: pyproject_content).
-              freeze_top_level_dependencies_except([dependency], pyproject_lock)
+              freeze_top_level_dependencies_except([dependency], lockfile)
           end
 
           def unlock_target_dependency(pyproject_content)
@@ -180,6 +184,14 @@ module Dependabot
 
           def pyproject_lock
             dependency_files.find { |f| f.name == "pyproject.lock" }
+          end
+
+          def poetry_lock
+            dependency_files.find { |f| f.name == "poetry.lock" }
+          end
+
+          def lockfile
+            poetry_lock || pyproject_lock
           end
 
           def run_poetry_command(command)

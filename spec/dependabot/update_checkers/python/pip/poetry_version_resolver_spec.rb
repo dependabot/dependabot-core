@@ -25,7 +25,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     }]
   end
   let(:unlock_requirement) { true }
-  let(:dependency_files) { [pyproject, pyproject_lock] }
+  let(:dependency_files) { [pyproject, lockfile] }
   let(:latest_version) { Gem::Version.new("2.18.4") }
   let(:pyproject) do
     Dependabot::DependencyFile.new(
@@ -34,9 +34,9 @@ RSpec.describe namespace::PoetryVersionResolver do
     )
   end
   let(:pyproject_fixture_name) { "exact_version.toml" }
-  let(:pyproject_lock) do
+  let(:lockfile) do
     Dependabot::DependencyFile.new(
-      name: "pyproject.toml",
+      name: "pyproject.lock",
       content: fixture("python", "pyproject_locks", lockfile_fixture_name)
     )
   end
@@ -64,13 +64,23 @@ RSpec.describe namespace::PoetryVersionResolver do
     subject { resolver.latest_resolvable_version }
 
     context "with a lockfile" do
-      let(:dependency_files) { [pyproject, pyproject_lock] }
+      let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
         let(:unlock_requirement) { false }
         it { is_expected.to eq(Gem::Version.new("2.18.0")) }
+      end
+
+      context "when the lockfile is named poetry.lock" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "poetry.lock",
+            content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+          )
+        end
+        pending { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
     end
 

@@ -79,5 +79,30 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PoetryFileUpdater do
       expect(lockfile_obj["metadata"]["content-hash"]).
         to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
     end
+
+    context "with a poetry.lock" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+        )
+      end
+
+      pending "updates the lockfile successfully" do
+        expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
+
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+        requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
+        pytest = lockfile_obj["package"].find { |d| d["name"] == "pytest" }
+
+        expect(requests["version"]).to eq("2.19.1")
+        expect(pytest["version"]).to eq("3.5.0")
+
+        expect(lockfile_obj["metadata"]["content-hash"]).
+          to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
+      end
+    end
   end
 end

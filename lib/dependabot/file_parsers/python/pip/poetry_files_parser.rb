@@ -22,7 +22,7 @@ module Dependabot
             dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
             dependency_set += pyproject_dependencies
-            dependency_set += pyproject_lock_dependencies if pyproject_lock
+            dependency_set += lockfile_dependencies if lockfile
 
             dependency_set
           end
@@ -62,10 +62,10 @@ module Dependabot
           # Create a DependencySet where each element has no requirement. Any
           # requirements will be added when combining the DependencySet with
           # other DependencySets.
-          def pyproject_lock_dependencies
+          def lockfile_dependencies
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
-            parsed_pyproject_lock.fetch("package", []).each do |details|
+            parsed_lockfile.fetch("package", []).each do |details|
               next if details.dig("source", "type") == "git"
 
               dependencies <<
@@ -81,9 +81,9 @@ module Dependabot
           end
 
           def version_from_lockfile(dep_name)
-            return unless pyproject_lock
+            return unless parsed_lockfile
 
-            parsed_pyproject_lock.fetch("package", []).
+            parsed_lockfile.fetch("package", []).
               find { |p| p.fetch("name") == normalised_name(dep_name) }&.
               fetch("verison", nil)
           end
@@ -105,14 +105,34 @@ module Dependabot
             raise Dependabot::DependencyFileNotParseable, pyproject_lock.path
           end
 
+          def parsed_poetry_lock
+            @parsed_poetry_lock ||= TomlRB.parse(poetry_lock.content)
+          rescue TomlRB::ParseError
+            raise Dependabot::DependencyFileNotParseable, poetry_lock.path
+          end
+
           def pyproject
             @pyproject ||=
               dependency_files.find { |f| f.name == "pyproject.toml" }
           end
 
+          def lockfile
+            poetry_lock || pyproject_lock
+          end
+
+          def parsed_lockfile
+            return parsed_poetry_lock if poetry_lock
+            return parsed_pyproject_lock if pyproject_lock
+          end
+
           def pyproject_lock
             @pyproject_lock ||=
               dependency_files.find { |f| f.name == "pyproject.lock" }
+          end
+
+          def poetry_lock
+            @poetry_lock ||=
+              dependency_files.find { |f| f.name == "poetry.lock" }
           end
         end
       end

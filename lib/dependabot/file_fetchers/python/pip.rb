@@ -54,7 +54,7 @@ module Dependabot
         end
 
         def pyproject_files
-          [pyproject, pyproject_lock].compact
+          [pyproject, pyproject_lock, poetry_lock].compact
         end
 
         def requirement_files
@@ -103,6 +103,10 @@ module Dependabot
 
         def pyproject_lock
           @pyproject_lock ||= fetch_file_if_present("pyproject.lock")
+        end
+
+        def poetry_lock
+          @poetry_lock ||= fetch_file_if_present("poetry.lock")
         end
 
         def requirements_txt_files

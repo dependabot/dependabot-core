@@ -115,7 +115,7 @@ module Dependabot
           # from the first two unless they have a lockfile.
           if reqs.none?
             return :pipfile if pipfile_lock
-            return :poetry if pyproject_lock
+            return :poetry if pyproject_lock || poetry_lock
             return :pip_compile if pip_compile_files.any?
           end
 
@@ -197,6 +197,10 @@ module Dependabot
 
         def pyproject_lock
           dependency_files.find { |f| f.name == "pyproject.lock" }
+        end
+
+        def poetry_lock
+          dependency_files.find { |f| f.name == "poetry.lock" }
         end
 
         def pip_compile_files

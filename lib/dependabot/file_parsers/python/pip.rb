@@ -38,7 +38,7 @@ module Dependabot
           dependency_set = DependencySet.new
 
           dependency_set += pipenv_dependencies if pipfile
-          dependency_set += poetry_dependencies if pyproject
+          dependency_set += poetry_dependencies if using_poetry?
           dependency_set += requirement_dependencies if requirement_files.any?
           dependency_set += setup_file_dependencies if setup_file
 
@@ -186,12 +186,25 @@ module Dependabot
           @pipfile_lock ||= get_original_file("Pipfile.lock")
         end
 
+        def using_poetry?
+          return false unless pyproject
+          return true if poetry_lock || pyproject_lock
+
+          !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
+        rescue TomlRB::ParseError
+          raise Dependabot::DependencyFileNotParseable, pyproject.path
+        end
+
         def pyproject
           @pyproject ||= get_original_file("pyproject.toml")
         end
 
         def pyproject_lock
           @pyproject_lock ||= get_original_file("pyproject.lock")
+        end
+
+        def poetry_lock
+          @poetry_lock ||= get_original_file("poetry.lock")
         end
 
         def setup_file
