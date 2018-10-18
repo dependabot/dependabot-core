@@ -1,3 +1,8 @@
+## v0.73.68, 18 October 2018
+
+- Python: Stricter index finding regex
+- Python: Ensure local version is unset after each check
+
 ## v0.73.67, 17 October 2018
 
 - Python: Support poetry.lock
