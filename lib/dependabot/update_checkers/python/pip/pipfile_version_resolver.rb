@@ -387,8 +387,10 @@ module Dependabot
             end
             raise if cmd.start_with?("pyenv local 2.7.15 &&")
 
-            cmd = "pyenv local 2.7.15 && " + cmd + " && pyenv local --unset"
+            cmd = "pyenv local 2.7.15 && " + cmd
             retry
+          ensure
+            IO.popen("pyenv local --unset", err: %i(child out))
           end
 
           def check_env_sources_included_in_config_variables(env_sources)

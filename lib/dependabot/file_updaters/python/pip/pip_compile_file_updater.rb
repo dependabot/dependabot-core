@@ -132,10 +132,10 @@ module Dependabot
                          error.message.include?("futures")
             raise if command.start_with?("pyenv local 2.7.15 &&")
 
-            command = "pyenv local 2.7.15 && " +
-                      command +
-                      " && pyenv local --unset"
+            command = "pyenv local 2.7.15 && " + command
             retry
+          ensure
+            IO.popen("pyenv local --unset", err: %i(child out))
           end
 
           def write_updated_dependency_files

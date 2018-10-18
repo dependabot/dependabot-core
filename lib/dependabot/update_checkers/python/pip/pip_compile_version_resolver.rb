@@ -95,10 +95,10 @@ module Dependabot
             end
             raise if command.start_with?("pyenv local 2.7.15 &&")
 
-            command = "pyenv local 2.7.15 && " +
-                      command +
-                      " && pyenv local --unset"
+            command = "pyenv local 2.7.15 && " + command
             retry
+          ensure
+            IO.popen("pyenv local --unset", err: %i(child out))
           end
 
           def write_temporary_dependency_files
