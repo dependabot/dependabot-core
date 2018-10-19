@@ -1,3 +1,7 @@
+## v0.73.70, 19 October 2018
+
+- Python: Raise original error if retrying on Python 2.7
+
 ## v0.73.69, 19 October 2018
 
 - Python: Add Cython as a dependency
