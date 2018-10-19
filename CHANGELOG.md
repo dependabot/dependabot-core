@@ -1,3 +1,7 @@
+## v0.73.69, 19 October 2018
+
+- Python: Add Cython as a dependency
+
 ## v0.73.68, 18 October 2018
 
 - Python: Stricter index finding regex
