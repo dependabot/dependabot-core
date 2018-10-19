@@ -4,6 +4,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/github_client_with_retries"
+require "dependabot/client/bitbucket"
 require "dependabot/shared_helpers"
 require "excon"
 require "gitlab"
@@ -253,48 +254,30 @@ module Dependabot
           )
       end
 
-      def fetch_bitbucket_commit(branch)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "refs/branches/#{branch}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
+      def bitbucket_client
+        credentials.
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == "bitbucket.org" }
 
-        JSON.parse(response.body).fetch("target").fetch("hash")
+        @bitbucket_client ||= Dependabot::Client::BitBucket.new(credentials)
+      end
+
+      def fetch_bitbucket_commit(branch)
+        bitbucket_client.fetch_commit(repo, branch)
       end
 
       def fetch_bitbucket_default_branch
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        JSON.parse(response.body).fetch("mainbranch").fetch("name")
+        bitbucket_client.fetch_default_branch(repo)
       end
 
       def bitbucket_repo_contents(path)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}?pagelen=100",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
+        response = bitbucket_client.fetch_default_branch(
+            repo,
+            commit,
+            path
+        )
 
-        JSON.parse(response.body).fetch("values").map do |file|
+        response.map do |file|
           type = case file.fetch("type")
                  when "commit_file" then "file"
                  when "commit_directory" then "dir"
@@ -310,24 +293,11 @@ module Dependabot
       end
 
       def bitbucket_file_contents(repo, path, commit)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        response.body
-      end
-
-      def bitbucket_credential
-        credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
+        response = bitbucket_client.fetch_file_contents(
+            repo,
+            commit,
+            path
+        )
       end
     end
   end
