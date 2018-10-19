@@ -7,6 +7,7 @@ require "dependabot/github_client_with_retries"
 require "dependabot/shared_helpers"
 require "excon"
 require "gitlab"
+require "dependabot/provider/github"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -52,9 +53,11 @@ module Dependabot
         @commit ||=
           case source.provider
           when "github"
-            github_client_for_source.ref(repo, "heads/#{branch}").object.sha
+            githubProvider = Dependabot::Provider::Github.new
+            githubProvider.commit(repo, github_client_for_source)
           when "gitlab"
-            gitlab_client.branch(repo, branch).commit.id
+            gitlabProvider = Dependabot::Provider::Gitlab.new
+            gitlabProvider.commit(repo, branch, gitlab_client)
           when "bitbucket"
             fetch_bitbucket_commit(branch)
           else raise "Unsupported provider '#{source.provider}'."
@@ -71,9 +74,11 @@ module Dependabot
         @default_branch_for_repo ||=
           case source.provider
           when "github"
-            github_client_for_source.repository(repo).default_branch
+            githubProvider = Dependabot::Provider::Github.new
+            githubProvider.default_branch_for_repo(repo, github_client_for_source)
           when "gitlab"
-            gitlab_client.project(repo).default_branch
+            gitlabProvider = Dependabot::Provider::Gitlab.new
+            gitlabProvider.default_branch_for_repo(repo, gitlab_client)
           when "bitbucket"
             fetch_bitbucket_default_branch
           else raise "Unsupported provider '#{source.provider}'."
