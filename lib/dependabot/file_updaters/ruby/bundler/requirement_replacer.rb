@@ -44,9 +44,6 @@ module Dependabot
           def update_comment_spacing_if_required(content, updated_content)
             return updated_content unless previous_requirement
 
-            length_change = updated_requirement.length -
-                            previous_requirement.length
-
             return updated_content if updated_content == content
             return updated_content if length_change.zero?
 
@@ -65,6 +62,15 @@ module Dependabot
 
             updated_lines[updated_line_index] = updated_line
             updated_lines.join
+          end
+
+          def length_change
+            unless previous_requirement.start_with?("=")
+              return updated_requirement.length - previous_requirement.length
+            end
+
+            updated_requirement.length -
+              previous_requirement.gsub(/^=/, "").strip.length
           end
 
           class Rewriter < Parser::TreeRewriter

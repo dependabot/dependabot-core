@@ -105,6 +105,27 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
             end
           end
         end
+
+        context "with an equality matcher" do
+          let(:updated_requirement) { "2.0" }
+          let(:previous_requirement) { "= 1.9" }
+          let(:content) { "gem \"business\", \"1.9\"    # description\n" }
+
+          context "when no change is required" do
+            it "handles the change in required spaces" do
+              expect(rewrite).
+                to eq("gem \"business\", \"2.0\"    # description\n")
+            end
+          end
+
+          context "when a change is required" do
+            let(:updated_requirement) { "2.0.0" }
+            it "handles the change in required spaces" do
+              expect(rewrite).
+                to eq("gem \"business\", \"2.0.0\"  # description\n")
+            end
+          end
+        end
       end
 
       context "with a function requirement" do
