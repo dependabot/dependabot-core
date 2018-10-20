@@ -51,6 +51,7 @@ module Dependabot
 
           UNREACHABLE_GIT = /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/
           FORBIDDEN_PACKAGE = /403 Forbidden: (?<package_req>.*)/
+          MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/
 
           def dependency
             # For now, we'll only ever be updating a single dependency for JS
@@ -88,6 +89,13 @@ module Dependabot
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/MethodLength
           def handle_npm_updater_error(error, lockfile)
+            if error.message.match?(MISSING_PACKAGE)
+              package_name =
+                error.message.match(MISSING_PACKAGE).
+                named_captures["package_req"].
+                split(/(?<=\w)\@/).first
+              handle_missing_package(package_name)
+            end
             if error.message.include?("#{dependency.name}@") &&
                error.message.start_with?("No matching vers") &&
                resolvable_before_update?(lockfile)

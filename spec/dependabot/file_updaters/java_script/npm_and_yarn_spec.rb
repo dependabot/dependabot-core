@@ -950,7 +950,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           let(:files) { [package_json, package_lock] }
           it "raises a helpful error" do
             expect { updated_files }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+              to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
           end
         end
 
