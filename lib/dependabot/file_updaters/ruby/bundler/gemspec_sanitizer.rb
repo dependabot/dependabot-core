@@ -130,9 +130,9 @@ module Dependabot
                 range_to_remove = node.loc.expression.join(
                   node.children.last.location.heredoc_end
                 )
-                return remove(range_to_remove)
+                return replace(range_to_remove, '"sanitized"')
               elsif unnecessary_assignment?(node)
-                return remove(node.loc.expression)
+                return replace(node.loc.expression, '"sanitized"')
               end
 
               node.children.each do |child|

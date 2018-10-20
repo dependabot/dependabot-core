@@ -40,7 +40,21 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       let(:content) do
         %(Spec.new { |s| s.version = "0.1.0"\n s.post_install_message = "a" })
       end
-      it { is_expected.to eq(%(Spec.new { |s| s.version = "0.1.0"\n  })) }
+      it do
+        is_expected.to eq(%(Spec.new { |s| s.version = "0.1.0"\n "sanitized" }))
+      end
+
+      context "that uses a conditional" do
+        let(:content) do
+          "Spec.new { |s| s.version = '0.1.0'\n "\
+          "s.post_install_message = \"a\" if true }"
+        end
+        it "maintains a valid conditional" do
+          expect(rewrite).to eq(
+            %(Spec.new { |s| s.version = '0.1.0'\n "sanitized" if true })
+          )
+        end
+      end
 
       context "that uses a heredoc" do
         let(:content) do
@@ -54,7 +68,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
             "Spec.new do |s|\n              s.version = \"0.1.0\""\
-            "\n              \n            end"
+            "\n              \"sanitized\"\n            end"
           )
         end
       end
