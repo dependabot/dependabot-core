@@ -63,12 +63,12 @@ module Dependabot
         end
 
         def <=>(other)
-          version = @version_string.to_s.downcase
+          version = stringify_version(@version_string)
           version = fill_tokens(version)
           version = trim_version(version)
           prefixed_tokens = split_into_prefixed_tokens(version)
 
-          other_version = other.to_s.downcase
+          other_version = stringify_version(other)
           other_version = fill_tokens(other_version)
           other_version = trim_version(other_version)
           other_prefixed_tokens = split_into_prefixed_tokens(other_version)
@@ -87,6 +87,13 @@ module Dependabot
           end
 
           0
+        end
+
+        def stringify_version(version)
+          version = version.to_s.downcase
+
+          # Not technically correct, but pragmatic
+          version.gsub(/^v(?=\d)/, "")
         end
 
         def fill_tokens(version)

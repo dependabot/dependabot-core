@@ -113,6 +113,11 @@ RSpec.describe Dependabot::Utils::Java::Version do
       context "that is equal" do
         let(:other_version) { described_class.new("1.0.0") }
         it { is_expected.to eq(0) }
+
+        context "but prefixed with a v" do
+          let(:other_version) { described_class.new("v1.0.0") }
+          it { is_expected.to eq(0) }
+        end
       end
 
       context "that is greater" do
