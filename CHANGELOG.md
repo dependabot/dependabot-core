@@ -1,6 +1,12 @@
+## v0.73.73, 20 October 2018
+
+- Handle directory paths that instead point to a file
+- Ruby: Handle equality matcher when determining required comment change
+
 ## v0.73.72, 20 October 2018
 
 - Java: Trim v-prefices from version strings when comparing
+- JS: Handle 401s in same way as 403s when updating npm lockfiles
 
 ## v0.73.71, 20 October 2018
 
