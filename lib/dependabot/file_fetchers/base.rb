@@ -153,6 +153,8 @@ module Dependabot
           sub_source = Source.from_url(github_response.submodule_git_url)
           github_response = github_client_for_source.
                             contents(sub_source.repo, ref: github_response.sha)
+        elsif github_response.respond_to?(:type)
+          raise Octokit::NotFound
         end
 
         github_response.map do |f|
@@ -170,6 +172,33 @@ module Dependabot
               type: file.type == "blob" ? "file" : file.type
             )
           end
+      end
+
+      def bitbucket_repo_contents(path)
+        response =
+          Excon.get(
+            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
+            "src/#{commit}/#{path.gsub(%r{/+$}, '')}?pagelen=100",
+            user: bitbucket_credential&.fetch("username"),
+            password: bitbucket_credential&.fetch("password"),
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+        raise BitbucketNotFound if response.status >= 300
+
+        JSON.parse(response.body).fetch("values").map do |file|
+          type = case file.fetch("type")
+                 when "commit_file" then "file"
+                 when "commit_directory" then "dir"
+                 else file.fetch("type")
+                 end
+
+          OpenStruct.new(
+            name: File.basename(file.fetch("path")),
+            path: file.fetch("path"),
+            type: type
+          )
+        end
       end
 
       def fetch_file_content(path)
@@ -280,33 +309,6 @@ module Dependabot
         raise BitbucketNotFound if response.status >= 300
 
         JSON.parse(response.body).fetch("mainbranch").fetch("name")
-      end
-
-      def bitbucket_repo_contents(path)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}?pagelen=100",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        JSON.parse(response.body).fetch("values").map do |file|
-          type = case file.fetch("type")
-                 when "commit_file" then "file"
-                 when "commit_directory" then "dir"
-                 else file.fetch("type")
-                 end
-
-          OpenStruct.new(
-            name: File.basename(file.fetch("path")),
-            path: file.fetch("path"),
-            type: type
-          )
-        end
       end
 
       def bitbucket_file_contents(repo, path, commit)
