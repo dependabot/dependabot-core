@@ -14,7 +14,6 @@ module Dependabot
         require "dependabot/file_parsers/base/dependency_set"
         require_relative "gradle/property_value_finder"
 
-        ATTRS = %w(name group version).freeze
         PROPERTY_REGEX =
           /
             (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
@@ -26,6 +25,9 @@ module Dependabot
         VSN_PART = %r{[^\s,'":/\\]+}
         DEPENDENCY_DECLARATION_REGEX =
           /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/
+        DEPENDENCY_SET_DECLARATION_REGEX =
+          /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
+        DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/
 
         def parse
           dependency_set = DependencySet.new
@@ -46,6 +48,7 @@ module Dependabot
 
           dependency_set += shortform_buildfile_dependencies(buildfile)
           dependency_set += keyword_arg_buildfile_dependencies(buildfile)
+          dependency_set += dependency_set_dependencies(buildfile)
 
           dependency_set
         end
@@ -55,11 +58,9 @@ module Dependabot
 
           prepared_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
             declaration = Regexp.last_match.named_captures.fetch("declaration")
-            details = {
-              group: declaration.split(":").first,
-              name: declaration.split(":")[1],
-              version: declaration.split(":").last
-            }
+
+            group, name, version = declaration.split(":")
+            details = { group: group, name: name, version: version }
 
             dep = dependency_from(details_hash: details, buildfile: buildfile)
             dependency_set << dep if dep
@@ -72,12 +73,9 @@ module Dependabot
           dependency_set = DependencySet.new
 
           prepared_content(buildfile).lines.each do |line|
-            name    = line.match(map_value_regex("name"))&.
-                      named_captures&.fetch("value")
-            group   = line.match(map_value_regex("group"))&.
-                      named_captures&.fetch("value")
-            version = line.match(map_value_regex("version"))&.
-                      named_captures&.fetch("value")
+            name    = argument_from_string(line, "name")
+            group   = argument_from_string(line, "group")
+            version = argument_from_string(line, "version")
             next unless name && group && version
 
             details = { name: name, group: group, version: version }
@@ -89,21 +87,56 @@ module Dependabot
           dependency_set
         end
 
-        def dependency_from(details_hash:, buildfile:)
+        def dependency_set_dependencies(buildfile)
+          dependency_set = DependencySet.new
+
+          dependency_set_blocks = []
+
+          prepared_content(buildfile).scan(DEPENDENCY_SET_DECLARATION_REGEX) do
+            mch = Regexp.last_match
+            dependency_set_blocks <<
+              {
+                arguments: mch.named_captures.fetch("arguments"),
+                block: mch.post_match[0..closing_bracket_index(mch.post_match)]
+              }
+          end
+
+          dependency_set_blocks.each do |blk|
+            group   = argument_from_string(blk[:arguments], "group")
+            version = argument_from_string(blk[:arguments], "version")
+
+            next unless group && version
+
+            blk[:block].scan(DEPENDENCY_SET_ENTRY_REGEX).flatten.each do |name|
+              dep = dependency_from(
+                details_hash: { group: group, name: name, version: version },
+                buildfile: buildfile,
+                in_dependency_set: true
+              )
+              dependency_set << dep if dep
+            end
+          end
+
+          dependency_set
+        end
+
+        def argument_from_string(string, arg_name)
+          string.
+            match(map_value_regex(arg_name))&.
+            named_captures&.
+            fetch("value")
+        end
+
+        def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
           group   = evaluated_value(details_hash[:group], buildfile)
           name    = evaluated_value(details_hash[:name], buildfile)
           version = evaluated_value(details_hash[:version], buildfile)
 
           dependency_name = "#{group}:#{name}"
 
-          # If we couldn't evaluate a property they we won't be able to
+          # If we can't evaluate a property they we won't be able to
           # update this dependency
           return if "#{dependency_name}:#{version}".match?(PROPERTY_REGEX)
-
-          version_property_name =
-            details_hash[:version].
-            match(PROPERTY_REGEX)&.
-            named_captures&.fetch("property_name")
 
           Dependency.new(
             name: dependency_name,
@@ -113,13 +146,31 @@ module Dependabot
               file: buildfile.name,
               source: nil,
               groups: [],
-              metadata:
-                if version_property_name
-                  { property_name: version_property_name }
-                end
+              metadata: dependency_metadata(details_hash, in_dependency_set)
             }],
             package_manager: "gradle"
           )
+        end
+
+        def dependency_metadata(details_hash, in_dependency_set)
+          version_property_name =
+            details_hash[:version].
+            match(PROPERTY_REGEX)&.
+            named_captures&.fetch("property_name")
+
+          return unless version_property_name || in_dependency_set
+
+          metadata = {}
+          if version_property_name
+            metadata[:property_name] = version_property_name
+          end
+          if in_dependency_set
+            metadata[:dependency_set] = {
+              group: details_hash[:group],
+              version: details_hash[:version]
+            }
+          end
+          metadata
         end
 
         def evaluated_value(value, buildfile)

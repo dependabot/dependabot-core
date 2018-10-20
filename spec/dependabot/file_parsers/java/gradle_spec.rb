@@ -119,6 +119,39 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       its(:length) { is_expected.to eq(34) }
     end
 
+    context "specified in a dependencySet" do
+      let(:buildfile_fixture_name) { "dependency_set.gradle" }
+
+      its(:length) { is_expected.to eq(19) }
+
+      describe "a dependencySet dependency" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "io.grpc:grpc-netty" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("io.grpc:grpc-netty")
+          expect(dependency.version).to eq("1.15.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.15.1",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: {
+                  group: "io.grpc",
+                  version: "1.15.1"
+                }
+              }
+            }]
+          )
+        end
+      end
+    end
+
     context "specified as implementations" do
       let(:buildfile_fixture_name) { "android_build.gradle" }
 
