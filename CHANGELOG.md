@@ -1,3 +1,9 @@
+## v0.73.71, 20 October 2018
+
+- JS: Raise a PrivateSourceAuthenticationFailure error when we can't find deps
+  from private sources
+- Ruby: More careful sanitization of gemspecs
+
 ## v0.73.70, 19 October 2018
 
 - Python: Raise original error if retrying on Python 2.7
