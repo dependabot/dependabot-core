@@ -1,3 +1,7 @@
+## v0.73.72, 20 October 2018
+
+- Java: Trim v-prefices from version strings when comparing
+
 ## v0.73.71, 20 October 2018
 
 - JS: Raise a PrivateSourceAuthenticationFailure error when we can't find deps
