@@ -2,7 +2,7 @@
 
 require "gitlab"
 
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
 require "dependabot/metadata_finders/base"
 require "dependabot/utils"
 
@@ -250,7 +250,7 @@ module Dependabot
         end
 
         def github_client
-          @github_client ||= Dependabot::GithubClientWithRetries.
+          @github_client ||= Dependabot::Clients::GithubWithRetries.
                              for_github_dot_com(credentials: credentials)
         end
       end

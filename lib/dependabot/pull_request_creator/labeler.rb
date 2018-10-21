@@ -310,7 +310,7 @@ module Dependabot
 
       def github_client_for_source
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.for_source(
+          Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
           )

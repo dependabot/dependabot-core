@@ -3,17 +3,14 @@
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
+require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
-require "excon"
 require "gitlab"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileFetchers
     class Base
-      class BitbucketNotFound < StandardError; end
-
       attr_reader :source, :credentials
 
       def self.required_files_in?(_filename_array)
@@ -56,10 +53,11 @@ module Dependabot
           when "gitlab"
             gitlab_client.branch(repo, branch).commit.id
           when "bitbucket"
-            fetch_bitbucket_commit(branch)
+            bitbucket_client.fetch_commit(repo, branch)
           else raise "Unsupported provider '#{source.provider}'."
           end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound,
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::BranchNotFound, branch
       rescue Octokit::Conflict => error
         raise unless error.message.include?("Repository is empty")
@@ -75,10 +73,11 @@ module Dependabot
           when "gitlab"
             gitlab_client.project(repo).default_branch
           when "bitbucket"
-            fetch_bitbucket_default_branch
+            bitbucket_client.fetch_default_branch(repo)
           else raise "Unsupported provider '#{source.provider}'."
           end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound,
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::RepoNotFound, source
       end
 
@@ -88,7 +87,8 @@ module Dependabot
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
 
         fetch_file_from_host(filename)
-      rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound,
+             Dependabot::Clients::Bitbucket::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -102,7 +102,8 @@ module Dependabot
           directory: directory,
           type: type
         )
-      rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound,
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -136,7 +137,8 @@ module Dependabot
           when "bitbucket" then bitbucket_repo_contents(path)
           else raise "Unsupported provider '#{source.provider}'."
           end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound, BitbucketNotFound
+      rescue Octokit::NotFound, Gitlab::Error::NotFound,
+             Dependabot::Clients::Bitbucket::NotFound
         raise if raise_errors
 
         []
@@ -175,18 +177,13 @@ module Dependabot
       end
 
       def bitbucket_repo_contents(path)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}?pagelen=100",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
+        response = bitbucket_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
 
-        JSON.parse(response.body).fetch("values").map do |file|
+        response.map do |file|
           type = case file.fetch("type")
                  when "commit_file" then "file"
                  when "commit_directory" then "dir"
@@ -262,7 +259,7 @@ module Dependabot
 
       def github_client_for_source
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.for_source(
+          Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
           )
@@ -282,48 +279,13 @@ module Dependabot
           )
       end
 
-      def fetch_bitbucket_commit(branch)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "refs/branches/#{branch}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        JSON.parse(response.body).fetch("target").fetch("hash")
-      end
-
-      def fetch_bitbucket_default_branch
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        JSON.parse(response.body).fetch("mainbranch").fetch("name")
+      def bitbucket_client
+        @bitbucket_client ||=
+          Dependabot::Clients::Bitbucket.new(bitbucket_credential)
       end
 
       def bitbucket_file_contents(repo, path, commit)
-        response =
-          Excon.get(
-            "https://api.bitbucket.org/2.0/repositories/#{repo}/"\
-            "src/#{commit}/#{path.gsub(%r{/+$}, '')}",
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-        raise BitbucketNotFound if response.status >= 300
-
-        response.body
+        bitbucket_client.fetch_file_contents(repo, commit, path)
       end
 
       def bitbucket_credential
@@ -334,4 +296,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

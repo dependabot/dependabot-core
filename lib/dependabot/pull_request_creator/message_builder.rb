@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 
@@ -624,7 +624,7 @@ module Dependabot
 
       def github_client_for_source
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.for_source(
+          Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
           )

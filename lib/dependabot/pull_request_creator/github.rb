@@ -2,7 +2,7 @@
 
 require "octokit"
 require "securerandom"
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 
@@ -53,7 +53,7 @@ module Dependabot
 
       def github_client_for_source
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.for_source(
+          Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
           )
