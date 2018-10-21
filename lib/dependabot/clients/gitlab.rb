@@ -22,10 +22,16 @@ module Dependabot
         )
       end
 
-      def self.for_gitlab_dot_com
+      def self.for_gitlab_dot_com(credentials:)
+        access_token =
+          credentials.
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == "gitlab.com" }&.
+          fetch("password")
+
         new(
           endpoint: "https://gitlab.com/api/v4",
-          private_token: ""
+          private_token: access_token || ""
         )
       end
 
@@ -34,7 +40,7 @@ module Dependabot
       ############
 
       def initialize(**args)
-        @client = Gitlab::Client.new(args)
+        @client = ::Gitlab::Client.new(args)
       end
 
       def method_missing(method_name, *args, &block)

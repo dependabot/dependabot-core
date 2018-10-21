@@ -220,7 +220,8 @@ module Dependabot
         end
 
         def gitlab_client
-          @gitlab_client ||= Dependabot::Clients::Gitlab.for_gitlab_dot_com
+          @gitlab_client ||= Dependabot::Clients::Gitlab.
+                             for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
