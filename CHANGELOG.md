@@ -1,3 +1,9 @@
+## v0.73.76, 21 October 2018
+
+- Python: Handle cascading pip-compile requirements when updating files
+- Python: Better handling of pip-compile errors during version resolution
+- Python: More robust child requirement file path building
+
 ## v0.73.75, 21 October 2018
 
 - Gradle: Handle dependency sets nicely in PR creator
