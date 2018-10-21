@@ -107,7 +107,7 @@ module Dependabot
             requirement_strings = req[:requirement].split(",").map(&:strip)
 
             new_requirement =
-              if requirement_strings.any? { |r| r.match?(/^==|^\d/) }
+              if requirement_strings.any? { |r| r.match?(/^=|^\d/) }
                 # If there is an equality operator, just update that. It must
                 # be binding and any other requirements will be being ignored
                 find_and_update_equality_match(requirement_strings)

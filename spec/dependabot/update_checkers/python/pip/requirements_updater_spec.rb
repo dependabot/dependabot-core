@@ -274,6 +274,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             context "and used an equality matcher" do
               let(:pyproject_req_string) { "==1.4.0" }
               its([:requirement]) { is_expected.to eq("==1.5.0") }
+
+              context "with a single equals" do
+                let(:pyproject_req_string) { "=1.4.0" }
+                its([:requirement]) { is_expected.to eq("=1.5.0") }
+              end
             end
           end
 
