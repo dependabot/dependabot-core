@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
 
-RSpec.describe Dependabot::GithubClientWithRetries do
+RSpec.describe Dependabot::Clients::GithubWithRetries do
   let(:client) { described_class.new(access_token: access_token) }
   let(:access_token) { "my-token" }
 

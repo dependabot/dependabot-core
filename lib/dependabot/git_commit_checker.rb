@@ -2,7 +2,7 @@
 
 require "excon"
 require "gitlab"
-require "dependabot/github_client_with_retries"
+require "dependabot/clients/github_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
 require "dependabot/utils"
@@ -231,7 +231,7 @@ module Dependabot
     end
 
     def github_commit_comparison_status(ref1, ref2)
-      client = GithubClientWithRetries.
+      client = Clients::GithubWithRetries.
                for_github_dot_com(credentials: credentials)
 
       client.compare(listing_source_repo, ref1, ref2).status

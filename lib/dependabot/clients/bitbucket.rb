@@ -4,9 +4,10 @@ require "dependabot/shared_helpers"
 require "excon"
 
 module Dependabot
-  module Client
-    class BitbucketNotFound < StandardError; end
-    class BitBucket
+  module Clients
+    class Bitbucket
+      class NotFound < StandardError; end
+
       def initialize(credentials)
         @credentials = credentials
       end
@@ -48,7 +49,7 @@ module Dependabot
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
-        raise BitbucketNotFound if response.status >= 300
+        raise NotFound if response.status >= 300
 
         response
       end

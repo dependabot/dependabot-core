@@ -3,8 +3,8 @@
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
-require "dependabot/github_client_with_retries"
-require "dependabot/client/bitbucket"
+require "dependabot/clients/github_with_retries"
+require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "gitlab"
 
@@ -57,7 +57,7 @@ module Dependabot
           else raise "Unsupported provider '#{source.provider}'."
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Client::BitbucketNotFound
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::BranchNotFound, branch
       rescue Octokit::Conflict => error
         raise unless error.message.include?("Repository is empty")
@@ -77,7 +77,7 @@ module Dependabot
           else raise "Unsupported provider '#{source.provider}'."
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Client::BitbucketNotFound
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::RepoNotFound, source
       end
 
@@ -88,7 +88,7 @@ module Dependabot
 
         fetch_file_from_host(filename)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Client::BitbucketNotFound
+             Dependabot::Clients::Bitbucket::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -103,7 +103,7 @@ module Dependabot
           type: type
         )
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Client::BitbucketNotFound
+             Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -138,7 +138,7 @@ module Dependabot
           else raise "Unsupported provider '#{source.provider}'."
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Client::BitbucketNotFound
+             Dependabot::Clients::Bitbucket::NotFound
         raise if raise_errors
 
         []
@@ -259,7 +259,7 @@ module Dependabot
 
       def github_client_for_source
         @github_client_for_source ||=
-          Dependabot::GithubClientWithRetries.for_source(
+          Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
           )
@@ -281,7 +281,7 @@ module Dependabot
 
       def bitbucket_client
         @bitbucket_client ||=
-          Dependabot::Client::BitBucket.new(bitbucket_credential)
+          Dependabot::Clients::Bitbucket.new(bitbucket_credential)
       end
 
       def bitbucket_file_contents(repo, path, commit)
