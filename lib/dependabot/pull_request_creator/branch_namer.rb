@@ -6,8 +6,6 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      PROPERTY_PMS = %w(maven gradle nuget).freeze
-
       attr_reader :dependencies, :files, :target_branch, :separator
 
       def initialize(dependencies:, files:, target_branch:, separator: "/")
@@ -17,10 +15,14 @@ module Dependabot
         @separator     = separator
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       def new_branch_name
         @name ||=
-          if dependencies.count > 1 && PROPERTY_PMS.include?(package_manager)
+          if dependencies.count > 1 && updating_a_property?
             property_name
+          elsif dependencies.count > 1 && updating_a_dependency_set?
+            dependency_set.fetch(:group)
           elsif dependencies.count > 1
             dependencies.map(&:name).join("-and-").tr(":", "-")
           elsif library?
@@ -36,6 +38,8 @@ module Dependabot
         # Some users need branch names without slashes
         branch_name.gsub("/", separator)
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
@@ -52,6 +56,18 @@ module Dependabot
         dependencies.first.package_manager
       end
 
+      def updating_a_property?
+        dependencies.first.
+          requirements.
+          any? { |r| r.dig(:metadata, :property_name) }
+      end
+
+      def updating_a_dependency_set?
+        dependencies.first.
+          requirements.
+          any? { |r| r.dig(:metadata, :dependency_set) }
+      end
+
       def property_name
         @property_name ||= dependencies.first.requirements.
                            find { |r| r.dig(:metadata, :property_name) }&.
@@ -60,6 +76,16 @@ module Dependabot
         raise "No property name!" unless @property_name
 
         @property_name
+      end
+
+      def dependency_set
+        @dependency_set ||= dependencies.first.requirements.
+                            find { |r| r.dig(:metadata, :dependency_set) }&.
+                            dig(:metadata, :dependency_set)
+
+        raise "No dependency set!" unless @dependency_set
+
+        @dependency_set
       end
 
       def sanitized_requirement(dependency)

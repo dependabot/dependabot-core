@@ -128,7 +128,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:dependencies) { [dependency, dependency] }
           it { is_expected.to eq("Bump business and business") }
 
-          context "for Maven" do
+          context "for a Maven property update" do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "org.springframework:spring-beans",
@@ -151,18 +151,54 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 }]
               )
             end
-            let(:pom) do
-              Dependabot::DependencyFile.new(
-                name: "pom.xml",
-                content: fixture("java", "poms", "property_pom.xml")
-              )
-            end
-            let(:files) { [pom] }
 
             it "has the right name" do
               expect(pr_name).
                 to eq(
                   "Bump springframework.version "\
+                  "from 4.3.12.RELEASE to 4.3.15.RELEASE"
+                )
+            end
+          end
+
+          context "for a dependency set update" do
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "4.3.15.RELEASE",
+                previous_version: "4.3.12.RELEASE",
+                package_manager: "maven",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.15.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    dependency_set: {
+                      group: "springframework",
+                      version: "4.3.12.RELEASE"
+                    }
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    dependency_set: {
+                      group: "springframework",
+                      version: "4.3.12.RELEASE"
+                    }
+                  }
+                }]
+              )
+            end
+
+            it "has the right name" do
+              expect(pr_name).
+                to eq(
+                  "Bump springframework dependency set "\
                   "from 4.3.12.RELEASE to 4.3.15.RELEASE"
                 )
             end

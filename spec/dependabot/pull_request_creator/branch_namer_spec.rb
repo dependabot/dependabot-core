@@ -121,7 +121,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/bundler/business-and-statesman") }
 
-      context "for a java update" do
+      context "for a java property update" do
         let(:files) { [pom] }
         let(:pom) do
           Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
@@ -176,6 +176,64 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
 
         it { is_expected.to eq("dependabot/maven/springframework.version") }
+      end
+
+      context "for a dependency set update" do
+        let(:dependencies) { [dependency, dep2] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "my.group:business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "gradle",
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: { group: "my.group", version: "1.4.0" }
+              }
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: { group: "my.group", version: "1.4.0" }
+              }
+            }]
+          )
+        end
+        let(:dep2) do
+          Dependabot::Dependency.new(
+            name: "my.group:statesman",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "gradle",
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: { group: "my.group", version: "1.4.0" }
+              }
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil,
+              metadata: {
+                dependency_set: { group: "my.group", version: "1.4.0" }
+              }
+            }]
+          )
+        end
+
+        it { is_expected.to eq("dependabot/gradle/my.group") }
       end
     end
 

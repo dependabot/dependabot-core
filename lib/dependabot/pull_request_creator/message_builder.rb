@@ -9,7 +9,6 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      PROPERTY_PMS = %w(maven gradle nuget).freeze
       SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                              test).freeze
       GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
@@ -107,6 +106,7 @@ module Dependabot
         pr_name + " in #{files.first.directory}"
       end
 
+      # rubocop:disable Metrics/AbcSize
       def application_pr_name
         pr_name = pr_name_prefix
 
@@ -115,9 +115,14 @@ module Dependabot
             dependency = dependencies.first
             "#{dependency.display_name} from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
-          elsif PROPERTY_PMS.include?(package_manager)
+          elsif updating_a_property?
             dependency = dependencies.first
             "#{property_name} from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          elsif updating_a_dependency_set?
+            dependency = dependencies.first
+            "#{dependency_set.fetch(:group)} dependency set "\
+            "from #{previous_version(dependency)} "\
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
@@ -128,6 +133,7 @@ module Dependabot
 
         pr_name + " in #{files.first.directory}"
       end
+      # rubocop:enable Metrics/AbcSize
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
@@ -163,9 +169,15 @@ module Dependabot
         msg + "to permit the latest version."
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def version_commit_message_intro
-        if dependencies.count > 1 && PROPERTY_PMS.include?(package_manager)
+        if dependencies.count > 1 && updating_a_property?
           return multidependency_property_intro
+        end
+
+        if dependencies.count > 1 && updating_a_dependency_set?
+          return dependency_set_intro
         end
 
         return multidependency_intro if dependencies.count > 1
@@ -185,6 +197,8 @@ module Dependabot
 
         msg
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def multidependency_property_intro
         dependency = dependencies.first
@@ -194,10 +208,30 @@ module Dependabot
         "to #{new_version(dependency)}."
       end
 
+      def dependency_set_intro
+        dependency = dependencies.first
+
+        "Bumps `#{dependency_set.fetch(:group)}` "\
+        "dependency set from #{previous_version(dependency)} "\
+        "to #{new_version(dependency)}."
+      end
+
       def multidependency_intro
         "Bumps #{dependency_links[0..-2].join(', ')} "\
         "and #{dependency_links[-1]}. These "\
         "dependencies needed to be updated together."
+      end
+
+      def updating_a_property?
+        dependencies.first.
+          requirements.
+          any? { |r| r.dig(:metadata, :property_name) }
+      end
+
+      def updating_a_dependency_set?
+        dependencies.first.
+          requirements.
+          any? { |r| r.dig(:metadata, :dependency_set) }
       end
 
       def property_name
@@ -208,6 +242,16 @@ module Dependabot
         raise "No property name!" unless @property_name
 
         @property_name
+      end
+
+      def dependency_set
+        @dependency_set ||= dependencies.first.requirements.
+                            find { |r| r.dig(:metadata, :dependency_set) }&.
+                            dig(:metadata, :dependency_set)
+
+        raise "No dependency set!" unless @dependency_set
+
+        @dependency_set
       end
 
       def dependency_links
