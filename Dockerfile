@@ -63,8 +63,8 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
 
 ### JAVASCRIPT
 
-# Install Node 8.0 and Yarn
-RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
+# Install Node 10.0 and Yarn
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get install -y nodejs \
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
@@ -122,7 +122,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.29.1
+# Install Rust 1.29.2
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
