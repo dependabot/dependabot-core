@@ -45,32 +45,83 @@ module Dependabot
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
               SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files
+                SharedHelpers.with_git_configured(credentials: credentials) do
+                  write_temporary_dependency_files
 
-                # Shell out to pip-compile, generate a new set of requirements.
-                # This is slow, as pip-compile needs to do installs.
-                cmd = "pyenv exec pip-compile -P #{dependency.name} "\
-                      "#{source_pip_config_file_name}"
-                run_command(cmd)
+                  # Shell out to pip-compile.
+                  # This is slow, as pip-compile needs to do installs.
+                  cmd = "pyenv exec pip-compile -P #{dependency.name} "\
+                        "#{source_pip_config_file_name}"
+                  run_command(cmd)
 
-                # Remove the created package details (so they aren't parsed)
-                FileUtils.rm_rf("sanitized_package.egg-info")
+                  # Remove the created package details (so they aren't parsed)
+                  FileUtils.rm_rf("sanitized_package.egg-info")
 
-                updated_deps =
-                  SharedHelpers.run_helper_subprocess(
-                    command: "pyenv exec python #{python_helper_path}",
-                    function: "parse_requirements",
-                    args: [Dir.pwd]
-                  )
+                  updated_deps =
+                    SharedHelpers.run_helper_subprocess(
+                      command: "pyenv exec python #{python_helper_path}",
+                      function: "parse_requirements",
+                      args: [Dir.pwd]
+                    )
 
-                updated_deps.
-                  select { |dep| normalise(dep["name"]) == dependency.name }.
-                  find { |dep| dep["file"] == source_compiled_file_name }&.
-                  fetch("version")
+                  updated_deps.
+                    select { |dep| normalise(dep["name"]) == dependency.name }.
+                    find { |dep| dep["file"] == source_compiled_file_name }&.
+                    fetch("version")
+                end
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                handle_pip_compile_errors(error)
               end
             return unless @latest_resolvable_version_string
 
             Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def handle_pip_compile_errors(error)
+            if error.message.include?("Could not find a version")
+              check_original_requirements_resolvable
+            end
+
+            if error.message.include?('Command "python setup.py egg_info') &&
+               error.message.include?(dependency.name)
+              # The latest version of the dependency we're updating is borked
+              # (because it has an unevaluatable setup.py). Skip the update.
+              return nil
+            end
+
+            if error.message.include?("Could not find a version ") &&
+               !error.message.include?(dependency.name)
+              # Sometimes pip-tools gets confused and can't work around
+              # sub-dependency incompatibilities. Ignore those cases.
+              return nil
+            end
+
+            raise
+          end
+
+          # Needed because pip-compile's resolver isn't perfect.
+          # Note: We raise errors from this method, rather than returning a
+          # boolean, so that all deps for this repo will raise identical
+          # errors when failing to update
+          def check_original_requirements_resolvable
+            SharedHelpers.in_a_temporary_directory do
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                write_temporary_dependency_files(unlock_requirement: false)
+
+                cmd = "pyenv exec pip-compile -P #{dependency.name} "\
+                      "#{source_pip_config_file_name}"
+                run_command(cmd)
+
+                true
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                raise unless error.message.include?("Could not find a version")
+
+                msg = clean_error_message(error.message)
+                raise if msg.empty?
+
+                raise DependencyFileNotResolvable, msg
+              end
+            end
           end
 
           def run_command(command)
@@ -102,11 +153,14 @@ module Dependabot
             IO.popen("pyenv local --unset", err: %i(child out))
           end
 
-          def write_temporary_dependency_files
+          def write_temporary_dependency_files(unlock_requirement: true)
             dependency_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, unlock_dependency(file))
+              File.write(
+                path,
+                unlock_requirement ? unlock_dependency(file) : file.content
+              )
             end
 
             setup_files.each do |file|
@@ -222,6 +276,11 @@ module Dependabot
           # See https://www.python.org/dev/peps/pep-0503/#normalized-names
           def normalise(name)
             name.downcase.gsub(/[-_.]+/, "-")
+          end
+
+          def clean_error_message(message)
+            # Redact any URLs, as they may include credentials
+            message.gsub(/http.*?(?=\s)/, "<redacted>")
           end
 
           def setup_files

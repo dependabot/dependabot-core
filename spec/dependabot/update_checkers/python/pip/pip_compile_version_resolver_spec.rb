@@ -94,6 +94,49 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:latest_version) { nil }
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
+
+      context "when unlocking causes a conflict (in the sub-dependencies)" do
+        let(:manifest_fixture_name) { "unresolvable_if_unpinned.in" }
+        let(:generated_fixture_name) do
+          "pip_compile_unresolvable_if_unpinned.txt"
+        end
+        let(:dependency_name) { "boto3" }
+        let(:dependency_version) { "1.7.84" }
+        let(:latest_version) { Gem::Version.new("1.9.28") }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: ">=1.7,<1.8",
+            groups: [],
+            source: nil
+          }]
+        end
+        it { is_expected.to be nil }
+      end
+    end
+
+    context "with an unresolvable requirement" do
+      let(:manifest_fixture_name) { "unresolvable.in" }
+      let(:dependency_files) { [manifest_file] }
+      let(:dependency_name) { "boto3" }
+      let(:dependency_version) { nil }
+      let(:latest_version) { Gem::Version.new("1.9.28") }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==1.9.27",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to start_with("Could not find a version that matches boto3")
+          end
+      end
     end
 
     context "with a subdependency" do
