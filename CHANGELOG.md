@@ -1,3 +1,7 @@
+## v0.73.77, 21 October 2018
+
+- Python: Catch another equality matcher case
+
 ## v0.73.76, 21 October 2018
 
 - Python: Handle cascading pip-compile requirements when updating files
