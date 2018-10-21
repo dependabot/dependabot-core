@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require "gitlab"
+require "dependabot/clients/gitlab"
 require "dependabot/pull_request_creator"
+require "gitlab"
 
 module Dependabot
   class PullRequestCreator
@@ -43,17 +44,10 @@ module Dependabot
       private
 
       def gitlab_client_for_source
-        access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }&.
-          fetch("password")
-
-        @gitlab_client_for_source ||=
-          ::Gitlab.client(
-            endpoint: source.api_endpoint,
-            private_token: access_token || ""
-          )
+        @gitlab_client_for_source ||= Dependabot::Clients::Gitlab.for_source(
+          source: source,
+          credentials: credentials
+        )
       end
 
       def branch_exists?

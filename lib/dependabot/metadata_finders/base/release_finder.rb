@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "gitlab"
-
 require "dependabot/clients/github_with_retries"
+require "dependabot/clients/gitlab"
 require "dependabot/metadata_finders/base"
 require "dependabot/utils"
 
@@ -236,17 +235,8 @@ module Dependabot
         end
 
         def gitlab_client
-          access_token =
-            credentials.
-            select { |cred| cred["type"] == "git_source" }.
-            find { |cred| cred["host"] == "gitlab.com" }&.
-            fetch("password")
-
-          @gitlab_client ||=
-            Gitlab.client(
-              endpoint: "https://gitlab.com/api/v4",
-              private_token: access_token || ""
-            )
+          @gitlab_client ||= Dependabot::Clients::Gitlab.
+                             for_gitlab_dot_com(credentials: credentials)
         end
 
         def github_client
