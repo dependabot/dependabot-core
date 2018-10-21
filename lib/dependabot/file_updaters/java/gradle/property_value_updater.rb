@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "nokogiri"
-
-require "dependabot/dependency_file"
 require "dependabot/file_updaters/java/gradle"
 require "dependabot/file_parsers/java/gradle/property_value_finder"
 

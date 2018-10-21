@@ -269,6 +269,59 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
           end
         end
       end
+
+      context "with a dependency from a dependency set" do
+        let(:buildfile_fixture_name) { "dependency_set.gradle" }
+        let(:dependencies) do
+          %w(
+            com.google.protobuf:protoc
+            com.google.protobuf:protobuf-java
+            com.google.protobuf:protobuf-java-util
+          ).map do |dep_name|
+            Dependabot::Dependency.new(
+              name: dep_name,
+              version: "23.6-jre",
+              previous_version: "3.6.1",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "23.6-jre",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://jcenter.bintray.com"
+                },
+                metadata: {
+                  dependency_set: {
+                    group: "com.google.protobuf",
+                    version: "3.6.1"
+                  }
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "3.6.1",
+                groups: [],
+                source: nil,
+                metadata: {
+                  dependency_set: {
+                    group: "com.google.protobuf",
+                    version: "3.6.1"
+                  }
+                }
+              }],
+              package_manager: "gradle"
+            )
+          end
+        end
+
+        it "updates the version in the dependency set declaration" do
+          expect(updated_files.map(&:name)).to eq(["build.gradle"])
+          expect(updated_files.first.content).
+            to include(
+              "endencySet(group: 'com.google.protobuf', version: '23.6-jre') {"
+            )
+        end
+      end
     end
   end
 end

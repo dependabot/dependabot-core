@@ -8,7 +8,7 @@ module Dependabot
   module UpdateCheckers
     module Java
       class Gradle
-        class PropertyUpdater
+        class MultiDependencyUpdater
           require_relative "version_finder"
 
           def initialize(dependency:, dependency_files:,
@@ -24,7 +24,7 @@ module Dependabot
             return false unless target_version
 
             @update_possible ||=
-              dependencies_using_property.all? do |dep|
+              dependencies_to_update.all? do |dep|
                 VersionFinder.new(
                   dependency: dep,
                   dependency_files: dependency_files,
@@ -39,7 +39,7 @@ module Dependabot
             raise "Update not possible!" unless update_possible?
 
             @updated_dependencies ||=
-              dependencies_using_property.map do |dep|
+              dependencies_to_update.map do |dep|
                 Dependency.new(
                   name: dep.name,
                   version: target_version.to_s,
@@ -56,14 +56,18 @@ module Dependabot
           attr_reader :dependency, :dependency_files, :target_version,
                       :source_url, :ignored_versions
 
-          def dependencies_using_property
-            @dependencies_using_property ||=
+          def dependencies_to_update
+            @dependencies_to_update ||=
               FileParsers::Java::Gradle.new(
                 dependency_files: dependency_files,
                 source: nil
               ).parse.select do |dep|
                 dep.requirements.any? do |r|
-                  r.dig(:metadata, :property_name) == property_name
+                  tmp_p_name = r.dig(:metadata, :property_name)
+                  tmp_dep_set = r.dig(:metadata, :dependency_set)
+                  next true if property_name && tmp_p_name == property_name
+
+                  dependency_set && tmp_dep_set == dependency_set
                 end
               end
           end
@@ -72,10 +76,12 @@ module Dependabot
             @property_name ||= dependency.requirements.
                                find { |r| r.dig(:metadata, :property_name) }&.
                                dig(:metadata, :property_name)
+          end
 
-            raise "No requirement with a property name!" unless @property_name
-
-            @property_name
+          def dependency_set
+            @dependency_set ||= dependency.requirements.
+                                find { |r| r.dig(:metadata, :dependency_set) }&.
+                                dig(:metadata, :dependency_set)
           end
 
           def pom
@@ -89,7 +95,7 @@ module Dependabot
                 requirements: dep.requirements,
                 latest_version: target_version.to_s,
                 source_url: source_url,
-                properties_to_update: [property_name]
+                properties_to_update: [property_name].compact
               ).updated_requirements
           end
         end

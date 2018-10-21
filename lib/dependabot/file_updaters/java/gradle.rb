@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "nokogiri"
 require "dependabot/file_updaters/base"
 require "dependabot/file_parsers/java/gradle"
 
@@ -8,6 +7,7 @@ module Dependabot
   module FileUpdaters
     module Java
       class Gradle < Dependabot::FileUpdaters::Base
+        require_relative "gradle/dependency_set_updater"
         require_relative "gradle/property_value_updater"
 
         def self.updated_files_regex
@@ -57,8 +57,9 @@ module Dependabot
             buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
             if new_req.dig(:metadata, :property_name)
-              files =
-                update_buildfiles_for_property_change(files, old_req, new_req)
+              files = update_files_for_property_change(files, old_req, new_req)
+            elsif new_req.dig(:metadata, :dependency_set)
+              files = update_files_for_dep_set_change(files, old_req, new_req)
             else
               files[files.index(buildfile)] =
                 update_version_in_buildfile(
@@ -73,7 +74,7 @@ module Dependabot
           files
         end
 
-        def update_buildfiles_for_property_change(buildfiles, old_req, new_req)
+        def update_files_for_property_change(buildfiles, old_req, new_req)
           files = buildfiles.dup
           property_name = new_req.fetch(:metadata).fetch(:property_name)
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
@@ -84,6 +85,20 @@ module Dependabot
               callsite_buildfile: buildfile,
               previous_value: old_req.fetch(:requirement),
               updated_value: new_req.fetch(:requirement)
+            )
+        end
+
+        def update_files_for_dep_set_change(buildfiles, old_req, new_req)
+          files = buildfiles.dup
+          dependency_set = new_req.fetch(:metadata).fetch(:dependency_set)
+          buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+
+          DependencySetUpdater.new(dependency_files: files).
+            update_files_for_dep_set_change(
+              dependency_set: dependency_set,
+              buildfile: buildfile,
+              previous_requirement: old_req.fetch(:requirement),
+              updated_requirement: new_req.fetch(:requirement)
             )
         end
 
