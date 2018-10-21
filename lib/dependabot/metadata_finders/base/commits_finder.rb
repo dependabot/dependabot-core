@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-require "json"
-require "excon"
-
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab"
+require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
@@ -108,12 +106,13 @@ module Dependabot
           when "github"
             github_client.tags(source.repo, per_page: 100).map(&:name)
           when "bitbucket"
-            fetch_bitbucket_tags
+            bitbucket_client.tags(source.repo).map { |tag| tag["name"] }
           when "gitlab"
             gitlab_client.tags(source.repo).map(&:name)
           else raise "Unexpected source provider '#{source.provider}'"
           end
-        rescue Octokit::NotFound, Gitlab::Error::NotFound
+        rescue Octokit::NotFound, Gitlab::Error::NotFound,
+               Dependabot::Clients::Bitbucket::NotFound
           []
         end
 
@@ -147,23 +146,6 @@ module Dependabot
           end
         end
 
-        def fetch_bitbucket_tags
-          url = "https://api.bitbucket.org/2.0/repositories/"\
-                "#{source.repo}/refs/tags?pagelen=100"
-          response = Excon.get(
-            url,
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-          return [] if response.status >= 300
-
-          JSON.parse(response.body).
-            fetch("values", []).
-            map { |tag| tag["name"] }
-        end
-
         def fetch_github_commits
           commits =
             github_client.compare(source.repo, previous_tag, new_tag).commits
@@ -181,20 +163,8 @@ module Dependabot
         end
 
         def fetch_bitbucket_commits
-          url = "https://api.bitbucket.org/2.0/repositories/"\
-                "#{source.repo}/commits/?"\
-                "include=#{new_tag}&exclude=#{previous_tag}"
-          response = Excon.get(
-            url,
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-          return [] if response.status >= 300
-
-          JSON.parse(response.body).
-            fetch("values", []).
+          bitbucket_client.
+            compare(source.repo, previous_tag, new_tag).
             map do |commit|
               {
                 message: commit.dig("summary", "raw"),
@@ -202,6 +172,8 @@ module Dependabot
                 html_url: commit.dig("links", "html", "href")
               }
             end
+        rescue Dependabot::Clients::Bitbucket::NotFound
+          []
         end
 
         def fetch_gitlab_commits
@@ -229,10 +201,9 @@ module Dependabot
                              for_github_dot_com(credentials: credentials)
         end
 
-        def bitbucket_credential
-          credentials.
-            select { |cred| cred["type"] == "git_source" }.
-            find { |cred| cred["host"] == "bitbucket.org" }
+        def bitbucket_client
+          @bitbucket_client ||= Dependabot::Clients::Bitbucket.
+                                for_bitbucket_dot_org(credentials: credentials)
         end
       end
     end

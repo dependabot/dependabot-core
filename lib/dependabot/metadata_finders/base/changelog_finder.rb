@@ -5,6 +5,7 @@ require "excon"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab"
+require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
@@ -300,18 +301,7 @@ module Dependabot
         end
 
         def fetch_bitbucket_file_list
-          url = "https://api.bitbucket.org/2.0/repositories/"\
-                "#{source.repo}/src?pagelen=100"
-          response = Excon.get(
-            url,
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-          return [] if response.status >= 300
-
-          JSON.parse(response.body).fetch("values", []).map do |file|
+          bitbucket_client.fetch_repo_contents(source.repo).map do |file|
             OpenStruct.new(
               name: file.fetch("path").split("/").last,
               type: file.fetch("type") == "commit_file" ? "file" : file["type"],
@@ -320,6 +310,8 @@ module Dependabot
               download_url: "#{source.url}/raw/master/#{file['path']}"
             )
           end
+        rescue Dependabot::Clients::Bitbucket::NotFound
+          []
         end
 
         def fetch_gitlab_file_list
@@ -387,6 +379,11 @@ module Dependabot
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
                              for_github_dot_com(credentials: credentials)
+        end
+
+        def bitbucket_client
+          @bitbucket_client ||= Dependabot::Clients::Bitbucket.
+                                for_bitbucket_dot_org(credentials: credentials)
         end
 
         def bitbucket_credential

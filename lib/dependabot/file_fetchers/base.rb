@@ -207,11 +207,13 @@ module Dependabot
         end
 
         case source.provider
-        when "github" then fetch_file_content_from_github(path, repo, commit)
+        when "github"
+          fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
-        when "bitbucket" then bitbucket_file_contents(repo, path, commit)
+        when "bitbucket"
+          bitbucket_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -274,18 +276,11 @@ module Dependabot
       end
 
       def bitbucket_client
+        # TODO: When self-hosted Bitbucket is supported this should use
+        # `Bitbucket.for_source`
         @bitbucket_client ||=
-          Dependabot::Clients::Bitbucket.new(bitbucket_credential)
-      end
-
-      def bitbucket_file_contents(repo, path, commit)
-        bitbucket_client.fetch_file_contents(repo, commit, path)
-      end
-
-      def bitbucket_credential
-        credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
+          Dependabot::Clients::Bitbucket.
+          for_bitbucket_dot_org(credentials: credentials)
       end
     end
   end
