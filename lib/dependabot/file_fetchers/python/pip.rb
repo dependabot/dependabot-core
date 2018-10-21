@@ -160,10 +160,10 @@ module Dependabot
 
         def fetch_child_requirement_files(file:, previously_fetched_files:)
           paths = file.content.scan(CHILD_REQUIREMENT_REGEX).flatten
-          current_dir = file.name.split("/")[0..-2].last
+          current_dir = File.dirname(file.name)
 
           paths.flat_map do |path|
-            path = File.join(current_dir, path) unless current_dir.nil?
+            path = File.join(current_dir, path) unless current_dir == "."
             path = Pathname.new(path).cleanpath.to_path
 
             next if previously_fetched_files.map(&:name).include?(path)
