@@ -1,3 +1,7 @@
+## v0.73.75, 21 October 2018
+
+- Gradle: Handle dependency sets nicely in PR creator
+
 ## v0.73.74, 21 October 2018
 
 - Gradle: Add support for dependencySet dependencies
