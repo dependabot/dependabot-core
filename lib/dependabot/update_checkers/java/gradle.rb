@@ -9,7 +9,7 @@ module Dependabot
       class Gradle < Dependabot::UpdateCheckers::Base
         require_relative "maven/requirements_updater"
         require_relative "gradle/version_finder"
-        require_relative "gradle/property_updater"
+        require_relative "gradle/multi_dependency_updater"
 
         def latest_version
           latest_version_details&.fetch(:version)
@@ -22,6 +22,7 @@ module Dependabot
           # The above is hard. Currently we just return the latest version and
           # hope (hence this package manager is in beta!)
           return nil if version_comes_from_multi_dependency_property?
+          return nil if version_comes_from_dependency_set?
 
           latest_version
         end
@@ -59,13 +60,16 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          return false unless version_comes_from_multi_dependency_property?
+          unless version_comes_from_multi_dependency_property? ||
+                 version_comes_from_dependency_set?
+            return false
+          end
 
-          property_updater.update_possible?
+          multi_dependency_updater.update_possible?
         end
 
         def updated_dependencies_after_full_unlock
-          property_updater.updated_dependencies
+          multi_dependency_updater.updated_dependencies
         end
 
         def numeric_version_up_to_date?
@@ -93,9 +97,9 @@ module Dependabot
             )
         end
 
-        def property_updater
-          @property_updater ||=
-            PropertyUpdater.new(
+        def multi_dependency_updater
+          @multi_dependency_updater ||=
+            MultiDependencyUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
               target_version_details: latest_version_details,
@@ -114,6 +118,12 @@ module Dependabot
                 req.dig(:metadata, :property_name) == property_name
               end
             end
+          end
+        end
+
+        def version_comes_from_dependency_set?
+          dependency.requirements.any? do |req|
+            req.dig(:metadata, :dependency_set)
           end
         end
 

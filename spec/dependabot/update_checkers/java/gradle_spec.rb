@@ -115,6 +115,29 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
+
+    context "when the dependency comes from a dependency set" do
+      let(:buildfile_fixture_name) { "dependency_set.gradle" }
+      let(:maven_central_metadata_url) do
+        "https://jcenter.bintray.com/"\
+        "com/google/protobuf/protoc/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "3.6.1",
+          groups: [],
+          source: nil,
+          metadata: {
+            dependency_set: { group: "com.google.protobuf", version: "3.6.1" }
+          }
+        }]
+      end
+      let(:dependency_name) { "com.google.protobuf:protoc" }
+      let(:dependency_version) { "3.6.1" }
+
+      it { is_expected.to eq(version_class.new("23.0")) }
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -145,6 +168,29 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
         it { is_expected.to be_nil }
       end
+    end
+
+    context "when the dependency comes from a dependency set" do
+      let(:buildfile_fixture_name) { "dependency_set.gradle" }
+      let(:maven_central_metadata_url) do
+        "https://jcenter.bintray.com/"\
+        "com/google/protobuf/protoc/maven-metadata.xml"
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "3.6.1",
+          groups: [],
+          source: nil,
+          metadata: {
+            dependency_set: { group: "com.google.protobuf", version: "3.6.1" }
+          }
+        }]
+      end
+      let(:dependency_name) { "com.google.protobuf:protoc" }
+      let(:dependency_version) { "3.6.1" }
+
+      it { is_expected.to be_nil }
     end
   end
 
@@ -233,8 +279,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
           )
       end
 
-      it "delegates to the PropertyUpdater" do
-        expect(described_class::PropertyUpdater).
+      it "delegates to the MultiDependencyUpdater" do
+        expect(described_class::MultiDependencyUpdater).
           to receive(:new).
           with(
             dependency: dependency,
@@ -243,6 +289,70 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
             target_version_details: {
               version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
+            }
+          ).
+          and_call_original
+        expect(subject).to eq(true)
+      end
+    end
+
+    context "when the dependency comes from a dependency set" do
+      let(:buildfile_fixture_name) { "dependency_set.gradle" }
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "3.6.1",
+          groups: [],
+          source: nil,
+          metadata: {
+            dependency_set: { group: "com.google.protobuf", version: "3.6.1" }
+          }
+        }]
+      end
+      let(:dependency_name) { "com.google.protobuf:protoc" }
+      let(:dependency_version) { "3.6.1" }
+
+      let(:jcenter_metadata_url_protoc) do
+        "https://jcenter.bintray.com/"\
+        "com/google/protobuf/protoc/maven-metadata.xml"
+      end
+      let(:jcenter_metadata_url_protobuf_java) do
+        "https://jcenter.bintray.com/"\
+        "com/google/protobuf/protobuf-java/maven-metadata.xml"
+      end
+      let(:jcenter_metadata_url_protobuf_java_util) do
+        "https://jcenter.bintray.com/"\
+        "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, jcenter_metadata_url_protoc).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, jcenter_metadata_url_protobuf_java).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+        stub_request(:get, jcenter_metadata_url_protobuf_java_util).
+          to_return(
+            status: 200,
+            body: fixture("java", "maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "delegates to the MultiDependencyUpdater" do
+        expect(described_class::MultiDependencyUpdater).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            ignored_versions: [],
+            target_version_details: {
+              version: version_class.new("23.0"),
+              source_url: "https://jcenter.bintray.com"
             }
           ).
           and_call_original
@@ -292,8 +402,8 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
           )
       end
 
-      it "delegates to the PropertyUpdater" do
-        expect(described_class::PropertyUpdater).
+      it "delegates to the MultiDependencyUpdater" do
+        expect(described_class::MultiDependencyUpdater).
           to receive(:new).
           with(
             dependency: dependency,

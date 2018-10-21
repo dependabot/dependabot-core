@@ -23,7 +23,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
     repositories {
         jcenter()
-        maven { url 'https://jitpack.io' }
     }
 
     project.afterEvaluate {
