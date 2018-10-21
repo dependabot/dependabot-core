@@ -1,3 +1,8 @@
+## v0.73.74, 21 October 2018
+
+- Gradle: Add support for dependencySet dependencies
+- Python: Handle Poetry file updates without a lockfile
+
 ## v0.73.73, 20 October 2018
 
 - Handle directory paths that instead point to a file
