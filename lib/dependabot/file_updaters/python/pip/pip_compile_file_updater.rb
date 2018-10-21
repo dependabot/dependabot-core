@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_updaters/python/pip"
 require "dependabot/shared_helpers"
 
@@ -52,11 +53,14 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_updated_dependency_files
 
-              # Shell out to pip-compile, generate a new set of requirements.
-              # This is slow, as pip-compile needs to do installs.
-              cmd = "pyenv exec pip-compile #{pip_compile_options} "\
-                    "-P #{dependency.name} #{source_pip_config_file_name}"
-              run_command(cmd)
+              filenames_to_compile.each do |filename|
+                # Shell out to pip-compile, generate a new set of requirements.
+                # This is slow, as pip-compile needs to do installs.
+                run_command(
+                  "pyenv exec pip-compile #{pip_compile_options(filename)} "\
+                  "-P #{dependency.name} #{filename}"
+                )
+              end
 
               dependency_files.map do |file|
                 next unless file.name.end_with?(".txt")
@@ -241,9 +245,8 @@ module Dependabot
             end
           end
 
-          def pip_compile_options
-            current_requirements_file_name =
-              source_pip_config_file_name.sub(/\.in$/, ".txt")
+          def pip_compile_options(filename)
+            current_requirements_file_name = filename.sub(/\.in$/, ".txt")
 
             requirements_file =
               dependency_files.
@@ -268,8 +271,41 @@ module Dependabot
             options.strip
           end
 
+          def requirement_map
+            child_req_regex = FileFetchers::Python::Pip::CHILD_REQUIREMENT_REGEX
+            @requirement_map ||=
+              pip_compile_files.each_with_object({}) do |file, req_map|
+                paths = file.content.scan(child_req_regex).flatten
+                current_dir = File.dirname(file.name)
+
+                req_map[file.name] =
+                  paths.map do |path|
+                    path = File.join(current_dir, path) if current_dir != "."
+                    Pathname.new(path).cleanpath.to_path
+                  end.uniq
+              end
+          end
+
+          def filenames_to_compile
+            original_filename = source_pip_config_file_name
+
+            # TODO: Make this recursive
+            additional_filenames =
+              requirement_map.select do |_, required_files|
+                next true if required_files.include?(original_filename)
+
+                required_files.include?(original_filename.gsub(/\.in$/, ".txt"))
+              end.keys
+
+            [original_filename, *additional_filenames]
+          end
+
           def setup_files
             dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def pip_compile_files
+            dependency_files.select { |f| f.name.end_with?(".in") }
           end
 
           def setup_cfg_files
