@@ -63,12 +63,12 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
 
       describe "a dependency that doesn't use go modules" do
         subject(:dependency) do
-          dependencies.find { |d| d.name == "github.com/fatih/color" }
+          dependencies.find { |d| d.name == "github.com/fatih/Color" }
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("github.com/fatih/color")
+          expect(dependency.name).to eq("github.com/fatih/Color")
           expect(dependency.version).to eq("1.7.0")
           expect(dependency.requirements).to eq(
             [{
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
               groups: [],
               source: {
                 type: "default",
-                source: "github.com/fatih/color"
+                source: "github.com/fatih/Color"
               }
             }]
           )
