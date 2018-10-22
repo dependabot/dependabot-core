@@ -1,3 +1,7 @@
+## v0.73.81, 22 October 2018
+
+- Ruby: Handle ignore requirements which prevent the current version
+
 ## v0.73.80, 22 October 2018
 
 - Reject changelog candidates that have an invalid encoding
