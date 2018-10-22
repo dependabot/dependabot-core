@@ -41,7 +41,7 @@ module Dependabot
           attr_reader :dependencies, :go_mod, :credentials
 
           def go_helper_path
-            File.join(project_root, "helpers/go/updater/updater.#{platform}64")
+            File.join(project_root, "helpers/go/go-helpers.#{platform}64")
           end
 
           def project_root

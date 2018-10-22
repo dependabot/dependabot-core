@@ -11,6 +11,7 @@ Gemfile.lock
 /helpers/gradle/*.jar
 /helpers/php/vendor
 /helpers/php/.php_cs.cache
+/helpers/go/go-helpers.*64
 vendor
 .DS_Store
 *.pyc

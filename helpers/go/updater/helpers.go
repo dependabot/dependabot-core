@@ -1,8 +1,9 @@
-package main
+package updater
 
 import (
-	"modfile"
 	"strings"
+
+	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
 )
 
 // Private methods lifted from the `modfile` package
