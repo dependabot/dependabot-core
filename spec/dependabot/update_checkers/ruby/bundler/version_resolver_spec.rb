@@ -295,26 +295,45 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
       let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:gemspec_fixture_name) { "small_example" }
       let(:unlock_requirement) { true }
+      let(:current_version) { nil }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.2.0",
-            groups: [],
-            source: nil
-          },
-          {
-            file: "example.gemspec",
-            requirement: "~> 1.0",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.2.0",
+          groups: [],
+          source: nil
+        }, {
+          file: "example.gemspec",
+          requirement: "~> 1.0",
+          groups: [],
+          source: nil
+        }]
       end
 
       it "doesn't just fall back to latest_version" do
         expect(resolver.latest_resolvable_version_details[:version]).
           to eq(Gem::Version.new("1.8.0"))
+      end
+
+      context "with an upper bound that is lower than the current req" do
+        let(:resolver) do
+          described_class.new(
+            dependency: dependency,
+            unprepared_dependency_files: dependency_files,
+            ignored_versions: ignored_versions,
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }],
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: "1.0.0"
+          )
+        end
+        let(:ignored_versions) { ["> 1.0.0"] }
+
+        it { is_expected.to be_nil }
       end
 
       context "when an old required ruby is specified in the gemspec" do

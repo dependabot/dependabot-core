@@ -95,6 +95,7 @@ module Dependabot
               details
             end
           rescue Dependabot::DependencyFileNotResolvable => error
+            return if ignored_versions.any? && !dependency.appears_in_lockfile?
             raise unless ruby_lock_error?(error)
 
             @gemspec_ruby_unlocked = true
