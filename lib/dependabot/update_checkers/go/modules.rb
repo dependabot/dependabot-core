@@ -67,7 +67,7 @@ module Dependabot
         def go_helper_path
           File.join(
             project_root,
-            "helpers/go/go-helpers.#{platform}64",
+            "helpers/go/go-helpers.#{platform}64"
           )
         end
 

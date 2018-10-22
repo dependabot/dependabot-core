@@ -38,8 +38,8 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
   let(:ignored_versions) { [] }
   let(:go_mod_content) do
     <<~GOMOD
-    module foobar
-    require #{dependency_name} #{dependency_version}
+      module foobar
+      require #{dependency_name} #{dependency_version}
     GOMOD
   end
   let(:dependency_files) do
@@ -65,9 +65,9 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
     context "with a go.mod excluded version" do
       let(:go_mod_content) do
         <<~GOMOD
-        module foobar
-        require #{dependency_name} #{dependency_version}
-        exclude #{dependency_name} v1.1.0
+          module foobar
+          require #{dependency_name} #{dependency_version}
+          exclude #{dependency_name} v1.1.0
         GOMOD
       end
 
