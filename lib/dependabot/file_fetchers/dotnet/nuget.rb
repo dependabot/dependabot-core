@@ -84,8 +84,9 @@ module Dependabot
 
           project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
             possible_paths = dir.split("/").map.with_index do |_, i|
-              dir.split("/").first(i + 1).join("/") + "/Directory.Build.props"
-            end.reverse
+              base = dir.split("/").first(i + 1).join("/")
+              Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
+            end.reverse + ["Directory.Build.props"]
 
             possible_paths.each do |path|
               break if attempted_paths.include?(path)
