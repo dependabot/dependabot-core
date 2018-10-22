@@ -5,7 +5,7 @@ require "dependabot/file_updaters/go/dep"
 module Dependabot
   module FileUpdaters
     module Go
-      module Modules
+      class Modules
         class GoModUpdater
           def initialize(dependencies:, go_mod:, credentials:)
             @dependencies = dependencies
