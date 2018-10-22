@@ -225,26 +225,6 @@ module Dependabot
             [*original_header_lines, *updated_content_lines].join
           end
 
-          def source_pip_config_file_name
-            file_from_reqs =
-              dependency.requirements.
-              map { |r| r[:file] }.
-              find { |fn| fn.end_with?(".in") }
-
-            return file_from_reqs if file_from_reqs
-
-            pip_compile_filenames =
-              dependency_files.
-              select { |f| f.name.end_with?(".in") }.
-              map(&:name)
-
-            pip_compile_filenames.find do |fn|
-              req_file = dependency_files.
-                         find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
-              req_file&.content&.include?(dependency.name)
-            end
-          end
-
           def pip_compile_options(filename)
             current_requirements_file_name = filename.sub(/\.in$/, ".txt")
 
@@ -271,33 +251,20 @@ module Dependabot
             options.strip
           end
 
-          def requirement_map
-            child_req_regex = FileFetchers::Python::Pip::CHILD_REQUIREMENT_REGEX
-            @requirement_map ||=
-              pip_compile_files.each_with_object({}) do |file, req_map|
-                paths = file.content.scan(child_req_regex).flatten
-                current_dir = File.dirname(file.name)
-
-                req_map[file.name] =
-                  paths.map do |path|
-                    path = File.join(current_dir, path) if current_dir != "."
-                    Pathname.new(path).cleanpath.to_path
-                  end.uniq
-              end
-          end
-
           def filenames_to_compile
-            original_filename = source_pip_config_file_name
+            files_from_reqs =
+              dependency.requirements.
+              map { |r| r[:file] }.
+              select { |fn| fn.end_with?(".in") }
 
-            # TODO: Make this recursive
-            additional_filenames =
-              requirement_map.select do |_, required_files|
-                next true if required_files.include?(original_filename)
+            files_from_compiled_files =
+              pip_compile_files.map(&:name).select do |fn|
+                compiled_file = dependency_files.
+                                find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
+                compiled_file&.content&.include?(dependency.name)
+              end
 
-                required_files.include?(original_filename.gsub(/\.in$/, ".txt"))
-              end.keys
-
-            [original_filename, *additional_filenames]
+            [*files_from_reqs, *files_from_compiled_files].uniq
           end
 
           def setup_files

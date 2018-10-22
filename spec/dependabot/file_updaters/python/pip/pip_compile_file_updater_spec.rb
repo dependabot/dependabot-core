@@ -234,36 +234,30 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         end
 
         let(:dependency_requirements) do
-          [
-            {
-              file: "requirements/test.in",
-              requirement: "<=18.1.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "requirements.txt",
-              requirement: "==18.1.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "requirements/test.in",
+            requirement: "<=18.1.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements.txt",
+            requirement: "==18.1.0",
+            groups: [],
+            source: nil
+          }]
         end
         let(:dependency_previous_requirements) do
-          [
-            {
-              file: "requirements/test.in",
-              requirement: "<=17.4.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "requirements.txt",
-              requirement: "==17.3.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "requirements/test.in",
+            requirement: "<=17.4.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements.txt",
+            requirement: "==17.3.0",
+            groups: [],
+            source: nil
+          }]
         end
 
         it "updates the other requirements.txt, too" do
@@ -271,6 +265,65 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
           expect(updated_files.first.content).to include("Attrs<=18.1.0")
           expect(updated_files[1].content).to include("attrs==18.1.0")
           expect(updated_files.last.content).to include("attrs==18.1.0")
+        end
+      end
+
+      context "with multiple requirement.in files" do
+        let(:dependency_files) do
+          [manifest_file, manifest_file2, generated_file, generated_file2]
+        end
+
+        let(:manifest_file2) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/dev.in",
+            content:
+              fixture("python", "pip_compile_files", manifest_fixture_name)
+          )
+        end
+        let(:generated_file2) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/dev.txt",
+            content: fixture("python", "requirements", generated_fixture_name)
+          )
+        end
+
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "<=18.1.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements/dev.in",
+            requirement: "<=18.1.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "<=17.4.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements/dev.in",
+            requirement: "<=17.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "updates the other manifest file, too" do
+          expect(updated_files.count).to eq(4)
+          expect(updated_files[0].name).to eq("requirements/test.in")
+          expect(updated_files[1].name).to eq("requirements/dev.in")
+          expect(updated_files[2].name).to eq("requirements/test.txt")
+          expect(updated_files[3].name).to eq("requirements/dev.txt")
+          expect(updated_files[0].content).to include("Attrs<=18.1.0")
+          expect(updated_files[1].content).to include("Attrs<=18.1.0")
+          expect(updated_files[2].content).to include("attrs==18.1.0")
+          expect(updated_files[3].content).to include("attrs==18.1.0")
         end
       end
     end
