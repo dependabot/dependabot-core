@@ -32,6 +32,7 @@ module Dependabot
       when "cargo" then UpdateCheckers::Rust::Cargo
       when "nuget" then UpdateCheckers::Dotnet::Nuget
       when "dep" then UpdateCheckers::Go::Dep
+      when "go_modules" then UpdateCheckers::Go::Modules
       when "elm-package" then UpdateCheckers::Elm::ElmPackage
       when "terraform" then UpdateCheckers::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
