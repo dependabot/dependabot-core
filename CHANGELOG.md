@@ -1,3 +1,10 @@
+## v0.73.78, 22 October 2018
+
+- Python: More robust pip config file updating
+- Python: Check resolvability of all requirement files in
+  PipCompileVersionResolver
+- Python: Recursively determine order to compile pip-compile files
+
 ## v0.73.77, 21 October 2018
 
 - Python: Catch another equality matcher case
