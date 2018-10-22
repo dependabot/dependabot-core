@@ -113,6 +113,56 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
         it { is_expected.to be nil }
       end
+
+      context "with multiple requirement.in files" do
+        let(:dependency_files) do
+          [manifest_file, manifest_file2, generated_file, generated_file2]
+        end
+
+        let(:manifest_file2) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/dev.in",
+            content:
+              fixture("python", "pip_compile_files", manifest_fixture_name2)
+          )
+        end
+        let(:generated_file2) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/dev.txt",
+            content: fixture("python", "requirements", generated_fixture_name2)
+          )
+        end
+        let(:manifest_fixture_name2) { manifest_fixture_name }
+        let(:generated_fixture_name2) { generated_fixture_name }
+
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "<=17.4.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements/dev.in",
+            requirement: "<=17.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to be >= Gem::Version.new("18.1.0") }
+
+        context "one of which is not resolvable" do
+          let(:manifest_fixture_name2) { "unresolvable.in" }
+
+          it "raises a helpful error" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).
+                  to start_with("Could not find a version that matches boto3")
+              end
+          end
+        end
+      end
     end
 
     context "with an unresolvable requirement" do

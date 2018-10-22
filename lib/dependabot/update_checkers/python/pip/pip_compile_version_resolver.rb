@@ -48,23 +48,18 @@ module Dependabot
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   write_temporary_dependency_files
 
-                  # Shell out to pip-compile.
-                  # This is slow, as pip-compile needs to do installs.
-                  cmd = "pyenv exec pip-compile -P #{dependency.name} "\
-                        "#{source_pip_config_file_name}"
-                  run_command(cmd)
+                  filenames_to_compile.each do |filename|
+                    # Shell out to pip-compile.
+                    # This is slow, as pip-compile needs to do installs.
+                    cmd = "pyenv exec pip-compile -P #{dependency.name} "\
+                          "#{filename}"
+                    run_command(cmd)
+                  end
 
                   # Remove the created package details (so they aren't parsed)
                   FileUtils.rm_rf("sanitized_package.egg-info")
 
-                  updated_deps =
-                    SharedHelpers.run_helper_subprocess(
-                      command: "pyenv exec python #{python_helper_path}",
-                      function: "parse_requirements",
-                      args: [Dir.pwd]
-                    )
-
-                  updated_deps.
+                  parse_requirements_from_cwd_files.
                     select { |dep| normalise(dep["name"]) == dependency.name }.
                     find { |dep| dep["file"] == source_compiled_file_name }&.
                     fetch("version")
@@ -75,6 +70,14 @@ module Dependabot
             return unless @latest_resolvable_version_string
 
             Utils::Python::Version.new(@latest_resolvable_version_string)
+          end
+
+          def parse_requirements_from_cwd_files
+            SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python #{python_helper_path}",
+              function: "parse_requirements",
+              args: [Dir.pwd]
+            )
           end
 
           def handle_pip_compile_errors(error)
@@ -108,9 +111,11 @@ module Dependabot
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(unlock_requirement: false)
 
-                cmd = "pyenv exec pip-compile -P #{dependency.name} "\
-                      "#{source_pip_config_file_name}"
-                run_command(cmd)
+                filenames_to_compile.each do |filename|
+                  cmd = "pyenv exec pip-compile -P #{dependency.name} "\
+                        "#{filename}"
+                  run_command(cmd)
+                end
 
                 true
               rescue SharedHelpers::HelperSubprocessFailed => error
@@ -283,8 +288,28 @@ module Dependabot
             message.gsub(/http.*?(?=\s)/, "<redacted>")
           end
 
+          def filenames_to_compile
+            files_from_reqs =
+              dependency.requirements.
+              map { |r| r[:file] }.
+              select { |fn| fn.end_with?(".in") }
+
+            files_from_compiled_files =
+              pip_compile_files.map(&:name).select do |fn|
+                compiled_file = dependency_files.
+                                find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
+                compiled_file&.content&.include?(dependency.name)
+              end
+
+            [*files_from_reqs, *files_from_compiled_files].uniq
+          end
+
           def setup_files
             dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def pip_compile_files
+            dependency_files.select { |f| f.name.end_with?(".in") }
           end
 
           def setup_cfg_files
