@@ -99,6 +99,7 @@ module Dependabot
 
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def changelog
           return unless source
 
@@ -117,6 +118,7 @@ module Dependabot
             file ||=
               candidates.find do |f|
                 new_version = git_source? ? new_ref : dependency.version
+                candidates -= [f] && next if fetch_file_text(f).nil?
                 new_version && fetch_file_text(f).include?(new_version)
               end
             file ||= candidates.max_by(&:size)
@@ -127,6 +129,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         def full_changelog_text
           return unless changelog

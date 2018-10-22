@@ -133,6 +133,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             finder.changelog_url
             expect(WebMock).to have_requested(:get, github_url).once
           end
+
+          context "when the first file does not have a valid encoding" do
+            let(:changelog_body_without_version) do
+              fixture("github", "contents_image.json")
+            end
+
+            it "gets the right URL" do
+              expect(subject).to eq(
+                "https://github.com/scrapy/scrapy/blob/master/docs/news.rst"
+              )
+            end
+          end
         end
       end
 
