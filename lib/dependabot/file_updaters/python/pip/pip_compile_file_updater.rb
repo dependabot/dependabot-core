@@ -264,7 +264,44 @@ module Dependabot
                 compiled_file&.content&.include?(dependency.name)
               end
 
-            [*files_from_reqs, *files_from_compiled_files].uniq
+            filenames = [*files_from_reqs, *files_from_compiled_files].uniq
+
+            order_filenames_for_compilation(filenames)
+          end
+
+          # If the files we need to update require one another then we need to
+          # update them in the right order
+          def order_filenames_for_compilation(filenames)
+            ordered_filenames = []
+
+            while (remaining_filenames = filenames - ordered_filenames).any?
+              ordered_filenames +=
+                remaining_filenames.
+                select do |fn|
+                  unupdated_reqs = requirement_map[fn] - ordered_filenames
+                  (unupdated_reqs & filenames).empty?
+                end
+            end
+
+            ordered_filenames
+          end
+
+          def requirement_map
+            child_req_regex = FileFetchers::Python::Pip::CHILD_REQUIREMENT_REGEX
+            @requirement_map ||=
+              pip_compile_files.each_with_object({}) do |file, req_map|
+                paths = file.content.scan(child_req_regex).flatten
+                current_dir = File.dirname(file.name)
+
+                req_map[file.name] =
+                  paths.map do |path|
+                    path = File.join(current_dir, path) if current_dir != "."
+                    path = Pathname.new(path).cleanpath.to_path
+                    next if path == file.name
+
+                    path
+                  end.uniq.compact
+              end
           end
 
           def setup_files
