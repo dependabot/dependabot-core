@@ -37,7 +37,7 @@ module Dependabot
         private
 
         def check_required_files
-          return if get_original_file("go.mod")
+          return if go_mod
           raise "No go.mod!"
         end
 
