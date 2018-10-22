@@ -1,3 +1,7 @@
+## v0.73.79, 22 October 2018
+
+- .NET: Ensure Directory.Build.props is fetched
+
 ## v0.73.78, 22 October 2018
 
 - Python: More robust pip config file updating
