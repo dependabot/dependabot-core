@@ -1,3 +1,7 @@
+## v0.73.80, 22 October 2018
+
+- Reject changelog candidates that have an invalid encoding
+
 ## v0.73.79, 22 October 2018
 
 - .NET: Ensure Directory.Build.props is fetched
