@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/dependabot/dependabot-core/helpers/go/updatechecker"
 	"github.com/dependabot/dependabot-core/helpers/go/updater"
 )
 
@@ -31,6 +32,10 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
+	case "getUpdatedVersion":
+		var args updatechecker.Args
+		parseArgs(helperParams.Args, &args)
+		funcOut, funcErr = updatechecker.GetUpdatedVersion(&args)
 	case "updateDependencyFile":
 		var args updater.Args
 		parseArgs(helperParams.Args, &args)
