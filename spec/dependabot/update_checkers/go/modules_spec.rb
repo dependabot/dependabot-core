@@ -25,7 +25,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
     )
   end
   let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
-  let(:dependency_version) { "v1.0.0" }
+  let(:dependency_version) { "1.0.0" }
   let(:requirements) do
     [{
       file: "go.mod",
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
   let(:go_mod_content) do
     <<~GOMOD
       module foobar
-      require #{dependency_name} #{dependency_version}
+      require #{dependency_name} v#{dependency_version}
     GOMOD
   end
   let(:dependency_files) do
@@ -55,24 +55,27 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "updates minor (but not major) semver versions" do
-      expect(latest_resolvable_version).to eq("v1.1.0")
+      expect(latest_resolvable_version).
+        to eq(Dependabot::Utils::Go::Version.new("1.1.0"))
     end
 
     it "doesn't update major semver versions" do
-      expect(latest_resolvable_version).to_not eq("v2.0.0")
+      expect(latest_resolvable_version).
+        to_not eq(Dependabot::Utils::Go::Version.new("2.0.0"))
     end
 
     context "with a go.mod excluded version" do
       let(:go_mod_content) do
         <<~GOMOD
           module foobar
-          require #{dependency_name} #{dependency_version}
+          require #{dependency_name} v#{dependency_version}
           exclude #{dependency_name} v1.1.0
         GOMOD
       end
 
       it "doesn't update to the excluded version" do
-        expect(latest_resolvable_version).to eq("v1.0.1")
+        expect(latest_resolvable_version).
+          to eq(Dependabot::Utils::Go::Version.new("1.0.1"))
       end
     end
 
@@ -81,15 +84,16 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
     end
 
     context "when on a pre-release" do
-      let(:dependency_version) { "v1.2.0-pre1" }
+      let(:dependency_version) { "1.2.0-pre1" }
 
       it "updates to newer pre-releases" do
-        expect(latest_resolvable_version).to eq("v1.2.0-pre2")
+        expect(latest_resolvable_version).
+          to eq(Dependabot::Utils::Go::Version.new("1.2.0-pre2"))
       end
     end
 
     it "doesn't update regular releases to newer pre-releases" do
-      expect(latest_resolvable_version).to_not eq("v1.2.0-pre2")
+      expect(latest_resolvable_version).to_not eq("1.2.0-pre2")
     end
 
     it "updates v2+ modules"

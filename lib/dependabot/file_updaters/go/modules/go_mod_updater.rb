@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/file_updaters/go/dep"
+require "dependabot/file_updaters/go/modules"
 
 module Dependabot
   module FileUpdaters

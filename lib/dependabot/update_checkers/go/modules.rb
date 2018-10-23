@@ -15,7 +15,8 @@ module Dependabot
           #  - for psuedo versions, if the commit referenced has been tagged
           #    in a non-modules-compliant way, still update to the next release
           #    as recognised by the dep logic
-          @latest_resolvable_version ||= find_latest_resolvable_version
+          @latest_resolvable_version ||=
+            version_class.new(find_latest_resolvable_version)
         end
 
         # This is currently used to short-circuit latest_resolvable_version,
@@ -32,14 +33,10 @@ module Dependabot
 
         def updated_requirements
           # TODO
-          dependency.requirements
-          # dependency.requirements.map do |req|
-          #   updated_source = req.fetch(:source).dup
-          #   updated_source[:digest] = updated_digest if req[:source][:digest]
-          #   updated_source[:tag] = latest_version if req[:source][:tag]
-
-          #   req.merge(source: updated_source)
-          # end
+          # dependency.requirements
+          dependency.requirements.map do |req|
+            req.merge(requirement: latest_version)
+          end
         end
 
         private
@@ -55,7 +52,7 @@ module Dependabot
                 args: {
                   dependency: {
                     name: dependency.name,
-                    version: dependency.version,
+                    version: "v" + dependency.version,
                     indirect: dependency.requirements.empty?
                   }
                 }
@@ -81,22 +78,6 @@ module Dependabot
           when /darwin/ then "darwin"
           else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
           end
-        end
-
-        def module_update_info
-          @module_update_info ||=
-            SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                File.write("go.mod", go_mod.content)
-
-                output = `GO111MODULE=on go list -m -u -json #{dependency.name}`
-                unless $CHILD_STATUS.success?
-                  raise Dependabot::DependencyFileNotParseable, go_mod.path
-                end
-
-                JSON.parse(output)
-              end
-            end
         end
 
         def latest_version_resolvable_with_full_unlock?

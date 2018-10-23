@@ -12,6 +12,7 @@ require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/dotnet/nuget"
 require "dependabot/update_checkers/go/dep"
+require "dependabot/update_checkers/go/modules"
 require "dependabot/update_checkers/elm/elm_package"
 require "dependabot/update_checkers/terraform/terraform"
 
