@@ -38,6 +38,7 @@ module Dependabot
 
         def check_required_files
           return if go_mod
+
           raise "No go.mod!"
         end
 
