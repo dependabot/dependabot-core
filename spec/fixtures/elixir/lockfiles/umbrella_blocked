@@ -1,0 +1,9 @@
+%{
+  "distillery": {:hex, :distillery, "1.5.5", "c6132d5c0152bdce6850fb6c942d58f1971b169b6965d908dc4e8767cfa51a95", [:mix], [], "hexpm"},
+  "jason": {:hex, :jason, "1.1.2", "b03dedea67a99223a2eaf9f1264ce37154564de899fd3d8b9a21b1a6fd64afe7", [:mix], [{:decimal, "~> 1.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm"},
+  "mime": {:hex, :mime, "1.3.0", "5e8d45a39e95c650900d03f897fbf99ae04f60ab1daa4a34c7a20a5151b7a5fe", [:mix], [], "hexpm"},
+  "phoenix": {:hex, :phoenix, "1.2.1", "6dc592249ab73c67575769765b66ad164ad25d83defa3492dc6ae269bd2a68ab", [:mix], [{:cowboy, "~> 1.0", [hex: :cowboy, repo: "hexpm", optional: true]}, {:phoenix_pubsub, "~> 1.0", [hex: :phoenix_pubsub, repo: "hexpm", optional: false]}, {:plug, "~> 1.1", [hex: :plug, repo: "hexpm", optional: false]}, {:poison, "~> 1.5 or ~> 2.0", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm"},
+  "phoenix_pubsub": {:hex, :phoenix_pubsub, "1.1.1", "6668d787e602981f24f17a5fbb69cc98f8ab085114ebfac6cc36e10a90c8e93c", [:mix], [], "hexpm"},
+  "plug": {:hex, :plug, "1.3.0", "6e2b01afc5db3fd011ca4a16efd9cb424528c157c30a44a0186bcc92c7b2e8f3", [:mix], [{:cowboy, "~> 1.0.1 or ~> 1.1", [hex: :cowboy, repo: "hexpm", optional: true]}, {:mime, "~> 1.0", [hex: :mime, repo: "hexpm", optional: false]}], "hexpm"},
+  "poison": {:hex, :poison, "2.2.0", "4763b69a8a77bd77d26f477d196428b741261a761257ff1cf92753a0d4d24a63", [:mix], [], "hexpm"},
+}

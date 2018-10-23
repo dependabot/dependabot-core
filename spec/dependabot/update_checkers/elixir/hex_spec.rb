@@ -412,6 +412,37 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       end
 
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
+
+      context "when upgrading is blocked" do
+        let(:lockfile_body) do
+          fixture("elixir", "lockfiles", "umbrella_blocked")
+        end
+        let(:sub_mixfile1) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_business/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_business_exact")
+          )
+        end
+        let(:sub_mixfile2) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_web/mix.exs",
+            content: fixture("elixir", "mixfiles", "dependabot_web_exact")
+          )
+        end
+
+        let(:dependency_name) { "phoenix" }
+        let(:version) { "1.2.1" }
+        let(:dependency_requirements) do
+          [{
+            file: "apps/dependabot_web/mix.exs",
+            requirement: "== 1.2.1",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to be >= Gem::Version.new("1.2.2") }
+      end
     end
   end
 
