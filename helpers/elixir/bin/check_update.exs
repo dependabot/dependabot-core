@@ -19,7 +19,7 @@ defmodule UpdateChecker do
 
       {:ok, {:error, error}} -> {:error, error}
 
-      nil -> {:error, :dependency_resolution_timed_out}
+      {:ok, nil} -> {:error, :dependency_resolution_timed_out}
 
       {:exit, reason} -> {:error, reason}
     end
