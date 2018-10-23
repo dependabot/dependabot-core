@@ -118,6 +118,12 @@ RSpec.describe Dependabot::Utils::Java::Version do
           let(:other_version) { described_class.new("v1.0.0") }
           it { is_expected.to eq(0) }
         end
+
+        context "using different date formats" do
+          let(:version_string) { "20181003" }
+          let(:other_version) { described_class.new("v2018-10-03") }
+          it { is_expected.to eq(0) }
+        end
       end
 
       context "that is greater" do

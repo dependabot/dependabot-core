@@ -66,11 +66,14 @@ module Dependabot
           version = stringify_version(@version_string)
           version = fill_tokens(version)
           version = trim_version(version)
-          prefixed_tokens = split_into_prefixed_tokens(version)
 
           other_version = stringify_version(other)
           other_version = fill_tokens(other_version)
           other_version = trim_version(other_version)
+
+          version, other_version = convert_dates(version, other_version)
+
+          prefixed_tokens = split_into_prefixed_tokens(version)
           other_prefixed_tokens = split_into_prefixed_tokens(other_version)
 
           prefixed_tokens, other_prefixed_tokens =
@@ -113,6 +116,14 @@ module Dependabot
             parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
             parts&.join(".")
           end.compact.reject(&:empty?).join("-")
+        end
+
+        def convert_dates(version, other_version)
+          default = [version, other_version]
+          return default unless version.match?(/^\d{4}-?\d{2}-?\d{2}$/)
+          return default unless other_version.match?(/^\d{4}-?\d{2}-?\d{2}$/)
+
+          [version.delete("-"), other_version.delete("-")]
         end
 
         def split_into_prefixed_tokens(version)
