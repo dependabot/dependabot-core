@@ -203,19 +203,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
       context "with good credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "855f6cbeffc6e14c6a884f0111caff3e"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "hex_organization",
+            "organization" => "dependabot",
+            "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+          }]
         end
 
         it { is_expected.to eq(Gem::Version.new("1.1.0")) }
@@ -223,19 +220,16 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
       context "with bad credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "111f6cbeffc6e14c6a884f0111caff3e"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "hex_organization",
+            "organization" => "dependabot",
+            "token" => "111f6cbeffc6e14c6a884f0111caff3e"
+          }]
         end
 
         it "raises a helpful error" do
@@ -404,20 +398,17 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       let(:dependency_name) { "plug" }
       let(:version) { "1.3.6" }
       let(:dependency_requirements) do
-        [
-          {
-            requirement: "~> 1.3.0",
-            file: "apps/dependabot_business/mix.exs",
-            groups: [],
-            source: nil
-          },
-          {
-            requirement: "1.3.6",
-            file: "apps/dependabot_web/mix.exs",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          requirement: "~> 1.3.0",
+          file: "apps/dependabot_business/mix.exs",
+          groups: [],
+          source: nil
+        }, {
+          requirement: "1.3.6",
+          file: "apps/dependabot_web/mix.exs",
+          groups: [],
+          source: nil
+        }]
       end
 
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
