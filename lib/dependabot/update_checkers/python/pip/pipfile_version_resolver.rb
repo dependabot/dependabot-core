@@ -64,25 +64,23 @@ module Dependabot
           def fetch_latest_resolvable_version
             @latest_resolvable_version_string ||=
               SharedHelpers.in_a_temporary_directory do
-                SharedHelpers.with_git_configured(credentials: credentials) do
-                  write_temporary_dependency_files
+                write_temporary_dependency_files
 
-                  # Initialize a git repo to appease pip-tools
-                  IO.popen("git init", err: %i(child out)) if setup_files.any?
+                # Initialize a git repo to appease pip-tools
+                IO.popen("git init", err: %i(child out)) if setup_files.any?
 
-                  # Shell out to Pipenv, which handles everything for us.
-                  # Whilst calling `lock` avoids doing an install as part of the
-                  # pipenv flow, an install is still done by pip-tools in order
-                  # to resolve the dependencies. That means this is slow.
-                  run_pipenv_command(
-                    "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                    "pyenv exec pipenv lock"
-                  )
+                # Shell out to Pipenv, which handles everything for us.
+                # Whilst calling `lock` avoids doing an install as part of the
+                # pipenv flow, an install is still done by pip-tools in order
+                # to resolve the dependencies. That means this is slow.
+                run_pipenv_command(
+                  "PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                  "pyenv exec pipenv lock"
+                )
 
-                  updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
+                updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
 
-                  fetch_version_from_parsed_lockfile(updated_lockfile)
-                end
+                fetch_version_from_parsed_lockfile(updated_lockfile)
               rescue SharedHelpers::HelperSubprocessFailed => error
                 handle_pipenv_errors(error)
               end
@@ -163,34 +161,32 @@ module Dependabot
           # errors when failing to update
           def check_original_requirements_resolvable
             SharedHelpers.in_a_temporary_directory do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files(update_pipfile: false)
+              write_temporary_dependency_files(update_pipfile: false)
 
-                # Initialize a git repo to appease pip-tools
-                IO.popen("git init", err: %i(child out)) if setup_files.any?
+              # Initialize a git repo to appease pip-tools
+              IO.popen("git init", err: %i(child out)) if setup_files.any?
 
-                run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
-                                   "pyenv exec pipenv lock")
+              run_pipenv_command("PIPENV_YES=true PIPENV_MAX_RETRIES=2 "\
+                                 "pyenv exec pipenv lock")
 
-                true
-              rescue SharedHelpers::HelperSubprocessFailed => error
-                if error.message.include?("Could not find a version")
-                  msg = clean_error_message(error.message)
-                  msg.gsub!(/\s+\(from .*$/, "")
-                  raise if msg.empty?
+              true
+            rescue SharedHelpers::HelperSubprocessFailed => error
+              if error.message.include?("Could not find a version")
+                msg = clean_error_message(error.message)
+                msg.gsub!(/\s+\(from .*$/, "")
+                raise if msg.empty?
 
-                  raise DependencyFileNotResolvable, msg
-                end
-
-                if error.message.include?("Not a valid python version")
-                  msg = "Pipenv does not support specifying Python ranges "\
-                    "(see https://github.com/pypa/pipenv/issues/1050 for more "\
-                    "details)."
-                  raise DependencyFileNotResolvable, msg
-                end
-
-                raise
+                raise DependencyFileNotResolvable, msg
               end
+
+              if error.message.include?("Not a valid python version")
+                msg = "Pipenv does not support specifying Python ranges "\
+                  "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+                  "details)."
+                raise DependencyFileNotResolvable, msg
+              end
+
+              raise
             end
           end
 
@@ -373,7 +369,10 @@ module Dependabot
 
           def run_pipenv_command(cmd)
             raw_response = nil
-            IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
+
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
+            end
 
             # Raise an error with the output from the shell session if Pipenv
             # returns a non-zero status
