@@ -1,3 +1,7 @@
+## v0.73.82, 23 October 2018
+
+- JS: Switch all ssh URLs to ssl when updating a package-lock.json
+
 ## v0.73.81, 22 October 2018
 
 - Ruby: Handle ignore requirements which prevent the current version
