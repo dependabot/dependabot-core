@@ -294,7 +294,7 @@ module Dependabot
 
             package_files.each do |file|
               FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
-                JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
+                JSON.parse(file.content).fetch(t, {}).each do |_, requirement|
                   next unless requirement.start_with?("git+ssh:")
 
                   req = requirement.split("#").first
