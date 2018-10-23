@@ -44,6 +44,7 @@ module Dependabot
           fetched_files << setup_file if setup_file
           fetched_files << setup_cfg if setup_cfg
           fetched_files << pip_conf if pip_conf
+          fetched_files << python_version if python_version
 
           check_required_files_present
           fetched_files.uniq
@@ -87,6 +88,11 @@ module Dependabot
         def pip_conf
           @pip_conf ||= fetch_file_if_present("pip.conf")&.
                         tap { |f| f.support_file = true }
+        end
+
+        def python_version
+          @python_version ||= fetch_file_if_present(".python-version")&.
+                              tap { |f| f.support_file = true }
         end
 
         def pipfile

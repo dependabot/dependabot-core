@@ -246,8 +246,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
 
       it "fetches the requirements.txt and the setup.py file" do
         expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include("setup.py")
+        expect(file_fetcher_instance.files.map(&:name)).to include("setup.py")
       end
     end
 
@@ -271,12 +270,20 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
             body: fixture("github", "setup_content.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, url + ".python-version?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
       end
 
-      it "fetches the requirements.txt and the pip.conf file" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+      it "fetches the requirements.txt, pip.conf and .python-version files" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).to include("pip.conf")
         expect(file_fetcher_instance.files.map(&:name)).
-          to include("pip.conf")
+          to include(".python-version")
       end
     end
 
@@ -302,10 +309,9 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           )
       end
 
-      it "fetches the requirements.txt and the pip.conf file" do
+      it "fetches the requirements.txt and the setup.cfg file" do
         expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include("setup.cfg")
+        expect(file_fetcher_instance.files.map(&:name)).to include("setup.cfg")
       end
     end
 
@@ -596,8 +602,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
 
         it "fetches the setup.py" do
           expect(file_fetcher_instance.files.count).to eq(2)
-          expect(file_fetcher_instance.files.map(&:name)).
-            to include("setup.py")
+          expect(file_fetcher_instance.files.map(&:name)).to include("setup.py")
         end
 
         context "and references extras" do

@@ -112,22 +112,6 @@
     }
   },
   {
-    "name": ".python-version",
-    "path": ".python-version",
-    "sha": "87ce492908ab2362771f27134bab4a075348a8f3",
-    "size": 6,
-    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.python-version?ref=develop",
-    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.python-version",
-    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/87ce492908ab2362771f27134bab4a075348a8f3",
-    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.python-version",
-    "type": "file",
-    "_links": {
-      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.python-version?ref=develop",
-      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/87ce492908ab2362771f27134bab4a075348a8f3",
-      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.python-version"
-    }
-  },
-  {
     "name": "LICENSE.md",
     "path": "LICENSE.md",
     "sha": "8dada3edaf50dbc082c9a125058f25def75e625a",
