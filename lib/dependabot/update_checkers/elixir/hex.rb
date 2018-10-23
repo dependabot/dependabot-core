@@ -172,8 +172,8 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version(unlock_requirement:)
-          @latest_resolvable_version ||= {}
-          @latest_resolvable_version[unlock_requirement] ||=
+          @latest_resolvable_version_hash ||= {}
+          @latest_resolvable_version_hash[unlock_requirement] ||=
             version_resolver(unlock_requirement: unlock_requirement).
             latest_resolvable_version
         end
