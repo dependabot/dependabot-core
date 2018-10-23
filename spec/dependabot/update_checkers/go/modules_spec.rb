@@ -96,12 +96,30 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
       expect(latest_resolvable_version).to_not eq("1.2.0-pre2")
     end
 
+    context "for libraries" do
+      let(:requirements) { [] }
+
+      it "updates the version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::Utils::Go::Version.new("1.1.0"))
+      end
+    end
+
     it "updates v2+ modules"
     it "doesn't update to v2+ modules with un-versioned paths"
     it "updates modules that don't live at a repository root"
     it "updates Git SHAs to releases that include them"
     it "doesn't updates Git SHAs to releases that don't include them"
-    it "updates Git SHAs on master to newer commits to master"
+
+    context "for Git pseudo-versions" do
+      let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
+
+      pending "updates to newer commits to master" do
+        expect(latest_resolvable_version.to_s).
+          to eq("v1.2.0-pre2.0.20181018214848-bbed29f74d16")
+      end
+    end
+
     it "doesn't update Git SHAs not on master to newer commits to master"
     # TODO: sub-dependencies?
   end
