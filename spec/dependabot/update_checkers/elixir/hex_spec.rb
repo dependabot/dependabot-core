@@ -419,13 +419,13 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:sub_mixfile1) do
           Dependabot::DependencyFile.new(
             name: "apps/api/mix.exs",
-            content: fixture("elixir", "mixfiles", "tmp1")
+            content: fixture("elixir", "mixfiles", "umbrella_bug_child1")
           )
         end
         let(:sub_mixfile4) do
           Dependabot::DependencyFile.new(
             name: "apps/tram/mix.exs",
-            content: fixture("elixir", "mixfiles", "tmp4")
+            content: fixture("elixir", "mixfiles", "umbrella_bug_child2")
           )
         end
 
@@ -440,7 +440,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.4.2")) }
+        it { is_expected.to be_nil }
       end
     end
   end
