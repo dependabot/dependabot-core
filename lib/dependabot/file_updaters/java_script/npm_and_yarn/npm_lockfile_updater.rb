@@ -290,18 +290,11 @@ module Dependabot
               return @git_ssh_requirements_to_swap
             end
 
-            git_dependencies =
-              dependencies.
-              select do |dep|
-                dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
-              end
-
             @git_ssh_requirements_to_swap = []
 
             package_files.each do |file|
               FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
                 JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
-                  next unless git_dependencies.map(&:name).include?(nm)
                   next unless requirement.start_with?("git+ssh:")
 
                   req = requirement.split("#").first
