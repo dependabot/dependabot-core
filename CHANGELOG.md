@@ -1,3 +1,10 @@
+## v0.73.83, 23 October 2018
+
+- Python: Fetch .python-version files
+- Elixir: Don't overwrite @latest_resolvable_version in UpdateChecker
+- Python: Add an additional Pipenv retry
+- Elixir: Handle (ignore) timeouts
+
 ## v0.73.82, 23 October 2018
 
 - JS: Switch all ssh URLs to ssl when updating a package-lock.json
