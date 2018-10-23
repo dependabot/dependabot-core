@@ -1,3 +1,7 @@
+## v0.73.84, 23 October 2018
+
+- Java: Normalise date versions before comparing
+
 ## v0.73.83, 23 October 2018
 
 - Python: Fetch .python-version files
