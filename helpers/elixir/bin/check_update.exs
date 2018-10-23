@@ -4,7 +4,7 @@ defmodule UpdateChecker do
 
     # Update the lockfile in a session that we can time out
     task = Task.async(fn -> do_resolution(dependency_name) end)
-    case Task.yield(task, 30000) do
+    case Task.yield(task, 30000) || Task.shutdown(task) do
       {:ok, {:ok, :resolution_successful}} ->
         # Read the new lock
         {updated_lock, _updated_rest_lock} =
@@ -19,7 +19,7 @@ defmodule UpdateChecker do
 
       {:ok, {:error, error}} -> {:error, error}
 
-      {:ok, nil} -> {:error, :dependency_resolution_timed_out}
+      nil -> {:error, :dependency_resolution_timed_out}
 
       {:exit, reason} -> {:error, reason}
     end
