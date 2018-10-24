@@ -116,7 +116,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
 
       pending "updates to newer commits to master" do
         expect(latest_resolvable_version.to_s).
-          to eq("v1.2.0-pre2.0.20181018214848-bbed29f74d16")
+          to eq("1.2.0-pre2.0.20181018214848-bbed29f74d16")
       end
     end
 

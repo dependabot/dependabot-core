@@ -48,6 +48,11 @@ RSpec.describe Dependabot::Utils::Go::Version do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end
+
+    context "with a leading v" do
+      let(:version_string) { "v1.0.0" }
+      it { is_expected.to eq "1.0.0" }
+    end
   end
 
   describe "#inspect" do

@@ -12,7 +12,7 @@ module Dependabot
       class Modules < Dependabot::UpdateCheckers::Base
         def latest_resolvable_version
           @latest_resolvable_version ||=
-            version_class.new(find_latest_resolvable_version)
+            version_class.new(find_latest_resolvable_version.gsub(/^v/, ""))
         end
 
         # This is currently used to short-circuit latest_resolvable_version,

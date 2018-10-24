@@ -21,7 +21,7 @@ module Dependabot
         end
 
         def initialize(version)
-          @version_string = version.to_s
+          @version_string = version.to_s.gsub(/^v/, "")
           version = version.gsub(/^v/, "") if version.is_a?(String)
           version = version&.to_s&.split("+")&.first
           super
