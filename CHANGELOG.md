@@ -1,3 +1,7 @@
+## v0.74.2, 24 October 2018
+
+- Python: Handle Pipenv updates that need Python two
+
 ## v0.74.1, 24 October 2018
 
 - Go: Add go_modules into the metadata finders map
