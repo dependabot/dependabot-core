@@ -1,3 +1,7 @@
+## v0.74.1, 24 October 2018
+
+- Go: Add go_modules into the metadata finders map
+
 ## v0.74.0, 24 October 2018
 
 - Go: Less broken support for Go modules, now in a separate package manager
