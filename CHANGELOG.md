@@ -1,3 +1,9 @@
+## v0.73.85, 24 October 2018
+
+- Elixir: Better timeout logic
+- JS: Add test that having a frozen Yarn lockfile doesn't affect file updating
+- Python: Better Python version detection, and management
+
 ## v0.73.84, 23 October 2018
 
 - Java: Normalise date versions before comparing
