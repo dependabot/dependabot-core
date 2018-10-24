@@ -47,10 +47,7 @@ module Dependabot
               else { type: "default", source: details["Path"] }
               end
 
-            version =
-              if rev_identifier?(details) then git_revision(details)
-              else details["Version"]&.sub(/^v?/, "")
-              end
+            version = details["Version"]&.sub(/^v?/, "")
 
             reqs = [{
               requirement: rev_identifier?(details) ? nil : details["Version"],
