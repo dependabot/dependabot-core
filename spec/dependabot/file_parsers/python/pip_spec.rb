@@ -55,6 +55,18 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       end
     end
 
+    context "with a .python-version file" do
+      let(:files) { [requirements, python_version_file] }
+      let(:python_version_file) do
+        Dependabot::DependencyFile.new(
+          name: ".python-version",
+          content: "2.7.15\n"
+        )
+      end
+
+      its(:length) { is_expected.to eq(3) }
+    end
+
     context "with comments" do
       let(:requirements_fixture_name) { "comments.txt" }
       its(:length) { is_expected.to eq(2) }

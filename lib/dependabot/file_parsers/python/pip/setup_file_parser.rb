@@ -101,11 +101,13 @@ module Dependabot
           end
 
           def write_temporary_dependency_files
-            dependency_files.each do |file|
-              path = file.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, file.content)
-            end
+            dependency_files.
+              reject { |f| f.name == ".python-version" }.
+              each do |file|
+                path = file.name
+                FileUtils.mkdir_p(Pathname.new(path).dirname)
+                File.write(path, file.content)
+              end
           end
 
           # Write a setup.py with only entries for the requires fields.
