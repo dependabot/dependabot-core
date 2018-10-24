@@ -150,6 +150,20 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         expect(json_lockfile["develop"]["funcsigs"]["markers"]).
           to eq("python_version < '3.0'")
       end
+
+      context "and includes a .python-version file" do
+        let(:dependency_files) { [pipfile, lockfile, python_version_file] }
+        let(:python_version_file) do
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: "2.7.15\n"
+          )
+        end
+
+        it "updates both files correctly" do
+          expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+        end
+      end
     end
 
     context "when the Pipfile included an environment variable source" do

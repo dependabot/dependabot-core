@@ -52,6 +52,7 @@ module Dependabot
           def compile_new_requirement_files
             SharedHelpers.in_a_temporary_directory do
               write_updated_dependency_files
+              run_command("pyenv install -s") if python_version_file
 
               filenames_to_compile.each do |filename|
                 # Shell out to pip-compile, generate a new set of requirements.
@@ -71,9 +72,7 @@ module Dependabot
                   replace_header_with_original(updated_content, file.content)
                 next if updated_content == file.content
 
-                file = file.dup
-                file.content = updated_content
-                file
+                file.dup.tap { |f| f.content = updated_content }
               end.compact
             end
           end

@@ -138,6 +138,7 @@ module Dependabot
           def updated_lockfile_content_for(pyproject_content)
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(pyproject_content)
+              run_poetry_command("pyenv install -s") if python_version_file
 
               run_poetry_command("pyenv exec poetry lock")
 
@@ -227,6 +228,10 @@ module Dependabot
 
           def poetry_lock
             dependency_files.find { |f| f.name == "poetry.lock" }
+          end
+
+          def python_version_file
+            dependency_files.find { |f| f.name == ".python-version" }
           end
         end
       end

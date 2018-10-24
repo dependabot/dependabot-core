@@ -49,6 +49,7 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   write_temporary_dependency_files
+                  run_command("pyenv install -s") if python_version_file
 
                   filenames_to_compile.each do |filename|
                     # Shell out to pip-compile.
@@ -60,6 +61,9 @@ module Dependabot
 
                   # Remove the created package details (so they aren't parsed)
                   FileUtils.rm_rf("sanitized_package.egg-info")
+
+                  # Remove any .python-version file before parsing the reqs
+                  FileUtils.remove_entry(".python-version", true)
 
                   parse_requirements_from_cwd_files.
                     select { |dep| normalise(dep["name"]) == dependency.name }.
@@ -112,6 +116,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(unlock_requirement: false)
+                run_command("pyenv install -s") if python_version_file
 
                 filenames_to_compile.each do |filename|
                   cmd = "pyenv exec pip-compile -P #{dependency.name} "\

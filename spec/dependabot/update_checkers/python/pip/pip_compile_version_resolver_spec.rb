@@ -260,6 +260,20 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.1.2")) }
+
+      context "that has a .python-version file" do
+        let(:dependency_files) do
+          [manifest_file, generated_file, python_version_file]
+        end
+        let(:python_version_file) do
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: "2.7.15\n"
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("0.1.2")) }
+      end
     end
   end
 end
