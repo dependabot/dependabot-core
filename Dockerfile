@@ -104,7 +104,7 @@ RUN curl -O https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz \
     && mv dep-linux-amd64 go/bin/dep \
     && chmod +x go/bin/dep \
     && mv go /root
-ENV PATH=/root/go/bin:$PATH
+ENV PATH=/root/go/bin:$PATH GOPATH=/opt/go
 
 
 ### ELIXIR
