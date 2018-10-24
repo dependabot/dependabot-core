@@ -1,3 +1,7 @@
+## v0.74.0, 24 October 2018
+
+- Go: Less broken support for Go modules, now in a separate package manager
+
 ## v0.73.87, 24 October 2018
 
 - Python: More Python version management
