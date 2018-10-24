@@ -1,4 +1,6 @@
-![Dependabot](https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg)
+<p align="center">
+  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg" alt="Dependabot" width="300">
+</p>
 
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
