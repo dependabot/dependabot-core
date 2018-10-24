@@ -1,3 +1,7 @@
+## v0.73.87, 24 October 2018
+
+- Python: More Python version management
+
 ## v0.73.86, 24 October 2018
 
 - Python: Don't use a user's .python-version when running our own python helpers
