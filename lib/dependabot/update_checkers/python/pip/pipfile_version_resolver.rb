@@ -393,14 +393,10 @@ module Dependabot
             original_error ||= error
             raise unless error.message.include?("InstallationError") ||
                          error.message.include?("Could not find a version")
-            raise original_error if File.exist?(".python-version")
+            raise original_error if cmd.include?("--two")
 
-            cmd = "pyenv local 2.7.15 && " + cmd
+            cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
-          ensure
-            unless python_version_file
-              FileUtils.remove_entry(".python-version", true)
-            end
           end
 
           def check_env_sources_included_in_config_variables(env_sources)

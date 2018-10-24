@@ -180,7 +180,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
         let(:latest_version) { Gem::Version.new("3.8.1") }
 
-        pending { is_expected.to eq(Gem::Version.new("3.8.1")) }
+        it { is_expected.to eq(Gem::Version.new("3.8.1")) }
       end
 
       context "for a resolution that has caused trouble in the past" do

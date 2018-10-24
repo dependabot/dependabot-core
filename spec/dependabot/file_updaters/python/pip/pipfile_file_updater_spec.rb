@@ -164,6 +164,34 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
         end
       end
+
+      context "when the Python requirement is implicit" do
+        let(:pipfile_fixture_name) { "required_python_implicit" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "3.8.1",
+            previous_version: "3.4.1",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "==3.8.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }],
+            previous_requirements: [{
+              requirement: "==3.4.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }]
+          )
+        end
+
+        it "updates both files correctly" do
+          expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+        end
+      end
     end
 
     context "when the Pipfile included an environment variable source" do
