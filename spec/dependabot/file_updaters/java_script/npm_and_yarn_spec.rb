@@ -1080,6 +1080,20 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     describe "Yarn specific" do
       let(:files) { [package_json, yarn_lock] }
 
+      context "when a yarnrc would prevent updates to the yarn.lock" do
+        let(:files) { [package_json, yarn_lock, yarnrc] }
+        let(:yarnrc) do
+          Dependabot::DependencyFile.new(
+            name: ".yarnrc",
+            content: "--frozen-lockfile true\n--install.frozen-lockfile true"
+          )
+        end
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).to include("yarn.lock")
+        end
+      end
+
       context "when the lockfile needs to be cleaned up (Yarn bug)" do
         let(:manifest_fixture_name) { "no_lockfile_change.json" }
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
