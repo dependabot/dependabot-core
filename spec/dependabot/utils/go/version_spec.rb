@@ -50,6 +50,17 @@ RSpec.describe Dependabot::Utils::Go::Version do
     end
   end
 
+  describe "#inspect" do
+    subject { version.inspect }
+
+    context "with a version that Gem::Version would mangle" do
+      let(:version_string) { "1.0.0-pre1" }
+      it "doesn't mangle it" do
+        is_expected.to eq "#<Dependabot::Utils::Go::Version \"1.0.0-pre1\">"
+      end
+    end
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }

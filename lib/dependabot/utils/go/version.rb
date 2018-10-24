@@ -27,6 +27,10 @@ module Dependabot
           super
         end
 
+        def inspect # :nodoc:
+          "#<#{self.class} #{@version_string.inspect}>"
+        end
+
         def to_s
           @version_string
         end
