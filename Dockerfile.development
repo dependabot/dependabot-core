@@ -1,0 +1,8 @@
+FROM dependabot/dependabot-core
+
+RUN mkdir -p /code/lib/dependabot
+WORKDIR /code
+
+COPY Gemfile Gemfile.lock dependabot-core.gemspec /code/
+COPY lib/dependabot/version.rb /code/lib/dependabot/
+RUN bundle install
