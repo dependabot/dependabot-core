@@ -95,7 +95,8 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("golang.org/x/crypto")
-            expect(dependency.version).to eq("027cca12c2d6")
+            expect(dependency.version).
+              to eq("0.0.0-20180617042118-027cca12c2d6")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,
