@@ -760,7 +760,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             let(:dependency) do
               Dependabot::Dependency.new(
                 name: "business",
-                version: "c170ea081c121c00ed6fe8764e3557e731454b9d",
+                version: "71083639645603d3bc25f7f5b11c96f0d07bf252",
                 previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
                 requirements: requirements,
                 previous_requirements: previous_requirements,
@@ -770,7 +770,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.14.0",
+                requirement: "~> 1.15.0",
                 groups: [],
                 source: {
                   type: "git",
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.14.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.15.0)!" }
           end
         end
       end
