@@ -23,6 +23,7 @@ module Dependabot
         "hex" => { name: "elixir", colour: "9380dd" },
         "cargo" => { name: "rust", colour: "000000" },
         "dep" => { name: "go", colour: "16e2e2" },
+        "go_modules" => { name: "go", colour: "16e2e2" },
         "elm-package" => { name: "elm", colour: "76d3f2" }
       }.freeze
 

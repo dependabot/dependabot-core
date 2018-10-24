@@ -30,6 +30,7 @@ module Dependabot
       when "cargo" then MetadataFinders::Rust::Cargo
       when "nuget" then MetadataFinders::Dotnet::Nuget
       when "dep" then MetadataFinders::Go::Dep
+      when "go_modules" then MetadataFinders::Go::Dep
       when "elm-package" then MetadataFinders::Elm::ElmPackage
       when "terraform" then MetadataFinders::Terraform::Terraform
       else raise "Unsupported package_manager #{package_manager}"
