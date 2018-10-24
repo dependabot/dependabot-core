@@ -11,10 +11,6 @@ module Dependabot
     module Go
       class Modules < Dependabot::UpdateCheckers::Base
         def latest_resolvable_version
-          # TODO
-          #  - for psuedo versions, if the commit referenced has been tagged
-          #    in a non-modules-compliant way, still update to the next release
-          #    as recognised by the dep logic
           @latest_resolvable_version ||=
             version_class.new(find_latest_resolvable_version)
         end
@@ -32,8 +28,6 @@ module Dependabot
         end
 
         def updated_requirements
-          # TODO
-          # dependency.requirements
           dependency.requirements.map do |req|
             req.merge(requirement: latest_version)
           end
