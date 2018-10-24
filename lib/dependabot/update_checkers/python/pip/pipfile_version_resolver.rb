@@ -230,6 +230,10 @@ module Dependabot
               File.write(path, "[metadata]\nname = sanitized-package\n")
             end
 
+            if python_version_file
+              File.write(".python-version", python_version_file.content)
+            end
+
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content) if update_pipfile
           end
@@ -367,6 +371,10 @@ module Dependabot
             dependency_files.select { |f| f.name.end_with?("setup.py") }
           end
 
+          def python_version_file
+            dependency_files.find { |f| f.name == ".python-version" }
+          end
+
           def setup_cfg_files
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
@@ -381,16 +389,17 @@ module Dependabot
 
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           rescue SharedHelpers::HelperSubprocessFailed => error
-            unless error.message.include?("InstallationError") ||
-                   error.message.include?("Could not find a version")
-              raise
-            end
-            raise if cmd.start_with?("pyenv local 2.7.15 &&")
+            original_error ||= error
+            raise unless error.message.include?("InstallationError") ||
+                         error.message.include?("Could not find a version")
+            raise original_error if File.exist?(".python-version")
 
             cmd = "pyenv local 2.7.15 && " + cmd
             retry
           ensure
-            IO.popen("pyenv local --unset", err: %i(child out))
+            unless python_version_file
+              FileUtils.remove_entry(".python-version", true)
+            end
           end
 
           def check_env_sources_included_in_config_variables(env_sources)

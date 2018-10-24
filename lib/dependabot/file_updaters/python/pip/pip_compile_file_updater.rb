@@ -131,15 +131,17 @@ module Dependabot
               command
             )
           rescue SharedHelpers::HelperSubprocessFailed => error
-            # Retry errors that might have been cause by using Python 3
+            original_error ||= error
             raise unless error.message.include?("InstallationError") ||
                          error.message.include?("futures")
-            raise if command.start_with?("pyenv local 2.7.15 &&")
+            raise original_error if File.exist?(".python-version")
 
             command = "pyenv local 2.7.15 && " + command
             retry
           ensure
-            IO.popen("pyenv local --unset", err: %i(child out))
+            unless python_version_file
+              FileUtils.remove_entry(".python-version", true)
+            end
           end
 
           def write_updated_dependency_files
@@ -160,6 +162,10 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, "[metadata]\nname = sanitized-package\n")
             end
+
+            return unless python_version_file
+
+            File.write(".python-version", python_version_file.content)
           end
 
           def sanitized_setup_file_content(file)
@@ -314,6 +320,10 @@ module Dependabot
 
           def setup_cfg_files
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
+          end
+
+          def python_version_file
+            dependency_files.find { |f| f.name == ".python-version" }
           end
         end
       end
