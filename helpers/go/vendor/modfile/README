@@ -1,2 +1,0 @@
-Taken from https://github.com/golang/go/tree/master/src/cmd/go/internal/modfile,
-as the canonical modfile parser is currently an internal package.

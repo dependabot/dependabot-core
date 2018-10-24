@@ -44,13 +44,6 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
         body: fixture("github", "contents_gopkg_lock.json"),
         headers: { "content-type" => "application/json" }
       )
-    stub_request(:get, url + "go.mod?ref=sha").
-      with(headers: { "Authorization" => "token token" }).
-      to_return(
-        status: 200,
-        body: fixture("github", "contents_go_mod.json"),
-        headers: { "content-type" => "application/json" }
-      )
     stub_request(:get, url + "?ref=sha").
       with(headers: { "Authorization" => "token token" }).
       to_return(
@@ -68,12 +61,6 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
   end
 
   context "for a dep project" do
-    before do
-      stub_request(:get, url + "go.mod?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-    end
-
     context "without a Gopkg.toml" do
       before do
         stub_request(:get, url + "Gopkg.toml?ref=sha").
@@ -103,36 +90,6 @@ RSpec.describe Dependabot::FileFetchers::Go::Dep do
     it "fetches the Gopkg.toml and Gopkg.lock" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Gopkg.toml Gopkg.lock))
-    end
-  end
-
-  context "for a go modules project" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_go_library_with_go_mod.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
-    context "without a go.mod" do
-      before do
-        stub_request(:get, url + "go.mod?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 404)
-      end
-
-      it "raises a helpful error" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependencyFileNotFound)
-      end
-    end
-
-    it "fetches the go.mod" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(go.mod))
     end
   end
 

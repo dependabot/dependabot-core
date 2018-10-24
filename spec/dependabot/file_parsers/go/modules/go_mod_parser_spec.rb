@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/go/modules/go_mod_parser"
 
@@ -62,12 +63,12 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
 
       describe "a dependency that doesn't use go modules" do
         subject(:dependency) do
-          dependencies.find { |d| d.name == "github.com/fatih/color" }
+          dependencies.find { |d| d.name == "github.com/fatih/Color" }
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("github.com/fatih/color")
+          expect(dependency.name).to eq("github.com/fatih/Color")
           expect(dependency.version).to eq("1.7.0")
           expect(dependency.requirements).to eq(
             [{
@@ -76,7 +77,7 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
               groups: [],
               source: {
                 type: "default",
-                source: "github.com/fatih/color"
+                source: "github.com/fatih/Color"
               }
             }]
           )
@@ -94,7 +95,8 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("golang.org/x/crypto")
-            expect(dependency.version).to eq("027cca12c2d6")
+            expect(dependency.version).
+              to eq("0.0.0-20180617042118-027cca12c2d6")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,

@@ -2,14 +2,14 @@
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
-require "dependabot/file_parsers/go/dep"
+require "dependabot/file_parsers/go/modules"
 require "dependabot/utils/go/path_converter"
 require "dependabot/errors"
 
 module Dependabot
   module FileParsers
     module Go
-      module Modules
+      class Modules
         class GoModParser
           GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/
 
@@ -19,16 +19,6 @@ module Dependabot
           end
 
           def dependency_set
-            dependency_set = Dependabot::FileParsers::Base::DependencySet.new
-            dependency_set += go_mod_dependencies
-            dependency_set
-          end
-
-          private
-
-          attr_reader :dependency_files, :credentials
-
-          def go_mod_dependencies
             dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
             i = 0
@@ -47,16 +37,17 @@ module Dependabot
             dependencies
           end
 
+          private
+
+          attr_reader :dependency_files, :credentials
+
           def dependency_from_details(details)
             source =
               if rev_identifier?(details) then git_source(details)
               else { type: "default", source: details["Path"] }
               end
 
-            version =
-              if rev_identifier?(details) then git_revision(details)
-              else details["Version"]&.sub(/^v?/, "")
-              end
+            version = details["Version"]&.sub(/^v?/, "")
 
             reqs = [{
               requirement: rev_identifier?(details) ? nil : details["Version"],

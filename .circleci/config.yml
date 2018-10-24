@@ -19,6 +19,7 @@ jobs:
       - run: cd helpers/php && composer install
       - run: cd helpers/python && pyenv exec pip install -r requirements.txt && pyenv local 2.7.15 && pyenv exec pip install -r requirements.txt && pyenv local --unset
       - run: cd helpers/elixir && mix deps.get
+      - run: cd helpers/go && make
 
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}

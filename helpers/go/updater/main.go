@@ -1,13 +1,9 @@
-package main
+package updater
 
 import (
-	"encoding/json"
-	"errors"
 	"io/ioutil"
-	"log"
-	"os"
 
-	"modfile"
+	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
 )
 
 type Dependency struct {
@@ -16,45 +12,27 @@ type Dependency struct {
 	Indirect bool   `json:"indirect"`
 }
 
-type HelperParams struct {
-	Function string `json:"function"`
-	Args     struct {
-		Dependencies []Dependency `json:"dependencies"`
-	} `json:"args"`
+type Args struct {
+	Dependencies []Dependency `json:"dependencies"`
 }
 
-type Output struct {
-	Error  string `json:"error,omitempty"`
-	Result string `json:"result,omitempty"`
-}
-
-func main() {
-	d := json.NewDecoder(os.Stdin)
-	helperParams := &HelperParams{}
-	if err := d.Decode(helperParams); err != nil {
-		abort(err)
-	}
-
-	if helperParams.Function != "updateDependencyFile" {
-		abort(errors.New("Expected function to be 'updateDependencyFile'"))
-	}
-
+func UpdateDependencyFile(args *Args) (interface{}, error) {
 	data, err := ioutil.ReadFile("go.mod")
 	if err != nil {
-		abort(err)
+		return nil, err
 	}
 
 	f, err := modfile.ParseLax("go.mod", data, nil)
 	if err != nil {
-		abort(err)
+		return nil, err
 	}
 
-	for _, dep := range helperParams.Args.Dependencies {
+	for _, dep := range args.Dependencies {
 		f.AddRequire(dep.Name, dep.Version)
 	}
 
 	for _, r := range f.Require {
-		for _, dep := range helperParams.Args.Dependencies {
+		for _, dep := range args.Dependencies {
 			if r.Mod.Path == dep.Name {
 				setIndirect(r.Syntax, dep.Indirect)
 			}
@@ -64,19 +42,5 @@ func main() {
 	f.Cleanup()
 
 	newModFile, _ := f.Format()
-	output(&Output{Result: string(newModFile)})
-}
-
-func output(o *Output) {
-	bytes, jsonErr := json.Marshal(o)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
-	}
-
-	os.Stdout.Write(bytes)
-}
-
-func abort(err error) {
-	output(&Output{Error: err.Error()})
-	os.Exit(1)
+	return string(newModFile), nil
 }

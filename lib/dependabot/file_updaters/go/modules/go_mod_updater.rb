@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/file_updaters/go/dep"
+require "dependabot/file_updaters/go/modules"
 
 module Dependabot
   module FileUpdaters
     module Go
-      module Modules
+      class Modules
         class GoModUpdater
           def initialize(dependencies:, go_mod:, credentials:)
             @dependencies = dependencies
@@ -41,7 +41,7 @@ module Dependabot
           attr_reader :dependencies, :go_mod, :credentials
 
           def go_helper_path
-            File.join(project_root, "helpers/go/updater/updater.#{platform}64")
+            File.join(project_root, "helpers/go/go-helpers.#{platform}64")
           end
 
           def project_root

@@ -38,6 +38,7 @@ module Dependabot
       when "hex" then Utils::Elixir::Version
       when "cargo" then Utils::Rust::Version
       when "dep" then Utils::Go::Version
+      when "go_modules" then Utils::Go::Version
       when "elm-package" then Utils::Elm::Version
       when "terraform" then Utils::Terraform::Version
       else raise "Unsupported package_manager #{package_manager}"
@@ -56,6 +57,7 @@ module Dependabot
       when "hex" then Utils::Elixir::Requirement
       when "cargo" then Utils::Rust::Requirement
       when "dep" then Utils::Go::Requirement
+      when "go_modules" then Utils::Go::Requirement
       when "elm-package" then Utils::Elm::Requirement
       when "terraform" then Utils::Terraform::Requirement
       else raise "Unsupported package_manager #{package_manager}"
