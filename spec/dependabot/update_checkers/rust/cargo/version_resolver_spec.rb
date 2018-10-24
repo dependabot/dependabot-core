@@ -206,7 +206,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         let(:manifest_fixture_name) { "multiple_versions_subdependency" }
         let(:lockfile_fixture_name) { "multiple_versions_subdependency" }
         let(:dependency_name) { "hyper" }
-        let(:dependency_version) { "0.10.14" }
+        let(:dependency_version) { "0.10.13" }
         let(:requirements) { [] }
 
         it { is_expected.to eq(Gem::Version.new("0.10.14")) }
