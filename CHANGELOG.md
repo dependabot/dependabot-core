@@ -1,3 +1,8 @@
+## v0.74.6, 25 October 2018
+
+- JS: Don't update the  attribute for git dependencies in npm6 lockfiles
+- Rust: Guard against trying to update dependencies with multiple source types
+
 ## v0.74.5, 25 October 2018
 
 - Go (modules): Update the go.sum if present
