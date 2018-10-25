@@ -1,3 +1,7 @@
+## v0.74.3, 25 October 2018
+
+- Python: Fix typo
+
 ## v0.74.2, 24 October 2018
 
 - Python: Handle Pipenv updates that need Python two
