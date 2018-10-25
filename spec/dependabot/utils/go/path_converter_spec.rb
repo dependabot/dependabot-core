@@ -26,24 +26,12 @@ RSpec.describe Dependabot::Utils::Go::PathConverter do
 
     context "with a vanity URL that needs to be fetched" do
       let(:path) { "k8s.io/apimachinery" }
-
-      before do
-        stub_request(:get, "https://k8s.io/apimachinery?go-get=1").
-          to_return(status: 200, body: vanity_response)
-      end
-      let(:vanity_response) do
-        fixture("go", "repo_responses", "k8s_io_apimachinery.html")
-      end
-
       it { is_expected.to eq("https://github.com/kubernetes/apimachinery") }
+    end
 
-      context "and returns a git source hosted with an unknown provider" do
-        let(:vanity_response) do
-          fixture("go", "repo_responses", "unknown_git_source.html")
-
-          it { is_expected.to eq("https://sf.com/kubernetes/apimachinery") }
-        end
-      end
+    context "with a vanity URL that redirects" do
+      let(:path) { "code.cloudfoundry.org/bytefmt" }
+      it { is_expected.to eq("https://github.com/cloudfoundry/bytefmt") }
     end
   end
 end

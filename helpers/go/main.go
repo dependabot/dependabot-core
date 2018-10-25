@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/dependabot/dependabot-core/helpers/go/importresolver"
 	"github.com/dependabot/dependabot-core/helpers/go/updatechecker"
 	"github.com/dependabot/dependabot-core/helpers/go/updater"
 )
@@ -40,6 +41,10 @@ func main() {
 		var args updater.Args
 		parseArgs(helperParams.Args, &args)
 		funcOut, funcErr = updater.UpdateDependencyFile(&args)
+	case "getVcsRemoteForImport":
+		var args importresolver.Args
+		parseArgs(helperParams.Args, &args)
+		funcOut, funcErr = importresolver.VCSRemoteForImport(&args)
 	default:
 		abort(fmt.Errorf("Unrecognised function '%s'", helperParams.Function))
 	}
