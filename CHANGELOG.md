@@ -1,3 +1,9 @@
+## v0.74.5, 25 October 2018
+
+- Go (modules): Update the go.sum if present
+- JS: Use lockfile to determine global registry if a .yarnrc exists but doesn't
+  specify it
+
 ## v0.74.4, 25 October 2018
 
 - Python: Use pip-tools' --allow-unsafe option when required
