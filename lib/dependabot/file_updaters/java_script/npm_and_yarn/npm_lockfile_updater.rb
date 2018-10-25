@@ -244,10 +244,10 @@ module Dependabot
             json = JSON.parse(content)
             types.each do |type|
               json.fetch(type, {}).each do |nm, _|
-                updated_version = git_dependencies_to_lock[nm]
+                updated_version = git_dependencies_to_lock.dig(nm, :version)
                 next unless updated_version
 
-                json[type][nm] = git_dependencies_to_lock[nm]
+                json[type][nm] = git_dependencies_to_lock[nm][:version]
               end
             end
 
@@ -268,7 +268,10 @@ module Dependabot
                 next unless details["version"]
                 next unless details["version"].start_with?("git")
 
-                @git_dependencies_to_lock[nm] = details["version"]
+                @git_dependencies_to_lock[nm] = {
+                  version: details["version"],
+                  from: details["from"]
+                }
               end
             end
             @git_dependencies_to_lock
@@ -312,6 +315,14 @@ module Dependabot
             git_ssh_requirements_to_swap.each do |req|
               new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
               old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
+              updated_content = updated_content.gsub(new_r, old_r)
+            end
+
+            git_dependencies_to_lock.each do |_, details|
+              next unless details[:from]
+
+              new_r = /"from": "#{Regexp.quote(details[:from])}#[^\"]+"/
+              old_r = %("from": "#{details[:from]}")
               updated_content = updated_content.gsub(new_r, old_r)
             end
 

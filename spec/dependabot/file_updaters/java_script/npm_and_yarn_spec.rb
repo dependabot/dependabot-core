@@ -349,6 +349,24 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
               expect(updated_yarn_lock.content).
                 to include("is-number.git#af885e2e890b9ef0875edd2b117305119ee")
             end
+
+            context "with an npm6 lockfile" do
+              let(:npm_lock_fixture_name) { "git_dependency_npm6.json" }
+              let(:files) { [package_json, package_lock] }
+
+              it "doesn't update the 'from' entry" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package.json package-lock.json))
+
+                parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+                expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
+                  to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                        "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+
+                expect(parsed_npm_lock["dependencies"]["is-number"]["from"]).
+                  to eq("git+https://github.com/jonschlinkert/is-number.git")
+              end
+            end
           end
         end
       end
