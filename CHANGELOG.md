@@ -1,3 +1,8 @@
+## v0.74.7, 25 October 2018
+
+- dep: rewrite vcs remote lookup in go using native library
+- Paginate through long lists of labels
+
 ## v0.74.6, 25 October 2018
 
 - JS: Don't update the  attribute for git dependencies in npm6 lockfiles
