@@ -13,7 +13,8 @@ module Dependabot
           return look_up_git_dependency_source if git_dependency?
 
           path_str = (specified_source_string || dependency.name)
-          url = Dependabot::Utils::Go::PathConverter.git_url_for_path(path_str)
+          url = Dependabot::Utils::Go::PathConverter.
+                git_url_for_path_without_go_helper(path_str)
           Source.from_url(url) if url
         end
 
