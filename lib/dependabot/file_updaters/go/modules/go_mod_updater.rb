@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/go/modules"
+require "dependabot/utils/go/shared_helper"
 
 module Dependabot
   module FileUpdaters
@@ -29,7 +30,7 @@ module Dependabot
                   end
 
                   SharedHelpers.run_helper_subprocess(
-                    command: go_helper_path,
+                    command: Utils::Go::SharedHelper.path,
                     function: "updateDependencyFile",
                     args: { dependencies: deps }
                   )
@@ -62,22 +63,6 @@ module Dependabot
           private
 
           attr_reader :dependencies, :go_mod, :go_sum, :credentials
-
-          def go_helper_path
-            File.join(project_root, "helpers/go/go-helpers.#{platform}64")
-          end
-
-          def project_root
-            File.join(File.dirname(__FILE__), "../../../../..")
-          end
-
-          def platform
-            case RbConfig::CONFIG["arch"]
-            when /linux/ then "linux"
-            when /darwin/ then "darwin"
-            else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
-            end
-          end
         end
       end
     end

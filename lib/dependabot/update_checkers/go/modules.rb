@@ -5,6 +5,7 @@ require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/utils/go/version"
+require "dependabot/utils/go/shared_helper"
 
 module Dependabot
   module UpdateCheckers
@@ -41,7 +42,7 @@ module Dependabot
               File.write("go.mod", go_mod.content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "GO111MODULE=on #{go_helper_path}",
+                command: "GO111MODULE=on #{Utils::Go::SharedHelper.path}",
                 function: "getUpdatedVersion",
                 args: {
                   dependency: {
@@ -52,25 +53,6 @@ module Dependabot
                 }
               )
             end
-          end
-        end
-
-        def go_helper_path
-          File.join(
-            project_root,
-            "helpers/go/go-helpers.#{platform}64"
-          )
-        end
-
-        def project_root
-          File.join(File.dirname(__FILE__), "../../../..")
-        end
-
-        def platform
-          case RbConfig::CONFIG["arch"]
-          when /linux/ then "linux"
-          when /darwin/ then "darwin"
-          else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
           end
         end
 
