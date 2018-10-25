@@ -1,10 +1,10 @@
-cargo-features = ["edition"]
+cargo-features = ["publish-lockfile"]
 
 [package]
 name = "dependabot" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
 authors = ["support@dependabot.com"]
-edition = "2018"
+publish-lockfile = true
 
 [dependencies]
 time = "0.1.12"

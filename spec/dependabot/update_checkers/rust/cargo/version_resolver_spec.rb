@@ -209,7 +209,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         let(:dependency_version) { "0.10.13" }
         let(:requirements) { [] }
 
-        it { is_expected.to eq(Gem::Version.new("0.10.14")) }
+        it { is_expected.to eq(Gem::Version.new("0.10.15")) }
       end
     end
 
