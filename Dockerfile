@@ -28,6 +28,7 @@ RUN apt-get update \
       libbz2-dev \
       libreadline-dev \
       libsqlite3-dev \
+      libcurl4-openssl-dev \
       llvm \
       libncurses5-dev \
       libncursesw5-dev \
@@ -47,7 +48,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.17.0
+    && gem install --no-ri --no-rdoc bundler -v 1.17.1
 
 
 ### PYTHON
@@ -123,7 +124,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.29.2
+# Install Rust 1.30.0
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
