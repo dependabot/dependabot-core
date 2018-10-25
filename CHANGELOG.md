@@ -1,3 +1,8 @@
+## v0.74.8, 25 October 2018
+
+- Go: Add method to look up Go paths without using Go (for environments where
+  we don't have the binaries)
+
 ## v0.74.7, 25 October 2018
 
 - dep: rewrite vcs remote lookup in go using native library
