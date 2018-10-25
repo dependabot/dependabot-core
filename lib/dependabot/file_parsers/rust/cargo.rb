@@ -25,9 +25,16 @@ module Dependabot
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies if lockfile
 
+          dependencies = dependency_set.dependencies
+
           # TODO: Handle patched dependencies
-          dependency_set.dependencies.
-            reject { |d| patched_dependencies.include?(d.name) }
+          dependencies.reject! { |d| patched_dependencies.include?(d.name) }
+
+          # TODO: Currently, Dependabot can't handle dependencies that have
+          # multiple source types. Fix that!
+          dependencies.reject do |dep|
+            dep.requirements.map { |r| r.dig(:source, :type) }.uniq.count > 1
+          end
         end
 
         private
