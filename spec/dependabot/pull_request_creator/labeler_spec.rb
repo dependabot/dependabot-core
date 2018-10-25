@@ -128,6 +128,39 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             to_not have_requested(:post, "#{repo_api_url}/labels")
         end
 
+        context "that is only present after paginating" do
+          let(:repo_labels_url) { "#{repo_api_url}/labels?per_page=100" }
+          let(:links_header) do
+            {
+              "Content-Type" => "application/json",
+              "Link" => "<#{repo_labels_url}&page=2>; rel=\"next\", " \
+                        "<#{repo_labels_url}&page=3>; rel=\"last\""
+            }
+          end
+
+          before do
+            stub_request(:get, repo_labels_url).
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_without_dependencies.json"),
+                headers: links_header
+              )
+            stub_request(:get, repo_labels_url + "&page=2").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_custom.json"),
+                headers: json_header
+              )
+          end
+
+          it "does not create a 'dependencies' label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).
+              to_not have_requested(:post, "#{repo_api_url}/labels")
+          end
+        end
+
         context "that should be ignored" do
           before do
             stub_request(:get, "#{repo_api_url}/labels?per_page=100").

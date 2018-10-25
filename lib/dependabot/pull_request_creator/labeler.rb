@@ -203,9 +203,22 @@ module Dependabot
       end
 
       def fetch_github_labels
-        github_client_for_source.
+        client = github_client_for_source
+
+        labels =
+          client.
           labels(source.repo, per_page: 100).
           map(&:name)
+
+        next_link = client.last_response.rels[:next]
+
+        while next_link
+          next_page = next_link.get
+          labels += next_page.data.map(&:name)
+          next_link = next_page.rels[:next]
+        end
+
+        labels
       end
 
       def fetch_gitlab_labels
