@@ -256,6 +256,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
           end
+
+          context "and a yarnrc file" do
+            let(:dependency_files) { [package_json, yarn_lock, yarnrc] }
+
+            it "uses the yarnrc file registry" do
+              expect(npmrc_content).to eq(
+                "registry = https://npm-proxy.fury.io/password/dependabot/\n\n"\
+                "//npm.fury.io/dependabot/:_authToken=my_token"
+              )
+            end
+
+            context "that doesn't contain details of the registry" do
+              let(:yarnrc_fixture_name) { "offline_mirror" }
+
+              it "adds a global registry line based on the lockfile details" do
+                expect(npmrc_content).
+                  to eq("registry = https://npm.fury.io/dependabot\n"\
+                        "_authToken = my_token\n"\
+                        "always-auth = true\n"\
+                        "//npm.fury.io/dependabot/:_authToken=my_token")
+              end
+            end
+          end
         end
       end
     end

@@ -99,16 +99,17 @@ module Dependabot
           end
 
           def build_npmrc_from_yarnrc
-            content = ""
-
-            global_registry =
+            yarnrc_global_registry =
               yarnrc_file.content.
               lines.find { |line| line.match?(/^\s*registry\s/) }&.
               match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
               named_captures&.fetch("registry")
 
-            content += "registry = #{global_registry}\n" if global_registry
-            content
+            if yarnrc_global_registry
+              return "registry = #{yarnrc_global_registry}\n"
+            end
+
+            build_npmrc_content_from_lockfile
           end
 
           def credential_lines_for_npmrc
