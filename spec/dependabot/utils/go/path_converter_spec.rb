@@ -33,5 +33,10 @@ RSpec.describe Dependabot::Utils::Go::PathConverter do
       let(:path) { "code.cloudfoundry.org/bytefmt" }
       it { is_expected.to eq("https://github.com/cloudfoundry/bytefmt") }
     end
+
+    context "with a path that already includes a scheme" do
+      let(:path) { "https://github.com/drewolson/testflight" }
+      it { is_expected.to eq("https://github.com/drewolson/testflight") }
+    end
   end
 end
