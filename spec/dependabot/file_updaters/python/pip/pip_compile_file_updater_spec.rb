@@ -103,6 +103,33 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       end
     end
 
+    context "with an unsafe dependency" do
+      let(:manifest_fixture_name) { "unsafe.in" }
+      let(:dependency_name) { "flake8" }
+      let(:dependency_version) { "3.6.0" }
+      let(:dependency_previous_version) { "3.5.0" }
+
+      context "that isn't included in the lockfile" do
+        let(:generated_fixture_name) { "pip_compile_safe.txt" }
+
+        it "does not include the unsafe dependency" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).to include("flake8==3.6.0")
+          expect(updated_files.first.content).to_not include("setuptools")
+        end
+      end
+
+      context "that is included in the lockfile" do
+        let(:generated_fixture_name) { "pip_compile_unsafe.txt" }
+
+        it "includes the unsafe dependency" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).to include("flake8==3.6.0")
+          expect(updated_files.first.content).to include("setuptools")
+        end
+      end
+    end
+
     context "with an import of the setup.py" do
       let(:dependency_files) { [manifest_file, generated_file, setup_file] }
       let(:setup_file) do

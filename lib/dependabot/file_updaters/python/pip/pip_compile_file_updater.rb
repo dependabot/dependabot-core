@@ -13,6 +13,8 @@ module Dependabot
           require_relative "requirement_file_updater"
           require_relative "setup_file_sanitizer"
 
+          UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+
           attr_reader :dependencies, :dependency_files, :credentials
 
           def initialize(dependencies:, dependency_files:, credentials:)
@@ -245,6 +247,10 @@ module Dependabot
               options += " --generate-hashes"
             end
 
+            if includes_unsafe_packages?(requirements_file.content)
+              options += " --allow-unsafe"
+            end
+
             unless requirements_file.content.include?("# via ")
               options += " --no-annotate"
             end
@@ -254,6 +260,10 @@ module Dependabot
             end
 
             options.strip
+          end
+
+          def includes_unsafe_packages?(content)
+            UNSAFE_PACKAGES.any? { |n| content.match?(/^#{Regexp.quote(n)}==/) }
           end
 
           def filenames_to_compile
