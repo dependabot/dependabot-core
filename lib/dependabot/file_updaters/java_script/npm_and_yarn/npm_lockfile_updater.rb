@@ -312,12 +312,15 @@ module Dependabot
           def post_process_npm_lockfile(lockfile_content)
             updated_content = lockfile_content
 
+            # Switch SSH requirements back for git dependencies
             git_ssh_requirements_to_swap.each do |req|
               new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
               old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
               updated_content = updated_content.gsub(new_r, old_r)
             end
 
+            # Switch from details back for git dependencies (they will have
+            # changed because we locked them)
             git_dependencies_to_lock.each do |_, details|
               next unless details[:from]
 
