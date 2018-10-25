@@ -66,7 +66,7 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   write_temporary_dependency_files
-                  run_command("pyenv install -s") if python_version_file
+                  run_pipenv_command("pyenv install -s") if python_version_file
 
                   # Initialize a git repo to appease pip-tools
                   IO.popen("git init", err: %i(child out)) if setup_files.any?
