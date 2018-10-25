@@ -47,7 +47,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.16.6
+    && gem install --no-ri --no-rdoc bundler -v 1.17.0
 
 
 ### PYTHON
@@ -56,10 +56,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.7 && cd - \
-    && pyenv install 3.6.6 \
+    && cd /usr/local/.pyenv && git checkout 835707da && cd - \
+    && pyenv install 3.6.7 \
     && pyenv install 2.7.15 \
-    && pyenv global 3.6.6
+    && pyenv global 3.6.7
 
 
 ### JAVASCRIPT
@@ -115,7 +115,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.3/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.4/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
