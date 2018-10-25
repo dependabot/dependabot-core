@@ -1,3 +1,7 @@
+## v0.74.4, 25 October 2018
+
+- Python: Use pip-tools' --allow-unsafe option when required
+
 ## v0.74.3, 25 October 2018
 
 - Python: Fix typo
