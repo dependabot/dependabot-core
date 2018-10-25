@@ -9,7 +9,6 @@ module Dependabot
       class Dep < Dependabot::FileUpdaters::Base
         require_relative "dep/manifest_updater"
         require_relative "dep/lockfile_updater"
-        require_relative "modules/go_mod_updater"
 
         def self.updated_files_regex
           [
@@ -28,14 +27,6 @@ module Dependabot
               updated_file(
                 file: manifest,
                 content: updated_manifest_content
-              )
-          end
-
-          if go_mod && file_changed?(go_mod)
-            updated_files <<
-              updated_file(
-                file: go_mod,
-                content: updated_go_mod_content
               )
           end
 
@@ -66,10 +57,6 @@ module Dependabot
           @lockfile ||= get_original_file("Gopkg.lock")
         end
 
-        def go_mod
-          @go_mod ||= get_original_file("go.mod")
-        end
-
         def updated_manifest_content
           ManifestUpdater.new(
             dependencies: dependencies,
@@ -83,14 +70,6 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials
           ).updated_lockfile_content
-        end
-
-        def updated_go_mod_content
-          Modules::GoModUpdater.new(
-            dependencies: dependencies,
-            go_mod: go_mod,
-            credentials: credentials
-          ).updated_go_mod_content
         end
       end
     end

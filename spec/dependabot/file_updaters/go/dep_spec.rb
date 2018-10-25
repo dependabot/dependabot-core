@@ -21,22 +21,17 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep do
     )
   end
 
-  let(:files) { [manifest, lockfile, go_mod] }
+  let(:files) { [manifest, lockfile] }
   let(:manifest) do
     Dependabot::DependencyFile.new(name: "Gopkg.toml", content: manifest_body)
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Gopkg.lock", content: lockfile_body)
   end
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-  end
   let(:manifest_body) { fixture("go", "gopkg_tomls", manifest_fixture_name) }
   let(:lockfile_body) { fixture("go", "gopkg_locks", lockfile_fixture_name) }
-  let(:go_mod_body) { fixture("go", "go_mods", go_mod_fixture_name) }
   let(:manifest_fixture_name) { "bare_version.toml" }
   let(:lockfile_fixture_name) { "bare_version.lock" }
-  let(:go_mod_fixture_name) { "go.mod" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -117,25 +112,6 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep do
               to include(%(version = ">= 1.0.0, < 4.0.0"))
           end
         end
-      end
-    end
-
-    context "with a go.mod update" do
-      let(:dependency_name) { "rsc.io/quote" }
-      let(:requirements) do
-        [{
-          file: "go.mod",
-          requirement: "v1.5.2",
-          groups: [],
-          source: {
-            type: "default",
-            source: "rsc.io/quote"
-          }
-        }]
-      end
-
-      it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
       end
     end
   end
