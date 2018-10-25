@@ -9,6 +9,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
   let(:updater) do
     described_class.new(
       go_mod: go_mod,
+      go_sum: go_sum,
       dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
@@ -19,6 +20,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
     )
   end
 
+  let(:go_sum) { nil }
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
@@ -75,6 +77,27 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
         end
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+
+        context "with a go.sum" do
+          let(:go_sum) do
+            Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
+          end
+          let(:go_sum_body) { fixture("go", "go_mods", go_sum_fixture_name) }
+          let(:go_sum_fixture_name) { "go.sum" }
+          subject(:updated_go_sum_content) { updater.updated_go_sum_content }
+
+          it "adds new entries to the go.sum" do
+            is_expected.
+              to include(%(rsc.io/quote v1.5.2/go.mod h1:))
+          end
+
+          # This happens via `go mod tidy`, which we currently can't run, as we
+          # need to the whole source repo
+          pending "removes old entries from the go.sum" do
+            is_expected.
+              to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+          end
+        end
       end
 
       context "when it has become indirect" do

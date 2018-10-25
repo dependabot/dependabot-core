@@ -23,11 +23,17 @@ module Dependabot
             updated_files <<
               updated_file(
                 file: go_mod,
-                content: updated_go_mod_content
+                content: file_updater.updated_go_mod_content
               )
-          end
 
-          # TODO: go.sum
+            if go_sum && go_sum.content != file_updater.updated_go_sum_content
+              updated_files <<
+                updated_file(
+                  file: go_sum,
+                  content: file_updater.updated_go_sum_content
+                )
+            end
+          end
 
           raise "No files changed!" if updated_files.none?
 
@@ -46,12 +52,18 @@ module Dependabot
           @go_mod ||= get_original_file("go.mod")
         end
 
-        def updated_go_mod_content
-          Modules::GoModUpdater.new(
-            dependencies: dependencies,
-            go_mod: go_mod,
-            credentials: credentials
-          ).updated_go_mod_content
+        def go_sum
+          @go_sum ||= get_original_file("go.sum")
+        end
+
+        def file_updater
+          @file_updater ||=
+            Modules::GoModUpdater.new(
+              dependencies: dependencies,
+              go_mod: go_mod,
+              go_sum: go_sum,
+              credentials: credentials
+            )
         end
       end
     end

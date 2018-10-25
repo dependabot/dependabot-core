@@ -21,12 +21,18 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules do
     )
   end
 
-  let(:files) { [go_mod] }
+  let(:files) { [go_mod, go_sum] }
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
   let(:go_mod_body) { fixture("go", "go_mods", go_mod_fixture_name) }
   let(:go_mod_fixture_name) { "go.mod" }
+
+  let(:go_sum) do
+    Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
+  end
+  let(:go_sum_body) { fixture("go", "go_mods", go_sum_fixture_name) }
+  let(:go_sum_fixture_name) { "go.sum" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -79,6 +85,18 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules do
 
     it "includes an updated go.mod" do
       expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+    end
+
+    it "includes an updated go.sum" do
+      expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+    end
+
+    context "without a go.sum" do
+      let(:files) { [go_mod] }
+
+      it "doesn't include a go.sum" do
+        expect(updated_files.find { |f| f.name == "go.sum" }).to be_nil
+      end
     end
   end
 end

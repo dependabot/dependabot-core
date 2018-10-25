@@ -22,7 +22,7 @@ func UpdateDependencyFile(args *Args) (interface{}, error) {
 		return nil, err
 	}
 
-	f, err := modfile.ParseLax("go.mod", data, nil)
+	f, err := modfile.Parse("go.mod", data, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,10 @@ func UpdateDependencyFile(args *Args) (interface{}, error) {
 		}
 	}
 
+	f.SortBlocks()
 	f.Cleanup()
 
 	newModFile, _ := f.Format()
+
 	return string(newModFile), nil
 }
