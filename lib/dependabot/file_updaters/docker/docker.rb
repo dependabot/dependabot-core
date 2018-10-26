@@ -7,7 +7,7 @@ module Dependabot
   module FileUpdaters
     module Docker
       class Docker < Dependabot::FileUpdaters::Base
-        FROM_REGEX = /[Ff][Rr][Oo][Mm]/
+        FROM_REGEX = /[Ff][Rr][Oo][Mm]/.freeze
 
         def self.updated_files_regex
           [/dockerfile/]

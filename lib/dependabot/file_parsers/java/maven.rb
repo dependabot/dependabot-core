@@ -26,7 +26,7 @@ module Dependabot
         PLUGIN_SELECTOR     = "plugins > plugin"
 
         # Regex to get the property name from a declaration that uses a property
-        PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
+        PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
 
         def parse
           dependency_set = DependencySet.new

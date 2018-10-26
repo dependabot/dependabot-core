@@ -8,9 +8,10 @@ module Dependabot
     module Elm
       class ElmPackage
         class CliParser
-          INSTALL_DEPENDENCY_REGEX = %r{([^\s]+\/[^\s]+)\s+(\d+\.\d+\.\d+)}
+          INSTALL_DEPENDENCY_REGEX =
+            %r{([^\s]+\/[^\s]+)\s+(\d+\.\d+\.\d+)}.freeze
           UPGRADE_DEPENDENCY_REGEX =
-            %r{([^\s]+\/[^\s]+) \(\d+\.\d+\.\d+ => (\d+\.\d+\.\d+)\)}
+            %r{([^\s]+\/[^\s]+) \(\d+\.\d+\.\d+ => (\d+\.\d+\.\d+)\)}.freeze
 
           def self.decode_install_preview(text)
             installs = {}

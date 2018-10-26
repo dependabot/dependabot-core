@@ -13,7 +13,7 @@ module Dependabot
     module Dotnet
       class Nuget
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/
+          VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/.freeze
 
           def initialize(requirements:, latest_version:, source_details:)
             @requirements = requirements

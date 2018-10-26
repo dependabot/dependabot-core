@@ -19,7 +19,7 @@ module Dependabot
                                 "ItemGroup > Dependency, "\
                                 "ItemGroup > DevelopmentDependency"
 
-          PROPERTY_REGEX      = /\$\((?<property>.*?)\)/
+          PROPERTY_REGEX      = /\$\((?<property>.*?)\)/.freeze
 
           def initialize(dependency_files:)
             @dependency_files = dependency_files

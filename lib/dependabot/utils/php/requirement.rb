@@ -6,8 +6,9 @@ module Dependabot
   module Utils
     module Php
       class Requirement < Gem::Requirement
-        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
-        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
+        AND_SEPARATOR =
+          /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
 
         def self.parse(obj)
           new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")

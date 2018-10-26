@@ -26,12 +26,12 @@ module Dependabot
         # just raise if the latest version can't be resolved. Knowing that is
         # still better than nothing, though.
         class PipfileVersionResolver
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
           GIT_DEPENDENCY_UNREACHABLE_REGEX =
-            /Command "git clone -q (?<url>[^\s]+).*" failed with error code 128/
-
+            /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze
           GIT_REFERENCE_NOT_FOUND_REGEX =
-            %r{Command "git reset --hard -q (?<tag>[^"]+)" .*/(?<name>.*?)$}
+            %r{Command "git reset --hard -q (?<tag>[^"]+)" .*/(?<name>.*?)$}.
+            freeze
 
           attr_reader :dependency, :dependency_files, :credentials
 

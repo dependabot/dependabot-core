@@ -17,7 +17,7 @@ module Dependabot
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/.freeze
           ALLOWED_UPDATE_STRATEGIES =
             %i(bump_versions bump_versions_if_necessary).freeze
 

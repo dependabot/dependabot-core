@@ -16,7 +16,7 @@ module Dependabot
         # - Unlock the dependency we're checking in the requirements.in file
         # - Run `pip-compile` and see what the result is
         class PipCompileVersionResolver
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
 
           attr_reader :dependency, :dependency_files, :credentials
 

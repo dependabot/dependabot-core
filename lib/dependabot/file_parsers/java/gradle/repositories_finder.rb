@@ -12,9 +12,9 @@ module Dependabot
           # it as a default.
           CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
-          REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/
+          REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
           MAVEN_REPO_REGEX =
-            /maven\s*\{[^\}]*\surl[\s\(]\s*['"](?<url>[^'"]+)['"]/
+            /maven\s*\{[^\}]*\surl[\s\(]\s*['"](?<url>[^'"]+)['"]/.freeze
 
           def initialize(dependency_files:, target_dependency_file:)
             @dependency_files = dependency_files

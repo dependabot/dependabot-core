@@ -14,11 +14,13 @@ module Dependabot
     module Php
       class Composer
         class RequirementsUpdater
-          ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/
-          VERSION_REGEX = /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
-          AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
-          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
-          SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
+          ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/.freeze
+          VERSION_REGEX =
+            /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/.freeze
+          AND_SEPARATOR =
+            /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
+          OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
+          SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/.freeze
 
           def initialize(requirements:, library:,
                          latest_version:, latest_resolvable_version:)

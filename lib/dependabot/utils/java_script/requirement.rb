@@ -6,15 +6,15 @@ module Dependabot
   module Utils
     module JavaScript
       class Requirement < Gem::Requirement
-        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/
-        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/.freeze
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 
         # Override the version pattern to allow a 'v' prefix
         quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
         version_pattern = "v?#{Gem::Version::VERSION_PATTERN}"
 
         PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-        PATTERN = /\A#{PATTERN_RAW}\z/
+        PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
         def self.parse(obj)
           if obj.is_a?(Gem::Version)

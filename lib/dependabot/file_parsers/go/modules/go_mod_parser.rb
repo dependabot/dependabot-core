@@ -11,7 +11,7 @@ module Dependabot
     module Go
       class Modules
         class GoModParser
-          GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/
+          GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/.freeze
 
           def initialize(dependency_files:, credentials:)
             @dependency_files = dependency_files

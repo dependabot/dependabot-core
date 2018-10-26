@@ -9,9 +9,9 @@ module Dependabot
     module Php
       class Composer
         class VersionResolver
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
           SOURCE_TIMED_OUT_REGEX =
-            /The "(?<url>[^"]+packages\.json)".*timed out/
+            /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
 
           def initialize(credentials:, dependency:, dependency_files:,
                          requirements_to_unlock:, latest_allowable_version:)

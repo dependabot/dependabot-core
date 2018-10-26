@@ -9,8 +9,9 @@ module Dependabot
     module Elm
       class ElmPackage
         class RequirementsUpdater
-          RANGE_REQUIREMENT_REGEX = /(\d+\.\d+\.\d+) <= v < (\d+\.\d+\.\d+)/
-          SINGLE_VERSION_REGEX = /\A(\d+\.\d+\.\d+)\z/
+          RANGE_REQUIREMENT_REGEX =
+            /(\d+\.\d+\.\d+) <= v < (\d+\.\d+\.\d+)/.freeze
+          SINGLE_VERSION_REGEX = /\A(\d+\.\d+\.\d+)\z/.freeze
 
           def initialize(requirements:, latest_resolvable_version:)
             @requirements = requirements

@@ -10,7 +10,7 @@ module Dependabot
         class PackagesConfigDeclarationFinder
           DECLARATION_REGEX =
             %r{<package [^>]*?/>|
-               <package [^>]*?[^/]>.*?</package>}mx
+               <package [^>]*?[^/]>.*?</package>}mx.freeze
 
           attr_reader :dependency_name, :declaring_requirement,
                       :packages_config

@@ -26,7 +26,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
   let(:source_details) do
     {
       source_url: nil,
-      repo_url:   "https://api.nuget.org/v3/index.json",
+      repo_url: "https://api.nuget.org/v3/index.json",
       nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                   "microsoft.extensions.dependencymodel/1.2.3/"\
                   "microsoft.extensions.dependencymodel.nuspec"

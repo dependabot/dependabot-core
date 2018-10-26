@@ -11,8 +11,8 @@ require "dependabot/source"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
-    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/
-    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/
+    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/.freeze
+    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/.freeze
 
     def initialize(dependency:, credentials:, ignored_versions: [])
       @dependency = dependency

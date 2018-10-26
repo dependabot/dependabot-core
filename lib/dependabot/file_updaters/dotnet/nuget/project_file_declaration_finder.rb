@@ -9,12 +9,14 @@ module Dependabot
       class Nuget
         class ProjectFileDeclarationFinder
           DECLARATION_REGEX =
-            %r{<PackageReference [^>]*?/>|
-               <PackageReference [^>]*?[^/]>.*?</PackageReference>|
-               <Dependency [^>]*?/>|
-               <Dependency [^>]*?[^/]>.*?</Dependency>|
-               <DevelopmentDependency [^>]*?/>|
-               <DevelopmentDependency [^>]*?[^/]>.*?</DevelopmentDependency>}mx
+            %r{
+              <PackageReference [^>]*?/>|
+              <PackageReference [^>]*?[^/]>.*?</PackageReference>|
+              <Dependency [^>]*?/>|
+              <Dependency [^>]*?[^/]>.*?</Dependency>|
+              <DevelopmentDependency [^>]*?/>|
+              <DevelopmentDependency [^>]*?[^/]>.*?</DevelopmentDependency>
+            }mx.freeze
 
           attr_reader :dependency_name, :declaring_requirement,
                       :dependency_files

@@ -11,10 +11,11 @@ module Dependabot
     module Python
       class Pip
         class SetupFileParser
-          INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*(\[.*?\])[,)\s]/m
-          SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*(\[.*?\])[,)\s]/m
-          TESTS_REQUIRE_REGEX = /tests_require\s*=\s*(\[.*?\])[,)\s]/m
-          EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*(\{.*?\})[,)\s]/m
+          INSTALL_REQUIRES_REGEX =
+            /install_requires\s*=\s*(\[.*?\])[,)\s]/m.freeze
+          SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*(\[.*?\])[,)\s]/m.freeze
+          TESTS_REQUIRE_REGEX = /tests_require\s*=\s*(\[.*?\])[,)\s]/m.freeze
+          EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*(\{.*?\})[,)\s]/m.freeze
 
           def initialize(dependency_files:)
             @dependency_files = dependency_files

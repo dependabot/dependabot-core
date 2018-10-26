@@ -14,8 +14,8 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class RequirementsUpdater
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
+          SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/.freeze
           ALLOWED_UPDATE_STRATEGIES =
             %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 

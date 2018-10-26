@@ -10,7 +10,7 @@ module Dependabot
   module MetadataFinders
     module Java
       class Maven < Dependabot::MetadataFinders::Base
-        DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/])+)}
+        DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/])+)}.freeze
 
         private
 

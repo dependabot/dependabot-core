@@ -28,7 +28,7 @@ module Dependabot
             (?:\#semver:(?<semver>.+))|
             (?:\#(?<ref>.+))
           )?$
-        }ix
+        }ix.freeze
 
         def parse
           dependency_set = DependencySet.new

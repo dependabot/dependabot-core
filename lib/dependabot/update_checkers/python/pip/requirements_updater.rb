@@ -10,8 +10,8 @@ module Dependabot
     module Python
       class Pip
         class RequirementsUpdater
-          PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
-          PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/
+          PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
+          PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/.freeze
 
           class UnfixableRequirement < StandardError; end
 

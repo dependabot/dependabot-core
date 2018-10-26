@@ -8,7 +8,8 @@ module Dependabot
     module Dotnet
       class Nuget
         class SlnProjectPathsFinder
-          PROJECT_PATH_REGEX = /(?<=["'])[^"']*?\.(?:vb|cs|fs)proj(?=["'])/
+          PROJECT_PATH_REGEX =
+            /(?<=["'])[^"']*?\.(?:vb|cs|fs)proj(?=["'])/.freeze
 
           def initialize(sln_file:)
             @sln_file = sln_file

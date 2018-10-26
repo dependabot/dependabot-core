@@ -8,7 +8,8 @@ module Dependabot
       class Gradle
         class PropertyValueFinder
           PROPERTY_DECLARATION_REGEX =
-            /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/
+            /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/.
+            freeze
 
           def initialize(dependency_files:)
             @dependency_files = dependency_files

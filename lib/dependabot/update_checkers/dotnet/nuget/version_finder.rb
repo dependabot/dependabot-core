@@ -57,7 +57,7 @@ module Dependabot
                     gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                   {
-                    version:    version_class.new(v),
+                    version: version_class.new(v),
                     nuspec_url: nuspec_url,
                     source_url: nil,
                     repo_url:
@@ -100,7 +100,7 @@ module Dependabot
             source_url = Source.from_url(source_url)&.url if source_url
 
             {
-              version:    version_class.new(version),
+              version: version_class.new(version),
               nuspec_url: nil,
               source_url: source_url
             }

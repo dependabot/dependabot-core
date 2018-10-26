@@ -10,7 +10,8 @@ module Dependabot
     module Go
       class Dep
         class VersionResolver
-          NOT_FOUND_REGEX = /failed to list versions for (?<repo_url>.*?):\s+/
+          NOT_FOUND_REGEX =
+            /failed to list versions for (?<repo_url>.*?):\s+/.freeze
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency

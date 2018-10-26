@@ -6,7 +6,7 @@ module Dependabot
   module Utils
     module Python
       class Requirement < Gem::Requirement
-        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 
         # Add equality and arbitrary-equality matchers
         OPS["=="] = ->(v, r) { v == r }
@@ -17,7 +17,7 @@ module Dependabot
         version_pattern = Utils::Python::Version::VERSION_PATTERN
 
         PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-        PATTERN = /\A#{PATTERN_RAW}\z/
+        PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
         def self.parse(obj)
           if obj.is_a?(Gem::Version)

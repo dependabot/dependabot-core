@@ -6,7 +6,7 @@ module Dependabot
   module FileFetchers
     module Elixir
       class Hex < Dependabot::FileFetchers::Base
-        APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
+        APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m.freeze
 
         def self.required_files_in?(filenames)
           filenames.include?("mix.exs")

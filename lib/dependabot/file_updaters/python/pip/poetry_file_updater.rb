@@ -174,7 +174,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do |dir|
               File.write(File.join(dir, "pyproject.toml"), pyproject_content)
               SharedHelpers.run_helper_subprocess(
-                command:  "pyenv exec python #{python_helper_path}",
+                command: "pyenv exec python #{python_helper_path}",
                 function: "get_pyproject_hash",
                 args: [dir]
               )

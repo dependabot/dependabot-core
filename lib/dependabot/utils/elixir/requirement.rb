@@ -6,8 +6,8 @@ module Dependabot
   module Utils
     module Elixir
       class Requirement < Gem::Requirement
-        AND_SEPARATOR = /\s+and\s+/
-        OR_SEPARATOR = /\s+or\s+/
+        AND_SEPARATOR = /\s+and\s+/.freeze
+        OR_SEPARATOR = /\s+or\s+/.freeze
 
         # Add the double-equality matcher to the list of allowed operations
         OPS["=="] = ->(v, r) { v == r }
@@ -16,7 +16,7 @@ module Dependabot
         quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
         PATTERN_RAW =
           "\\s*(#{quoted})?\\s*(#{Utils::Elixir::Version::VERSION_PATTERN})\\s*"
-        PATTERN = /\A#{PATTERN_RAW}\z/
+        PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
         # Returns an array of requirements. At least one requirement from the
         # returned array must be satisfied for a version to be valid.

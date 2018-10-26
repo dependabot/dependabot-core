@@ -22,11 +22,12 @@ module Dependabot
           require_relative "gemspec_sanitizer"
           require_relative "gemspec_dependency_name_finder"
 
-          LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
-          GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
-          GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
+          LOCKFILE_ENDING =
+            /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+          GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m.freeze
+          GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m.freeze
           GEM_NOT_FOUND_ERROR_REGEX =
-            /locked to (?<name>[^\s]+) \(|not find (?<name>[^\s]+)-\d/
+            /locked to (?<name>[^\s]+) \(|not find (?<name>[^\s]+)-\d/.freeze
           GEMSPEC_SOURCES = [
             ::Bundler::Source::Path,
             ::Bundler::Source::Gemspec

@@ -7,7 +7,7 @@ module Dependabot
       (?:\.com|\.org)[/:]
       (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
       (?:(?:/tree|/blob|/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x
+    }x.freeze
 
     attr_reader :provider, :repo, :directory, :branch, :hostname, :api_endpoint
 

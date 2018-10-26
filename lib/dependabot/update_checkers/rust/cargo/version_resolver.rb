@@ -12,7 +12,8 @@ module Dependabot
     module Rust
       class Cargo
         class VersionResolver
-          BRANCH_NOT_FOUND_REGEX = /failed to find branch `(?<branch>[^`]+)`/
+          BRANCH_NOT_FOUND_REGEX =
+            /failed to find branch `(?<branch>[^`]+)`/.freeze
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency

@@ -222,7 +222,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
           nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
                       "microsoft.extensions.dependencymodel/2.1.0/"\
                       "microsoft.extensions.dependencymodel.nuspec",
-          repo_url:   "https://api.nuget.org/v3/index.json"
+          repo_url: "https://api.nuget.org/v3/index.json"
         }
       ).and_call_original
       expect(updated_requirements).to eq(
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             latest_version: "4.8.1",
             source_details: {
               nuspec_url: nil,
-              repo_url:   "https://www.nuget.org/api/v2",
+              repo_url: "https://www.nuget.org/api/v2",
               source_url: "https://github.com/autofac/Autofac"
             }
           ).and_call_original

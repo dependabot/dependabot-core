@@ -7,8 +7,8 @@ module Dependabot
   module FileFetchers
     module Python
       class Pip < Dependabot::FileFetchers::Base
-        CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.txt)/
-        CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/
+        CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.txt)/.freeze
+        CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/.freeze
 
         def self.required_files_in?(filenames)
           return true if filenames.any? { |name| name.end_with?(".txt", ".in") }

@@ -15,7 +15,8 @@ module Dependabot
           require_relative "npmrc_builder"
           require_relative "package_json_updater"
 
-          TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+          TIMEOUT_FETCHING_PACKAGE =
+            %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
 
           def initialize(dependencies:, dependency_files:, credentials:)
             @dependencies = dependencies

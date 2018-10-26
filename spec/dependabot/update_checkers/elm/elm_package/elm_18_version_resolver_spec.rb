@@ -221,7 +221,7 @@ RSpec.describe namespace::Elm18VersionResolver do
             }],
             previous_version: dependency_version,
             previous_requirements: [{
-              requirement:  dependency_requirement,
+              requirement: dependency_requirement,
               groups: [],
               source: nil,
               file: "elm-package.json"
@@ -240,7 +240,7 @@ RSpec.describe namespace::Elm18VersionResolver do
             }],
             previous_version: "13.1.1",
             previous_requirements: [{
-              requirement:  "13.1.1 <= v <= 13.1.1",
+              requirement: "13.1.1 <= v <= 13.1.1",
               groups: [],
               source: nil,
               file: "elm-package.json"
@@ -270,7 +270,7 @@ RSpec.describe namespace::Elm18VersionResolver do
               }],
               previous_version: dependency_version,
               previous_requirements: [{
-                requirement:  dependency_requirement,
+                requirement: dependency_requirement,
                 groups: [],
                 source: nil,
                 file: "elm-package.json"
@@ -289,7 +289,7 @@ RSpec.describe namespace::Elm18VersionResolver do
               }],
               previous_version: nil,
               previous_requirements: [{
-                requirement:  "13.1.0 <= v <= 13.1.1",
+                requirement: "13.1.0 <= v <= 13.1.1",
                 groups: [],
                 source: nil,
                 file: "elm-package.json"

@@ -9,9 +9,12 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class RegistryFinder
-          NPM_AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
-          NPM_GLOBAL_REGISTRY_REGEX = /^registry\s*=\s*(?<registry>.*)$/
-          YARN_GLOBAL_REGISTRY_REGEX = /^registry\s+['"](?<registry>.*)['"]/
+          NPM_AUTH_TOKEN_REGEX =
+            %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
+          NPM_GLOBAL_REGISTRY_REGEX =
+            /^registry\s*=\s*(?<registry>.*)$/.freeze
+          YARN_GLOBAL_REGISTRY_REGEX =
+            /^registry\s+['"](?<registry>.*)['"]/.freeze
 
           def initialize(dependency:, credentials:, npmrc_file: nil,
                          yarnrc_file: nil)

@@ -24,7 +24,7 @@ module Dependabot
         #   version allowed by the gemspec, if the gemspec has a required ruby
         #   version range
         class FilePreparer
-          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+          VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
           GEMSPEC_SOURCES = [
             ::Bundler::Source::Path,
             ::Bundler::Source::Gemspec

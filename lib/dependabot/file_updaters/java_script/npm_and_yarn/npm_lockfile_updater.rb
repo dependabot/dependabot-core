@@ -49,10 +49,11 @@ module Dependabot
 
           attr_reader :dependencies, :dependency_files, :credentials
 
-          UNREACHABLE_GIT = /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/
+          UNREACHABLE_GIT =
+            /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/.freeze
           FORBIDDEN_PACKAGE =
-            /(403 Forbidden|401 Unauthorized): (?<package_req>.*)/
-          MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/
+            /(403 Forbidden|401 Unauthorized): (?<package_req>.*)/.freeze
+          MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/.freeze
 
           def dependency
             # For now, we'll only ever be updating a single dependency for JS

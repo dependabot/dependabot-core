@@ -15,9 +15,9 @@ module Dependabot
     module Ruby
       class Bundler
         module SharedBundlerHelpers
-          GIT_REGEX = /git reset --hard [^\s]*` in directory (?<path>[^\s]*)/
-          GIT_REF_REGEX = /does not exist in the repository (?<path>[^\s]*)\./
-          PATH_REGEX = /The path `(?<path>.*)` does not exist/
+          GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/.freeze
+          GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./.freeze
+          PATH_REGEX = /The path `(?<path>.*)` does not exist/.freeze
           RETRYABLE_ERRORS = %w(
             Bundler::HTTPError
             Bundler::Fetcher::FallbackError

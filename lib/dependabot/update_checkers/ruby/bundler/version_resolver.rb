@@ -21,7 +21,7 @@ module Dependabot
           require_relative "shared_bundler_helpers"
           include SharedBundlerHelpers
 
-          GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
+          GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
 
           def initialize(dependency:, unprepared_dependency_files:,
                          credentials:, ignored_versions:,

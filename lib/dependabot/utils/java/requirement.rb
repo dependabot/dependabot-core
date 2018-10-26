@@ -9,7 +9,7 @@ module Dependabot
         quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
         PATTERN_RAW =
           "\\s*(#{quoted})?\\s*(#{Utils::Java::Version::VERSION_PATTERN})\\s*"
-        PATTERN = /\A#{PATTERN_RAW}\z/
+        PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
         def self.parse(obj)
           if obj.is_a?(Gem::Version)

@@ -15,21 +15,22 @@ module Dependabot
 
         # Detials of Docker regular expressions is at
         # https://github.com/docker/distribution/blob/master/reference/regexp.go
-        DOMAIN_COMPONENT = /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/
-        DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/
-        REGISTRY = /(?<registry>#{DOMAIN}(?::[0-9]+)?)/
+        DOMAIN_COMPONENT =
+          /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/.freeze
+        DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
+        REGISTRY = /(?<registry>#{DOMAIN}(?::[0-9]+)?)/.freeze
 
-        NAME_COMPONENT = /(?:[a-z0-9]+(?:(?:[._]|__|[-]*)[a-z0-9]+)*)/
-        IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}
+        NAME_COMPONENT = /(?:[a-z0-9]+(?:(?:[._]|__|[-]*)[a-z0-9]+)*)/.freeze
+        IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
-        FROM = /[Ff][Rr][Oo][Mm]/
-        TAG = /:(?<tag>[\w][\w.-]{0,127})/
-        DIGEST = /@(?<digest>[^\s]+)/
-        NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/
+        FROM = /[Ff][Rr][Oo][Mm]/.freeze
+        TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
+        DIGEST = /@(?<digest>[^\s]+)/.freeze
+        NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/.freeze
         FROM_LINE =
-          %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
+          %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
 
-        AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/
+        AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
         def parse
           dependency_set = DependencySet.new

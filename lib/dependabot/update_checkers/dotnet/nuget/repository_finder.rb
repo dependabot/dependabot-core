@@ -172,12 +172,12 @@ module Dependabot
 
           def default_repository_details
             {
-              repository_url:  DEFAULT_REPOSITORY_URL,
-              versions_url:    "https://api.nuget.org/v3-flatcontainer/"\
+              repository_url: DEFAULT_REPOSITORY_URL,
+              versions_url: "https://api.nuget.org/v3-flatcontainer/"\
                                "#{dependency.name.downcase}/index.json",
-              search_url:      "https://api-v2v3search-0.nuget.org/query"\
+              search_url: "https://api-v2v3search-0.nuget.org/query"\
                                "?q=#{dependency.name.downcase}&prerelease=true",
-              auth_header:     {},
+              auth_header: {},
               repository_type: "v3"
             }
           end

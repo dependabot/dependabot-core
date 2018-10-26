@@ -10,10 +10,13 @@ module Dependabot
   module UpdateCheckers
     module Docker
       class Docker < Dependabot::UpdateCheckers::Base
-        VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/
-        VERSION_WTIH_SUFFIX = /^#{VERSION_REGEX}(?<affix>-[a-z0-9.\-]+)?$/
-        VERSION_WTIH_PREFIX = /^(?<affix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/
-        NAME_WITH_VERSION = /#{VERSION_WTIH_PREFIX}|#{VERSION_WTIH_SUFFIX}/
+        VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
+        VERSION_WTIH_SUFFIX =
+          /^#{VERSION_REGEX}(?<affix>-[a-z0-9.\-]+)?$/.freeze
+        VERSION_WTIH_PREFIX =
+          /^(?<affix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
+        NAME_WITH_VERSION =
+          /#{VERSION_WTIH_PREFIX}|#{VERSION_WTIH_SUFFIX}/.freeze
 
         def latest_version
           @latest_version ||= fetch_latest_version
