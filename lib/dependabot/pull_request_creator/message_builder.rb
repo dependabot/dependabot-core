@@ -654,6 +654,7 @@ module Dependabot
       def recent_github_commit_messages
         github_client_for_source.commits(source.repo).
           reject { |c| c.author&.type == "Bot" }.
+          reject { |c| c.message&.start_with?("Merge") }.
           map(&:commit).
           map(&:message).
           compact
