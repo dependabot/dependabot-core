@@ -107,6 +107,20 @@ RSpec.describe namespace::PipfileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.16.12") }
     end
 
+    context "when another dependency has been yanked" do
+      let(:pipfile_fixture_name) { "yanked" }
+      let(:lockfile_fixture_name) { "yanked.lock" }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to start_with(
+              "CRITICAL:notpip._internal.index:Could not find a version"
+            )
+          end
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
@@ -245,18 +259,15 @@ RSpec.describe namespace::PipfileVersionResolver do
       context "from credentials" do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "python_index",
-              "index-url" => "https://user:pass@pypi.gemfury.com/secret_codes/"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "python_index",
+            "index-url" => "https://user:pass@pypi.gemfury.com/secret_codes/"
+          }]
         end
 
         before do
@@ -317,18 +328,15 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       context "with a non-matching credential" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "python_index",
-              "index-url" => "https://pypi.gemfury.com/secret_codes/"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "python_index",
+            "index-url" => "https://pypi.gemfury.com/secret_codes/"
+          }]
         end
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
@@ -341,18 +349,15 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       context "with a matching credential" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "python_index",
-              "index-url" => "https://pypi.python.org/simple"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "python_index",
+            "index-url" => "https://pypi.python.org/simple"
+          }]
         end
 
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
@@ -363,20 +368,17 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:dependency_files) { [pipfile] }
       let(:dependency_version) { nil }
       let(:dependency_requirements) do
-        [
-          {
-            file: "Pipfile",
-            requirement: "==2.18.0",
-            groups: ["default"],
-            source: nil
-          },
-          {
-            file: "requirements.txt",
-            requirement: nil,
-            groups: ["default"],
-            source: nil
-          }
-        ]
+        [{
+          file: "Pipfile",
+          requirement: "==2.18.0",
+          groups: ["default"],
+          source: nil
+        }, {
+          file: "requirements.txt",
+          requirement: nil,
+          groups: ["default"],
+          source: nil
+        }]
       end
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end

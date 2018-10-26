@@ -204,6 +204,7 @@ module Dependabot
                   drop_while do |l|
                     !l.start_with?(
                       "Could not find",
+                      "CRITICAL:notpip._internal.index:Could not find",
                       "packaging.specifiers.InvalidSpecifier"
                     )
                   end.join.strip
