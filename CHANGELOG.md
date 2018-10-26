@@ -1,3 +1,7 @@
+## v0.74.11, 26 October 2018
+
+- Python: Raise a DependencyFileNotResolvable error for yanked dependencies
+
 ## v0.74.10, 26 October 2018
 
 - Rust: Handle invalid names in manifest files (assuming no lockfile)
