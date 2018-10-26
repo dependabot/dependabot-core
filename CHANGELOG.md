@@ -1,3 +1,7 @@
+## v0.74.10, 26 October 2018
+
+- Rust: Handle invalid names in manifest files (assuming no lockfile)
+
 ## v0.74.9, 26 October 2018
 
 - Ignore merge commits when determining whether conventional commits are in use
