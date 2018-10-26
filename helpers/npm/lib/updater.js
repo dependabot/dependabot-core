@@ -68,20 +68,17 @@ async function updateDependencyFiles(
 }
 
 function install_args(depName, desiredVersion, requirements, oldLockfile) {
-  const source = (
-    requirements.find(req => {
-      return req.source;
-    }) || {}
-  ).source;
+  const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
-    var originalVersion = ((oldLockfile["dependencies"] || {})[depName] || {})[
+    let originalVersion = ((oldLockfile["dependencies"] || {})[depName] || {})[
       "version"
     ];
-    originalVersion = originalVersion || `${source.url}#ref`;
-    if (!originalVersion.includes("#")) {
+
+    if (!originalVersion || !originalVersion.includes("#")) {
       originalVersion = `${source.url}#ref`;
     }
+
     originalVersion = originalVersion.replace(
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
@@ -114,15 +111,14 @@ function muteStderr() {
 }
 
 function installer_for_lockfile(oldLockfile) {
-  var requireObjectsIncludeMatchers = Object.keys(
+  const requireObjectsIncludeMatchers = Object.keys(
     oldLockfile["dependencies"] || {}
   ).some(key => {
-    var requires = oldLockfile["dependencies"][key]["requires"] || {};
-    return Object.keys(requires).some(key2 => {
-      if (requires[key2].match(/^\^|~|\<|\>/)) {
-        return true;
-      }
-    });
+    const requires = oldLockfile["dependencies"][key]["requires"] || {};
+
+    return Object.keys(requires).some(key2 =>
+      requires[key2].match(/^\^|~|\<|\>/)
+    );
   });
 
   return requireObjectsIncludeMatchers ? npm6installer : npm5installer;
