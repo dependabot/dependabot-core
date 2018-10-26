@@ -199,14 +199,16 @@ module Dependabot
           return nil unless version
 
           version = version.gsub(/^v/, "")
+          escaped_version = Regexp.escape(version)
 
           changelog_lines = full_changelog_text.split("\n")
 
           changelog_lines.find_index.with_index do |line, index|
             next false unless line.include?(version)
-            next false if line.match?(/#{Regexp.escape(version)}\.\./)
+            next false if line.match?(/#{escaped_version}\.\./)
             next true if line.start_with?("#", "!", "==")
-            next true if line.match?(/^v?#{Regexp.escape(version)}:?/)
+            next true if line.match?(/^v?#{escaped_version}:?/)
+            next true if line.match?(/^\+\*\- version #{escaped_version}/i)
             next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
             next true if changelog_lines[index + 1]&.match?(/^[=\-\+]{3,}\s*$/)
 
