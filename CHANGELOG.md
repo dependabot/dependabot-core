@@ -1,3 +1,7 @@
+## v0.74.9, 26 October 2018
+
+- Ignore merge commits when determining whether conventional commits are in use
+
 ## v0.74.8, 25 October 2018
 
 - Go: Add method to look up Go paths without using Go (for environments where
