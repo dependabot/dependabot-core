@@ -86,7 +86,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:manifest_fixture_name) { "requires_nightly" }
       let(:lockfile_fixture_name) { "bare_version_specified" }
 
-      pending "raises a DependencyFileNotResolvable error" do
+      it "raises a DependencyFileNotResolvable error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
@@ -105,7 +105,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
-            expect(error.message).to include("feature `edition` is required")
+            expect(error.message).
+              to include("feature `namespaced-features` is required")
           end
       end
     end
