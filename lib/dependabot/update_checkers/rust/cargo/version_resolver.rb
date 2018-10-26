@@ -138,8 +138,8 @@ module Dependabot
             manifest_files.each do |file|
               path = file.name
               dir = Pathname.new(path).dirname
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(file.name, file.content)
+              FileUtils.mkdir_p(dir)
+              File.write(file.name, sanitized_manifest_content(file.content))
 
               FileUtils.mkdir_p(File.join(dir, "src"))
               File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -159,6 +159,20 @@ module Dependabot
 
           def dummy_app_content
             %{fn main() {\nprintln!("Hello, world!");\n}}
+          end
+
+          def sanitized_manifest_content(content)
+            object = TomlRB.parse(content)
+
+            package_name = object.dig("package", "name")
+            return content unless package_name&.match?(/[\{\}]/)
+
+            if lockfile
+              raise "Sanitizing name for pkg with lockfile. Investigate!"
+            end
+
+            object["package"]["name"] = "sanitized"
+            TomlRB.dump(object)
           end
 
           def manifest_files
