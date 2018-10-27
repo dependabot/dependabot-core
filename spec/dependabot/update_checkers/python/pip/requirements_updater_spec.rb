@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
       requirements: requirements,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version,
-      update_strategy: update_strategy
+      update_strategy: update_strategy,
+      has_lockfile: has_lockfile
     )
   end
 
@@ -33,6 +34,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
   end
   let(:requirement_txt_req_string) { "==1.4.0" }
   let(:setup_py_req_string) { ">= 1.4.0" }
+  let(:has_lockfile) { true }
 
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
@@ -326,6 +328,16 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:pyproject_req_string) { "^1.3.0" }
             its([:requirement]) { is_expected.to eq("^1.5.0") }
 
+            context "without a lockfile" do
+              let(:has_lockfile) { false }
+              its([:requirement]) { is_expected.to eq("^1.3.0") }
+
+              context "that needs updating" do
+                let(:latest_resolvable_version) { "2.5.0" }
+                its([:requirement]) { is_expected.to eq("^2.5.0") }
+              end
+            end
+
             context "with an || specifier" do
               let(:pyproject_req_string) { "^0.8.0 || ^1.3.0" }
               its([:requirement]) { is_expected.to eq("^0.8.0 || ^1.3.0") }
@@ -439,7 +451,12 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
 
             context "for a development dependency" do
               let(:groups) { ["dev-dependencies"] }
-              its([:requirement]) { is_expected.to eq("^1.3.0") }
+              its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+              context "without a lockfile" do
+                let(:has_lockfile) { false }
+                its([:requirement]) { is_expected.to eq("^1.3.0") }
+              end
             end
 
             context "that needs updating" do

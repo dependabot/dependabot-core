@@ -76,7 +76,8 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
-            update_strategy: requirements_update_strategy
+            update_strategy: requirements_update_strategy,
+            has_lockfile: pipfile_lock || poetry_lock || pyproject_lock
           ).updated_requirements
         end
 

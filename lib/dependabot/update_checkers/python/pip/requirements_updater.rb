@@ -15,13 +15,14 @@ module Dependabot
 
           class UnfixableRequirement < StandardError; end
 
-          attr_reader :requirements, :update_strategy,
+          attr_reader :requirements, :update_strategy, :has_lockfile,
                       :latest_version, :latest_resolvable_version
 
-          def initialize(requirements:, update_strategy:,
+          def initialize(requirements:, update_strategy:, has_lockfile:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
             @update_strategy = update_strategy
+            @has_lockfile = has_lockfile
 
             if latest_version
               @latest_version = Utils::Python::Version.new(latest_version)
@@ -82,6 +83,7 @@ module Dependabot
           def updated_pyproject_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
+            return req if new_version_satisfies?(req) && !has_lockfile
 
             # If the requirement uses || syntax then we always want to widen it
             if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
@@ -90,8 +92,7 @@ module Dependabot
 
             # If the requirement is a development dependency we always want to
             # bump it
-            if req.fetch(:groups).include?("dev-dependencies") &&
-               !new_version_satisfies?(req)
+            if req.fetch(:groups).include?("dev-dependencies")
               return update_pyproject_version(req)
             end
 

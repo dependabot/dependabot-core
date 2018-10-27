@@ -551,40 +551,34 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         Dependabot::Dependency.new(
           name: "luigi",
           version: "2.0.0",
-          requirements: [
-            {
-              file: "constraints.txt",
-              requirement: "==2.0.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "requirements.txt",
-              requirement: "==2.0.0",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "constraints.txt",
+            requirement: "==2.0.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements.txt",
+            requirement: "==2.0.0",
+            groups: [],
+            source: nil
+          }],
           package_manager: "pip"
         )
       end
 
       it "updates both requirements" do
         expect(checker.updated_requirements).to match_array(
-          [
-            {
-              file: "constraints.txt",
-              requirement: "==2.6.0",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "requirements.txt",
-              requirement: "==2.6.0",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "constraints.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements.txt",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          }]
         )
       end
     end
