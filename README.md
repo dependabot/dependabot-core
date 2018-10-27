@@ -25,6 +25,15 @@ Highlights include:
 - Logic to generate updated manifest and lockfiles for a new dependency version
 - Logic to find changelogs, release notes, and commits for a dependency update
 
+## Other Dependabot resources
+
+In addition to this library, you may be interested in:
+
+- The [dependabot-script][dependabot-script] repo, which provides a collection
+  of scripts that use this library to update dependencies on GitHub Enterprise
+  or GitLab
+- The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
+
 ## Setup
 
 To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
@@ -59,10 +68,6 @@ concern will have a language-specific class.
 | `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL. See the [metadata finders](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/metadata_finders) for more details. |
 | `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
 | `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
-
-## API
-
-Dependabot has a REST API, see it's [dedicated GH page](https://github.com/dependabot/api-docs) for more.
 
 ## Why is this public?
 
@@ -105,6 +110,7 @@ recurring payments from Europe, check them out.
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
+[api-docs]: https://github.com/dependabot/api-docs
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
