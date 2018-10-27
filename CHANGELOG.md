@@ -1,3 +1,8 @@
+## v0.74.12, 27 October 2018
+
+- Python: Only update poetry dev dependency requirements if the update
+  is required
+
 ## v0.74.11, 26 October 2018
 
 - Python: Raise a DependencyFileNotResolvable error for yanked dependencies
