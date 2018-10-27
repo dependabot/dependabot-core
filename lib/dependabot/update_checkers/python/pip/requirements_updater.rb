@@ -78,6 +78,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def updated_pyproject_requirement(req)
             return req unless latest_resolvable_version
             return req unless req.fetch(:requirement)
@@ -89,7 +90,8 @@ module Dependabot
 
             # If the requirement is a development dependency we always want to
             # bump it
-            if req.fetch(:groups).include?("dev-dependencies")
+            if req.fetch(:groups).include?("dev-dependencies") &&
+               !new_version_satisfies?(req)
               return update_pyproject_version(req)
             end
 
@@ -102,6 +104,7 @@ module Dependabot
             req.merge(requirement: :unfixable)
           end
           # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def update_pyproject_version(req)
             requirement_strings = req[:requirement].split(",").map(&:strip)
