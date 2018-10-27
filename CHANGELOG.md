@@ -1,3 +1,8 @@
+## v0.74.13, 27 October 2018
+
+- Python: Make requirement updating logic depend on whether a lockfile is
+  present
+
 ## v0.74.12, 27 October 2018
 
 - Python: Only update poetry dev dependency requirements if the update
