@@ -20,8 +20,7 @@ updating in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
 Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given
-  a project's other dependencies*. That means tapping into the package manager's
-  dependency resolution logic
+  a project's other dependencies*
 - Logic to generate updated manifest and lockfiles for a new dependency version
 - Logic to find changelogs, release notes, and commits for a dependency update
 
