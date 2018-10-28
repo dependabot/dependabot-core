@@ -9,12 +9,16 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class RegistryFinder
-          AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+          NPM_AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+          NPM_GLOBAL_REGISTRY_REGEX = /^registry\s*=\s*(?<registry>.*)$/
+          YARN_GLOBAL_REGISTRY_REGEX = /^registry\s+['"](?<registry>.*)['"]/
 
-          def initialize(dependency:, credentials:, npmrc_file: nil)
+          def initialize(dependency:, credentials:, npmrc_file: nil,
+                         yarnrc_file: nil)
             @dependency = dependency
             @credentials = credentials
             @npmrc_file = npmrc_file
+            @yarnrc_file = yarnrc_file
           end
 
           def registry
@@ -31,7 +35,7 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :credentials, :npmrc_file
+          attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file
 
           def first_registry_with_dependency_details
             @first_registry_with_dependency_details ||=
@@ -102,19 +106,74 @@ module Dependabot
                 registries = []
                 registries += credentials.
                               select { |cred| cred["type"] == "npm_registry" }
+                registries += npmrc_registries
+                registries += yarnrc_registries
 
-                npmrc_file&.content.to_s.scan(AUTH_TOKEN_REGEX) do
-                  next if Regexp.last_match[:registry].include?("${")
-
-                  registries << {
-                    "type" => "npm_registry",
-                    "registry" => Regexp.last_match[:registry],
-                    "token" => Regexp.last_match[:token]
-                  }
-                end
-
-                registries.uniq
+                unique_registries(registries)
               end
+          end
+
+          def npmrc_registries
+            return [] unless npmrc_file
+
+            registries = []
+            npmrc_file.content.scan(NPM_AUTH_TOKEN_REGEX) do
+              next if Regexp.last_match[:registry].include?("${")
+
+              registries << {
+                "type" => "npm_registry",
+                "registry" => Regexp.last_match[:registry],
+                "token" => Regexp.last_match[:token]
+              }
+            end
+
+            npmrc_file.content.scan(NPM_GLOBAL_REGISTRY_REGEX) do
+              next if Regexp.last_match[:registry].include?("${")
+
+              registry = Regexp.last_match[:registry].strip.
+                         sub(%r{/+$}, "").
+                         sub(%r{^.*?//}, "")
+              next if registries.include?(registry)
+
+              registries << {
+                "type" => "npm_registry",
+                "registry" => registry,
+                "token" => nil
+              }
+            end
+
+            registries
+          end
+
+          def yarnrc_registries
+            return [] unless yarnrc_file
+
+            registries = []
+            yarnrc_file.content.scan(YARN_GLOBAL_REGISTRY_REGEX) do
+              next if Regexp.last_match[:registry].include?("${")
+
+              registry = Regexp.last_match[:registry].strip.
+                         sub(%r{/+$}, "").
+                         sub(%r{^.*?//}, "")
+              registries << {
+                "type" => "npm_registry",
+                "registry" => registry,
+                "token" => nil
+              }
+            end
+
+            registries
+          end
+
+          def unique_registries(registries)
+            registries.uniq.reject do |registry|
+              next if registry["token"]
+
+              # Reject this entry if an identical one with a token exists
+              registries.any? do |r|
+                r["token"] && r["registry"] == registry["registry"]
+              end
+            end
           end
 
           # npm registries expect slashes to be escaped

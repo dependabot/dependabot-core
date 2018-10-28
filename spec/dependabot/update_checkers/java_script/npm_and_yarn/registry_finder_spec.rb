@@ -9,10 +9,12 @@ RSpec.describe tested_module::RegistryFinder do
     described_class.new(
       dependency: dependency,
       credentials: credentials,
-      npmrc_file: npmrc_file
+      npmrc_file: npmrc_file,
+      yarnrc_file: yarnrc_file
     )
   end
   let(:npmrc_file) { nil }
+  let(:yarnrc_file) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -104,6 +106,25 @@ RSpec.describe tested_module::RegistryFinder do
         let(:npmrc_fixture_name) { "env_url" }
         it { is_expected.to eq("registry.npmjs.org") }
       end
+    end
+
+    context "with an yarnrc file" do
+      let(:yarnrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".yarnrc",
+          content: fixture("javascript", "yarnrc", yarnrc_fixture_name)
+        )
+      end
+      let(:yarnrc_fixture_name) { "global_registry" }
+
+      before do
+        url = "https://npm-proxy.fury.io/password/dependabot/etag"
+        body = fixture("javascript", "gemfury_response_etag.json")
+
+        stub_request(:get, url).to_return(status: 200, body: body)
+      end
+
+      it { is_expected.to eq("npm-proxy.fury.io/password/dependabot") }
     end
 
     context "with a private registry source" do
