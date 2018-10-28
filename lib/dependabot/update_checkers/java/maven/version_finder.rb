@@ -111,7 +111,7 @@ module Dependabot
 
           def dependency_metadata(repository_details)
             @dependency_metadata ||= {}
-            @dependency_metadata[repository_details.fetch("url")] ||=
+            @dependency_metadata[repository_details.hash] ||=
               begin
                 response = Excon.get(
                   dependency_metadata_url(repository_details.fetch("url")),
