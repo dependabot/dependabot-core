@@ -15,6 +15,8 @@ module Dependabot
           require_relative "npmrc_builder"
           require_relative "package_json_updater"
 
+          TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+
           def initialize(dependencies:, dependency_files:, credentials:)
             @dependencies = dependencies
             @dependency_files = dependency_files
@@ -112,6 +114,9 @@ module Dependabot
             end.compact
           end
 
+          # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def handle_yarn_lock_updater_error(error, yarn_lock)
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
@@ -142,8 +147,15 @@ module Dependabot
                 split(/(?<=\w)\@/).first
               handle_missing_package(package_name)
             end
+
+            if error.message.match?(TIMEOUT_FETCHING_PACKAGE)
+              handle_timeout(error.message)
+            end
             raise
           end
+          # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def resolvable_before_update?(yarn_lock)
             SharedHelpers.in_a_temporary_directory do
@@ -324,6 +336,24 @@ module Dependabot
             ).registry
 
             raise PrivateSourceAuthenticationFailure, reg
+          end
+
+          def handle_timeout(message)
+            url = message.match(TIMEOUT_FETCHING_PACKAGE).named_captures["url"]
+            return if url.start_with?("https://registry.npmjs.org")
+
+            package_name =
+              message.match(TIMEOUT_FETCHING_PACKAGE).
+              named_captures["package"].gsub("%2f", "/").gsub("%2F", "/")
+
+            dep = FileParsers::JavaScript::NpmAndYarn.new(
+              dependency_files: dependency_files,
+              source: nil,
+              credentials: credentials
+            ).parse.find { |d| d.name == package_name }
+            return unless dep
+
+            raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
           end
 
           def npmrc_content

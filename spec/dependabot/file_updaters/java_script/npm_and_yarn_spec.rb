@@ -981,6 +981,29 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a registry that times out" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:yarn_lock_fixture_name) { "yarn.lock" }
+        let(:yarnrc) do
+          Dependabot::DependencyFile.new(
+            name: ".yarnrc",
+            content: 'registry "https://timeout.cv/repository/mirror/"'
+          )
+        end
+
+        context "with a yarn lockfile" do
+          let(:files) { [package_json, yarn_lock, yarnrc] }
+          # This test is extremely slow (it take 1m45 to run) so should only be
+          # run locally.
+          # it "raises a helpful error" do
+          #   expect { updated_files }.
+          #     to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          #       expect(error.source).to eq("timeout.cv/repository/mirror")
+          #     end
+          # end
+        end
+      end
+
       context "with a git reference that Yarn would find but npm wouldn't" do
         let(:manifest_fixture_name) { "git_dependency_yarn_ref.json" }
         let(:npm_lock_fixture_name) { "git_dependency_yarn_ref.json" }
