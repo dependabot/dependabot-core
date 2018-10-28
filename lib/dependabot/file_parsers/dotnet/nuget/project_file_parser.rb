@@ -60,7 +60,14 @@ module Dependabot
               groups: [],
               source: nil
             }
-            requirement[:metadata] = { property_name: prop_name } if prop_name
+
+            if prop_name
+              # Get the root property name unless no details could be found,
+              # in which case use the top-level name to ease debugging
+              root_prop_name = details_for_property(prop_name, project_file)&.
+                               fetch(:root_property_name) || prop_name
+              requirement[:metadata] = { property_name: root_prop_name }
+            end
 
             Dependency.new(
               name: name,
@@ -123,21 +130,21 @@ module Dependabot
 
             property_name = value.match(PROPERTY_REGEX).
                             named_captures.fetch("property")
-            property_value = value_for_property(property_name, project_file)
+            property_details = details_for_property(property_name, project_file)
 
             # Don't halt parsing for a missing property value until we're
             # confident we're fetching property values correctly
-            return value unless property_value
+            return value unless property_details&.fetch(:value)
 
-            value.gsub(PROPERTY_REGEX, property_value)
+            value.gsub(PROPERTY_REGEX, property_details&.fetch(:value))
           end
 
-          def value_for_property(property_name, project_file)
+          def details_for_property(property_name, project_file)
             property_value_finder.
               property_details(
                 property_name: property_name,
                 callsite_file: project_file
-              )&.fetch(:value)
+              )
           end
 
           def property_value_finder

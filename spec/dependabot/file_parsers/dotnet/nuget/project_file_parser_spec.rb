@@ -142,6 +142,31 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
           end
         end
 
+        context "that is indirect" do
+          let(:file_body) do
+            fixture("dotnet", "csproj", "property_version_indirect.csproj")
+          end
+
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "Nuke.Uncommon" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Nuke.Uncommon")
+            expect(dependency.version).to eq("0.1.434")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.1.434",
+                file: "my.csproj",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "NukeVersion" }
+              }]
+            )
+          end
+        end
+
         context "that can't be found" do
           let(:file_body) do
             fixture("dotnet", "csproj", "missing_property_version.csproj")
