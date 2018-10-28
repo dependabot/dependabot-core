@@ -20,6 +20,7 @@ module Dependabot
             @dependency_files = dependency_files
             @credentials      = credentials
             @ignored_versions = ignored_versions
+            @forbidden_urls   = []
           end
 
           def latest_version_details
@@ -62,13 +63,17 @@ module Dependabot
                   map { |version| { version: version, source_url: url } }
               end.flatten
 
+            if version_details.none? && forbidden_urls.any?
+              raise PrivateSourceAuthenticationFailure, forbidden_urls.first
+            end
+
             version_details.sort_by { |details| details.fetch(:version) }
           end
 
           private
 
           attr_reader :dependency, :dependency_files, :credentials,
-                      :ignored_versions
+                      :ignored_versions, :forbidden_urls
 
           def wants_prerelease?
             return false unless dependency.version
@@ -115,6 +120,7 @@ module Dependabot
                   idempotent: true,
                   **SharedHelpers.excon_defaults
                 )
+                check_response(response, repository_details.fetch("url"))
                 Nokogiri::XML(response.body)
               rescue Excon::Error::Socket, Excon::Error::Timeout
                 central =
@@ -123,6 +129,17 @@ module Dependabot
 
                 Nokogiri::XML("")
               end
+          end
+
+          def check_response(response, repository_url)
+            central =
+              FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+
+            return unless [401, 403].include?(response.status)
+            return if @forbidden_urls.include?(repository_url)
+            return if repository_url == central
+
+            @forbidden_urls << repository_url
           end
 
           def repositories

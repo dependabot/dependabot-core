@@ -222,6 +222,21 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
+
+        context "when credentials are required" do
+          before do
+            stub_request(:get, private_registry_metadata_url).
+              to_return(status: 401, body: "no dice")
+          end
+
+          it "raises a helpful error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { subject }.
+              to raise_error(error_class) do |error|
+                expect(error.source).to eq("https://private.registry.org/repo")
+              end
+          end
+        end
       end
     end
 
