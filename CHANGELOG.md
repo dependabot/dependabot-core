@@ -1,3 +1,10 @@
+## v0.74.14, 28 October 2018
+
+- Maven: Raise a PrivateSourceAuthenticationFailure if auth stopped us finding
+  any versions of a dependency
+- Maven: Don't hit password protected registries without password
+- Maven: More careful caching of dependency metadata in VersionFinder
+
 ## v0.74.13, 27 October 2018
 
 - Python: Make requirement updating logic depend on whether a lockfile is
