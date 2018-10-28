@@ -1,3 +1,9 @@
+## v0.74.16, 28 October 2018
+
+- .NET: Look up property values that include further indirection
+- .NET: Store the root property name when parsing dependencies (not the
+  top-level one)
+
 ## v0.74.15, 28 October 2018
 
 - Elixir: Ignore non-existant apps_path
