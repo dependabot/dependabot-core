@@ -126,8 +126,17 @@ module Dependabot
           end
 
           def repositories
-            @repositories ||= pom_repository_details +
-                              credentials_repository_details
+            return @repositories if @repositories
+
+            details = pom_repository_details + credentials_repository_details
+
+            @repositories =
+              details.reject do |repo|
+                next if repo["password"]
+
+                # Reject this entry if an identical one with a password exists
+                details.any? { |r| r["url"] == repo["url"] && r["password"] }
+              end
           end
 
           def pom_repository_details
