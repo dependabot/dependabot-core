@@ -84,7 +84,7 @@ RSpec.describe tested_module::RegistryFinder do
       end
     end
 
-    context "with an npmrc file" do
+    context "with a .npmrc file" do
       let(:npmrc_file) do
         Dependabot::DependencyFile.new(
           name: ".npmrc",
@@ -108,7 +108,7 @@ RSpec.describe tested_module::RegistryFinder do
       end
     end
 
-    context "with an yarnrc file" do
+    context "with a .yarnrc file" do
       let(:yarnrc_file) do
         Dependabot::DependencyFile.new(
           name: ".yarnrc",
@@ -125,6 +125,18 @@ RSpec.describe tested_module::RegistryFinder do
       end
 
       it { is_expected.to eq("npm-proxy.fury.io/password/dependabot") }
+
+      context "that can't be reached" do
+        before do
+          url = "https://npm-proxy.fury.io/password/dependabot/etag"
+          stub_request(:get, url).to_return(status: 401, body: "")
+        end
+
+        # Since this registry is declared at the global registry, in the absense
+        # of other information we should still us it (and *not* flaa back to
+        # registry.npmjs.org)
+        it { is_expected.to eq("npm-proxy.fury.io/password/dependabot") }
+      end
     end
 
     context "with a private registry source" do

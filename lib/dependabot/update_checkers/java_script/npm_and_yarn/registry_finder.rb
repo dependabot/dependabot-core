@@ -51,7 +51,7 @@ module Dependabot
                 nil
               end&.fetch("registry")
 
-            @first_registry_with_dependency_details ||= "registry.npmjs.org"
+            @first_registry_with_dependency_details ||= global_registry
           end
 
           def registry_url
@@ -133,7 +133,7 @@ module Dependabot
               registry = Regexp.last_match[:registry].strip.
                          sub(%r{/+$}, "").
                          sub(%r{^.*?//}, "")
-              next if registries.include?(registry)
+              next if registries.map { |r| r["registry"] }.include?(registry)
 
               registries << {
                 "type" => "npm_registry",
@@ -174,6 +174,28 @@ module Dependabot
                 r["token"] && r["registry"] == registry["registry"]
               end
             end
+          end
+
+          def global_registry
+            npmrc_file&.content.to_s.scan(NPM_GLOBAL_REGISTRY_REGEX) do
+              next if Regexp.last_match[:registry].include?("${")
+
+              registry = Regexp.last_match[:registry].strip.
+                         sub(%r{/+$}, "").
+                         sub(%r{^.*?//}, "")
+              return registry
+            end
+
+            yarnrc_file&.content.to_s.scan(YARN_GLOBAL_REGISTRY_REGEX) do
+              next if Regexp.last_match[:registry].include?("${")
+
+              registry = Regexp.last_match[:registry].strip.
+                         sub(%r{/+$}, "").
+                         sub(%r{^.*?//}, "")
+              return registry
+            end
+
+            "registry.npmjs.org"
           end
 
           # npm registries expect slashes to be escaped
