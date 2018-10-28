@@ -55,6 +55,10 @@ module Dependabot
             # updating (it will blow up later if there are problems)
             nil
           end.compact
+        rescue Octokit::NotFound, Gitlab::Error::NotFound
+          # If the path specified in apps_path doesn't exist then it's not being
+          # used. We can just return an empty array of subapp files.
+          []
         end
       end
     end

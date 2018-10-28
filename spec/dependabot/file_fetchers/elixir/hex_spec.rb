@@ -141,5 +141,22 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
           to_not include("apps/bank_web/mix.exs")
       end
     end
+
+    context "when the apps folder doesn't exist" do
+      before do
+        stub_request(:get, url + "apps?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: json_header
+          )
+      end
+
+      it "ignores the apps_path declaration" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(%w(mix.exs mix.lock))
+      end
+    end
   end
 end
