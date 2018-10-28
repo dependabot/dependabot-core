@@ -1,3 +1,11 @@
+## v0.74.15, 28 October 2018
+
+- Elixir: Ignore non-existant apps_path
+- JS: Consider global registry in RegistryFinder
+- JS: Handle timeout errors from private registries in FileUpdater
+- JS: Fall back to global registry, rather than registry.npmjs.org, in
+  RegistryFinder
+
 ## v0.74.14, 28 October 2018
 
 - Maven: Raise a PrivateSourceAuthenticationFailure if auth stopped us finding
