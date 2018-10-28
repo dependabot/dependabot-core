@@ -9,7 +9,8 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
-  let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
+  let(:file_body) { fixture("dotnet", "csproj", csproj_fixture_name) }
+  let(:csproj_fixture_name) { "property_version.csproj" }
   let(:finder) { described_class.new(dependency_files: files) }
   let(:files) { [file] }
   let(:property_name) { "NukeVersion" }
@@ -23,6 +24,24 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
       let(:property_name) { "NukeVersion" }
       its([:value]) { is_expected.to eq("0.1.434") }
       its([:file]) { is_expected.to eq("my.csproj") }
+      its([:root_property_name]) { is_expected.to eq("NukeVersion") }
+
+      context "but which calls another property" do
+        let(:csproj_fixture_name) { "property_version_indirect.csproj" }
+        let(:property_name) { "IndirectNukeVersion" }
+        its([:value]) { is_expected.to eq("0.1.434") }
+        its([:file]) { is_expected.to eq("my.csproj") }
+        its([:root_property_name]) { is_expected.to eq("NukeVersion") }
+
+        context "leading to an infinite loop" do
+          let(:property_name) { "LoopOne" }
+
+          # For now we should manually investigate if this ever happens
+          it "raises" do
+            expect { property_details }.to raise_error("Circular reference!")
+          end
+        end
+      end
     end
 
     context "with a property that can't be found" do
@@ -61,6 +80,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("2.3.1") }
       its([:file]) { is_expected.to eq("build/dependencies.props") }
+      its([:root_property_name]) { is_expected.to eq("XunitPackageVersion") }
     end
   end
 end

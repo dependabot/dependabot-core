@@ -11,11 +11,15 @@ module Dependabot
     module Dotnet
       class Nuget
         class PropertyValueFinder
+          PROPERTY_REGEX = /\$\((?<property>.*?)\)/.freeze
+
           def initialize(dependency_files:)
             @dependency_files = dependency_files
           end
 
-          def property_details(property_name:, callsite_file:)
+          def property_details(property_name:, callsite_file:, stack: [])
+            stack += [[property_name, callsite_file.name]]
+
             node_details = deep_find_prop_node(
               property: property_name,
               file: callsite_file
@@ -27,7 +31,28 @@ module Dependabot
                 callsite_file: callsite_file
               )
 
-            node_details
+            return unless node_details
+            return node_details unless node_details[:value] =~ PROPERTY_REGEX
+
+            check_next_level_of_stack(node_details, stack)
+          end
+
+          def check_next_level_of_stack(node_details, stack)
+            property_name = node_details.fetch(:value).
+                            match(PROPERTY_REGEX).
+                            named_captures.fetch("property")
+            callsite_file = dependency_files.
+                            find { |f| f.name == node_details.fetch(:file) }
+
+            if stack.include?([property_name, callsite_file.name])
+              raise "Circular reference!"
+            end
+
+            property_details(
+              property_name: property_name,
+              callsite_file: callsite_file,
+              stack: stack
+            )
           end
 
           private
@@ -40,7 +65,9 @@ module Dependabot
             node = doc.at_xpath(property_xpath(property))
 
             # If we found a value for the property, return it
-            return node_details(file: file, node: node) if node
+            if node
+              return node_details(file: file, node: node, property: property)
+            end
 
             # Otherwise, we need to look in an imported file
             import_path_finder =
@@ -89,8 +116,13 @@ module Dependabot
             "/Project/PropertyGroup/#{property_name}"
           end
 
-          def node_details(file:, node:)
-            { file: file.name, node: node, value: node.content.strip }
+          def node_details(file:, node:, property:)
+            {
+              file: file.name,
+              node: node,
+              value: node.content.strip,
+              root_property_name: property
+            }
           end
         end
       end
