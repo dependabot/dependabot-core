@@ -314,7 +314,7 @@ module Dependabot
                 sanitized_url = url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
                 response = Excon.get(
-                  url + dependency.name + "/",
+                  url,
                   idempotent: true,
                   **SharedHelpers.excon_defaults
                 )

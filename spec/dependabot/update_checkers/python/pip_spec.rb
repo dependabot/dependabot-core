@@ -207,6 +207,39 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
           let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
         end
+
+        context "that 403s" do
+          let(:pypi_base_url) { "https://some.internal.registry.com/pypi/" }
+          before do
+            stub_request(:get, pypi_url).
+              to_return(status: 403, body: pypi_response)
+          end
+
+          context "and the base URL also 403s" do
+            before do
+              stub_request(:get, pypi_base_url).
+                to_return(status: 403, body: pypi_response)
+            end
+
+            it "raises a helpful error" do
+              error_class = Dependabot::PrivateSourceAuthenticationFailure
+              expect { subject }.
+                to raise_error(error_class) do |error|
+                  expect(error.source).
+                    to eq("https://some.internal.registry.com/pypi/")
+                end
+            end
+          end
+
+          context "and the base URL 200s" do
+            before do
+              stub_request(:get, pypi_base_url).
+                to_return(status: 400, body: pypi_response)
+            end
+
+            it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+          end
+        end
       end
 
       context "set in credentials" do

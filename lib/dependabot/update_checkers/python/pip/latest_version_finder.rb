@@ -70,7 +70,8 @@ module Dependabot
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
               index_response = registry_response_for_dependency(index_url)
 
-              if index_response.status == 401 || index_response.status == 403
+              if [401, 403].include?(index_response.status) &&
+                 [401, 403].include?(registry_index_response(index_url).status)
                 raise PrivateSourceAuthenticationFailure, sanitized_url
               end
 
@@ -115,12 +116,20 @@ module Dependabot
             extra_index_urls =
               extra_index_urls.map { |url| url.strip.gsub(%r{/*$}, "") + "/" }
 
-            [main_index_url] + extra_index_urls
+            [main_index_url, *extra_index_urls].uniq
           end
 
           def registry_response_for_dependency(index_url)
             Excon.get(
               index_url + normalised_name + "/",
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+          end
+
+          def registry_index_response(index_url)
+            Excon.get(
+              index_url,
               idempotent: true,
               **SharedHelpers.excon_defaults
             )

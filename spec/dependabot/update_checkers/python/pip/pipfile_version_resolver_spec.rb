@@ -244,7 +244,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:lockfile_fixture_name) { "exact_version.lock" }
 
       before do
-        stub_request(:get, "https://some.internal.registry.com/pypi/requests/").
+        stub_request(:get, "https://some.internal.registry.com/pypi/").
           to_raise(Excon::Error::Timeout)
       end
 
@@ -271,7 +271,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
 
         before do
-          stub_request(:get, "https://pypi.gemfury.com/secret_codes/requests/").
+          stub_request(:get, "https://pypi.gemfury.com/secret_codes/").
             to_raise(Excon::Error::Timeout)
         end
 
