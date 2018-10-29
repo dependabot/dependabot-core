@@ -56,7 +56,7 @@ module Dependabot
         def updated_lockfile_content
           LockfileUpdater.new(
             dependencies: dependencies,
-            podfile: updated_podfile_content,
+            updated_podfile_content: updated_podfile_content,
             lockfile: lockfile,
             credentials: credentials
           ).updated_lockfile_content

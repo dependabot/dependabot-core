@@ -51,6 +51,15 @@ module Dependabot
 
             changed_requirements.any? { |f| f[:file] == file.name }
           end
+
+          # TODO: replace this with a setting in CocoaPods, like we do for Bundler
+          def podfile_content_for_resolution
+            # Prepend auth details to any git remotes
+            updated_podfile_content.gsub(
+              "git@github.com:",
+              "https://#{github_access_token}:x-oauth-basic@github.com/"
+            )
+          end
         end
       end
     end

@@ -12,9 +12,9 @@ module Dependabot
     module Cocoa
       class CocoaPods
         class LockfileUpdater
-          def initialize(dependencies:, podfile:, lockfile:, credentials:)
+          def initialize(dependencies:, updated_podfile_content:, lockfile:, credentials:)
             @dependencies = dependencies
-            @podfile = podfile
+            @updated_podfile_content = updated_podfile_content
             @lockfile = lockfile
             @credentials = credentials
           end
@@ -34,6 +34,8 @@ module Dependabot
               evaluated_podfile,
               parsed_lockfile
             )
+            analyzer.installation_options.integrate_targets = false
+
 
             checkout_options =
               pod_sandbox.checkout_sources.select do |root_name, _|
@@ -43,30 +45,55 @@ module Dependabot
             lockfile_content =
               Pod::Lockfile.generate(
                 evaluated_podfile,
-                analyzer.analyze.specifications,
+                pod_analyzer.analyze.specifications,
                 checkout_options
               ).to_yaml
 
             post_process_lockfile(lockfile_content)
           end
 
+          private
+
           def evaluated_podfile
             @evaluated_podfile ||=
-              Pod::Podfile.from_ruby(nil, @podfile)
+              Pod::Podfile.from_ruby(nil, @updated_podfile_content)
           end
 
           def post_process_lockfile(lockfile_body)
             # Add the correct Podfile checksum (i.e., without auth alterations)
             # and change the `COCOAPODS` version back to whatever it was before
             checksum =
-              Digest::SHA1.hexdigest(updated_podfile_content).encode("UTF-8")
+              Digest::SHA1.hexdigest(@updated_podfile_content).encode("UTF-8")
             old_cocoapods_line =
-              lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
+              @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
 
-            lockfile_body.gsub(
+            @lockfile.content.gsub(
               /COCOAPODS: \d\.\d\.\d.*/,
               "PODFILE CHECKSUM: #{checksum}\n\n#{old_cocoapods_line}"
             )
+          end
+
+          def pod_analyzer
+            @pod_analyzer =
+              begin
+                lockfile_hash =
+                  Pod::YAMLHelper.load_string(@lockfile.content)
+                parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
+
+                pod_sandbox = Pod::Sandbox.new("tmp")
+                analyzer = Pod::Installer::Analyzer.new(
+                  pod_sandbox,
+                  evaluated_podfile,
+                  parsed_lockfile
+                )
+
+                analyzer.installation_options.integrate_targets = false
+                analyzer.update = { pods: ["Alamofire"] }
+                analyzer.config.silent = true
+                analyzer.update_repositories
+
+                analyzer
+              end
           end
         end
       end
