@@ -40,7 +40,6 @@ module Dependabot
           end
 
           def post_process_lockfile(lockfile_body)
-
             # Add the correct Podfile checksum (i.e., without auth alterations)
             # and change the `COCOAPODS` version back to whatever it was before
             checksum =

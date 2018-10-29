@@ -46,11 +46,6 @@ module Dependabot
           @lockfile ||= get_original_file("Podfile.lock")
         end
 
-        def updated_lockfile_content
-          @updated_lockfile_content ||= build_updated_lockfile
-
-        end
-
         def evaluated_podfile
           @evaluated_podfile ||=
             Pod::Podfile.from_ruby(nil, updated_podfile_content)
