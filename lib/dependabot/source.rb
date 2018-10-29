@@ -3,9 +3,18 @@
 module Dependabot
   class Source
     SOURCE_REGEX = %r{
-      (?<provider>github(?=\.com)|bitbucket(?=\.org)|gitlab(?=\.com))
+      (?<provider>
+        github(?=\.com)|
+        bitbucket(?=\.org)|
+        gitlab(?=\.com)|
+        azure(?=\.com)
+      )
       (?:\.com|\.org)[/:]
-      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?<repo>
+        [^/\s]+/
+        (?:_git/)?(?:(?!\.git|\.\s)[^/\s#"',])+
+        (/_git/(?:(?!\.git|\.\s)[^/\s#"',])+)?
+      )
       (?:(?:/tree|/blob|/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x.freeze
 
@@ -46,6 +55,7 @@ module Dependabot
       when "github" then "https://github.com/" + repo
       when "bitbucket" then "https://bitbucket.org/" + repo
       when "gitlab" then "https://gitlab.com/" + repo
+      when "azure" then "https://dev.azure.com/" + repo
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
@@ -57,6 +67,7 @@ module Dependabot
       when "github" then "github.com"
       when "bitbucket" then "bitbucket.org"
       when "gitlab" then "gitlab.com"
+      when "azure" then "dev.azure.com"
       else raise "Unexpected provider '#{provider}'"
       end
     end
@@ -66,6 +77,7 @@ module Dependabot
       when "github" then "https://api.github.com/"
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
       when "gitlab" then "https://gitlab.com/api/v4"
+      when "azure" then "https://dev.azure.com/"
       else raise "Unexpected provider '#{provider}'"
       end
     end
