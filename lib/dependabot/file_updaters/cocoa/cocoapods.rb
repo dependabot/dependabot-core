@@ -8,6 +8,9 @@ module Dependabot
   module FileUpdaters
     module Cocoa
       class CocoaPods < Dependabot::FileUpdaters::Base
+        require_relative "cocoapods/podfile_updater"
+        require_relative "cocoapods/lockfile_updater"
+
         POD_CALL =
           /^[ \t]*pod\(?[ \t]*#{Gemnasium::Parser::Patterns::QUOTED_GEM_NAME}
            (?:[ \t]*,[ \t]*#{Gemnasium::Parser::Patterns::REQUIREMENT_LIST})?/x
@@ -43,88 +46,9 @@ module Dependabot
           @lockfile ||= get_original_file("Podfile.lock")
         end
 
-        def updated_podfile_content
-          return @updated_podfile_content if @updated_podfile_content
-
-          dependencies.
-            select { |dep| requirement_changed?(podfile, dep) }.
-            reduce(podfile.content.dup) do |content, dep|
-            podfile.content.
-              to_enum(:scan, POD_CALL).
-              find { Regexp.last_match[:name] == dep.name }
-
-            original_pod_declaration_string = Regexp.last_match.to_s
-            updated_pod_declaration_string =
-              original_pod_declaration_string.
-              sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_requirements|
-                old_version =
-                  old_requirements.match(Gemnasium::Parser::Patterns::VERSION)[0]
-
-                precision = old_version.split(".").count
-                new_version =
-                  dep.version.split(".").first(precision).join(".")
-
-                old_requirements.sub(old_version, new_version)
-            end
-
-            @updated_podfile_content = podfile.content.gsub(
-              original_pod_declaration_string,
-              updated_pod_declaration_string
-            )
-          end
-        end
-
         def updated_lockfile_content
           @updated_lockfile_content ||= build_updated_lockfile
 
-        end
-
-        def build_updated_lockfile
-          external_source_pods =
-            evaluated_podfile.dependencies.
-            select(&:external_source).
-            map(&:root_name).uniq
-
-          checkout_options =
-            pod_sandbox.checkout_sources.select do |root_name, _|
-              external_source_pods.include?(root_name)
-            end
-
-          lockfile_content =
-            Pod::Lockfile.generate(
-              evaluated_podfile,
-              pod_analyzer.analyze.specifications,
-              checkout_options
-            ).to_yaml
-
-          post_process_lockfile(lockfile_content)
-        end
-
-        def pod_analyzer
-          @pod_analyzer =
-            begin
-              lockfile_hash = Pod::YAMLHelper.load_string(lockfile.content)
-              parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
-
-              analyzer = Pod::Installer::Analyzer.new(
-                pod_sandbox,
-                evaluated_podfile,
-                parsed_lockfile
-              )
-
-              dependency_names = dependencies.map { |dep| dep.name }
-              analyzer.installation_options.integrate_targets = false
-              analyzer.update = { pods: [dependency_names] }
-
-              analyzer.config.silent = true
-              analyzer.update_repositories
-
-              analyzer
-            end
-        end
-
-        def pod_sandbox
-          @pod_sandbox ||= Pod::Sandbox.new("tmp")
         end
 
         def evaluated_podfile
@@ -132,34 +56,19 @@ module Dependabot
             Pod::Podfile.from_ruby(nil, updated_podfile_content)
         end
 
-        # # TODO: replace this with a setting in CocoaPods, like we do for Bundler
-        # def podfile_content_for_resolution
-        #   # Prepend auth details to any git remotes
-        #   updated_podfile_content.gsub(
-        #     "git@github.com:",
-        #     "https://#{github_access_token}:x-oauth-basic@github.com/"
-        #   )
-        # end
+        def updated_podfile_content
+          PodfileUpdater.new(
+            dependencies: dependencies,
+            podfile: podfile
+          ).updated_podfile_content
+        end
 
-        def post_process_lockfile(lockfile_body)
-          # Remove any auth details we prepended to git remotes
-          # lockfile_body =
-          #   lockfile_body.gsub(
-          #     "https://#{github_access_token}:x-oauth-basic@github.com/",
-          #     "git@github.com:"
-          #   )
-
-          # Add the correct Podfile checksum (i.e., without auth alterations)
-          # and change the `COCOAPODS` version back to whatever it was before
-          checksum =
-            Digest::SHA1.hexdigest(updated_podfile_content).encode("UTF-8")
-          old_cocoapods_line =
-            lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
-
-          lockfile_body.gsub(
-            /COCOAPODS: \d\.\d\.\d.*/,
-            "PODFILE CHECKSUM: #{checksum}\n\n#{old_cocoapods_line}"
-          )
+        def updated_lockfile_content
+          LockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).updated_lockfile_content
         end
       end
     end
