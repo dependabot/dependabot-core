@@ -17,7 +17,7 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
   let(:updater) do
     described_class.new(
       dependency_files: [podfile, lockfile],
-      dependencies: dependency,
+      dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -26,14 +26,19 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
       }]
     )
   end
+
   let(:podfile) do
     Dependabot::DependencyFile.new(content: podfile_body, name: "Podfile")
   end
+
   let(:podfile_body) { fixture("cocoa", "podfiles", "version_specified") }
+
   let(:lockfile) do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "Podfile.lock")
   end
+
   let(:lockfile_body) { fixture("cocoa", "lockfiles", "version_specified") }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "Alamofire",

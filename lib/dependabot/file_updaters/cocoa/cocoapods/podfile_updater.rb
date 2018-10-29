@@ -13,9 +13,8 @@ module Dependabot
           end
 
           def updated_podfile_content
-            dependencies.
-              select { |dep| requirement_changed?(podfile, dep) }.
-              reduce(podfile.content.dup) do |_content, dep|
+            dependencies.select { |dep| requirement_changed?(podfile, dep) }
+              .reduce(podfile.content.dup) do |_content, dep|
                 podfile.content.
                   to_enum(:scan, POD_CALL).
                   find { Regexp.last_match[:name] == dep.name }

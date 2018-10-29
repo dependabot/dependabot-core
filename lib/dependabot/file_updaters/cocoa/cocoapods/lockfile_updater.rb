@@ -4,25 +4,36 @@ require "toml-rb"
 
 require "dependabot/shared_helpers"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/dep"
-require "dependabot/file_parsers/go/dep"
+require "dependabot/file_updaters/cocoa/cocoapods.rb"
+require "dependabot/update_checkers/cocoa/cocoapods.rb"
 
 module Dependabot
   module FileUpdaters
     module Cocoa
       class CocoaPods
         class LockfileUpdater
-          def initialize(dependencies:, dependency_files:, credentials:)
+          def initialize(dependencies:, podfile:, lockfile:, credentials:)
             @dependencies = dependencies
-            @dependency_files = dependency_files
+            @podfile = podfile
+            @lockfile = lockfile
             @credentials = credentials
           end
 
-          def build_updated_lockfile
+          def updated_lockfile_content
             external_source_pods =
               evaluated_podfile.dependencies.
               select(&:external_source).
               map(&:root_name).uniq
+
+            lockfile_hash =
+                Pod::YAMLHelper.load_string(@lockfile.content)
+            parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
+            pod_sandbox = Pod::Sandbox.new("tmp")
+            analyzer = Pod::Installer::Analyzer.new(
+              pod_sandbox,
+              evaluated_podfile,
+              parsed_lockfile
+            )
 
             checkout_options =
               pod_sandbox.checkout_sources.select do |root_name, _|
@@ -32,11 +43,16 @@ module Dependabot
             lockfile_content =
               Pod::Lockfile.generate(
                 evaluated_podfile,
-                pod_analyzer.analyze.specifications,
+                analyzer.analyze.specifications,
                 checkout_options
               ).to_yaml
 
             post_process_lockfile(lockfile_content)
+          end
+
+          def evaluated_podfile
+            @evaluated_podfile ||=
+              Pod::Podfile.from_ruby(nil, @podfile)
           end
 
           def post_process_lockfile(lockfile_body)
