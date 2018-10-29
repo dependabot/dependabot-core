@@ -145,7 +145,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
         let(:lockfile_fixture_name) { "branch.lock" }
 
         let(:dependency_name) { "golang.org/x/text" }
-        let(:dependency_version) { "4d1c5fb19474adfe9562c9847ba425e7da817e81" }
+        let(:dependency_version) { "6f8607282f41687a5ce9b5a0378084237f2f7576" }
         let(:dependency_previous_version) do
           "7dd2c8130f5e924233f5543598300651c386d431"
         end
@@ -166,12 +166,12 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
 
         it "updates the lockfile correctly" do
           expect(updated_lockfile_content).
-            to include("4d1c5fb19474adfe9562c9847ba425e7da817e81")
+            to include("6f8607282f41687a5ce9b5a0378084237f2f7576")
           expect(updated_lockfile_content).
             to include(
               "  branch = \"master\"\n"\
-              "  digest = \"1:9ce6eb33df9a0e0c4d2e20df3c952a4c044b5e2288416da"\
-              "09be219ca657bbb74\"\n"\
+              "  digest = \"1:0ce696a0a889d8627912e417dc255a3d8d777cdd6e021"\
+              "e23981dbb36159b0fe0\"\n"\
               "  name = \"golang.org/x/text\""
             )
         end

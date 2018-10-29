@@ -150,7 +150,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:dependency_version) { "0.1.3" }
       let(:string_req) { "0.1.3" }
 
-      it { is_expected.to eq(Gem::Version.new("1.0.1")) }
+      it { is_expected.to eq(Gem::Version.new("1.0.2")) }
     end
 
     context "with a git dependency" do
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         }
       end
 
-      it { is_expected.to eq("1024c5074ced00aad1a83be4d10119b39d2151bd") }
+      it { is_expected.to eq("74dc0260efd2c5e17c35643a2b47dc508ec823fd") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }

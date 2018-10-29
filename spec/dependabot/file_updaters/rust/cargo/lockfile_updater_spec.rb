@@ -146,7 +146,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
 
         let(:dependency_name) { "utf8-ranges" }
         let(:dependency_version) do
-          "1024c5074ced00aad1a83be4d10119b39d2151bd"
+          "74dc0260efd2c5e17c35643a2b47dc508ec823fd"
         end
         let(:dependency_previous_version) do
           "83141b376b93484341c68fbca3ca110ae5cd2708"
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).
-            to include("utf8-ranges#1024c5074ced00aad1a83be4d10119b39d2151bd")
+            to include("utf8-ranges#74dc0260efd2c5e17c35643a2b47dc508ec823fd")
         end
 
         context "with an ssh URl" do
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
           it "updates the dependency version in the lockfile" do
             expect(updated_lockfile_content).
               to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
-                         "1024c5074ced00aad1a83be4d10119b39d2151bd")
+                         "74dc0260efd2c5e17c35643a2b47dc508ec823fd")
             expect(updated_lockfile_content).to_not include("git+https://")
           end
         end
