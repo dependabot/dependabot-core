@@ -1,3 +1,7 @@
+## v0.74.18, 29 October 2018
+
+- Python: Handle 403s more intelligently in UpdateChecker
+
 ## v0.74.17, 29 October 2018
 
 - Rust: Handle resolvability errors that exist in the initial requirements
