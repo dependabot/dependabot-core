@@ -15,9 +15,11 @@ module Dependabot
           BRANCH_NOT_FOUND_REGEX =
             /failed to find branch `(?<branch>[^`]+)`/.freeze
 
-          def initialize(dependency:, dependency_files:, credentials:)
+          def initialize(dependency:, credentials:,
+                         original_dependency_files:, prepared_dependency_files:)
             @dependency = dependency
-            @dependency_files = dependency_files
+            @prepared_dependency_files = prepared_dependency_files
+            @original_dependency_files = original_dependency_files
             @credentials = credentials
           end
 
@@ -27,10 +29,11 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :credentials
+          attr_reader :dependency, :credentials,
+                      :prepared_dependency_files, :original_dependency_files
 
           def fetch_latest_resolvable_version
-            base_directory = dependency_files.first.directory
+            base_directory = prepared_dependency_files.first.directory
             SharedHelpers.in_a_temporary_directory(base_directory) do
               write_temporary_dependency_files
 
@@ -99,8 +102,8 @@ module Dependabot
             )
           end
 
-          def write_temporary_dependency_files
-            write_manifest_files
+          def write_temporary_dependency_files(prepared: true)
+            write_manifest_files(prepared: prepared)
 
             File.write(lockfile.name, lockfile.content) if lockfile
             File.write(toolchain.name, toolchain.content) if toolchain
@@ -131,11 +134,35 @@ module Dependabot
             return true if message.include?("believes it's in a workspace")
             return true if message.include?("wasn't a root")
             return true if message.include?("requires a nightly version")
+            return true if message.match?(/feature `[^\`]+` is required/)
 
-            message.match?(/feature `[^\`]+` is required/)
+            !original_requirements_resolvable?
           end
 
-          def write_manifest_files
+          def original_requirements_resolvable?
+            base_directory = original_dependency_files.first.directory
+            SharedHelpers.in_a_temporary_directory(base_directory) do
+              write_temporary_dependency_files(prepared: false)
+
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                command = "cargo update -p #{dependency_spec} --verbose"
+                run_cargo_command(command)
+              end
+            end
+
+            true
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            raise unless error.message.include?("no matching version")
+
+            false
+          end
+
+          def write_manifest_files(prepared: true)
+            manifest_files = if prepared
+                             then prepared_manifest_files
+                             else original_manifest_files
+                             end
+
             manifest_files.each do |file|
               path = file.name
               dir = Pathname.new(path).dirname
@@ -176,18 +203,26 @@ module Dependabot
             TomlRB.dump(object)
           end
 
-          def manifest_files
-            @manifest_files ||=
-              dependency_files.select { |f| f.name.end_with?("Cargo.toml") }
+          def prepared_manifest_files
+            @prepared_manifest_files ||=
+              prepared_dependency_files.
+              select { |f| f.name.end_with?("Cargo.toml") }
+          end
+
+          def original_manifest_files
+            @original_manifest_files ||=
+              original_dependency_files.
+              select { |f| f.name.end_with?("Cargo.toml") }
           end
 
           def lockfile
-            @lockfile ||= dependency_files.find { |f| f.name == "Cargo.lock" }
+            @lockfile ||= prepared_dependency_files.
+                          find { |f| f.name == "Cargo.lock" }
           end
 
           def toolchain
-            @toolchain ||=
-              dependency_files.find { |f| f.name == "rust-toolchain" }
+            @toolchain ||= prepared_dependency_files.
+                           find { |f| f.name == "rust-toolchain" }
           end
 
           def git_dependency?

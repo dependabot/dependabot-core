@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
   subject(:resolver) do
     described_class.new(
       dependency: dependency,
-      dependency_files: dependency_files,
+      prepared_dependency_files: dependency_files,
+      original_dependency_files: unprepared_dependency_files,
       credentials: credentials
     )
   end
@@ -85,6 +86,24 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:lockfile_fixture_name) { "missing_dependency" }
 
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
+    context "with a yanked version (for another dependency)" do
+      let(:manifest_fixture_name) { "yanked_version" }
+      let(:lockfile_fixture_name) { "yanked_version" }
+
+      let(:dependency_name) { "time" }
+      let(:dependency_version) { "0.1.38" }
+      let(:string_req) { "0.1.12" }
+
+      it "raises a helpful error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).
+              to include("version `= 99.0.0` found for package `regex`")
+          end
+      end
     end
 
     context "with a missing rust-toolchain file" do
