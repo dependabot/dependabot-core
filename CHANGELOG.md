@@ -1,3 +1,7 @@
+## v0.74.17, 29 October 2018
+
+- Rust: Handle resolvability errors that exist in the initial requirements
+
 ## v0.74.16, 28 October 2018
 
 - .NET: Look up property values that include further indirection
