@@ -138,6 +138,9 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           )
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
           to_return(status: 200)
+        allow_any_instance_of(described_class::VersionResolver).
+          to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("1.7.0"))
       end
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -923,6 +926,8 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
         let(:dependency_files) { [package_json, yarn_lock] }
         let(:manifest_fixture_name) { "no_lockfile_change.json" }
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+
+        let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
