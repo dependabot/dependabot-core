@@ -54,7 +54,6 @@ module Dependabot
           def compile_new_requirement_files
             SharedHelpers.in_a_temporary_directory do
               write_updated_dependency_files
-              run_command("pyenv install -s") if python_version_file
 
               filenames_to_compile.each do |filename|
                 # Shell out to pip-compile, generate a new set of requirements.
@@ -140,9 +139,7 @@ module Dependabot
             command = "pyenv local 2.7.15 && " + command
             retry
           ensure
-            unless python_version_file
-              FileUtils.remove_entry(".python-version", true)
-            end
+            FileUtils.remove_entry(".python-version", true)
           end
 
           def write_updated_dependency_files
@@ -163,10 +160,6 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, "[metadata]\nname = sanitized-package\n")
             end
-
-            return unless python_version_file
-
-            File.write(".python-version", python_version_file.content)
           end
 
           def sanitized_setup_file_content(file)
@@ -329,10 +322,6 @@ module Dependabot
 
           def setup_cfg_files
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
-          end
-
-          def python_version_file
-            dependency_files.find { |f| f.name == ".python-version" }
           end
         end
       end

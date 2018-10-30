@@ -50,7 +50,6 @@ module Dependabot
             @latest_resolvable_version_string ||=
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
-                run_poetry_command("pyenv install -s") if python_version_file
 
                 # Shell out to Poetry, which handles everything for us.
                 # Calling `lock` avoids doing an install.
@@ -193,10 +192,6 @@ module Dependabot
 
           def lockfile
             poetry_lock || pyproject_lock
-          end
-
-          def python_version_file
-            dependency_files.find { |f| f.name == ".python-version" }
           end
 
           def run_poetry_command(command)

@@ -66,7 +66,6 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   write_temporary_dependency_files
-                  run_pipenv_command("pyenv install -s") if python_version_file
 
                   # Initialize a git repo to appease pip-tools
                   IO.popen("git init", err: %i(child out)) if setup_files.any?
@@ -232,10 +231,6 @@ module Dependabot
               File.write(path, "[metadata]\nname = sanitized-package\n")
             end
 
-            if python_version_file
-              File.write(".python-version", python_version_file.content)
-            end
-
             # Overwrite the pipfile with updated content
             File.write("Pipfile", pipfile_content) if update_pipfile
           end
@@ -371,10 +366,6 @@ module Dependabot
 
           def setup_files
             dependency_files.select { |f| f.name.end_with?("setup.py") }
-          end
-
-          def python_version_file
-            dependency_files.find { |f| f.name == ".python-version" }
           end
 
           def setup_cfg_files
