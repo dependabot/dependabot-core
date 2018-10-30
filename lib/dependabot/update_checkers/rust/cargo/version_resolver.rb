@@ -152,7 +152,8 @@ module Dependabot
 
             true
           rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("no matching version")
+            raise unless error.message.include?("no matching version") ||
+                         error.message.include?("failed to select a version")
 
             false
           end

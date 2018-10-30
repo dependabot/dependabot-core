@@ -104,6 +104,19 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
               to include("version `= 99.0.0` found for package `regex`")
           end
       end
+
+      context "without a lockfile" do
+        let(:unprepared_dependency_files) { [manifest] }
+
+        it "raises a helpful error" do
+          expect { resolver.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+              expect(error.message).
+                to include("version `^99.0.0` found for package `regex`")
+            end
+        end
+      end
     end
 
     context "with a missing rust-toolchain file" do
