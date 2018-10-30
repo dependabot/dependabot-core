@@ -10,7 +10,7 @@ module Dependabot
       class NpmAndYarn < Dependabot::UpdateCheckers::Base
         require_relative "npm_and_yarn/requirements_updater"
         require_relative "npm_and_yarn/library_detector"
-        require_relative "npm_and_yarn/version_resolver"
+        require_relative "npm_and_yarn/latest_version_finder"
         require_relative "npm_and_yarn/subdependency_version_resolver"
 
         def latest_version
@@ -20,12 +20,10 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          # JavaScript doesn't uses nested resolution, so the latest version is
-          # always resolvable if this is a top-level dependency.
           return latest_version if dependency.top_level?
 
-          # Otherwise, if the dependency is indirect, its version is constrained
-          # by the requirements placed on it by dependencies lower down the tree
+          # If the dependency is indirect its version is constrained  by the
+          # requirements placed on it by dependencies lower down the tree
           subdependency_version_resolver.latest_resolvable_version
         end
 
@@ -34,7 +32,7 @@ module Dependabot
             return latest_resolvable_version_with_no_unlock_for_git_dependency
           end
 
-          version_resolver.latest_resolvable_version_with_no_unlock
+          latest_version_finder.latest_resolvable_version_with_no_unlock
         end
 
         def updated_requirements
@@ -87,7 +85,8 @@ module Dependabot
         end
 
         def latest_version_for_git_dependency
-          latest_release = version_resolver.latest_version_details_from_registry
+          latest_release = latest_version_finder.
+                           latest_version_details_from_registry
 
           # If there's been a release that includes the current pinned ref or
           # that the current branch is behind, we switch to that release.
@@ -116,13 +115,13 @@ module Dependabot
             if git_dependency? && !should_switch_source_from_git_to_registry?
               latest_git_version_details
             else
-              version_resolver.latest_version_details_from_registry
+              latest_version_finder.latest_version_details_from_registry
             end
         end
 
-        def version_resolver
-          @version_resolver ||=
-            VersionResolver.new(
+        def latest_version_finder
+          @latest_version_finder ||=
+            LatestVersionFinder.new(
               dependency: dependency,
               credentials: credentials,
               dependency_files: dependency_files,

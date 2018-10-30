@@ -12,7 +12,7 @@ module Dependabot
   module UpdateCheckers
     module JavaScript
       class NpmAndYarn
-        class VersionResolver
+        class LatestVersionFinder
           class RegistryError < StandardError; end
 
           def initialize(dependency:, credentials:, dependency_files:,

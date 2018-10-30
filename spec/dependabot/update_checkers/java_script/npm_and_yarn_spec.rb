@@ -602,7 +602,7 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
             to_timeout
 
           # Speed up spec by stopping any sleep logic
-          resolver = checker.send(:version_resolver)
+          resolver = checker.send(:latest_version_finder)
           allow(resolver).to receive(:sleep).and_return(true)
         end
 
@@ -791,13 +791,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
 
         # Speed up spec by stopping any sleep logic
-        resolver = checker.send(:version_resolver)
+        resolver = checker.send(:latest_version_finder)
         allow(resolver).to receive(:sleep).and_return(true)
       end
 
       it "raises an error" do
         expect { checker.latest_version }.
-          to raise_error(described_class::VersionResolver::RegistryError)
+          to raise_error(described_class::LatestVersionFinder::RegistryError)
       end
     end
 
@@ -807,13 +807,13 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
 
         # Speed up spec by stopping any sleep logic
-        resolver = checker.send(:version_resolver)
+        resolver = checker.send(:latest_version_finder)
         allow(resolver).to receive(:sleep).and_return(true)
       end
 
       it "raises an error" do
         expect { checker.latest_version }.
-          to raise_error(described_class::VersionResolver::RegistryError)
+          to raise_error(described_class::LatestVersionFinder::RegistryError)
       end
 
       context "for a library dependency" do
