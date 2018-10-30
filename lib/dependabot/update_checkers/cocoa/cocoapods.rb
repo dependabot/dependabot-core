@@ -62,7 +62,7 @@ module Dependabot
               )
 
               analyzer.installation_options.integrate_targets = false
-              analyzer.update = { pods: ["Alamofire"] }
+              analyzer.update = { pods: [dependency.name] }
 
               analyzer.config.silent = true
               analyzer.update_repositories
@@ -74,24 +74,24 @@ module Dependabot
         def lockfile
           lockfile = dependency_files.find { |f| f.name == "Podfile.lock" }
           raise "No Podfile.lock!" unless lockfile
-
           lockfile
         end
 
         def podfile
           podfile = dependency_files.find { |f| f.name == "Podfile" }
           raise "No Podfile!" unless podfile
-
           podfile
         end
 
         def podfile_for_update_check
           content = remove_dependency_requirement(podfile.content)
-          replace_ssh_links_with_https(content)
+          content = replace_ssh_links_with_https(content)
+          prepend_git_auth_details(content)
         end
 
         def lockfile_for_update_check
-          replace_ssh_links_with_https(lockfile.content)
+          content = replace_ssh_links_with_https(lockfile.content)
+          prepend_git_auth_details(content)
         end
 
         # Replace the original pod requirements with nothing, to fully "unlock"
@@ -116,6 +116,14 @@ module Dependabot
 
         def replace_ssh_links_with_https(content)
           content.gsub("git@github.com:", "https://github.com/")
+        end
+
+        # TODO: replace this with a setting in CocoaPods, like we do for Bundler
+        def prepend_git_auth_details(content)
+          content.gsub(
+            "https://github.com/",
+            "https://x-access-token:#{github_access_token}@github.com/"
+          )
         end
       end
     end

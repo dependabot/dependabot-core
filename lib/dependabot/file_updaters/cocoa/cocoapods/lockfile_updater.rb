@@ -59,13 +59,20 @@ module Dependabot
                Pod::Podfile.from_ruby(nil, podfile_content_for_resolution)
           end
 
-          # TODO: replace this with a setting in CocoaPods, like we do for Bundler
           def podfile_content_for_resolution
             # Prepend auth details to any git remotes
+            credential_string = "#{@credentials.first['username']}:#{@credentials.first['password']}"
             @updated_podfile_content.gsub(
               "git@github.com:",
-              "https://#{github_access_token}:x-oauth-basic@github.com/"
+              "https://#{credential_string}:x-oauth-basic@github.com/"
             )
+          end
+
+          def relevant_credentials
+            @credentials.select do |cred|
+              next true
+              false
+            end
           end
 
           def post_process_lockfile(lockfile_body)
@@ -97,7 +104,8 @@ module Dependabot
                 )
 
                 analyzer.installation_options.integrate_targets = false
-                analyzer.update = { pods: ["Alamofire"] }
+                pods = @dependencies.map { |d| d.name }
+                analyzer.update = { pods: pods }
                 analyzer.config.silent = true
                 analyzer.update_repositories
 
