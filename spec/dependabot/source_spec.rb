@@ -150,9 +150,12 @@ RSpec.describe Dependabot::Source do
     end
 
     context "with an Azue DevOps URL" do
-      let(:url) { "https://dev.azure.com/greysteil/_git/dependabot-test" }
+      let(:url) { "https://dev.azure.com/greysteil/_git/dependabot-test?path" }
       its(:provider) { is_expected.to eq("azure") }
       its(:repo) { is_expected.to eq("greysteil/_git/dependabot-test") }
+      its(:unscoped_repo) { is_expected.to eq("dependabot-test") }
+      its(:organization) { is_expected.to eq("greysteil") }
+      its(:project) { is_expected.to eq("dependabot-test") }
 
       context "that specifies the project" do
         let(:url) do
@@ -160,6 +163,9 @@ RSpec.describe Dependabot::Source do
         end
         its(:provider) { is_expected.to eq("azure") }
         its(:repo) { is_expected.to eq("greysteil/dependabot-test/_git/test2") }
+        its(:unscoped_repo) { is_expected.to eq("test2") }
+        its(:organization) { is_expected.to eq("greysteil") }
+        its(:project) { is_expected.to eq("dependabot-test") }
       end
     end
   end

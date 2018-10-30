@@ -2,21 +2,39 @@
 
 module Dependabot
   class Source
-    SOURCE_REGEX = %r{
-      (?<provider>
-        github(?=\.com)|
-        bitbucket(?=\.org)|
-        gitlab(?=\.com)|
-        azure(?=\.com)
-      )
-      (?:\.com|\.org)[/:]
-      (?<repo>
-        [^/\s]+/
-        (?:_git/)?(?:(?!\.git|\.\s)[^/\s#"',])+
-        (/_git/(?:(?!\.git|\.\s)[^/\s#"',])+)?
-      )
-      (?:(?:/tree|/blob|/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+    GITHUB_SOURCE = %r{
+      (?<provider>github)
+      (?:\.com)[/:]
+      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x.freeze
+
+    GITLAB_SOURCE = %r{
+      (?<provider>gitlab)
+      (?:\.com)[/:]
+      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+    }x.freeze
+
+    BITBUCKET_SOURCE = %r{
+      (?<provider>bitbucket)
+      (?:\.org)[/:]
+      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?:(?:/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+    }x.freeze
+
+    AZURE_SOURCE = %r{
+      (?<provider>azure)
+      (?:\.com)[/:]
+      (?<repo>[^/\s]+/([^/\s]+/)?(?:_git/)(?:(?!\.git|\.\s)[^/\s#?"',])+)
+    }x.freeze
+
+    SOURCE_REGEX = /
+      (?:#{GITHUB_SOURCE})|
+      (?:#{GITLAB_SOURCE})|
+      (?:#{BITBUCKET_SOURCE})|
+      (?:#{AZURE_SOURCE})
+    /x.freeze
 
     attr_reader :provider, :repo, :directory, :branch, :hostname, :api_endpoint
 
@@ -58,6 +76,23 @@ module Dependabot
       when "azure" then "https://dev.azure.com/" + repo
       else raise "Unexpected repo provider '#{provider}'"
       end
+    end
+
+    def organization
+      repo.split("/").first
+    end
+
+    def project
+      raise "Project is an Azure DevOps concept only" unless provider == "azure"
+
+      parts = repo.split("/_git/")
+      return parts.first.split("/").last if parts.first.split("/").count == 2
+
+      parts.last
+    end
+
+    def unscoped_repo
+      repo.split("/").last
     end
 
     private
