@@ -86,12 +86,12 @@ module Dependabot
           path_dependency_details(fetched_files).each do |name, path|
             path = path.sub(/^file:/, "")
             filename = File.join(path, "package.json")
+            cleaned_name = Pathname.new(filename).cleanpath.to_path
+            next if fetched_files.map(&:name).include?(cleaned_name)
 
             begin
               file = fetch_file_from_host(filename, type: "path_dependency")
-              unless fetched_files.map(&:name).include?(file.name)
-                package_json_files << file
-              end
+              package_json_files << file
             rescue Dependabot::DependencyFileNotFound
               unfetchable_deps << [name, path]
             end
