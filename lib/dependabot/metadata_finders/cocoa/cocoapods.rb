@@ -8,7 +8,8 @@ module Dependabot
   module MetadataFinders
     module Cocoa
       class CocoaPods < Dependabot::MetadataFinders::Base
-        GITHUB_LINK_REGEX = /class="github-link".*?#{Source::SOURCE_REGEX}">/m
+        GITHUB_LINK_REGEX = /class="github-link".*?#{Source::SOURCE_REGEX}">/m.
+                            freeze
 
         private
 

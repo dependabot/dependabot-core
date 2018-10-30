@@ -12,11 +12,12 @@ module Dependabot
     module Cocoa
       class CocoaPods
         class LockfileUpdater
-          def initialize(dependencies:, updated_podfile_content:, lockfile:, credentials:)
+          def initialize(dependencies:, updated_podfile_content:,
+                         lockfile:, credentials:)
             @dependencies = dependencies
             @updated_podfile_content = updated_podfile_content
             @lockfile = lockfile
-            @credentials = credentials
+            @creds = credentials
           end
 
           def updated_lockfile_content
@@ -26,7 +27,7 @@ module Dependabot
               map(&:root_name).uniq
 
             lockfile_hash =
-                Pod::YAMLHelper.load_string(@lockfile.content)
+              Pod::YAMLHelper.load_string(@lockfile.content)
             parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
             pod_sandbox = Pod::Sandbox.new("tmp")
             analyzer = Pod::Installer::Analyzer.new(
@@ -35,7 +36,6 @@ module Dependabot
               parsed_lockfile
             )
             analyzer.installation_options.integrate_targets = false
-
 
             checkout_options =
               pod_sandbox.checkout_sources.select do |root_name, _|
@@ -56,26 +56,20 @@ module Dependabot
 
           def evaluated_podfile
             @evaluated_podfile ||=
-               Pod::Podfile.from_ruby(nil, podfile_content_for_resolution)
+              Pod::Podfile.from_ruby(nil, podfile_content_for_resolution)
           end
 
           def podfile_content_for_resolution
             # Prepend auth details to any git remotes
-            credential_string = "#{@credentials.first['username']}:#{@credentials.first['password']}"
+            credential_string =
+              "#{@creds.first['username']}:#{@creds.first['password']}"
             @updated_podfile_content.gsub(
               "git@github.com:",
               "https://#{credential_string}:x-oauth-basic@github.com/"
             )
           end
 
-          def relevant_credentials
-            @credentials.select do |cred|
-              next true
-              false
-            end
-          end
-
-          def post_process_lockfile(lockfile_body)
+          def post_process_lockfile(_lockfile_body)
             # Add the correct Podfile checksum (i.e., without auth alterations)
             # and change the `COCOAPODS` version back to whatever it was before
             checksum =
@@ -104,7 +98,7 @@ module Dependabot
                 )
 
                 analyzer.installation_options.integrate_targets = false
-                pods = @dependencies.map { |d| d.name }
+                pods = @dependencies.map(&:name)
                 analyzer.update = { pods: pods }
                 analyzer.config.silent = true
                 analyzer.update_repositories

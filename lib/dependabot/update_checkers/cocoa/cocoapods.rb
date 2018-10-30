@@ -74,12 +74,14 @@ module Dependabot
         def lockfile
           lockfile = dependency_files.find { |f| f.name == "Podfile.lock" }
           raise "No Podfile.lock!" unless lockfile
+
           lockfile
         end
 
         def podfile
           podfile = dependency_files.find { |f| f.name == "Podfile" }
           raise "No Podfile!" unless podfile
+
           podfile
         end
 

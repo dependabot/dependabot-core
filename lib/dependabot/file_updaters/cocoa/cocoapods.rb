@@ -13,9 +13,9 @@ module Dependabot
 
         POD_CALL =
           /^[ \t]*pod\(?[ \t]*#{Gemnasium::Parser::Patterns::QUOTED_GEM_NAME}
-           (?:[ \t]*,[ \t]*#{Gemnasium::Parser::Patterns::REQUIREMENT_LIST})?/x
+           (?:[ \t]*,[ \t]*#{Gemnasium::Parser::Patterns::REQUIREMENT_LIST})?/x.freeze
 
-        LOCKFILE_ENDING = /(?<ending>\s*PODFILE CHECKSUM.*)/m
+        LOCKFILE_ENDING = /(?<ending>\s*PODFILE CHECKSUM.*)/m.freeze
 
         def self.updated_files_regex
           [

@@ -13,32 +13,32 @@ module Dependabot
           end
 
           def updated_podfile_content
-            dependencies.select { |dep| requirement_changed?(podfile, dep) }
-              .reduce(podfile.content.dup) do |_content, dep|
-                podfile.content.
-                  to_enum(:scan, POD_CALL).
-                  find { Regexp.last_match[:name] == dep.name }
+            dependencies.select { |dep| requirement_changed?(podfile, dep) }.
+              reduce(podfile.content.dup) do |_content, dep|
+              podfile.content.
+                to_enum(:scan, POD_CALL).
+                find { Regexp.last_match[:name] == dep.name }
 
-                original_pod_declaration_string = Regexp.last_match.to_s
-                updated_pod_declaration_string =
-                  original_pod_declaration_string.
-                  sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_requirements|
-                    old_version =
-                      old_requirements.
-                      match(Gemnasium::Parser::Patterns::VERSION)[0]
+              original_pod_declaration_string = Regexp.last_match.to_s
+              updated_pod_declaration_string =
+                original_pod_declaration_string.
+                sub(Gemnasium::Parser::Patterns::REQUIREMENTS) do |old_reqs|
+                  old_version =
+                    old_reqs.
+                    match(Gemnasium::Parser::Patterns::VERSION)[0]
 
-                    precision = old_version.split(".").count
-                    new_version =
-                      dep.version.split(".").first(precision).join(".")
+                  precision = old_version.split(".").count
+                  new_version =
+                    dep.version.split(".").first(precision).join(".")
 
-                    old_requirements.sub(old_version, new_version)
-                  end
+                  old_reqs.sub(old_version, new_version)
+                end
 
-                @updated_podfile_content = podfile.content.gsub(
-                  original_pod_declaration_string,
-                  updated_pod_declaration_string
-                )
-              end
+              @updated_podfile_content = podfile.content.gsub(
+                original_pod_declaration_string,
+                updated_pod_declaration_string
+              )
+            end
           end
 
           private
