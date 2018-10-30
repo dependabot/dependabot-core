@@ -218,7 +218,7 @@ RSpec.describe namespace::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:manifest_fixture_name) { "dev_and_peer_dependency.json" }
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)

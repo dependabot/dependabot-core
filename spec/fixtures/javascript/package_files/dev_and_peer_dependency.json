@@ -1,10 +1,10 @@
 {
-    "name": "test",
+    "name": "{{ name }}",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test\ specified\" && exit 1"
     },
     "repository": {
         "type": "git",
@@ -17,7 +17,11 @@
     },
     "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
     "dependencies": {
-        "react": "^15.2.0",
-        "react-dom": "^15.2.0"
-    }
-}
+      "fetch-factory": "^0.0.1"
+    },
+    "peerDependencies": {
+      "etag" : "^1.0.0"
+    },
+    "devDependencies": {
+      "etag" : "^1.0.0"
+    }}

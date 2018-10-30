@@ -796,6 +796,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     describe "the updated package-lock.json" do
+      let(:files) { [package_json, package_lock] }
+
       it "has details of the updated item" do
         parsed_lockfile = JSON.parse(updated_npm_lock.content)
         expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
@@ -836,6 +838,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
     end
 
     describe "the updated yarn_lock" do
+      let(:files) { [package_json, yarn_lock] }
+
       it "has details of the updated item" do
         expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
       end
@@ -879,7 +883,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
 
       context "when updating only the lockfile" do
-        let(:files) { [package_json, yarn_lock] }
         let(:manifest_fixture_name) { "lockfile_only_change.json" }
         let(:yarn_lock_fixture_name) { "lockfile_only_change.lock" }
 
