@@ -712,4 +712,42 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
   end
+
+  describe "#possible_versions" do
+    subject(:possible_versions) { version_finder.possible_versions }
+
+    it "returns a list of versions" do
+      expect(possible_versions).to eq(
+        [
+          Dependabot::Utils::JavaScript::Version.new("1.7.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.6.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.5.1"),
+          Dependabot::Utils::JavaScript::Version.new("1.5.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.4.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.3.1"),
+          Dependabot::Utils::JavaScript::Version.new("1.3.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.2.1"),
+          Dependabot::Utils::JavaScript::Version.new("1.2.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.1.0"),
+          Dependabot::Utils::JavaScript::Version.new("1.0.1"),
+          Dependabot::Utils::JavaScript::Version.new("1.0.0")
+        ]
+      )
+    end
+
+    context "when some versions are being ignored" do
+      let(:ignored_versions) { [">= 1.1.0, < 1.6"] }
+
+      it "excludes the ignored versions" do
+        expect(possible_versions).to eq(
+          [
+            Dependabot::Utils::JavaScript::Version.new("1.7.0"),
+            Dependabot::Utils::JavaScript::Version.new("1.6.0"),
+            Dependabot::Utils::JavaScript::Version.new("1.0.1"),
+            Dependabot::Utils::JavaScript::Version.new("1.0.0")
+          ]
+        )
+      end
+    end
+  end
 end
