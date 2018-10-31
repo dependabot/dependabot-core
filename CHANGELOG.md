@@ -1,3 +1,7 @@
+## v0.74.21, 31 October 2018
+
+- JS: Bump yarn from 1.10.1 to 1.12.1
+
 ## v0.74.20, 31 October 2018
 
 - Python: Don't use python-version declared in .python-version file
