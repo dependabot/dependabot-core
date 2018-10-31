@@ -12,11 +12,24 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class VersionResolver
-          PEER_DEP_ERROR_REGEX =
+          # Error message from yarn add:
+          #" > @reach/router@1.2.1" has incorrect \
+          #peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
+          YARN_PEER_DEP_ERROR_REGEX =
             /
               "\s>\s(?<requiring_dep>[^"]+)"\s
               has\sincorrect\speer\sdependency\s
               "(?<required_dep>[^"]+)"
+            /x.freeze
+
+          # Error message from npm install:
+          #react-dom@15.2.0 requires a peer of react@^15.2.0 \
+          #but none is installed. You must install peer dependencies yourself.
+          NPM_PEER_DEP_ERROR_REGEX =
+            /
+              (?<requiring_dep>[^\s]+)\s
+              requires\sa\speer\sof\s
+              (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled
             /x.freeze
 
           def initialize(dependency:, credentials:, dependency_files:,
@@ -28,11 +41,6 @@ module Dependabot
           end
 
           def latest_resolvable_version
-            # TODO: Check resolvability for npm lockfiles
-            if package_locks.any? || shrinkwraps.any?
-              return latest_allowable_version
-            end
-
             unless relevant_unmet_peer_dependencies.any?
               return latest_allowable_version
             end
@@ -59,20 +67,28 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
-                package_files.map do |file|
-                  run_yarn_checker(path: Pathname.new(file.name).dirname)
-                rescue SharedHelpers::HelperSubprocessFailed => error
-                  raise unless error.message.match?(PEER_DEP_ERROR_REGEX)
+                if package_locks.any? || shrinkwraps.any?
+                  package_files.map do |file|
+                    run_npm_checker(path: Pathname.new(file.name).dirname)
+                  rescue SharedHelpers::HelperSubprocessFailed => error
+                    raise unless error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
 
-                  error.message
-                end.compact
+                    error.message.match(NPM_PEER_DEP_ERROR_REGEX).named_captures
+                  end.compact
+                else
+                  package_files.map do |file|
+                    run_yarn_checker(path: Pathname.new(file.name).dirname)
+                  rescue SharedHelpers::HelperSubprocessFailed => error
+                    raise unless error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
+
+                    error.message.match(YARN_PEER_DEP_ERROR_REGEX).named_captures
+                  end.compact
+                end
               end
           end
 
           def unmet_peer_dependencies
-            peer_dependency_errors.map do |message|
-              captures = message.match(PEER_DEP_ERROR_REGEX).named_captures
-
+            peer_dependency_errors.map do |captures|
               {
                 requirement_name:
                   captures.fetch("required_dep").sub(/@[^@]+$/, ""),
@@ -109,6 +125,30 @@ module Dependabot
             end
           end
 
+          def run_npm_checker(path:)
+            # FIX ME!! 🤠
+            lockfile_name = package_locks.any? ?
+              package_locks.first.name : shrinkwraps.any? ?
+                shrinkwraps.first.name : nil
+
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              Dir.chdir(path) do
+                SharedHelpers.run_helper_subprocess(
+                  command: "node #{npm_helper_path}",
+                  function: "checkPeerDependencies",
+                  args: [
+                    Dir.pwd,
+                    dependency.name,
+                    latest_allowable_version,
+                    requirements_for_path(dependency.requirements, path),
+                    top_level_dependencies,
+                    lockfile_name
+                  ]
+                )
+              end
+            end
+          end
+
           def requirements_for_path(requirements, path)
             return requirements if path.to_s == "."
 
@@ -123,6 +163,16 @@ module Dependabot
             yarn_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
               File.write(f.name, prepared_yarn_lockfile_content(f.content))
+            end
+
+            package_locks.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, f.content)
+            end
+
+            shrinkwraps.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, f.content)
             end
 
             File.write(".npmrc", npmrc_content)
@@ -254,6 +304,11 @@ module Dependabot
           def yarn_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
             File.join(project_root, "helpers/yarn/bin/run.js")
+          end
+
+          def npm_helper_path
+            project_root = File.join(File.dirname(__FILE__), "../../../../..")
+            File.join(project_root, "helpers/npm/bin/run.js")
           end
         end
       end

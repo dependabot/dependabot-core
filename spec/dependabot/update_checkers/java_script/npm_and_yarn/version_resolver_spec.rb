@@ -75,12 +75,102 @@ RSpec.describe namespace::VersionResolver do
 
     context "with a package-lock.json" do
       let(:dependency_files) { [package_json, npm_lock] }
-      it { is_expected.to eq(latest_allowable_version) }
+
+      context "updating a dependency without peer dependency issues" do
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+
+      context "updating a dependency with a peer requirement" do
+        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:npm_lock_fixture_name) { "peer_dependency.json" }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-dom",
+            version: "15.6.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "updating a dependency that is a peer requirement" do
+        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:npm_lock_fixture_name) { "peer_dependency.json" }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "15.6.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a npm-shrinkwrap.json" do
       let(:dependency_files) { [package_json, shrinkwrap] }
-      it { is_expected.to eq(latest_allowable_version) }
+
+      context "updating a dependency without peer dependency issues" do
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+
+      context "updating a dependency with a peer requirement" do
+        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:shrinkwrap_fixture_name) { "peer_dependency.json" }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-dom",
+            version: "15.6.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "updating a dependency that is a peer requirement" do
+        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:shrinkwrap_fixture_name) { "peer_dependency.json" }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "15.6.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with no lockfile" do
