@@ -12,6 +12,13 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class VersionResolver
+          PEER_DEP_ERROR_REGEX =
+            /
+              "\s>\s(?<requiring_dep>[^"]+)"\s
+              has\sincorrect\speer\sdependency\s
+              "(?<required_dep>[^"]+)"
+            /x.freeze
+
           def initialize(dependency:, credentials:, dependency_files:,
                          latest_allowable_version:)
             @dependency               = dependency
@@ -26,11 +33,13 @@ module Dependabot
               return latest_allowable_version
             end
 
+            unless relevant_unmet_peer_dependencies.any?
+              return latest_allowable_version
+            end
+
             # TODO: This is too crude. We should find the latest version that
             # won't cause those errors (by looking at the errors)
-            return if peer_dependency_errors?
-
-            latest_allowable_version
+            nil
           end
 
           private
@@ -38,28 +47,45 @@ module Dependabot
           attr_reader :dependency, :credentials, :dependency_files,
                       :latest_allowable_version
 
-          def peer_dependency_errors?
+          def peer_dependency_errors
             return @peer_dependency_errors if @peer_dependency_errors_checked
 
             @peer_dependency_errors_checked = true
 
-            @peer_dependency_errors = run_update_check
+            @peer_dependency_errors =
+              SharedHelpers.in_a_temporary_directory do
+                write_temporary_dependency_files
+
+                package_files.map do |file|
+                  run_yarn_checker(path: Pathname.new(file.name).dirname)
+                rescue SharedHelpers::HelperSubprocessFailed => error
+                  raise unless error.message.match?(PEER_DEP_ERROR_REGEX)
+
+                  error.message
+                end.compact
+              end
           end
 
-          def run_update_check
-            SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+          def unmet_peer_dependencies
+            peer_dependency_errors.map do |message|
+              captures = message.match(PEER_DEP_ERROR_REGEX).named_captures
 
-              package_files.each do |file|
-                run_yarn_checker(path: Pathname.new(file.name).dirname)
-              end
+              {
+                requirement_name:
+                  captures.fetch("required_dep").sub(/@[^@]+$/, ""),
+                requirement_version:
+                  captures.fetch("required_dep").split("@").last,
+                requiring_dep_name:
+                  captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
+              }
             end
+          end
 
-            false
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("incorrect peer dependency")
-
-            true
+          def relevant_unmet_peer_dependencies
+            unmet_peer_dependencies.select do |dep|
+              dep[:requirement_name] == dependency.name ||
+                dep[:requiring_dep_name] == dependency.name
+            end
           end
 
           def run_yarn_checker(path:)
@@ -195,7 +221,7 @@ module Dependabot
               dependency_files: dependency_files,
               source: nil,
               credentials: credentials
-            ).parse.select(&:top_level?).map { |dep| dep.to_h }
+            ).parse.select(&:top_level?).map(&:to_h)
           end
 
           def package_locks

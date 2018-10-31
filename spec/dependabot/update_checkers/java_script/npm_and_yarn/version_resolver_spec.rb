@@ -97,7 +97,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react-dom",
-            version: "15.2.0",
+            version: nil,
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -122,7 +122,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react",
-            version: "15.2.0",
+            version: nil,
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -139,6 +139,26 @@ RSpec.describe namespace::VersionResolver do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
           it { is_expected.to eq(Gem::Version.new("15.6.2")) }
         end
+      end
+
+      context "when there are already peer requirement issues" do
+        let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
+        let(:latest_allowable_version) { Gem::Version.new("0.2.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("0.2.1")) }
       end
     end
 
