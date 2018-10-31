@@ -1,3 +1,9 @@
+## v0.74.20, 31 October 2018
+
+- Python: Don't use python-version declared in .python-version file
+- JS: Save some requests when fetching path dependencies
+- Python: Bump poetry from 0.11.5 to 0.12.5
+
 ## v0.74.19, 30 October 2018
 
 - Add Azuze as a known source
