@@ -60,6 +60,15 @@ module Dependabot
             # our problem, so we quietly return `nil` here.
           end
 
+          def npm_versions_array
+            npm_details.fetch("versions", {}).
+              reject { |_, details| details["deprecated"] }.
+              keys.map { |v| version_class.new(v) }.
+              reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
+              reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
+              sort.reverse
+          end
+
           private
 
           attr_reader :dependency, :credentials, :dependency_files,
@@ -150,15 +159,6 @@ module Dependabot
 
           def version_from_versions_array
             npm_versions_array.find { |version| !yanked?(version) }
-          end
-
-          def npm_versions_array
-            npm_details.fetch("versions", {}).
-              reject { |_, details| details["deprecated"] }.
-              keys.map { |v| version_class.new(v) }.
-              reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
-              reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-              sort.reverse
           end
 
           def yanked?(version)
