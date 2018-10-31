@@ -934,7 +934,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             it "raises a helpful error" do
               # TODO: Raise custom error here
               expect { updater.updated_dependency_files }.
-                to raise_error(Dependabot::DependencyFileNotResolvable)
+                to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
             end
           end
 
