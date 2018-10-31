@@ -120,7 +120,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PoetryFileUpdater do
         )
       end
 
-      pending "updates the lockfile successfully" do
+      it "updates the lockfile successfully" do
         expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
 
         updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
