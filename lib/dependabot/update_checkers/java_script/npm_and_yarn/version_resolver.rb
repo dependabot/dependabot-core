@@ -13,8 +13,8 @@ module Dependabot
       class NpmAndYarn
         class VersionResolver
           # Error message from yarn add:
-          #" > @reach/router@1.2.1" has incorrect \
-          #peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
+          # " > @reach/router@1.2.1" has incorrect \
+          # peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
           YARN_PEER_DEP_ERROR_REGEX =
             /
               "\s>\s(?<requiring_dep>[^"]+)"\s
@@ -23,8 +23,8 @@ module Dependabot
             /x.freeze
 
           # Error message from npm install:
-          #react-dom@15.2.0 requires a peer of react@^15.2.0 \
-          #but none is installed. You must install peer dependencies yourself.
+          # react-dom@15.2.0 requires a peer of react@^15.2.0 \
+          # but none is installed. You must install peer dependencies yourself.
           NPM_PEER_DEP_ERROR_REGEX =
             /
               '(?<requiring_dep>[^\s]+)\s
@@ -67,23 +67,17 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
-                if package_locks.any? || shrinkwraps.any?
-                  package_files.map do |file|
-                    run_npm_checker(path: Pathname.new(file.name).dirname)
-                  rescue SharedHelpers::HelperSubprocessFailed => error
-                    raise unless error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-
-                    error.message.match(NPM_PEER_DEP_ERROR_REGEX).named_captures
-                  end.compact
-                else
-                  package_files.map do |file|
-                    run_yarn_checker(path: Pathname.new(file.name).dirname)
-                  rescue SharedHelpers::HelperSubprocessFailed => error
-                    raise unless error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-
-                    error.message.match(YARN_PEER_DEP_ERROR_REGEX).named_captures
-                  end.compact
-                end
+                package_files.map do |file|
+                  run_checker(path: Pathname.new(file.name).dirname)
+                rescue SharedHelpers::HelperSubprocessFailed => error
+                  if (match = error.message.match(NPM_PEER_DEP_ERROR_REGEX))
+                    match.named_captures
+                  elsif (match = error.message.match(YARN_PEER_DEP_ERROR_REGEX))
+                    match.named_captures
+                  else
+                    raise
+                  end
+                end.compact
               end
           end
 
@@ -107,6 +101,14 @@ module Dependabot
             end
           end
 
+          def run_checker(path:)
+            if package_locks.any? || shrinkwraps.any?
+              run_npm_checker(path: path)
+            else
+              run_yarn_checker(path: path)
+            end
+          end
+
           def run_yarn_checker(path:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
@@ -126,10 +128,13 @@ module Dependabot
           end
 
           def run_npm_checker(path:)
-            # FIX ME!! 🤠
-            lockfile_name = package_locks.any? ?
-              package_locks.first.name : shrinkwraps.any? ?
-                shrinkwraps.first.name : nil
+            # FIX ME!!
+            lockfile_name = nil
+            if package_locks.any?
+              lockfile_name = package_locks.first.name
+            elsif shrinkwraps.any?
+              lockfile_name = shrinkwraps.first.name
+            end
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
@@ -160,20 +165,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files
-            yarn_locks.each do |f|
-              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, prepared_yarn_lockfile_content(f.content))
-            end
-
-            package_locks.each do |f|
-              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, f.content)
-            end
-
-            shrinkwraps.each do |f|
-              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, f.content)
-            end
+            write_lock_files
 
             File.write(".npmrc", npmrc_content)
 
@@ -190,6 +182,23 @@ module Dependabot
 
               updated_content = sanitized_package_json_content(updated_content)
               File.write(file.name, updated_content)
+            end
+          end
+
+          def write_lock_files
+            yarn_locks.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, prepared_yarn_lockfile_content(f.content))
+            end
+
+            package_locks.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, f.content)
+            end
+
+            shrinkwraps.each do |f|
+              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+              File.write(f.name, f.content)
             end
           end
 
