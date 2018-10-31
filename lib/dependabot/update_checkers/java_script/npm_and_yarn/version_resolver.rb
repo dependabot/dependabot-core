@@ -63,15 +63,6 @@ module Dependabot
           end
 
           def run_yarn_checker(path:)
-            # Top level dependecies are required in the peer dep checker
-            # to fetch the manifests for all top level deps which may contain
-            # "peerDependency" requirements
-            top_level_dependencies = FileParsers::JavaScript::NpmAndYarn.new(
-              dependency_files: dependency_files,
-              source: nil,
-              credentials: credentials
-            ).parse.select(&:top_level?).map { |dep| dep.to_h }
-
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
                 SharedHelpers.run_helper_subprocess(
@@ -82,7 +73,7 @@ module Dependabot
                     dependency.name,
                     latest_allowable_version,
                     requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies || []
+                    top_level_dependencies
                   ]
                 )
               end
@@ -194,6 +185,17 @@ module Dependabot
 
           def version_class
             Utils::JavaScript::Version
+          end
+
+          # Top level dependecies are required in the peer dep checker
+          # to fetch the manifests for all top level deps which may contain
+          # "peerDependency" requirements
+          def top_level_dependencies
+            @top_level_dependencies ||= FileParsers::JavaScript::NpmAndYarn.new(
+              dependency_files: dependency_files,
+              source: nil,
+              credentials: credentials
+            ).parse.select(&:top_level?).map { |dep| dep.to_h }
           end
 
           def package_locks
