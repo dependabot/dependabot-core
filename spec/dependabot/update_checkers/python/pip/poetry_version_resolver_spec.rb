@@ -80,7 +80,7 @@ RSpec.describe namespace::PoetryVersionResolver do
             content: fixture("python", "pyproject_locks", lockfile_fixture_name)
           )
         end
-        pending { is_expected.to eq(Gem::Version.new("2.18.4")) }
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
     end
 

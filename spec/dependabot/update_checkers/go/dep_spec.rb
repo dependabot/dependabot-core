@@ -308,7 +308,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
 
           it "updates the commit" do
             expect(latest_resolvable_version).
-              to eq("462c4771caf3e8fb48d40f4cb96ecdca705e68fa")
+              to eq("6f44c5a2ea40ee3593d98cdcc905cc1fdaa660e2")
           end
         end
 
@@ -437,7 +437,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
 
         it "updates the commit" do
           expect(checker.latest_resolvable_version_with_no_unlock).
-            to eq("462c4771caf3e8fb48d40f4cb96ecdca705e68fa")
+            to eq("6f44c5a2ea40ee3593d98cdcc905cc1fdaa660e2")
         end
       end
 

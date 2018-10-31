@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "Python Projects"
+name = "PythonProjects"
 version = "2.0.0"
 homepage = "https://github.com/roghu/py3_projects"
 license = "MIT"
