@@ -125,8 +125,6 @@ async function checkPeerDepsForReq(
 
   args = args.concat(otherDeps);
 
-  // console.log(JSON.stringify(topLevelDependencies, null, 2));
-
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
