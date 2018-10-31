@@ -80,6 +80,40 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PoetryFileUpdater do
         to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
     end
 
+    context "with a specified Python version" do
+      let(:pyproject_fixture_name) { "python_2.toml" }
+      let(:lockfile_fixture_name) { "python_2.lock" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "2.19.1",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "2.19.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "2.18.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "updates the lockfile successfully" do
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
+
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+        requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
+        expect(requests["version"]).to eq("2.19.1")
+      end
+    end
+
     context "without a lockfile" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "caret_version.toml" }

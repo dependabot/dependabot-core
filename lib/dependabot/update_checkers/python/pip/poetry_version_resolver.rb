@@ -8,7 +8,9 @@ require "dependabot/file_updaters/python/pip/pyproject_preparer"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
+require "dependabot/utils/python/requirement"
 require "dependabot/errors"
+require "python_versions"
 
 module Dependabot
   module UpdateCheckers
@@ -53,6 +55,8 @@ module Dependabot
 
                 # Shell out to Poetry, which handles everything for us.
                 # Calling `lock` avoids doing an install.
+                run_poetry_command("pyenv install -s")
+                run_poetry_command("pyenv exec pip install poetry")
                 run_poetry_command("pyenv exec poetry lock")
 
                 updated_lockfile =
@@ -81,8 +85,28 @@ module Dependabot
               File.write(path, file.content)
             end
 
+            # Overwrite the .python-version with updated content
+            File.write(".python-version", python_version) if python_version
+
             # Overwrite the pyproject with updated content
             File.write("pyproject.toml", pyproject_content) if update_pyproject
+          end
+
+          def python_version
+            pyproject_object = TomlRB.parse(pyproject_content)
+            poetry_object = pyproject_object.dig("tool", "poetry")
+
+            requirement =
+              poetry_object&.dig("dependencies", "python") ||
+              poetry_object&.dig("dev-dependencies", "python")
+
+            return python_version_file&.content unless requirement
+
+            requirement = Utils::Python::Requirement.new(requirement)
+
+            PythonVersions::PYTHON_VERSIONS.find do |version|
+              requirement.satisfied_by?(Utils::Python::Version.new(version))
+            end
           end
 
           def pyproject_content
@@ -192,6 +216,10 @@ module Dependabot
 
           def lockfile
             poetry_lock || pyproject_lock
+          end
+
+          def python_version_file
+            dependency_files.find { |f| f.name == ".python-version" }
           end
 
           def run_poetry_command(command)
