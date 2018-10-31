@@ -26,6 +26,7 @@ RUN apt-get update \
       libpq-dev \
       libssl-dev \
       libbz2-dev \
+      libffi-dev \
       libreadline-dev \
       libsqlite3-dev \
       libcurl4-openssl-dev \
