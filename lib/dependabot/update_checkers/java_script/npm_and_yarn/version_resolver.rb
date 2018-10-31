@@ -27,9 +27,9 @@ module Dependabot
           #but none is installed. You must install peer dependencies yourself.
           NPM_PEER_DEP_ERROR_REGEX =
             /
-              (?<requiring_dep>[^\s]+)\s
+              '(?<requiring_dep>[^\s]+)\s
               requires\sa\speer\sof\s
-              (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled
+              (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled.
             /x.freeze
 
           def initialize(dependency:, credentials:, dependency_files:,
