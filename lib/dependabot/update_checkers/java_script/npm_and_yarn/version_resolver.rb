@@ -52,6 +52,9 @@ module Dependabot
 
             @peer_dependency_errors_checked = true
 
+            # TODO: Add all of the error handling that the FileUpdater does
+            # here (since problematic repos will be resolved here before they're
+            # seen by the FileUpdater)
             @peer_dependency_errors =
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
