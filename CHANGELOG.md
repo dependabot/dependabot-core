@@ -1,3 +1,7 @@
+## v0.74.22, 31 October 2018
+
+- Python: Handle custom python versions when using Poetry
+
 ## v0.74.21, 31 October 2018
 
 - JS: Bump yarn from 1.10.1 to 1.12.1

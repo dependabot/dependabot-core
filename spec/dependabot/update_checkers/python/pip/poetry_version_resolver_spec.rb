@@ -63,6 +63,12 @@ RSpec.describe namespace::PoetryVersionResolver do
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
 
+    context "without a lockfile (but with a latest version)" do
+      let(:dependency_files) { [pyproject] }
+      let(:dependency_version) { nil }
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }
@@ -84,12 +90,6 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "without a lockfile (but with a latest version)" do
-      let(:dependency_files) { [pyproject] }
-      let(:dependency_version) { nil }
-      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
-    end
-
     context "when the latest version isn't allowed" do
       let(:latest_version) { Gem::Version.new("2.18.3") }
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
@@ -108,6 +108,13 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       # Resolution blocked by requests
       it { is_expected.to eq(Gem::Version.new("2.5")) }
+    end
+
+    context "with a legacy Python" do
+      let(:pyproject_fixture_name) { "python_2.toml" }
+      let(:lockfile_fixture_name) { "python_2.lock" }
+
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
     context "with a conflict at the latest version" do
