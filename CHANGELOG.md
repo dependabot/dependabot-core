@@ -1,3 +1,8 @@
+## v0.74.24, 1 November 2018
+
+- Yarn: Fix resolved url in lockfile for dependencies installed from GitHub using the
+  shorthand syntax (without host)
+
 ## v0.74.23, 1 November 2018
 
 - Python: Handle upper bound changes when new version has fewer digits than old
