@@ -113,6 +113,34 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+
+        context "that is a git dependency" do
+          let(:manifest_fixture_name) { "git_dependency.json" }
+          let(:npm_lock_fixture_name) { "git_dependency.json" }
+          let(:latest_allowable_version) do
+            "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+              requirements: [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "master"
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          it { is_expected.to eq(latest_allowable_version) }
+        end
       end
 
       context "updating a dependency with a peer requirement" do
@@ -161,27 +189,8 @@ RSpec.describe namespace::VersionResolver do
     context "with a npm-shrinkwrap.json" do
       let(:dependency_files) { [package_json, shrinkwrap] }
 
-      context "updating a dependency without peer dependency issues" do
-        let(:manifest_fixture_name) { "package.json" }
-        let(:npm_lock_fixture_name) { "package-lock.json" }
-        let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "etag",
-            version: "1.0.0",
-            requirements: [{
-              file: "package.json",
-              requirement: "^1.0.0",
-              groups: ["dependencies"],
-              source: nil
-            }],
-            package_manager: "npm_and_yarn"
-          )
-        end
-
-        it { is_expected.to eq(latest_allowable_version) }
-      end
-
+      # Shrinkwrap case is mainly covered by package-lock.json specs (since
+      # resolution is identical). Single spec ensures things are working
       context "updating a dependency with a peer requirement" do
         let(:manifest_fixture_name) { "peer_dependency.json" }
         let(:shrinkwrap_fixture_name) { "peer_dependency.json" }
@@ -201,51 +210,6 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
-      end
-
-      context "updating a dependency that is a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:shrinkwrap_fixture_name) { "peer_dependency.json" }
-        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "react",
-            version: "15.2.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^15.2.0",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
-        end
-
-        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
-      end
-
-      context "when there are already peer requirement issues" do
-        let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
-        let(:shrinkwrap_fixture_name) { "peer_dependency_mismatch.json" }
-
-        context "for a dependency with issues (that won't be fixed)" do
-          let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "react-dom",
-              version: "16.0.0",
-              package_manager: "npm_and_yarn",
-              requirements: [{
-                file: "package.json",
-                requirement: "^16.0.0",
-                groups: ["dependencies"],
-                source: nil
-              }]
-            )
-          end
-
-          it { is_expected.to eq(Gem::Version.new("16.3.1")) }
-        end
       end
     end
 
@@ -271,6 +235,33 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+
+        context "that is a git dependency" do
+          let(:manifest_fixture_name) { "git_dependency.json" }
+          let(:latest_allowable_version) do
+            "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: nil,
+              requirements: [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "master"
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          it { is_expected.to eq(latest_allowable_version) }
+        end
       end
 
       context "updating a dependency with a peer requirement" do
@@ -389,6 +380,34 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(latest_allowable_version) }
+
+        context "that is a git dependency" do
+          let(:manifest_fixture_name) { "git_dependency.json" }
+          let(:yarn_lock_fixture_name) { "git_dependency.lock" }
+          let(:latest_allowable_version) do
+            "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: "af885e2e890b9ef0875edd2b117305119ee5bdc5",
+              requirements: [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "master"
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          it { is_expected.to eq(latest_allowable_version) }
+        end
       end
 
       context "updating a dependency with a peer requirement" do
