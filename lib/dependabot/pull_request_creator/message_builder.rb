@@ -651,7 +651,7 @@ module Dependabot
           "chore"
         elsif recent_commits_using_build && !recent_commits_using_chore
           "build"
-        elsif last_dependabot_commit_message.start_with?("chore")
+        elsif last_dependabot_commit_message&.start_with?("chore")
           "chore"
         else
           "build"
