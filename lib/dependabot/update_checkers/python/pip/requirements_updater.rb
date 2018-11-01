@@ -256,7 +256,7 @@ module Dependabot
 
               case op = r.requirements.first.first
               when "<", "<="
-                op + update_greatest_version(r.to_s, latest_resolvable_version)
+                "<" + update_greatest_version(r.to_s, latest_resolvable_version)
               when "!="
                 nil
               when ">", ">="
@@ -339,8 +339,10 @@ module Dependabot
             version = Utils::Python::Version.new(req_string.gsub(/<=?/, ""))
             version = version.release if version.prerelease?
 
-            index_to_update =
-              version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
+            index_to_update = [
+              version.segments.map.with_index { |n, i| n.zero? ? 0 : i }.max,
+              version_to_be_permitted.segments.count - 1
+            ].min
 
             new_segments = version.segments.map.with_index do |_, index|
               if index < index_to_update

@@ -200,14 +200,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         it "only updates the lockfile" do
           expect(updated_files.map(&:name)).
             to match_array(%w(package-lock.json yarn.lock))
+        end
 
+        it "correctly update the lockfiles" do
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
             to eq("github:jonschlinkert/is-number#"\
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-          expect(updated_yarn_lock.content).to include("is-number")
+          expect(updated_yarn_lock.content).to include(
+            "is-number@jonschlinkert/is-number:"
+          )
+
           expect(updated_yarn_lock.content).to_not include("d5ac0584ee")
+          expect(updated_yarn_lock.content).to include(
+            "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+          )
         end
 
         context "specified as a full URL" do
@@ -422,7 +430,71 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
           expect(updated_yarn_lock.content).
-            to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            to include("is-number@jonschlinkert/is-number#4.0.0:")
+          expect(updated_yarn_lock.content).to include(
+            "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+          )
+        end
+
+        context "with a commit reference" do
+          let(:dependency_name) { "@reach/router" }
+          let(:requirements) do
+            [{
+              requirement: nil,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/reach/router",
+                branch: nil,
+                ref: ref
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: nil,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/reach/router",
+                branch: nil,
+                ref: old_ref
+              }
+            }]
+          end
+          let(:version) { "1c62524db6e156050552fa4938c2de363d3116df" }
+          let(:previous_version) { "2675f56127c921474b275ff91fbdad8ec33cbd74" }
+          let(:ref) { "1c62524db6e156050552fa4938c2de363d3116df" }
+          let(:old_ref) { "2675f56127c921474b275ff91fbdad8ec33cbd74" }
+
+          let(:manifest_fixture_name) { "github_dependency_commit_ref.json" }
+          let(:yarn_lock_fixture_name) { "github_dependency_commit_ref.lock" }
+          let(:npm_lock_fixture_name) { "github_dependency_commit_ref.json" }
+
+          it "updates the package.json and the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json yarn.lock))
+
+            parsed_package_json = JSON.parse(updated_package_json.content)
+            expect(parsed_package_json["dependencies"]["@reach/router"]).
+              to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
+
+            parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"]).
+              to eq("github:reach/router#"\
+                    "1c62524db6e156050552fa4938c2de363d3116df")
+
+            expect(updated_yarn_lock.content).to include(
+              "\"@reach/router@reach/router"\
+              "#1c62524db6e156050552fa4938c2de363d3116df\":"
+            )
+            expect(updated_yarn_lock.content).to include(
+              "https://codeload.github.com/reach/router/tar.gz/"\
+              "1c62524db6e156050552fa4938c2de363d3116df"
+            )
+          end
         end
 
         context "when using full git URL" do

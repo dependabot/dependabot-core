@@ -22,6 +22,7 @@ const {
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
+const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const fixDuplicates = require("./fix-duplicates");
 const replaceDeclaration = require("./replace-lockfile-declaration");
 
@@ -102,11 +103,43 @@ function optionalRequirement(requirements) {
   );
 }
 
-function install_args_with_version(depName, desiredVersion, requirements) {
+function getGitHubShorthand(url) {
+  const gitHubUrl = "https://github.com/";
+  return url.replace(gitHubUrl, "");
+}
+
+function addedUsingGitHubShorthand(depName, repoShorthand, lockfileJson) {
+  const depNameWithGitHubShorthand = `${depName}@${repoShorthand}`;
+  return Object.keys(lockfileJson).some(name => {
+    return name.startsWith(depNameWithGitHubShorthand);
+  });
+}
+
+function installArgsWithVersion(
+  depName,
+  desiredVersion,
+  requirements,
+  lockfileJson
+) {
   const source = requirements.source;
 
   if (source && source.type === "git") {
-    return [`${depName}@${source.url}#${desiredVersion}`];
+    // Handle packages added using the github shorthand, e.g.
+    // - yarn add discord.js@discordjs/discord.js
+    //
+    // To keep the correct resolved url in the lockfile we need to explicitly
+    // tell yarn to install using the shorthand and not using the git url
+    //
+    // The resolved url from the shorthand case comes from
+    // https://codeload.github.com/org/repo.. whereas it comes from
+    // https://github.com/org/repo.. in the usual git install case:
+    // yarn add https://github.com/org/repo..
+    const repoShorthand = getGitHubShorthand(source.url);
+    if (addedUsingGitHubShorthand(depName, repoShorthand, lockfileJson)) {
+      return [`${depName}@${repoShorthand}#${desiredVersion}`];
+    } else {
+      return [`${depName}@${source.url}#${desiredVersion}`];
+    }
   } else {
     return [`${depName}@${desiredVersion}`];
   }
@@ -120,14 +153,16 @@ async function updateDependencyFiles(
 ) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
-  var update_run_results = { "yarn.lock": readFile("yarn.lock") };
+  let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
+
   for (let reqs of requirements) {
-    update_run_results = Object.assign(
-      update_run_results,
+    updateRunResults = Object.assign(
+      updateRunResults,
       await updateDependencyFile(directory, depName, desiredVersion, reqs)
     );
   }
-  return update_run_results;
+
+  return updateRunResults;
 }
 
 async function updateDependencyFile(
@@ -161,7 +196,14 @@ async function updateDependencyFile(
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
-  const args = install_args_with_version(depName, desiredVersion, requirements);
+  const lockfileJson = parse(originalYarnLock).object;
+  const args = installArgsWithVersion(
+    depName,
+    desiredVersion,
+    requirements,
+    lockfileJson
+  );
+
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
 
   // Despite the innocent-sounding name, this actually does all the hard work
@@ -186,11 +228,12 @@ async function updateDependencyFile(
     path.join(directory, requirements.file),
     originalPackageJson
   );
+
   const lockfile2 = await Lockfile.fromDirectory(directory, reporter);
   const install2 = new LightweightInstall(flags, config, reporter, lockfile2);
   await install2.init();
-  var updatedYarnLock = readFile("yarn.lock");
 
+  let updatedYarnLock = readFile("yarn.lock");
   updatedYarnLock = recoverVersionComments(originalYarnLock, updatedYarnLock);
 
   return {
