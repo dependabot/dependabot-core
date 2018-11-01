@@ -2,10 +2,13 @@
 
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
-require "dependabot/file_updaters/java_script/npm_and_yarn/npmrc_builder"
 require "dependabot/utils/java_script/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+
+file_updater_path = "dependabot/file_updaters/java_script/npm_and_yarn/"
+require "#{file_updater_path}/npmrc_builder"
+require "#{file_updater_path}/package_json_preparer"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -127,7 +130,7 @@ module Dependabot
 
             return [] if relevant_unmet_peer_dependencies.empty?
 
-            # Prune out any pre-existing issues
+            # Prune out any pre-existing warnings
             relevant_unmet_peer_dependencies.reject do |issue|
               old_unmet_peer_dependencies.any? do |old_issue|
                 old_issue.slice(:requirement_name, :requiring_dep_name) ==
@@ -226,16 +229,7 @@ module Dependabot
             package_files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
-
-              updated_content = file.content
-              updated_content = replace_ssh_sources(updated_content)
-
-              # A bug prevents Yarn recognising that a directory is part of a
-              # workspace if it is specified with a `./` prefix.
-              updated_content = remove_workspace_path_prefixes(updated_content)
-
-              updated_content = sanitized_package_json_content(updated_content)
-              File.write(file.name, updated_content)
+              File.write(file.name, prepared_package_json_content(file))
             end
           end
 
@@ -260,73 +254,17 @@ module Dependabot
             content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
           end
 
+          def prepared_package_json_content(file)
+            FileUpdaters::JavaScript::NpmAndYarn::PackageJsonPreparer.new(
+              package_json_content: file.content
+            ).prepared_content
+          end
+
           def npmrc_content
             FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder.new(
               credentials: credentials,
               dependency_files: dependency_files
             ).npmrc_content
-          end
-
-          # TODO: Move into a generic file preparer class that can be reused
-          # between this class and the FileUpdater
-          def replace_ssh_sources(content)
-            updated_content = content
-
-            git_ssh_requirements_to_swap.each do |req|
-              new_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
-              updated_content = updated_content.gsub(req, new_req)
-            end
-
-            updated_content
-          end
-
-          def remove_workspace_path_prefixes(content)
-            json = JSON.parse(content)
-            return content unless json.key?("workspaces")
-
-            workspace_object = json.fetch("workspaces")
-            paths_array =
-              if workspace_object.is_a?(Hash)
-                workspace_object.values_at("packages", "nohoist").
-                  flatten.compact
-              elsif workspace_object.is_a?(Array) then workspace_object
-              else raise "Unexpected workspace object"
-              end
-
-            paths_array.each { |path| path.gsub!(%r{^\./}, "") }
-
-            json.to_json
-          end
-
-          def git_ssh_requirements_to_swap
-            if @git_ssh_requirements_to_swap
-              return @git_ssh_requirements_to_swap
-            end
-
-            @git_ssh_requirements_to_swap = []
-
-            package_files.each do |file|
-              FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES.each do |t|
-                JSON.parse(file.content).fetch(t, {}).each do |_, requirement|
-                  next unless requirement.start_with?("git+ssh:")
-
-                  req = requirement.split("#").first
-                  @git_ssh_requirements_to_swap << req
-                end
-              end
-            end
-
-            @git_ssh_requirements_to_swap
-          end
-
-          def sanitized_package_json_content(content)
-            content.
-              gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
-              gsub("\\ ", " ")                  # escaped whitespace not allowed
-          end
-
-          def version_class
-            Utils::JavaScript::Version
           end
 
           # Top level dependecies are required in the peer dep checker
@@ -390,6 +328,10 @@ module Dependabot
               select { |version| version_class.correct?(version.to_s) }.
               map { |version| version_class.new(version.to_s) }.
               max
+          end
+
+          def version_class
+            Utils::JavaScript::Version
           end
 
           def version_regex
