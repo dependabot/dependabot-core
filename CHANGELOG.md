@@ -1,3 +1,7 @@
+## v0.75.0, 1 November 2018
+
+- JS: First attempt at handling JS peer dependencies
+
 ## v0.74.26, 1 November 2018
 
 - Handle case with no previous dependabot PRs
