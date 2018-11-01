@@ -39,14 +39,10 @@ RSpec.describe namespace::VersionResolver do
       to_return(status: 200, body: react_dom_registry_response)
     stub_request(:get, react_dom_registry_listing_url + "/latest").
       to_return(status: 200, body: "{}")
-    stub_request(:get, react_dom_registry_listing_url + "/16.6.0").
-      to_return(status: 200)
     stub_request(:get, react_registry_listing_url).
       to_return(status: 200, body: react_registry_response)
     stub_request(:get, react_registry_listing_url + "/latest").
       to_return(status: 200, body: "{}")
-    stub_request(:get, react_registry_listing_url + "/16.6.0").
-      to_return(status: 200)
   end
 
   let(:dependency_files) { [package_json] }
@@ -162,6 +158,44 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+
+        context "that has (old) peer requirements that aren't included" do
+          let(:manifest_fixture_name) { "peer_dependency_changed.json" }
+          let(:npm_lock_fixture_name) { "peer_dependency_changed.json" }
+          let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react-apollo",
+              version: "2.1.8",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^2.1.8",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          let(:react_apollo_registry_listing_url) do
+            "https://registry.npmjs.org/react-apollo"
+          end
+          let(:react_apollo_registry_response) do
+            fixture("javascript", "npm_responses", "react-apollo.json")
+          end
+          before do
+            stub_request(:get, react_apollo_registry_listing_url).
+              to_return(status: 200, body: react_apollo_registry_response)
+            stub_request(:get, react_apollo_registry_listing_url + "/latest").
+              to_return(status: 200, body: "{}")
+          end
+
+          # Upgrading react-apollo is blocked by our apollo-client version.
+          # This test also checks that the old peer requirement on redux, which
+          # is no longer in the package.json, doesn't cause any problems *and*
+          # tests that complicated react peer requirements are processed OK.
+          it { is_expected.to eq(Gem::Version.new("2.1.9")) }
+        end
       end
 
       context "updating a dependency that is a peer requirement" do
