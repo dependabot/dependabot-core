@@ -1,3 +1,7 @@
+## v0.74.25, 1 November 2018
+
+- Use `chore` as semantic commit message if it is being used
+
 ## v0.74.24, 1 November 2018
 
 - Yarn: Fix resolved url in lockfile for dependencies installed from GitHub using the
