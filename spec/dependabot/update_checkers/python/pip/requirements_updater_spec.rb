@@ -112,6 +112,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             context "that needs updating" do
               let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
               its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+
+              context "and has more digits than the new version" do
+                let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
+                let(:latest_resolvable_version) { "1.10" }
+
+                its([:requirement]) { is_expected.to eq(">=1.9,<1.11.0") }
+              end
             end
           end
         end
