@@ -1,3 +1,7 @@
+## v0.75.1, 1 November 2018
+
+- JS: Hot fixes for VersionResolver
+
 ## v0.75.0, 1 November 2018
 
 - JS: First attempt at handling JS peer dependencies
