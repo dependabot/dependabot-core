@@ -89,12 +89,11 @@ module Dependabot
                 path = Pathname.new(file.name).dirname
                 run_checker(path: path, version: version)
               rescue SharedHelpers::HelperSubprocessFailed => error
-                if (match = error.message.match(NPM_PEER_DEP_ERROR_REGEX))
-                  match.named_captures
-                elsif (match = error.message.match(YARN_PEER_DEP_ERROR_REGEX))
-                  match.named_captures
-                else
-                  raise
+                if error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
+                  error.message.match(NPM_PEER_DEP_ERROR_REGEX).named_captures
+                elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
+                  error.message.match(YARN_PEER_DEP_ERROR_REGEX).named_captures
+                else raise
                 end
               end.compact
             end

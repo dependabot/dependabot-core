@@ -354,6 +354,29 @@ RSpec.describe namespace::VersionResolver do
           end
 
           it { is_expected.to eq(Gem::Version.new("0.2.1")) }
+
+          context "with a dependency version that can't be found" do
+            let(:manifest_fixture_name) { "yanked_version.json" }
+            let(:latest_allowable_version) { Gem::Version.new("99.0.0") }
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "fetch-factory",
+                version: nil,
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^99.0.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+
+            # We let the latest version through here, rather than raising.
+            # Eventually error handling should be moved from the FileUpdater
+            # to here
+            it { is_expected.to eq(Gem::Version.new("99.0.0")) }
+          end
         end
       end
     end
