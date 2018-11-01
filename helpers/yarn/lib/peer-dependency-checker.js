@@ -47,7 +47,10 @@ function optionalRequirement(requirements) {
 }
 
 function installArgsWithVersion(depName, desiredVersion, requirements) {
-  const source = requirements.source;
+  const source =
+    "source" in requirements
+      ? requirements.source
+      : (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
     return [`${depName}@${source.url}#${desiredVersion}`];

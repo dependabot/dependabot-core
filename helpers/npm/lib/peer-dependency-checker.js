@@ -10,30 +10,14 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 
-const fs = require("fs");
-const path = require("path");
-const npm6 = require("npm");
-const npm5 = require("npm5/node_modules/npm");
-const npm6installer = require("npm/lib/install");
-const npm5installer = require("npm5/node_modules/npm/lib/install");
+const npm = require("npm");
+const installer = require("npm/lib/install");
 
-function install_args(depName, desiredVersion, requirements, oldLockfile) {
+function installArgsWithVersion(depName, desiredVersion, requirements) {
   const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
-    let originalVersion = ((oldLockfile["dependencies"] || {})[depName] || {})[
-      "version"
-    ];
-
-    if (!originalVersion || !originalVersion.includes("#")) {
-      originalVersion = `${source.url}#ref`;
-    }
-
-    originalVersion = originalVersion.replace(
-      /git\+ssh:\/\/git@(.*?)[:/]/,
-      "git+https://$1/"
-    );
-    return [`${originalVersion.replace(/#.*/, "")}#${desiredVersion}`];
+    return [`${depName}@${source.url}#${desiredVersion}`];
   } else {
     return [`${depName}@${desiredVersion}`];
   }
@@ -60,41 +44,19 @@ function muteStderr() {
   };
 }
 
-function installer_for_lockfile(oldLockfile) {
-  const requireObjectsIncludeMatchers = Object.keys(
-    oldLockfile["dependencies"] || {}
-  ).some(key => {
-    const requires = oldLockfile["dependencies"][key]["requires"] || {};
-
-    return Object.keys(requires).some(key2 =>
-      requires[key2].match(/^\^|~|\<|\>/)
-    );
-  });
-
-  return requireObjectsIncludeMatchers ? npm6installer : npm5installer;
-}
-
 async function checkPeerDependencies(
   directory,
   depName,
   desiredVersion,
   requirements,
-  topLevelDependencies,
-  lockfileName
+  topLevelDependencies
 ) {
-  const readFile = fileName =>
-    fs.readFileSync(path.join(directory, fileName)).toString();
-
-  await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
-  await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
-  // lockfileName = "npm-shrinkwrap.json";
-  const oldLockfile = lockfileName ? JSON.parse(readFile(lockfileName)) : {};
-  const installer = installer_for_lockfile(oldLockfile);
+  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
 
   const dryRun = true;
 
   // Returns dep name and version for npm install, example: ["react@16.6.0"]
-  let args = install_args(depName, desiredVersion, requirements, oldLockfile);
+  let args = installArgsWithVersion(depName, desiredVersion, requirements);
 
   // To check peer dependencies requirements in all top level dependencies we
   // need to explicitly tell npm to fetch all manifests by specifying the
@@ -115,47 +77,43 @@ async function checkPeerDependencies(
   // - given react and react-dom in top level deps
   const otherDeps = (topLevelDependencies || [])
     .filter(dep => dep.name !== depName && dep.version)
-    .map(dep =>
-      install_args(dep.name, dep.version, dep.requirements, oldLockfile)
-    )
+    .map(dep => installArgsWithVersion(dep.name, dep.version, dep.requirements))
     .reduce((acc, dep) => acc.concat(dep), []);
 
   args = args.concat(otherDeps);
 
-  const initial_installer = new installer.Installer(directory, dryRun, args, {
+  const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
 
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanup_installer = new installer.Installer(directory, dryRun, [], {
+  const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
     packageLockOnly: true
   });
 
   // Skip printing the success message
-  initial_installer.printInstalled = cb => cb();
-  cleanup_installer.printInstalled = cb => cb();
+  initialInstaller.printInstalled = cb => cb();
+  cleanupInstaller.printInstalled = cb => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
-    await runAsync(initial_installer, initial_installer.run, []);
-    await runAsync(cleanup_installer, cleanup_installer.run, []);
+    await runAsync(initialInstaller, initialInstaller.run, []);
+    await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
   }
 
-  const peerDependencyWarnings = initial_installer.idealTree.warnings
-    .filter(warning => {
+  const peerDependencyWarning = initialInstaller.idealTree.warnings.find(
+    warning => {
       return warning.code === "EPEERINVALID";
-    })
-    .map(warning => {
-      return warning.message;
-    });
+    }
+  );
 
-  if (peerDependencyWarnings.length) {
-    console.log(peerDependencyWarnings);
+  if (peerDependencyWarning) {
+    throw new Error(peerDependencyWarning.message);
   }
 }
 

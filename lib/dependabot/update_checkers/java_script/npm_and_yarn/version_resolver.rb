@@ -28,7 +28,7 @@ module Dependabot
           # but none is installed. You must install peer dependencies yourself.
           NPM_PEER_DEP_ERROR_REGEX =
             /
-              '(?<requiring_dep>[^\s]+)\s
+              (?<requiring_dep>[^\s]+)\s
               requires\sa\speer\sof\s
               (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled.
             /x.freeze
@@ -153,12 +153,6 @@ module Dependabot
           end
 
           def run_npm_checker(path:)
-            # FIX ME!!
-            lockfile_name =
-              if package_locks.any? then package_locks.first.name
-              elsif shrinkwraps.any? then shrinkwraps.first.name
-              end
-
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
                 SharedHelpers.run_helper_subprocess(
@@ -169,8 +163,7 @@ module Dependabot
                     dependency.name,
                     latest_allowable_version,
                     requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies.map(&:to_h),
-                    lockfile_name
+                    top_level_dependencies.map(&:to_h)
                   ]
                 )
               end
