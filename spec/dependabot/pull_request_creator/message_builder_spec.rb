@@ -325,12 +325,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         it do
-          is_expected.to eq("build(deps): bump business from 1.4.0 to 1.5.0")
+          is_expected.to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
         end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("build(deps): [security] bump") }
+          it { is_expected.to start_with("chore(deps): [security] bump") }
         end
 
         context "with a dev dependency" do
@@ -355,7 +355,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
 
-          it { is_expected.to start_with("build(deps-dev): bump") }
+          it { is_expected.to start_with("chore(deps-dev): bump") }
         end
       end
 
@@ -446,13 +446,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "uses a semantic commit prefix" do
           expect(pr_name).
-            to eq("build(deps): update business requirement from ~> 1.4.0 "\
+            to eq("chore(deps): update business requirement from ~> 1.4.0 "\
                   "to ~> 1.5.0")
         end
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("build(deps): [security] update") }
+          it { is_expected.to start_with("chore(deps): [security] update") }
         end
       end
     end
