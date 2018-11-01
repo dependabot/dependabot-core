@@ -7,6 +7,7 @@ require "dependabot/utils/java_script/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module UpdateCheckers
     module JavaScript
@@ -33,11 +34,12 @@ module Dependabot
             /x.freeze
 
           def initialize(dependency:, credentials:, dependency_files:,
-                         latest_allowable_version:)
+                         latest_allowable_version:, latest_version_finder:)
             @dependency               = dependency
             @credentials              = credentials
             @dependency_files         = dependency_files
             @latest_allowable_version = latest_allowable_version
+            @latest_version_finder    = latest_version_finder
           end
 
           def latest_resolvable_version
@@ -45,15 +47,13 @@ module Dependabot
               return latest_allowable_version
             end
 
-            # TODO: This is too crude. We should find the latest version that
-            # won't cause those errors (by looking at the errors)
-            nil
+            satisfying_versions.first
           end
 
           private
 
           attr_reader :dependency, :credentials, :dependency_files,
-                      :latest_allowable_version
+                      :latest_allowable_version, :latest_version_finder
 
           def peer_dependency_errors
             return @peer_dependency_errors if @peer_dependency_errors_checked
@@ -101,12 +101,37 @@ module Dependabot
             end
           end
 
+          def satisfying_versions
+            latest_version_finder.
+              possible_versions_with_details.
+              select do |version, details|
+                unless peer_reqs_on_dep.all? { |r| r.satisfied_by?(version) }
+                  next false
+                end
+                next true unless details["peerDependencies"]
+
+                details["peerDependencies"].all? do |dep, req|
+                  dep = top_level_dependencies.find { |d| d.name == dep }
+                  req = Utils::JavaScript::Requirement.new(req)
+                  next unless version_class.correct?(dep.version)
+
+                  req.satisfied_by?(version_class.new(dep.version))
+                end
+              end.
+              map(&:first)
+          end
+
+          def peer_reqs_on_dep
+            unmet_peer_dependencies.
+              select { |dep| dep[:requirement_name] == dependency.name }.
+              map { |dep| dep[:requirement_version] }.
+              map { |req| Utils::JavaScript::Requirement.new(req) }
+          end
+
           def run_checker(path:)
-            if package_locks.any? || shrinkwraps.any?
-              run_npm_checker(path: path)
-            else
-              run_yarn_checker(path: path)
-            end
+            run_npm_checker(path: path) if [*package_locks, *shrinkwraps].any?
+            run_yarn_checker(path: path) if yarn_locks.any?
+            run_yarn_checker(path: path) if lockfiles.none?
           end
 
           def run_yarn_checker(path:)
@@ -120,7 +145,7 @@ module Dependabot
                     dependency.name,
                     latest_allowable_version,
                     requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies
+                    top_level_dependencies.map(&:to_h)
                   ]
                 )
               end
@@ -129,12 +154,10 @@ module Dependabot
 
           def run_npm_checker(path:)
             # FIX ME!!
-            lockfile_name = nil
-            if package_locks.any?
-              lockfile_name = package_locks.first.name
-            elsif shrinkwraps.any?
-              lockfile_name = shrinkwraps.first.name
-            end
+            lockfile_name =
+              if package_locks.any? then package_locks.first.name
+              elsif shrinkwraps.any? then shrinkwraps.first.name
+              end
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
@@ -146,7 +169,7 @@ module Dependabot
                     dependency.name,
                     latest_allowable_version,
                     requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies,
+                    top_level_dependencies.map(&:to_h),
                     lockfile_name
                   ]
                 )
@@ -283,7 +306,11 @@ module Dependabot
               dependency_files: dependency_files,
               source: nil,
               credentials: credentials
-            ).parse.select(&:top_level?).map(&:to_h)
+            ).parse.select(&:top_level?)
+          end
+
+          def lockfiles
+            [*yarn_locks, *package_locks, *shrinkwraps]
           end
 
           def package_locks
@@ -324,3 +351,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

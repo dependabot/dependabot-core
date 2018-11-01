@@ -140,7 +140,8 @@ module Dependabot
               dependency: dependency,
               credentials: credentials,
               dependency_files: dependency_files,
-              latest_allowable_version: latest_version
+              latest_allowable_version: latest_version,
+              latest_version_finder: latest_version_finder
             )
         end
 

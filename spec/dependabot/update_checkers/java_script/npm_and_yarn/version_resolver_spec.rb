@@ -12,10 +12,43 @@ RSpec.describe namespace::VersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      latest_allowable_version: latest_allowable_version
+      latest_allowable_version: latest_allowable_version,
+      latest_version_finder: latest_version_finder
     )
   end
   let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
+  let(:latest_version_finder) do
+    namespace::LatestVersionFinder.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: []
+    )
+  end
+  let(:react_dom_registry_listing_url) do
+    "https://registry.npmjs.org/react-dom"
+  end
+  let(:react_dom_registry_response) do
+    fixture("javascript", "npm_responses", "react-dom.json")
+  end
+  let(:react_registry_listing_url) { "https://registry.npmjs.org/react" }
+  let(:react_registry_response) do
+    fixture("javascript", "npm_responses", "react.json")
+  end
+  before do
+    stub_request(:get, react_dom_registry_listing_url).
+      to_return(status: 200, body: react_dom_registry_response)
+    stub_request(:get, react_dom_registry_listing_url + "/latest").
+      to_return(status: 200, body: "{}")
+    stub_request(:get, react_dom_registry_listing_url + "/16.6.0").
+      to_return(status: 200)
+    stub_request(:get, react_registry_listing_url).
+      to_return(status: 200, body: react_registry_response)
+    stub_request(:get, react_registry_listing_url + "/latest").
+      to_return(status: 200, body: "{}")
+    stub_request(:get, react_registry_listing_url + "/16.6.0").
+      to_return(status: 200)
+  end
 
   let(:dependency_files) { [package_json] }
   let(:package_json) do
@@ -87,7 +120,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react-dom",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -98,7 +131,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
       end
 
       context "updating a dependency that is a peer requirement" do
@@ -108,7 +141,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -119,7 +152,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
     end
 
@@ -137,7 +170,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react-dom",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -148,7 +181,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
       end
 
       context "updating a dependency that is a peer requirement" do
@@ -158,7 +191,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -169,7 +202,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
     end
 
@@ -198,7 +231,8 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        # We don't handle updates without a lockfile properly yet
+        pending { is_expected.to eq(Gem::Version.new("15.2.0")) }
 
         context "to an acceptable version" do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
@@ -223,7 +257,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
 
         context "to an acceptable version" do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
@@ -269,7 +303,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react-dom",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -280,7 +314,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
       end
 
       context "updating a dependency that is a peer requirement" do
@@ -290,7 +324,7 @@ RSpec.describe namespace::VersionResolver do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "react",
-            version: "15.6.2",
+            version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
@@ -301,7 +335,7 @@ RSpec.describe namespace::VersionResolver do
           )
         end
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
     end
   end

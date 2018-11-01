@@ -69,6 +69,15 @@ module Dependabot
               sort.reverse
           end
 
+          def possible_versions_with_details
+            npm_details.fetch("versions", {}).
+              reject { |_, details| details["deprecated"] }.
+              transform_keys { |k| version_class.new(k) }.
+              reject { |k, _| k.prerelease? && !related_to_current_pre?(k) }.
+              reject { |k, _| ignore_reqs.any? { |r| r.satisfied_by?(k) } }.
+              sort.reverse
+          end
+
           private
 
           attr_reader :dependency, :credentials, :dependency_files,
