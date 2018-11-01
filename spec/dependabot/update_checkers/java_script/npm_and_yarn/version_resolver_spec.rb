@@ -223,6 +223,30 @@ RSpec.describe namespace::VersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
+
+      context "when there are already peer requirement issues" do
+        let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
+        let(:shrinkwrap_fixture_name) { "peer_dependency_mismatch.json" }
+
+        context "for a dependency with issues (that won't be fixed)" do
+          let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react-dom",
+              version: "16.0.0",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^16.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        end
+      end
     end
 
     context "with no lockfile" do
@@ -303,7 +327,7 @@ RSpec.describe namespace::VersionResolver do
       context "when there are already peer requirement issues" do
         let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
 
-        context "for the dependency with issues" do
+        context "for a dependency with issues" do
           let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
           let(:dependency) do
             Dependabot::Dependency.new(

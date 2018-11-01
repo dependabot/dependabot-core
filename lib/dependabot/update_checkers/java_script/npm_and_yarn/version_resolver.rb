@@ -127,8 +127,13 @@ module Dependabot
 
             return [] if relevant_unmet_peer_dependencies.empty?
 
-            relevant_unmet_peer_dependencies.
-              reject { |issue| old_unmet_peer_dependencies.include?(issue) }
+            # Prune out any pre-existing issues
+            relevant_unmet_peer_dependencies.reject do |issue|
+              old_unmet_peer_dependencies.any? do |old_issue|
+                old_issue.slice(:requirement_name, :requiring_dep_name) ==
+                  issue.slice(:requirement_name, :requiring_dep_name)
+              end
+            end
           end
 
           def satisfying_versions
