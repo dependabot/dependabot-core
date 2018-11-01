@@ -60,45 +60,75 @@ module Dependabot
 
             @peer_dependency_errors_checked = true
 
+            @peer_dependency_errors =
+              fetch_peer_dependency_errors(version: latest_allowable_version)
+          end
+
+          def old_peer_dependency_errors
+            if @old_peer_dependency_errors_checked
+              return @old_peer_dependency_errors
+            end
+
+            @old_peer_dependency_errors_checked = true
+
+            @old_peer_dependency_errors =
+              fetch_peer_dependency_errors(version: dependency.version)
+          end
+
+          def fetch_peer_dependency_errors(version:)
             # TODO: Add all of the error handling that the FileUpdater does
             # here (since problematic repos will be resolved here before they're
             # seen by the FileUpdater)
-            @peer_dependency_errors =
-              SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
 
-                package_files.map do |file|
-                  run_checker(path: Pathname.new(file.name).dirname)
-                rescue SharedHelpers::HelperSubprocessFailed => error
-                  if (match = error.message.match(NPM_PEER_DEP_ERROR_REGEX))
-                    match.named_captures
-                  elsif (match = error.message.match(YARN_PEER_DEP_ERROR_REGEX))
-                    match.named_captures
-                  else
-                    raise
-                  end
-                end.compact
-              end
+              package_files.map do |file|
+                path = Pathname.new(file.name).dirname
+                run_checker(path: path, version: version)
+              rescue SharedHelpers::HelperSubprocessFailed => error
+                if (match = error.message.match(NPM_PEER_DEP_ERROR_REGEX))
+                  match.named_captures
+                elsif (match = error.message.match(YARN_PEER_DEP_ERROR_REGEX))
+                  match.named_captures
+                else
+                  raise
+                end
+              end.compact
+            end
           end
 
           def unmet_peer_dependencies
-            peer_dependency_errors.map do |captures|
-              {
-                requirement_name:
-                  captures.fetch("required_dep").sub(/@[^@]+$/, ""),
-                requirement_version:
-                  captures.fetch("required_dep").split("@").last,
-                requiring_dep_name:
-                  captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
-              }
-            end
+            peer_dependency_errors.
+              map { |captures| error_details_from_captures(captures) }
+          end
+
+          def old_unmet_peer_dependencies
+            old_peer_dependency_errors.
+              map { |captures| error_details_from_captures(captures) }
+          end
+
+          def error_details_from_captures(captures)
+            {
+              requirement_name:
+                captures.fetch("required_dep").sub(/@[^@]+$/, ""),
+              requirement_version:
+                captures.fetch("required_dep").split("@").last,
+              requiring_dep_name:
+                captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
+            }
           end
 
           def relevant_unmet_peer_dependencies
-            unmet_peer_dependencies.select do |dep|
-              dep[:requirement_name] == dependency.name ||
-                dep[:requiring_dep_name] == dependency.name
-            end
+            relevant_unmet_peer_dependencies =
+              unmet_peer_dependencies.select do |dep|
+                dep[:requirement_name] == dependency.name ||
+                  dep[:requiring_dep_name] == dependency.name
+              end
+
+            return [] if relevant_unmet_peer_dependencies.empty?
+
+            relevant_unmet_peer_dependencies.
+              reject { |issue| old_unmet_peer_dependencies.include?(issue) }
           end
 
           def satisfying_versions
@@ -113,9 +143,9 @@ module Dependabot
                 details["peerDependencies"].all? do |dep, req|
                   dep = top_level_dependencies.find { |d| d.name == dep }
                   req = Utils::JavaScript::Requirement.new(req)
-                  next unless version_class.correct?(dep.version)
+                  next unless version_for_dependency(dep)
 
-                  req.satisfied_by?(version_class.new(dep.version))
+                  req.satisfied_by?(version_for_dependency(dep))
                 end
               end.
               map(&:first)
@@ -128,13 +158,16 @@ module Dependabot
               map { |req| Utils::JavaScript::Requirement.new(req) }
           end
 
-          def run_checker(path:)
-            run_npm_checker(path: path) if [*package_locks, *shrinkwraps].any?
-            run_yarn_checker(path: path) if yarn_locks.any?
-            run_yarn_checker(path: path) if lockfiles.none?
+          def run_checker(path:, version:)
+            if [*package_locks, *shrinkwraps].any?
+              run_npm_checker(path: path, version: version)
+            end
+
+            run_yarn_checker(path: path, version: version) if yarn_locks.any?
+            run_yarn_checker(path: path, version: version) if lockfiles.none?
           end
 
-          def run_yarn_checker(path:)
+          def run_yarn_checker(path:, version:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
                 SharedHelpers.run_helper_subprocess(
@@ -143,7 +176,7 @@ module Dependabot
                   args: [
                     Dir.pwd,
                     dependency.name,
-                    latest_allowable_version,
+                    version,
                     requirements_for_path(dependency.requirements, path),
                     top_level_dependencies.map(&:to_h)
                   ]
@@ -152,7 +185,7 @@ module Dependabot
             end
           end
 
-          def run_npm_checker(path:)
+          def run_npm_checker(path:, version:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
                 SharedHelpers.run_helper_subprocess(
@@ -161,7 +194,7 @@ module Dependabot
                   args: [
                     Dir.pwd,
                     dependency.name,
-                    latest_allowable_version,
+                    version,
                     requirements_for_path(dependency.requirements, path),
                     top_level_dependencies.map(&:to_h)
                   ]
@@ -338,6 +371,24 @@ module Dependabot
           def npm_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
             File.join(project_root, "helpers/npm/bin/run.js")
+          end
+
+          def version_for_dependency(dep)
+            if dep.version && version_class.correct?(dep.version)
+              return version_class.new(dep.version)
+            end
+
+            dep.requirements.map { |r| r[:requirement] }.compact.
+              reject { |req_string| req_string.start_with?("<") }.
+              select { |req_string| req_string.match?(version_regex) }.
+              map { |req_string| req_string.match(version_regex) }.
+              select { |version| version_class.correct?(version.to_s) }.
+              map { |version| version_class.new(version.to_s) }.
+              max
+          end
+
+          def version_regex
+            version_class::VERSION_PATTERN
           end
         end
       end

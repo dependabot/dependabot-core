@@ -16,7 +16,6 @@ RSpec.describe namespace::VersionResolver do
       latest_version_finder: latest_version_finder
     )
   end
-  let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
   let(:latest_version_finder) do
     namespace::LatestVersionFinder.new(
       dependency: dependency,
@@ -89,20 +88,6 @@ RSpec.describe namespace::VersionResolver do
     }]
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "etag",
-      version: "1.0.0",
-      requirements: [{
-        file: "package.json",
-        requirement: "^1.0.0",
-        groups: ["dependencies"],
-        source: nil
-      }],
-      package_manager: "npm_and_yarn"
-    )
-  end
-
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
 
@@ -110,6 +95,23 @@ RSpec.describe namespace::VersionResolver do
       let(:dependency_files) { [package_json, npm_lock] }
 
       context "updating a dependency without peer dependency issues" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
         it { is_expected.to eq(latest_allowable_version) }
       end
 
@@ -160,6 +162,23 @@ RSpec.describe namespace::VersionResolver do
       let(:dependency_files) { [package_json, shrinkwrap] }
 
       context "updating a dependency without peer dependency issues" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
         it { is_expected.to eq(latest_allowable_version) }
       end
 
@@ -211,6 +230,22 @@ RSpec.describe namespace::VersionResolver do
 
       context "updating a dependency without peer dependency issues" do
         let(:manifest_fixture_name) { "package.json" }
+        let(:manifest_fixture_name) { "package.json" }
+        let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
         it { is_expected.to eq(latest_allowable_version) }
       end
 
@@ -232,7 +267,7 @@ RSpec.describe namespace::VersionResolver do
         end
 
         # We don't handle updates without a lockfile properly yet
-        pending { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
 
         context "to an acceptable version" do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
@@ -267,22 +302,44 @@ RSpec.describe namespace::VersionResolver do
 
       context "when there are already peer requirement issues" do
         let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
-        let(:latest_allowable_version) { Gem::Version.new("0.2.1") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "fetch-factory",
-            version: nil,
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^0.0.1",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
+
+        context "for the dependency with issues" do
+          let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react",
+              version: nil,
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^15.2.0",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("16.3.1")) }
         end
 
-        it { is_expected.to eq(Gem::Version.new("0.2.1")) }
+        context "updating an unrelated dependency" do
+          let(:latest_allowable_version) { Gem::Version.new("0.2.1") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "fetch-factory",
+              version: nil,
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^0.0.1",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("0.2.1")) }
+        end
       end
     end
 
@@ -292,6 +349,20 @@ RSpec.describe namespace::VersionResolver do
       context "updating a dependency without peer dependency issues" do
         let(:manifest_fixture_name) { "package.json" }
         let(:yarn_lock_fixture_name) { "yarn.lock" }
+        let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
 
         it { is_expected.to eq(latest_allowable_version) }
       end
