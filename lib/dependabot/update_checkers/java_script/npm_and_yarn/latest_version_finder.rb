@@ -49,7 +49,7 @@ module Dependabot
                 requirements_array(r.fetch(:requirement))
             end.compact
 
-            npm_versions_array.
+            possible_versions.
               find do |version|
                 reqs.all? { |r| r.any? { |opt| opt.satisfied_by?(version) } } &&
                   !yanked?(version)
@@ -58,6 +58,24 @@ module Dependabot
             raise if dependency_registry == "registry.npmjs.org"
             # Sometimes custom registries are flaky. We don't want to make that
             # our problem, so we quietly return `nil` here.
+          end
+
+          def possible_versions
+            npm_details.fetch("versions", {}).
+              reject { |_, details| details["deprecated"] }.
+              keys.map { |v| version_class.new(v) }.
+              reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
+              reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
+              sort.reverse
+          end
+
+          def possible_versions_with_details
+            npm_details.fetch("versions", {}).
+              reject { |_, details| details["deprecated"] }.
+              transform_keys { |k| version_class.new(k) }.
+              reject { |k, _| k.prerelease? && !related_to_current_pre?(k) }.
+              reject { |k, _| ignore_reqs.any? { |r| r.satisfied_by?(k) } }.
+              sort.reverse
           end
 
           private
@@ -149,16 +167,7 @@ module Dependabot
           end
 
           def version_from_versions_array
-            npm_versions_array.find { |version| !yanked?(version) }
-          end
-
-          def npm_versions_array
-            npm_details.fetch("versions", {}).
-              reject { |_, details| details["deprecated"] }.
-              keys.map { |v| version_class.new(v) }.
-              reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
-              reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-              sort.reverse
+            possible_versions.find { |version| !yanked?(version) }
           end
 
           def yanked?(version)

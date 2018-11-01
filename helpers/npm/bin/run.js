@@ -1,7 +1,9 @@
 const updater = require("../lib/updater");
+const peerDependencyChecker = require("../lib/peer-dependency-checker");
 
 const functionMap = {
-  update: updater.updateDependencyFiles
+  update: updater.updateDependencyFiles,
+  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
 };
 
 function output(obj) {

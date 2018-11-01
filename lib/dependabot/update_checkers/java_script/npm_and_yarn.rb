@@ -11,6 +11,7 @@ module Dependabot
         require_relative "npm_and_yarn/requirements_updater"
         require_relative "npm_and_yarn/library_detector"
         require_relative "npm_and_yarn/latest_version_finder"
+        require_relative "npm_and_yarn/version_resolver"
         require_relative "npm_and_yarn/subdependency_version_resolver"
 
         def latest_version
@@ -20,11 +21,15 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          return latest_version if dependency.top_level?
+          return unless latest_version
 
-          # If the dependency is indirect its version is constrained  by the
-          # requirements placed on it by dependencies lower down the tree
-          subdependency_version_resolver.latest_resolvable_version
+          if dependency.top_level?
+            version_resolver.latest_resolvable_version
+          else
+            # If the dependency is indirect its version is constrained  by the
+            # requirements placed on it by dependencies lower down the tree
+            subdependency_version_resolver.latest_resolvable_version
+          end
         end
 
         def latest_resolvable_version_with_no_unlock
@@ -126,6 +131,17 @@ module Dependabot
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions
+            )
+        end
+
+        def version_resolver
+          @version_resolver ||=
+            VersionResolver.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              latest_allowable_version: latest_version,
+              latest_version_finder: latest_version_finder
             )
         end
 
