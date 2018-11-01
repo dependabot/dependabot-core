@@ -1,3 +1,8 @@
+## v0.74.23, 1 November 2018
+
+- Python: Handle upper bound changes when new version has fewer digits than old
+  one
+
 ## v0.74.22, 31 October 2018
 
 - Python: Handle custom python versions when using Poetry
