@@ -142,7 +142,7 @@ module Dependabot
         pr_name = ""
         if using_semantic_commit_messages?
           scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
-          pr_name += "build(#{scope}): "
+          pr_name += "#{semantic_prefix}(#{scope}): "
           pr_name += "[security] " if includes_security_fixes?
           pr_name + (library? ? "update " : "bump ")
         elsif using_gitmoji_commit_messages?
@@ -633,6 +633,32 @@ module Dependabot
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      def semantic_prefix
+        unless using_semantic_commit_messages?
+          raise "Not using semantic prefixes!"
+        end
+
+        recent_commits_using_chore =
+          recent_commit_messages.
+          any? { |msg| msg.start_with?("chore") }
+
+        recent_commits_using_build =
+          recent_commit_messages.
+          any? { |msg| msg.start_with?("build") }
+
+        if recent_commits_using_chore && !recent_commits_using_build
+          "chore"
+        elsif recent_commits_using_build && !recent_commits_using_chore
+          "build"
+        elsif last_dependabot_commit_message&.start_with?("chore")
+          "chore"
+        else
+          "build"
+        end
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+
       def using_gitmoji_commit_messages?
         return false if recent_commit_messages.none?
 
@@ -644,29 +670,61 @@ module Dependabot
       end
 
       def recent_commit_messages
-        @recent_commit_messages ||=
-          case source.provider
-          when "github" then recent_github_commit_messages
-          when "gitlab" then recent_gitlab_commit_messages
-          else raise "Unsupported provider: #{source.provider}"
-          end
+        case source.provider
+        when "github" then recent_github_commit_messages
+        when "gitlab" then recent_gitlab_commit_messages
+        else raise "Unsupported provider: #{source.provider}"
+        end
       end
 
       def recent_github_commit_messages
-        github_client_for_source.commits(source.repo).
+        @recent_github_commit_messages ||=
+          github_client_for_source.commits(source.repo)
+
+        @recent_github_commit_messages.
           reject { |c| c.author&.type == "Bot" }.
-          reject { |c| c.message&.start_with?("Merge") }.
+          reject { |c| c.commit&.message&.start_with?("Merge") }.
           map(&:commit).
           map(&:message).
           compact
       end
 
       def recent_gitlab_commit_messages
-        gitlab_client_for_source.commits(source.repo).
+        @recent_gitlab_commit_messages ||=
+          gitlab_client_for_source.commits(source.repo)
+
+        @recent_gitlab_commit_messages.
           reject { |c| c.author_email == "support@dependabot.com" }.
           reject { |c| c.message&.start_with?("merge !") }.
           map(&:message).
           compact
+      end
+
+      def last_dependabot_commit_message
+        case source.provider
+        when "github" then last_github_dependabot_commit_message
+        when "gitlab" then last_gitlab_dependabot_commit_message
+        else raise "Unsupported provider: #{source.provider}"
+        end
+      end
+
+      def last_github_dependabot_commit_message
+        @recent_github_commit_messages ||=
+          github_client_for_source.commits(source.repo)
+
+        @recent_github_commit_messages.
+          find { |c| c.author&.login == "dependabot[bot]" }&.
+          commit&.
+          message
+      end
+
+      def last_gitlab_dependabot_commit_message
+        @recent_gitlab_commit_messages ||=
+          gitlab_client_for_source.commits(source.repo)
+
+        @recent_gitlab_commit_messages.
+          find { |c| c.author_email == "support@dependabot.com" }&.
+          message
       end
 
       def github_client_for_source
