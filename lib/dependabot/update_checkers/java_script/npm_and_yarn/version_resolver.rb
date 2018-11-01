@@ -51,6 +51,11 @@ module Dependabot
             end
 
             satisfying_versions.first
+          rescue SharedHelpers::HelperSubprocessFailed
+            # Fall back to allowing the version through. Whatever error
+            # occurred should be properly handled by the FileUpdater. We
+            # can slowly migrate error handling to this class over time.
+            latest_allowable_version
           end
 
           private
