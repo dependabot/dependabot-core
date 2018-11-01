@@ -51,11 +51,6 @@ module Dependabot
             end
 
             satisfying_versions.first
-          rescue SharedHelpers::HelperSubprocessFailed
-            # Fall back to allowing the version through. Whatever error
-            # occurred should be properly handled by the FileUpdater. We
-            # can slowly migrate error handling to this class over time.
-            latest_allowable_version
           end
 
           private
@@ -103,6 +98,11 @@ module Dependabot
                 end
               end.compact
             end
+          rescue SharedHelpers::HelperSubprocessFailed
+            # Fall back to allowing the version through. Whatever error
+            # occurred should be properly handled by the FileUpdater. We
+            # can slowly migrate error handling to this class over time.
+            []
           end
 
           def unmet_peer_dependencies
@@ -148,27 +148,32 @@ module Dependabot
             latest_version_finder.
               possible_versions_with_details.
               select do |version, details|
-                unless peer_reqs_on_dep.all? { |r| r.satisfied_by?(version) }
-                  next false
-                end
+                next false unless satisfies_peer_reqs_on_dep?(version)
                 next true unless details["peerDependencies"]
 
                 details["peerDependencies"].all? do |dep, req|
                   dep = top_level_dependencies.find { |d| d.name == dep }
-                  req = Utils::JavaScript::Requirement.new(req)
-                  next unless version_for_dependency(dep)
+                  reqs = Utils::JavaScript::Requirement.requirements_array(req)
+                  next false unless dep
+                  next false unless version_for_dependency(dep)
 
-                  req.satisfied_by?(version_for_dependency(dep))
+                  reqs.any? { |r| r.satisfied_by?(version_for_dependency(dep)) }
                 end
               end.
               map(&:first)
           end
 
+          def satisfies_peer_reqs_on_dep?(version)
+            peer_reqs_on_dep.all? do |req|
+              reqs = Utils::JavaScript::Requirement.requirements_array(req)
+              reqs.any? { |r| r.satisfied_by?(version) }
+            end
+          end
+
           def peer_reqs_on_dep
             unmet_peer_dependencies.
               select { |dep| dep[:requirement_name] == dependency.name }.
-              map { |dep| dep[:requirement_version] }.
-              map { |req| Utils::JavaScript::Requirement.new(req) }
+              map { |dep| dep[:requirement_version] }
           end
 
           def run_checker(path:, version:)

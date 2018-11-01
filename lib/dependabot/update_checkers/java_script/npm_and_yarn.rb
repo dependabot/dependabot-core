@@ -23,13 +23,14 @@ module Dependabot
         def latest_resolvable_version
           return unless latest_version
 
-          if dependency.top_level?
-            version_resolver.latest_resolvable_version
-          else
-            # If the dependency is indirect its version is constrained  by the
-            # requirements placed on it by dependencies lower down the tree
-            subdependency_version_resolver.latest_resolvable_version
-          end
+          @latest_resolvable_version ||=
+            if dependency.top_level?
+              version_resolver.latest_resolvable_version
+            else
+              # If the dependency is indirect its version is constrained  by the
+              # requirements placed on it by dependencies lower down the tree
+              subdependency_version_resolver.latest_resolvable_version
+            end
         end
 
         def latest_resolvable_version_with_no_unlock
