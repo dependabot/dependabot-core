@@ -1,3 +1,8 @@
+## v0.75.3, 2 November 2018
+
+- Gradle: Handle dependency set updating when the dependency set has been
+  updated already
+
 ## v0.75.2, 2 November 2018
 
 - Python: Don't write .python-version when updating Pipfile or pip-compile files
