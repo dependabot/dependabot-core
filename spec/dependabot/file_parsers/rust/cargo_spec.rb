@@ -83,6 +83,18 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         end
       end
 
+      context "which is part of a workspace but not the root" do
+        let(:manifest_fixture_name) { "workspace_child" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+              expect(error.message).
+                to include("This project is part of a Rust workspace")
+            end
+        end
+      end
+
       context "with declarations in dependencies and build-dependencies" do
         let(:manifest_fixture_name) { "repeated_dependency" }
 

@@ -21,6 +21,8 @@ module Dependabot
           %w(dependencies dev-dependencies build-dependencies).freeze
 
         def parse
+          check_rust_workspace_root
+
           dependency_set = DependencySet.new
           dependency_set += manifest_dependencies
           dependency_set += lockfile_dependencies if lockfile
@@ -38,6 +40,21 @@ module Dependabot
         end
 
         private
+
+        def check_rust_workspace_root
+          cargo_toml = dependency_files.find { |f| f.name == "Cargo.toml" }
+          workspace_root = parsed_file(cargo_toml).dig("package", "workspace")
+          return unless workspace_root
+
+          msg = "This project is part of a Rust workspace but is not the "\
+                "workspace root."\
+
+          if cargo_toml.directory != "/"
+            msg += "Please update your settings so Dependabot points at the "\
+                   "workspace root instead of #{cargo_toml.directory}."
+          end
+          raise Dependabot::DependencyFileNotEvaluatable, msg
+        end
 
         def manifest_dependencies
           dependency_set = DependencySet.new
