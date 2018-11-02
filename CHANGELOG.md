@@ -1,4 +1,10 @@
+## v0.75.7, 2 November 2018
+
+- Maven: Check whether property being updated has the same source
+- Maven: Store property source in metadata, as well as name
+
 ## v0.75.6, 2 November 2018
+
 - Go: Fix go.sum updating
 
 ## v0.75.5, 2 November 2018
