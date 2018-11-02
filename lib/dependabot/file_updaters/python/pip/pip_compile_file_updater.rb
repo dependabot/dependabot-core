@@ -144,6 +144,8 @@ module Dependabot
 
           def write_updated_dependency_files
             dependency_files.each do |file|
+              next if file.name == ".python-version"
+
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, freeze_dependency_requirement(file))

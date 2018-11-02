@@ -259,6 +259,8 @@ module Dependabot
 
           def write_temporary_dependency_files(pipfile_content)
             dependency_files.each do |file|
+              next if file.name == ".python-version"
+
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)

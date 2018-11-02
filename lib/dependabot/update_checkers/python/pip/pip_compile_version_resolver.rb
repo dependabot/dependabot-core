@@ -163,6 +163,8 @@ module Dependabot
 
           def write_temporary_dependency_files(unlock_requirement: true)
             dependency_files.each do |file|
+              next if file.name == ".python-version"
+
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(
