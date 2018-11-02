@@ -1,3 +1,6 @@
+## v0.75.6, 2 November 2018
+- Go: Fix go.sum updating
+
 ## v0.75.5, 2 November 2018
 
 - Docker: Include registry details if auth failure happens on Docker Hub
