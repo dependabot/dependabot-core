@@ -78,6 +78,8 @@ module Dependabot
               return internal_dependency_poms[name]
             end
 
+            return unless version && !version.include?(",")
+
             fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
           end
 
