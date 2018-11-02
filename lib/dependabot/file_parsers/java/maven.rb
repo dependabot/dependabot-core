@@ -77,6 +77,12 @@ module Dependabot
         end
 
         def build_dependency(pom, dependency_node, name)
+          property_details =
+            {
+              property_name: version_property_name(dependency_node),
+              property_source: property_source(dependency_node, pom)
+            }.compact
+
           Dependency.new(
             name: name,
             version: dependency_version(pom, dependency_node),
@@ -87,9 +93,8 @@ module Dependabot
               groups: [],
               source: nil,
               metadata: {
-                property_name: version_property_name(dependency_node),
                 packaging_type: packaging_type(pom, dependency_node)
-              }
+              }.merge(property_details)
             }]
           )
         end
@@ -181,6 +186,21 @@ module Dependabot
           property_value = value_for_property(property_name, pom)
 
           value.gsub(PROPERTY_REGEX, property_value)
+        end
+
+        def property_source(dependency_node, pom)
+          property_name = version_property_name(dependency_node)
+          return unless property_name
+
+          declaring_pom =
+            property_value_finder.
+            property_details(property_name: property_name, callsite_pom: pom)&.
+            fetch(:file)
+
+          return declaring_pom if declaring_pom
+
+          msg = "Property not found: #{property_name}"
+          raise DependencyFileNotEvaluatable, msg
         end
 
         def value_for_property(property_name, pom)
