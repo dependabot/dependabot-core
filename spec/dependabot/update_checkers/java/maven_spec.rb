@@ -218,7 +218,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
-        let(:metadata) { { property_name: "springframework.version" } }
+        let(:metadata) do
+          {
+            property_name: "springframework.version",
+            property_source: "pom.xml"
+          }
+        end
         it { is_expected.to be_nil }
       end
 
@@ -265,7 +270,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           let(:pom_body) do
             fixture("java", "poms", "repeated_multi_property_pom.xml")
           end
-          let(:metadata) { { property_name: "maven-plugins.version" } }
+          let(:metadata) do
+            {
+              property_name: "maven-plugins.version",
+              property_source: "pom.xml"
+            }
+          end
           it { is_expected.to be_nil }
         end
 
@@ -462,7 +472,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           requirement: "4.3.12.RELEASE",
           groups: [],
           source: nil,
-          metadata: { property_name: "springframework.version" }
+          metadata: {
+            property_name: "springframework.version",
+            property_source: "pom.xml"
+          }
         }]
       end
 
@@ -530,6 +543,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           source: nil,
           metadata: {
             property_name: "springframework.version",
+            property_source: "pom.xml",
             packaging_type: "jar"
           }
         }]
@@ -581,6 +595,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                 },
                 metadata: {
                   property_name: "springframework.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],
@@ -591,6 +606,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                 source: nil,
                 metadata: {
                   property_name: "springframework.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],
@@ -610,6 +626,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                 },
                 metadata: {
                   property_name: "springframework.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],
@@ -620,6 +637,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
                 source: nil,
                 metadata: {
                   property_name: "springframework.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],
@@ -667,7 +685,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           requirement: "4.3.12.RELEASE.1",
           groups: [],
           source: nil,
-          metadata: { property_name: "springframework.version" }
+          metadata: {
+            property_name: "springframework.version",
+            property_source: "pom.xml"
+          }
         }]
       end
       it { is_expected.to eq(true) }
@@ -689,7 +710,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
             requirement: "0.9-SNAPSHOT",
             groups: [],
             source: nil,
-            metadata: { property_name: "project.version" }
+            metadata: {
+              packaging_type: "jar",
+              property_name: "project.version",
+              property_source: "../pom_parent.xml"
+            }
           }]
         end
 

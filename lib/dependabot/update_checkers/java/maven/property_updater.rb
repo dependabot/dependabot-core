@@ -66,7 +66,8 @@ module Dependabot
                 source: nil
               ).parse.select do |dep|
                 dep.requirements.any? do |r|
-                  r.dig(:metadata, :property_name) == property_name
+                  next unless r.dig(:metadata, :property_name) == property_name
+                  r.dig(:metadata, :property_source) == property_source
                 end
               end
           end
@@ -79,6 +80,13 @@ module Dependabot
             raise "No requirement with a property name!" unless @property_name
 
             @property_name
+          end
+
+          def property_source
+            @property_source ||=
+              dependency.requirements.
+              find { |r| r.dig(:metadata, :property_name) == property_name }&.
+              dig(:metadata, :property_source)
           end
 
           def version_string(dep)

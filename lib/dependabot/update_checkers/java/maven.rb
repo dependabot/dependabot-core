@@ -123,12 +123,15 @@ module Dependabot
         def version_comes_from_multi_dependency_property?
           declarations_using_a_property.any? do |requirement|
             property_name = requirement.fetch(:metadata).fetch(:property_name)
+            property_source = requirement.fetch(:metadata).
+                              fetch(:property_source)
 
             all_property_based_dependencies.any? do |dep|
               next false if dep.name == dependency.name
 
               dep.requirements.any? do |req|
-                req.dig(:metadata, :property_name) == property_name
+                next unless req.dig(:metadata, :property_name) == property_name
+                req.dig(:metadata, :property_source) == property_source
               end
             end
           end

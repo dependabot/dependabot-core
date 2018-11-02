@@ -42,6 +42,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
       source: nil,
       metadata: {
         property_name: "springframework.version",
+        property_source: "pom.xml",
         packaging_type: "jar"
       }
     }]
@@ -129,6 +130,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
               },
               metadata: {
                 property_name: "springframework.version",
+                property_source: "pom.xml",
                 packaging_type: "jar"
               }
             }],
@@ -139,6 +141,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
               source: nil,
               metadata: {
                 property_name: "springframework.version",
+                property_source: "pom.xml",
                 packaging_type: "jar"
               }
             }],
@@ -158,6 +161,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
               },
               metadata: {
                 property_name: "springframework.version",
+                property_source: "pom.xml",
                 packaging_type: "jar"
               }
             }],
@@ -168,6 +172,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
               source: nil,
               metadata: {
                 property_name: "springframework.version",
+                property_source: "pom.xml",
                 packaging_type: "jar"
               }
             }],
@@ -200,6 +205,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
           source: nil,
           metadata: {
             property_name: "junit-platform.version",
+            property_source: "pom.xml",
             packaging_type: "jar"
           }
         }]
@@ -245,10 +251,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   requirement: nil,
                   groups: [],
                   source: nil,
-                  metadata: {
-                    property_name: nil,
-                    packaging_type: "jar"
-                  }
+                  metadata: { packaging_type: "jar" }
                 },
                 {
                   file: "pom.xml",
@@ -260,6 +263,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   },
                   metadata: {
                     property_name: "junit-platform.version",
+                    property_source: "pom.xml",
                     packaging_type: "jar"
                   }
                 },
@@ -270,6 +274,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   source: nil,
                   metadata: {
                     property_name: "another.version",
+                    property_source: "pom.xml",
                     packaging_type: "jar"
                   }
                 }
@@ -280,10 +285,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   requirement: nil,
                   groups: [],
                   source: nil,
-                  metadata: {
-                    property_name: nil,
-                    packaging_type: "jar"
-                  }
+                  metadata: { packaging_type: "jar" }
                 },
                 {
                   file: "pom.xml",
@@ -292,6 +294,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   source: nil,
                   metadata: {
                     property_name: "junit-platform.version",
+                    property_source: "pom.xml",
                     packaging_type: "jar"
                   }
                 },
@@ -302,6 +305,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                   source: nil,
                   metadata: {
                     property_name: "another.version",
+                    property_source: "pom.xml",
                     packaging_type: "jar"
                   }
                 }
@@ -322,6 +326,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 },
                 metadata: {
                   property_name: "junit-platform.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],
@@ -332,6 +337,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
                 source: nil,
                 metadata: {
                   property_name: "junit-platform.version",
+                  property_source: "pom.xml",
                   packaging_type: "jar"
                 }
               }],

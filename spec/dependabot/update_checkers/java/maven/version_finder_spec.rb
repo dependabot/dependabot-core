@@ -41,10 +41,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       requirement: "23.3-jre",
       groups: [],
       source: nil,
-      metadata: {
-        property_name: nil,
-        packaging_type: "jar"
-      }
+      metadata: { packaging_type: "jar" }
     }]
   end
   let(:dependency_name) { "com.google.guava:guava" }
