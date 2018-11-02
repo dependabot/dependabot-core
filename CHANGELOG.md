@@ -1,3 +1,7 @@
+## v0.75.4, 2 November 2018
+
+- JS: Add workaround for git dependency library updates
+
 ## v0.75.3, 2 November 2018
 
 - Gradle: Handle dependency set updating when the dependency set has been
