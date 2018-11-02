@@ -42,14 +42,22 @@ module Dependabot
         end
 
         def updated_requirements
+          resolvable_version =
+            if latest_resolvable_version.is_a?(version_class)
+              latest_resolvable_version.to_s
+            elsif latest_resolvable_version.nil?
+              nil
+            else
+              latest_version_details&.fetch(:version, nil)&.to_s
+            end
+
           @updated_requirements ||=
             RequirementsUpdater.new(
               requirements: dependency.requirements,
               updated_source: updated_source,
               latest_version:
                 latest_version_details&.fetch(:version, nil)&.to_s,
-              latest_resolvable_version:
-                latest_version_details&.fetch(:version, nil)&.to_s,
+              latest_resolvable_version: resolvable_version,
               update_strategy: requirements_update_strategy
             ).updated_requirements
         end
