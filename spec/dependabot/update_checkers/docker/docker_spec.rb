@@ -237,6 +237,26 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       end
 
       it { is_expected.to eq("2.4.2") }
+
+      context "and dockerhub 401s" do
+        before do
+          tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
+          stub_request(:get, tags_url).
+            and_return(
+              status: 401,
+              body: "",
+              headers: { "www_authenticate" => "basic 123" }
+            )
+        end
+
+        it "raises a to PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { checker.latest_version }.
+            to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.hub.docker.com")
+            end
+        end
+      end
     end
 
     context "when the latest version is a pre-release" do

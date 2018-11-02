@@ -232,12 +232,11 @@ module Dependabot
         end
 
         def registry_hostname
-          dependency.requirements.first[:source][:registry]
+          dependency.requirements.first[:source][:registry] ||
+            "registry.hub.docker.com"
         end
 
         def using_dockerhub?
-          return true if registry_hostname.nil?
-
           registry_hostname == "registry.hub.docker.com"
         end
 
