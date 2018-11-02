@@ -320,6 +320,8 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
             to include(
               "endencySet(group: 'com.google.protobuf', version: '23.6-jre') {"
             )
+          expect(updated_files.first.content).
+            to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
         end
       end
     end

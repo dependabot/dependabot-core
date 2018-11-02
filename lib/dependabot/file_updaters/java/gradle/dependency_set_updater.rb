@@ -16,19 +16,14 @@ module Dependabot
                                               buildfile:,
                                               previous_requirement:,
                                               updated_requirement:)
-            regex = FileParsers::Java::Gradle::DEPENDENCY_SET_DECLARATION_REGEX
-            original_declaration_string =
-              buildfile.content.scan(regex) do
-                mtch = Regexp.last_match
-                next unless mtch.to_s.include?(dependency_set[:group])
-                next unless mtch.to_s.include?(dependency_set[:version])
+            declaration_string =
+              original_declaration_string(dependency_set, buildfile)
 
-                break mtch.to_s
-              end
+            return dependency_files unless declaration_string
 
             updated_content = buildfile.content.sub(
-              original_declaration_string,
-              original_declaration_string.sub(
+              declaration_string,
+              declaration_string.sub(
                 previous_requirement,
                 updated_requirement
               )
@@ -44,6 +39,20 @@ module Dependabot
           private
 
           attr_reader :dependency_files
+
+          def original_declaration_string(dependency_set, buildfile)
+            regex = FileParsers::Java::Gradle::DEPENDENCY_SET_DECLARATION_REGEX
+            dependency_sets = []
+            buildfile.content.scan(regex) do
+              dependency_sets << Regexp.last_match.to_s
+            end
+
+            dependency_sets.find do |mtch|
+              next unless mtch.include?(dependency_set[:group])
+
+              mtch.include?(dependency_set[:version])
+            end
+          end
 
           def update_file(file:, content:)
             updated_file = file.dup

@@ -48,5 +48,17 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle::DependencySetUpdater do
           "dependencySet(group: 'com.google.protobuf', version: '4.0.0') {"
         )
     end
+
+    context "when the dependency set has already been updated" do
+      let(:dependency_set) do
+        { group: "com.google.protobuf", version: "3.1.2" }
+      end
+      let(:previous_requirement) { "3.1.2" }
+      let(:updated_requirement) { "3.6.1" }
+
+      it "leaves the content unchanged" do
+        expect(updated_files).to eq(dependency_files)
+      end
+    end
   end
 end

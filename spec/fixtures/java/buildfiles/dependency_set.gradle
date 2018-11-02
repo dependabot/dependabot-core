@@ -51,10 +51,9 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'protobuf-java-util'
             }
 
-            dependency 'com.google.auto.service:auto-service:1.0-rc4'
+            dependency 'org.apache.kafka:kafka-clients:3.6.1'
 
-            // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.0.0'
+            dependency 'com.google.auto.service:auto-service:1.0-rc4'
 
             dependencySet(group: 'io.grpc', version: '1.15.1') {
                 entry 'grpc-netty'
