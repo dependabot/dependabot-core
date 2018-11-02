@@ -1,3 +1,8 @@
+## v0.75.2, 2 November 2018
+
+- Python: Don't write .python-version when updating Pipfile or pip-compile files
+- PHP: Bump composer/composer from 1.7.2 to 1.7.3
+
 ## v0.75.1, 1 November 2018
 
 - JS: Hot fixes for VersionResolver
