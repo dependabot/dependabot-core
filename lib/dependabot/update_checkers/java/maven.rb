@@ -131,6 +131,7 @@ module Dependabot
 
               dep.requirements.any? do |req|
                 next unless req.dig(:metadata, :property_name) == property_name
+
                 req.dig(:metadata, :property_source) == property_source
               end
             end

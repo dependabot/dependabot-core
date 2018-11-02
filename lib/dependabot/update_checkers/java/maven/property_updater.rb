@@ -67,6 +67,7 @@ module Dependabot
               ).parse.select do |dep|
                 dep.requirements.any? do |r|
                   next unless r.dig(:metadata, :property_name) == property_name
+
                   r.dig(:metadata, :property_source) == property_source
                 end
               end

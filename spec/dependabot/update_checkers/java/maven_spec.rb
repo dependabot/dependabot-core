@@ -248,21 +248,18 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           "org.apache.maven.plugins:maven-javadoc-plugin"
         end
         let(:dependency_requirements) do
-          [
-            {
-              file: "pom.xml",
-              requirement: "3.0.0-M1",
-              groups: [],
-              source: nil,
-              metadata: metadata
-            },
-            {
-              file: "pom.xml",
-              requirement: "2.10.4",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            file: "pom.xml",
+            requirement: "3.0.0-M1",
+            groups: [],
+            source: nil,
+            metadata: metadata
+          }, {
+            file: "pom.xml",
+            requirement: "2.10.4",
+            groups: [],
+            source: nil
+          }]
         end
         it { is_expected.to eq(version_class.new("23.0")) }
 
@@ -281,20 +278,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
         context "with a nil requirement" do
           let(:dependency_requirements) do
-            [
-              {
-                file: "pom.xml",
-                requirement: "3.0.0-M1",
-                groups: [],
-                source: nil
-              },
-              {
-                file: "pom.xml",
-                requirement: nil,
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              file: "pom.xml",
+              requirement: "3.0.0-M1",
+              groups: [],
+              source: nil
+            }, {
+              file: "pom.xml",
+              requirement: nil,
+              groups: [],
+              source: nil
+            }]
           end
           it { is_expected.to eq(version_class.new("23.0")) }
         end
@@ -347,20 +341,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
       context "for a dependency inherited by others" do
         let(:dependency_requirements) do
-          [
-            {
-              requirement: "23.0-jre",
-              file: "pom.xml",
-              groups: [],
-              source: nil
-            },
-            {
-              requirement: nil,
-              file: "util/pom.xml",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            requirement: "23.0-jre",
+            file: "pom.xml",
+            groups: [],
+            source: nil
+          }, {
+            requirement: nil,
+            file: "util/pom.xml",
+            groups: [],
+            source: nil
+          }]
         end
         let(:dependency_name) { "com.google.guava:guava" }
         let(:dependency_version) { "23.0-jre" }

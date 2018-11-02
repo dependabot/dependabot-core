@@ -93,20 +93,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
 
         it "updates both requirements" do
           expect(updater.updated_requirements).to match_array(
-            [
-              {
-                file: "pom.xml",
-                requirement: "23.6-jre",
-                groups: [],
-                source: { type: "maven_repo", url: "new_url" }
-              },
-              {
-                file: "another/pom.xml",
-                requirement: "[23.6-jre]",
-                groups: [],
-                source: { type: "maven_repo", url: "new_url" }
-              }
-            ]
+            [{
+              file: "pom.xml",
+              requirement: "23.6-jre",
+              groups: [],
+              source: { type: "maven_repo", url: "new_url" }
+            }, {
+              file: "another/pom.xml",
+              requirement: "[23.6-jre]",
+              groups: [],
+              source: { type: "maven_repo", url: "new_url" }
+            }]
           )
         end
 
@@ -115,20 +112,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
 
           it "updates only the specific requirement" do
             expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: { type: "maven_repo", url: "new_url" }
-                },
-                {
-                  file: "another/pom.xml",
-                  requirement: "[23.0,)",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: { type: "maven_repo", url: "new_url" }
+              }, {
+                file: "another/pom.xml",
+                requirement: "[23.0,)",
+                groups: [],
+                source: nil
+              }]
             )
           end
         end

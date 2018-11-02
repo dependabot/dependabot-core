@@ -245,71 +245,63 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::PropertyUpdater do
               name: "org.junit.platform:junit-platform-runner",
               version: "23.6-jre",
               previous_version: "1.0.0-M2",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: nil,
-                  groups: [],
-                  source: nil,
-                  metadata: { packaging_type: "jar" }
+              requirements: [{
+                file: "pom.xml",
+                requirement: nil,
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }, {
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
                 },
-                {
-                  file: "pom.xml",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: {
-                    type: "maven_repo",
-                    url: "https://repo.maven.apache.org/maven2"
-                  },
-                  metadata: {
-                    property_name: "junit-platform.version",
-                    property_source: "pom.xml",
-                    packaging_type: "jar"
-                  }
-                },
-                {
-                  file: "pom.xml",
-                  requirement: "1.0.0",
-                  groups: [],
-                  source: nil,
-                  metadata: {
-                    property_name: "another.version",
-                    property_source: "pom.xml",
-                    packaging_type: "jar"
-                  }
+                metadata: {
+                  property_name: "junit-platform.version",
+                  property_source: "pom.xml",
+                  packaging_type: "jar"
                 }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: nil,
-                  groups: [],
-                  source: nil,
-                  metadata: { packaging_type: "jar" }
-                },
-                {
-                  file: "pom.xml",
-                  requirement: "1.0.0-M2",
-                  groups: [],
-                  source: nil,
-                  metadata: {
-                    property_name: "junit-platform.version",
-                    property_source: "pom.xml",
-                    packaging_type: "jar"
-                  }
-                },
-                {
-                  file: "pom.xml",
-                  requirement: "1.0.0",
-                  groups: [],
-                  source: nil,
-                  metadata: {
-                    property_name: "another.version",
-                    property_source: "pom.xml",
-                    packaging_type: "jar"
-                  }
+              }, {
+                file: "pom.xml",
+                requirement: "1.0.0",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "another.version",
+                  property_source: "pom.xml",
+                  packaging_type: "jar"
                 }
-              ],
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: nil,
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }, {
+                file: "pom.xml",
+                requirement: "1.0.0-M2",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "junit-platform.version",
+                  property_source: "pom.xml",
+                  packaging_type: "jar"
+                }
+              }, {
+                file: "pom.xml",
+                requirement: "1.0.0",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "another.version",
+                  property_source: "pom.xml",
+                  packaging_type: "jar"
+                }
+              }],
               package_manager: "maven"
             ),
             Dependabot::Dependency.new(
