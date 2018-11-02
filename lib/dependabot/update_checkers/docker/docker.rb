@@ -258,15 +258,11 @@ module Dependabot
 
         def docker_registry_client
           @docker_registry_client ||=
-            if registry_hostname
-              DockerRegistry2::Registry.new(
-                "https://#{registry_hostname}",
-                user: registry_credentials&.fetch("username"),
-                password: registry_credentials&.fetch("password")
-              )
-            else
-              DockerRegistry2::Registry.new("https://registry.hub.docker.com")
-            end
+            DockerRegistry2::Registry.new(
+              "https://#{registry_hostname}",
+              user: registry_credentials&.fetch("username"),
+              password: registry_credentials&.fetch("password")
+            )
         end
       end
     end
