@@ -49,6 +49,7 @@ module Dependabot
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   File.write("go.mod", updated_go_mod_content)
                   File.write("go.sum", go_sum.content)
+                  File.write("main.go", dummy_main_go)
 
                   `GO111MODULE=on go get`
                   unless $CHILD_STATUS.success?
@@ -61,6 +62,16 @@ module Dependabot
           end
 
           private
+
+          def dummy_main_go
+            lines = ["package main", "import ("]
+            dependencies.each do |dep|
+              lines << "_ \"#{dep.name}\""
+            end
+            lines << ")"
+            lines << "func main() {}"
+            lines.join("\n")
+          end
 
           attr_reader :dependencies, :go_mod, :go_sum, :credentials
         end

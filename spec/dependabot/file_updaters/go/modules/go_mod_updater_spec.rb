@@ -88,12 +88,16 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
 
           it "adds new entries to the go.sum" do
             is_expected.
+              to include(%(rsc.io/quote v1.5.2 h1:))
+            is_expected.
               to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
           # This happens via `go mod tidy`, which we currently can't run, as we
           # need to the whole source repo
           pending "removes old entries from the go.sum" do
+            is_expected.
+              to include(%(rsc.io/quote v1.4.0 h1:))
             is_expected.
               to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
