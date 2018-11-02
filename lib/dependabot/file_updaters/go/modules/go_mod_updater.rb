@@ -51,7 +51,7 @@ module Dependabot
                   File.write("go.sum", go_sum.content)
                   File.write("main.go", dummy_main_go)
 
-                  `GO111MODULE=on go get`
+                  `GO111MODULE=on go get -d`
                   unless $CHILD_STATUS.success?
                     raise Dependabot::DependencyFileNotParseable, go_sum.path
                   end
