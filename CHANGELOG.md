@@ -1,3 +1,10 @@
+## v0.75.5, 2 November 2018
+
+- Docker: Include registry details if auth failure happens on Docker Hub
+- Maven: Handle range requirements for parent when finding custom repositories
+- Rust: Raise an error when trying to operate on a non-root part of a rust
+  workspace
+
 ## v0.75.4, 2 November 2018
 
 - JS: Add workaround for git dependency library updates
