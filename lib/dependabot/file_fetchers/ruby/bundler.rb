@@ -39,9 +39,7 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << gemfile if gemfile
-          fetched_files << gems_rb if gems_rb
           fetched_files << lockfile if lockfile
-          fetched_files << gems_locked if gems_locked
           fetched_files += gemspecs
           fetched_files << ruby_version_file if ruby_version_file
           fetched_files += child_gemfiles
@@ -58,7 +56,7 @@ module Dependabot
         end
 
         def check_required_files_present
-          return if gemfile || gemspecs.any? || gems_rb
+          return if gemfile || gemspecs.any?
 
           path = Pathname.new(File.join(directory, "Gemfile")).
                  cleanpath.to_path
@@ -66,19 +64,13 @@ module Dependabot
         end
 
         def gemfile
-          @gemfile ||= fetch_file_if_present("Gemfile")
+          @gemfile ||= fetch_file_if_present("Gemfile") ||
+                       fetch_file_if_present("gems.rb")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_if_present("Gemfile.lock")
-        end
-
-        def gems_rb
-          @gems_rb ||= fetch_file_if_present("gems.rb")
-        end
-
-        def gems_locked
-          @gems_locked ||= fetch_file_if_present("gems.locked")
+          @lockfile ||= fetch_file_if_present("Gemfile.lock") ||
+                        fetch_file_if_present("gems.locked")
         end
 
         def gemspecs
