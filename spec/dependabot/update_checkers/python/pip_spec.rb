@@ -386,6 +386,39 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("2.5.0"))
       end
+
+      context "and a requirements.txt that specifies a subdependency" do
+        let(:dependency_files) do
+          [manifest_file, generated_file, requirements_file]
+        end
+        let(:manifest_fixture_name) { "requests.in" }
+        let(:generated_fixture_name) { "pip_compile_requests.txt" }
+        let(:requirements_fixture_name) { "urllib.txt" }
+        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+
+        let(:dependency_name) { "urllib" }
+        let(:dependency_version) { "1.22" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: nil,
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "delegates to PipCompileVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipCompileVersionResolver)
+          allow(described_class::PipCompileVersionResolver).to receive(:new).
+            and_return(dummy_resolver)
+          expect(dummy_resolver).
+            to receive(:latest_resolvable_version).
+            and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("2.5.0"))
+        end
+      end
     end
 
     context "with a Pipfile" do
@@ -442,7 +475,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "luigi",
-        version: "2.0.0",
+        version: version,
         requirements: requirements,
         package_manager: "pip"
       )
@@ -453,6 +486,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "with no requirement" do
       let(:req_string) { nil }
+      let(:version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
       context "when the user is ignoring the latest version" do
@@ -463,21 +497,25 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
 
     context "with an equality string" do
       let(:req_string) { "==2.0.0" }
+      let(:version) { "2.0.0" }
       it { is_expected.to eq(Gem::Version.new("2.0.0")) }
     end
 
     context "with a >= string" do
       let(:req_string) { ">=2.0.0" }
+      let(:version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
 
     context "with a full range string" do
       let(:req_string) { ">=2.0.0,<2.5.0" }
+      let(:version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.4.0")) }
     end
 
     context "with a ~= string" do
       let(:req_string) { "~=2.0.0" }
+      let(:version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.0.1")) }
     end
 
@@ -490,6 +528,7 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       end
       let(:req1) { "~=2.0" }
       let(:req2) { "<=2.5.0" }
+      let(:version) { nil }
       it { is_expected.to eq(Gem::Version.new("2.5.0")) }
     end
   end

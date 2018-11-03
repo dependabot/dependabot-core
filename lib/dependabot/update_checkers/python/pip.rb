@@ -6,6 +6,7 @@ require "toml-rb"
 require "python_requirement_parser"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/utils/python/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -105,7 +106,6 @@ module Dependabot
           raise NotImplementedError
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def resolver_type
           reqs = dependency.requirements
@@ -114,11 +114,7 @@ module Dependabot
           # If there are no requirements then this is a sub-dependency. It
           # must come from one of Pipenv, Poetry or pip-tools, and can't come
           # from the first two unless they have a lockfile.
-          if reqs.none?
-            return :pipfile if pipfile_lock
-            return :poetry if pyproject_lock || poetry_lock
-            return :pip_compile if pip_compile_files.any?
-          end
+          return subdependency_resolver if reqs.none?
 
           # Otherwise, this is a top-level dependency, and we can figure out
           # which resolver to use based on the filename of its requirements
@@ -126,10 +122,28 @@ module Dependabot
           return :poetry if req_files.any? { |f| f == "pyproject.toml" }
           return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
-          :requirements
+          if dependency.version && !exact_requirement?(reqs)
+            subdependency_resolver
+          else
+            :requirements
+          end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def subdependency_resolver
+          return :pipfile if pipfile_lock
+          return :poetry if poetry_lock || pyproject_lock
+          return :pip_compile if pip_compile_files.any?
+
+          raise "Claimed to be a sub-dependency, but no lockfile exists!"
+        end
+
+        def exact_requirement?(reqs)
+          reqs = reqs.map { |r| r.fetch(:requirement) }
+          reqs = reqs.compact
+          reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
+          reqs.any? { |r| Utils::Python::Requirement.new(r).exact? }
+        end
 
         def resolver_args
           {

@@ -232,6 +232,37 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip do
         expect(updater.updated_dependency_files).
           to eq([OpenStruct.new(name: "updated files")])
       end
+
+      context "and a requirements.txt that specifies a subdependency" do
+        let(:dependency_files) { [manifest_file, generated_file, requirements] }
+        let(:manifest_fixture_name) { "requests.in" }
+        let(:generated_fixture_name) { "pip_compile_requests.txt" }
+        let(:requirements_fixture_name) { "urllib.txt" }
+        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+
+        let(:dependency_name) { "urllib" }
+        let(:dependency_version) { "1.22" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: nil,
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "delegates to PipCompileFileUpdater" do
+          dummy_updater =
+            instance_double(described_class::PipCompileFileUpdater)
+          allow(described_class::PipCompileFileUpdater).to receive(:new).
+            and_return(dummy_updater)
+          expect(dummy_updater).
+            to receive(:updated_dependency_files).
+            and_return([OpenStruct.new(name: "updated files")])
+          expect(updater.updated_dependency_files).
+            to eq([OpenStruct.new(name: "updated files")])
+        end
+      end
     end
 
     describe "with no Pipfile or pip-compile files" do

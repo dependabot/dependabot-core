@@ -106,6 +106,7 @@ module Dependabot
             # requirements, so return `nil` for these.
             return if version.include?(",") || version.include?("*") ||
                       version == ""
+
             version
           end
 

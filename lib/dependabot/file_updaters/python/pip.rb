@@ -44,8 +44,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def resolver_type
           reqs = dependencies.flat_map(&:requirements)
           req_files = reqs.map { |r| r.fetch(:file) }
@@ -53,11 +51,7 @@ module Dependabot
           # If there are no requirements then this is a sub-dependency. It
           # must come from one of Pipenv, Poetry or pip-tools, and can't come
           # from the first two unless they have a lockfile.
-          if reqs.none?
-            return :pipfile if pipfile_lock
-            return :poetry if poetry_lock || pyproject_lock
-            return :pip_compile if pip_compile_files.any?
-          end
+          return subdependency_resolver if reqs.none?
 
           # Otherwise, this is a top-level dependency, and we can figure out
           # which resolver to use based on the filename of its requirements
@@ -65,10 +59,21 @@ module Dependabot
           return :poetry if req_files.any? { |f| f == "pyproject.toml" }
           return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
-          :requirements
+          # Finally, we should only ever be updating a requirements.txt file if
+          # some requirements have changed. Otherwise, this must be a case where
+          # we have a requirements.txt *and* some other resolver of which the
+          # dependency is a sub-dependency.
+          changed_reqs = reqs - dependencies.flat_map(&:previous_requirements)
+          changed_reqs.none? ? subdependency_resolver : :requirements
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        def subdependency_resolver
+          return :pipfile if pipfile_lock
+          return :poetry if poetry_lock || pyproject_lock
+          return :pip_compile if pip_compile_files.any?
+
+          raise "Claimed to be a sub-dependency, but no lockfile exists!"
+        end
 
         def updated_pipfile_based_files
           PipfileFileUpdater.new(
