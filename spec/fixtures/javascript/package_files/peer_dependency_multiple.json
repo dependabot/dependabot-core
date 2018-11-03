@@ -3,8 +3,8 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
-        "react": "0.14.2",
-        "react-apollo": "0.8.0",
-        "react-native-router-flux": "3.0.9"
+      "react": "^0.14.2",
+      "react-tabs": "^1.1.0",
+      "react-modal": "^0.6.1"
     }
 }

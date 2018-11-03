@@ -573,7 +573,7 @@ RSpec.describe namespace::VersionResolver do
             )
           end
 
-          pending { is_expected.to eq(Gem::Version.new("0.14.9")) }
+          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
         end
       end
     end
