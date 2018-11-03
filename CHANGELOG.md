@@ -1,3 +1,8 @@
+## v0.75.9, 2 November 2018
+
+- JS: Better peer dependency regex for npm
+- JS: Better git dependency handling in peer dependency checker
+
 ## v0.75.8, 2 November 2018
 
 - go: only download packages with go get, don't build them
