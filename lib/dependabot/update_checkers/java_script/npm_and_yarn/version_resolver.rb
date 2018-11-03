@@ -35,7 +35,7 @@ module Dependabot
             /
               (?<requiring_dep>[^\s]+)\s
               requires\sa\speer\sof\s
-              (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled.
+              (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
             /x.freeze
 
           def initialize(dependency:, credentials:, dependency_files:,
@@ -87,16 +87,22 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
-              package_files.map do |file|
+              package_files.flat_map do |file|
                 path = Pathname.new(file.name).dirname
                 run_checker(path: path, version: version)
               rescue SharedHelpers::HelperSubprocessFailed => error
+                errors = []
                 if error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-                  error.message.match(NPM_PEER_DEP_ERROR_REGEX).named_captures
+                  error.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
+                    errors << Regexp.last_match.named_captures
+                  end
                 elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-                  error.message.match(YARN_PEER_DEP_ERROR_REGEX).named_captures
+                  error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+                    errors << Regexp.last_match.named_captures
+                  end
                 else raise
                 end
+                errors
               end.compact
             end
           rescue SharedHelpers::HelperSubprocessFailed
