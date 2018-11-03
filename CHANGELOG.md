@@ -1,3 +1,7 @@
+## v0.75.11, 3 November 2018
+
+- JS: Log all peer dependency warnings from yarn and npm
+
 ## v0.75.10, 3 November 2018
 
 - .NET: Don't assume lowest version is the current one in file parser
