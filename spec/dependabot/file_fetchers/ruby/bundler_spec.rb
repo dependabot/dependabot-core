@@ -144,6 +144,40 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
     end
   end
 
+  context "with a gems.rb rather than a Gemfile" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_ruby_bundler_2.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "gems.rb?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "gems.locked?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the ruby-version file" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(%w(gems.rb gems.locked))
+    end
+  end
+
   context "with a file included with require_relative" do
     let(:directory) { "/Library/Homebrew/test" }
     let(:url) do

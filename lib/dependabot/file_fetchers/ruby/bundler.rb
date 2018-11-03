@@ -17,16 +17,21 @@ module Dependabot
             return false
           end
 
+          if filenames.include?("gems.locked") && !filenames.include?("gems.rb")
+            return false
+          end
+
           if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
             return true
           end
 
-          filenames.include?("Gemfile")
+          filenames.include?("Gemfile") || filenames.include?("gems.rb")
         end
 
         def self.required_files_message
-          "Repo must contain either a Gemfile or a gemspec. " \
-          "A Gemfile.lock may only be present if a Gemfile is."
+          "Repo must contain either a Gemfile, a gemspec, or a gems.rb. "\
+          "A Gemfile.lock may only be present if a Gemfile is, and a "\
+          "gems.locked may only be present if a gems.rb is."
         end
 
         private
@@ -34,7 +39,9 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << gemfile if gemfile
+          fetched_files << gems_rb if gems_rb
           fetched_files << lockfile if lockfile
+          fetched_files << gems_locked if gems_locked
           fetched_files += gemspecs
           fetched_files << ruby_version_file if ruby_version_file
           fetched_files += child_gemfiles
@@ -45,22 +52,33 @@ module Dependabot
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
           end
 
+          check_required_files_present
+
           fetched_files.uniq
         end
 
+        def check_required_files_present
+          return if gemfile || gemspecs.any? || gems_rb
+
+          path = Pathname.new(File.join(directory, "Gemfile")).
+                 cleanpath.to_path
+          raise Dependabot::DependencyFileNotFound, path
+        end
+
         def gemfile
-          @gemfile ||=
-            if gemspecs.any?
-              fetch_file_if_present("Gemfile")
-            else
-              # This will raise if there is no Gemfile, which is what we want
-              # (since there is no gemspec)
-              fetch_file_from_host("Gemfile")
-            end
+          @gemfile ||= fetch_file_if_present("Gemfile")
         end
 
         def lockfile
           @lockfile ||= fetch_file_if_present("Gemfile.lock")
+        end
+
+        def gems_rb
+          @gems_rb ||= fetch_file_if_present("gems.rb")
+        end
+
+        def gems_locked
+          @gems_locked ||= fetch_file_if_present("gems.locked")
         end
 
         def gemspecs
