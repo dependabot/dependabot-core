@@ -12,21 +12,14 @@
 const path = require("path");
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 const Config = require("@dependabot/yarn-lib/lib/config").default;
-const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
+const { BufferReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
+const { isString } = require("./helpers");
 
 class LightweightAdd extends Add {
   async bailout(patterns, workspaceLayout) {
     await this.linker.resolvePeerModules();
     return true;
-  }
-}
-
-class DependabotReporter extends EventReporter {
-  warn(msg) {
-    if (msg.includes("incorrect peer dependency")) {
-      throw new Error(msg);
-    }
   }
 }
 
@@ -99,7 +92,7 @@ async function checkPeerDepsForReq(
     dev: devRequirement(requirement),
     optional: optionalRequirement(requirement)
   };
-  const reporter = new DependabotReporter();
+  const reporter = new BufferReporter();
   const config = new Config(reporter);
 
   await config.init({
@@ -140,8 +133,19 @@ async function checkPeerDepsForReq(
   // implementation of Add that doesn't actually download and install packages
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
 
-  // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
+
+  const eventBuffer = reporter.getBuffer();
+  const peerDependencyWarnings = eventBuffer
+    .map(({ data }) => data)
+    .filter(data => {
+      // Guard against event.data sometimes being an object
+      return isString(data) && data.includes("incorrect peer dependency");
+    });
+
+  if (peerDependencyWarnings.length) {
+    throw new Error(peerDependencyWarnings.join("\n"));
+  }
 }
 
 module.exports = { checkPeerDependencies };

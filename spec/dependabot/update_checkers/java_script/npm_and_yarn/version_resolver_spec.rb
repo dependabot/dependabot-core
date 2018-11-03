@@ -217,6 +217,26 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
+
+        context "of multiple dependencies" do
+          let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
+          let(:npm_lock_fixture_name) { "peer_dependency_multiple.json" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react",
+              version: "0.14.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "0.14.2",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+        end
       end
     end
 
@@ -535,6 +555,26 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
+
+        context "of multiple dependencies" do
+          let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
+          let(:yarn_lock_fixture_name) { "peer_dependency_multiple.lock" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react",
+              version: "0.14.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "0.14.2",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+        end
       end
     end
   end

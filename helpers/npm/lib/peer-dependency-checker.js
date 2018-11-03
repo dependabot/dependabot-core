@@ -106,14 +106,12 @@ async function checkPeerDependencies(
     unmute();
   }
 
-  const peerDependencyWarning = initialInstaller.idealTree.warnings.find(
-    warning => {
-      return warning.code === "EPEERINVALID";
-    }
-  );
+  const peerDependencyWarnings = initialInstaller.idealTree.warnings
+    .filter(warning => warning.code === "EPEERINVALID")
+    .map(warning => warning.message);
 
-  if (peerDependencyWarning) {
-    throw new Error(peerDependencyWarning.message);
+  if (peerDependencyWarnings.length) {
+    throw new Error(peerDependencyWarnings.join("\n"));
   }
 }
 
