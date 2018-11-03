@@ -322,7 +322,7 @@ q@^1.1.2:
   resolved "https://registry.yarnpkg.com/q/-/q-1.5.1.tgz#7e32f75b41381291d04611f1bf14109ac00651d7"
   integrity sha1-fjL3W0E4EpHQRhHxvxQQmsAGUdc=
 
-react-modal@^0.6.1:
+react-modal@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/react-modal/-/react-modal-0.6.1.tgz#286444d80f3ae8a0aceba970371c9c73aa812849"
   integrity sha1-KGRE2A866KCs66lwNxycc6qBKEk=
@@ -331,7 +331,7 @@ react-modal@^0.6.1:
     exenv "1.2.0"
     lodash.assign "^3.2.0"
 
-react-tabs@^1.1.0:
+react-tabs@1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/react-tabs/-/react-tabs-1.1.0.tgz#f1e3d6136e1d89f70f5ef8835468a2f03a54777a"
   integrity sha1-8ePWE24difcPXviDVGii8DpUd3o=
@@ -339,7 +339,7 @@ react-tabs@^1.1.0:
     classnames "^2.2.0"
     prop-types "^15.5.0"
 
-react@^0.14.2:
+react@0.14.9:
   version "0.14.9"
   resolved "https://registry.yarnpkg.com/react/-/react-0.14.9.tgz#9110a6497c49d44ba1c0edd317aec29c2e0d91d1"
   integrity sha1-kRCmSXxJ1EuhwO3TF67CnC4NkdE=
