@@ -102,14 +102,11 @@ module Dependabot
             # Remove brackets if present
             version = requirement.gsub(/[\(\)\[\]]/, "").strip
 
-            # Take the first (and therefore lowest) element of any range. Nuget
-            # resolves dependencies to the "Lowest Applicable Version".
-            # https://docs.microsoft.com/en-us/nuget/consume-packages/dependency-resolution
-            version = version.split(",").first.strip
-
-            # We don't know the version for requirements like (,1.0) or for
-            # wildcard requirements, so return `nil` for these.
-            return version unless version == "" || version.include?("*")
+            # We don't know the version for range requirements or wildcard
+            # requirements, so return `nil` for these.
+            return if version.include?(",") || version.include?("*") ||
+                      version == ""
+            version
           end
 
           def req_property_name(dependency_node)

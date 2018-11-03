@@ -84,7 +84,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
         it "has the right details" do
           expect(dependencies.first.requirements.first.fetch(:requirement)).
             to eq("[1.0,2.0]")
-          expect(dependencies.first.version).to eq("1.0")
+          expect(dependencies.first.version).to be_nil
 
           expect(dependencies[1].requirements.first.fetch(:requirement)).
             to eq("[1.1]")
