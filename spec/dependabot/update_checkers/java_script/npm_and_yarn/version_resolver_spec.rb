@@ -224,18 +224,18 @@ RSpec.describe namespace::VersionResolver do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "react",
-              version: "0.14.0",
+              version: "0.14.2",
               package_manager: "npm_and_yarn",
               requirements: [{
                 file: "package.json",
-                requirement: "0.14.0",
+                requirement: "0.14.2",
                 groups: ["dependencies"],
                 source: nil
               }]
             )
           end
 
-          pending { is_expected.to eq(Gem::Version.new("0.14.9")) }
+          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
         end
       end
     end
@@ -562,11 +562,11 @@ RSpec.describe namespace::VersionResolver do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "react",
-              version: "0.14.0",
+              version: "0.14.2",
               package_manager: "npm_and_yarn",
               requirements: [{
                 file: "package.json",
-                requirement: "0.14.0",
+                requirement: "0.14.2",
                 groups: ["dependencies"],
                 source: nil
               }]

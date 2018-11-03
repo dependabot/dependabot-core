@@ -3,9 +3,8 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
-        "apollo-client": "^0.8.0",
         "react": "0.14.2",
-        "react-apollo": "^0.9.0",
-        "react-dom": "0.14.2"
+        "react-apollo": "0.8.0",
+        "react-native-router-flux": "3.0.9"
     }
 }

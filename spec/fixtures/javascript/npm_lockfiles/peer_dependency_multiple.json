@@ -4,23 +4,25 @@
     "lockfileVersion": 1,
     "requires": true,
     "dependencies": {
-        "@types/async": {
-            "version": "2.0.50",
-            "resolved": "https://registry.npmjs.org/@types/async/-/async-2.0.50.tgz",
-            "integrity": "sha512-VMhZMMQgV1zsR+lX/0IBfAk+8Eb7dPVMWiQGFAt3qjo5x7Ml6b77jUo0e1C3ToD+XRDXqtrfw+6AB0uUsPEr3Q==",
-            "optional": true
+        "@exponent/react-native-action-sheet": {
+            "version": "0.1.3",
+            "resolved": "https://registry.npmjs.org/@exponent/react-native-action-sheet/-/react-native-action-sheet-0.1.3.tgz",
+            "integrity": "sha1-9TLw6Sz6jVW+bjN9S9GudabTkYw="
         },
-        "@types/graphql": {
-            "version": "0.8.6",
-            "resolved": "https://registry.npmjs.org/@types/graphql/-/graphql-0.8.6.tgz",
-            "integrity": "sha1-s0+4gEk7qDWwwGcCTucBMNb5u2g=",
-            "optional": true
+        "@exponent/react-native-navigator": {
+            "version": "0.3.7",
+            "resolved": "https://registry.npmjs.org/@exponent/react-native-navigator/-/react-native-navigator-0.3.7.tgz",
+            "integrity": "sha1-ViSdTRs6rcxAQ5gzrEV2CrZBYpA=",
+            "requires": {
+                "@exponent/react-native-responsive-image": "0.0.4",
+                "invariant": "^2.1.0",
+                "react-native-clone-referenced-element": "^1.0.0"
+            }
         },
-        "@types/isomorphic-fetch": {
-            "version": "0.0.30",
-            "resolved": "http://registry.npmjs.org/@types/isomorphic-fetch/-/isomorphic-fetch-0.0.30.tgz",
-            "integrity": "sha1-ohcXYkzemkjC21Ok5QD8XDKpm7w=",
-            "optional": true
+        "@exponent/react-native-responsive-image": {
+            "version": "0.0.4",
+            "resolved": "https://registry.npmjs.org/@exponent/react-native-responsive-image/-/react-native-responsive-image-0.0.4.tgz",
+            "integrity": "sha1-b2VcyFI04YZfpBI1yOIpjrmKakY="
         },
         "acorn": {
             "version": "5.7.3",
@@ -32,25 +34,18 @@
             "resolved": "https://registry.npmjs.org/amdefine/-/amdefine-1.0.1.tgz",
             "integrity": "sha1-SlKCrBZHKek2Gbz9OtFR+BfOkfU="
         },
-        "apollo-client": {
-            "version": "0.8.7",
-            "resolved": "https://registry.npmjs.org/apollo-client/-/apollo-client-0.8.7.tgz",
-            "integrity": "sha1-c/UtHdbf4PB+i/4FqOR8S80796M=",
-            "requires": {
-                "@types/async": "^2.0.31",
-                "@types/graphql": "^0.8.0",
-                "@types/isomorphic-fetch": "0.0.30",
-                "graphql-anywhere": "^2.1.0",
-                "graphql-tag": "^1.1.1",
-                "redux": "^3.4.0",
-                "symbol-observable": "^1.0.2",
-                "whatwg-fetch": "^2.0.0"
-            }
-        },
         "asap": {
             "version": "2.0.6",
             "resolved": "https://registry.npmjs.org/asap/-/asap-2.0.6.tgz",
             "integrity": "sha1-5QNHYR1+aQlDIIu9r+vLwvuGbUY="
+        },
+        "assert": {
+            "version": "1.4.1",
+            "resolved": "https://registry.npmjs.org/assert/-/assert-1.4.1.tgz",
+            "integrity": "sha1-mZEtWRg2tab1s0XA8H7vwI/GXZE=",
+            "requires": {
+                "util": "0.10.3"
+            }
         },
         "ast-types": {
             "version": "0.9.6",
@@ -145,13 +140,6 @@
                 "promise": "^7.0.3",
                 "ua-parser-js": "^0.7.9",
                 "whatwg-fetch": "^0.9.0"
-            },
-            "dependencies": {
-                "whatwg-fetch": {
-                    "version": "0.9.0",
-                    "resolved": "http://registry.npmjs.org/whatwg-fetch/-/whatwg-fetch-0.9.0.tgz",
-                    "integrity": "sha1-DjaExsuZlbQ+/J3wPkw2XZX9nMA="
-                }
             }
         },
         "glob": {
@@ -176,11 +164,6 @@
             "resolved": "https://registry.npmjs.org/graphql-anywhere/-/graphql-anywhere-2.2.0.tgz",
             "integrity": "sha1-ZSw/ojpKbP65iBdRL7SBALl/PVw="
         },
-        "graphql-tag": {
-            "version": "1.3.2",
-            "resolved": "https://registry.npmjs.org/graphql-tag/-/graphql-tag-1.3.2.tgz",
-            "integrity": "sha1-ers6j9nzQV0HFjMU7SNwYceFt1k="
-        },
         "hoist-non-react-statics": {
             "version": "1.2.0",
             "resolved": "http://registry.npmjs.org/hoist-non-react-statics/-/hoist-non-react-statics-1.2.0.tgz",
@@ -193,6 +176,11 @@
             "requires": {
                 "safer-buffer": ">= 2.1.2 < 3"
             }
+        },
+        "immutable": {
+            "version": "3.8.2",
+            "resolved": "https://registry.npmjs.org/immutable/-/immutable-3.8.2.tgz",
+            "integrity": "sha1-wkOZUUVbs5kT2vKBN28VMOEErfM="
         },
         "inflight": {
             "version": "1.0.6",
@@ -232,16 +220,6 @@
                 "object-assign": "^2.0.0",
                 "source-map": "^0.4.2"
             }
-        },
-        "lodash": {
-            "version": "4.17.11",
-            "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.11.tgz",
-            "integrity": "sha512-cQKh8igo5QUhZ7lg38DYWAxMvjSAKG0A8wGSVimP07SIUEK2UO+arSRKbRZWtelMtN5V0Hkwh5ryOto/SshYIg=="
-        },
-        "lodash-es": {
-            "version": "4.17.11",
-            "resolved": "https://registry.npmjs.org/lodash-es/-/lodash-es-4.17.11.tgz",
-            "integrity": "sha512-DHb1ub+rMjjrxqlB3H56/6MXtm1lSksDp2rA2cNWjG8mlDUYFhUj3Di2Zn5IwSU87xLv8tNIQ7sSwE/YOX/D/Q=="
         },
         "lodash.flatten": {
             "version": "4.4.0",
@@ -329,18 +307,18 @@
             "integrity": "sha1-fjL3W0E4EpHQRhHxvxQQmsAGUdc="
         },
         "react": {
-            "version": "0.14.0",
-            "resolved": "http://registry.npmjs.org/react/-/react-0.14.0.tgz",
-            "integrity": "sha1-cufGkjOwguN+G702dKlD23LY9Ac=",
+            "version": "0.14.2",
+            "resolved": "http://registry.npmjs.org/react/-/react-0.14.2.tgz",
+            "integrity": "sha1-aU0+q9/eVuwrobTbfRYMmm/pzmo=",
             "requires": {
                 "envify": "^3.0.0",
                 "fbjs": "^0.3.1"
             }
         },
         "react-apollo": {
-            "version": "0.9.0",
-            "resolved": "https://registry.npmjs.org/react-apollo/-/react-apollo-0.9.0.tgz",
-            "integrity": "sha1-qV0FzPL5KxaiH9QXleKHbJ6ijW4=",
+            "version": "0.8.0",
+            "resolved": "http://registry.npmjs.org/react-apollo/-/react-apollo-0.8.0.tgz",
+            "integrity": "sha1-vAp+xgQHzb5NtDi6TxFFGoz0/rs=",
             "requires": {
                 "graphql-anywhere": "^2.0.0",
                 "hoist-non-react-statics": "^1.2.0",
@@ -349,8 +327,7 @@
                 "lodash.isequal": "^4.1.1",
                 "lodash.isobject": "^3.0.2",
                 "lodash.pick": "^4.4.0",
-                "object-assign": "^4.0.1",
-                "react-dom": "0.14.x || 15.* || ^15.0.0"
+                "object-assign": "^4.0.1"
             },
             "dependencies": {
                 "object-assign": {
@@ -360,13 +337,27 @@
                 }
             }
         },
-        "react-dom": {
-            "version": "0.14.0",
-            "resolved": "http://registry.npmjs.org/react-dom/-/react-dom-0.14.0.tgz",
-            "integrity": "sha1-/C55KrJ9iNsAmnbsvP1WETaKhJ4=",
+        "react-native-clone-referenced-element": {
+            "version": "1.0.0",
+            "resolved": "https://registry.npmjs.org/react-native-clone-referenced-element/-/react-native-clone-referenced-element-1.0.0.tgz",
+            "integrity": "sha1-sC+h86CNPGMjORiDMVFT3+0+Ioo="
+        },
+        "react-native-router-flux": {
+            "version": "3.0.9",
+            "resolved": "http://registry.npmjs.org/react-native-router-flux/-/react-native-router-flux-3.0.9.tgz",
+            "integrity": "sha1-FbUs8Xnjghx1yF0eEwIbVUuAZz8=",
             "requires": {
-                "react": "^0.14.0"
+                "@exponent/react-native-action-sheet": "^0.1.2",
+                "@exponent/react-native-navigator": "^0.3.5",
+                "assert": "^1.3.0",
+                "immutable": "^3.7.6",
+                "react-native-tabs": "^1.0.2"
             }
+        },
+        "react-native-tabs": {
+            "version": "1.0.9",
+            "resolved": "https://registry.npmjs.org/react-native-tabs/-/react-native-tabs-1.0.9.tgz",
+            "integrity": "sha1-ddPDXotbaXCGnqsoI3LLMuKngs0="
         },
         "recast": {
             "version": "0.11.23",
@@ -391,17 +382,6 @@
                 }
             }
         },
-        "redux": {
-            "version": "3.7.2",
-            "resolved": "https://registry.npmjs.org/redux/-/redux-3.7.2.tgz",
-            "integrity": "sha512-pNqnf9q1hI5HHZRBkj3bAngGZW/JMCmexDlOxw4XagXY2o1327nHH54LoTjiPJ0gizoqPDRqWyX/00g0hD6w+A==",
-            "requires": {
-                "lodash": "^4.2.1",
-                "lodash-es": "^4.2.1",
-                "loose-envify": "^1.1.0",
-                "symbol-observable": "^1.0.3"
-            }
-        },
         "safer-buffer": {
             "version": "2.1.2",
             "resolved": "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz",
@@ -415,11 +395,6 @@
                 "amdefine": ">=0.0.4"
             }
         },
-        "symbol-observable": {
-            "version": "1.2.0",
-            "resolved": "https://registry.npmjs.org/symbol-observable/-/symbol-observable-1.2.0.tgz",
-            "integrity": "sha512-e900nM8RRtGhlV36KGEU9k65K3mPb1WV70OdjfxlG2EAuM1noi/E/BaW/uMhL7bPEssK8QV57vN3esixjUvcXQ=="
-        },
         "through": {
             "version": "2.3.8",
             "resolved": "http://registry.npmjs.org/through/-/through-2.3.8.tgz",
@@ -430,10 +405,25 @@
             "resolved": "https://registry.npmjs.org/ua-parser-js/-/ua-parser-js-0.7.19.tgz",
             "integrity": "sha512-T3PVJ6uz8i0HzPxOF9SWzWAlfN/DavlpQqepn22xgve/5QecC+XMCAtmUNnY7C9StehaV6exjUCI801lOI7QlQ=="
         },
+        "util": {
+            "version": "0.10.3",
+            "resolved": "http://registry.npmjs.org/util/-/util-0.10.3.tgz",
+            "integrity": "sha1-evsa/lCAUkZInj23/g7TeTNqwPk=",
+            "requires": {
+                "inherits": "2.0.1"
+            },
+            "dependencies": {
+                "inherits": {
+                    "version": "2.0.1",
+                    "resolved": "https://registry.npmjs.org/inherits/-/inherits-2.0.1.tgz",
+                    "integrity": "sha1-sX0I0ya0Qj5Wjv9xn5GwscvfafE="
+                }
+            }
+        },
         "whatwg-fetch": {
-            "version": "2.0.4",
-            "resolved": "http://registry.npmjs.org/whatwg-fetch/-/whatwg-fetch-2.0.4.tgz",
-            "integrity": "sha512-dcQ1GWpOD/eEQ97k66aiEVpNnapVj90/+R+SXTPYGHpYBBypfKJEQjLrvMZ7YXbKm21gXd4NcuxUTjiv1YtLng=="
+            "version": "0.9.0",
+            "resolved": "http://registry.npmjs.org/whatwg-fetch/-/whatwg-fetch-0.9.0.tgz",
+            "integrity": "sha1-DjaExsuZlbQ+/J3wPkw2XZX9nMA="
         },
         "wrappy": {
             "version": "1.0.2",
