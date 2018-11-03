@@ -1,3 +1,8 @@
+## v0.75.10, 3 November 2018
+
+- .NET: Don't assume lowest version is the current one in file parser
+- Python: Handle sub-dependencies that appear in a requirements.txt
+
 ## v0.75.9, 2 November 2018
 
 - JS: Better peer dependency regex for npm
