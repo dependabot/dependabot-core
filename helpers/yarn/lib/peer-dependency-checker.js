@@ -16,11 +16,13 @@ const { BufferReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const { isString } = require("./helpers");
 
+// Rely on the package-linker to check for peer dependency requirements
+// linker.init(flattenedTopLevelPatterns..) is called from the install command
+// which happens after the manifests have been fetched
 class LightweightAdd extends Add {
-  async bailout(patterns, workspaceLayout) {
-    await this.linker.resolvePeerModules();
-    return true;
-  }
+  // Skip updating the lockfile and package.json from the install command
+  saveLockfileAndIntegrity() {}
+  persistChanges() {}
 }
 
 function devRequirement(requirements) {
