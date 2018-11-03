@@ -1,3 +1,7 @@
+## v0.75.8, 2 November 2018
+
+- go: only download packages with go get, don't build them
+
 ## v0.75.7, 2 November 2018
 
 - Maven: Check whether property being updated has the same source

@@ -212,18 +212,29 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       end
       let(:dependency_name) { "org.springframework:spring-beans" }
       let(:dependency_version) { "4.3.12.RELEASE" }
-      let(:metadata) { nil }
+      let(:metadata) do
+        {
+          property_name: "springframework.version",
+          property_source: "pom.xml"
+        }
+      end
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
+      context "when the same property is also declared in another file" do
+        let(:dependency_files) { [pom, other_pom] }
+        let(:other_pom) do
+          Dependabot::DependencyFile.new(
+            name: "other/pom.xml",
+            content: fixture("java", "poms", "property_pom_other.xml")
+          )
+        end
+
+        it { is_expected.to eq(version_class.new("23.0")) }
+      end
+
       context "that affects multiple dependencies" do
         let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
-        let(:metadata) do
-          {
-            property_name: "springframework.version",
-            property_source: "pom.xml"
-          }
-        end
         it { is_expected.to be_nil }
       end
 

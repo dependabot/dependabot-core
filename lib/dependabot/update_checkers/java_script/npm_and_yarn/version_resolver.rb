@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require "dependabot/git_commit_checker"
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
 require "dependabot/utils/java_script/version"
+require "dependabot/utils/java_script/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -33,7 +35,7 @@ module Dependabot
             /
               (?<requiring_dep>[^\s]+)\s
               requires\sa\speer\sof\s
-              (?<required_dep>[^\s]+)\sbut\snone\sis\sinstalled.
+              (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
             /x.freeze
 
           def initialize(dependency:, credentials:, dependency_files:,
@@ -85,16 +87,22 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
-              package_files.map do |file|
+              package_files.flat_map do |file|
                 path = Pathname.new(file.name).dirname
                 run_checker(path: path, version: version)
               rescue SharedHelpers::HelperSubprocessFailed => error
+                errors = []
                 if error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-                  error.message.match(NPM_PEER_DEP_ERROR_REGEX).named_captures
+                  error.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
+                    errors << Regexp.last_match.named_captures
+                  end
                 elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-                  error.message.match(YARN_PEER_DEP_ERROR_REGEX).named_captures
+                  error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+                    errors << Regexp.last_match.named_captures
+                  end
                 else raise
                 end
+                errors
               end.compact
             end
           rescue SharedHelpers::HelperSubprocessFailed
@@ -152,8 +160,10 @@ module Dependabot
 
                 details["peerDependencies"].all? do |dep, req|
                   dep = top_level_dependencies.find { |d| d.name == dep }
-                  reqs = Utils::JavaScript::Requirement.requirements_array(req)
                   next false unless dep
+                  next git_dependency?(dep) if req.include?("/")
+
+                  reqs = requirement_class.requirements_array(req)
                   next false unless version_for_dependency(dep)
 
                   reqs.any? { |r| r.satisfied_by?(version_for_dependency(dep)) }
@@ -164,9 +174,18 @@ module Dependabot
 
           def satisfies_peer_reqs_on_dep?(version)
             peer_reqs_on_dep.all? do |req|
-              reqs = Utils::JavaScript::Requirement.requirements_array(req)
+              # Git requirements can't be satisfied by a version
+              next false if req.include?("/")
+
+              reqs = requirement_class.requirements_array(req)
               reqs.any? { |r| r.satisfied_by?(version) }
             end
+          end
+
+          def git_dependency?(dep)
+            GitCommitChecker.
+              new(dependency: dep, credentials: credentials).
+              git_dependency?
           end
 
           def peer_reqs_on_dep
@@ -341,6 +360,10 @@ module Dependabot
 
           def version_class
             Utils::JavaScript::Version
+          end
+
+          def requirement_class
+            Utils::JavaScript::Requirement
           end
 
           def version_regex

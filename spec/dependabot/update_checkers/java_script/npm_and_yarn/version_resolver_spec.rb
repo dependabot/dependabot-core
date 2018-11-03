@@ -342,6 +342,34 @@ RSpec.describe namespace::VersionResolver do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
           it { is_expected.to eq(Gem::Version.new("15.6.2")) }
         end
+
+        # # This test is very slow, so is kept commented out. It should pass.
+        # context "that is a git dependency" do
+        #   let(:manifest_fixture_name) { "peer_dependency_git.json" }
+        #   let(:latest_allowable_version) do
+        #     "1af607cc24ee57b338c18e1a67eae445da86b316"
+        #   end
+        #   let(:dependency) do
+        #     Dependabot::Dependency.new(
+        #       name: "@trainline/react-skeletor",
+        #       version: nil,
+        #       requirements: [{
+        #         requirement: nil,
+        #         file: "package.json",
+        #         groups: ["dependencies"],
+        #         source: {
+        #           type: "git",
+        #           url: "https://github.com/trainline/react-skeletor",
+        #           branch: nil,
+        #           ref: "master"
+        #         }
+        #       }],
+        #       package_manager: "npm_and_yarn"
+        #     )
+        #   end
+
+        #   it { is_expected.to eq(latest_allowable_version) }
+        # end
       end
 
       context "updating a dependency that is a peer requirement" do
