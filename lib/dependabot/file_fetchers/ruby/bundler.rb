@@ -17,16 +17,21 @@ module Dependabot
             return false
           end
 
+          if filenames.include?("gems.locked") && !filenames.include?("gems.rb")
+            return false
+          end
+
           if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
             return true
           end
 
-          filenames.include?("Gemfile")
+          filenames.include?("Gemfile") || filenames.include?("gems.rb")
         end
 
         def self.required_files_message
-          "Repo must contain either a Gemfile or a gemspec. " \
-          "A Gemfile.lock may only be present if a Gemfile is."
+          "Repo must contain either a Gemfile, a gemspec, or a gems.rb. "\
+          "A Gemfile.lock may only be present if a Gemfile is, and a "\
+          "gems.locked may only be present if a gems.rb is."
         end
 
         private
@@ -45,22 +50,27 @@ module Dependabot
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
           end
 
+          check_required_files_present
+
           fetched_files.uniq
         end
 
+        def check_required_files_present
+          return if gemfile || gemspecs.any?
+
+          path = Pathname.new(File.join(directory, "Gemfile")).
+                 cleanpath.to_path
+          raise Dependabot::DependencyFileNotFound, path
+        end
+
         def gemfile
-          @gemfile ||=
-            if gemspecs.any?
-              fetch_file_if_present("Gemfile")
-            else
-              # This will raise if there is no Gemfile, which is what we want
-              # (since there is no gemspec)
-              fetch_file_from_host("Gemfile")
-            end
+          @gemfile ||= fetch_file_if_present("Gemfile") ||
+                       fetch_file_if_present("gems.rb")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_if_present("Gemfile.lock")
+          @lockfile ||= fetch_file_if_present("Gemfile.lock") ||
+                        fetch_file_if_present("gems.locked")
         end
 
         def gemspecs

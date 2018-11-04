@@ -165,7 +165,7 @@ module Dependabot
 
           def inaccessible_git_dependencies
             in_a_temporary_bundler_context(error_handling: false) do
-              ::Bundler::Definition.build("Gemfile", nil, {}).dependencies.
+              ::Bundler::Definition.build(gemfile.name, nil, {}).dependencies.
                 reject do |spec|
                   next true unless spec.source.is_a?(::Bundler::Source::Git)
 
@@ -192,7 +192,7 @@ module Dependabot
 
           def jfrog_source
             in_a_temporary_bundler_context(error_handling: false) do
-              ::Bundler::Definition.build("Gemfile", nil, {}).
+              ::Bundler::Definition.build(gemfile.name, nil, {}).
                 send(:sources).
                 rubygems_remotes.
                 find { |uri| uri.host.include?("jfrog") }&.
@@ -218,6 +218,11 @@ module Dependabot
 
           def git_source_credentials
             credentials.select { |cred| cred["type"] == "git_source" }
+          end
+
+          def gemfile
+            dependency_files.find { |f| f.name == "Gemfile" } ||
+              dependency_files.find { |f| f.name == "gems.rb" }
           end
         end
       end

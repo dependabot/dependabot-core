@@ -114,7 +114,7 @@ module Dependabot
               SharedHelpers.in_a_forked_process do
                 ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
 
-                ::Bundler::Definition.build("Gemfile", nil, {}).
+                ::Bundler::Definition.build(gemfile.name, nil, {}).
                   dependencies.
                   select(&:current_platform?).
                   # We can't dump gemspec sources, and we wouldn't bump them
@@ -170,7 +170,7 @@ module Dependabot
             name.end_with?(".gemspec") && !name.include?("/")
           end
 
-          return if file_names.include?("Gemfile")
+          return if gemfile
 
           raise "A gemspec or Gemfile must be provided!"
         end
@@ -243,7 +243,8 @@ module Dependabot
         end
 
         def gemfile
-          @gemfile ||= get_original_file("Gemfile")
+          @gemfile ||= get_original_file("Gemfile") ||
+                       get_original_file("gems.rb")
         end
 
         def evaled_gemfiles
@@ -251,11 +252,14 @@ module Dependabot
             reject { |f| f.name.end_with?(".gemspec") }.
             reject { |f| f.name.end_with?(".lock") }.
             reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }
+            reject { |f| f.name == "Gemfile" }.
+            reject { |f| f.name == "gems.rb" }.
+            reject { |f| f.name == "gems.locked" }
         end
 
         def lockfile
-          @lockfile ||= get_original_file("Gemfile.lock")
+          @lockfile ||= get_original_file("Gemfile.lock") ||
+                        get_original_file("gems.locked")
         end
 
         def parsed_lockfile
@@ -270,7 +274,9 @@ module Dependabot
         end
 
         def imported_ruby_files
-          dependency_files.select { |f| f.name.end_with? ".rb" }
+          dependency_files.
+            select { |f| f.name.end_with?(".rb") }.
+            reject { f.name == "gems.rb" }
         end
       end
     end

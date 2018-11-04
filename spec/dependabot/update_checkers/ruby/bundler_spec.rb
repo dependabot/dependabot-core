@@ -122,6 +122,34 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
 
         it { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
+
+      context "with a gem.rb and gems.locked setup" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+            name: "gems.rb",
+            directory: directory
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+            name: "gems.locked",
+            directory: directory
+          )
+        end
+
+        let(:requirements) do
+          [{
+            file: "gems.rb",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
     end
 
     context "with a private rubygems source" do
@@ -451,6 +479,63 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
             ]
           )
         end
+
+        context "with a gem.rb and gems.locked setup" do
+          let(:gemfile) do
+            Dependabot::DependencyFile.new(
+              content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+              name: "gems.rb",
+              directory: directory
+            )
+          end
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+              name: "gems.locked",
+              directory: directory
+            )
+          end
+
+          let(:requirements) do
+            [{
+              file: "gems.rb",
+              requirement: "= 3.5.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+          let(:expected_requirements) do
+            [{
+              file: "gems.rb",
+              requirement: "3.6.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+
+          it "returns the right array of updated dependencies" do
+            expect(updated_dependencies_after_full_unlock).to match_array(
+              [
+                Dependabot::Dependency.new(
+                  name: "rspec-mocks",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                ),
+                Dependabot::Dependency.new(
+                  name: "rspec-support",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                )
+              ]
+            )
+          end
+        end
       end
     end
   end
@@ -514,6 +599,47 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         end
 
         it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
+
+      context "with a gem.rb and gems.locked setup" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+            name: "gems.rb",
+            directory: directory
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+            name: "gems.locked",
+            directory: directory
+          )
+        end
+
+        context "that only appears in the lockfile" do
+          let(:gemfile_fixture_name) { "subdependency" }
+          let(:lockfile_fixture_name) { "subdependency.lock" }
+          let(:requirements) { [] }
+          let(:dependency_name) { "i18n" }
+          let(:current_version) { "0.7.0.beta1" }
+
+          it { is_expected.to eq(Gem::Version.new("0.7.0")) }
+        end
+
+        context "with a range requirement" do
+          let(:gemfile_fixture_name) { "version_between_bounds" }
+          let(:requirements) do
+            [{
+              file: "gems.rb",
+              requirement: "> 1.0.0, < 1.5.0",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        end
       end
     end
 
@@ -1251,6 +1377,47 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         it { is_expected.to eq([]) }
       end
 
+      context "with a gems.rb and gems.locked" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+            name: "gems.rb",
+            directory: directory
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+            name: "gems.locked",
+            directory: directory
+          )
+        end
+
+        let(:requirements) do
+          [{
+            file: "gems.rb",
+            requirement: "~> 1.4.0",
+            groups: [:default],
+            source: nil
+          }]
+        end
+
+        it "delegates to Bundler::RequirementsUpdater" do
+          expect(requirements_updater).
+            to receive(:new).with(
+              requirements: requirements,
+              library: false,
+              latest_version: "1.13.0",
+              latest_resolvable_version: "1.8.0",
+              updated_source: nil
+            ).and_call_original
+
+          expect(updated_requirements.count).to eq(1)
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+          expect(updated_requirements.first[:file]).to eq("gems.rb")
+        end
+      end
+
       context "for a gem with a git source" do
         let(:gemfile_fixture_name) { "git_source_with_version" }
         let(:lockfile_fixture_name) { "git_source_with_version.lock" }
@@ -1417,20 +1584,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:current_version) { "1.4.0" }
 
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.4.0",
-            groups: [:default],
-            source: nil
-          },
-          {
-            file: "example.gemspec",
-            requirement: "~> 1.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.4.0",
+          groups: [:default],
+          source: nil
+        }, {
+          file: "example.gemspec",
+          requirement: "~> 1.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
@@ -1457,20 +1621,17 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:current_version) { nil }
 
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.4.0",
-            groups: [:default],
-            source: nil
-          },
-          {
-            file: "example.gemspec",
-            requirement: "~> 1.0",
-            groups: [:default],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.4.0",
+          groups: [:default],
+          source: nil
+        }, {
+          file: "example.gemspec",
+          requirement: "~> 1.0",
+          groups: [:default],
+          source: nil
+        }]
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do

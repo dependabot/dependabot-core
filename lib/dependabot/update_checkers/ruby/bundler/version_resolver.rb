@@ -210,7 +210,7 @@ module Dependabot
             # dependencies getting unlocked (which would happen if they were
             # also subdependencies of the dependency being unlocked)
             ::Bundler::Definition.build(
-              "Gemfile",
+              gemfile.name,
               lockfile&.name,
               gems: dependencies_to_unlock,
               lock_shared_dependencies: true
@@ -234,11 +234,13 @@ module Dependabot
           end
 
           def gemfile
-            dependency_files.find { |f| f.name == "Gemfile" }
+            dependency_files.find { |f| f.name == "Gemfile" } ||
+              dependency_files.find { |f| f.name == "gems.rb" }
           end
 
           def lockfile
-            dependency_files.find { |f| f.name == "Gemfile.lock" }
+            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+              dependency_files.find { |f| f.name == "gems.locked" }
           end
         end
       end

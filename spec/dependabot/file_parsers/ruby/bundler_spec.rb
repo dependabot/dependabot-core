@@ -124,6 +124,39 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       end
     end
 
+    context "from a gems.rb and gems.locked" do
+      let(:gemfile) do
+        Dependabot::DependencyFile.new(name: "gems.rb", content: gemfile_body)
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "gems.locked",
+          content: lockfile_body
+        )
+      end
+      let(:gemfile_fixture_name) { "version_specified" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.4.0",
+            file: "gems.rb",
+            source: nil,
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        it { is_expected.to be_production }
+        its(:name) { is_expected.to eq("business") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) { is_expected.to eq("1.4.0") }
+      end
+    end
+
     context "with a git dependency" do
       let(:gemfile_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source.lock" }

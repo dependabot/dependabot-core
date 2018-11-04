@@ -118,7 +118,7 @@ module Dependabot
           def build_definition(other_updates:)
             gems_to_unlock = other_updates.map(&:name) + [dependency.name]
             definition = ::Bundler::Definition.build(
-              "Gemfile",
+              gemfile.name,
               lockfile&.name,
               gems: gems_to_unlock + subdependencies,
               lock_shared_dependencies: true
@@ -147,7 +147,7 @@ module Dependabot
             all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
                         specs.map(&:name).map(&:to_s)
             top_level = ::Bundler::Definition.
-                        build("Gemfile", lockfile.name, {}).
+                        build(gemfile.name, lockfile.name, {}).
                         dependencies.map(&:name).map(&:to_s)
 
             all_deps - top_level
@@ -217,11 +217,13 @@ module Dependabot
           end
 
           def gemfile
-            dependency_files.find { |f| f.name == "Gemfile" }
+            dependency_files.find { |f| f.name == "Gemfile" } ||
+              dependency_files.find { |f| f.name == "gems.rb" }
           end
 
           def lockfile
-            dependency_files.find { |f| f.name == "Gemfile.lock" }
+            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+              dependency_files.find { |f| f.name == "gems.locked" }
           end
 
           def library?
