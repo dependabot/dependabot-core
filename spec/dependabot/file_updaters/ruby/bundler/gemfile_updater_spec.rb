@@ -14,10 +14,7 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemfileUpdater do
   end
   let(:dependencies) { [dependency] }
   let(:gemfile) do
-    Dependabot::DependencyFile.new(
-      name: "Gemfile",
-      content: gemfile_body
-    )
+    Dependabot::DependencyFile.new(name: "Gemfile", content: gemfile_body)
   end
   let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
   let(:gemfile_fixture_name) { "Gemfile" }
@@ -58,23 +55,39 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemfileUpdater do
     context "when the full version is specified" do
       let(:gemfile_fixture_name) { "version_specified" }
       let(:requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "~> 1.5.0",
-          groups: [],
-          source: nil
-        }]
+        [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
       end
       let(:previous_requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "~> 1.4.0",
-          groups: [],
-          source: nil
-        }]
+        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
       end
+
       it { is_expected.to include("\"business\", \"~> 1.5.0\"") }
       it { is_expected.to include("\"statesman\", \"~> 1.2.0\"") }
+
+      context "with a gems.rb" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(name: "gems.rb", content: gemfile_body)
+        end
+        let(:requirements) do
+          [{
+            file: "gems.rb",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "gems.rb",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to include("\"business\", \"~> 1.5.0\"") }
+        it { is_expected.to include("\"statesman\", \"~> 1.2.0\"") }
+      end
     end
 
     context "when updating a sub-dependency" do
