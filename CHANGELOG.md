@@ -1,3 +1,8 @@
+## v0.75.12, 4 November 2018
+
+- JS: Fix bug in peer dependency checks for yarn
+- Ruby: Handle gems.rb and gems.locked
+
 ## v0.75.11, 3 November 2018
 
 - JS: Log all peer dependency warnings from yarn and npm
