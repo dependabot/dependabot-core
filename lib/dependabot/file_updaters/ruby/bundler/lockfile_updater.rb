@@ -85,8 +85,8 @@ module Dependabot
           end
 
           def write_temporary_dependency_files
-            File.write("Gemfile", updated_gemfile_content(gemfile))
-            File.write("Gemfile.lock", lockfile.content)
+            File.write(gemfile.name, updated_gemfile_content(gemfile))
+            File.write(lockfile.name, lockfile.content)
 
             top_level_gemspecs.each do |gemspec|
               File.write(
@@ -171,8 +171,8 @@ module Dependabot
 
           def build_definition(dependencies_to_unlock)
             defn = ::Bundler::Definition.build(
-              "Gemfile",
-              "Gemfile.lock",
+              gemfile.name,
+              lockfile.name,
               gems: dependencies_to_unlock
             )
 
@@ -237,7 +237,9 @@ module Dependabot
           end
 
           def imported_ruby_files
-            dependency_files.select { |f| f.name.end_with?(".rb") }
+            dependency_files.
+              select { |f| f.name.end_with?(".rb") }.
+              reject { |f| f.name == "gems.rb" }
           end
 
           def top_level_gemspecs
@@ -338,11 +340,14 @@ module Dependabot
           end
 
           def gemfile
-            @gemfile ||= dependency_files.find { |f| f.name == "Gemfile" }
+            @gemfile ||= dependency_files.find { |f| f.name == "Gemfile" } ||
+                         dependency_files.find { |f| f.name == "gems.rb" }
           end
 
           def lockfile
-            @lockfile ||= dependency_files.find { |f| f.name == "Gemfile.lock" }
+            @lockfile ||=
+              dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+              dependency_files.find { |f| f.name == "gems.locked" }
           end
 
           def evaled_gemfiles
@@ -351,7 +356,9 @@ module Dependabot
               reject { |f| f.name.end_with?(".gemspec") }.
               reject { |f| f.name.end_with?(".lock") }.
               reject { |f| f.name.end_with?(".ruby-version") }.
-              reject { |f| f.name == "Gemfile" }
+              reject { |f| f.name == "Gemfile" }.
+              reject { |f| f.name == "gems.rb" }.
+              reject { |f| f.name == "gems.locked" }
           end
 
           def git_dependency?(dep)

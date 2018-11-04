@@ -144,7 +144,7 @@ module Dependabot
 
             @dependency_source ||=
               in_a_temporary_bundler_context do
-                definition = ::Bundler::Definition.build("Gemfile", nil, {})
+                definition = ::Bundler::Definition.build(gemfile.name, nil, {})
 
                 specified_source =
                   definition.dependencies.
@@ -159,7 +159,8 @@ module Dependabot
           end
 
           def gemfile
-            dependency_files.find { |f| f.name == "Gemfile" }
+            dependency_files.find { |f| f.name == "Gemfile" } ||
+              dependency_files.find { |f| f.name == "gems.rb" }
           end
         end
       end

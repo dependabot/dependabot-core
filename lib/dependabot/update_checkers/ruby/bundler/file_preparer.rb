@@ -106,7 +106,8 @@ module Dependabot
           end
 
           def gemfile
-            dependency_files.find { |f| f.name == "Gemfile" }
+            dependency_files.find { |f| f.name == "Gemfile" } ||
+              dependency_files.find { |f| f.name == "gems.rb" }
           end
 
           def evaled_gemfiles
@@ -114,11 +115,14 @@ module Dependabot
               reject { |f| f.name.end_with?(".gemspec") }.
               reject { |f| f.name.end_with?(".lock") }.
               reject { |f| f.name.end_with?(".ruby-version") }.
-              reject { |f| f.name == "Gemfile" }
+              reject { |f| f.name == "Gemfile" }.
+              reject { |f| f.name == "gems.rb" }.
+              reject { |f| f.name == "gems.locked" }
           end
 
           def lockfile
-            dependency_files.find { |f| f.name == "Gemfile.lock" }
+            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+              dependency_files.find { |f| f.name == "gems.locked" }
           end
 
           def top_level_gemspecs
@@ -135,7 +139,9 @@ module Dependabot
           end
 
           def imported_ruby_files
-            dependency_files.select { |f| f.name.end_with?(".rb") }
+            dependency_files.
+              select { |f| f.name.end_with?(".rb") }.
+              reject { |f| f.name == "gems.rb" }
           end
 
           def gemfile_content_for_update_check(file)

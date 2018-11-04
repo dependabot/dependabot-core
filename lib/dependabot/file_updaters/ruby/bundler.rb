@@ -11,7 +11,13 @@ module Dependabot
         require_relative "bundler/lockfile_updater"
 
         def self.updated_files_regex
-          [/^Gemfile$/, /^Gemfile\.lock$/, %r{^[^/]*\.gemspec$}]
+          [
+            /^Gemfile$/,
+            /^Gemfile\.lock$/,
+            /^gems\.rb$/,
+            /^gems\.locked$/,
+            %r{^[^/]*\.gemspec$}
+          ]
         end
 
         def updated_dependency_files
@@ -52,23 +58,24 @@ module Dependabot
         def check_required_files
           file_names = dependency_files.map(&:name)
 
-          if file_names.include?("Gemfile.lock") &&
-             !file_names.include?("Gemfile")
+          if lockfile && !gemfile
             raise "A Gemfile must be provided if a lockfile is!"
           end
 
           return if file_names.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
-          return if file_names.include?("Gemfile")
+          return if gemfile
 
           raise "A gemspec or Gemfile must be provided!"
         end
 
         def gemfile
-          @gemfile ||= get_original_file("Gemfile")
+          @gemfile ||= get_original_file("Gemfile") ||
+                       get_original_file("gems.rb")
         end
 
         def lockfile
-          @lockfile ||= get_original_file("Gemfile.lock")
+          @lockfile ||= get_original_file("Gemfile.lock") ||
+                        get_original_file("gems.locked")
         end
 
         def evaled_gemfiles
@@ -77,7 +84,9 @@ module Dependabot
             reject { |f| f.name.end_with?(".gemspec") }.
             reject { |f| f.name.end_with?(".lock") }.
             reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }
+            reject { |f| f.name == "Gemfile" }.
+            reject { |f| f.name == "gems.rb" }.
+            reject { |f| f.name == "gems.locked" }
         end
 
         def updated_gemfile_content(file)
