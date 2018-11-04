@@ -88,6 +88,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         context "and a full version was previously specified" do
           let(:gemfile_requirement_string) { "~> 1.4.0" }
           its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+          its([:file]) { is_expected.to eq("Gemfile") }
+
+          context "in a gems.rb" do
+            subject { updated_requirements.find { |r| r[:file] == "gems.rb" } }
+            before { gemfile_requirement[:file] = "gems.rb" }
+
+            its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+            its([:file]) { is_expected.to eq("gems.rb") }
+          end
         end
 
         context "and it's a pre-release" do

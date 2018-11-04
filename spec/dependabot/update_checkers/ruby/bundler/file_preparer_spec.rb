@@ -74,6 +74,31 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
           end
         end
 
+        context "with a gems.rb and gems.locked setup" do
+          subject { prepared_dependency_files.find { |f| f.name == "gems.rb" } }
+
+          let(:gemfile) do
+            Dependabot::DependencyFile.new(
+              content: gemfile_body,
+              name: "gems.rb"
+            )
+          end
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              content: lockfile_body,
+              name: "gems.locked"
+            )
+          end
+
+          it "returns the right files" do
+            expect(prepared_dependency_files.map(&:name)).
+              to match_array(%w(gems.rb gems.locked))
+          end
+
+          its(:content) { is_expected.to include(%("business", ">= 1.4.3"\n)) }
+          its(:content) { is_expected.to include(%("statesman", "~> 1.2.0"\n)) }
+        end
+
         context "when asked not to unlock the requirement" do
           let(:unlock_requirement) { false }
           its(:content) { is_expected.to include(%("business", "~> 1.4.0"\n)) }

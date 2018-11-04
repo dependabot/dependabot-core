@@ -95,6 +95,31 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::LatestVersionFinder do
         it { is_expected.to be_nil }
       end
 
+      context "with a gems.rb setup" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemfiles", gemfile_fixture_name),
+            name: "gems.rb"
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "lockfiles", lockfile_fixture_name),
+            name: "gems.locked"
+          )
+        end
+        let(:requirements) do
+          [{
+            file: "gems.rb",
+            requirement: requirement_string,
+            groups: [],
+            source: source
+          }]
+        end
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
+
       context "when the gem is Bundler" do
         let(:gemfile_fixture_name) { "bundler_specified" }
         let(:dependency_name) { "bundler" }
