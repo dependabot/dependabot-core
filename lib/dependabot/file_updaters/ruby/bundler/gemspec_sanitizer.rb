@@ -174,7 +174,7 @@ module Dependabot
 
             def replace_constant(node)
               case node.children.last&.type
-              when :str then nil # no-op
+              when :str, :int then nil # no-op
               when :const, :send, :lvar
                 replace(
                   node.children.last.loc.expression,

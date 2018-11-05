@@ -97,6 +97,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
         end
       end
 
+      context "with an assignment to an int" do
+        let(:content) { "v = 'a'\n\nSpec.new { |s| s.version = 1 }" }
+        it do
+          is_expected.to eq(%(v = 'a'\n\nSpec.new { |s| s.version = 1 }))
+        end
+      end
+
       context "with an assignment to a File.read" do
         let(:content) { "Spec.new { |s| s.version = File.read('something') }" }
         it do
