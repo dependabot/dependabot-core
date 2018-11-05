@@ -1,3 +1,7 @@
+## v0.75.15, 5 November 2018
+
+- Python: Handle or conditions in Poetry python requirements
+
 ## v0.75.14, 5 November 2018
 
 - JS: Stop downloading node_modules when checking yarn peer deps
