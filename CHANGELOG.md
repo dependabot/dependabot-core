@@ -1,3 +1,9 @@
+## v0.75.13, 5 November 2018
+
+- Ruby: Better error handling if Gemfile isn't present
+- Ruby: Fix typo in FileParser
+- Ruby: Handle assignment to an integer in GemspecSanitizer
+
 ## v0.75.12, 4 November 2018
 
 - JS: Fix bug in peer dependency checks for yarn
