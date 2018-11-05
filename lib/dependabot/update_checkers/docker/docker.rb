@@ -104,9 +104,16 @@ module Dependabot
           candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
           wants_prerelease = prerelease?(dependency.version)
-          latest_tag =
+          candidate_tags =
             candidate_tags.
             reject { |tag| prerelease?(tag) && !wants_prerelease }.
+            reject do |tag|
+              version = version_class.new(numeric_version_from(tag))
+              ignore_reqs.any? { |r| r.satisfied_by?(version) }
+            end
+
+          latest_tag =
+            candidate_tags.
             max_by { |tag| version_class.new(numeric_version_from(tag)) }
 
           latest_tag || dependency.version
@@ -263,6 +270,12 @@ module Dependabot
               user: registry_credentials&.fetch("username"),
               password: registry_credentials&.fetch("password")
             )
+        end
+
+        def ignore_reqs
+          # Note: we use Gem::Requirement here because ignore conditions will
+          # be passed as Ruby ranges
+          ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
         end
       end
     end

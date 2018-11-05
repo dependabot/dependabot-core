@@ -12,9 +12,11 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
+  let(:ignored_versions) { [] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -135,6 +137,11 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
         it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
       end
+    end
+
+    context "when the latest version is being ignored" do
+      let(:ignored_versions) { [">= 17.10"] }
+      it { is_expected.to eq("17.04") }
     end
 
     context "when there is a latest tag" do
