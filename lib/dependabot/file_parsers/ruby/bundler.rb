@@ -276,7 +276,7 @@ module Dependabot
         def imported_ruby_files
           dependency_files.
             select { |f| f.name.end_with?(".rb") }.
-            reject { f.name == "gems.rb" }
+            reject { |f| f.name == "gems.rb" }
         end
       end
     end
