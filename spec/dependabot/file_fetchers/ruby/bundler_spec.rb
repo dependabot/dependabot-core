@@ -98,6 +98,23 @@ RSpec.describe Dependabot::FileFetchers::Ruby::Bundler do
           to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
+
+    context "without a Gemfile" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_go_app.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
   end
 
   context "with a .ruby-version file" do

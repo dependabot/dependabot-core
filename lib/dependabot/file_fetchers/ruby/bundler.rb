@@ -46,11 +46,11 @@ module Dependabot
           fetched_files += path_gemspecs
           fetched_files += require_relative_files(fetched_files)
 
+          check_required_files_present
+
           unless self.class.required_files_in?(fetched_files.map(&:name))
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
           end
-
-          check_required_files_present
 
           fetched_files.uniq
         end
