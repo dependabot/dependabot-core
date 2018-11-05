@@ -1,3 +1,8 @@
+## v0.75.14, 5 November 2018
+
+- JS: Stop downloading node_modules when checking yarn peer deps
+- Docker: Handle ignored versions
+
 ## v0.75.13, 5 November 2018
 
 - Ruby: Better error handling if Gemfile isn't present
