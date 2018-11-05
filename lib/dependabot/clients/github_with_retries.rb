@@ -48,6 +48,18 @@ module Dependabot
         new(access_tokens: access_tokens)
       end
 
+      #################
+      # VCS Interface #
+      #################
+
+      def fetch_commit(repo, branch)
+        ref(repo, "heads/#{branch}").object.sha
+      end
+
+      def fetch_default_branch(repo)
+        repository(repo).default_branch
+      end
+
       ############
       # Proxying #
       ############

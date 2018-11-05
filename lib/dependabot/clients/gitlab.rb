@@ -35,6 +35,18 @@ module Dependabot
         )
       end
 
+      #################
+      # VCS Interface #
+      #################
+
+      def fetch_commit(repo, branch)
+        branch(repo, branch).commit.id
+      end
+
+      def fetch_default_branch(repo)
+        project(repo).default_branch
+      end
+
       ############
       # Proxying #
       ############

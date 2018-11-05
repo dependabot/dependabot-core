@@ -24,6 +24,7 @@ module Dependabot
       def initialize(source:, credentials:)
         @source = source
         @credentials = credentials
+
         @submodule_directories = {}
       end
 
@@ -46,16 +47,7 @@ module Dependabot
       def commit
         branch = target_branch || default_branch_for_repo
 
-        @commit ||=
-          case source.provider
-          when "github"
-            github_client_for_source.ref(repo, "heads/#{branch}").object.sha
-          when "gitlab"
-            gitlab_client.branch(repo, branch).commit.id
-          when "bitbucket"
-            bitbucket_client.fetch_commit(repo, branch)
-          else raise "Unsupported provider '#{source.provider}'."
-          end
+        @commit ||= client_for_provider.fetch_commit(repo, branch)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
              Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::BranchNotFound, branch
@@ -65,17 +57,21 @@ module Dependabot
 
       private
 
+      def client_for_provider
+        case source.provider
+        when "github"
+          github_client_for_source
+        when "gitlab"
+          gitlab_client
+        when "bitbucket"
+          bitbucket_client
+        else raise "Unsupported provider '#{source.provider}'."
+        end
+      end
+
       def default_branch_for_repo
         @default_branch_for_repo ||=
-          case source.provider
-          when "github"
-            github_client_for_source.repository(repo).default_branch
-          when "gitlab"
-            gitlab_client.project(repo).default_branch
-          when "bitbucket"
-            bitbucket_client.fetch_default_branch(repo)
-          else raise "Unsupported provider '#{source.provider}'."
-          end
+          client_for_provider.fetch_default_branch(repo)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
              Dependabot::Clients::Bitbucket::NotFound
         raise Dependabot::RepoNotFound, source
