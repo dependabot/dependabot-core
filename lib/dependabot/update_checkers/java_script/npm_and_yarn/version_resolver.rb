@@ -213,8 +213,7 @@ module Dependabot
                     Dir.pwd,
                     dependency.name,
                     version,
-                    requirements_for_path(dependency.requirements, path),
-                    top_level_dependencies.map(&:to_h)
+                    requirements_for_path(dependency.requirements, path)
                   ]
                 )
               end
