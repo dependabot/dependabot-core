@@ -6,7 +6,7 @@ module Dependabot
   module Utils
     module JavaScript
       class Requirement < Gem::Requirement
-        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?!\s*[|-])/.freeze
+        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/.freeze
         OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 
         # Override the version pattern to allow a 'v' prefix
@@ -36,6 +36,10 @@ module Dependabot
         def self.requirements_array(requirement_string)
           return [new(nil)] if requirement_string.nil?
 
+          # Removing parentheses is technically wrong but they are extremely
+          # rarely used.
+          # TODO: Handle complicated parenthesised requirements
+          requirement_string = requirement_string.gsub(/[()]/, "")
           requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
             requirements = req_string.strip.split(AND_SEPARATOR)
             new(requirements)

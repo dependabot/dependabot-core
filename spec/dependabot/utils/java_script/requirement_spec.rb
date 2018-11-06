@@ -44,6 +44,11 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
       it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
     end
 
+    context "with a hyphen range specified" do
+      let(:requirement_string) { "1.0.0 - 1.5.0" }
+      it { is_expected.to eq(Gem::Requirement.new(["<= 1.5.0", ">= 1.0.0"])) }
+    end
+
     context "with a ~> version specified" do
       let(:requirement_string) { "~>1.5.1" }
       it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
@@ -72,6 +77,44 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
     context "with a 'v' prefix" do
       let(:requirement_string) { ">=v1.0.0" }
       it { is_expected.to eq(described_class.new(">= v1.0.0")) }
+    end
+  end
+
+  describe "#requirements_array" do
+    subject { described_class.requirements_array(requirement_string) }
+
+    context "with multiple intersecting requirements" do
+      let(:requirement_string) { ">=1.0.0 <=1.5.0" }
+      it { is_expected.to eq([Gem::Requirement.new("<= 1.5.0", ">= 1.0.0")]) }
+
+      context "separated by &&" do
+        let(:requirement_string) { ">=1.0.0 && <=1.5.0" }
+        it { is_expected.to eq([Gem::Requirement.new("<= 1.5.0", ">= 1.0.0")]) }
+      end
+    end
+
+    context "with multiple optional requirements" do
+      let(:requirement_string) { "^1.0.0 || ^2.0.0" }
+      it do
+        is_expected.to match_array(
+          [
+            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
+          ]
+        )
+      end
+    end
+
+    context "with parentheses that do nothing" do
+      let(:requirement_string) { "(^1.0.0 || ^2.0.0)" }
+      it do
+        is_expected.to match_array(
+          [
+            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
+          ]
+        )
+      end
     end
   end
 
