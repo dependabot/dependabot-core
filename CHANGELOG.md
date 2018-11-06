@@ -1,7 +1,7 @@
 ## v0.75.16, 6 November 2018
 
 - Python:  Bump poetry from 0.12.5 to 0.12.6
-- JS: Handle version resolution for sub-dependencies when not updating lockfile
+- JS: Handle version resolution for sub-dependencies when not updating manifest
 - Add a common interface for provider client (thanks @codisart)
 
 ## v0.75.15, 5 November 2018
