@@ -1,3 +1,7 @@
+## v0.75.18, 6 November 2018
+
+- Python: Fetch path dependencies with paths that don't start with a '.'
+
 ## v0.75.17, 6 November 2018
 
 - Fix merge conflict issue in FileFetchers::Base
