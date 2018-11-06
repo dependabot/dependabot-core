@@ -33,6 +33,7 @@
 # - docker
 # - terraform
 
+require "optparse"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
@@ -49,15 +50,31 @@ credentials = [{
   "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
 }]
 
-# Full name of the GitHub repo you want to create pull requests for.
-if ARGV.length < 2
-  puts "usage: full-dry-run.rb PACKAGE_MANAGER GITHUB_REPO [DEPENDENCY]"
-  exit 1
-end
-package_manager, repo_name, dependency_name = ARGV
-
 # Directory where the base dependency files are.
 directory = "/"
+
+# Name of an individual dependency to udpate
+dependency_name = nil
+
+option_parse = OptionParser.new do |opts|
+  opts.banner = "usage: ruby bin/dry-run.rb [options] PACKAGE_MANAGER REPO"
+
+  opts.on("--dir DIRECTORY", "Dependency file directory") do |value|
+    directory = value
+  end
+
+  opts.on("--dep DEPENDENCY", "Dependency to update") do |value|
+    dependency_name = value
+  end
+end
+option_parse.parse!
+
+# Full name of the GitHub repo you want to create pull requests for.
+if ARGV.length < 2
+  puts option_parse.help
+  exit 1
+end
+package_manager, repo_name = ARGV
 
 source = Dependabot::Source.new(
   provider: "github",
