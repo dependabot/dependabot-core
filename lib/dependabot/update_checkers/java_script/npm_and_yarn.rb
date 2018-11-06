@@ -34,6 +34,8 @@ module Dependabot
         end
 
         def latest_resolvable_version_with_no_unlock
+          return latest_resolvable_version unless dependency.top_level?
+
           if git_dependency?
             return latest_resolvable_version_with_no_unlock_for_git_dependency
           end
