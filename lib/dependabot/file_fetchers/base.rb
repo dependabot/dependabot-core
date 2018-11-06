@@ -225,11 +225,13 @@ module Dependabot
         path = path.gsub("#{dir}/", "")
 
         case provider
-        when "github" then fetch_file_content_from_github(path, repo, commit)
+        when "github"
+          fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
-        when "bitbucket" then bitbucket_file_contents(repo, path, commit)
+        when "bitbucket"
+          bitbucket_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{provider}'."
         end
       end
