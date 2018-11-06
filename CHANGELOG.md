@@ -1,3 +1,7 @@
+## v0.75.17, 6 November 2018
+
+- Fix merge conflict issue in FileFetchers::Base
+
 ## v0.75.16, 6 November 2018
 
 - Python:  Bump poetry from 0.12.5 to 0.12.6
