@@ -170,7 +170,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       it "updates the requirements.txt" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).
-          to include("pbr==5.1.0                # via mock")
+          to include("pbr==5.1.1                # via mock")
       end
 
       context "with an uncompiled requirement file, too" do
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.first.content).
-            to include("pbr==5.1.0                # via mock")
+            to include("pbr==5.1.1                # via mock")
           expect(updated_files.last.content).to include("pbr==4.3.0")
         end
       end
