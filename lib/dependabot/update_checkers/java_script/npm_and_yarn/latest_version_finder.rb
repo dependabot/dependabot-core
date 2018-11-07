@@ -171,16 +171,22 @@ module Dependabot
           end
 
           def yanked?(version)
-            Excon.get(
-              dependency_url + "/#{version}",
-              SharedHelpers.excon_defaults.merge(
-                headers: registry_auth_headers,
-                idempotent: true
-              )
-            ).status == 404
-          rescue Excon::Error::Timeout
-            # Give the benefit of the doubt if the registry is playing up
-            false
+            @yanked ||= {}
+            return @yanked[version] if @yanked.key?(version)
+
+            @yanked[version] =
+              begin
+                Excon.get(
+                  dependency_url + "/#{version}",
+                  SharedHelpers.excon_defaults.merge(
+                    headers: registry_auth_headers,
+                    idempotent: true
+                  )
+                ).status == 404
+              rescue Excon::Error::Timeout
+                # Give the benefit of the doubt if the registry is playing up
+                false
+              end
           end
 
           def npm_details

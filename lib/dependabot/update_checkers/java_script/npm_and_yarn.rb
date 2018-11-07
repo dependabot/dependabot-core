@@ -15,9 +15,12 @@ module Dependabot
         require_relative "npm_and_yarn/subdependency_version_resolver"
 
         def latest_version
-          return latest_version_for_git_dependency if git_dependency?
-
-          latest_version_details&.fetch(:version)
+          @latest_version ||=
+            if git_dependency?
+              latest_version_for_git_dependency
+            else
+              latest_version_details&.fetch(:version)
+            end
         end
 
         def latest_resolvable_version
@@ -101,16 +104,19 @@ module Dependabot
         end
 
         def latest_version_for_git_dependency
-          latest_release = latest_version_finder.
-                           latest_version_details_from_registry
+          @latest_version_for_git_dependency ||=
+            begin
+              latest_release = latest_version_finder.
+                               latest_version_details_from_registry
 
-          # If there's been a release that includes the current pinned ref or
-          # that the current branch is behind, we switch to that release.
-          if git_branch_or_ref_in_release?(latest_release&.fetch(:version))
-            return latest_release.fetch(:version)
-          end
-
-          latest_git_version_details[:sha]
+              # If there's been a release that includes the current pinned ref
+              # or that the current branch is behind, we switch to that release.
+              if git_branch_or_ref_in_release?(latest_release&.fetch(:version))
+                latest_release.fetch(:version)
+              else
+                latest_git_version_details[:sha]
+              end
+            end
         end
 
         def should_switch_source_from_git_to_registry?
