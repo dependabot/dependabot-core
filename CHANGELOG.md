@@ -1,3 +1,8 @@
+## v0.75.26, 7 November 2018
+
+- JS: Better parsing of private registry URLs
+- JS: Bump yarn from 1.12.1 to 1.12.3
+
 ## v0.75.25, 7 November 2018
 
 - .NET: Parse and update nested packages.config files
