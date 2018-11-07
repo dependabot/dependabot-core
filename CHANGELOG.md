@@ -1,3 +1,7 @@
+## v0.75.23, 7 November 2018
+
+- JS: Fix yarn lockfile for githost shorthand installs
+
 ## v0.75.22, 7 November 2018
 
 - JS: Don't consider previously failing peer dependencies when finding latest
