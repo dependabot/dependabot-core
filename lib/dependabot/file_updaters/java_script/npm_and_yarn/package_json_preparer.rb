@@ -54,7 +54,7 @@ module Dependabot
           def remove_invalid_characters(content)
             content.
               gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
-              gsub("\\ ", " ")                  # escaped whitespace not allowed
+              gsub(/(?<!\\)\ /, " ")            # escaped whitespace not allowed
           end
 
           def swapped_ssh_requirements
