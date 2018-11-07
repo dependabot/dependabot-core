@@ -1,3 +1,7 @@
+## v0.75.27, 7 November 2018
+
+- JS: Fix sanitization when a slash character is being escaped
+
 ## v0.75.26, 7 November 2018
 
 - JS: Better parsing of private registry URLs
