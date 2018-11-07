@@ -175,7 +175,7 @@ module Dependabot
           end
 
           def satisfies_peer_reqs_on_dep?(version)
-            peer_reqs_on_dep.all? do |req|
+            newly_broken_peer_reqs_on_dep.all? do |req|
               # Git requirements can't be satisfied by a version
               next false if req.include?("/")
 
@@ -190,8 +190,8 @@ module Dependabot
               git_dependency?
           end
 
-          def peer_reqs_on_dep
-            unmet_peer_dependencies.
+          def newly_broken_peer_reqs_on_dep
+            relevant_unmet_peer_dependencies.
               select { |dep| dep[:requirement_name] == dependency.name }.
               map { |dep| dep[:requirement_version] }
           end
