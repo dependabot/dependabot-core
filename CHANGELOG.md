@@ -1,3 +1,7 @@
+## v0.75.25, 7 November 2018
+
+- .NET: Parse and update nested packages.config files
+
 ## v0.75.24, 7 November 2018
 
 - .NET: Fetch packages.config files from any directories specified in .sln files
