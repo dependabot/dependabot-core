@@ -633,7 +633,6 @@ module Dependabot
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def semantic_prefix
         unless using_semantic_commit_messages?
           raise "Not using semantic prefixes!"
@@ -647,17 +646,16 @@ module Dependabot
           recent_commit_messages.
           any? { |msg| msg.start_with?("build") }
 
-        if recent_commits_using_chore && !recent_commits_using_build
+        if last_dependabot_commit_message&.start_with?("chore")
           "chore"
-        elsif recent_commits_using_build && !recent_commits_using_chore
+        elsif last_dependabot_commit_message&.start_with?("build")
           "build"
-        elsif last_dependabot_commit_message&.start_with?("chore")
+        elsif recent_commits_using_chore && !recent_commits_using_build
           "chore"
         else
           "build"
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def using_gitmoji_commit_messages?
         return false if recent_commit_messages.none?
