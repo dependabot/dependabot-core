@@ -48,6 +48,8 @@ module Dependabot
           end
 
           def latest_resolvable_version
+            return latest_allowable_version if git_dependency?(dependency)
+
             unless relevant_unmet_peer_dependencies.any?
               return latest_allowable_version
             end
