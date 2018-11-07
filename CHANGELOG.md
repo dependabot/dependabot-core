@@ -1,3 +1,8 @@
+## v0.75.28, 7 November 2018
+
+- JS: Better whitespace escaping
+- PHP: Handle packages that require themselves
+
 ## v0.75.27, 7 November 2018
 
 - JS: Fix sanitization when a slash character is being escaped
