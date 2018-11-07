@@ -25,6 +25,7 @@ const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const fixDuplicates = require("./fix-duplicates");
 const replaceDeclaration = require("./replace-lockfile-declaration");
+const urlParse = require("url").parse;
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
@@ -103,16 +104,28 @@ function optionalRequirement(requirements) {
   );
 }
 
-function getGitHubShorthand(url) {
-  const gitHubUrl = "https://github.com/";
-  return url.replace(gitHubUrl, "");
-}
+const GIT_HOSTS = [
+  "github.com",
+  "gitlab.com",
+  "bitbucket.com",
+  "bitbucket.org"
+];
 
-function addedUsingGitHubShorthand(depName, repoShorthand, lockfileJson) {
-  const depNameWithGitHubShorthand = `${depName}@${repoShorthand}`;
-  return Object.keys(lockfileJson).some(name => {
-    return name.startsWith(depNameWithGitHubShorthand);
-  });
+function getGitShorthand(depName, url, lockfileJson) {
+  const { hostname, path } = urlParse(url);
+  const isSupportedHost = hostname && path && GIT_HOSTS.indexOf(hostname) >= 0;
+  if (!isSupportedHost) return;
+
+  const hostShorthand = hostname.replace(/\.[a-z]{3}$/, "");
+  const repoShorthand = path.replace(/^\//, "");
+
+  return [repoShorthand, `${hostShorthand}:${repoShorthand}`].find(
+    shorthand => {
+      return Object.keys(lockfileJson).some(name => {
+        return name.startsWith(`${depName}@${shorthand}`);
+      });
+    }
+  );
 }
 
 function installArgsWithVersion(
@@ -134,9 +147,9 @@ function installArgsWithVersion(
     // https://codeload.github.com/org/repo.. whereas it comes from
     // https://github.com/org/repo.. in the usual git install case:
     // yarn add https://github.com/org/repo..
-    const repoShorthand = getGitHubShorthand(source.url);
-    if (addedUsingGitHubShorthand(depName, repoShorthand, lockfileJson)) {
-      return [`${depName}@${repoShorthand}#${desiredVersion}`];
+    const repoShortHand = getGitShorthand(depName, source.url, lockfileJson);
+    if (repoShortHand) {
+      return [`${depName}@${repoShortHand}#${desiredVersion}`];
     } else {
       return [`${depName}@${source.url}#${desiredVersion}`];
     }
