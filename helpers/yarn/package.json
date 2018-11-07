@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@dependabot/yarn-lib": "^1.12.1",
+    "@dependabot/yarn-lib": "^1.12.3",
     "semver": "^5.6.0"
   },
   "devDependencies": {
