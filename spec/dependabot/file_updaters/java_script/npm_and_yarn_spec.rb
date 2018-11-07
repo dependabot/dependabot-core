@@ -219,11 +219,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
 
         context "specified as a full URL" do
-          let(:req) { nil }
-          let(:ref) { "master" }
-          let(:old_req) { nil }
-          let(:old_ref) { "master" }
-
           let(:manifest_fixture_name) { "git_dependency.json" }
           let(:yarn_lock_fixture_name) { "git_dependency.lock" }
           let(:npm_lock_fixture_name) { "git_dependency.json" }
@@ -377,6 +372,75 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             end
           end
         end
+
+        context "when using git host URL: gitlab" do
+          let(:dependency_name) { "babel-preset-php" }
+          let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
+          let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
+          let(:requirements) do
+            [{
+              requirement: nil,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://gitlab.com/kornelski/babel-preset-php",
+                branch: nil,
+                ref: "master"
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: nil,
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://gitlab.com/kornelski/babel-preset-php",
+                branch: nil,
+                ref: "master"
+              }
+            }]
+          end
+
+          let(:manifest_fixture_name) { "githost_dependency.json" }
+          let(:yarn_lock_fixture_name) { "githost_dependency.lock" }
+          let(:npm_lock_fixture_name) { "githost_dependency.json" }
+
+          it "correctly update the lockfiles" do
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(
+              parsed_package_lock["dependencies"]["babel-preset-php"]["version"]
+            ).to eq("gitlab:kornelski/babel-preset-php#"\
+                    "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19")
+
+            expect(updated_yarn_lock.content).
+              to include("gitlab:kornelski/babel-preset-php#master\":")
+            expect(updated_yarn_lock.content).to include(
+              "https://gitlab.com/kornelski/babel-preset-php/repository/archive.tar.gz?ref=5fbc24ccc37bd72052ce71ceae5b4934feb3ac19"
+            )
+          end
+        end
+
+        context "when using git host URL: github" do
+          let(:manifest_fixture_name) { "githost_dependency.json" }
+          let(:yarn_lock_fixture_name) { "githost_dependency.lock" }
+          let(:npm_lock_fixture_name) { "githost_dependency.json" }
+
+          it "correctly update the lockfiles" do
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("github:jonschlinkert/is-number#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+            expect(updated_yarn_lock.content).
+              to include("is-number@github:jonschlinkert/is-number#master\":")
+            expect(updated_yarn_lock.content).to include(
+              "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+            )
+          end
+        end
       end
 
       context "with a requirement" do
@@ -517,6 +581,32 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
 
             expect(updated_yarn_lock.content).
               to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+        end
+
+        context "when using git host URL" do
+          let(:manifest_fixture_name) { "githost_dependency_ref.json" }
+          let(:yarn_lock_fixture_name) { "githost_dependency_ref.lock" }
+          let(:npm_lock_fixture_name) { "githost_dependency_ref.json" }
+
+          it "updates the package.json and the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json yarn.lock))
+
+            parsed_package_json = JSON.parse(updated_package_json.content)
+            expect(parsed_package_json["devDependencies"]["is-number"]).
+              to eq("github:jonschlinkert/is-number#4.0.0")
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("github:jonschlinkert/is-number#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+            expect(updated_yarn_lock.content).
+              to include("is-number@github:jonschlinkert/is-number#4.0.0\":")
+            expect(updated_yarn_lock.content).to include(
+              "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
+            )
           end
         end
 
