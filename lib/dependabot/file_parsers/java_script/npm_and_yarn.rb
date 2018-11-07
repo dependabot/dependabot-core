@@ -239,7 +239,7 @@ module Dependabot
           return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
           return if resolved_url.include?("github")
 
-          private_registry_source_for(resolved_url)
+          private_registry_source_for(resolved_url, name)
         end
 
         def requirement_for(requirement)
@@ -259,9 +259,14 @@ module Dependabot
           }
         end
 
-        def private_registry_source_for(resolved_url)
+        def private_registry_source_for(resolved_url, name)
           url =
-            if resolved_url.include?("/~/") then resolved_url.split("/~/").first
+            if resolved_url.include?("/~/")
+              # Gemfury format
+              resolved_url.split("/~/").first
+            elsif resolved_url.include?("/#{name}/-/#{name}")
+              # Sonatype Nexus / Artifactory JFrog format
+              resolved_url.split("/#{name}/-/#{name}").first
             elsif (cred_url = credential_url(resolved_url)) then cred_url
             else resolved_url.split("/")[0..2].join("/")
             end

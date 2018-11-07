@@ -249,7 +249,8 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
                   groups: ["dependencies"],
                   source: {
                     type: "private_registry",
-                    url: "https://artifactory01.mydomain.com"
+                    url: "https://artifactory01.mydomain.com/artifactory/api/"\
+                         "npm/my-repo"
                   }
                 }]
               )
