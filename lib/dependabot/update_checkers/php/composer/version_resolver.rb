@@ -134,7 +134,8 @@ module Dependabot
                     "#{extensions.join(', ')}.\n\n"\
                     "The full error raised was:\n\n#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
-            elsif error.message.include?("package requires php")
+            elsif error.message.include?("package requires php") ||
+                  error.message.include?("cannot require itself")
               raise Dependabot::DependencyFileNotResolvable, error.message
             elsif error.message.include?("requirements could not be resolved")
               # We should raise a Dependabot::DependencyFileNotResolvable error

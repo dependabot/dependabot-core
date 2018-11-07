@@ -63,6 +63,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
 
   describe "latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
+
     context "with an invalid version constraint" do
       let(:manifest_fixture_name) { "invalid_version_constraint" }
       let(:lockfile_fixture_name) { "invalid_version_constraint" }
@@ -93,6 +94,18 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
       let(:dependency_version) { nil }
 
       it { is_expected.to eq(Dependabot::Utils::Php::Version.new("1.0")) }
+    end
+
+    context "with a library that requires itself" do
+      let(:dependency_files) { [manifest] }
+      let(:manifest_fixture_name) { "requires_self" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("cannot require itself")
+          end
+      end
     end
 
     # This test is extremely slow, as it neds to wait for Composer to time out.

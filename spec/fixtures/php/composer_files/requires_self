@@ -1,0 +1,8 @@
+{
+    "name": "my_repo/my_fabuluos_library",
+    "require": {
+        "monolog/monolog" : "1.0.1",
+        "symfony/polyfill-mbstring": "1.0.1",
+        "my_repo/my_fabuluos_library": "dev-master"
+    }
+}
