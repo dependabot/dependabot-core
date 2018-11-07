@@ -1,3 +1,7 @@
+## v0.75.24, 7 November 2018
+
+- .NET: Fetch packages.config files from any directories specified in .sln files
+
 ## v0.75.23, 7 November 2018
 
 - JS: Fix yarn lockfile for githost shorthand installs
