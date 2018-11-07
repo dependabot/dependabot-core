@@ -38,11 +38,14 @@ module Dependabot
         end
 
         def packages_config_dependencies
-          return DependencySet.new unless packages_config
+          dependency_set = DependencySet.new
 
-          PackagesConfigParser.
-            new(packages_config: packages_config).
-            dependency_set
+          packages_config_files.each do |file|
+            parser = PackagesConfigParser.new(packages_config: file)
+            dependency_set += parser.dependency_set
+          end
+
+          dependency_set
         end
 
         def project_file_parser
@@ -54,12 +57,17 @@ module Dependabot
           dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
         end
 
-        def packages_config
-          dependency_files.find { |f| f.name.casecmp("packages.config").zero? }
+        def packages_config_files
+          dependency_files.select do |f|
+            f.name.split("/").last.casecmp("packages.config").zero?
+          end
         end
 
         def project_import_files
-          dependency_files - [packages_config, nuget_config]
+          dependency_files -
+            project_files -
+            packages_config_files -
+            [nuget_config]
         end
 
         def nuget_config
@@ -67,7 +75,7 @@ module Dependabot
         end
 
         def check_required_files
-          return if project_files.any? || packages_config
+          return if project_files.any? || packages_config_files.any?
 
           raise "No project file or packages.config!"
         end

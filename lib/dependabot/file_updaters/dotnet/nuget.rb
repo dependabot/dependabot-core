@@ -44,12 +44,14 @@ module Dependabot
           dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
         end
 
-        def packages_config
-          dependency_files.find { |f| f.name.casecmp("packages.config").zero? }
+        def packages_config_files
+          dependency_files.select do |f|
+            f.name.split("/").last.casecmp("packages.config").zero?
+          end
         end
 
         def check_required_files
-          return if project_files.any? || packages_config
+          return if project_files.any? || packages_config_files.any?
 
           raise "No project file or packages.config!"
         end
@@ -116,12 +118,15 @@ module Dependabot
 
         def declaration_finder(dependency, requirement)
           @declaration_finders ||= {}
+
+          requirement_fn = requirement.fetch(:file)
           @declaration_finders[dependency.hash + requirement.hash] ||=
-            if requirement.fetch(:file).casecmp("packages.config").zero?
+            if requirement_fn.split("/").last.casecmp("packages.config").zero?
               PackagesConfigDeclarationFinder.new(
                 dependency_name: dependency.name,
                 declaring_requirement: requirement,
-                packages_config: packages_config
+                packages_config:
+                  packages_config_files.find { |f| f.name == requirement_fn }
               )
             else
               ProjectFileDeclarationFinder.new(

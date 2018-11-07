@@ -148,6 +148,35 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
           )
         end
       end
+
+      context "that is nested" do
+        its(:length) { is_expected.to eq(9) }
+        let(:packages_config) do
+          Dependabot::DependencyFile.new(
+            name: "dir/packages.config",
+            content: fixture("dotnet", "packages_configs", "packages.config")
+          )
+        end
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).
+              to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
+            expect(dependency.version).to eq("1.0.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.0.0",
+                file: "dir/packages.config",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
     end
 
     context "with an imported properties file" do

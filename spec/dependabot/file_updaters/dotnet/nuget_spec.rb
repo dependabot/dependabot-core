@@ -180,6 +180,44 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
             to include("</packages>\n\n")
         end
       end
+
+      context "that is nested" do
+        let(:packages_config) do
+          Dependabot::DependencyFile.new(
+            content: fixture("dotnet", "packages_configs", "packages.config"),
+            name: "dir/packages.config"
+          )
+        end
+        let(:requirements) do
+          [{
+            file: "dir/packages.config",
+            requirement: "8.0.4",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "dir/packages.config",
+            requirement: "8.0.3",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        describe "the updated packages.config file" do
+          subject(:updated_packages_config_file) do
+            updated_files.find { |f| f.name == "dir/packages.config" }
+          end
+
+          its(:content) do
+            is_expected.to include 'id="Newtonsoft.Json" version="8.0.4"'
+          end
+          its(:content) do
+            is_expected.to include 'id="NuGet.Core" version="2.11.1"'
+          end
+        end
+      end
     end
 
     context "with a vbproj and csproj" do
