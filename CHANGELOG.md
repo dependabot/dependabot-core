@@ -1,3 +1,7 @@
+## v0.75.21, 7 November 2018
+
+- Rejig semantic prefix detection
+
 ## v0.75.20, 7 November 2018
 
 - JS: Don't try to version resolve git dependencies
