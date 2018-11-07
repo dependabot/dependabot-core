@@ -1,3 +1,8 @@
+## v0.75.22, 7 November 2018
+
+- JS: Don't consider previously failing peer dependencies when finding latest
+  resolvable version
+
 ## v0.75.21, 7 November 2018
 
 - Rejig semantic prefix detection
