@@ -274,9 +274,26 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
           body: fixture("github", "contents_dotnet_sln.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "src/GraphQL.Common?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_old.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(
         :get,
         File.join(url, "src/GraphQL.Common/GraphQL.Common.csproj?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github",
+                        "contents_dotnet_csproj_with_parent_import.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(
+        :get,
+        File.join(url, "src/GraphQL.Common/packages.config?ref=sha")
       ).with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
@@ -304,12 +321,13 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
     end
 
     it "fetches the files the .sln points to" do
-      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.count).to eq(4)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
           %w(
             NuGet.Config
             src/GraphQL.Common/GraphQL.Common.csproj
+            src/GraphQL.Common/packages.config
             src/src.props
           )
         )
@@ -345,12 +363,13 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
       end
 
       it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.count).to eq(6)
+        expect(file_fetcher_instance.files.count).to eq(7)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
+              src/GraphQL.Common/packages.config
               src/src.props
               src/Directory.Build.props
               src/build/dependencies.props
@@ -368,12 +387,13 @@ RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
       end
 
       it "fetches the other files" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
+              src/GraphQL.Common/packages.config
             )
           )
       end

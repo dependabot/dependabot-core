@@ -28,16 +28,19 @@ module Dependabot
           fetched_files += directory_build_props_files
           fetched_files += imported_property_files
 
-          fetched_files << packages_config if packages_config
+          fetched_files += packages_config_files
           fetched_files << nuget_config if nuget_config
 
           fetched_files = fetched_files.uniq
-          return fetched_files unless project_files.none? && !packages_config
 
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "<anything>.(cs|vb|fs)proj")
-          )
+          if project_files.none? && packages_config_files.none?
+            raise(
+              Dependabot::DependencyFileNotFound,
+              File.join(directory, "<anything>.(cs|vb|fs)proj")
+            )
+          end
+
+          fetched_files
         end
 
         def project_files
@@ -58,13 +61,18 @@ module Dependabot
           )
         end
 
-        def packages_config
-          @packages_config ||=
-            begin
-              file = repo_contents.
+        def packages_config_files
+          return @packages_config_files if @packages_config_files
+
+          candidate_paths =
+            [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+          @packages_config_files ||=
+            candidate_paths.map do |dir|
+              file = repo_contents(dir: dir).
                      find { |f| f.name.casecmp("packages.config").zero? }
-              fetch_file_from_host(file.name) if file
-            end
+              fetch_file_from_host(File.join(dir, file.name)) if file
+            end.compact
         end
 
         def sln_file
@@ -82,6 +90,8 @@ module Dependabot
           attempted_paths = []
           @directory_build_props_files = []
 
+          # Don't need to insert "." here, because Directory.Build.props files
+          # can only be used by project files (not packages.config ones)
           project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
             possible_paths = dir.split("/").map.with_index do |_, i|
               base = dir.split("/").first(i + 1).join("/")
