@@ -1,3 +1,8 @@
+## v0.75.20, 7 November 2018
+
+- JS: Don't try to version resolve git dependencies
+- JS: Better caching in UpdateChecker
+
 ## v0.75.19, 6 November 2018
 
 - JS: Handle complicated requirements
