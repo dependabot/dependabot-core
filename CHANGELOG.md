@@ -1,3 +1,7 @@
+## v0.75.33, 8 November 2018
+
+- Python: Don't confuse git reference with path references when fetching files
+
 ## v0.75.32, 8 November 2018
 
 - Use ESLint style commit messages if they're currently in use
