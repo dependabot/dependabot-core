@@ -1,3 +1,8 @@
+## v0.75.30, 8 November 2018
+
+- Elixir: Better error checking (raise based on original reqs)
+- Elixir: Handle resolution failure for git dependencies
+
 ## v0.75.29, 8 November 2018
 
 - Elixir: Raise DependencyFileNotResolvable error for unresolvable mixfiles
