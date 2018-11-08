@@ -84,9 +84,8 @@ module Dependabot
             # TODO: Update the environment specifications instead
             return if error.message.include?("Dependencies have diverged")
 
-            raise error if original_requirements_resolvable?
-
-            raise Dependabot::DependencyFileNotResolvable, error.message
+            check_original_requirements_resolvable
+            raise error
           end
 
           def error_result(error)
@@ -109,7 +108,7 @@ module Dependabot
             false
           end
 
-          def original_requirements_resolvable?
+          def check_original_requirements_resolvable
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(prepared: false)
               FileUtils.cp(
@@ -123,8 +122,8 @@ module Dependabot
             end
 
             true
-          rescue SharedHelpers::HelperSubprocessFailed
-            false
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
           def write_temporary_dependency_files(prepared: true)
