@@ -70,6 +70,8 @@ module Dependabot
             version_class.new(updated_version)
           end
 
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
           def run_yarn_updater(path:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
@@ -80,7 +82,21 @@ module Dependabot
                 )
               end
             end
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            unfindable_str = "find package \"#{dependency.name}"
+            raise unless error.message.include?("The registry may be down") ||
+                         error.message.include?("ETIMEDOUT") ||
+                         error.message.include?("ENOBUFS") ||
+                         error.message.include?(unfindable_str)
+
+            retry_count ||= 0
+            retry_count += 1
+            raise if retry_count > 2
+
+            sleep(rand(3.0..10.0)) && retry
           end
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def write_temporary_dependency_files
             yarn_locks.each do |f|
