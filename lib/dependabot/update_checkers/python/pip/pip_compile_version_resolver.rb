@@ -117,8 +117,7 @@ module Dependabot
                 write_temporary_dependency_files(unlock_requirement: false)
 
                 filenames_to_compile.each do |filename|
-                  cmd = "pyenv exec pip-compile -P #{dependency.name} "\
-                        "#{filename}"
+                  cmd = "pyenv exec pip-compile #{filename}"
                   run_command(cmd)
                 end
 

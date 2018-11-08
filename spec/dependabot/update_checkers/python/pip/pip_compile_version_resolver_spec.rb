@@ -112,6 +112,22 @@ RSpec.describe namespace::PipCompileVersionResolver do
           }]
         end
         it { is_expected.to be nil }
+
+        context "and updating would cause a conflict" do
+          let(:dependency_name) { "moto" }
+          let(:dependency_version) { "1.3.6" }
+          let(:latest_version) { Gem::Version.new("1.3.7") }
+
+          let(:dependency_requirements) do
+            [{
+              file: "requirements/test.in",
+              requirement: nil,
+              groups: [],
+              source: nil
+            }]
+          end
+          it { is_expected.to be nil }
+        end
       end
 
       context "with multiple requirement.in files" do
