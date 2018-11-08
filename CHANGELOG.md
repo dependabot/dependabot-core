@@ -1,3 +1,10 @@
+## v0.75.31, 8 November 2018
+
+- JS: Retry transitory errors in SubdependencyVersionResolver
+- JS: Retry another transitory error in YarnLockfileUpdater
+- Python: Better handling of cases when attempting a pip-compile update would
+  cause errors
+
 ## v0.75.30, 8 November 2018
 
 - Elixir: Better error checking (raise based on original reqs)
