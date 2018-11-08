@@ -1,3 +1,7 @@
+## v0.75.29, 8 November 2018
+
+- Elixir: Raise DependencyFileNotResolvable error for unresolvable mixfiles
+
 ## v0.75.28, 7 November 2018
 
 - JS: Better whitespace escaping
