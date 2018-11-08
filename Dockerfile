@@ -100,8 +100,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl -O https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz \
-    && tar xvf go1.11.1.linux-amd64.tar.gz \
+RUN curl -O https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz \
+    && tar xvf go1.11.2.linux-amd64.tar.gz \
     && wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
     && mv dep-linux-amd64 go/bin/dep \
     && chmod +x go/bin/dep \
@@ -125,7 +125,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.30.0
+# Install Rust 1.30.1
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
