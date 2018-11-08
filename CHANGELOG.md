@@ -1,3 +1,7 @@
+## v0.75.32, 8 November 2018
+
+- Use ESLint style commit messages if they're currently in use
+
 ## v0.75.31, 8 November 2018
 
 - JS: Retry transitory errors in SubdependencyVersionResolver
