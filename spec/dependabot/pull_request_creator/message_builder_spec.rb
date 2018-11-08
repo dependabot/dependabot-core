@@ -93,7 +93,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     subject(:pr_name) { builder.pr_name }
 
     context "for an application" do
-      context "that doesn't use semantic commits" do
+      context "that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
             to_return(
@@ -316,11 +316,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses semantic commits" do
+      context "that uses angular commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
             to_return(status: 200,
-                      body: fixture("github", "commits_semantic.json"),
+                      body: fixture("github", "commits_angular.json"),
                       headers: json_header)
         end
 
@@ -359,6 +359,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "that uses eslint commits" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits").
+            to_return(status: 200,
+                      body: fixture("github", "commits_eslint.json"),
+                      headers: json_header)
+        end
+
+        it do
+          is_expected.to eq("Upgrade: Bump business from 1.4.0 to 1.5.0")
+        end
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("Upgrade: [Security] Bump") }
+        end
+      end
+
       context "that uses gitmoji commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
@@ -385,7 +403,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
       end
 
-      context "that doesn't use semantic commits" do
+      context "that doesn't use a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
             to_return(status: 200, body: "[]", headers: json_header)
@@ -436,15 +454,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
-      context "that uses semantic commits" do
+      context "that uses angular commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits").
             to_return(status: 200,
-                      body: fixture("github", "commits_semantic.json"),
+                      body: fixture("github", "commits_angular.json"),
                       headers: json_header)
         end
 
-        it "uses a semantic commit prefix" do
+        it "uses an angular commit prefix" do
           expect(pr_name).
             to eq("chore(deps): update business requirement from ~> 1.4.0 "\
                   "to ~> 1.5.0")
@@ -453,6 +471,26 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
           it { is_expected.to start_with("chore(deps): [security] update") }
+        end
+      end
+
+      context "that uses eslint commits" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits").
+            to_return(status: 200,
+                      body: fixture("github", "commits_eslint.json"),
+                      headers: json_header)
+        end
+
+        it "uses an eslint commit prefix" do
+          expect(pr_name).
+            to eq("Upgrade: Update business requirement from ~> 1.4.0 "\
+                  "to ~> 1.5.0")
+        end
+
+        context "with a security vulnerability fixed" do
+          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
       end
     end

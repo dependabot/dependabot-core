@@ -9,8 +9,10 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      SEMANTIC_PREFIXES = %w(build chore ci docs feat fix perf refactor style
-                             test).freeze
+      ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style
+                            test).freeze
+      ESLINT_PREFIXES  = %w(Fix Update New Breaking Docs Build Upgrade
+                            Chore).freeze
       GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
                             lipstick tada white_check_mark lock apple penguin
                             checkered_flag robot green_apple bookmark
@@ -140,11 +142,16 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       def pr_name_prefix
         pr_name = ""
-        if using_semantic_commit_messages?
+        if using_angular_commit_messages?
           scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
-          pr_name += "#{semantic_prefix}(#{scope}): "
+          pr_name += "#{angular_commit_prefix}(#{scope}): "
           pr_name += "[security] " if includes_security_fixes?
           pr_name + (library? ? "update " : "bump ")
+        elsif using_eslint_commit_messages?
+          # https://eslint.org/docs/developer-guide/contributing/pull-requests
+          pr_name += "Upgrade: "
+          pr_name += "[Security] " if includes_security_fixes?
+          pr_name + (library? ? "Update " : "Bump ")
         elsif using_gitmoji_commit_messages?
           pr_name += "⬆️ "
           pr_name += "🔒 " if includes_security_fixes?
@@ -623,19 +630,29 @@ module Dependabot
         vulnerabilities_fixed.values.flatten.any?
       end
 
-      def using_semantic_commit_messages?
+      def using_angular_commit_messages?
         return false if recent_commit_messages.none?
 
         semantic_messages = recent_commit_messages.select do |message|
-          SEMANTIC_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
+          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/) }
         end
 
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
       end
 
-      def semantic_prefix
-        unless using_semantic_commit_messages?
-          raise "Not using semantic prefixes!"
+      def using_eslint_commit_messages?
+        return false if recent_commit_messages.none?
+
+        semantic_messages = recent_commit_messages.select do |message|
+          ESLINT_PREFIXES.any? { |pre| message.start_with?("#{pre}:") }
+        end
+
+        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
+      def angular_commit_prefix
+        unless using_angular_commit_messages?
+          raise "Not using angular style commits!"
         end
 
         recent_commits_using_chore =
