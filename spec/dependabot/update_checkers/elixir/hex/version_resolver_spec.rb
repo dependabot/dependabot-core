@@ -87,7 +87,9 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include('Failed to use "plug"')
+          end
       end
     end
 
