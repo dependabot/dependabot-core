@@ -707,5 +707,26 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
         end
       end
     end
+
+    context "with a git dependency" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements.json")
+      end
+
+      before do
+        stub_request(:get, url + "requirements.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_git_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "doesn't confuse the git reference for a path reference" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.first.name).to eq("requirements.txt")
+      end
+    end
   end
 end

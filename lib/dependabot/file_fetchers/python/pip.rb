@@ -236,7 +236,8 @@ module Dependabot
               req_file.content.
               scan(/^(?:-e)\s+(?<path>.*?)(?=\[|#|$)/).
               flatten.
-              map(&:strip)
+              map(&:strip).
+              reject { |p| p.include?("://") }
           end.flatten.uniq
         end
       end
