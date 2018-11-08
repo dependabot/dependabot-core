@@ -71,9 +71,11 @@ module Dependabot
               end
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
+            unfindable_str = "find package \"#{dependency.name}"
             raise unless error.message.include?("The registry may be down") ||
                          error.message.include?("ETIMEDOUT") ||
-                         error.message.include?("ENOBUFS")
+                         error.message.include?("ENOBUFS") ||
+                         error.message.include?(unfindable_str)
 
             retry_count ||= 0
             retry_count += 1
