@@ -9,7 +9,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
-      dependency_files: files,
+      prepared_dependency_files: prepared_files,
+      original_dependency_files: original_files,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -34,7 +35,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
     [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
   end
 
-  let(:files) { [mixfile, lockfile] }
+  let(:original_files) { [mixfile, lockfile] }
+  let(:prepared_files) { [mixfile, lockfile] }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
       name: "mix.exs",
@@ -73,6 +75,15 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
 
     context "with a dependency with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with an unresolvable mixfile" do
+      let(:mixfile_fixture_name) { "unresolvable" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.

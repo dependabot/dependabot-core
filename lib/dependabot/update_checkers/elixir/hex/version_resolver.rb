@@ -10,9 +10,11 @@ module Dependabot
     module Elixir
       class Hex
         class VersionResolver
-          def initialize(dependency:, dependency_files:, credentials:)
+          def initialize(dependency:, credentials:,
+                         original_dependency_files:, prepared_dependency_files:)
             @dependency = dependency
-            @dependency_files = dependency_files
+            @original_dependency_files = original_dependency_files
+            @prepared_dependency_files = prepared_dependency_files
             @credentials = credentials
           end
 
@@ -22,7 +24,8 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :dependency_files, :credentials
+          attr_reader :dependency, :credentials,
+                      :original_dependency_files, :prepared_dependency_files
 
           def fetch_latest_resolvable_version
             latest_resolvable_version =
@@ -61,11 +64,6 @@ module Dependabot
           end
 
           def handle_hex_errors(error)
-            # Ignore dependencies which don't resolve due to mis-matching
-            # environment specifications.
-            # TODO: Update the environment specifications instead
-            return if error.message.include?("Dependencies have diverged")
-
             if error.message.include?("No authenticated organization found")
               org = error.message.match(/found for ([a-z_]+)\./).captures.first
               raise Dependabot::PrivateSourceAuthenticationFailure, org
@@ -81,7 +79,12 @@ module Dependabot
             # warnings as part of the Elixir module.
             return error_result(error) if includes_result?(error)
 
-            raise error unless error.message.start_with?("Invalid requirement")
+            # Ignore dependencies which don't resolve due to mis-matching
+            # environment specifications.
+            # TODO: Update the environment specifications instead
+            return if error.message.include?("Dependencies have diverged")
+
+            raise error if original_requirements_resolvable?
 
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
@@ -106,8 +109,30 @@ module Dependabot
             false
           end
 
-          def write_temporary_dependency_files
-            dependency_files.each do |file|
+          def original_requirements_resolvable?
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files(prepared: false)
+              FileUtils.cp(
+                elixir_helper_check_update_path,
+                "check_update.exs"
+              )
+
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                run_elixir_update_checker
+              end
+            end
+
+            true
+          rescue SharedHelpers::HelperSubprocessFailed
+            false
+          end
+
+          def write_temporary_dependency_files(prepared: true)
+            files = if prepared then prepared_dependency_files
+                    else original_dependency_files
+                    end
+
+            files.each do |file|
               path = file.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)

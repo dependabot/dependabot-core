@@ -136,7 +136,8 @@ module Dependabot
 
           resolver_result = VersionResolver.new(
             dependency: dependency,
-            dependency_files: prepared_files,
+            prepared_dependency_files: prepared_files,
+            original_dependency_files: dependency_files,
             credentials: credentials
           ).latest_resolvable_version
 
@@ -189,7 +190,8 @@ module Dependabot
 
               VersionResolver.new(
                 dependency: dependency,
-                dependency_files: prepared_dependency_files,
+                prepared_dependency_files: prepared_dependency_files,
+                original_dependency_files: dependency_files,
                 credentials: credentials
               )
             end

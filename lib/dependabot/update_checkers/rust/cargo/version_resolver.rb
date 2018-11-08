@@ -159,8 +159,7 @@ module Dependabot
           end
 
           def write_manifest_files(prepared: true)
-            manifest_files = if prepared
-                             then prepared_manifest_files
+            manifest_files = if prepared then prepared_manifest_files
                              else original_manifest_files
                              end
 
