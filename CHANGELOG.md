@@ -1,3 +1,7 @@
+## v0.75.35, 9 November 2018
+
+- Ruby: Simpler error message from FileFetcher
+
 ## v0.75.34, 9 November 2018
 
 - Python: Handle quote characters when fetching path dependencies
