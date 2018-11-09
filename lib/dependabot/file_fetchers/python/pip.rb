@@ -232,12 +232,21 @@ module Dependabot
 
         def path_setup_file_paths
           (requirements_txt_files + child_requirement_files).map do |req_file|
-            req_file.content.scan(/^(?<path>\..*?)(?=\[|#|$)/).flatten +
+            uneditable_reqs =
               req_file.content.
-              scan(/^(?:-e)\s+(?<path>.*?)(?=\[|#|$)/).
+              scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
               flatten.
               map(&:strip).
               reject { |p| p.include?("://") }
+
+            editable_reqs =
+              req_file.content.
+              scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
+              flatten.
+              map(&:strip).
+              reject { |p| p.include?("://") }
+
+            uneditable_reqs + editable_reqs
           end.flatten.uniq
         end
       end
