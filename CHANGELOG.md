@@ -1,3 +1,8 @@
+## v0.75.34, 9 November 2018
+
+- Python: Handle quote characters when fetching path dependencies
+- Python: Bump poetry from 0.12.6 to 0.12.7
+
 ## v0.75.33, 8 November 2018
 
 - Python: Don't confuse git reference with path references when fetching files
