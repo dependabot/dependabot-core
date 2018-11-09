@@ -605,24 +605,53 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           expect(file_fetcher_instance.files.map(&:name)).to include("setup.py")
         end
 
-        context "that isn't editable" do
+        context "using a variety of quote styles" do
           before do
             stub_request(:get, url + "requirements.txt?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: 200,
-                body: fixture(
-                  "github",
-                  "requirements_with_self_reference_not_editable.json"
-                ),
+                body:
+                  fixture("github", "requirements_with_path_dependencies.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "my/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "my-single/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "my-other/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
           end
 
-          it "fetches the setup.py" do
-            expect(file_fetcher_instance.files.count).to eq(2)
+          it "fetches the path dependencies" do
+            expect(file_fetcher_instance.files.count).to eq(5)
             expect(file_fetcher_instance.files.map(&:name)).
-              to include("setup.py")
+              to match_array(
+                %w(requirements.txt setup.py my/setup.py my-single/setup.py
+                   my-other/setup.py)
+              )
           end
         end
 
