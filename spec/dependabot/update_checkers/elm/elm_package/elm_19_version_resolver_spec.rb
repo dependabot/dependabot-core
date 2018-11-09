@@ -105,7 +105,7 @@ RSpec.describe namespace::Elm19VersionResolver do
 
         context ":all unlocks" do
           let(:unlock_requirement) { :all }
-          it { is_expected.to eq(elm_version("15.1.0")) }
+          it { is_expected.to be >= elm_version("16.0.0") }
         end
       end
     end
