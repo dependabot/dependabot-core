@@ -12,15 +12,6 @@ module Dependabot
         require "dependabot/file_fetchers/ruby/bundler/require_relative_finder"
 
         def self.required_files_in?(filenames)
-          if filenames.include?("Gemfile.lock") &&
-             !filenames.include?("Gemfile")
-            return false
-          end
-
-          if filenames.include?("gems.locked") && !filenames.include?("gems.rb")
-            return false
-          end
-
           if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
             return true
           end
@@ -29,9 +20,7 @@ module Dependabot
         end
 
         def self.required_files_message
-          "Repo must contain either a Gemfile, a gemspec, or a gems.rb. "\
-          "A Gemfile.lock may only be present if a Gemfile is, and a "\
-          "gems.locked may only be present if a gems.rb is."
+          "Repo must contain either a Gemfile, a gemspec, or a gems.rb."
         end
 
         private
@@ -39,7 +28,7 @@ module Dependabot
         def fetch_files
           fetched_files = []
           fetched_files << gemfile if gemfile
-          fetched_files << lockfile if lockfile
+          fetched_files << lockfile if gemfile && lockfile
           fetched_files += gemspecs
           fetched_files << ruby_version_file if ruby_version_file
           fetched_files += child_gemfiles
