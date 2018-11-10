@@ -331,7 +331,23 @@ module Dependabot
               updated_content = updated_content.gsub(new_r, old_r)
             end
 
+            # Switch back the protocol of tarball resolutions if they've changed
+            # (fixes an npm bug, which appears to be applied inconsistently)
+            tarball_urls.each do |url|
+              incorrect_url =
+                if url.start_with?("https") then url.gsub(/^https:/, "http:")
+                else url.gsub(/^http:/, "https:")
+                end
+              updated_content = updated_content.gsub(incorrect_url, url)
+            end
+
             updated_content
+          end
+
+          def tarball_urls
+            [*package_locks, *shrinkwraps].flat_map do |file|
+              file.content.scan(/"resolved":\s+"(.*)\"/).flatten
+            end.uniq
           end
 
           def find_npm_lockfile_dependency_with_ref(ref)

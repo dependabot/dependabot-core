@@ -1247,6 +1247,19 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "when a tarball URL will incorrectly swap to http" do
+        let(:manifest_fixture_name) { "tarball_bug.json" }
+        let(:npm_lock_fixture_name) { "tarball_bug.json" }
+
+        it "updates the files" do
+          expect(updated_files.count).to eq(2)
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["dependencies"]["lodash"]["resolved"]).
+            to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
+        end
+      end
+
       context "when the package lock has a numeric version for a git dep" do
         let(:manifest_fixture_name) { "git_dependency.json" }
         let(:npm_lock_fixture_name) { "git_dependency_version.json" }
