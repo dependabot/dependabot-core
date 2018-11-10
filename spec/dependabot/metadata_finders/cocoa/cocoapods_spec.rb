@@ -17,21 +17,34 @@ RSpec.describe Dependabot::MetadataFinders::Cocoa::CocoaPods do
       requirements: [{
         requirement: "~> 1.0.0",
         file: "Podfile",
-        groups: []
+        groups: [],
+        source: source
       }],
       previous_requirements: [{
         requirement: "~> 0.9.0",
         file: "Podfile",
-        groups: []
+        groups: [],
+        source: source
       }],
       package_manager: "cocoapods"
     )
   end
+
   subject(:finder) do
-    described_class.new(dependency: dependency, github_client: github_client)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
-  let(:github_client) { Octokit::Client.new(access_token: "token") }
+
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+
   let(:dependency_name) { "Alamofire" }
+  let(:source) { nil }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
