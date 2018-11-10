@@ -17,7 +17,7 @@ module Dependabot
             @dependencies = dependencies
             @updated_podfile_content = updated_podfile_content
             @lockfile = lockfile
-            @creds = credentials
+            @credentials = credentials
           end
 
           def updated_lockfile_content
@@ -55,29 +55,21 @@ module Dependabot
           private
 
           def evaluated_podfile
-            @evaluated_podfile ||=
-              Pod::Podfile.from_ruby(nil, podfile_content_for_resolution)
+            SharedHelpers.with_git_configured(credentials: @credentials) do
+              @evaluated_podfile ||=
+                Pod::Podfile.from_ruby(nil, @updated_podfile_content)
+            end
           end
 
-          def podfile_content_for_resolution
-            # Prepend auth details to any git remotes
-            credential_string =
-              "#{@creds.first['username']}:#{@creds.first['password']}"
-            @updated_podfile_content.gsub(
-              "git@github.com:",
-              "https://#{credential_string}:x-oauth-basic@github.com/"
-            )
-          end
-
-          def post_process_lockfile(_lockfile_body)
+          def post_process_lockfile(lockfile_body)
             # Add the correct Podfile checksum (i.e., without auth alterations)
             # and change the `COCOAPODS` version back to whatever it was before
             checksum =
               Digest::SHA1.hexdigest(@updated_podfile_content).encode("UTF-8")
-            old_cocoapods_line =
-              @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
+              old_cocoapods_line =
+                @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
 
-            @lockfile.content.gsub(
+            lockfile_body.gsub(
               /COCOAPODS: \d\.\d\.\d.*/,
               "PODFILE CHECKSUM: #{checksum}\n\n#{old_cocoapods_line}"
             )

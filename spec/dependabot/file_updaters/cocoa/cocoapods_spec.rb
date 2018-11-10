@@ -153,7 +153,7 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
 
         it "generates the correct podfile checksum" do
           expect(file.content).
-            to include "CHECKSUM: 2db781eacbb9b29370b899ba5cd95a2347a63bd4"
+            to include "PODFILE CHECKSUM: 2db781eacbb9b29370b899ba5cd95a2347a63bd4"
         end
 
         it "doesn't leave details of the access token in the lockfile" do
