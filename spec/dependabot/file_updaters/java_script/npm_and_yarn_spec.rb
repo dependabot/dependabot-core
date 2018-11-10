@@ -1251,12 +1251,42 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         let(:manifest_fixture_name) { "tarball_bug.json" }
         let(:npm_lock_fixture_name) { "tarball_bug.json" }
 
-        it "updates the files" do
+        it "keeps the correct protocol" do
           expect(updated_files.count).to eq(2)
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_package_lock["dependencies"]["lodash"]["resolved"]).
             to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
+        end
+
+        context "when updating the problematic dependency" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "2.3.2" }
+          let(:previous_version) { "0.4.0" }
+          let(:requirements) do
+            [{
+              requirement: "2.3.2",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: "0.4.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "keeps the correct protocol" do
+            expect(updated_files.count).to eq(2)
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["chalk"]["resolved"]).
+              to eq("https://registry.npmjs.org/chalk/-/chalk-2.3.2.tgz")
+          end
         end
       end
 

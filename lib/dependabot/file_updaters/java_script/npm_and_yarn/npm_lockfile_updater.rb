@@ -334,11 +334,15 @@ module Dependabot
             # Switch back the protocol of tarball resolutions if they've changed
             # (fixes an npm bug, which appears to be applied inconsistently)
             tarball_urls.each do |url|
-              incorrect_url =
-                if url.start_with?("https") then url.gsub(/^https:/, "http:")
-                else url.gsub(/^http:/, "https:")
-                end
-              updated_content = updated_content.gsub(incorrect_url, url)
+              trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
+              incorrect_url = if url.start_with?("https")
+                                trimmed_url.gsub(/^https:/, "http:")
+                              else trimmed_url.gsub(/^http:/, "https:")
+                              end
+              updated_content = updated_content.gsub(
+                /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,
+                trimmed_url
+              )
             end
 
             updated_content
