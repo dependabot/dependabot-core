@@ -66,8 +66,8 @@ module Dependabot
             # and change the `COCOAPODS` version back to whatever it was before
             checksum =
               Digest::SHA1.hexdigest(@updated_podfile_content).encode("UTF-8")
-              old_cocoapods_line =
-                @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
+            old_cocoapods_line =
+              @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
 
             lockfile_body.gsub(
               /COCOAPODS: \d\.\d\.\d.*/,
