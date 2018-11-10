@@ -1,3 +1,7 @@
+## v0.75.36, 10 November 2018
+
+- JS: Handle npm switches to insecure URLs
+
 ## v0.75.35, 9 November 2018
 
 - Ruby: Simpler error message from FileFetcher
