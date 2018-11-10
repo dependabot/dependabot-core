@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/file_parsers/cocoa/cocoapods"
 require_relative "../shared_examples_for_file_parsers"
 
@@ -15,8 +16,14 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Podfile.lock", content: lockfile_body)
   end
-  let(:parser) { described_class.new(dependency_files: files) }
-
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -32,7 +39,8 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
           [{
             requirement: "~> 3.0.0",
             file: "Podfile",
-            groups: []
+            groups: [],
+            source: nil
           }]
         end
 
@@ -57,7 +65,8 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
           [{
             requirement: ">= 0",
             file: "Podfile",
-            groups: []
+            groups: [],
+            source: nil
           }]
         end
 
@@ -89,7 +98,8 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
           [{
             requirement: ">= 0",
             file: "Podfile",
-            groups: []
+            groups: [],
+            source: nil
           }]
         end
 
