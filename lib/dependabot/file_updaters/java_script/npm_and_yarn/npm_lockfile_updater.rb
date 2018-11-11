@@ -21,10 +21,16 @@ module Dependabot
             @credentials = credentials
           end
 
+          # rubocop:disable Metrics/AbcSize
           def updated_lockfile_content(lockfile)
             path = Pathname.new(lockfile.name).dirname.to_s
             name = Pathname.new(lockfile.name).basename.to_s
-            if npmrc_disables_lockfile? ||
+            return lockfile.content if npmrc_disables_lockfile?
+
+            # Prevent changes to the lockfile when the dependency has been
+            # required in a package.json outside the current folder (e.g. lerna
+            # proj)
+            if dependency.top_level? &&
                requirements_for_path(dependency.requirements, path).empty?
               return lockfile.content
             end
@@ -44,6 +50,7 @@ module Dependabot
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_npm_updater_error(error, lockfile)
           end
+          # rubocop:enable Metrics/AbcSize
 
           private
 
@@ -72,18 +79,34 @@ module Dependabot
 
           def run_npm_updater(lockfile_name)
             SharedHelpers.with_git_configured(credentials: credentials) do
-              SharedHelpers.run_helper_subprocess(
-                command: "node #{npm_helper_path}",
-                function: "update",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  dependency.version,
-                  dependency.requirements,
-                  lockfile_name
-                ]
-              )
+              if dependency.top_level?
+                run_npm_top_level_updater(lockfile_name)
+              else
+                run_npm_subdependency_updater(lockfile_name)
+              end
             end
+          end
+
+          def run_npm_top_level_updater(lockfile_name)
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{npm_helper_path}",
+              function: "update",
+              args: [
+                Dir.pwd,
+                dependency.name,
+                dependency.version,
+                dependency.requirements,
+                lockfile_name
+              ]
+            )
+          end
+
+          def run_npm_subdependency_updater(lockfile_name)
+            SharedHelpers.run_helper_subprocess(
+              command: "node #{npm_helper_path}",
+              function: "updateSubdependency",
+              args: [Dir.pwd, lockfile_name]
+            )
           end
 
           # rubocop:disable Metrics/AbcSize
@@ -208,7 +231,7 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               updated_content =
-                if update_package_json
+                if update_package_json && dependency.top_level?
                   updated_package_json_content(file)
                 else
                   file.content
@@ -234,7 +257,12 @@ module Dependabot
               next if f.name == excluded_lock
 
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, f.content)
+
+              if dependency.top_level?
+                File.write(f.name, f.content)
+              else
+                File.write(f.name, prepared_npm_lockfile_content(f.content))
+              end
             end
           end
 
@@ -309,6 +337,26 @@ module Dependabot
             end
 
             @git_ssh_requirements_to_swap
+          end
+
+          def prepared_npm_lockfile_content(content)
+            JSON.dump(
+              remove_dependency_from_npm_lockfile(JSON.parse(content))
+            )
+          end
+
+          # Duplicated in SubdependencyVersionResolver
+          # Remove the dependency we want to update from the lockfile and let
+          # npm find the latest resolvable version and fix the lockfile
+          def remove_dependency_from_npm_lockfile(npm_lockfile)
+            return npm_lockfile unless npm_lockfile.key?("dependencies")
+
+            dependencies =
+              npm_lockfile["dependencies"].
+              reject { |key, _| key == dependency.name }.
+              map { |k, v| [k, remove_dependency_from_npm_lockfile(v)] }.
+              to_h
+            npm_lockfile.merge("dependencies" => dependencies)
           end
 
           def post_process_npm_lockfile(lockfile_content)

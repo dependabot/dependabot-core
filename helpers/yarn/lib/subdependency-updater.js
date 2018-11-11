@@ -24,17 +24,6 @@ class LightweightInstall extends Install {
   }
 }
 
-async function allDependencyRanges(config) {
-  const manifest = await config.readRootManifest();
-  return Object.assign(
-    {},
-    manifest.peerDependencies,
-    manifest.optionalDependencies,
-    manifest.devDependencies,
-    manifest.dependencies
-  );
-}
-
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
 function recoverVersionComments(oldLockfile, newLockfile) {
@@ -42,15 +31,14 @@ function recoverVersionComments(oldLockfile, newLockfile) {
   const nodeRegex = /^# node v(\S+)\n/gm;
   const oldMatch = regex => [].concat(oldLockfile.match(regex))[0];
   return newLockfile
-    .replace(yarnRegex, match => oldMatch(yarnRegex) || "")
-    .replace(nodeRegex, match => oldMatch(nodeRegex) || "");
+    .replace(yarnRegex, () => oldMatch(yarnRegex) || "")
+    .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-async function updateDependencyFile(directory, depName) {
+async function updateDependencyFile(directory, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
-  const originalYarnLock = readFile("yarn.lock");
-  const originalPackageJson = readFile("package.json");
+  const originalYarnLock = readFile(lockfileName);
 
   const flags = {
     ignoreScripts: true,
@@ -69,12 +57,12 @@ async function updateDependencyFile(directory, depName) {
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
   const install = new LightweightInstall(flags, config, reporter, lockfile);
   await install.init();
-  var updatedYarnLock = readFile("yarn.lock");
+  var updatedYarnLock = readFile(lockfileName);
 
   updatedYarnLock = recoverVersionComments(originalYarnLock, updatedYarnLock);
 
   return {
-    "yarn.lock": updatedYarnLock
+    [lockfileName]: updatedYarnLock
   };
 }
 

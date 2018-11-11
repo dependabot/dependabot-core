@@ -16,11 +16,9 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { promisify } = require("util");
 const npm6 = require("npm");
 const npm5 = require("npm5/node_modules/npm");
-const npm6installer = require("npm/lib/install");
-const npm5installer = require("npm5/node_modules/npm/lib/install");
+const { installerForLockfile, muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFiles(
   directory,
@@ -35,29 +33,29 @@ async function updateDependencyFiles(
   await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
   await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
   const oldLockfile = JSON.parse(readFile(lockfile_name));
-  const installer = installer_for_lockfile(oldLockfile);
+  const installer = installerForLockfile(oldLockfile);
 
   const dryRun = true;
-  const args = install_args(depName, desiredVersion, requirements, oldLockfile);
-  const initial_installer = new installer.Installer(directory, dryRun, args, {
+  const args = installArgs(depName, desiredVersion, requirements, oldLockfile);
+  const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanup_installer = new installer.Installer(directory, dryRun, [], {
+  const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
     packageLockOnly: true
   });
 
   // Skip printing the success message
-  initial_installer.printInstalled = cb => cb();
-  cleanup_installer.printInstalled = cb => cb();
+  initialInstaller.printInstalled = cb => cb();
+  cleanupInstaller.printInstalled = cb => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
-    await runAsync(initial_installer, initial_installer.run, []);
-    await runAsync(cleanup_installer, cleanup_installer.run, []);
+    await runAsync(initialInstaller, initialInstaller.run, []);
+    await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
   }
@@ -67,7 +65,7 @@ async function updateDependencyFiles(
   return { [lockfile_name]: updatedLockfile };
 }
 
-function install_args(depName, desiredVersion, requirements, oldLockfile) {
+function installArgs(depName, desiredVersion, requirements, oldLockfile) {
   const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
@@ -87,41 +85,6 @@ function install_args(depName, desiredVersion, requirements, oldLockfile) {
   } else {
     return [`${depName}@${desiredVersion}`];
   }
-}
-
-function runAsync(obj, method, args) {
-  return new Promise((resolve, reject) => {
-    const cb = (err, ...returnValues) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(returnValues);
-      }
-    };
-    method.apply(obj, [...args, cb]);
-  });
-}
-
-function muteStderr() {
-  const original = process.stderr.write;
-  process.stderr.write = () => {};
-  return () => {
-    process.stderr.write = original;
-  };
-}
-
-function installer_for_lockfile(oldLockfile) {
-  const requireObjectsIncludeMatchers = Object.keys(
-    oldLockfile["dependencies"] || {}
-  ).some(key => {
-    const requires = oldLockfile["dependencies"][key]["requires"] || {};
-
-    return Object.keys(requires).some(key2 =>
-      requires[key2].match(/^\^|~|\<|\>/)
-    );
-  });
-
-  return requireObjectsIncludeMatchers ? npm6installer : npm5installer;
 }
 
 module.exports = { updateDependencyFiles };

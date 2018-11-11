@@ -1321,6 +1321,23 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
       end
+
+      context "with a sub-dependency" do
+        let(:manifest_fixture_name) { "no_lockfile_change.json" }
+        let(:npm_lock_fixture_name) { "subdependency_update.json" }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.1.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
+            to eq("5.7.3")
+        end
+      end
     end
 
     #######################

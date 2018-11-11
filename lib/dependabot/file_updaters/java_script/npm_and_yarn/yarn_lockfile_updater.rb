@@ -48,11 +48,10 @@ module Dependabot
           def updated_yarn_lock(yarn_lock)
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
-
-              updated_files =
-                run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
-
-              updated_files.fetch("yarn.lock")
+              lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
+              path = Pathname.new(yarn_lock.name).dirname.to_s
+              updated_files = run_yarn_updater(path, lockfile_name)
+              updated_files.fetch(lockfile_name)
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_yarn_lock_updater_error(error, yarn_lock)
@@ -60,13 +59,13 @@ module Dependabot
 
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
-          def run_yarn_updater(path:)
+          def run_yarn_updater(path, lockfile_name)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
                 if dependency.top_level?
                   run_yarn_top_level_updater(path: path)
                 else
-                  run_yarn_subdependency_updater
+                  run_yarn_subdependency_updater(lockfile_name)
                 end
               end
             end
@@ -99,11 +98,11 @@ module Dependabot
             )
           end
 
-          def run_yarn_subdependency_updater
+          def run_yarn_subdependency_updater(lockfile_name)
             SharedHelpers.run_helper_subprocess(
               command: "node #{yarn_helper_path}",
               function: "updateSubdependency",
-              args: [Dir.pwd, dependency.name]
+              args: [Dir.pwd, lockfile_name]
             )
           end
 
@@ -163,8 +162,9 @@ module Dependabot
           def resolvable_before_update?(yarn_lock)
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(update_package_json: false)
-
-              run_yarn_updater(path: Pathname.new(yarn_lock.name).dirname)
+              lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
+              path = Pathname.new(yarn_lock.name).dirname.to_s
+              run_yarn_updater(path, lockfile_name)
             end
 
             true
@@ -173,20 +173,7 @@ module Dependabot
           end
 
           def write_temporary_dependency_files(update_package_json: true)
-            if dependency.top_level?
-              write_temporary_top_level_dependency_files(
-                update_package_json: update_package_json
-              )
-            else
-              write_temporary_subdependency_dependency_files
-            end
-          end
-
-          def write_temporary_top_level_dependency_files(update_package_json:)
-            yarn_locks.each do |f|
-              FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, f.content)
-            end
+            write_lockfiles
 
             File.write(".npmrc", npmrc_content)
 
@@ -195,7 +182,7 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               updated_content =
-                if update_package_json
+                if update_package_json && dependency.top_level?
                   updated_package_json_content(file)
                 else
                   file.content
@@ -212,30 +199,21 @@ module Dependabot
             end
           end
 
-          def write_temporary_subdependency_dependency_files
+          def write_lockfiles
             yarn_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-              File.write(f.name, prepared_yarn_lockfile_content(f.content))
-            end
 
-            File.write(".npmrc", npmrc_content)
-
-            package_files.each do |file|
-              path = file.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-
-              updated_content = file.content
-              updated_content = replace_ssh_sources(updated_content)
-
-              # A bug prevents Yarn recognising that a directory is part of a
-              # workspace if it is specified with a `./` prefix.
-              updated_content = remove_workspace_path_prefixes(updated_content)
-
-              updated_content = sanitized_package_json_content(updated_content)
-              File.write(file.name, updated_content)
+              if dependency.top_level?
+                File.write(f.name, f.content)
+              else
+                File.write(f.name, prepared_yarn_lockfile_content(f.content))
+              end
             end
           end
 
+          # Duplicated in SubdependencyVersionResolver
+          # Remove the dependency we want to update from the lockfile and let
+          # yarn find the latest resolvable version and fix the lockfile
           def prepared_yarn_lockfile_content(content)
             content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
           end
