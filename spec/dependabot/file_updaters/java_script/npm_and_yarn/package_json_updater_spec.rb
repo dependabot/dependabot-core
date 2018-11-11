@@ -103,6 +103,55 @@ RSpec.describe namespace::PackageJsonUpdater do
       end
     end
 
+    context "updating multiple dependencies" do
+      let(:manifest_fixture_name) { "package.json" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: "0.0.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.0.2",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^0.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          ),
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.8.1",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          )
+        ]
+      end
+
+      it "updates both dependency declarations" do
+        parsed_file = JSON.parse(updated_package_json.content)
+        expect(parsed_file.dig("dependencies", "etag")).to be_nil
+        expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+        expect(parsed_file.dig("dependencies", "fetch-factory")).to eq("^0.0.2")
+      end
+    end
+
     context "when the dependency is specified as both dev and runtime" do
       let(:dependency) do
         Dependabot::Dependency.new(

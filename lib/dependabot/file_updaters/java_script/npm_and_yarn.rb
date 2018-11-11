@@ -34,11 +34,6 @@ module Dependabot
 
         private
 
-        def dependency
-          # For now, we'll only ever be updating a single dependency for JS
-          dependencies.first
-        end
-
         def check_required_files
           raise "No package.json!" unless get_original_file("package.json")
         end
