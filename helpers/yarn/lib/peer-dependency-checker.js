@@ -119,7 +119,7 @@ async function checkPeerDepsForReq(
     .map(({ data }) => data)
     .filter(data => {
       // Guard against event.data sometimes being an object
-      return isString(data) && data.includes("incorrect peer dependency");
+      return isString(data) && data.match(/(unmet|incorrect) peer dependency/);
     });
 
   if (peerDependencyWarnings.length) {

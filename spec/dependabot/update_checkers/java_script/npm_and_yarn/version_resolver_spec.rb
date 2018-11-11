@@ -196,6 +196,42 @@ RSpec.describe namespace::VersionResolver do
           # tests that complicated react peer requirements are processed OK.
           it { is_expected.to eq(Gem::Version.new("2.1.9")) }
         end
+
+        context "that previously had the peer dependency as a normal dep" do
+          let(:manifest_fixture_name) { "peer_dependency_switch.json" }
+          let(:npm_lock_fixture_name) { "peer_dependency_switch.json" }
+          let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react-burger-menu",
+              version: "1.8.4",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "~1.8.0",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          let(:react_burger_menu_registry_listing_url) do
+            "https://registry.npmjs.org/react-burger-menu"
+          end
+          let(:react_burger_menu_registry_response) do
+            fixture("javascript", "npm_responses", "react-burger-menu.json")
+          end
+          before do
+            stub_request(:get, react_burger_menu_registry_listing_url).
+              to_return(status: 200, body: react_burger_menu_registry_response)
+            stub_request(
+              :get,
+              react_burger_menu_registry_listing_url + "/latest"
+            ).to_return(status: 200, body: "{}")
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.9.0")) }
+        end
       end
 
       context "updating a dependency that is a peer requirement" do
@@ -272,7 +308,6 @@ RSpec.describe namespace::VersionResolver do
 
       context "updating a dependency without peer dependency issues" do
         let(:manifest_fixture_name) { "package.json" }
-        let(:manifest_fixture_name) { "package.json" }
         let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -343,33 +378,32 @@ RSpec.describe namespace::VersionResolver do
           it { is_expected.to eq(Gem::Version.new("15.6.2")) }
         end
 
-        # # This test is very slow, so is kept commented out. It should pass.
-        # context "that is a git dependency" do
-        #   let(:manifest_fixture_name) { "peer_dependency_git.json" }
-        #   let(:latest_allowable_version) do
-        #     "1af607cc24ee57b338c18e1a67eae445da86b316"
-        #   end
-        #   let(:dependency) do
-        #     Dependabot::Dependency.new(
-        #       name: "@trainline/react-skeletor",
-        #       version: nil,
-        #       requirements: [{
-        #         requirement: nil,
-        #         file: "package.json",
-        #         groups: ["dependencies"],
-        #         source: {
-        #           type: "git",
-        #           url: "https://github.com/trainline/react-skeletor",
-        #           branch: nil,
-        #           ref: "master"
-        #         }
-        #       }],
-        #       package_manager: "npm_and_yarn"
-        #     )
-        #   end
+        context "that is a git dependency" do
+          let(:manifest_fixture_name) { "peer_dependency_git.json" }
+          let(:latest_allowable_version) do
+            "1af607cc24ee57b338c18e1a67eae445da86b316"
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "@trainline/react-skeletor",
+              version: nil,
+              requirements: [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/trainline/react-skeletor",
+                  branch: nil,
+                  ref: "master"
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
 
-        #   it { is_expected.to eq(latest_allowable_version) }
-        # end
+          it { is_expected.to eq(latest_allowable_version) }
+        end
       end
 
       context "updating a dependency that is a peer requirement" do
@@ -534,6 +568,42 @@ RSpec.describe namespace::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+
+        context "that previously had the peer dependency as a normal dep" do
+          let(:manifest_fixture_name) { "peer_dependency_switch.json" }
+          let(:yarn_lock_fixture_name) { "peer_dependency_switch.lock" }
+          let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "react-burger-menu",
+              version: "1.8.4",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "~1.8.0",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+
+          let(:react_burger_menu_registry_listing_url) do
+            "https://registry.npmjs.org/react-burger-menu"
+          end
+          let(:react_burger_menu_registry_response) do
+            fixture("javascript", "npm_responses", "react-burger-menu.json")
+          end
+          before do
+            stub_request(:get, react_burger_menu_registry_listing_url).
+              to_return(status: 200, body: react_burger_menu_registry_response)
+            stub_request(
+              :get,
+              react_burger_menu_registry_listing_url + "/latest"
+            ).to_return(status: 200, body: "{}")
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.9.0")) }
+        end
       end
 
       context "updating a dependency that is a peer requirement" do
