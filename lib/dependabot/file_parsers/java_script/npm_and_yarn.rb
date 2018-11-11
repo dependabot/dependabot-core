@@ -18,6 +18,7 @@ module Dependabot
           %w(dependencies devDependencies optionalDependencies).freeze
         CENTRAL_REGISTRIES = %w(
           https://registry.npmjs.org
+          http://registry.npmjs.org
           https://registry.yarnpkg.com
         ).freeze
         GIT_URL_REGEX = %r{

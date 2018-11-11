@@ -18,6 +18,8 @@ module Dependabot
     module JavaScript
       class NpmAndYarn
         class VersionResolver
+          require_relative "latest_version_finder"
+
           # Error message from yarn add:
           # " > @reach/router@1.2.1" has incorrect \
           # peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
@@ -46,7 +48,9 @@ module Dependabot
             @credentials              = credentials
             @dependency_files         = dependency_files
             @latest_allowable_version = latest_allowable_version
-            @latest_version_finder    = latest_version_finder
+
+            @latest_version_finder = {}
+            @latest_version_finder[dependency] = latest_version_finder
           end
 
           def latest_resolvable_version
@@ -59,10 +63,50 @@ module Dependabot
             satisfying_versions.first
           end
 
+          def latest_version_resolvable_with_full_unlock?
+            return false if dependency_updates_from_full_unlock.nil?
+
+            true
+          end
+
+          def dependency_updates_from_full_unlock
+            return if git_dependency?(dependency)
+            return if newly_broken_peer_reqs_from_dep.any?
+
+            updates =
+              [{ dependency: dependency, version: latest_allowable_version }]
+            newly_broken_peer_reqs_on_dep.each do |peer_req|
+              dep_name = peer_req.fetch(:requiring_dep_name)
+              dep = top_level_dependencies.find { |d| d.name == dep_name }
+
+              # Can't handle reqs from sub-deps or git source deps (yet)
+              return nil if dep.nil?
+              return nil if git_dependency?(dep)
+
+              updated_version =
+                latest_version_of_dep_with_satisfied_peer_reqs(dep)
+              return nil unless updated_version
+
+              updates << { dependency: dep, version: updated_version }
+            end
+
+            updates
+          end
+
           private
 
           attr_reader :dependency, :credentials, :dependency_files,
-                      :latest_allowable_version, :latest_version_finder
+                      :latest_allowable_version
+
+          def latest_version_finder(dep)
+            @latest_version_finder[dep] ||=
+              LatestVersionFinder.new(
+                dependency: dep,
+                credentials: credentials,
+                dependency_files: dependency_files,
+                ignored_versions: []
+              )
+          end
 
           def peer_dependency_errors
             return @peer_dependency_errors if @peer_dependency_errors_checked
@@ -156,7 +200,7 @@ module Dependabot
           end
 
           def satisfying_versions
-            latest_version_finder.
+            latest_version_finder(dependency).
               possible_versions_with_details.
               select do |version, details|
                 next false unless satisfies_peer_reqs_on_dep?(version)
@@ -179,13 +223,34 @@ module Dependabot
           end
 
           def satisfies_peer_reqs_on_dep?(version)
-            newly_broken_peer_reqs_on_dep.all? do |req|
+            newly_broken_peer_reqs_on_dep.all? do |peer_req|
+              req = peer_req.fetch(:requirement_version)
+
               # Git requirements can't be satisfied by a version
               next false if req.include?("/")
 
               reqs = requirement_class.requirements_array(req)
               reqs.any? { |r| r.satisfied_by?(version) }
             end
+          end
+
+          def latest_version_of_dep_with_satisfied_peer_reqs(dep)
+            latest_version_finder(dep).
+              possible_versions_with_details.
+              find do |version, details|
+                next false unless version > version_class.new(dep.version)
+
+                details["peerDependencies"].all? do |peer_dep_name, req|
+                  # Can't handle multiple peer dependencies
+                  next false unless peer_dep_name == dependency.name
+                  next git_dependency?(dependency) if req.include?("/")
+
+                  reqs = requirement_class.requirements_array(req)
+
+                  reqs.any? { |r| r.satisfied_by?(latest_allowable_version) }
+                end
+              end&.
+              first
           end
 
           def git_dependency?(dep)
@@ -196,8 +261,12 @@ module Dependabot
 
           def newly_broken_peer_reqs_on_dep
             relevant_unmet_peer_dependencies.
-              select { |dep| dep[:requirement_name] == dependency.name }.
-              map { |dep| dep[:requirement_version] }
+              select { |dep| dep[:requirement_name] == dependency.name }
+          end
+
+          def newly_broken_peer_reqs_from_dep
+            relevant_unmet_peer_dependencies.
+              select { |dep| dep[:requiring_dep_name] == dependency.name }
           end
 
           def run_checker(path:, version:)

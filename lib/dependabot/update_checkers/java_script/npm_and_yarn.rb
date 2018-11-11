@@ -80,12 +80,36 @@ module Dependabot
         private
 
         def latest_version_resolvable_with_full_unlock?
-          # Full unlock checks aren't implemented for JS (yet)
-          false
+          return unless latest_version
+
+          # No support for full unlocks for subdependencies yet
+          return false unless dependency.top_level?
+
+          version_resolver.latest_version_resolvable_with_full_unlock?
         end
 
         def updated_dependencies_after_full_unlock
-          raise NotImplementedError
+          version_resolver.dependency_updates_from_full_unlock.
+            map { |update_details| build_updated_dependency(update_details) }
+        end
+
+        def build_updated_dependency(update_details)
+          original_dep = update_details.fetch(:dependency)
+
+          Dependency.new(
+            name: original_dep.name,
+            version: update_details.fetch(:version).to_s,
+            requirements: RequirementsUpdater.new(
+              requirements: original_dep.requirements,
+              updated_source: original_dep == dependency ? updated_source : nil,
+              latest_version: update_details[:version].to_s,
+              latest_resolvable_version: update_details[:version].to_s,
+              update_strategy: requirements_update_strategy
+            ).updated_requirements,
+            previous_version: original_dep.version,
+            previous_requirements: original_dep.requirements,
+            package_manager: original_dep.package_manager
+          )
         end
 
         def latest_resolvable_version_with_no_unlock_for_git_dependency
