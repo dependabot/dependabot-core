@@ -346,36 +346,38 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
+
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     context "for a sub-dependency" do
-      context "using yarn" do
-        let(:dependency_files) { [package_json, yarn_lock] }
-        let(:manifest_fixture_name) { "no_lockfile_change.json" }
-        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
-        let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
+      it "delegates to SubdependencyVersionResolver" do
+        dummy_version_resolver =
+          instance_double(described_class::SubdependencyVersionResolver)
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "acorn",
-            version: "5.1.1",
-            requirements: [],
-            package_manager: "npm_and_yarn"
-          )
-        end
+        expect(described_class::SubdependencyVersionResolver).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: ignored_versions
+          ).and_return(dummy_version_resolver)
+        expect(dummy_version_resolver).
+          to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("5.7.3"))
 
-        let(:yarn_lock) do
-          Dependabot::DependencyFile.new(
-            name: "yarn.lock",
-            content:
-              fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
-          )
-        end
-
-        # Note: The latest vision is 6.0.2, but we can't reach it as other
-        # dependencies constrain us
-        it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+        expect(checker.latest_resolvable_version).
+          to eq(Gem::Version.new("5.7.3"))
       end
     end
   end
@@ -416,33 +418,34 @@ RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
     end
 
     context "for a sub-dependency" do
-      context "using yarn" do
-        let(:dependency_files) { [package_json, yarn_lock] }
-        let(:manifest_fixture_name) { "no_lockfile_change.json" }
-        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
 
-        let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
+      it "delegates to SubdependencyVersionResolver" do
+        dummy_version_resolver =
+          instance_double(described_class::SubdependencyVersionResolver)
 
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "acorn",
-            version: "5.1.1",
-            requirements: [],
-            package_manager: "npm_and_yarn"
-          )
-        end
+        expect(described_class::SubdependencyVersionResolver).
+          to receive(:new).
+          with(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: ignored_versions
+          ).and_return(dummy_version_resolver)
+        expect(dummy_version_resolver).
+          to receive(:latest_resolvable_version).
+          and_return(Gem::Version.new("5.7.3"))
 
-        let(:yarn_lock) do
-          Dependabot::DependencyFile.new(
-            name: "yarn.lock",
-            content:
-              fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
-          )
-        end
-
-        # Note: The latest vision is 6.0.2, but we can't reach it as other
-        # dependencies constrain us
-        it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+        expect(checker.latest_resolvable_version_with_no_unlock).
+          to eq(Gem::Version.new("5.7.3"))
       end
     end
 

@@ -27,6 +27,8 @@ module Dependabot
             # TODO: Update subdependencies for npm lockfiles
             return if package_locks.any? || shrinkwraps.any?
 
+            raise "Not a subdependency!" if dependency.requirements.any?
+
             updated_lockiles = yarn_locks.map do |yarn_lock|
               updated_content = update_subdependency_in_lockfile(yarn_lock)
               updated_lockfile = yarn_lock.dup
