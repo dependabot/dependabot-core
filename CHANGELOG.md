@@ -1,3 +1,8 @@
+## v0.75.37, 12 November 2018
+
+- JS: Add npm-shrinkwrap to list of files updated by file updater
+- Python: More careful requirement file updating (handle no-binary flags)
+
 ## v0.75.36, 10 November 2018
 
 - JS: Handle npm switches to insecure URLs
