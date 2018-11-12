@@ -92,6 +92,22 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
       end
     end
 
+    context "with a no-binary flag" do
+      let(:manifest_fixture_name) { "no_binary.in" }
+      let(:generated_fixture_name) { "pip_compile_no_binary.txt" }
+      let(:dependency_name) { "psycopg2" }
+      let(:dependency_version) { "2.7.6" }
+      let(:dependency_previous_version) { "2.7.4" }
+
+      it "updates the requirements.txt correctly" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("psycopg2==2.7.6")
+        expect(updated_files.first.content).to include("--no-binary psycopg2")
+        expect(updated_files.first.content).
+          to_not include("--no-binary psycopg2==")
+      end
+    end
+
     context "with hashes" do
       let(:generated_fixture_name) { "pip_compile_hashes.txt" }
 

@@ -21,13 +21,17 @@ module Dependabot
           end
 
           def updated_content
-            updated_content = content.gsub(
-              original_declaration_replacement_regex,
-              updated_dependency_declaration_string(
-                old_requirement,
-                new_requirement
-              )
-            )
+            updated_content =
+              content.gsub(original_declaration_replacement_regex) do |mtch|
+                # If the "declaration" is setting an option (e.g., no-binary)
+                # ignore it, since it isn't actually a declaration
+                next mtch if Regexp.last_match.pre_match.match?(/--.*\z/)
+
+                updated_dependency_declaration_string(
+                  old_requirement,
+                  new_requirement
+                )
+              end
 
             raise "Expected content to change!" if content == updated_content
 

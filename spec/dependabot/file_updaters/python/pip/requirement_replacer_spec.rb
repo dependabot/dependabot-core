@@ -51,6 +51,17 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
         it { is_expected.to include("pytest-xdist\n") }
       end
 
+      context "and a no-binary flag" do
+        let(:requirement_content) { "requests --no-binary requests" }
+        let(:dependency_name) { "requests" }
+        it { is_expected.to eq("requests==1.11.5 --no-binary requests") }
+
+        context "for a previous dependency" do
+          let(:requirement_content) { "black --no-binary black\nrequests" }
+          it { is_expected.to eq("black --no-binary black\nrequests==1.11.5") }
+        end
+      end
+
       context "and another requirement with the same ending" do
         let(:requirement_content) do
           fixture("python", "pip_compile_files", "superstring.in")
