@@ -30,7 +30,7 @@ module Dependabot
           GIT_DEPENDENCY_UNREACHABLE_REGEX =
             /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze
           GIT_REFERENCE_NOT_FOUND_REGEX =
-            %r{Command "git reset --hard -q (?<tag>[^"]+)" .*/(?<name>.*?)$}.
+            %r{"git checkout -q (?<tag>[^"]+)" .*/(?<name>.*?)(\\n'\]|$)}.
             freeze
 
           attr_reader :dependency, :dependency_files, :credentials
@@ -118,6 +118,7 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
@@ -128,7 +129,7 @@ module Dependabot
             end
 
             if error.message.include?("Could not find a version") ||
-               error.message.include?("Not a valid python version")
+               error.message.include?("was not found on your system…")
               check_original_requirements_resolvable
             end
 
@@ -156,6 +157,7 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           # Needed because Pipenv's resolver isn't perfect.
           # Note: We raise errors from this method, rather than returning a
@@ -182,7 +184,7 @@ module Dependabot
                   raise DependencyFileNotResolvable, msg
                 end
 
-                if error.message.include?("Not a valid python version")
+                if error.message.include?("was not found on your system…")
                   msg = "Pipenv does not support specifying Python ranges "\
                     "(see https://github.com/pypa/pipenv/issues/1050 for more "\
                     "details)."
@@ -201,11 +203,11 @@ module Dependabot
             msg = msg_lines.
                   take_while { |l| !l.start_with?("During handling of") }.
                   drop_while do |l|
-                    !l.start_with?(
-                      "Could not find",
-                      "CRITICAL:notpip._internal.index:Could not find",
-                      "packaging.specifiers.InvalidSpecifier"
-                    )
+                    next false if l.start_with?("CRITICAL:")
+                    next false if l.start_with?("ERROR:")
+                    next false if l.start_with?("packaging.specifiers")
+
+                    true
                   end.join.strip
 
             # We also need to redact any URLs, as they may include credentials
