@@ -19,3 +19,4 @@ vendor
 /helpers/elixir/_build
 /helpers/python/src
 *git.store
+.vscode/
