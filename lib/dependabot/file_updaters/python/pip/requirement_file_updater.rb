@@ -124,9 +124,18 @@ module Dependabot
             return unless requirement_includes_hashes?(requirement)
 
             hash_regex = PythonRequirementParser::HASH
-            original_dependency_declaration_string(requirement).
+            current_separator =
+              original_dependency_declaration_string(requirement).
               match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
               named_captures.fetch("separator")
+
+            default_separator =
+              original_dependency_declaration_string(requirement).
+              match(PythonRequirementParser::HASH).
+              pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
+              named_captures.fetch("separator")
+
+            current_separator || default_separator
           end
 
           def package_hashes_for(name:, version:, algorithm:)

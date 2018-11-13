@@ -204,6 +204,40 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementFileUpdater do
               "aaa3bb96466ede7d107b241\n"
             )
           end
+
+          context "moving to multiple hashes" do
+            let(:requirements_fixture_name) { "hashes_single_to_multiple.txt" }
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "pytest",
+                version: "3.3.1",
+                requirements: [{
+                  file: "requirements.txt",
+                  requirement: "==3.3.1",
+                  groups: [],
+                  source: nil
+                }],
+                previous_version: "3.2.3",
+                previous_requirements: [{
+                  file: "requirements.txt",
+                  requirement: "==3.2.3",
+                  groups: [],
+                  source: nil
+                }],
+                package_manager: "pip"
+              )
+            end
+
+            its(:content) do
+              is_expected.to eq(
+                "pytest==3.3.1 "\
+                "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4"\
+                "2ad7331c9ad06d0efe4962 "\
+                "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6"\
+                "4096cebe79fb51ecb2eb93\n"
+              )
+            end
+          end
         end
       end
 
