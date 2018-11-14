@@ -1,3 +1,8 @@
+## v0.75.39, 14 November 2018
+
+- Python: Bump poetry from 0.12.7 to 0.12.8
+- Python: Bump hashin from 0.13.4 to 0.14.0
+
 ## v0.75.38, 13 November 2018
 
 - JS: Support updating npm sub-dependencies
