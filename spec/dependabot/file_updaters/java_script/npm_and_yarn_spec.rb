@@ -120,6 +120,25 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
+    context "with diverged lockfiles" do
+      let(:manifest_fixture_name) { "diverged_sub_dependency.json" }
+      let(:yarn_lock_fixture_name) { "diverged_sub_dependency.lock" }
+      let(:npm_lock_fixture_name) { "diverged_sub_dependency.json" }
+
+      context "when updating a sub-dependency" do
+        let(:dependency_name) { "stringstream" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+        let(:version) { "0.0.6" }
+        let(:previous_version) { "0.0.5" }
+
+        it "only updates the lockfile which includes the sub-dep" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(yarn.lock))
+        end
+      end
+    end
+
     context "with a shrinkwrap" do
       let(:files) { [package_json, shrinkwrap] }
       let(:shrinkwrap) do
