@@ -77,16 +77,16 @@ module Dependabot
 
                   case stderr
                   when /go: .*: unknown revision/
-                    error_msg = stderr.lines.grep(/unknown revision/).first
-                    raise Dependabot::DependencyFileNotResolvable, error_msg
+                    line = stderr.lines.grep(/unknown revision/).first
+                    raise Dependabot::DependencyFileNotResolvable, line.strip
                   when /go: .*: unrecognized import path/
-                    error_msg = stderr.lines.grep(/unrecognized import/).first
-                    raise Dependabot::DependencyFileNotResolvable, error_msg
+                    line = stderr.lines.grep(/unrecognized import/).first
+                    raise Dependabot::DependencyFileNotResolvable, line.strip
                   when /go: errors parsing go.mod/
-                    error_msg = stderr.gsub(path.to_s, "")
+                    error_msg = stderr.gsub(path.to_s, "").strip
                     raise Dependabot::DependencyFileNotParseable, error_msg
                   else
-                    error_msg = stderr.gsub(path.to_s, "")
+                    error_msg = stderr.gsub(path.to_s, "").strip
                     raise Dependabot::DependencyFileNotParseable, error_msg
                   end
                 end
