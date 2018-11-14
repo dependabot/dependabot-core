@@ -159,6 +159,14 @@ RSpec.describe namespace::VersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
 
+        context "and some badly written peer dependency requirements" do
+          let(:react_dom_registry_response) do
+            fixture("javascript", "npm_responses", "react-dom-bad-reqs.json")
+          end
+
+          it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        end
+
         context "that has (old) peer requirements that aren't included" do
           let(:manifest_fixture_name) { "peer_dependency_changed.json" }
           let(:npm_lock_fixture_name) { "peer_dependency_changed.json" }

@@ -171,6 +171,8 @@ module Dependabot
                   next false unless version_for_dependency(dep)
 
                   reqs.any? { |r| r.satisfied_by?(version_for_dependency(dep)) }
+                rescue Gem::Requirement::BadRequirementError
+                  false
                 end
               end.
               map(&:first)
