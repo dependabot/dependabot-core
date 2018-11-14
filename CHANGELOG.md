@@ -1,3 +1,8 @@
+## v0.75.40, 14 November 2018
+
+- Python: Pin to latest pipenv commit
+- JS: Handle bad peer dependency requirements
+
 ## v0.75.39, 14 November 2018
 
 - Python: Bump poetry from 0.12.7 to 0.12.8
