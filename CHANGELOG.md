@@ -1,3 +1,9 @@
+## v0.75.41, 14 November 2018
+
+- Go: Better parser error handling for Go modules
+- JS: Handle diverged npm/yarn lockfiles
+- JS: Fix bug when using both npm5 and yarn lockfiles and updating a sub-dep
+
 ## v0.75.40, 14 November 2018
 
 - Python: Pin to latest pipenv commit
