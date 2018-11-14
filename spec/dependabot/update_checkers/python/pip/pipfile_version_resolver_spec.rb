@@ -114,8 +114,11 @@ RSpec.describe namespace::PipfileVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            puts error.message
             expect(error.message).to start_with(
-              "CRITICAL:notpip._internal.index:Could not find a version"
+              "CRITICAL:pipenv.patched.notpip._internal.index:"\
+              "Could not find a version that satisfies the requirement "\
+              "pytest==10.4.0"
             )
           end
       end
@@ -415,7 +418,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to start_with(
+            expect(error.message).to include(
               "Could not find a version that matches "\
               "chardet<3.1.0,==3.0.0,>=3.0.2\n"
             )
