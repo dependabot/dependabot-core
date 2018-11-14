@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/file_parsers/go/modules"
@@ -66,16 +67,28 @@ module Dependabot
 
           def module_info(go_mod)
             @module_info ||=
-              SharedHelpers.in_a_temporary_directory do
+              SharedHelpers.in_a_temporary_directory do |path|
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   File.write("go.mod", go_mod.content)
 
-                  output = `GO111MODULE=on go list -m -json all`
-                  unless $CHILD_STATUS.success?
-                    raise Dependabot::DependencyFileNotParseable, go_mod.path
-                  end
+                  command = "GO111MODULE=on go list -m -json all"
+                  stdout, stderr, status = Open3.capture3(command)
+                  next stdout if status.success?
 
-                  output
+                  case stderr
+                  when /go: .*: unknown revision/
+                    error_msg = stderr.lines.grep(/unknown revision/).first
+                    raise Dependabot::DependencyFileNotResolvable, error_msg
+                  when /go: .*: unrecognized import path/
+                    error_msg = stderr.lines.grep(/unrecognized import/).first
+                    raise Dependabot::DependencyFileNotResolvable, error_msg
+                  when /go: errors parsing go.mod/
+                    error_msg = stderr.gsub(path.to_s, "")
+                    raise Dependabot::DependencyFileNotParseable, error_msg
+                  else
+                    error_msg = stderr.gsub(path.to_s, "")
+                    raise Dependabot::DependencyFileNotParseable, error_msg
+                  end
                 end
               end
           end
