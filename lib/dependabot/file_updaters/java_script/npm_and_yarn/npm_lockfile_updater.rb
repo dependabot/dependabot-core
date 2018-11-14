@@ -25,6 +25,7 @@ module Dependabot
           def updated_lockfile_content(lockfile)
             path = Pathname.new(lockfile.name).dirname.to_s
             name = Pathname.new(lockfile.name).basename.to_s
+            return lockfile.content if dependency_up_to_date?(lockfile)
             return lockfile.content if npmrc_disables_lockfile?
 
             # Prevent changes to the lockfile when the dependency has been
@@ -75,6 +76,22 @@ module Dependabot
 
               r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
             end.compact
+          end
+
+          def dependency_up_to_date?(lockfile)
+            existing_dep = FileParsers::JavaScript::NpmAndYarn.new(
+              dependency_files: [lockfile, *package_files],
+              source: nil,
+              credentials: credentials
+            ).parse.find { |dep| dep.name == dependency.name }
+
+            # If the dependency is missing but top level it should be treated as
+            # not up to date
+            # If it's a missing sub dependency we treat it as up to date
+            # (likely it is no longer required)
+            return !dependency.top_level? if existing_dep.nil?
+
+            existing_dep&.version == dependency.version
           end
 
           def run_npm_updater(lockfile_name)
