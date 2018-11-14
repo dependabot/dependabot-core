@@ -1,17 +1,15 @@
 const fs = require("fs");
 const path = require("path");
-const npm6 = require("npm");
-const npm5 = require("npm5/node_modules/npm");
-const { installerForLockfile, muteStderr, runAsync } = require("./helpers.js");
+const npm = require("npm");
+const installer = require("npm/lib/install");
+
+const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFile(directory, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
-  await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
-  const oldLockfile = JSON.parse(readFile(lockfileName));
-  const installer = installerForLockfile(oldLockfile);
+  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
 
   const dryRun = true;
   const initialInstaller = new installer.Installer(directory, dryRun, [], {
