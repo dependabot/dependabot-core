@@ -121,6 +121,42 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       # Note: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+
+      context "when using npm5 lockfile" do
+        let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
+
+        # Note: npm5 lockfiles have exact version requires so can't easily
+        # update specific sub-dependencies to a new version, make sure we keep
+        # the same version
+        it { is_expected.to eq(Gem::Version.new("5.2.1")) }
+      end
+    end
+
+    context "with a yarn.lock and a package-lock.json" do
+      let(:dependency_files) { [package_json, npm_lock, yarn_lock] }
+      let(:manifest_fixture_name) { "no_lockfile_change.json" }
+      let(:npm_lock_fixture_name) { "subdependency_update.json" }
+      let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.2.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+
+      context "when using npm5" do
+        let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
+
+        # Note: npm5 lockfiles have exact version requires so can't easily
+        # update specific sub-dependencies to a new version, make sure we keep
+        # the same version
+        it { is_expected.to eq(Gem::Version.new("5.2.1")) }
+      end
     end
   end
 end
