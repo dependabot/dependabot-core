@@ -38,4 +38,6 @@ jobs:
       # Run tests
       - run: cd helpers/yarn && node_modules/.bin/jest
       - run: cd helpers/npm && node_modules/.bin/jest
-      - run: bundle exec rspec spec
+      - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml
+      - store_test_results:
+          path: ~/rspec
