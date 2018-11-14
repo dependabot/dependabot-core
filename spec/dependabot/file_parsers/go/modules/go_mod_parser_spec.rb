@@ -21,9 +21,10 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
   let(:go_mod) do
     Dependabot::DependencyFile.new(
       name: "go.mod",
-      content: fixture("go", "go_mods", go_mod_fixture_name)
+      content: go_mod_content
     )
   end
+  let(:go_mod_content) { fixture("go", "go_mods", go_mod_fixture_name) }
   let(:go_mod_fixture_name) { "go.mod" }
 
   describe "dependency_set" do
@@ -112,6 +113,39 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
             )
           end
         end
+      end
+    end
+
+    describe "a garbage go.mod" do
+      let(:go_mod_content) { "not really a go.mod file :-/" }
+
+      it "raises the correct error" do
+        expect { parser.dependency_set }.
+          to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    describe "a non-existent dependency" do
+      let(:go_mod_content) do
+        go_mod = fixture("go", "go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote", "example.com/not-a-repo")
+      end
+
+      it "raises the correct error" do
+        expect { parser.dependency_set }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    describe "a dependency at a non-existent version" do
+      let(:go_mod_content) do
+        go_mod = fixture("go", "go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote v1.4.0", "rsc.io/quote v1.321.0")
+      end
+
+      it "raises the correct error" do
+        expect { parser.dependency_set }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end
