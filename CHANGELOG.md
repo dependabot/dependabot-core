@@ -1,3 +1,10 @@
+## v0.75.38, 13 November 2018
+
+- JS: Support updating npm sub-dependencies
+- Python: Handle transition from a single hash to multiple in requirements file
+  updater
+- JS: Handle unmet peer dependency warnings in yarn
+
 ## v0.75.37, 12 November 2018
 
 - JS: Add npm-shrinkwrap to list of files updated by file updater
