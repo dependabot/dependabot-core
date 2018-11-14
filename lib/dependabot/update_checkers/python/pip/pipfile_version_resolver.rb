@@ -118,7 +118,6 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
-          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
@@ -157,7 +156,6 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
-          # rubocop:enable Metrics/MethodLength
 
           # Needed because Pipenv's resolver isn't perfect.
           # Note: We raise errors from this method, rather than returning a
