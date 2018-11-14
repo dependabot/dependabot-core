@@ -1,3 +1,7 @@
+## v0.75.42, 14 November 2018
+
+- Go modules: strip whitespace from parser errors
+
 ## v0.75.41, 14 November 2018
 
 - Go: Better parser error handling for Go modules
