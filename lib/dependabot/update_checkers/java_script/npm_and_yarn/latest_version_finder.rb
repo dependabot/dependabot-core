@@ -75,7 +75,7 @@ module Dependabot
               transform_keys { |k| version_class.new(k) }.
               reject { |k, _| k.prerelease? && !related_to_current_pre?(k) }.
               reject { |k, _| ignore_reqs.any? { |r| r.satisfied_by?(k) } }.
-              sort.reverse
+              sort_by(&:first).reverse
           end
 
           private

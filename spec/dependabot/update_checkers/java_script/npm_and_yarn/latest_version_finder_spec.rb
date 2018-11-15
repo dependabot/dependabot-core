@@ -750,4 +750,34 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
   end
+
+  describe "#possible_versions_with_details" do
+    subject(:possible_versions_with_details) do
+      version_finder.possible_versions_with_details
+    end
+
+    context "with versions that would be considered equivalent" do
+      let(:registry_response) do
+        fixture("javascript", "npm_responses", "react-test-renderer.json")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "16.0.0-beta.5",
+          requirements: [{
+            file: "package.json",
+            requirement: "16.0.0-beta.5",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns a list of versions" do
+        expect { possible_versions_with_details }.to_not raise_error
+      end
+    end
+  end
 end
