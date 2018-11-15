@@ -387,9 +387,12 @@ module Dependabot
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           rescue SharedHelpers::HelperSubprocessFailed => error
             original_error ||= error
-            raise unless error.message.include?("InstallationError") ||
-                         error.message.include?("Could not find a version")
-            raise original_error if cmd.include?("--two")
+            unless error.message.include?("InstallationError") ||
+                   error.message.include?("Could not find a version")
+              raise original_error
+            end
+
+            raise if cmd.include?("--two")
 
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
