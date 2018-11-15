@@ -191,7 +191,7 @@ module Dependabot
                   IO.popen("git init", err: %i(child out)) if setup_files.any?
 
                   run_pipenv_command(
-                    "PIPENV_YES=true PIPENV_MAX_RETRIES=3 "\
+                    "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
                     "pyenv exec pipenv lock"
                   )
 
@@ -229,11 +229,11 @@ module Dependabot
 
           def generate_updated_requirements_files
             run_pipenv_command(
-              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 "\
+              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
               "pyenv exec pipenv lock -r > req.txt"
             )
             run_pipenv_command(
-              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 "\
+              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
               "pyenv exec pipenv lock -r -d > dev-req.txt"
             )
           end
