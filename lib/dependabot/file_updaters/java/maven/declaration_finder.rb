@@ -113,7 +113,9 @@ module Dependabot
               property_details(
                 property_name: property_name,
                 callsite_pom: declaring_pom
-              ).fetch(:value)
+              )&.fetch(:value)
+
+            return value unless property_value
 
             value.gsub(FileParsers::Java::Maven::PROPERTY_REGEX, property_value)
           end

@@ -285,6 +285,37 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         expect(declaration_node.at_css("groupId").content).
           to eq("${project.groupId}")
       end
+
+      context "that is missing for an unrelated dependency" do
+        let(:dependency_files) { [pom] }
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("java", "poms", "missing_property_group_id.xml")
+          )
+        end
+        let(:dependency_name) { "io.reactivex.rxjava2:rxjava" }
+        let(:dependency_version) { "2.1.6" }
+        let(:declaring_requirement) do
+          {
+            requirement: dependency_version,
+            file: "pom.xml",
+            groups: [],
+            source: nil
+          }
+        end
+
+        it "finds the declaration" do
+          expect(declaration_nodes.count).to eq(1)
+
+          declaration_node = declaration_nodes.first
+          expect(declaration_node).to be_a(Nokogiri::XML::Node)
+          expect(declaration_node.at_css("version").content).to eq("2.1.6")
+          expect(declaration_node.at_css("artifactId").content).to eq("rxjava")
+          expect(declaration_node.at_css("groupId").content).
+            to eq("io.reactivex.rxjava2")
+        end
+      end
     end
 
     context "with an inherited property" do
