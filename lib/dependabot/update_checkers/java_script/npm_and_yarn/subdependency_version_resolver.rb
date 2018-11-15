@@ -35,6 +35,11 @@ module Dependabot
             end
 
             version_from_updated_lockfiles(updated_lockfiles)
+          rescue SharedHelpers::HelperSubprocessFailed
+            # TODO: Move error handling logic from the FileUpdater to this class
+
+            # Return nil (no update possible) if an unknown error occurred
+            nil
           end
 
           private

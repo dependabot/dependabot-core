@@ -83,6 +83,26 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
     end
 
+    context "with an invalid package.json" do
+      let(:dependency_files) { [package_json, npm_lock] }
+
+      let(:manifest_fixture_name) { "non_existant_dependency.json" }
+      let(:npm_lock_fixture_name) { "subdependency_update.json" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "gracefully handles package not found exception" do
+        expect(latest_resolvable_version).to be_nil
+      end
+    end
+
     context "with a yarn.lock" do
       let(:dependency_files) { [package_json, yarn_lock] }
 
