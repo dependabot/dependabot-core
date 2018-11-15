@@ -1,3 +1,7 @@
+## v0.75.46, 15 November 2018
+
+- Maven: Handle property searches that use a range for the parent pom
+
 ## v0.75.45, 15 November 2018
 
 - Python: Disable pipenv spinner in logs
