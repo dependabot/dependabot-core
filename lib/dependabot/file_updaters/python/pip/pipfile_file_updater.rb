@@ -249,15 +249,24 @@ module Dependabot
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           rescue SharedHelpers::HelperSubprocessFailed => error
             original_error ||= error
-            unless error.message.include?("InstallationError") ||
-                   error.message.include?("Could not find a version")
-              raise original_error
-            end
+            msg = error.message
 
-            raise if cmd.include?("--two")
+            relevant_error =
+              if error_suggests_bad_python_version?(msg) then original_error
+              else error
+              end
+
+            raise relevant_error unless error_suggests_bad_python_version?(msg)
+            raise relevant_error if cmd.include?("--two")
 
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
+          end
+
+          def error_suggests_bad_python_version?(message)
+            return true if message.include?("UnsupportedPythonVersion")
+
+            message.include?('Command "python setup.py egg_info" failed')
           end
 
           def write_temporary_dependency_files(pipfile_content)
