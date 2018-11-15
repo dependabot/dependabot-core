@@ -55,7 +55,7 @@ module Dependabot
 
         def version_resolver
           @version_resolver ||=
-            if dependency_files.any? { |f| f.name == "elm.json" }
+            if dependency.requirements.any? { |r| r.fetch(:file) == "elm.json" }
               Elm19VersionResolver.new(
                 dependency: dependency,
                 dependency_files: dependency_files
