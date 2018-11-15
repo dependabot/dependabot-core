@@ -141,7 +141,7 @@ module Dependabot
                   url_details[:versions_url],
                   headers: url_details[:auth_header],
                   idempotent: true,
-                  **SharedHelpers.excon_defaults
+                  **excon_defaults
                 )
                 next unless response.status == 200
 
@@ -160,7 +160,7 @@ module Dependabot
                 repository_details[:search_url],
                 headers: repository_details[:auth_header],
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **excon_defaults
               )
               return unless response.status == 200
 
@@ -174,7 +174,7 @@ module Dependabot
                 repository_details[:versions_url],
                 headers: repository_details[:auth_header],
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **excon_defaults
               )
               return unless response.status == 200
 
@@ -210,6 +210,18 @@ module Dependabot
 
           def requirement_class
             Utils::Dotnet::Requirement
+          end
+
+          def excon_defaults
+            # For large JSON files we sometimes need a little longer than for
+            # other languages. For example, see:
+            # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
+            # q=microsoft.aspnetcore.mvc&prerelease=true
+            SharedHelpers.excon_defaults.merge(
+              connect_timeout: 10,
+              write_timeout: 10,
+              read_timeout: 10
+            )
           end
         end
       end
