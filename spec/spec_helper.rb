@@ -3,6 +3,7 @@
 require "rspec/its"
 require "webmock/rspec"
 require "vcr"
+require "byebug"
 
 RSpec.configure do |config|
   config.color = true
