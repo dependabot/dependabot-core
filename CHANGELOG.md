@@ -1,3 +1,9 @@
+## v0.75.45, 15 November 2018
+
+- Python: Disable pipenv spinner in logs
+- .NET: Longer timeout when hitting registries
+- Rust: Retry timeouts from crates.io
+
 ## v0.75.44, 15 November 2018
 
 - PHP: Respect COMPOSER_MEMORY_LIMIT environment variable
