@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  test:
     docker:
       - image: dependabot/dependabot-core:0.1.43
     working_directory: ~/dependabot-core
@@ -41,3 +41,9 @@ jobs:
       - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml
       - store_test_results:
           path: ~/rspec
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
