@@ -1,3 +1,9 @@
+## v0.75.43, 15 November 2018
+
+- JS: Handle tricky possible version comparisons
+- Python: Switch to released version of pipenv
+- Elm: Select elm resolver based on requirements
+
 ## v0.75.42, 14 November 2018
 
 - Go modules: strip whitespace from parser errors
