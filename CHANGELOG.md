@@ -1,3 +1,7 @@
+## v0.75.49, 15 November 2018
+
+- Python: Set higher timeout for Pipenv
+
 ## v0.75.48, 15 November 2018
 
 - Python: Clean up Pipenv error handling
