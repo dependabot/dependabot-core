@@ -75,8 +75,7 @@ module Dependabot
                   # pipenv flow, an install is still done by pip-tools in order
                   # to resolve the dependencies. That means this is slow.
                   run_pipenv_command(
-                    "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
-                    "pyenv exec pipenv lock"
+                    pipenv_environment_variables + "pyenv exec pipenv lock"
                   )
 
                   updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
@@ -170,8 +169,7 @@ module Dependabot
                 IO.popen("git init", err: %i(child out)) if setup_files.any?
 
                 run_pipenv_command(
-                  "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
-                  "pyenv exec pipenv lock"
+                  pipenv_environment_variables + "pyenv exec pipenv lock"
                 )
 
                 true
@@ -441,6 +439,17 @@ module Dependabot
             @pipfile_sources ||=
               TomlRB.parse(pipfile.content).fetch("source", []).
               map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+          end
+
+          def pipenv_environment_variables
+            environment_variables = [
+              "PIPENV_YES=true",       # Install new Python versions if needed
+              "PIPENV_MAX_RETRIES=3",  # Retry timeouts
+              "PIPENV_NOSPIN=1",       # Don't pollute logs with spinner
+              "PIPENV_TIMEOUT=500"     # Set install timeout to 6 minutes
+            ]
+
+            environment_variables.join(" ") + " "
           end
         end
       end

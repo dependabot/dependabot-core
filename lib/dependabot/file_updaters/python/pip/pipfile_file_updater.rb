@@ -191,8 +191,7 @@ module Dependabot
                   IO.popen("git init", err: %i(child out)) if setup_files.any?
 
                   run_pipenv_command(
-                    "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
-                    "pyenv exec pipenv lock"
+                    pipenv_environment_variables + "pyenv exec pipenv lock"
                   )
 
                   result = { lockfile: File.read("Pipfile.lock") }
@@ -229,12 +228,12 @@ module Dependabot
 
           def generate_updated_requirements_files
             run_pipenv_command(
-              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
-              "pyenv exec pipenv lock -r > req.txt"
+              pipenv_environment_variables +
+                "pyenv exec pipenv lock -r > req.txt"
             )
             run_pipenv_command(
-              "PIPENV_YES=true PIPENV_MAX_RETRIES=3 PIPENV_NOSPIN=1 "\
-              "pyenv exec pipenv lock -r -d > dev-req.txt"
+              pipenv_environment_variables +
+                "pyenv exec pipenv lock -r -d > dev-req.txt"
             )
           end
 
@@ -377,6 +376,17 @@ module Dependabot
 
           def requirements_files
             dependency_files.select { |f| f.name.end_with?(".txt") }
+          end
+
+          def pipenv_environment_variables
+            environment_variables = [
+              "PIPENV_YES=true",       # Install new Python versions if needed
+              "PIPENV_MAX_RETRIES=3",  # Retry timeouts
+              "PIPENV_NOSPIN=1",       # Don't pollute logs with spinner
+              "PIPENV_TIMEOUT=500"     # Set install timeout to 6 minutes
+            ]
+
+            environment_variables.join(" ") + " "
           end
         end
       end

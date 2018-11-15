@@ -114,7 +114,6 @@ RSpec.describe namespace::PipfileVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            puts error.message
             expect(error.message).to start_with(
               "CRITICAL:pipenv.patched.notpip._internal.index:"\
               "Could not find a version that satisfies the requirement "\
