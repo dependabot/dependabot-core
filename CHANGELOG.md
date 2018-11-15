@@ -1,3 +1,7 @@
+## v0.75.48, 15 November 2018
+
+- Python: Clean up Pipenv error handling
+
 ## v0.75.47, 15 November 2018
 
 - Python: Raise original error correctly depending on Python version in use
