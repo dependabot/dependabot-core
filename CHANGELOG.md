@@ -1,3 +1,7 @@
+## v0.75.44, 15 November 2018
+
+- PHP: Respect COMPOSER_MEMORY_LIMIT environment variable
+
 ## v0.75.43, 15 November 2018
 
 - JS: Handle tricky possible version comparisons
