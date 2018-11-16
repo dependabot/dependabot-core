@@ -2,7 +2,7 @@ version: 2
 jobs:
   test:
     docker:
-      - image: dependabot/dependabot-core:0.1.43
+      - image: dependabot/dependabot-core:0.1.44
     working_directory: ~/dependabot-core
     steps:
       - checkout
