@@ -85,14 +85,10 @@ module Dependabot
           end
 
           def check_install_result(changed_deps)
-            original_dependency_names =
-              original_dependency_details.select(&:top_level?).map(&:name)
-
             other_deps_bumped =
               changed_deps.
               keys.
-              reject { |name| name == dependency.name }.
-              select { |n| original_dependency_names.include?(n) }
+              reject { |name| name == dependency.name }
 
             return :forced_full_unlock_bump if other_deps_bumped.any?
 
@@ -167,11 +163,6 @@ module Dependabot
                   json[type][category].delete(dependency.name)
                 end
               end
-            end
-
-            # Delete all indirect dependencies
-            %w(dependencies test-dependencies).each do |type|
-              json[type]["indirect"] = {} if json.dig(type, "indirect")
             end
 
             json["source-directories"] = []
