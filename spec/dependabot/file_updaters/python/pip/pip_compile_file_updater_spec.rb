@@ -313,7 +313,10 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
 
       context "with multiple requirement.in files" do
         let(:dependency_files) do
-          [manifest_file, manifest_file2, generated_file, generated_file2]
+          [
+            manifest_file, manifest_file2, manifest_file3, manifest_file4,
+            generated_file, generated_file2, generated_file3, generated_file4
+          ]
         end
 
         let(:manifest_file2) do
@@ -326,6 +329,34 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         let(:generated_file2) do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.txt",
+            content: fixture("python", "requirements", generated_fixture_name)
+          )
+        end
+
+        let(:manifest_file3) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/mirror2.in",
+            content:
+              fixture("python", "pip_compile_files", "imports_mirror.in")
+          )
+        end
+        let(:generated_file3) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/mirror2.txt",
+            content: fixture("python", "requirements", generated_fixture_name)
+          )
+        end
+
+        let(:manifest_file4) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/mirror.in",
+            content:
+              fixture("python", "pip_compile_files", "imports_dev.in")
+          )
+        end
+        let(:generated_file4) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/mirror.txt",
             content: fixture("python", "requirements", generated_fixture_name)
           )
         end
@@ -358,15 +389,19 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
         end
 
         it "updates the other manifest file, too" do
-          expect(updated_files.count).to eq(4)
+          expect(updated_files.count).to eq(6)
           expect(updated_files[0].name).to eq("requirements/test.in")
           expect(updated_files[1].name).to eq("requirements/dev.in")
           expect(updated_files[2].name).to eq("requirements/test.txt")
           expect(updated_files[3].name).to eq("requirements/dev.txt")
+          expect(updated_files[4].name).to eq("requirements/mirror2.txt")
+          expect(updated_files[5].name).to eq("requirements/mirror.txt")
           expect(updated_files[0].content).to include("Attrs<=18.1.0")
           expect(updated_files[1].content).to include("Attrs<=18.1.0")
           expect(updated_files[2].content).to include("attrs==18.1.0")
           expect(updated_files[3].content).to include("attrs==18.1.0")
+          expect(updated_files[4].content).to include("attrs==18.1.0")
+          expect(updated_files[5].content).to include("attrs==18.1.0")
         end
       end
     end

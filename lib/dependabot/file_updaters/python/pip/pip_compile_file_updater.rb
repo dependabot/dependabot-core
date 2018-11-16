@@ -307,6 +307,7 @@ module Dependabot
                   paths.map do |path|
                     path = File.join(current_dir, path) if current_dir != "."
                     path = Pathname.new(path).cleanpath.to_path
+                    path = path.gsub(/\.txt$/, ".in")
                     next if path == file.name
 
                     path
