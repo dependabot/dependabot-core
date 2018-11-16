@@ -495,6 +495,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
+        context "with headers that are bullets" do
+          let(:changelog_body) do
+            fixture("github", "changelog_contents_bullets.json")
+          end
+          let(:dependency_version) { "2.9.1" }
+          let(:dependency_previous_version) { "2.9.0" }
+
+          it "gets the right content" do
+            expect(changelog_text).to start_with("* 2.9.1")
+            expect(changelog_text).
+              to eq(
+                "* 2.9.1\n"\
+                "    * IPv6 support. Thanks https://github.com/amashinchi"
+              )
+          end
+        end
+
         context "with no relevant versions" do
           let(:dependency_version) { "1.13.0" }
           let(:dependency_previous_version) { "1.12.0" }

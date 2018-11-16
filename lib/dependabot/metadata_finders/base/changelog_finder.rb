@@ -208,7 +208,7 @@ module Dependabot
             next false if line.match?(/#{escaped_version}\.\./)
             next true if line.start_with?("#", "!", "==")
             next true if line.match?(/^v?#{escaped_version}:?/)
-            next true if line.match?(/^\+\*\- version #{escaped_version}/i)
+            next true if line.match?(/^[\+\*\-] (version )?#{escaped_version}/i)
             next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
             next true if changelog_lines[index + 1]&.match?(/^[=\-\+]{3,}\s*$/)
 
