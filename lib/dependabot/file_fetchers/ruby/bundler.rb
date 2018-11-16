@@ -53,13 +53,13 @@ module Dependabot
         end
 
         def gemfile
-          @gemfile ||= fetch_file_if_present("Gemfile") ||
-                       fetch_file_if_present("gems.rb")
+          @gemfile ||= fetch_file_if_present("gems.rb") ||
+                       fetch_file_if_present("Gemfile")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_if_present("Gemfile.lock") ||
-                        fetch_file_if_present("gems.locked")
+          @lockfile ||= fetch_file_if_present("gems.locked") ||
+                        fetch_file_if_present("Gemfile.lock")
         end
 
         def gemspecs
