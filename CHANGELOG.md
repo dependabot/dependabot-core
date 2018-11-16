@@ -1,3 +1,9 @@
+## v0.75.52, 16 November 2018
+
+- Ruby: Use Bundler 2.0.0.pre.1
+- Try to prevent Sentry from grouping all HelperSubprocessFailed errors
+- Elm: Don't perform updates that require indirect dependency changes
+
 ## v0.75.51, 16 November 2018
 
 - Handle changelogs which use a bullet point for each new version
