@@ -156,11 +156,17 @@ module Dependabot
 
         def child_requirement_files
           @child_requirement_files ||=
-            requirements_txt_files.flat_map do |requirement_file|
-              fetch_child_requirement_files(
-                file: requirement_file,
-                previously_fetched_files: []
-              )
+            begin
+              fetched_files = requirements_txt_files.dup
+              requirements_txt_files.flat_map do |requirement_file|
+                child_files = fetch_child_requirement_files(
+                  file: requirement_file,
+                  previously_fetched_files: fetched_files
+                )
+
+                fetched_files += child_files
+                child_files
+              end
             end
         end
 
