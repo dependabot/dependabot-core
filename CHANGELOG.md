@@ -1,3 +1,7 @@
+## v0.75.54, 16 November 2018
+
+- Python: Update unsafe requirements if specified in pip-compile manifest
+
 ## v0.75.53, 16 November 2018
 
 - Python: Protect against fetching the same file multiple times
