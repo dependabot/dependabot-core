@@ -120,11 +120,13 @@ module Dependabot
           content.gsub("git@github.com:", "https://github.com/")
         end
 
-        # TODO: replace this with a setting in CocoaPods, like we do for Bundler
         def prepend_git_auth_details(content)
+          credential_string =
+            "#{@credentials.first['username']}:
+            #{@credentials.first['password']}"
           content.gsub(
             "https://github.com/",
-            "https://x-access-token:#{github_access_token}@github.com/"
+            "https://#{credential_string}:x-oauth-basic@github.com/"
           )
         end
       end

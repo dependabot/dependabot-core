@@ -9,7 +9,6 @@ module Dependabot
         def self.parse(obj)
           Pod::Requirement.new(obj.to_s)
         end
-
       end
     end
   end

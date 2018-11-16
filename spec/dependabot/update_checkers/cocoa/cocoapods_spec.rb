@@ -18,7 +18,7 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      github_access_token: "token"
+      credentials: credentials
     )
   end
 
@@ -37,19 +37,36 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
     [{
       requirement: "~> 3.0.0",
       file: "Podfile",
-      groups: []
+      groups: [],
+      source: source
+    }]
+  end
+
+  let(:source) { nil }
+
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
     }]
   end
 
   let(:podfile) do
-    Dependabot::DependencyFile.new(content: podfile_content, name: "Podfile")
-  end
-  let(:podfile_lock) do
     Dependabot::DependencyFile.new(
-      content: lockfile_content,
-      name: "Podfile.lock"
+      name: "Podfile",
+      content: podfile_content
     )
   end
+
+  let(:podfile_lock) do
+    Dependabot::DependencyFile.new(
+      name: "Podfile.lock",
+      content: lockfile_content
+    )
+  end
+
   let(:podfile_content) { fixture("cocoa", "podfiles", "version_specified") }
   let(:lockfile_content) { fixture("cocoa", "lockfiles", "version_specified") }
 
