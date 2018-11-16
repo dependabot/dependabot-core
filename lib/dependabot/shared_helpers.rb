@@ -64,6 +64,10 @@ module Dependabot
         super(message)
         @command = command
       end
+
+      def raven_context
+        { fingerprint: [@command] }
+      end
     end
 
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
