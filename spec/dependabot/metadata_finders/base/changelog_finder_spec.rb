@@ -503,7 +503,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { "2.9.0" }
 
           it "gets the right content" do
-            expect(changelog_text).to start_with("* 2.9.1")
             expect(changelog_text).
               to eq(
                 "* 2.9.1\n"\
