@@ -7,7 +7,7 @@ module Dependabot
     module CocoaPods
       class Requirement < Pod::Requirement
         def self.parse(obj)
-          Pod::Requirement.new(obj.to_s)
+          Pod::Requirement.new(obj.to_s).requirements.flatten
         end
       end
     end
