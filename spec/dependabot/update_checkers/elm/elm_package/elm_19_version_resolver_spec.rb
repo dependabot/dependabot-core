@@ -97,16 +97,43 @@ RSpec.describe namespace::Elm19VersionResolver do
 
       context "with multiple updates required" do
         let(:fixture_name) { "full_unlock_required.json" }
-        let(:dependency_name) { "rtfeldman/elm-css" }
-        let(:dependency_version) { "15.0.0" }
-        let(:dependency_requirement) { "15.0.0" }
+        let(:dependency_name) { "elm/http" }
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency_requirement) { "1.0.0" }
 
         it { is_expected.to eq(elm_version(dependency_version)) }
 
         context ":all unlocks" do
           let(:unlock_requirement) { :all }
-          it { is_expected.to be >= elm_version("16.0.0") }
+
+          # TODO: Full unlocks don't work yet! We need to work on how we use elm
+          it { is_expected.to eq(elm_version(dependency_version)) }
         end
+      end
+
+      context "with indirect dependency updates required" do
+        let(:fixture_name) { "indirect_updates_required.json" }
+        let(:dependency_name) { "elm/http" }
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency_requirement) { "1.0.0" }
+
+        it { is_expected.to be >= elm_version("2.0.0") }
+      end
+    end
+  end
+
+  describe "#updated_dependencies_after_full_unlock" do
+    subject(:updated_deps) { resolver.updated_dependencies_after_full_unlock }
+
+    context "with multiple updates required" do
+      let(:fixture_name) { "full_unlock_required.json" }
+      let(:dependency_name) { "elm/http" }
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirement) { "1.0.0" }
+
+      # TODO: Full unlocks don't work yet! We need to work on how we use elm
+      it "updates the right dependencies" do
+        expect(updated_deps).to eq([])
       end
     end
   end
