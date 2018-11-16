@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.required_rubygems_version = ">= 2.7.3"
 
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
-  spec.add_dependency "bundler", "~> 1.16"
+  spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
   spec.add_dependency "docker_registry2", "~> 1.4.1"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gitlab", "~> 4.1"
