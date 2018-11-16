@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/cocoapods/version"
+require "cocoapods-core"
 
 module Dependabot
   module Utils
     module CocoaPods
-      class Requirement < Gem::Requirement
+      class Requirement < Pod::Requirement
         def self.parse(obj)
-          new_version = Utils::CocoaPods::Version.new(obj.to_s)
-          ["=", new_version] if obj.is_a?(Gem::Version)
+          requirement = Pod::Requirement.new(obj.to_s)
         end
+
       end
     end
   end
