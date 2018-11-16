@@ -1,3 +1,9 @@
+## v0.75.53, 16 November 2018
+
+- Python: Protect against fetching the same file multiple times
+- Python: Order pip-compile file resolution correctly when .txt outputs are
+  imported
+
 ## v0.75.52, 16 November 2018
 
 - Ruby: Use Bundler 2.0.0.pre.1
