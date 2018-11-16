@@ -53,8 +53,8 @@ module Dependabot
                   filenames_to_compile.each do |filename|
                     # Shell out to pip-compile.
                     # This is slow, as pip-compile needs to do installs.
-                    cmd = "pyenv exec pip-compile -P #{dependency.name} "\
-                          "#{filename}"
+                    cmd = "pyenv exec pip-compile --allow-unsafe "\
+                          "-P #{dependency.name} #{filename}"
                     run_command(cmd)
                   end
 
@@ -117,7 +117,7 @@ module Dependabot
                 write_temporary_dependency_files(unlock_requirement: false)
 
                 filenames_to_compile.each do |filename|
-                  cmd = "pyenv exec pip-compile #{filename}"
+                  cmd = "pyenv exec pip-compile --allow-unsafe #{filename}"
                   run_command(cmd)
                 end
 

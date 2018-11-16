@@ -230,6 +230,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be_nil }
     end
 
+    context "with a dependency that is 'unsafe' to lock" do
+      let(:manifest_fixture_name) { "setuptools.in" }
+      let(:generated_fixture_name) { "pip_compile_setuptools.txt" }
+      let(:dependency_name) { "setuptools" }
+      let(:dependency_version) { "40.4.1" }
+      let(:dependency_requirements) { [] }
+
+      it { is_expected.to be >= Gem::Version.new("40.6.2") }
+    end
+
     context "with an import of the setup.py" do
       let(:dependency_files) { [manifest_file, generated_file, setup_file] }
       let(:setup_file) do
