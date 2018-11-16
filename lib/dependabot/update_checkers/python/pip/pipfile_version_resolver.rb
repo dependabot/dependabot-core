@@ -446,7 +446,7 @@ module Dependabot
               "PIPENV_YES=true",       # Install new Python versions if needed
               "PIPENV_MAX_RETRIES=3",  # Retry timeouts
               "PIPENV_NOSPIN=1",       # Don't pollute logs with spinner
-              "PIPENV_TIMEOUT=360"     # Set install timeout to 6 minutes
+              "PIPENV_TIMEOUT=600"     # Set install timeout to 10 minutes
             ]
 
             environment_variables.join(" ") + " "
