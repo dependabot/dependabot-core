@@ -1,3 +1,9 @@
+## v0.75.50, 16 November 2018
+
+- Ruby: Prefer fetching gems.rb to Gemfile
+- Python: decrease timeout from 500 to 360 seconds
+- JS: Mute sub-dependency version resolve errors
+
 ## v0.75.49, 15 November 2018
 
 - Python: Set higher timeout for Pipenv
