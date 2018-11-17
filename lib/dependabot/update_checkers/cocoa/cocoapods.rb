@@ -87,13 +87,11 @@ module Dependabot
 
         def podfile_for_update_check
           content = remove_dependency_requirement(podfile.content)
-          content = replace_ssh_links_with_https(content)
-          prepend_git_auth_details(content)
+          replace_ssh_links_with_https(content)
         end
 
         def lockfile_for_update_check
-          content = replace_ssh_links_with_https(lockfile.content)
-          prepend_git_auth_details(content)
+          replace_ssh_links_with_https(lockfile.content)
         end
 
         # Replace the original pod requirements with nothing, to fully "unlock"
@@ -118,16 +116,6 @@ module Dependabot
 
         def replace_ssh_links_with_https(content)
           content.gsub("git@github.com:", "https://github.com/")
-        end
-
-        def prepend_git_auth_details(content)
-          credential_string =
-            "#{@credentials.first['username']}:
-            #{@credentials.first['password']}"
-          content.gsub(
-            "https://github.com/",
-            "https://#{credential_string}:x-oauth-basic@github.com/"
-          )
         end
       end
     end
