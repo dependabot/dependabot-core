@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/base"
+require "dependabot/file_updaters/ruby/bundler/lockfile_updater"
 require "dependabot/errors"
 
 module Dependabot
@@ -135,7 +136,9 @@ module Dependabot
 
         def fetch_gemspec_paths
           if lockfile
-            parsed_lockfile = ::Bundler::LockfileParser.new(lockfile.content)
+            parsed_lockfile = ::Bundler::LockfileParser.new(
+              sanitized_lockfile_content
+            )
             parsed_lockfile.specs.
               select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
               map { |s| s.source.path }.uniq
@@ -154,6 +157,11 @@ module Dependabot
 
           @child_gemfiles ||=
             fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
+        end
+
+        def sanitized_lockfile_content
+          regex = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+          lockfile.content.gsub(regex, "")
         end
 
         def fetch_child_gemfiles(file:, previously_fetched_files:)

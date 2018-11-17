@@ -86,7 +86,7 @@ module Dependabot
 
           def write_temporary_dependency_files
             File.write(gemfile.name, updated_gemfile_content(gemfile))
-            File.write(lockfile.name, lockfile.content)
+            File.write(lockfile.name, sanitized_lockfile_body)
 
             top_level_gemspecs.each do |gemspec|
               File.write(
@@ -148,7 +148,7 @@ module Dependabot
           end
 
           def unlock_blocking_subdeps(dependencies_to_unlock, error)
-            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+            all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
                         specs.map(&:name).map(&:to_s)
             top_level = build_definition([]).dependencies.
                         map(&:name).map(&:to_s)
@@ -303,7 +303,7 @@ module Dependabot
             return "0.0.1" unless lockfile
 
             gemspec_specs =
-              ::Bundler::LockfileParser.new(lockfile.content).specs.
+              ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs.
               select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
 
             gem_name =
@@ -348,6 +348,10 @@ module Dependabot
             @lockfile ||=
               dependency_files.find { |f| f.name == "Gemfile.lock" } ||
               dependency_files.find { |f| f.name == "gems.locked" }
+          end
+
+          def sanitized_lockfile_body
+            lockfile.content.gsub(LOCKFILE_ENDING, "")
           end
 
           def evaled_gemfiles

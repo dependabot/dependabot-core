@@ -7,6 +7,7 @@ require "bundler_git_source_patch"
 require "excon"
 
 require "dependabot/update_checkers/ruby/bundler"
+require "dependabot/file_updaters/ruby/bundler/lockfile_updater"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -158,7 +159,7 @@ module Dependabot
             # subdependencies
             return [] unless lockfile
 
-            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+            all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
                         specs.map(&:name).map(&:to_s)
             top_level = build_definition([]).dependencies.
                         map(&:name).map(&:to_s)
@@ -241,6 +242,11 @@ module Dependabot
           def lockfile
             dependency_files.find { |f| f.name == "Gemfile.lock" } ||
               dependency_files.find { |f| f.name == "gems.locked" }
+          end
+
+          def sanitized_lockfile_body
+            re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+            lockfile.content.gsub(re, "")
           end
         end
       end

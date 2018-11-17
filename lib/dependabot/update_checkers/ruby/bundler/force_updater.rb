@@ -6,6 +6,7 @@ require "bundler_git_source_patch"
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/ruby/bundler/requirements_updater"
+require "dependabot/file_updaters/ruby/bundler/lockfile_updater"
 require "dependabot/file_parsers/ruby/bundler"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -144,7 +145,7 @@ module Dependabot
             # subdependencies
             return [] unless lockfile
 
-            all_deps =  ::Bundler::LockfileParser.new(lockfile.content).
+            all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
                         specs.map(&:name).map(&:to_s)
             top_level = ::Bundler::Definition.
                         build(gemfile.name, lockfile.name, {}).
@@ -226,6 +227,11 @@ module Dependabot
               dependency_files.find { |f| f.name == "gems.locked" }
           end
 
+          def sanitized_lockfile_body
+            re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+            lockfile.content.gsub(re, "")
+          end
+
           def library?
             dependency.version.nil?
           end
@@ -236,6 +242,8 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)
             end
+
+            File.write(lockfile.name, sanitized_lockfile_body) if lockfile
           end
 
           def relevant_credentials

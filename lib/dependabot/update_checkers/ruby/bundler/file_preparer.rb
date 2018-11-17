@@ -7,6 +7,7 @@ require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
 require "dependabot/file_updaters/ruby/bundler/git_source_remover"
 require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
 require "dependabot/file_updaters/ruby/bundler/gemspec_dependency_name_finder"
+require "dependabot/file_updaters/ruby/bundler/lockfile_updater"
 require "dependabot/update_checkers/ruby/bundler/ruby_requirement_setter"
 
 module Dependabot
@@ -247,7 +248,7 @@ module Dependabot
             return "0.0.1" unless lockfile
 
             gemspec_specs =
-              ::Bundler::LockfileParser.new(lockfile.content).specs.
+              ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs.
               select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
 
             gem_name =
@@ -259,6 +260,11 @@ module Dependabot
 
             spec = gemspec_specs.find { |s| s.name == gem_name }
             spec&.version || gemspec_specs.first&.version || "0.0.1"
+          end
+
+          def sanitized_lockfile_content
+            re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+            lockfile.content.gsub(re, "")
           end
         end
       end

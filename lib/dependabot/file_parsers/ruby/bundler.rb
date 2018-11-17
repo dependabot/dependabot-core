@@ -2,6 +2,7 @@
 
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/file_updaters/ruby/bundler/lockfile_updater"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -263,7 +264,13 @@ module Dependabot
         end
 
         def parsed_lockfile
-          @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile.content)
+          @parsed_lockfile ||=
+            ::Bundler::LockfileParser.new(sanitized_lockfile_content)
+        end
+
+        def sanitized_lockfile_content
+          regex = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+          lockfile.content.gsub(regex, "")
         end
 
         def gemspecs

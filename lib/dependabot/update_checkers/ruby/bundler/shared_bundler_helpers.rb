@@ -206,6 +206,8 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, file.content)
             end
+
+            File.write(lockfile.name, sanitized_lockfile_body) if lockfile
           end
 
           def relevant_credentials
@@ -223,6 +225,16 @@ module Dependabot
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" } ||
               dependency_files.find { |f| f.name == "gems.rb" }
+          end
+
+          def lockfile
+            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+              dependency_files.find { |f| f.name == "gems.locked" }
+          end
+
+          def sanitized_lockfile_body
+            re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+            lockfile.content.gsub(re, "")
           end
         end
       end
