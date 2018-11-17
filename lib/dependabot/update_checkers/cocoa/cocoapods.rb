@@ -40,7 +40,7 @@ module Dependabot
 
           specs = pod_analyzer.analyze.specifications
 
-          Gem::Version.new(specs.find { |d| d.name == dependency.name }.version)
+          Pod::Version.new(specs.find { |d| d.name == dependency.name }.version)
         end
 
         def pod_analyzer

@@ -85,7 +85,7 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
     context "for a dependency from the master source" do
       # Stubbing the CocoaPods spec repo is hard. Instead just spec that the
       # latest version is high
-      it { is_expected.to be >= Gem::Version.new("4.4.0") }
+      it { is_expected.to be >= Pod::Version.new("4.4.0") }
 
       context "with a version conflict at the latest version" do
         let(:podfile_content) do
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
           fixture("cocoa", "lockfiles", "version_conflict")
         end
 
-        it { is_expected.to eq(Gem::Version.new("3.5.1")) }
+        it { is_expected.to eq(Pod::Version.new("3.5.1")) }
       end
     end
 
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
       let(:podfile_content) { fixture("cocoa", "podfiles", "private_source") }
       let(:lockfile_content) { fixture("cocoa", "lockfiles", "private_source") }
 
-      it { is_expected.to eq(Gem::Version.new("4.3.0")) }
+      it { is_expected.to eq(Pod::Version.new("4.3.0")) }
     end
 
     context "for a dependency with a specified source repo (inline)" do
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do
       let(:podfile_content) { fixture("cocoa", "podfiles", "inline_source") }
       let(:lockfile_content) { fixture("cocoa", "lockfiles", "inline_source") }
 
-      it { is_expected.to eq(Gem::Version.new("4.3.0")) }
+      it { is_expected.to eq(Pod::Version.new("4.3.0")) }
     end
   end
 
