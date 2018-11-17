@@ -1,3 +1,7 @@
+## v0.75.55, 17 November 2018
+
+- Python: Boost Pipenv timeout to 10 minutes
+
 ## v0.75.54, 16 November 2018
 
 - Python: Update unsafe requirements if specified in pip-compile manifest
