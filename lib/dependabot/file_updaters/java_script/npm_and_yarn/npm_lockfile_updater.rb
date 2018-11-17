@@ -414,9 +414,20 @@ module Dependabot
           end
 
           def tarball_urls
-            [*package_locks, *shrinkwraps].flat_map do |file|
+            all_urls = [*package_locks, *shrinkwraps].flat_map do |file|
               file.content.scan(/"resolved":\s+"(.*)\"/).flatten
-            end.uniq
+            end
+            all_urls.uniq! { |url| url.gsub(/(\d+\.)*tgz$/, "") }
+
+            # If both the http:// and https:// versions of the tarball appear
+            # in the lockfile, prefer the https:// one
+            trimmed_urls = all_urls.map { |url| url.gsub(/(\d+\.)*tgz$/, "") }
+            all_urls.reject do |url|
+              next false unless url.start_with?("http:")
+
+              trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
+              trimmed_urls.include?(trimmed_url.gsub(/^http:/, "https:"))
+            end
           end
 
           def find_npm_lockfile_dependency_with_ref(ref)
