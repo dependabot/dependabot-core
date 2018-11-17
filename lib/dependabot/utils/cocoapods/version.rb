@@ -14,6 +14,11 @@ module Dependabot
         def to_s
           @version_string
         end
+
+        def self.correct?(version)
+          puts(version)
+          super(Pod::Version.new(version))
+        end
       end
     end
   end
