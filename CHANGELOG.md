@@ -1,3 +1,8 @@
+## v0.75.56, 17 November 2018
+
+- Ruby: Handle Bundler 2 lockfiles
+- JS: Make tarball protocol consistent when updating from http to https
+
 ## v0.75.55, 17 November 2018
 
 - Python: Boost Pipenv timeout to 10 minutes
