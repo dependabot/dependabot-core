@@ -135,6 +135,7 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
         )
       end
       let(:gemfile_fixture_name) { "version_specified" }
+      let(:lockfile_fixture_name) { "bundler_2.lock" }
 
       its(:length) { is_expected.to eq(2) }
 

@@ -16,4 +16,4 @@ DEPENDENCIES
   rspec-support (= 3.5.0)
 
 BUNDLED WITH
-   1.16.0
+   2.0.0.dev
