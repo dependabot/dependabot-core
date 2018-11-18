@@ -44,6 +44,11 @@ RSpec.describe Dependabot::Utils::Dotnet::Requirement do
         let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
       end
+
+      context "specified in Ruby format" do
+        let(:requirement_string) { ">= 1.0.0, < 2.0.0" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
+      end
     end
   end
 end
