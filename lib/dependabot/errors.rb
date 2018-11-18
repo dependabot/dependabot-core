@@ -22,6 +22,8 @@ module Dependabot
     end
   end
 
+  class OutOfMemory < DependabotError; end
+
   #####################
   # Repo leval errors #
   #####################

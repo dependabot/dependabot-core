@@ -157,7 +157,7 @@ module Dependabot
               source = url.gsub(%r{/packages.json$}, "")
               raise Dependabot::PrivateSourceTimedOut, source
             elsif error.message.start_with?("Allowed memory size")
-              raise "Composer out of memory"
+              raise Dependabot::OutOfMemory
             elsif error.message.start_with?("Package not found in updated") &&
                   !dependency.top_level?
               # If we can't find the dependency in the composer.lock after an

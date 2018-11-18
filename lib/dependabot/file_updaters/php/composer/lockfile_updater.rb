@@ -98,7 +98,7 @@ module Dependabot
               raise DependencyFileNotResolvable, error.message
             end
             if error.message.start_with?("Allowed memory size")
-              raise "Composer out of memory"
+              raise Dependabot::OutOfMemory
             end
 
             if error.message.include?("403 Forbidden")
