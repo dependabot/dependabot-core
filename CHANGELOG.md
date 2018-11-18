@@ -1,3 +1,8 @@
+## v0.75.58, 18 November 2018
+
+- .NET: Don't raise for uninterpolated versions
+- Raise Dependabot::OutOfMemory if Composer runs out of memory
+
 ## v0.75.57, 18 November 2018
 
 - .NET: Handle requirement strings in .NET format
