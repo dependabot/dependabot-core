@@ -36,6 +36,16 @@ module Dependabot
           ).updated_requirements
         end
 
+        def requirements_unlocked_or_can_be?
+          # If any requirements have an uninterpolated property in them then
+          # that property couldn't be found, and the requirement therefore
+          # cannot be unlocked (since we can't update that property)
+          namespace = FileParsers::Dotnet::Nuget::PropertyValueFinder
+          dependency.requirements.none? do |req|
+            req.fetch(:requirement)&.match?(namespace::PROPERTY_REGEX)
+          end
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?

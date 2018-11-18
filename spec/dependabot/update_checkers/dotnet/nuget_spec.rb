@@ -332,6 +332,43 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     end
   end
 
+  describe "#requirements_unlocked_or_can_be?" do
+    subject(:requirements_unlocked_or_can_be) do
+      checker.requirements_unlocked_or_can_be?
+    end
+
+    context "with a property dependency" do
+      let(:dependency_requirements) do
+        [{
+          requirement: "0.1.434",
+          file: "my.csproj",
+          groups: [],
+          source: nil,
+          metadata: { property_name: "NukeVersion" }
+        }]
+      end
+      let(:dependency_name) { "Nuke.Common" }
+      let(:dependency_version) { "0.1.434" }
+
+      it { is_expected.to eq(true) }
+
+      context "whose property couldn't be found" do
+        let(:dependency_requirements) do
+          [{
+            requirement: "$(NukeVersion)",
+            file: "my.csproj",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "NukeVersion" }
+          }]
+        end
+        let(:dependency_version) { "$(NukeVersion)" }
+
+        it { is_expected.to eq(false) }
+      end
+    end
+  end
+
   describe "#updated_dependencies(requirements_to_unlock: :all)" do
     subject(:updated_dependencies) do
       checker.updated_dependencies(requirements_to_unlock: :all)
