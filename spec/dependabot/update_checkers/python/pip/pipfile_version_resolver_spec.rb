@@ -130,6 +130,15 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:latest_version) { Gem::Version.new("1.7.0") }
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+      context "that no longer appears in the lockfile after updating" do
+        let(:lockfile_fixture_name) { "unnecessary_subdependency.lock" }
+        let(:dependency_name) { "setuptools" }
+        let(:dependency_version) { "40.2.0" }
+        let(:latest_version) { Gem::Version.new("41.0.0") }
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a path dependency" do
@@ -238,6 +247,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:latest_version) { Gem::Version.new("7.0.0") }
       let(:pipfile_fixture_name) { "extra_subdependency" }
       let(:lockfile_fixture_name) { "extra_subdependency.lock" }
+
       it { is_expected.to be >= Gem::Version.new("6.7.0") }
     end
 

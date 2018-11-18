@@ -112,6 +112,9 @@ module Dependabot
 
               return version if version
             end
+
+            # If the sub-dependency no longer appears in the lockfile return nil
+            nil
           end
 
           # rubocop:disable Metrics/CyclomaticComplexity
