@@ -1,3 +1,9 @@
+## v0.75.60, 18 November 2018
+
+- Python: Better Python version error handling for pip-compile
+- JS: Remove comments before parsing package.json (they shouldn't be there
+  anyway...)
+
 ## v0.75.59, 18 November 2018
 
 - Python: Handle sub-dependency updates where the sub-dep is no longer required
