@@ -82,4 +82,35 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfilePreparer do
       end
     end
   end
+
+  describe "#replace_ssh_git_urls" do
+    subject(:updated_content) { preparer.replace_ssh_git_urls }
+
+    context "with a git source that already uses https" do
+      let(:pipfile_fixture_name) { "git_source" }
+
+      it "keeps the existing https URL" do
+        expect(updated_content).
+          to include('git = "https://github.com/django/django.git"')
+      end
+    end
+
+    context "with a git source that uses ssh" do
+      let(:pipfile_fixture_name) { "git_source_ssh" }
+
+      it "switches to https" do
+        expect(updated_content).
+          to include('git = "https://github.com/requests/requests"')
+      end
+    end
+
+    context "with a git source that uses a git URL" do
+      let(:pipfile_fixture_name) { "git_source_git_url" }
+
+      it "switches to https" do
+        expect(updated_content).
+          to include('git = "https://github.com/requests/requests"')
+      end
+    end
+  end
 end

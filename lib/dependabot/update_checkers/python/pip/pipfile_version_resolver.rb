@@ -120,6 +120,7 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
@@ -144,6 +145,8 @@ module Dependabot
             if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
               url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                     named_captures.fetch("url")
+              raise if url.start_with?("ssh://", "git@")
+
               raise GitDependenciesNotReachable, url
             end
 
@@ -158,6 +161,7 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           # Needed because Pipenv's resolver isn't perfect.
           # Note: We raise errors from this method, rather than returning a
@@ -263,6 +267,7 @@ module Dependabot
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content) if unlock_requirement?
             content = add_private_sources(content)
+            content = replace_ssh_git_urls(content)
             content
           end
 
@@ -296,6 +301,12 @@ module Dependabot
             FileUpdaters::Python::Pip::PipfilePreparer.
               new(pipfile_content: pipfile_content).
               replace_sources(credentials)
+          end
+
+          def replace_ssh_git_urls(pipfile_content)
+            FileUpdaters::Python::Pip::PipfilePreparer.
+              new(pipfile_content: pipfile_content).
+              replace_ssh_git_urls
           end
 
           def check_private_sources_are_reachable

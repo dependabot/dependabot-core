@@ -1,0 +1,9 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[dev-packages]
+Pytest = "==3.4.0"
+
+[packages.requests]
+git = "ssh://git@github.com/requests/requests"
