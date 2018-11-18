@@ -1,3 +1,7 @@
+## v0.75.59, 18 November 2018
+
+- Python: Handle sub-dependency updates where the sub-dep is no longer required
+
 ## v0.75.58, 18 November 2018
 
 - .NET: Don't raise for uninterpolated versions
