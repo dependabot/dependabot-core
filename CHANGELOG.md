@@ -1,3 +1,7 @@
+## v0.75.61, 18 November 2018
+
+- .NET: Handle ruby-stype requirement strings
+
 ## v0.75.60, 18 November 2018
 
 - Python: Better Python version error handling for pip-compile
