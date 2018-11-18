@@ -32,9 +32,7 @@ module Dependabot
 
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
-            req_string.split(",").map do |r|
-              convert_dotnet_constraint_to_ruby_constraint(r.strip)
-            end
+            convert_dotnet_constraint_to_ruby_constraint(req_string)
           end
 
           super(requirements)
@@ -48,9 +46,33 @@ module Dependabot
         private
 
         def convert_dotnet_constraint_to_ruby_constraint(req_string)
+          return unless req_string
+
+          if req_string&.include?(",")
+            return convert_dotnet_range_to_ruby_range(req_string)
+          end
+
           return req_string unless req_string.include?("*")
 
           convert_wildcard_req(req_string)
+        end
+
+        def convert_dotnet_range_to_ruby_range(req_string)
+          lower_b, upper_b = req_string.split(",").map(&:strip)
+
+          lower_b =
+            if ["(", "["].include?(lower_b) then nil
+            elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
+            else ">= #{lower_b.sub(/\[\s*/, '').strip}"
+            end
+
+          upper_b =
+            if [")", "]"].include?(upper_b) then nil
+            elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
+            else "<= #{upper_b.sub(/\s*\]/, '').strip}"
+            end
+
+          [lower_b, upper_b].compact
         end
 
         def convert_wildcard_req(req_string)

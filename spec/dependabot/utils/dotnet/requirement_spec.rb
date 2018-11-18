@@ -25,5 +25,25 @@ RSpec.describe Dependabot::Utils::Dotnet::Requirement do
         it { is_expected.to eq(described_class.new("~> 1.1-a")) }
       end
     end
+
+    context "with a range requirement" do
+      let(:requirement_string) { "[1.0.0,)" }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
+
+      context "which needs a > operator" do
+        let(:requirement_string) { "(1.0.0,)" }
+        it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
+      end
+
+      context "which needs a > and a < operator" do
+        let(:requirement_string) { "(1.0.0, 2.0.0)" }
+        it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
+      end
+
+      context "which needs a >= and a <= operator" do
+        let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
+      end
+    end
   end
 end
