@@ -24,24 +24,6 @@ module Dependabot
             TomlRB.dump(pipfile_object)
           end
 
-          def replace_ssh_git_urls
-            pipfile_object = TomlRB.parse(pipfile_content)
-
-            FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
-              next unless pipfile_object[keys[:pipfile]]
-
-              pipfile_object.fetch(keys[:pipfile]).each do |dep_name, req|
-                next unless req.is_a?(Hash)
-                next unless req["git"]&.start_with?("ssh://", "git@")
-
-                pipfile_object[keys[:pipfile]][dep_name]["git"] =
-                  req["git"].gsub(%r{(?:ssh://)?git@(.*?)[:/]}, 'https://\1/')
-              end
-            end
-
-            TomlRB.dump(pipfile_object)
-          end
-
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pipfile_content unless lockfile
 
