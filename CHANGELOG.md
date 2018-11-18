@@ -1,3 +1,7 @@
+## v0.75.57, 18 November 2018
+
+- .NET: Handle requirement strings in .NET format
+
 ## v0.75.56, 17 November 2018
 
 - Ruby: Handle Bundler 2 lockfiles
