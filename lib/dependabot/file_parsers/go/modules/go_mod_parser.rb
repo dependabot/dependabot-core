@@ -74,24 +74,27 @@ module Dependabot
                   command = "GO111MODULE=on go mod edit -print > /dev/null"
                   command += " && GO111MODULE=on go list -m -json all"
                   stdout, stderr, status = Open3.capture3(command)
-                  next stdout if status.success?
-
-                  case stderr
-                  when /go: .*: unknown revision/
-                    line = stderr.lines.grep(/unknown revision/).first
-                    raise Dependabot::DependencyFileNotResolvable, line.strip
-                  when /go: .*: unrecognized import path/
-                    line = stderr.lines.grep(/unrecognized import/).first
-                    raise Dependabot::DependencyFileNotResolvable, line.strip
-                  when /go: errors parsing go.mod/
-                    msg = stderr.gsub(path.to_s, "").strip
-                    raise Dependabot::DependencyFileNotParseable.new(path, msg)
-                  else
-                    msg = stderr.gsub(path.to_s, "").strip
-                    raise Dependabot::DependencyFileNotParseable.new(path, msg)
-                  end
+                  handle_parser_error(path, stderr) unless status.success?
+                  stdout
                 end
               end
+          end
+
+          def handle_parser_error(path, stderr)
+            case stderr
+            when /go: .*: unknown revision/
+              line = stderr.lines.grep(/unknown revision/).first
+              raise Dependabot::DependencyFileNotResolvable, line.strip
+            when /go: .*: unrecognized import path/
+              line = stderr.lines.grep(/unrecognized import/).first
+              raise Dependabot::DependencyFileNotResolvable, line.strip
+            when /go: errors parsing go.mod/
+              msg = stderr.gsub(path.to_s, "").strip
+              raise Dependabot::DependencyFileNotParseable.new(path, msg)
+            else
+              msg = stderr.gsub(path.to_s, "").strip
+              raise Dependabot::DependencyFileNotParseable.new(path, msg)
+            end
           end
 
           def rev_identifier?(dep)
