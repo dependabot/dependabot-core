@@ -1,3 +1,8 @@
+## v0.75.65, 19 November 2018
+
+- JS: Handle no lockfile when completing npmrc
+- JS: Raise git not reachable for ssh://git
+
 ## v0.75.64, 19 November 2018
 
 - JS: Handle environment variables in npmrc in unexpected places
