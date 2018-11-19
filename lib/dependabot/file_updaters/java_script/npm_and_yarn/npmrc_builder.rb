@@ -88,7 +88,7 @@ module Dependabot
           def complete_npmrc_from_credentials
             initial_content = npmrc_file.content.
                               gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
-
+            return initial_content unless yarn_lock || package_lock
             return initial_content unless global_registry
 
             initial_content +
