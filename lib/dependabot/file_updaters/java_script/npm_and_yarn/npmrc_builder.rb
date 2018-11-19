@@ -86,16 +86,15 @@ module Dependabot
           end
 
           def complete_npmrc_from_credentials
-            initial_content =
-              npmrc_file.content.
-              gsub(/^.*:_authToken=\$.*/, "").
-              gsub(/^.*:_auth=\$.*/, "")
+            initial_content = npmrc_file.content.
+                              gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
 
-            return initial_content unless (cred = registry_credentials.first)
+            return initial_content unless global_registry
 
-            initial_content.gsub(/^_auth\s*=\s*\${.*}/) do |ln|
-              ln.sub(/\${.*}/, cred.fetch("token"))
-            end
+            initial_content +
+              "registry = https://#{global_registry['registry']}\n"\
+              "#{global_registry_auth_line}\n"\
+              "always-auth = true\n"
           end
 
           def build_npmrc_from_yarnrc
