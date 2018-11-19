@@ -118,15 +118,15 @@ module Dependabot
 
     def self.configure_git_to_use_https
       run_shell_command(
-        'git config --global --replace-all url."https://github.com/".'\
+        'git config --system --replace-all url."https://github.com/".'\
         "insteadOf ssh://git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
+        'git config --system --add url."https://github.com/".'\
         "insteadOf ssh://git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
+        'git config --system --add url."https://github.com/".'\
         "insteadOf git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
+        'git config --system --add url."https://github.com/".'\
         "insteadOf git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
+        'git config --system --add url."https://github.com/".'\
         "insteadOf git://github.com/"
       )
     end
@@ -136,12 +136,12 @@ module Dependabot
       # (requires git 2.9 or greater). This is required so that any --system
       # credential helpers aren't used.
       run_shell_command(
-        "git config --global --replace-all credential.helper ''"
+        "git config --system --replace-all credential.helper ''"
       )
 
       # Then add a file-based credential store that loads a file in this repo
       run_shell_command(
-        "git config --global credential.helper "\
+        "git config --system credential.helper "\
         "'store --file=#{Dir.pwd}/git.store'"
       )
 
@@ -163,8 +163,8 @@ module Dependabot
 
     def self.reset_git_config
       run_shell_command(
-        'git config --global --remove-section url."https://github.com/" '\
-        "&& git config --global --remove-section credential"
+        'git config --system --remove-section url."https://github.com/" '\
+        "&& git config --system --remove-section credential"
       )
     end
 

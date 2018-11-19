@@ -179,7 +179,6 @@ module Dependabot
               dependency_url =
                 error.message.match(UNREACHABLE_GIT).
                 named_captures.fetch("url")
-              raise if dependency_url.start_with?("ssh://")
 
               raise Dependabot::GitDependenciesNotReachable, dependency_url
             end
