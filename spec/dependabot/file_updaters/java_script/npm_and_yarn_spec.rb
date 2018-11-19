@@ -1140,6 +1140,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             end
           end
 
+          context "when there is a private git dep we don't have access to" do
+            let(:files) { [package_json, package_lock] }
+
+            let(:manifest_fixture_name) { "github_dependency_private.json" }
+            let(:npm_lock_fixture_name) { "github_dependency_private.json" }
+
+            let(:dependency_name) { "strict-uri-encode" }
+            let(:version) { "1.1.0" }
+            let(:requirements) { [] }
+
+            it "raises a helpful error" do
+              expect { updater.updated_dependency_files }.
+                to raise_error(Dependabot::GitDependenciesNotReachable)
+            end
+          end
+
           context "because we're updating to a non-existant version" do
             let(:yarn_lock_fixture_name) { "yarn.lock" }
             let(:npm_lock_fixture_name) { "package-lock.json" }
