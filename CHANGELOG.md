@@ -1,3 +1,8 @@
+## v0.75.66, 19 November 2018
+
+- PHP: Raise dependency file not resolvable if tarball can't be downloaded
+- Switch back to using --global for git configuration
+
 ## v0.75.65, 19 November 2018
 
 - JS: Handle no lockfile when completing npmrc
