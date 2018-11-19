@@ -117,31 +117,33 @@ module Dependabot
     end
 
     def self.configure_git_to_use_https
+      # Note: we use --global here (rather than --system) so that Dependabot
+      # can be run without privileged access
       run_shell_command(
-        'git config --system --replace-all url."https://github.com/".'\
+        'git config --global --replace-all url."https://github.com/".'\
         "insteadOf ssh://git@github.com/ && "\
-        'git config --system --add url."https://github.com/".'\
+        'git config --global --add url."https://github.com/".'\
         "insteadOf ssh://git@github.com: && "\
-        'git config --system --add url."https://github.com/".'\
+        'git config --global --add url."https://github.com/".'\
         "insteadOf git@github.com: && "\
-        'git config --system --add url."https://github.com/".'\
+        'git config --global --add url."https://github.com/".'\
         "insteadOf git@github.com/ && "\
-        'git config --system --add url."https://github.com/".'\
+        'git config --global --add url."https://github.com/".'\
         "insteadOf git://github.com/"
       )
     end
 
     def self.configure_git_credentials(credentials)
       # First, reset the credential helpers by appending an empty string to them
-      # (requires git 2.9 or greater). This is required so that any --system
+      # (requires git 2.9 or greater). This is required so that any --global
       # credential helpers aren't used.
       run_shell_command(
-        "git config --system --replace-all credential.helper ''"
+        "git config --global --replace-all credential.helper ''"
       )
 
       # Then add a file-based credential store that loads a file in this repo
       run_shell_command(
-        "git config --system credential.helper "\
+        "git config --global credential.helper "\
         "'store --file=#{Dir.pwd}/git.store'"
       )
 
@@ -163,8 +165,8 @@ module Dependabot
 
     def self.reset_git_config
       run_shell_command(
-        'git config --system --remove-section url."https://github.com/" '\
-        "&& git config --system --remove-section credential"
+        'git config --global --remove-section url."https://github.com/" '\
+        "&& git config --global --remove-section credential"
       )
     end
 
