@@ -4,6 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers/base"
 require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 # For docs, see https://hexdocs.pm/mix/Mix.Tasks.Deps.html
 module Dependabot
@@ -47,9 +48,21 @@ module Dependabot
               env: mix_env,
               command: "mix run #{elixir_helper_path}",
               function: "parse",
-              args: [Dir.pwd]
+              args: [Dir.pwd],
+              popen_opts: { err: %i(child out) }
             )
           end
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+          result_json =
+            error.message.lines.
+            drop_while { |l| !l.start_with?('{"result":') }.
+            join("\n")
+
+          if result_json.empty?
+            raise DependencyFileNotEvaluatable, error.message
+          end
+
+          JSON.parse(result_json).fetch("result")
         end
 
         def write_sanitized_mixfiles

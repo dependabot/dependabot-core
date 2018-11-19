@@ -289,6 +289,19 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       its(:length) { is_expected.to eq(7) }
     end
 
+    context "with an unevaluatable mixfile" do
+      let(:mixfile_fixture_name) { "unevaluatable" }
+      let(:lockfile_fixture_name) { "minor_version" }
+
+      it "raises a helpful error" do
+        expect { parser.parse }.
+          to raise_error do |error|
+            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+            expect(error.message).to include("Random error!")
+          end
+      end
+    end
+
     context "with a call to read a version file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
