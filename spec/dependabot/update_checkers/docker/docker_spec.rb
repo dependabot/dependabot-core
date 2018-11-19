@@ -326,6 +326,16 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
         let(:version) { "2.0-runtime" }
         it { is_expected.to eq("2.1.3-runtime") }
       end
+
+      context "when the latest tag 404s" do
+        before do
+          stub_request(:head, repo_url + "manifests/latest").
+            and_return(status: 404)
+        end
+
+        # Assume the latest is the highest version if digests can't be fetched
+        it { is_expected.to eq("2.2-sdk") }
+      end
     end
 
     context "when the dependency's version has a suffix with periods" do

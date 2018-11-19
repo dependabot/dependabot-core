@@ -200,6 +200,10 @@ module Dependabot
           return unless tags_from_registry.include?("latest")
 
           digest_of("latest")
+        rescue DockerRegistry2::NotFound
+          # Sometimes Dockerhub refuses to return a digest, in which case we
+          # treat the repo as if it didn't have a `latest` tag
+          nil
         end
 
         def digest_of(tag)
