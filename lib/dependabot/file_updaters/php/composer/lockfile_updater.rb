@@ -97,6 +97,9 @@ module Dependabot
             if error.message.start_with?("Unknown downloader type: npm-signatu")
               raise DependencyFileNotResolvable, error.message
             end
+            if error.message.include?("file could not be downloaded")
+              raise DependencyFileNotResolvable, error.message
+            end
             if error.message.start_with?("Allowed memory size")
               raise Dependabot::OutOfMemory
             end
