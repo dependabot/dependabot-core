@@ -1,3 +1,7 @@
+## v0.75.63, 19 November 2018
+
+- Go (modules): catch go.mod major version issues in the parser
+
 ## v0.75.62, 19 November 2018
 
 - Ruby: Better gemspec sanitization (handle tapped blocks)
