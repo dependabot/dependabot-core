@@ -1,3 +1,7 @@
+## v0.75.64, 19 November 2018
+
+- JS: Handle environment variables in npmrc in unexpected places
+
 ## v0.75.63, 19 November 2018
 
 - Go (modules): catch go.mod major version issues in the parser
