@@ -71,7 +71,8 @@ module Dependabot
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   File.write("go.mod", go_mod.content)
 
-                  command = "GO111MODULE=on go list -m -json all"
+                  command = "GO111MODULE=on go mod edit -print > /dev/null"
+                  command += " && GO111MODULE=on go list -m -json all"
                   stdout, stderr, status = Open3.capture3(command)
                   next stdout if status.success?
 
@@ -83,11 +84,11 @@ module Dependabot
                     line = stderr.lines.grep(/unrecognized import/).first
                     raise Dependabot::DependencyFileNotResolvable, line.strip
                   when /go: errors parsing go.mod/
-                    error_msg = stderr.gsub(path.to_s, "").strip
-                    raise Dependabot::DependencyFileNotParseable, error_msg
+                    msg = stderr.gsub(path.to_s, "").strip
+                    raise Dependabot::DependencyFileNotParseable.new(path, msg)
                   else
-                    error_msg = stderr.gsub(path.to_s, "").strip
-                    raise Dependabot::DependencyFileNotParseable, error_msg
+                    msg = stderr.gsub(path.to_s, "").strip
+                    raise Dependabot::DependencyFileNotParseable.new(path, msg)
                   end
                 end
               end
