@@ -78,6 +78,11 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
       end
     end
 
+    context "when the user is using an unfound property" do
+      let(:dependency_version) { "$PackageVersion_LibGit2SharpNativeBinaries" }
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }

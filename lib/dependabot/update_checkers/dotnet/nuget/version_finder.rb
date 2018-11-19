@@ -108,6 +108,7 @@ module Dependabot
 
           def wants_prerelease?
             if dependency.version &&
+               version_class.correct?(dependency.version) &&
                version_class.new(dependency.version).prerelease?
               return true
             end
