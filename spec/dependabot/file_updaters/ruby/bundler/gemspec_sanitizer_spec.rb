@@ -88,6 +88,17 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
           let(:content) { %(Spec.new { |s| s.version = Example::VERSION.dup }) }
           it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
         end
+
+        context "that is tapped" do
+          let(:content) do
+            %(Spec.new { |s| s.version = Example::VERSION.dup }.tap { |a| "h" })
+          end
+          it do
+            is_expected.to eq(
+              %(Spec.new { |s| s.version = "1.5.0" }.tap { |a| "h" })
+            )
+          end
+        end
       end
 
       context "with an assignment to a variable" do

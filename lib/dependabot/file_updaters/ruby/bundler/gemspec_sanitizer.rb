@@ -50,17 +50,15 @@ module Dependabot
 
               # Remove any assignments to a VERSION constant (or similar), as
               # that constant probably comes from a required file
-              replace_constant(node) if node_assigns_to_version_constant?(node)
+              replace_version_assignments(node)
 
               # Replace the `s.files= ...` assignment with a blank array, as
               # occassionally a File.open(..).readlines pattern is used
-              replace_file_assignment(node) if node_assigns_files_to_var?(node)
+              replace_file_assignments(node)
 
               # Replace the `s.require_path= ...` assignment, as
               # occassionally a Dir['lib'] pattern is used
-              if node_assigns_require_paths?(node)
-                replace_require_paths_assignment(node)
-              end
+              replace_require_paths_assignments(node)
 
               # Replace any `File.read(...)` calls with a dummy string
               replace_file_reads(node)
@@ -74,6 +72,38 @@ module Dependabot
 
             def requires_file?(node)
               %i(require require_relative).include?(node.children[1])
+            end
+
+            def replace_version_assignments(node)
+              return unless node.is_a?(Parser::AST::Node)
+
+              if node_assigns_to_version_constant?(node)
+                return replace_constant(node)
+              end
+
+              node.children.each { |child| replace_version_assignments(child) }
+            end
+
+            def replace_file_assignments(node)
+              return unless node.is_a?(Parser::AST::Node)
+
+              if node_assigns_files_to_var?(node)
+                return replace_file_assignment(node)
+              end
+
+              node.children.each { |child| replace_file_assignments(child) }
+            end
+
+            def replace_require_paths_assignments(node)
+              return unless node.is_a?(Parser::AST::Node)
+
+              if node_assigns_require_paths?(node)
+                return replace_require_paths_assignment(node)
+              end
+
+              node.children.each do |child|
+                replace_require_paths_assignments(child)
+              end
             end
 
             def node_assigns_to_version_constant?(node)
