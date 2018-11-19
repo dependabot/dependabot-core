@@ -1,3 +1,7 @@
+## v0.75.62, 19 November 2018
+
+- Ruby: Better gemspec sanitization (handle tapped blocks)
+
 ## v0.75.61, 18 November 2018
 
 - .NET: Handle ruby-stype requirement strings
