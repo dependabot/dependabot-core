@@ -216,6 +216,18 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
       end
     end
 
+    context "with a git subdependency" do
+      let(:manifest_fixture_name) { "git_subdependency" }
+      let(:lockfile_fixture_name) { "git_subdependency" }
+
+      let(:dependency_name) { "cranelift-bforest" }
+      let(:dependency_version) { "ede366644f3777d43448367df1af86e52c21660b" }
+      let(:requirements) { [] }
+      let(:crates_response) { nil }
+
+      it { is_expected.to be_nil }
+    end
+
     context "with a path dependency" do
       let(:requirements) do
         [{
@@ -315,6 +327,18 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
 
         it { is_expected.to eq("74dc0260efd2c5e17c35643a2b47dc508ec823fd") }
       end
+    end
+
+    context "with a git subdependency" do
+      let(:manifest_fixture_name) { "git_subdependency" }
+      let(:lockfile_fixture_name) { "git_subdependency" }
+
+      let(:dependency_name) { "cranelift-bforest" }
+      let(:dependency_version) { "ede366644f3777d43448367df1af86e52c21660b" }
+      let(:requirements) { [] }
+      let(:crates_response) { nil }
+
+      it { is_expected.to be_nil }
     end
   end
 

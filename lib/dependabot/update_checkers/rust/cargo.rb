@@ -18,6 +18,10 @@ module Dependabot
           @latest_version =
             if git_dependency?
               latest_version_for_git_dependency
+            elsif git_subdependency?
+              # TODO: Dependabot can't update git sub-dependencies yet, because
+              # they can't be passed to GitCommitChecker.
+              nil
             else
               versions = available_versions
               versions.reject!(&:prerelease?) unless wants_prerelease?
@@ -34,6 +38,10 @@ module Dependabot
           @latest_resolvable_version ||=
             if git_dependency?
               latest_resolvable_version_for_git_dependency
+            elsif git_subdependency?
+              # TODO: Dependabot can't update git sub-dependencies yet, because
+              # they can't be passed to GitCommitChecker.
+              nil
             else
               fetch_latest_resolvable_version(unlock_requirement: true)
             end
@@ -226,6 +234,12 @@ module Dependabot
 
         def git_dependency?
           git_commit_checker.git_dependency?
+        end
+
+        def git_subdependency?
+          return false if dependency.top_level?
+
+          !version_class.correct?(dependency.version)
         end
 
         def path_dependency?
