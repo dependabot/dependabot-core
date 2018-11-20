@@ -1,3 +1,12 @@
+## v0.75.67, 20 November 2018
+
+- Rust: Handle git sub-dependencies
+- .NET: Handle unfound property versions in VersionFinder
+- Python: Bump poetry from 0.12.8 to 0.12.9
+- Elixir: Handle unevaluatable Mixfiles
+- Docker: Handle Dockerhub 404s when looking up latest version digest
+- JS: Handle unreachable git dependencies in Yarn lockfile updater
+
 ## v0.75.66, 19 November 2018
 
 - PHP: Raise dependency file not resolvable if tarball can't be downloaded
