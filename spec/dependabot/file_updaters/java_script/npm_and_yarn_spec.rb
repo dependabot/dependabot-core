@@ -1420,6 +1420,38 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             to eq("5.7.3")
         end
       end
+
+      # Note: this will never fail locally on a Mac
+      context "with an incompatible os" do
+        let(:manifest_fixture_name) { "os_mismatch.json" }
+        let(:npm_lock_fixture_name) { "os_mismatch.json" }
+
+        let(:dependency_name) { "fsevents" }
+        let(:version) { "1.2.4" }
+        let(:previous_version) { "1.2.2" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.2.4",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.2.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the version" do
+          parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_npm_lock["dependencies"]["fsevents"]["version"]).
+            to eq("1.2.4")
+        end
+      end
     end
 
     #######################

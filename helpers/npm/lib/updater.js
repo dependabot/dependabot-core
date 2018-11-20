@@ -30,7 +30,11 @@ async function updateDependencyFiles(
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
+  // `force: true` ignores checks for platform (os, cpu) and engines
+  // in npm/lib/install/validate-args.js
+  // Platform is checked and raised from (EBADPLATFORM):
+  // https://github.com/npm/npm-install-checks
+  await runAsync(npm, npm.load, [{ loglevel: "silent", force: true }]);
   const oldPackage = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
