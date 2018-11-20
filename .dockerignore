@@ -1,0 +1,6 @@
+/.bundle
+/.git
+/tmp/
+/helpers
+/spec
+gitignored
