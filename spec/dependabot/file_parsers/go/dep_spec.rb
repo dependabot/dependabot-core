@@ -49,7 +49,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
     describe "top level dependencies" do
       subject(:dependencies) { parser.parse.select(&:top_level?) }
 
-      its(:length) { is_expected.to eq(11) }
+      its(:length) { is_expected.to eq(9) }
 
       describe "a regular version dependency" do
         subject(:dependency) do
@@ -184,6 +184,18 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
                 }
               }]
             )
+          end
+        end
+
+        context "that is missing a version in its manifest and lockfile" do
+          let(:manifest_fixture_name) { "missing_version.toml" }
+          let(:lockfile_fixture_name) { "missing_version.lock" }
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "github.com/caarlos0/env" }
+          end
+
+          it "is filtered out" do
+            expect(dependency).to be_nil
           end
         end
 
