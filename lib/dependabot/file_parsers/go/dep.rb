@@ -37,6 +37,7 @@ module Dependabot
           REQUIREMENT_TYPES.each do |type|
             parsed_file(manifest).fetch(type, []).each do |details|
               next if lockfile && !appears_in_lockfile?(details.fetch("name"))
+              next if missing_version_in_manifest_and_lockfile(details)
 
               dependency_set << Dependency.new(
                 name: details.fetch("name"),
@@ -145,6 +146,16 @@ module Dependabot
           %w(Gopkg.toml Gopkg.lock).each do |filename|
             raise "No #{filename}!" unless get_original_file(filename)
           end
+        end
+
+        def missing_version_in_manifest_and_lockfile(declaration)
+          return false if git_declaration?(declaration)
+
+          lockfile_decl =
+            parsed_file(lockfile).
+            fetch("projects", []).
+            find { |details| details["name"] == declaration["name"] }
+          lockfile_decl&.fetch("version", nil).nil?
         end
       end
     end
