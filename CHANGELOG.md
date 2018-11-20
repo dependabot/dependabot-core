@@ -1,3 +1,8 @@
+## v0.75.73, 20 November 2018
+
+- Trim spec.files in gemspec, speeding up docker development
+- Fix typo in Poetry updater
+
 ## v0.75.72, 20 November 2018
 
 - Python: Another attempt to fix poetry
