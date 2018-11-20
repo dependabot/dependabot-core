@@ -32,6 +32,24 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PyprojectPreparer do
     end
   end
 
+  describe "#sanitize" do
+    subject(:sanitized_content) { preparer.sanitize }
+
+    context "with a pyproject that doesn't need sanitizing" do
+      it { is_expected.to eq(pyproject_content) }
+    end
+
+    context "with a pyproject that has a {{ name }} variable" do
+      let(:pyproject_content) do
+        fixture("python", "pyproject_files", "needs_sanitization.toml")
+      end
+
+      it "replaces the {{ name }} variable" do
+        expect(sanitized_content).to include('name = "something"')
+      end
+    end
+  end
+
   describe "#freeze_top_level_dependencies_except" do
     subject(:freeze_top_level_dependencies_except) do
       preparer.freeze_top_level_dependencies_except(dependencies, lockfile)

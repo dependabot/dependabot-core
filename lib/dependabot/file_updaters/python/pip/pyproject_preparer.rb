@@ -24,6 +24,11 @@ module Dependabot
             TomlRB.dump(pyproject_object)
           end
 
+          def sanitize
+            # {{ name }} syntax not allowed
+            pyproject_content.gsub(/\{\{.*?\}\}/, "something")
+          end
+
           # rubocop:disable Metrics/PerceivedComplexity
           def freeze_top_level_dependencies_except(dependencies, lockfile)
             return pyproject_content unless lockfile

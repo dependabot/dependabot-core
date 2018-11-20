@@ -87,6 +87,11 @@ RSpec.describe namespace::PoetryVersionResolver do
           )
         end
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+
+        context "when the pyproject.toml needs to be sanitized" do
+          let(:pyproject_fixture_name) { "needs_sanitization.toml" }
+          it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+        end
       end
     end
 

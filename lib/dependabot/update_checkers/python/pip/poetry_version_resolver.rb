@@ -89,11 +89,15 @@ module Dependabot
             File.write(".python-version", python_version) if python_version
 
             # Overwrite the pyproject with updated content
-            File.write("pyproject.toml", pyproject_content) if update_pyproject
+            if update_pyproject
+              File.write("pyproject.toml", updated_pyproject_content)
+            else
+              File.write("pyproject.toml", sanitized_pyproject_content)
+            end
           end
 
           def python_version
-            pyproject_object = TomlRB.parse(pyproject_content)
+            pyproject_object = TomlRB.parse(pyproject.content)
             poetry_object = pyproject_object.dig("tool", "poetry")
 
             requirement =
@@ -112,11 +116,24 @@ module Dependabot
             end
           end
 
-          def pyproject_content
+          def updated_pyproject_content
             content = pyproject.content
+            content = sanitize_pyproject_content(content)
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content) if unlock_requirement?
             content
+          end
+
+          def sanitized_pyproject_content
+            content = pyproject.content
+            content = sanitize_pyproject_content(content)
+            content
+          end
+
+          def sanitize_pyproject_content(pyproject_content)
+            FileUpdaters::Python::Pip::PyprojectPreparer.
+              new(pyproject_content: pyproject_content).
+              sanitize
           end
 
           def freeze_other_dependencies(pyproject_content)

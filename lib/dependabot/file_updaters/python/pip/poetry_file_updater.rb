@@ -102,6 +102,7 @@ module Dependabot
             content = freeze_other_dependencies(content)
             content = freeze_dependencies_being_updated(content)
             content = add_private_sources(content)
+            content = sanitize(content)
             content
           end
 
@@ -136,6 +137,12 @@ module Dependabot
             PyprojectPreparer.
               new(pyproject_content: pyproject_content).
               replace_sources(credentials)
+          end
+
+          def sanitize(pyproject_content)
+            PyprojectPreparer.
+              new(pyproject_content: pyproject_content).
+              sanitize
           end
 
           def updated_lockfile_content_for(pyproject_content)
