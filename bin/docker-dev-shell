@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# NOTE: Most native helpers are excluded - you can enable them as and when you
+#       need them. This is because Bundler (apparently) looks recursively at
+#       every subdirectory of the current directory when booting, which is
+#       extremely slow over the Docker for Mac filesystem bridge.
+
+echo "=> building dockerfile"
+docker build -t dependabot/dependabot-core-development -f Dockerfile.development .
+
+echo "=> running docker development shell"
+docker run --rm -ti \
+  -v "$(pwd)/Gemfile:/code/Gemfile" \
+  -v "$(pwd)/Gemfile.lock:/code/Gemfile.lock" \
+  -v "$(pwd)/dependabot-core.gemspec:/code/dependabot-core.gemspec" \
+  -v "$(pwd)/bin:/code/bin" \
+  -v "$(pwd)/lib:/code/lib" \
+  -v "$(pwd)/spec:/code/spec" \
+  -v "$(pwd)/helpers/python:/code/helpers/python" \
+  dependabot/dependabot-core-development bash
