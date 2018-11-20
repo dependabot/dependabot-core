@@ -55,7 +55,9 @@ module Dependabot
 
                 if python_version
                   run_poetry_command("pyenv install -s")
-                  run_poetry_command("pyenv exec pip install poetry")
+                  run_poetry_command(
+                    "pyenv exec pip install -r #{python_requirements_path}"
+                  )
                 end
 
                 # Shell out to Poetry, which handles everything for us.
@@ -281,6 +283,11 @@ module Dependabot
             @pyproject_sources ||=
               sources.
               map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+          end
+
+          def python_requirements_path
+            project_root = File.join(File.dirname(__FILE__), "../../../../..")
+            File.join(project_root, "helpers/python/requirements.txt")
           end
         end
       end
