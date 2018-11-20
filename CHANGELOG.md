@@ -1,3 +1,7 @@
+## v0.75.69, 20 November 2018
+
+- Go (dep): ignore some tricky git dependencies
+
 ## v0.75.68, 20 November 2018
 
 - Maven: Allow version updates that come via a parent_pom
