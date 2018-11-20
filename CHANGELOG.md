@@ -1,3 +1,7 @@
+## v0.75.70, 20 November 2018
+
+- Python: Install all requirments for different python versions
+
 ## v0.75.69, 20 November 2018
 
 - Go (dep): ignore some tricky git dependencies
