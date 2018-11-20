@@ -146,7 +146,7 @@ module Dependabot
         end
 
         def original_pomfiles
-          @pomfiles ||=
+          @original_pomfiles ||=
             dependency_files.select { |f| f.name.end_with?("pom.xml") }
         end
       end
