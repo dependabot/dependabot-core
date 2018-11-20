@@ -1,8 +1,8 @@
 FROM dependabot/dependabot-core
 
-RUN mkdir -p /code/lib/dependabot
+RUN mkdir -p /code/lib/dependabot /code/helpers
 WORKDIR /code
 
-COPY Gemfile Gemfile.lock dependabot-core.gemspec /code/
+COPY Gemfile Gemfile.lock dependabot-core.gemspec .gitignore /code/
 COPY lib/dependabot/version.rb /code/lib/dependabot/
 RUN bundle install

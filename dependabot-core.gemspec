@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "find"
 require "./lib/dependabot/version"
 
 Gem::Specification.new do |spec|
@@ -15,8 +16,16 @@ Gem::Specification.new do |spec|
   spec.license      = "License Zero Prosperity Public License"
 
   spec.require_path = "lib"
-  spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
-                          "lib/**/*", "helpers/**/*"]
+  spec.files        = ["CHANGELOG.md", "LICENSE", "README.md"]
+
+  ignores = File.readlines(".gitignore").grep(/\S+/).map(&:chomp)
+  Find.find("lib", "helpers") do |path|
+    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
+      Find.prune
+    else
+      spec.files << path unless File.directory?(path)
+    end
+  end
 
   spec.required_ruby_version = ">= 2.5.0"
   spec.required_rubygems_version = ">= 2.7.3"
