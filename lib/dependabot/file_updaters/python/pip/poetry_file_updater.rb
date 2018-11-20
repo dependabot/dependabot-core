@@ -149,8 +149,11 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(pyproject_content)
 
-              run_poetry_command("pyenv install -s")
-              run_poetry_command("pyenv exec pip install poetry")
+              if python_version
+                run_poetry_command("pyenv install -s")
+                run_poetry_command("pyenv exec pip install poetry")
+              end
+
               run_poetry_command("pyenv exec poetry lock")
 
               return File.read("poetry.lock") if File.exist?("poetry.lock")

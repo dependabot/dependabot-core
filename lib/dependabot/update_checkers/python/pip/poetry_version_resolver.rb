@@ -53,10 +53,13 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
+                if python_version
+                  run_poetry_command("pyenv install -s")
+                  run_poetry_command("pyenv exec pip install poetry")
+                end
+
                 # Shell out to Poetry, which handles everything for us.
                 # Calling `lock` avoids doing an install.
-                run_poetry_command("pyenv install -s")
-                run_poetry_command("pyenv exec pip install poetry")
                 run_poetry_command("pyenv exec poetry lock")
 
                 updated_lockfile =
