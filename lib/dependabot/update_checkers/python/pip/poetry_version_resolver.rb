@@ -122,7 +122,7 @@ module Dependabot
           end
 
           def pre_installed_python?(version)
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?("version")
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
           end
 
           def updated_pyproject_content

@@ -208,7 +208,7 @@ module Dependabot
           end
 
           def pre_installed_python?(version)
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?("version")
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
           end
 
           def pyproject_hash_for(pyproject_content)
