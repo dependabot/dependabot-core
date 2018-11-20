@@ -56,7 +56,7 @@ module Dependabot
           result_json =
             error.message.lines.
             drop_while { |l| !l.start_with?('{"result":') }.
-            join("\n")
+            join
 
           if result_json.empty?
             raise DependencyFileNotEvaluatable, error.message
