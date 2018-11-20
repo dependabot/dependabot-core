@@ -138,38 +138,32 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
           Dependabot::Dependency.new(
             name: "org.apache.maven.plugins:maven-javadoc-plugin",
             version: "3.0.0-M2",
-            requirements: [
-              {
-                file: "pom.xml",
-                requirement: "3.0.0-M2",
-                groups: [],
-                source: nil,
-                metadata: { property_name: "maven-javadoc-plugin.version" }
-              },
-              {
-                file: "pom.xml",
-                requirement: "3.0.0-M2",
-                groups: [],
-                source: nil,
-                metadata: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                file: "pom.xml",
-                requirement: "3.0.0-M1",
-                groups: [],
-                source: nil,
-                metadata: { property_name: "maven-javadoc-plugin.version" }
-              },
-              {
-                file: "pom.xml",
-                requirement: "2.10.4",
-                groups: [],
-                source: nil,
-                metadata: nil
-              }
-            ],
+            requirements: [{
+              file: "pom.xml",
+              requirement: "3.0.0-M2",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "maven-javadoc-plugin.version" }
+            }, {
+              file: "pom.xml",
+              requirement: "3.0.0-M2",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "3.0.0-M1",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "maven-javadoc-plugin.version" }
+            }, {
+              file: "pom.xml",
+              requirement: "2.10.4",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
             package_manager: "maven"
           )
         end
@@ -185,38 +179,32 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             Dependabot::Dependency.new(
               name: "org.apache.maven.plugins:maven-javadoc-plugin",
               version: "3.0.0-M2",
-              requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "3.0.0-M2",
-                  groups: [],
-                  source: { type: "maven_repo", url: "https://some.repo.com" },
-                  metadata: nil
-                },
-                {
-                  file: "pom.xml",
-                  requirement: "3.0.0-M2",
-                  groups: [],
-                  source: { type: "maven_repo", url: "https://some.repo.com" },
-                  metadata: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "pom.xml",
-                  requirement: "3.0.0-M2",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                },
-                {
-                  file: "pom.xml",
-                  requirement: "2.10.4",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                }
-              ],
+              requirements: [{
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: { type: "maven_repo", url: "https://some.repo.com" },
+                metadata: nil
+              }, {
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: { type: "maven_repo", url: "https://some.repo.com" },
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "3.0.0-M2",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }, {
+                file: "pom.xml",
+                requirement: "2.10.4",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
               package_manager: "maven"
             )
           end
@@ -514,38 +502,32 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
       context "for a dependency inherited by others" do
         let(:dependency_requirements) do
-          [
-            {
-              requirement: "23.6-jre",
-              file: "pom.xml",
-              groups: [],
-              source: nil,
-              metadata: { property_name: "guava.version" }
-            },
-            {
-              requirement: nil,
-              file: "util/pom.xml",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            requirement: "23.6-jre",
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "guava.version" }
+          }, {
+            requirement: nil,
+            file: "util/pom.xml",
+            groups: [],
+            source: nil
+          }]
         end
         let(:dependency_previous_requirements) do
-          [
-            {
-              requirement: "23.0-jre",
-              file: "pom.xml",
-              groups: [],
-              source: nil,
-              metadata: { property_name: "guava.version" }
-            },
-            {
-              requirement: nil,
-              file: "util/pom.xml",
-              groups: [],
-              source: nil
-            }
-          ]
+          [{
+            requirement: "23.0-jre",
+            file: "pom.xml",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "guava.version" }
+          }, {
+            requirement: nil,
+            file: "util/pom.xml",
+            groups: [],
+            source: nil
+          }]
         end
         let(:dependency_name) { "com.google.guava:guava" }
         let(:dependency_version) { "23.6-jre" }
