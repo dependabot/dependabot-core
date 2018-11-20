@@ -15,7 +15,7 @@ module Dependabot
         end
 
         def updated_dependency_files
-          updated_files = pomfiles.dup
+          updated_files = dependency_files.dup
 
           # Loop through each of the changed requirements, applying changes to
           # all pomfiles for that change. Note that the logic is different here
@@ -28,7 +28,8 @@ module Dependabot
             )
           end
 
-          updated_files = updated_files.reject { |f| pomfiles.include?(f) }
+          updated_files.select! { |f| f.name.end_with?("pom.xml") }
+          updated_files.reject! { |f| original_pomfiles.include?(f) }
 
           raise "No files changed!" if updated_files.none?
           if updated_files.any? { |f| f.name.end_with?("pom_parent.xml") }
@@ -144,7 +145,7 @@ module Dependabot
           )
         end
 
-        def pomfiles
+        def original_pomfiles
           @pomfiles ||=
             dependency_files.select { |f| f.name.end_with?("pom.xml") }
         end
