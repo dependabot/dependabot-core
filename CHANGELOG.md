@@ -1,3 +1,7 @@
+## v0.75.74, 20 November 2018
+
+- JS: Fix dependency updates with os requirements (npm)
+
 ## v0.75.73, 20 November 2018
 
 - Trim spec.files in gemspec, speeding up docker development
