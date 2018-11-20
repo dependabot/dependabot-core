@@ -53,9 +53,8 @@ module Dependabot
               SharedHelpers.in_a_temporary_directory do
                 write_temporary_dependency_files
 
-                if python_version
+                if python_version && !pre_installed_python?(python_version)
                   run_poetry_command("pyenv install -s")
-                  run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
                     "pyenv exec pip install -r #{python_requirements_path}"
                   )
@@ -120,6 +119,10 @@ module Dependabot
                 req.satisfied_by?(Utils::Python::Version.new(version))
               end
             end
+          end
+
+          def pre_installed_python?(version)
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?("version")
           end
 
           def updated_pyproject_content

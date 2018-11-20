@@ -14,4 +14,8 @@ module PythonVersions
     2.7.15 2.7.14 2.7.13 2.7.12 2.7.11 2.7.10 2.7.9 2.7.8 2.7.7 2.7.6 2.7.5
     2.7.4 2.7.3 2.7.2 2.7.1 2.7
   ).freeze
+
+  PRE_INSTALLED_PYTHON_VERSIONS = %w(
+    3.6.7 2.7.15
+  ).freeze
 end

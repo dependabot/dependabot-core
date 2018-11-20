@@ -149,7 +149,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files(pyproject_content)
 
-              if python_version
+              if python_version && !pre_installed_python?(python_version)
                 run_poetry_command("pyenv install -s")
                 run_poetry_command("pyenv exec pip install --upgrade pip")
                 run_poetry_command(
@@ -205,6 +205,10 @@ module Dependabot
             PythonVersions::PYTHON_VERSIONS.find do |version|
               requirement.satisfied_by?(Utils::Python::Version.new(version))
             end
+          end
+
+          def pre_installed_python?(version)
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?("version")
           end
 
           def pyproject_hash_for(pyproject_content)
