@@ -34,7 +34,7 @@ async function updateDependencyFiles(
   // in npm/lib/install/validate-args.js
   // Platform is checked and raised from (EBADPLATFORM):
   // https://github.com/npm/npm-install-checks
-  await runAsync(npm, npm.load, [{ loglevel: "silent", force: true }]);
+  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
   const oldPackage = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
