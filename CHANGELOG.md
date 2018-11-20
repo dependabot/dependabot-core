@@ -1,3 +1,8 @@
+## v0.75.68, 20 November 2018
+
+- Maven: Allow version updates that come via a parent_pom
+- Python: Sanitize pyproject.toml files before running Poetry
+
 ## v0.75.67, 20 November 2018
 
 - Rust: Handle git sub-dependencies
