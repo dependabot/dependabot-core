@@ -55,6 +55,7 @@ module Dependabot
 
                 if python_version
                   run_poetry_command("pyenv install -s")
+                  run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
                     "pyenv exec pip install -r #{python_requirements_path}"
                   )
