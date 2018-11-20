@@ -16,27 +16,25 @@
  */
 const fs = require("fs");
 const path = require("path");
-const npm6 = require("npm");
-const npm5 = require("npm5/node_modules/npm");
-const { installerForLockfile, muteStderr, runAsync } = require("./helpers.js");
+const npm = require("npm");
+const installer = require("npm/lib/install");
+const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFiles(
   directory,
   depName,
   desiredVersion,
   requirements,
-  lockfile_name
+  lockfileName
 ) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  await runAsync(npm6, npm6.load, [{ loglevel: "silent" }]);
-  await runAsync(npm5, npm5.load, [{ loglevel: "silent" }]);
-  const oldLockfile = JSON.parse(readFile(lockfile_name));
-  const installer = installerForLockfile(oldLockfile);
+  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
+  const oldPackage = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
-  const args = installArgs(depName, desiredVersion, requirements, oldLockfile);
+  const args = installArgs(depName, desiredVersion, requirements, oldPackage);
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
@@ -60,21 +58,23 @@ async function updateDependencyFiles(
     unmute();
   }
 
-  const updatedLockfile = readFile(lockfile_name);
+  const updatedLockfile = readFile(lockfileName);
 
-  return { [lockfile_name]: updatedLockfile };
+  return { [lockfileName]: updatedLockfile };
 }
 
-function installArgs(depName, desiredVersion, requirements, oldLockfile) {
+function installArgs(depName, desiredVersion, requirements, oldPackage) {
   const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
-    let originalVersion = ((oldLockfile["dependencies"] || {})[depName] || {})[
-      "version"
-    ];
+    let originalVersion =
+      (oldPackage["dependencies"] || {})[depName] ||
+      (oldPackage["devDependencies"] || {})[depName] ||
+      (oldPackage["peerDependencies"] || {})[depName] ||
+      (oldPackage["optionalDependencies"] || {})[depName];
 
-    if (!originalVersion || !originalVersion.includes("#")) {
-      originalVersion = `${source.url}#ref`;
+    if (!originalVersion) {
+      originalVersion = source.url;
     }
 
     originalVersion = originalVersion.replace(

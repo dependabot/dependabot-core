@@ -160,14 +160,6 @@ module Dependabot
                     "#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
             end
-            if error.message.include?("fatal: reference is not a tree")
-              ref = error.message.match(/a tree: (?<ref>.*)/).
-                    named_captures.fetch("ref")
-              dep = find_npm_lockfile_dependency_with_ref(ref)
-              raise unless dep
-
-              raise Dependabot::GitDependencyReferenceNotFound, dep.fetch(:name)
-            end
             if error.message.match?(FORBIDDEN_PACKAGE)
               package_name =
                 error.message.match(FORBIDDEN_PACKAGE).
@@ -427,22 +419,6 @@ module Dependabot
               trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
               trimmed_urls.include?(trimmed_url.gsub(/^http:/, "https:"))
             end
-          end
-
-          def find_npm_lockfile_dependency_with_ref(ref)
-            flatten_dependencies = lambda { |obj|
-              deps = []
-              obj["dependencies"]&.each do |name, details|
-                deps << { name: name, version: details["version"] }
-                deps += flatten_dependencies.call(details)
-              end
-              deps
-            }
-
-            deps = package_locks.flat_map do |package_lock|
-              flatten_dependencies.call(JSON.parse(package_lock.content))
-            end
-            deps.find { |dep| dep[:version].end_with?("##{ref}") }
           end
 
           def npmrc_content

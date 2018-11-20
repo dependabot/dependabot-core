@@ -277,6 +277,36 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(updated_yarn_lock.content).to_not include("af885e2e890")
           end
 
+          context "when the lockfile has an outdated source" do
+            let(:yarn_lock_fixture_name) do
+              "git_dependency_outdated_source.lock"
+            end
+            let(:npm_lock_fixture_name) do
+              "git_dependency_outdated_source.json"
+            end
+
+            it "updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json yarn.lock))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(
+                parsed_package_lock["dependencies"]["is-number"]["version"]
+              ).to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+              # Note: Yarn installs the latest version of is-number because the
+              # lockfile has an invalid resolved url and the package json has no
+              # version specified. The invalid source url gets set when
+              # replacing the resolved url from the old lockfile in
+              # replace-lockfile-declaration.
+              expect(updated_yarn_lock.content).to include(
+                "is-number@https://github.com/jonschlinkert/is-number.git"
+              )
+              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+            end
+          end
+
           context "when the package lock is empty" do
             let(:npm_lock_fixture_name) { "no_dependencies.json" }
 
@@ -1018,7 +1048,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             parsed_lockfile.dig(
               "dependencies", "fetch-factory", "requires", "es6-promise"
             )
-          ).to eq("3.3.1")
+          ).to eq("^3.0.2")
         end
 
         context "for an npm6 lockfile" do
@@ -1279,42 +1309,6 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
-          end
-        end
-      end
-
-      context "with an unreachable git reference" do
-        let(:npm_lock_fixture_name) { "git_dependency_bad_ref.json" }
-        let(:manifest_fixture_name) { "git_dependency_bad_ref.json" }
-        let(:yarn_lock_fixture_name) { "git_dependency_bad_ref.lock" }
-
-        let(:dependency_name) { "lodash" }
-        let(:version) { "1.3.1" }
-        let(:previous_version) { "1.2.1" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.3.1",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.2.1",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-
-        context "with an npm lockfile" do
-          let(:files) { [package_json, package_lock] }
-          it "raises a helpful error" do
-            expect { updated_files }.to raise_error do |error|
-              expect(error).to be_a(Dependabot::GitDependencyReferenceNotFound)
-              expect(error.dependency).to eq("is-number")
-            end
           end
         end
       end
