@@ -1128,55 +1128,87 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
           end
+        end
+      end
 
-          context "when there is a private dep we don't have access to" do
-            let(:manifest_fixture_name) { "private_source.json" }
-            let(:yarn_lock_fixture_name) { "private_source.lock" }
+      context "when there is a private dep we don't have access to" do
+        let(:manifest_fixture_name) { "private_source.json" }
+        let(:npm_lock_fixture_name) { "private_source.json" }
+        let(:yarn_lock_fixture_name) { "private_source.lock" }
 
-            it "raises a helpful error" do
-              # TODO: Raise custom error here
-              expect { updater.updated_dependency_files }.
-                to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
-            end
+        context "with a yarn lockfile" do
+          let(:files) { [package_json, yarn_lock] }
+
+          it "raises a helpful error" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
           end
+        end
+      end
 
-          context "when there is a private git dep we don't have access to" do
-            let(:files) { [package_json, package_lock] }
+      context "when there is a private git dep we don't have access to" do
+        let(:manifest_fixture_name) { "github_dependency_private.json" }
+        let(:npm_lock_fixture_name) { "github_dependency_private.json" }
+        let(:yarn_lock_fixture_name) { "github_dependency_private.lock" }
 
-            let(:manifest_fixture_name) { "github_dependency_private.json" }
-            let(:npm_lock_fixture_name) { "github_dependency_private.json" }
+        let(:dependency_name) { "strict-uri-encode" }
+        let(:version) { "1.1.0" }
+        let(:requirements) { [] }
 
-            let(:dependency_name) { "strict-uri-encode" }
-            let(:version) { "1.1.0" }
-            let(:requirements) { [] }
+        context "with a yarn lockfile" do
+          let(:files) { [package_json, yarn_lock] }
 
-            it "raises a helpful error" do
-              expect { updater.updated_dependency_files }.
-                to raise_error(Dependabot::GitDependenciesNotReachable)
-            end
+          it "raises a helpful error" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls).
+                  to eq(
+                    [
+                      "ssh://git@github.com/hmarr/"\
+                      "dependabot-test-private-npm-package.git"
+                    ]
+                  )
+              end
           end
+        end
 
-          context "because we're updating to a non-existant version" do
-            let(:yarn_lock_fixture_name) { "yarn.lock" }
-            let(:npm_lock_fixture_name) { "package-lock.json" }
-            let(:manifest_fixture_name) { "package.json" }
+        context "with a npm lockfile" do
+          let(:files) { [package_json, package_lock] }
 
-            let(:dependency_name) { "fetch-factory" }
-            let(:version) { "5.0.2" }
-            let(:requirements) do
-              [{
-                file: "package.json",
-                requirement: "^5.0.2",
-                groups: ["dependencies"],
-                source: nil
-              }]
-            end
-
-            it "raises an unhandled error" do
-              expect { updated_files }.
-                to raise_error(Dependabot::InconsistentRegistryResponse)
-            end
+          it "raises a helpful error" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls).
+                  to eq(
+                    [
+                      "ssh://git@github.com/hmarr/"\
+                      "dependabot-test-private-npm-package.git"
+                    ]
+                  )
+              end
           end
+        end
+      end
+
+      context "because we're updating to a non-existant version" do
+        let(:yarn_lock_fixture_name) { "yarn.lock" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:manifest_fixture_name) { "package.json" }
+
+        let(:dependency_name) { "fetch-factory" }
+        let(:version) { "5.0.2" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^5.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "raises an unhandled error" do
+          expect { updated_files }.
+            to raise_error(Dependabot::InconsistentRegistryResponse)
         end
       end
 
