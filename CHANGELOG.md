@@ -1,3 +1,7 @@
+## v0.75.71, 20 November 2018
+
+- Python: Try updating pip for installing requirements
+
 ## v0.75.70, 20 November 2018
 
 - Python: Install all requirments for different python versions
