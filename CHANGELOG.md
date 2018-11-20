@@ -1,3 +1,8 @@
+## v0.75.72, 20 November 2018
+
+- Python: Another attempt to fix poetry
+- JS: Handle outdated git source in lockfile
+
 ## v0.75.71, 20 November 2018
 
 - Python: Try updating pip for installing requirements
