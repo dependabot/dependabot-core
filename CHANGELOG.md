@@ -1,3 +1,8 @@
+## v0.75.76, 21 November 2018
+
+- .NET: Assume unfound properties are up-to-date
+- Ruby: Sanitize File.readlines from gemspec
+
 ## v0.75.75, 21 November 2018
 
 - Python: Better checking of Python version when using Pipenv
