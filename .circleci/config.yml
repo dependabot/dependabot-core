@@ -41,3 +41,5 @@ jobs:
       - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml
       - store_test_results:
           path: ~/rspec
+      - store_artifacts:
+          path: ~/rspec
