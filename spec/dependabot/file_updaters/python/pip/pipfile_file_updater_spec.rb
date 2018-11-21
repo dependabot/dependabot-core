@@ -191,6 +191,25 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         it "updates both files correctly" do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
         end
+
+        context "due to a version in the lockfile" do
+          let(:pipfile_fixture_name) { "required_python_implicit_2" }
+          let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }
+
+          it "updates both files correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+
+            updated_lockfile = updated_files.find do |f|
+              f.name == "Pipfile.lock"
+            end
+            json_lockfile = JSON.parse(updated_lockfile.content)
+
+            expect(json_lockfile["develop"]["pytest"]["version"]).
+              to eq("==3.8.1")
+            expect(json_lockfile["default"]["futures"]["version"]).
+              to eq("==3.2.0")
+          end
+        end
       end
     end
 

@@ -206,6 +206,13 @@ RSpec.describe namespace::PipfileVersionResolver do
         let(:latest_version) { Gem::Version.new("3.8.1") }
 
         it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+
+        context "due to a version in the lockfile" do
+          let(:pipfile_fixture_name) { "required_python_implicit_2" }
+          let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }
+
+          it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+        end
       end
 
       context "for a resolution that has caused trouble in the past" do
