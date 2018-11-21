@@ -1,3 +1,7 @@
+## v0.75.79, 21 November 2018
+
+- Ruby: Handle calls to Find.find in gemspecs
+
 ## v0.75.78, 21 November 2018
 
 - Ruby: Smarter gemspec sanitization (wrap require lines in error handling,
