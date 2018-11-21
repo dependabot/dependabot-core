@@ -139,6 +139,7 @@ module Dependabot
               return unless node.is_a?(Parser::AST::Node)
               return if node.children[1] == :version=
               return replace_file_read(node) if node_reads_a_file?(node)
+              return replace_file_readlines(node) if node_uses_readlines?(node)
 
               node.children.each { |child| replace_file_reads(child) }
             end
@@ -149,7 +150,16 @@ module Dependabot
               return false unless node.children.first&.type == :const
               return false unless node.children.first.children.last == :File
 
-              node.children[1] == :read || node.children[1] == :readlines
+              node.children[1] == :read
+            end
+
+            def node_uses_readlines?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :const
+              return false unless node.children.first.children.last == :File
+
+              node.children[1] == :readlines
             end
 
             def remove_unnecessary_assignments(node)
@@ -236,6 +246,10 @@ module Dependabot
 
             def replace_file_read(node)
               replace(node.loc.expression, '"text"')
+            end
+
+            def replace_file_readlines(node)
+              replace(node.loc.expression, '["text"]')
             end
           end
         end
