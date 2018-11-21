@@ -4,11 +4,13 @@ require "json"
 require "tmpdir"
 require "excon"
 require "English"
+require "digest"
 
 module Dependabot
   module SharedHelpers
     BUMP_TMP_FILE_PREFIX = "dependabot_"
     BUMP_TMP_DIR_PATH = "tmp"
+    GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
 
     class ChildProcessFailed < StandardError
       attr_reader :error_class, :error_message, :error_backtrace
@@ -105,10 +107,11 @@ module Dependabot
     end
 
     def self.with_git_configured(credentials:)
+      backup_git_config_path = stash_global_git_config
       configure_git_to_use_https_with_credentials(credentials)
       yield
     ensure
-      reset_git_config
+      reset_global_git_config(backup_git_config_path)
     end
 
     def self.configure_git_to_use_https_with_credentials(credentials)
@@ -163,11 +166,19 @@ module Dependabot
       File.write("git.store", git_store_content)
     end
 
-    def self.reset_git_config
-      run_shell_command(
-        'git config --global --remove-section url."https://github.com/" '\
-        "&& git config --global --remove-section credential"
-      )
+    def self.stash_global_git_config
+      return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)
+
+      contents = File.read(GIT_CONFIG_GLOBAL_PATH)
+      digest = Digest::SHA2.hexdigest(contents)[0...10]
+      backup_path = GIT_CONFIG_GLOBAL_PATH + ".backup-#{digest}"
+
+      FileUtils.mv(GIT_CONFIG_GLOBAL_PATH, backup_path)
+      backup_path
+    end
+
+    def self.reset_global_git_config(backup_path)
+      FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
     def self.run_shell_command(command)
