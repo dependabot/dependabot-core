@@ -56,6 +56,17 @@ module Dependabot
             TomlRB.dump(pipfile_object)
           end
 
+          def update_python_requirement(requirement)
+            pipfile_object = TomlRB.parse(pipfile_content)
+
+            pipfile_object["requires"] ||= {}
+            pipfile_object["requires"].delete("python_full_version")
+            pipfile_object["requires"].delete("python_version")
+            pipfile_object["requires"]["python_full_version"] = requirement
+
+            TomlRB.dump(pipfile_object)
+          end
+
           private
 
           attr_reader :pipfile_content

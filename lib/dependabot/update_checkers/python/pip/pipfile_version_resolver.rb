@@ -134,7 +134,7 @@ module Dependabot
               check_original_requirements_resolvable
             end
 
-            if error.message.include?('Command "python setup.py egg_info') &&
+            if error.message.include?('Command "python setup.py egg_info"') &&
                error.message.include?(dependency.name)
               # The latest version of the dependency we're updating is borked
               # (because it has an unevaluatable setup.py). Skip the update.
@@ -237,7 +237,10 @@ module Dependabot
             end
 
             # Overwrite the pipfile with updated content
-            File.write("Pipfile", pipfile_content) if update_pipfile
+            File.write(
+              "Pipfile",
+              pipfile_content(update_pipfile: update_pipfile)
+            )
           end
 
           def sanitized_setup_file_content(file)
@@ -258,8 +261,11 @@ module Dependabot
             end
           end
 
-          def pipfile_content
+          def pipfile_content(update_pipfile: true)
             content = pipfile.content
+            content = specify_python_requirement(content)
+            return content unless update_pipfile
+
             content = freeze_other_dependencies(content)
             content = unlock_target_dependency(content) if unlock_requirement?
             content = add_private_sources(content)
@@ -296,6 +302,44 @@ module Dependabot
             FileUpdaters::Python::Pip::PipfilePreparer.
               new(pipfile_content: pipfile_content).
               replace_sources(credentials)
+          end
+
+          def specify_python_requirement(content)
+            return content if pipfile_python_requirement
+
+            version =
+              dependency_files.find { |f| f.name == ".python-version" }&.
+              content
+
+            return content unless version
+
+            FileUpdaters::Python::Pip::PipfilePreparer.
+              new(pipfile_content: content).
+              update_python_requirement(version)
+          end
+
+          def specify_python_two_requirement
+            content = File.read("Pipfile")
+
+            updated_content =
+              FileUpdaters::Python::Pip::PipfilePreparer.
+              new(pipfile_content: content).
+              update_python_requirement("2.7.15")
+
+            File.write("Pipfile", updated_content)
+          end
+
+          def pipfile_python_requirement
+            parsed_pipfile = TomlRB.parse(pipfile.content)
+
+            parsed_pipfile.dig("requires", "python_full_version") ||
+              parsed_pipfile.dig("requires", "python_version")
+          end
+
+          def python_requirement_specified?
+            return true if pipfile_python_requirement
+
+            dependency_files.any? { |f| f.name == ".python-version" }
           end
 
           def check_private_sources_are_reachable
@@ -391,21 +435,24 @@ module Dependabot
             msg = error.message
 
             relevant_error =
-              if error_suggests_bad_python_version?(msg) then original_error
+              if may_be_using_wrong_python_version?(msg) then original_error
               else error
               end
 
-            raise relevant_error unless error_suggests_bad_python_version?(msg)
-            raise relevant_error if cmd.include?("--two")
+            raise relevant_error unless may_be_using_wrong_python_version?(msg)
+            raise relevant_error if @using_python_two
 
+            @using_python_two = true
+            specify_python_two_requirement
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
           end
 
-          def error_suggests_bad_python_version?(message)
-            return true if message.include?("UnsupportedPythonVersion")
+          def may_be_using_wrong_python_version?(error_message)
+            return false if python_requirement_specified?
+            return true if error_message.include?("UnsupportedPythonVersion")
 
-            message.include?('Command "python setup.py egg_info" failed')
+            error_message.include?('Command "python setup.py egg_info" failed')
           end
 
           def check_env_sources_included_in_config_variables(env_sources)
