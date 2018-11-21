@@ -85,6 +85,15 @@ module Dependabot
           def prepared_manifest_content
             parsed_manifest = TomlRB.parse(manifest.content)
 
+            FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|
+              (parsed_manifest[type] || []).each do |details|
+                next unless details["name"] == "gopkg.in/fsnotify.v1"
+                next if details["source"]
+
+                details["source"] = "gopkg.in/fsnotify/fsnotify.v1"
+              end
+            end
+
             dependencies.each do |dep|
               req = dep.requirements.find { |r| r[:file] == manifest.name }
               next unless appears_in_lockfile(dep)
