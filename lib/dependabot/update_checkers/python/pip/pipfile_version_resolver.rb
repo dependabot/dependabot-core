@@ -318,7 +318,7 @@ module Dependabot
               update_python_requirement(version)
           end
 
-          def specify_python_two_requirement
+          def add_python_two_requirement_to_pipfile
             content = File.read("Pipfile")
 
             updated_content =
@@ -443,14 +443,14 @@ module Dependabot
             raise relevant_error if @using_python_two
 
             @using_python_two = true
-            specify_python_two_requirement
+            add_python_two_requirement_to_pipfile
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
           end
 
           def may_be_using_wrong_python_version?(error_message)
             return false if python_requirement_specified?
-            return true if error_message.include?("UnsupportedPythonVersion")
+            return true if error_message.include?("InvalidPythonVersion")
 
             error_message.include?('Command "python setup.py egg_info" failed')
           end
