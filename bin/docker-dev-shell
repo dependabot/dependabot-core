@@ -12,4 +12,5 @@ docker run --rm -ti \
   -v "$(pwd)/lib:/code/lib" \
   -v "$(pwd)/spec:/code/spec" \
   -v "$(pwd)/helpers:/code/helpers" \
+  --cap-add=SYS_PTRACE \
   dependabot/dependabot-core-development bash

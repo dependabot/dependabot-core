@@ -1,5 +1,7 @@
 FROM dependabot/dependabot-core
 
+RUN apt-get update && apt-get install -y vim strace ltrace gdb
+
 RUN mkdir -p /code/lib/dependabot /code/helpers
 WORKDIR /code
 
