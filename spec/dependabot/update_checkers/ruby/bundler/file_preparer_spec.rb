@@ -283,7 +283,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
         let(:dependency_name) { "gitlab" }
 
         its(:content) { is_expected.to include(%("gitlab", ">= 1.4.3"\n)) }
-        its(:content) { is_expected.to_not include("require ") }
+        its(:content) { is_expected.to include("begin\nrequire ") }
         its(:content) { is_expected.to include(%(version      = "0.0.1")) }
 
         context "without a version" do
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
       context "when the file requires sanitizing" do
         let(:gemspec_body) { fixture("ruby", "gemspecs", "with_require") }
 
-        its(:content) { is_expected.to_not include("require ") }
+        its(:content) { is_expected.to include("begin\nrequire ") }
         its(:content) { is_expected.to include(%(version      = "0.0.1")) }
       end
     end

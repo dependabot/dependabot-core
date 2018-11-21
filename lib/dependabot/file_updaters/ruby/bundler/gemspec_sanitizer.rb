@@ -46,7 +46,7 @@ module Dependabot
             def on_send(node)
               # Remove any `require` or `require_relative` calls, as we won't
               # have the required files
-              remove(node.loc.expression) if requires_file?(node)
+              wrap_require(node) if requires_file?(node)
 
               # Remove any assignments to a VERSION constant (or similar), as
               # that constant probably comes from a required file
@@ -72,6 +72,16 @@ module Dependabot
 
             def requires_file?(node)
               %i(require require_relative).include?(node.children[1])
+            end
+
+            def wrap_require(node)
+              replace(
+                node.loc.expression,
+                "begin\n"\
+                "#{node.loc.expression.source_line}\n"\
+                "rescue LoadError\n"\
+                "end"
+              )
             end
 
             def replace_version_assignments(node)

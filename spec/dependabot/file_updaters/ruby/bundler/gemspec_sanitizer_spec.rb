@@ -19,14 +19,32 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       let(:content) do
         %(require 'example/version'\nadd_dependency "require")
       end
-      it { is_expected.to eq(%(\nadd_dependency "require")) }
+
+      it do
+        is_expected.to eq(
+          "begin\n"\
+          "require 'example/version'\n"\
+          "rescue LoadError\n"\
+          "end\n"\
+          'add_dependency "require"'
+        )
+      end
     end
 
     context "with a require_relative line" do
       let(:content) do
         %(require_relative 'example/version'\nadd_dependency "require")
       end
-      it { is_expected.to eq(%(\nadd_dependency "require")) }
+
+      it do
+        is_expected.to eq(
+          "begin\n"\
+          "require_relative 'example/version'\n"\
+          "rescue LoadError\n"\
+          "end\n"\
+          'add_dependency "require"'
+        )
+      end
     end
 
     context "with a File.read line" do
