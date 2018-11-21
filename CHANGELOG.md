@@ -1,3 +1,7 @@
+## v0.75.77, 21 November 2018
+
+- Ruby: Better readlines replacement
+
 ## v0.75.76, 21 November 2018
 
 - .NET: Assume unfound properties are up-to-date
