@@ -1,3 +1,8 @@
+## v0.75.80, 21 November 2018
+
+- Python: Interpret additional pip-compile error as tell that Python 2.7 should
+  be used
+
 ## v0.75.79, 21 November 2018
 
 - Ruby: Handle calls to Find.find in gemspecs
