@@ -421,18 +421,34 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipCompileFileUpdater do
           source: nil
         }]
       end
-      let(:dependency_previous_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "<=0.1.2",
-          groups: [],
-          source: nil
-        }]
-      end
+      let(:dependency_previous_requirements) { dependency_requirements }
 
       it "updates the requirements.txt" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.last.content).to include("wsgiref==0.1.2")
+      end
+
+      context "for a dependency that uses markers correctly" do
+        let(:manifest_fixture_name) { "legacy_python_2.in" }
+        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
+
+        let(:dependency_name) { "astroid" }
+        let(:dependency_version) { "1.6.5" }
+        let(:dependency_previous_version) { "1.6.4" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "<2",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_requirements) { dependency_requirements }
+
+        it "updates the requirements.txt" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.last.content).to include("astroid==1.6.5")
+        end
       end
     end
   end

@@ -287,6 +287,24 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("0.1.2")) }
 
+      context "that uses markers correctly (so raises a different error)" do
+        let(:manifest_fixture_name) { "legacy_python_2.in" }
+        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
+
+        let(:dependency_name) { "astroid" }
+        let(:dependency_version) { "1.6.4" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "<2",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.6.5")) }
+      end
+
       context "that has a .python-version file" do
         let(:dependency_files) do
           [manifest_file, generated_file, python_version_file]

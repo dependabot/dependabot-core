@@ -132,14 +132,26 @@ module Dependabot
             )
           rescue SharedHelpers::HelperSubprocessFailed => error
             original_error ||= error
-            raise unless error.message.include?("InstallationError") ||
-                         error.message.include?("futures")
-            raise original_error if File.exist?(".python-version")
+            msg = error.message
+
+            relevant_error =
+              if error_suggests_bad_python_version?(msg) then original_error
+              else error
+              end
+
+            raise relevant_error unless error_suggests_bad_python_version?(msg)
+            raise relevant_error if File.exist?(".python-version")
 
             command = "pyenv local 2.7.15 && " + command
             retry
           ensure
             FileUtils.remove_entry(".python-version", true)
+          end
+
+          def error_suggests_bad_python_version?(message)
+            return true if message.include?("not find a version that satisfies")
+
+            message.include?('Command "python setup.py egg_info" failed')
           end
 
           def write_updated_dependency_files
