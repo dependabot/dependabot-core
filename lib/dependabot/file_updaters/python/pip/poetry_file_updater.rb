@@ -200,10 +200,13 @@ module Dependabot
 
             return python_version_file&.content unless requirement
 
-            requirement = Utils::Python::Requirement.new(requirement)
+            requirements =
+              Utils::Python::Requirement.requirements_array(requirement)
 
             PythonVersions::PYTHON_VERSIONS.find do |version|
-              requirement.satisfied_by?(Utils::Python::Version.new(version))
+              requirements.any? do |r|
+                r.satisfied_by?(Utils::Python::Version.new(version))
+              end
             end
           end
 

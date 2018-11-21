@@ -45,8 +45,8 @@ python-versions = "*"
 version = "1.21.1"
 
 [metadata]
-content-hash = "03c413092387168b964c7a533328ca9d6b3ae7e620961bf29639f843d1b521e4"
-python-versions = "^2.7"
+content-hash = "985ef2361aa7ef32655a050b528bb2c540e986a1827479353dc42cb7a2b5a3bc"
+python-versions = "~2.6 || ^2.7"
 
 [metadata.hashes]
 certifi = ["339dc09518b07e2fa7eda5450740925974815557727d6bd35d319c1524a04a4c", "6d58c986d22b038c8c0df30d639f23a3e6d172a05c3583e766f4c0b785c0986a"]
