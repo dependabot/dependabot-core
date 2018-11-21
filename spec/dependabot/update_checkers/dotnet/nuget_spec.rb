@@ -70,6 +70,28 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       to_return(status: 200, body: nuget_search_results)
   end
 
+  describe "up_to_date?" do
+    subject(:up_to_date?) { checker.up_to_date? }
+
+    context "with a property dependency" do
+      context "whose property couldn't be found" do
+        let(:dependency_name) { "Nuke.Common" }
+        let(:dependency_requirements) do
+          [{
+            requirement: "$(NukeVersion)",
+            file: "my.csproj",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "NukeVersion" }
+          }]
+        end
+        let(:dependency_version) { "$(NukeVersion)" }
+
+        it { is_expected.to eq(true) }
+      end
+    end
+  end
+
   describe "#latest_version" do
     subject { checker.latest_version }
     it { is_expected.to eq(version_class.new("2.1.0")) }

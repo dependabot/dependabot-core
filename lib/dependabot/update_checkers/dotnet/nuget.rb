@@ -36,6 +36,15 @@ module Dependabot
           ).updated_requirements
         end
 
+        def up_to_date?
+          # If any requirements have an uninterpolated property in them then
+          # that property couldn't be found, and we assume that the dependency
+          # is up-to-date
+          return true unless requirements_unlocked_or_can_be?
+
+          super
+        end
+
         def requirements_unlocked_or_can_be?
           # If any requirements have an uninterpolated property in them then
           # that property couldn't be found, and the requirement therefore
