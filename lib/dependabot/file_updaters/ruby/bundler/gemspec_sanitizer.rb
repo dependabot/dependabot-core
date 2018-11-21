@@ -63,6 +63,9 @@ module Dependabot
               # Replace any `File.read(...)` calls with a dummy string
               replace_file_reads(node)
 
+              # Remove the arguments from any `Find.find(...)` calls
+              remove_find_dot_find_args(node)
+
               remove_unnecessary_assignments(node)
             end
 
@@ -172,6 +175,23 @@ module Dependabot
               node.children[1] == :readlines
             end
 
+            def remove_find_dot_find_args(node)
+              return unless node.is_a?(Parser::AST::Node)
+              return if node.children[1] == :version=
+              return remove_find_args(node) if node_calls_find_dot_find?(node)
+
+              node.children.each { |child| remove_find_dot_find_args(child) }
+            end
+
+            def node_calls_find_dot_find?(node)
+              return false unless node.is_a?(Parser::AST::Node)
+              return false unless node.children.first.is_a?(Parser::AST::Node)
+              return false unless node.children.first&.type == :const
+              return false unless node.children.first.children.last == :Find
+
+              node.children[1] == :find
+            end
+
             def remove_unnecessary_assignments(node)
               return unless node.is_a?(Parser::AST::Node)
 
@@ -260,6 +280,15 @@ module Dependabot
 
             def replace_file_readlines(node)
               replace(node.loc.expression, '["text"]')
+            end
+
+            def remove_find_args(node)
+              last_arg = node.children.last
+
+              range_to_remove =
+                last_arg.loc.expression.join(node.children[2].loc.begin.begin)
+
+              remove(range_to_remove)
             end
           end
         end

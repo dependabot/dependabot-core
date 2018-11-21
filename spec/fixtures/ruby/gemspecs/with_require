@@ -18,6 +18,13 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
                           "lib/**/*", "helpers/**/*"]
+  Find.find("lib", "helpers") do |path|
+    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
+      Find.prune
+    else
+      spec.files << path unless File.directory?(path)
+    end
+  end
 
   spec.required_ruby_version = ">= 2.4.0"
   spec.required_rubygems_version = ">= 2.6.11"

@@ -63,6 +63,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
       end
     end
 
+    context "with a Find.find line" do
+      let(:content) do
+        %(Find.find("lib", "whatever")\ncode = "require")
+      end
+      it { is_expected.to eq(%(Find.find()\ncode = "require")) }
+    end
+
     context "with an unnecessary assignment" do
       let(:content) do
         %(Spec.new { |s| s.version = "0.1.0"\n s.post_install_message = "a" })
