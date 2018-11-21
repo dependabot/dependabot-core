@@ -44,8 +44,8 @@ module Dependabot
             end
 
             def on_send(node)
-              # Remove any `require` or `require_relative` calls, as we won't
-              # have the required files
+              # Wrap any `require` or `require_relative` calls in a rescue
+              # block, as we might not have the required files
               wrap_require(node) if requires_file?(node)
 
               # Remove any assignments to a VERSION constant (or similar), as
