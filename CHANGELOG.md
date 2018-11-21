@@ -1,3 +1,8 @@
+## v0.75.75, 21 November 2018
+
+- Python: Better checking of Python version when using Pipenv
+- Python: Handle python requirements with an || in pyproject.toml
+
 ## v0.75.74, 20 November 2018
 
 - JS: Fix dependency updates with os requirements (npm)
