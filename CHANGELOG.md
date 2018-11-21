@@ -1,3 +1,8 @@
+## v0.75.78, 21 November 2018
+
+- Ruby: Smarter gemspec sanitization (wrap require lines in error handling,
+  rather than deleting them)
+
 ## v0.75.77, 21 November 2018
 
 - Ruby: Better readlines replacement
