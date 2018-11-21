@@ -34,6 +34,13 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
         %(version = File.read("something").strip\ncode = "require")
       end
       it { is_expected.to eq(%(version = "text".strip\ncode = "require")) }
+
+      context "that uses File.readlines" do
+        let(:content) do
+          %(version = File.readlines("something").strip\ncode = "require")
+        end
+        it { is_expected.to eq(%(version = "text".strip\ncode = "require")) }
+      end
     end
 
     context "with an unnecessary assignment" do

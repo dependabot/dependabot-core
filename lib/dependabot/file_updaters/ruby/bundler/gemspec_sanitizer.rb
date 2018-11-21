@@ -149,7 +149,7 @@ module Dependabot
               return false unless node.children.first&.type == :const
               return false unless node.children.first.children.last == :File
 
-              node.children[1] == :read
+              node.children[1] == :read || node.children[1] == :readlines
             end
 
             def remove_unnecessary_assignments(node)
