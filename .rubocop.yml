@@ -5,6 +5,7 @@ AllCops:
     - vendor/**/*
     - bin/**/*
     - tmp/**/*
+    - helpers/utils/git-credential-store-immutable
 
 Layout/DotPosition:
   EnforcedStyle: trailing
