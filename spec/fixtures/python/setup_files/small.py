@@ -21,5 +21,6 @@ setup(name='python-package',
           API=[
               'flask==0.12.2',
           ],
+          socks=['PySocks>=1.5.6, !=1.5.7'],
       ),
 )

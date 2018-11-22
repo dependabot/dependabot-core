@@ -130,7 +130,7 @@ module Dependabot
             end
 
             if error.message.include?("Could not find a version") ||
-               error.message.include?("was not found on your system…")
+               error.message.include?("is not a python version")
               check_original_requirements_resolvable
             end
 
@@ -185,7 +185,7 @@ module Dependabot
                   raise DependencyFileNotResolvable, msg
                 end
 
-                if error.message.include?("was not found on your system…")
+                if error.message.include?("is not a python version")
                   msg = "Pipenv does not support specifying Python ranges "\
                     "(see https://github.com/pypa/pipenv/issues/1050 for more "\
                     "details)."
@@ -318,7 +318,7 @@ module Dependabot
               update_python_requirement(version)
           end
 
-          def specify_python_two_requirement
+          def add_python_two_requirement_to_pipfile
             content = File.read("Pipfile")
 
             updated_content =
@@ -443,7 +443,7 @@ module Dependabot
             raise relevant_error if @using_python_two
 
             @using_python_two = true
-            specify_python_two_requirement
+            add_python_two_requirement_to_pipfile
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
           end

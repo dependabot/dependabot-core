@@ -78,8 +78,10 @@ def parse_setup(directory):
                     continue
                 for req in kwargs.get(arg):
                     parse_requirement(req, arg)
-            for req in chain.from_iterable(kwargs.get('extras_require', {}).values()):
-                parse_requirement(req, 'extras_require')
+            extras_require_dict = kwargs.get('extras_require', {})
+            for key in extras_require_dict:
+                for req in extras_require_dict[key]:
+                    parse_requirement(req, 'extras_require:{}'.format(key))
         setuptools.setup = setup
 
         def noop(*args, **kwargs):
