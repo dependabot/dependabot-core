@@ -1,3 +1,8 @@
+## v0.75.84, 22 November 2018
+
+- Dep: Silence a relatively hard-to-reproduce dep panic
+- PHP: Fetch auth.json (in preparation for using it)
+
 ## v0.75.83, 22 November 2018
 
 - Handle a nil that previously wasn't being handled
