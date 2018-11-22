@@ -10,32 +10,32 @@ RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
       build-essential \
+      curl \
       dirmngr \
       git \
       gnupg2 \
-      curl \
-      wget \
-      zlib1g-dev \
-      liblzma-dev \
-      tzdata \
-      zip \
-      unzip \
-      locales \
-      openssh-client \
-      make \
-      libpq-dev \
-      libssl-dev \
       libbz2-dev \
-      libffi-dev \
-      libreadline-dev \
-      libsqlite3-dev \
       libcurl4-openssl-dev \
-      llvm \
+      libffi-dev \
+      liblzma-dev \
+      libmysqlclient-dev \
       libncurses5-dev \
       libncursesw5-dev \
-      libmysqlclient-dev \
-      xz-utils \
+      libpq-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      libssl-dev \
+      llvm \
+      locales \
+      make \
+      openssh-client \
       tk-dev \
+      tzdata \
+      unzip \
+      wget \
+      xz-utils \
+      zip \
+      zlib1g-dev \
     && locale-gen en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
