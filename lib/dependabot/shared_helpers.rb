@@ -176,6 +176,7 @@ module Dependabot
     end
 
     def self.reset_global_git_config(backup_path)
+      return if backup_path.nil?
       return unless File.exist?(backup_path)
 
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
