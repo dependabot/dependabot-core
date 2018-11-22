@@ -139,6 +139,7 @@ dependencies.each do |dep|
     credentials: credentials
   )
 
+  puts " => checking for updates"
   updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
   updated_deps.select! do |d|
     next true if d.version != d.previous_version
