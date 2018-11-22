@@ -130,7 +130,7 @@ module Dependabot
             end
 
             if error.message.include?("Could not find a version") ||
-               error.message.include?("was not found on your system…")
+               error.message.include?("is not a python version")
               check_original_requirements_resolvable
             end
 
@@ -185,7 +185,7 @@ module Dependabot
                   raise DependencyFileNotResolvable, msg
                 end
 
-                if error.message.include?("was not found on your system…")
+                if error.message.include?("is not a python version")
                   msg = "Pipenv does not support specifying Python ranges "\
                     "(see https://github.com/pypa/pipenv/issues/1050 for more "\
                     "details)."
@@ -450,7 +450,7 @@ module Dependabot
 
           def may_be_using_wrong_python_version?(error_message)
             return false if python_requirement_specified?
-            return true if error_message.include?("InvalidPythonVersion")
+            return true if error_message.include?("UnsupportedPythonVersion")
 
             error_message.include?('Command "python setup.py egg_info" failed')
           end

@@ -22,7 +22,8 @@ module Dependabot
             content =
               "from setuptools import setup\n\n"\
               "setup(name=\"sanitized-package\",version=\"0.0.1\","\
-              "install_requires=#{install_requires_array.to_json}"
+              "install_requires=#{install_requires_array.to_json},"\
+              "extras_require=#{extras_require_hash.to_json}"
 
             content += ',setup_requires=["pbr"],pbr=True' if include_pbr?
             content + ")"
@@ -54,6 +55,24 @@ module Dependabot
 
                 dep.name + dep.requirements.first[:requirement].to_s
               end.compact
+          end
+
+          def extras_require_hash
+            @extras_require_hash ||=
+              begin
+                hash = {}
+                parsed_setup_file.dependencies.each do |dep|
+                  dep.requirements.first[:groups].each do |group|
+                    next unless group.start_with?("extras_require:")
+
+                    hash[group.split(":").last] ||= []
+                    hash[group.split(":").last] <<
+                      dep.name + dep.requirements.first[:requirement].to_s
+                  end
+                end
+
+                hash
+              end
           end
 
           def parsed_setup_file

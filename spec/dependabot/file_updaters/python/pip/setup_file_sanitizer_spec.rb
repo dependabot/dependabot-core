@@ -28,7 +28,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
         'install_requires=["boto3==1.3.1","flake8<3.0.0,>2.5.4",'\
         '"gocardless-pro","pandas==0.19.2","pep8==1.7.0","psycopg2==2.6.1",'\
         '"raven==5.32.0","requests==2.12.*","scipy==0.18.1",'\
-        '"scikit-learn==0.18.1"])'
+        '"scikit-learn==0.18.1"],extras_require={"API":["flask==0.12.2"]})'
       )
     end
 
@@ -45,7 +45,8 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
         expect(sanitized_content).to eq(
           "from setuptools import setup\n\n"\
           'setup(name="sanitized-package",version="0.0.1",'\
-          'install_requires=["raven"],setup_requires=["pbr"],pbr=True)'
+          'install_requires=["raven"],extras_require={},'\
+          'setup_requires=["pbr"],pbr=True)'
         )
       end
     end

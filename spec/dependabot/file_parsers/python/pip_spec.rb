@@ -470,7 +470,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
             [{
               requirement: "==0.12.2",
               file: "setup.py",
-              groups: ["extras_require"],
+              groups: ["extras_require:API"],
               source: nil
             }]
           )
@@ -527,7 +527,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
               [{
                 requirement: "==0.12.2",
                 file: "setup.py",
-                groups: ["extras_require"],
+                groups: ["extras_require:API"],
                 source: nil
               }]
             )
