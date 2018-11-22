@@ -1,3 +1,7 @@
+## v0.75.82, 22 November 2018
+
+- Don't assume a ~/.gitconfig exists
+
 ## v0.75.81, 22 November 2018
 
 - Go (dep): handle fsnotify bug
