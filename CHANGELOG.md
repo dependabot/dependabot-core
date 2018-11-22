@@ -1,3 +1,7 @@
+## v0.75.83, 22 November 2018
+
+- Handle a nil that previously wasn't being handled
+
 ## v0.75.82, 22 November 2018
 
 - Don't assume a ~/.gitconfig exists
