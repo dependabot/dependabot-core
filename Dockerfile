@@ -17,6 +17,8 @@ RUN apt-get update \
       libbz2-dev \
       libcurl4-openssl-dev \
       libffi-dev \
+      libgpgme-dev \
+      libgpgme11 \
       liblzma-dev \
       libmysqlclient-dev \
       libncurses5-dev \
@@ -49,7 +51,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
     && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 2.0.0.pre.1
+    && gem install --no-ri --no-rdoc bundler -v 2.0.0.pre.1 \
+    && bundle config build.gpgme --use-system-libraries
 
 
 ### PYTHON
