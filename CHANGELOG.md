@@ -1,3 +1,7 @@
+## v0.75.85, 22 November 2018
+
+- Python: Use latest pipenv commit (prep for imminent release)
+
 ## v0.75.84, 22 November 2018
 
 - Dep: Silence a relatively hard-to-reproduce dep panic
@@ -9,7 +13,7 @@
 
 ## v0.75.82, 22 November 2018
 
-- Don't assume a ~/.gitconfig exists
+- Don't assume a `~/.gitconfig` exists
 
 ## v0.75.81, 22 November 2018
 
