@@ -43,12 +43,15 @@ require "dependabot/pull_request_creator"
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
 # If using a private registry it's also possible to add details of that here.
-credentials = [{
-  "type" => "git_source",
-  "host" => "github.com",
-  "username" => "x-access-token",
-  "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
-}]
+credentials = []
+if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+  credentials << {
+    "type" => "git_source",
+    "host" => "github.com",
+    "username" => "x-access-token",
+    "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+  }
+end
 
 # Directory where the base dependency files are.
 directory = "/"
