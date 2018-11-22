@@ -1,9 +1,52 @@
 #!/bin/bash
 
-echo "=> building dockerfile"
-docker build -t dependabot/dependabot-core-development -f Dockerfile.development .
+IMAGE_NAME="dependabot/dependabot-core-development"
+DOCKERFILE="Dockerfile.development"
+HELP=false
+REBUILD=false
 
-echo "=> running docker development shell"
+OPTS=`getopt -o hr: --long help,rebuild: -n 'parse-options' -- "$@"`
+if [ $? != 0 ]; then
+  echo "failed parsing options" >&2
+  exit 1
+fi
+
+while true; do
+  case "$1" in
+    -h | --help ) HELP=true; shift ;;
+    -r | --rebuild ) REBUILD=true; shift ;;
+    -- ) shift; break ;;
+    * ) break ;;
+  esac
+done
+
+if [ "$HELP" = "true" ]; then
+  echo "usage: $0 [--rebuild] [ARGS]"
+  exit 0
+fi
+
+build_image() {
+  echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
+  docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+}
+
+IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null)
+if [ -z "$IMAGE_ID" ]; then
+  echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
+  build_image
+elif [ "$REBUILD" = "true" ]; then
+  echo "$(tput setaf 4) > rebuild of $IMAGE_NAME requested$(tput sgr0)"
+  build_image
+else
+  echo "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
+fi
+
+CONTAINER_ARGS=("bash")
+if [ "$#" -gt "0" ]; then
+  CONTAINER_ARGS=("$@")
+fi
+
+echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 docker run --rm -ti \
   -v "$(pwd)/Gemfile:/code/Gemfile" \
   -v "$(pwd)/Gemfile.lock:/code/Gemfile.lock" \
@@ -13,4 +56,4 @@ docker run --rm -ti \
   -v "$(pwd)/spec:/code/spec" \
   -v "$(pwd)/helpers:/code/helpers" \
   --cap-add=SYS_PTRACE \
-  dependabot/dependabot-core-development bash
+  "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
