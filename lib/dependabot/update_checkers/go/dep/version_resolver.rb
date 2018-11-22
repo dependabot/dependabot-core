@@ -12,6 +12,8 @@ module Dependabot
         class VersionResolver
           NOT_FOUND_REGEX =
             /failed to list versions for (?<repo_url>.*?):\s+/.freeze
+          INDEX_OUT_OF_RANGE_REGEX =
+            /panic: runtime error: index out of range.*findValidVersion/m.freeze
 
           def initialize(dependency:, dependency_files:, credentials:)
             @dependency = dependency
@@ -20,7 +22,11 @@ module Dependabot
           end
 
           def latest_resolvable_version
-            @latest_resolvable_version ||= fetch_latest_resolvable_version
+            if defined?(@latest_resolvable_version)
+              return @latest_resolvable_version
+            end
+
+            @latest_resolvable_version = fetch_latest_resolvable_version
           end
 
           private
@@ -76,6 +82,13 @@ module Dependabot
 
               raise Dependabot::GitDependenciesNotReachable, url
             end
+
+            # A dep bug that probably isn't going to be fixed any time soon :-(
+            # - https://github.com/golang/dep/issues/1437
+            # - https://github.com/golang/dep/issues/649
+            # - https://github.com/golang/dep/issues/2041
+            # - https://twitter.com/miekg/status/996682296739745792
+            return if error.message.match?(INDEX_OUT_OF_RANGE_REGEX)
 
             raise
           end
