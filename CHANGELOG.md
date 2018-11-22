@@ -1,3 +1,8 @@
+## v0.75.81, 22 November 2018
+
+- Go (dep): handle fsnotify bug
+- Fix some issues relating to git credentials configuration
+
 ## v0.75.80, 21 November 2018
 
 - Python: Interpret additional pip-compile error as tell that Python 2.7 should
