@@ -1,3 +1,7 @@
+## v0.75.86, 22 November 2018
+
+- Python: Workaround Pipenv bug (caused issue for new Python version installs)
+
 ## v0.75.85, 22 November 2018
 
 - Python: Use latest pipenv commit (prep for imminent release)
