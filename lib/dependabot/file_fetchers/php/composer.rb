@@ -20,6 +20,7 @@ module Dependabot
           fetched_files = []
           fetched_files << composer_json
           fetched_files << composer_lock if composer_lock
+          fetched_files << auth_json if auth_json
           fetched_files += path_dependencies
           fetched_files
         end
@@ -32,9 +33,13 @@ module Dependabot
           return @composer_lock if @composer_lock_lookup_attempted
 
           @composer_lock_lookup_attempted = true
-          @composer_lock ||= fetch_file_from_host("composer.lock")
-        rescue Dependabot::DependencyFileNotFound
-          nil
+          @composer_lock ||= fetch_file_if_present("composer.lock")
+        end
+
+        # Note: This is fetched but currently unused
+        def auth_json
+          @auth_json ||= fetch_file_if_present("auth.json")&.
+                         tap { |f| f.support_file = true }
         end
 
         def path_dependencies

@@ -30,6 +30,13 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
+    stub_request(:get, url + "?ref=sha").
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_composer_repo.json"),
+        headers: { "content-type" => "application/json" }
+      )
     stub_request(:get, url + "composer.json?ref=sha").
       with(headers: { "Authorization" => "token token" }).
       to_return(
@@ -53,6 +60,13 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
   context "without a composer.lock" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_composer_repo_no_lockfile.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "composer.lock?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
@@ -60,6 +74,30 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
     it "fetches the composer.json" do
       expect(file_fetcher_instance.files.map(&:name)).to eq(["composer.json"])
+    end
+  end
+
+  context "with an auth.json" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_composer_repo_with_auth.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "auth.json?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "composer_json_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the auth.json" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(composer.json composer.lock auth.json))
     end
   end
 
@@ -152,6 +190,14 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
 
       context "because there is no lockfile" do
         before do
+          stub_request(:get, url + "?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "contents_composer_repo_no_lockfile.json"),
+              headers: { "content-type" => "application/json" }
+            )
           stub_request(:get, url + "composer.lock?ref=sha").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
@@ -170,6 +216,16 @@ RSpec.describe Dependabot::FileFetchers::Php::Composer do
         "https://api.github.com/repos/gocardless/bump/contents/"
       end
       let(:url) { base_url + "my/app/" }
+
+      before do
+        stub_request(:get, base_url + "my/app?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_composer_repo.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
 
       it "fetches the composer.json, composer.lock and the path dependency" do
         expect(file_fetcher_instance.files.map(&:name)).
