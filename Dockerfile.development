@@ -1,6 +1,8 @@
 FROM dependabot/dependabot-core
 
 RUN apt-get update && apt-get install -y vim strace ltrace gdb
+RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
+    echo 'export PS1="[dependabot-core-dev] \w $(tput setaf 4)$ $(tput sgr 0)"' >> ~/.bashrc
 
 RUN mkdir -p /code/lib/dependabot /code/helpers
 WORKDIR /code
