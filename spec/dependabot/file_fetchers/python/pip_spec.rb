@@ -598,6 +598,13 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
               body: fixture("github", "setup_content.json"),
               headers: { "content-type" => "application/json" }
             )
+          stub_request(:get, url + "setup.cfg?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 404,
+              body: fixture("github", "setup_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches the setup.py" do
@@ -615,13 +622,6 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
                   fixture("github", "requirements_with_path_dependencies.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "setup.py?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
-                status: 200,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
             stub_request(:get, url + "my/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -629,6 +629,9 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "my/setup.cfg?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
             stub_request(:get, url + "my-single/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -636,7 +639,17 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "my-single/setup.cfg?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
             stub_request(:get, url + "my-other/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "my-other/setup.cfg?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: 200,
@@ -646,11 +659,10 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           end
 
           it "fetches the path dependencies" do
-            expect(file_fetcher_instance.files.count).to eq(5)
             expect(file_fetcher_instance.files.map(&:name)).
               to match_array(
                 %w(requirements.txt setup.py my/setup.py my-single/setup.py
-                   my-other/setup.py)
+                   my-other/setup.py my-other/setup.cfg)
               )
           end
         end
@@ -762,6 +774,9 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "flowmachine/setup.cfg?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
             stub_request(:get, url + "flowclient/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -769,6 +784,9 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "flowclient/setup.cfg?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
           end
 
           it "fetches the setup.py" do
@@ -784,6 +802,9 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
       context "that has an unfetchable path" do
         before do
           stub_request(:get, url + "setup.py?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, url + "setup.cfg?ref=sha").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
         end

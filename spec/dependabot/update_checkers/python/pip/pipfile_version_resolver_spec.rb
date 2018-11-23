@@ -145,13 +145,13 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do
         Dependabot::DependencyFile.new(
-          name: "setup.py",
+          name: "mydep/setup.py",
           content: fixture("python", "setup_files", setupfile_fixture_name)
         )
       end
       let(:setupfile_fixture_name) { "small.py" }
-      let(:pipfile_fixture_name) { "path_dependency" }
-      let(:lockfile_fixture_name) { "path_dependency.lock" }
+      let(:pipfile_fixture_name) { "path_dependency_not_self" }
+      let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "that needs to be sanitized" do

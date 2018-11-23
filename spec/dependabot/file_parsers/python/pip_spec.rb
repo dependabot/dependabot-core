@@ -855,6 +855,28 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           its(:requirements) { is_expected.to eq(expected_requirements) }
         end
       end
+
+      context "that imports a path dependency" do
+        let(:files) { [pipfile, lockfile, setup_file] }
+        let(:pipfile_fixture_name) { "path_dependency_not_self" }
+        let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "mydep/setup.py",
+            content: fixture("python", "setup_files", "small.py"),
+            support_file: true
+          )
+        end
+
+        describe "top level dependencies" do
+          subject(:dependencies) { parser.parse.select(&:top_level?) }
+          its(:length) { is_expected.to eq(2) }
+
+          it "excludes the path dependency" do
+            expect(dependencies.map(&:name)).to match_array(%w(requests pytest))
+          end
+        end
+      end
     end
 
     context "with a Pipfile but no Pipfile.lock" do

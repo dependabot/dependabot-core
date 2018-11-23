@@ -328,13 +328,13 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         let(:dependency_files) { [pipfile, lockfile, setupfile] }
         let(:setupfile) do
           Dependabot::DependencyFile.new(
-            name: "setup.py",
+            name: "mydep/setup.py",
             content: fixture("python", "setup_files", setupfile_fixture_name)
           )
         end
         let(:setupfile_fixture_name) { "small.py" }
-        let(:pipfile_fixture_name) { "path_dependency" }
-        let(:lockfile_fixture_name) { "path_dependency.lock" }
+        let(:pipfile_fixture_name) { "path_dependency_not_self" }
+        let(:lockfile_fixture_name) { "path_dependency_not_self.lock" }
 
         it "updates the dependency" do
           expect(json_lockfile["default"]["requests"]["version"]).
@@ -352,6 +352,38 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         context "that imports a setup.cfg" do
           let(:dependency_files) do
             [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
+          end
+          let(:setupfile_fixture_name) { "with_pbr.py" }
+          let(:setup_cfg) do
+            Dependabot::DependencyFile.new(
+              name: "mydep/setup.cfg",
+              content: fixture("python", "setup_files", "setup.cfg")
+            )
+          end
+          let(:requirements_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: fixture("python", "requirements", "pbr.txt")
+            )
+          end
+
+          it "updates the dependency" do
+            expect(json_lockfile["default"]["requests"]["version"]).
+              to eq("==2.18.4")
+          end
+        end
+
+        context "that imports its own setup.py" do
+          let(:dependency_files) do
+            [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
+          end
+          let(:pipfile_fixture_name) { "path_dependency" }
+          let(:lockfile_fixture_name) { "path_dependency.lock" }
+          let(:setupfile) do
+            Dependabot::DependencyFile.new(
+              name: "setup.py",
+              content: fixture("python", "setup_files", setupfile_fixture_name)
+            )
           end
           let(:setupfile_fixture_name) { "with_pbr.py" }
           let(:setup_cfg) do

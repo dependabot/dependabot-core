@@ -220,10 +220,21 @@ module Dependabot
             path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
             next if path == "setup.py" && setup_file
 
-            path_setup_files << fetch_file_from_host(path).
-                                tap { |f| f.support_file = true }
-          rescue Dependabot::DependencyFileNotFound
-            unfetchable_files << path
+            begin
+              path_setup_files << fetch_file_from_host(path).
+                                  tap { |f| f.support_file = true }
+            rescue Dependabot::DependencyFileNotFound
+              unfetchable_files << path
+            end
+
+            begin
+              cfg_path = path.gsub(/\.py$/, ".cfg")
+              path_setup_files << fetch_file_from_host(cfg_path).
+                                  tap { |f| f.support_file = true }
+            rescue Dependabot::DependencyFileNotFound
+              # Ignore lack of a setup.cfg
+              nil
+            end
           end
 
           if unfetchable_files.any?
