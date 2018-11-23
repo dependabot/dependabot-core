@@ -1,3 +1,7 @@
+## v0.75.93, 23 November 2018
+
+- Docker: Retry rogue 404s from dockerhub
+
 ## v0.75.92, 23 November 2018
 
 - Python: Lock git dependencies during Pipenv updates
