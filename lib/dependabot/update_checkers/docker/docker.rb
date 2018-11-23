@@ -85,6 +85,7 @@ module Dependabot
         def digest_up_to_date?
           dependency.requirements.all? do |req|
             next true unless req.fetch(:source)[:digest]
+            next true unless digest_of(dependency.version)
 
             req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
           end
@@ -200,10 +201,6 @@ module Dependabot
           return unless tags_from_registry.include?("latest")
 
           digest_of("latest")
-        rescue DockerRegistry2::NotFound
-          # Sometimes Dockerhub refuses to return a digest, in which case we
-          # treat the repo as if it didn't have a `latest` tag
-          nil
         end
 
         def digest_of(tag)
@@ -217,6 +214,9 @@ module Dependabot
               raise if attempt > 3
 
               retry
+            rescue DockerRegistry2::NotFound
+              # Sometimes Dockerhub refuses to return a digest
+              nil
             end
         end
 
