@@ -1,3 +1,8 @@
+## v0.75.89, 23 November 2018
+
+- Python: Raise a resolvability error for unsupported dependencies
+- Go (dep): Fix fsnotify-related bug in the update checker
+
 ## v0.75.88, 23 November 2018
 
 - Python: Handle path dependencies in Pipenv everywhere
