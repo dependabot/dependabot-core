@@ -172,6 +172,13 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
 
+    context "with a Pipfile with no source" do
+      let(:pipfile_fixture_name) { "no_source" }
+      let(:dependency_files) { [pipfile] }
+
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "with a custom index-url" do
       let(:pypi_url) do
         "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"

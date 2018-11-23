@@ -98,6 +98,11 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
         end
       end
 
+      context "without a source" do
+        let(:pipfile_fixture_name) { "no_source" }
+        its(:length) { is_expected.to eq(11) }
+      end
+
       context "using arbitrary equality" do
         let(:pipfile_fixture_name) { "arbitrary_equality" }
         let(:lockfile_fixture_name) { "arbitrary_equality.lock" }

@@ -173,7 +173,7 @@ module Dependabot
 
             pipfile_object = TomlRB.parse(pipfile.content)
 
-            urls[:main] = pipfile_object["source"].first&.fetch("url", nil)
+            urls[:main] = pipfile_object["source"]&.first&.fetch("url", nil)
 
             pipfile_object["source"]&.each do |source|
               urls[:extra] << source.fetch("url") if source["url"]
