@@ -1,3 +1,7 @@
+## v0.75.90, 23 November 2018
+
+- Python: Try setting a longer pip default timeout
+
 ## v0.75.89, 23 November 2018
 
 - Python: Raise a resolvability error for unsupported dependencies
