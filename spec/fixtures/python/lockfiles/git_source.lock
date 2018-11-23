@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "76257e8b1a36ef923d9e0a4f4b3c06ab5bdb727ff0b05b700d24c105bca0c9f3"
+            "sha256": "ab083473c9e4abf940ab40d0b5e2882d1d69cf2e8b3739e21131f90ffde8c04f"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -40,16 +40,16 @@
             ],
             "version": "==3.0.4"
         },
-        "django": {
-            "git": "https://github.com/django/django.git",
-            "ref": "1.11.4"
-        },
         "idna": {
             "hashes": [
                 "sha256:8c7309c718f94b3a625cb648ace320157ad16ff131ae0af362c9f21b80ef6ec4",
                 "sha256:2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
             ],
             "version": "==2.6"
+        },
+        "pythonfinder": {
+            "git": "https://github.com/sarugaku/pythonfinder.git",
+            "ref": "e63ef4351b3a2757c374cd1b828a1adef87bb15e"
         },
         "requests": {
             "hashes": [

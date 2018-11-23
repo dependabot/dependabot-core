@@ -280,10 +280,10 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
       let(:lockfile_fixture_name) { "git_source.lock" }
 
       it "excludes the git dependency" do
-        expect(dependencies.map(&:name)).to_not include("django")
+        expect(dependencies.map(&:name)).to_not include("pythonfinder")
       end
 
-      describe "the dependency" do
+      describe "the (non-git) dependency" do
         subject { dependencies.find { |d| d.name == "requests" } }
         let(:expected_requirements) do
           [{

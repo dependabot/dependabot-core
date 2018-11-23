@@ -4,4 +4,4 @@ verify_ssl = true
 
 [packages]
 requests = "*"
-django = { git = 'https://github.com/django/django.git', ref = '1.11.4' }
+pythonfinder = { git = 'https://github.com/sarugaku/pythonfinder.git', ref = 'v0.1.2' }

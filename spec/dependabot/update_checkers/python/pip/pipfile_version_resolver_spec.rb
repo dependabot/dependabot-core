@@ -339,7 +339,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
-              expect(err.dependency).to eq("django")
+              expect(err.dependency).to eq("pythonfinder")
             end
         end
       end

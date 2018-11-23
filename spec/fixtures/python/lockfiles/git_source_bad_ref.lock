@@ -40,16 +40,16 @@
             ],
             "version": "==3.0.4"
         },
-        "django": {
-            "git": "https://github.com/django/django.git",
-            "ref": "15.11.4"
-        },
         "idna": {
             "hashes": [
                 "sha256:8c7309c718f94b3a625cb648ace320157ad16ff131ae0af362c9f21b80ef6ec4",
                 "sha256:2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
             ],
             "version": "==2.6"
+        },
+        "pythonfinder": {
+            "git": "https://github.com/sarugaku/pythonfinder.git",
+            "ref": "v15.1.2"
         },
         "requests": {
             "hashes": [
