@@ -303,7 +303,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
       end
     end
 
-    context "with fsnotify as a dependency" do
+    context "with fsnotify as a direct dependency" do
       let(:manifest_fixture_name) { "fsnotify_dep.toml" }
       let(:lockfile_fixture_name) { "fsnotify_dep.lock" }
       let(:previous_requirements) do
@@ -320,6 +320,29 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
       let(:dependency_name) { "gopkg.in/fsnotify.v1" }
       let(:dependency_version) { "1.2.0" }
       let(:dependency_previous_version) { "1.2.0" }
+
+      it "updates the lockfile correctly" do
+        expect { updated_lockfile_content }.to_not raise_error
+      end
+    end
+
+    context "with fsnotify as a transitive dependency" do
+      let(:manifest_fixture_name) { "fsnotify_trans_dep.toml" }
+      let(:lockfile_fixture_name) { "fsnotify_trans_dep.lock" }
+      let(:previous_requirements) do
+        [{
+          file: "Gopkg.toml",
+          requirement: "~1.6.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/onsi/ginkgo"
+          }
+        }]
+      end
+      let(:dependency_name) { "github.com/onsi/ginkgo" }
+      let(:dependency_version) { "1.7.0" }
+      let(:dependency_previous_version) { "1.6.0" }
 
       it "updates the lockfile correctly" do
         expect { updated_lockfile_content }.to_not raise_error

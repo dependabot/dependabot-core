@@ -65,7 +65,7 @@ module Dependabot
             content = remove_git_source(content) if remove_git_source?
             content = replace_git_pin(content) if replace_git_pin?
             content = replace_version_constraint(content, file.name)
-            content = add_fsnotify_source(content)
+            content = add_fsnotify_override(content)
 
             content
           end
@@ -127,18 +127,23 @@ module Dependabot
 
           # A dep bug means we have to specify a source for gopkg.in/fsnotify.v1
           # or we get `panic: version queue is empty` errors
-          def add_fsnotify_source(content)
+          def add_fsnotify_override(content)
             parsed_manifest = TomlRB.parse(content)
 
-            FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|
-              (parsed_manifest[type] || []).each do |details|
-                next unless details["name"] == "gopkg.in/fsnotify.v1"
-                next if details["source"]
+            overrides = parsed_manifest.fetch("override", [])
+            dep_name = "gopkg.in/fsnotify.v1"
 
-                details["source"] = "gopkg.in/fsnotify/fsnotify.v1"
-              end
+            override = overrides.find { |s| s["name"] == dep_name }
+            if override.nil?
+              override = { "name" => dep_name }
+              overrides << override
             end
 
+            unless override["source"]
+              override["source"] = "gopkg.in/fsnotify/fsnotify.v1"
+            end
+
+            parsed_manifest["override"] = overrides
             TomlRB.dump(parsed_manifest)
           end
 
