@@ -421,7 +421,6 @@ module Dependabot
             dependency_files.select { |f| f.name.end_with?("setup.cfg") }
           end
 
-          # rubocop:disable Metrics/PerceivedComplexity
           def run_pipenv_command(cmd)
             raw_response = nil
             IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
@@ -432,8 +431,6 @@ module Dependabot
 
             raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
           rescue SharedHelpers::HelperSubprocessFailed => error
-            retry if error.message.include?("The Python you just installed")
-
             original_error ||= error
             msg = error.message
 
@@ -450,7 +447,6 @@ module Dependabot
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
           end
-          # rubocop:enable Metrics/PerceivedComplexity
 
           def may_be_using_wrong_python_version?(error_message)
             return false if python_requirement_specified?
