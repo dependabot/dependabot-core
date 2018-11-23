@@ -1,3 +1,8 @@
+## v0.75.91, 23 November 2018
+
+- Python: Handle Pipfiles without a source block
+- Better GitHub repo regex (taken directly from Octokit)
+
 ## v0.75.90, 23 November 2018
 
 - Python: Try setting a longer pip default timeout
