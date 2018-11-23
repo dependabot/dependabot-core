@@ -330,11 +330,27 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
       context "when the latest tag 404s" do
         before do
           stub_request(:head, repo_url + "manifests/latest").
-            and_return(status: 404)
+            to_return(status: 404).then.
+            to_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
         end
 
-        # Assume the latest is the highest version if digests can't be fetched
-        it { is_expected.to eq("2.2-sdk") }
+        it { is_expected.to eq("2.1.401-sdk") }
+
+        context "every time" do
+          before do
+            stub_request(:head, repo_url + "manifests/latest").
+              to_return(status: 404)
+          end
+
+          it "raises" do
+            expect { checker.latest_version }.
+              to raise_error(DockerRegistry2::NotFound)
+          end
+        end
       end
     end
 

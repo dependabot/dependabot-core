@@ -85,7 +85,6 @@ module Dependabot
         def digest_up_to_date?
           dependency.requirements.all? do |req|
             next true unless req.fetch(:source)[:digest]
-            next true unless digest_of(dependency.version)
 
             req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
           end
@@ -208,15 +207,12 @@ module Dependabot
           @digests[tag] ||=
             begin
               docker_registry_client.digest(docker_repo_name, tag)
-            rescue RestClient::Exceptions::Timeout
+            rescue RestClient::Exceptions::Timeout, DockerRegistry2::NotFound
               attempt ||= 1
               attempt += 1
               raise if attempt > 3
 
               retry
-            rescue DockerRegistry2::NotFound
-              # Sometimes Dockerhub refuses to return a digest
-              nil
             end
         end
 
