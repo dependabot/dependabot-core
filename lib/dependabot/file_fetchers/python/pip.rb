@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
 require "dependabot/file_fetchers/base"
 require "dependabot/file_parsers/python/pip"
+require "dependabot/errors"
 
 module Dependabot
   module FileFetchers
@@ -43,6 +46,7 @@ module Dependabot
 
           fetched_files << setup_file if setup_file
           fetched_files << setup_cfg if setup_cfg
+          fetched_files += path_setup_files
           fetched_files << pip_conf if pip_conf
           fetched_files << python_version if python_version
 
@@ -62,8 +66,7 @@ module Dependabot
           [
             *requirements_txt_files,
             *child_requirement_files,
-            *constraints_files,
-            *path_setup_files
+            *constraints_files
           ]
         end
 
@@ -121,6 +124,14 @@ module Dependabot
 
         def requirements_in_files
           req_txt_and_in_files.select { |f| f.name.end_with?(".in") }
+        end
+
+        def parsed_pipfile
+          raise "No Pipfile" unless pipfile
+
+          @parsed_pipfile ||= TomlRB.parse(pipfile.content)
+        rescue TomlRB::ParseError
+          raise Dependabot::DependencyFileNotParseable, pipfile.path
         end
 
         def req_txt_and_in_files
@@ -237,6 +248,10 @@ module Dependabot
         end
 
         def path_setup_file_paths
+          requirement_txt_path_setup_file_paths + pipfile_path_setup_file_paths
+        end
+
+        def requirement_txt_path_setup_file_paths
           (requirements_txt_files + child_requirement_files).map do |req_file|
             uneditable_reqs =
               req_file.content.
@@ -254,6 +269,23 @@ module Dependabot
 
             uneditable_reqs + editable_reqs
           end.flatten.uniq
+        end
+
+        def pipfile_path_setup_file_paths
+          return [] unless pipfile
+
+          paths = []
+          %w(packages dev-packages).each do |dep_type|
+            next unless parsed_pipfile[dep_type]
+
+            parsed_pipfile[dep_type].each do |_, req|
+              next unless req.is_a?(Hash) && req["path"]
+
+              paths << req["path"]
+            end
+          end
+
+          paths
         end
       end
     end

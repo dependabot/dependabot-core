@@ -169,7 +169,7 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "setup_content.json"),
+            body: fixture("github", "contents_python_pipfile.json"),
             headers: { "content-type" => "application/json" }
           )
       end
@@ -715,6 +715,68 @@ RSpec.describe Dependabot::FileFetchers::Python::Pip do
             expect(file_fetcher_instance.files.count).to eq(5)
             expect(file_fetcher_instance.files.map(&:name)).
               to include("setup.py")
+          end
+        end
+
+        context "but is in a Pipfile" do
+          let(:repo_contents) do
+            fixture("github", "contents_python_only_pipfile_and_lockfile.json")
+          end
+          let(:directory) { "/docs" }
+          before do
+            stub_request(:get, url + "docs?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 200, body: repo_contents, headers: json_header)
+            %w(app build_scripts data migrations tests).each do |dir|
+              stub_request(:get, url + "docs/#{dir}?ref=sha").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(status: 200, body: "[]", headers: json_header)
+            end
+
+            stub_request(:get, url + "docs/todo.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "contents_todo_txt.json"),
+                headers: json_header
+              )
+            stub_request(:get, url + "docs/Pipfile?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github",
+                              "contents_python_pipfile_with_path_dep.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "docs/Pipfile.lock?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "flowmachine/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "flowclient/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "fetches the setup.py" do
+            expect(file_fetcher_instance.files.map(&:name)).
+              to match_array(
+                %w(Pipfile Pipfile.lock
+                   ../flowmachine/setup.py ../flowclient/setup.py)
+              )
           end
         end
       end
