@@ -32,6 +32,10 @@ module Dependabot
           GIT_REFERENCE_NOT_FOUND_REGEX =
             %r{"git checkout -q (?<tag>[^"]+)" .*/(?<name>.*?)(\\n'\]|$)}.
             freeze
+          UNSUPPORTED_DEPS = %w(pyobjc).freeze
+          UNSUPPORTED_DEP_REGEX =
+            /"python setup\.py egg_info".*(?:#{UNSUPPORTED_DEPS.join("|")})/.
+            freeze
 
           attr_reader :dependency, :dependency_files, :credentials
 
@@ -120,12 +124,24 @@ module Dependabot
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/AbcSize
+          # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
                error.message.include?("Invalid specifier:")
               msg = clean_error_message(error.message)
               raise if msg.empty?
 
+              raise DependencyFileNotResolvable, msg
+            end
+
+            if error.message.match?(UNSUPPORTED_DEP_REGEX)
+              msg = "Dependabot detected a dependency that can't be built on "\
+                    "linux. Currently, all Dependabot builds happen on linux "\
+                    "boxes, so there is no way for Dependabot to resolve your "\
+                    "dependency files.\n\n"\
+                    "Unless you think Dependabot has made a mistake (please "\
+                    "tag us if so) you may wish to disable Dependabot on this "\
+                    "repo."
               raise DependencyFileNotResolvable, msg
             end
 
@@ -158,6 +174,7 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/AbcSize
+          # rubocop:enable Metrics/MethodLength
 
           # Needed because Pipenv's resolver isn't perfect.
           # Note: We raise errors from this method, rather than returning a
