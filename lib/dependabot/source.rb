@@ -5,7 +5,7 @@ module Dependabot
     GITHUB_SOURCE = %r{
       (?<provider>github)
       (?:\.com)[/:]
-      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x.freeze
 
