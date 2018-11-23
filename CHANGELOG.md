@@ -1,3 +1,7 @@
+## v0.75.92, 23 November 2018
+
+- Python: Lock git dependencies during Pipenv updates
+
 ## v0.75.91, 23 November 2018
 
 - Python: Handle Pipfiles without a source block
