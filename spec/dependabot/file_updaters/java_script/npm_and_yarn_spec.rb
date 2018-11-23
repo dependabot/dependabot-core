@@ -13,10 +13,11 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
   let(:updater) do
     described_class.new(
       dependency_files: files,
-      dependencies: [dependency],
+      dependencies: dependencies,
       credentials: credentials
     )
   end
+  let(:dependencies) { [dependency] }
   let(:files) { [package_json, yarn_lock, package_lock] }
   let(:credentials) do
     [{
@@ -117,6 +118,137 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       context "when nothing has changed" do
         let(:requirements) { previous_requirements }
         specify { expect { updated_files }.to raise_error(/No files/) }
+      end
+    end
+
+    context "with multiple dependencies" do
+      let(:files) { [package_json, package_lock, yarn_lock] }
+
+      let(:manifest_fixture_name) { "multiple_updates.json" }
+      let(:npm_lock_fixture_name) { "multiple_updates.json" }
+      let(:yarn_lock_fixture_name) { "multiple_updates.lock" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.8.1",
+            previous_version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.8.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          ),
+          Dependabot::Dependency.new(
+            name: "is-number",
+            version: "4.0.0",
+            previous_version: "2.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^4.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^2.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        ]
+      end
+
+      it "updates both dependencies" do
+        parsed_package = JSON.parse(updated_package_json.content)
+        expect(parsed_package["dependencies"]["is-number"]).
+          to eq("^4.0.0")
+        expect(parsed_package["dependencies"]["etag"]).
+          to eq("^1.8.1")
+
+        parsed_package_lock = JSON.parse(updated_npm_lock.content)
+        expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+          to eq("4.0.0")
+        expect(parsed_package_lock["dependencies"]["etag"]["version"]).
+          to eq("1.8.1")
+
+        expect(updated_yarn_lock.content).to include(
+          "is-number@^4.0.0:"
+        )
+        expect(updated_yarn_lock.content).to include(
+          "etag@^1.8.1:"
+        )
+      end
+
+      context "lockfile only update" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "etag",
+              version: "1.2.0",
+              previous_version: "1.0.1",
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.0.1",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "^1.0.1",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: "2.1.0",
+              previous_version: "2.0.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "^2.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "^2.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "updates both dependencies" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package-lock.json yarn.lock))
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("2.1.0")
+          expect(parsed_package_lock["dependencies"]["etag"]["version"]).
+            to eq("1.2.0")
+
+          expect(updated_yarn_lock.content).to include(
+            "is-number-2.1.0.tgz"
+          )
+          expect(updated_yarn_lock.content).to include(
+            "etag-1.2.0.tgz"
+          )
+        end
       end
     end
 

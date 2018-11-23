@@ -21,24 +21,15 @@ module Dependabot
             @credentials = credentials
           end
 
-          # rubocop:disable Metrics/AbcSize
           def updated_lockfile_content(lockfile)
-            path = Pathname.new(lockfile.name).dirname.to_s
-            name = Pathname.new(lockfile.name).basename.to_s
-            return lockfile.content if dependency_up_to_date?(lockfile)
             return lockfile.content if npmrc_disables_lockfile?
-
-            # Prevent changes to the lockfile when the dependency has been
-            # required in a package.json outside the current folder (e.g. lerna
-            # proj)
-            if dependency.top_level? &&
-               requirements_for_path(dependency.requirements, path).empty?
-              return lockfile.content
-            end
+            return lockfile.content if updatable_dependencies(lockfile).empty?
 
             @updated_lockfile_content ||= {}
             @updated_lockfile_content[lockfile.name] ||=
               SharedHelpers.in_a_temporary_directory do
+                path = Pathname.new(lockfile.name).dirname.to_s
+                name = Pathname.new(lockfile.name).basename.to_s
                 write_temporary_dependency_files(lockfile.name)
 
                 updated_files = Dir.chdir(path) { run_npm_updater(name) }
@@ -51,7 +42,6 @@ module Dependabot
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_npm_updater_error(error, lockfile)
           end
-          # rubocop:enable Metrics/AbcSize
 
           private
 
@@ -63,9 +53,20 @@ module Dependabot
             /(403 Forbidden|401 Unauthorized): (?<package_req>.*)/.freeze
           MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/.freeze
 
-          def dependency
-            # For now, we'll only ever be updating a single dependency for JS
-            dependencies.first
+          def top_level_dependencies
+            dependencies.select(&:top_level?)
+          end
+
+          def sub_dependencies
+            dependencies.reject(&:top_level?)
+          end
+
+          def updatable_dependencies(lockfile)
+            path = Pathname.new(lockfile.name).dirname.to_s
+            dependencies.reject do |dependency|
+              top_level_dependency_not_required?(dependency, path) ||
+                dependency_up_to_date?(lockfile, dependency)
+            end
           end
 
           def requirements_for_path(requirements, path)
@@ -78,7 +79,7 @@ module Dependabot
             end.compact
           end
 
-          def dependency_up_to_date?(lockfile)
+          def dependency_up_to_date?(lockfile, dependency)
             existing_dep = FileParsers::JavaScript::NpmAndYarn.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
@@ -94,9 +95,17 @@ module Dependabot
             existing_dep&.version == dependency.version
           end
 
+          # Prevent changes to the lockfile when the dependency has been
+          # required in a package.json outside the current folder (e.g. lerna
+          # proj)
+          def top_level_dependency_not_required?(dependency, path)
+            dependency.top_level? &&
+              requirements_for_path(dependency.requirements, path).empty?
+          end
+
           def run_npm_updater(lockfile_name)
             SharedHelpers.with_git_configured(credentials: credentials) do
-              if dependency.top_level?
+              if top_level_dependencies.any?
                 run_npm_top_level_updater(lockfile_name)
               else
                 run_npm_subdependency_updater(lockfile_name)
@@ -105,14 +114,16 @@ module Dependabot
           end
 
           def run_npm_top_level_updater(lockfile_name)
+            top_level_deps_to_update = top_level_dependencies.map do |d|
+              { name: d.name, version: d.version, requirements: d.requirements }
+            end
+
             SharedHelpers.run_helper_subprocess(
               command: "node #{npm_helper_path}",
               function: "update",
               args: [
                 Dir.pwd,
-                dependency.name,
-                dependency.version,
-                dependency.requirements,
+                top_level_deps_to_update,
                 lockfile_name
               ]
             )
@@ -138,7 +149,8 @@ module Dependabot
                 split(/(?<=\w)\@/).first
               handle_missing_package(package_name)
             end
-            if error.message.include?("#{dependency.name}@") &&
+            names = dependencies.map(&:name)
+            if names.any? { |name| error.message.include?("#{name}@") } &&
                error.message.start_with?("No matching vers") &&
                resolvable_before_update?(lockfile)
               # This happens if a new version has been published that relies on
@@ -241,7 +253,7 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               updated_content =
-                if update_package_json && dependency.top_level?
+                if update_package_json && top_level_dependencies.any?
                   updated_package_json_content(file)
                 else
                   file.content
@@ -268,7 +280,7 @@ module Dependabot
 
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
 
-              if dependency.top_level?
+              if top_level_dependencies.any?
                 File.write(f.name, f.content)
               else
                 File.write(f.name, prepared_npm_lockfile_content(f.content))
@@ -361,9 +373,10 @@ module Dependabot
           def remove_dependency_from_npm_lockfile(npm_lockfile)
             return npm_lockfile unless npm_lockfile.key?("dependencies")
 
+            sub_dependency_names = sub_dependencies.map(&:name)
             dependencies =
               npm_lockfile["dependencies"].
-              reject { |key, _| key == dependency.name }.
+              reject { |key, _| sub_dependency_names.include?(key) }.
               map { |k, v| [k, remove_dependency_from_npm_lockfile(v)] }.
               to_h
             npm_lockfile.merge("dependencies" => dependencies)
@@ -435,7 +448,7 @@ module Dependabot
             @updated_package_json_content[file.name] ||=
               PackageJsonUpdater.new(
                 package_json: file,
-                dependencies: dependencies
+                dependencies: top_level_dependencies
               ).updated_package_json.content
           end
 
