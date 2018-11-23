@@ -12,6 +12,7 @@
 
 const npm = require("npm");
 const installer = require("npm/lib/install");
+const { muteStderr, runAsync } = require("./helpers.js");
 
 function installArgsWithVersion(depName, desiredVersion, requirements) {
   const source = (requirements.find(req => req.source) || {}).source;
@@ -23,27 +24,6 @@ function installArgsWithVersion(depName, desiredVersion, requirements) {
   }
 }
 
-function runAsync(obj, method, args) {
-  return new Promise((resolve, reject) => {
-    const cb = (err, ...returnValues) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(returnValues);
-      }
-    };
-    method.apply(obj, [...args, cb]);
-  });
-}
-
-function muteStderr() {
-  const original = process.stderr.write;
-  process.stderr.write = () => {};
-  return () => {
-    process.stderr.write = original;
-  };
-}
-
 async function checkPeerDependencies(
   directory,
   depName,
@@ -51,7 +31,11 @@ async function checkPeerDependencies(
   requirements,
   topLevelDependencies
 ) {
-  await runAsync(npm, npm.load, [{ loglevel: "silent" }]);
+  // `force: true` ignores checks for platform (os, cpu) and engines
+  // in npm/lib/install/validate-args.js
+  // Platform is checked and raised from (EBADPLATFORM):
+  // https://github.com/npm/npm-install-checks
+  await runAsync(npm, npm.load, [{ loglevel: "silent", force: true }]);
 
   const dryRun = true;
 
