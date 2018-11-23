@@ -1,3 +1,11 @@
+## v0.75.87, 23 November 2018
+
+- Bump poetry from 0.12.9 to 0.12.10
+- Use latest Pipenv commit and remove workaround
+- npm: ingore platform and engine checks on install
+- Python: Fetch path dependencies listed in Pipfile
+- Python: Mark fetched path dependencies as support files
+
 ## v0.75.86, 22 November 2018
 
 - Python: Workaround Pipenv bug (caused issue for new Python version installs)
