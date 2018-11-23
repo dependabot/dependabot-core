@@ -164,7 +164,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         let(:setupfile_fixture_name) { "with_pbr.py" }
         let(:setup_cfg) do
           Dependabot::DependencyFile.new(
-            name: "setup.cfg",
+            name: "mydep/setup.cfg",
             content: fixture("python", "setup_files", "setup.cfg")
           )
         end
