@@ -1,3 +1,7 @@
+## v0.75.88, 23 November 2018
+
+- Python: Handle path dependencies in Pipenv everywhere
+
 ## v0.75.87, 23 November 2018
 
 - Bump poetry from 0.12.9 to 0.12.10
