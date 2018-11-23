@@ -85,14 +85,8 @@ module Dependabot
           def prepared_manifest_content
             parsed_manifest = TomlRB.parse(manifest.content)
 
-            FileParsers::Go::Dep::REQUIREMENT_TYPES.each do |type|
-              (parsed_manifest[type] || []).each do |details|
-                next unless details["name"] == "gopkg.in/fsnotify.v1"
-                next if details["source"]
-
-                details["source"] = "gopkg.in/fsnotify/fsnotify.v1"
-              end
-            end
+            parsed_manifest["override"] =
+              add_fsnotify_override(parsed_manifest["override"])
 
             dependencies.each do |dep|
               req = dep.requirements.find { |r| r[:file] == manifest.name }
@@ -154,6 +148,24 @@ module Dependabot
             parsed_manifest["constraint"] << details
           end
 
+          # Work around a dep bug that results in a panic
+          def add_fsnotify_override(overrides)
+            overrides ||= []
+            dep_name = "gopkg.in/fsnotify.v1"
+
+            override = overrides.find { |s| s["name"] == dep_name }
+            if override.nil?
+              override = { "name" => dep_name }
+              overrides << override
+            end
+
+            unless override["source"]
+              override["source"] = "gopkg.in/fsnotify/fsnotify.v1"
+            end
+
+            overrides
+          end
+
           def dummy_app_content
             base = "package main\n\n"\
                    "import \"fmt\"\n\n"
@@ -184,7 +196,7 @@ module Dependabot
           end
 
           def appears_in_lockfile(dep)
-            !parsed_file(lockfile).fetch("projects").
+            !parsed_file(lockfile)["projects"]&.
               find { |p| p["name"] == dep.name }.nil?
           end
 
