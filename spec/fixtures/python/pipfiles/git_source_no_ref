@@ -1,0 +1,7 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[packages]
+requests = "*"
+pythonfinder = { git = 'https://github.com/sarugaku/pythonfinder.git' }

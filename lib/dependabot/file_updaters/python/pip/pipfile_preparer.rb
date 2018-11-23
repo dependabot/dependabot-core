@@ -36,25 +36,37 @@ module Dependabot
               pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
                 next if excluded_names.include?(normalise(dep_name))
 
-                locked_version = version_from_lockfile(
-                  lockfile,
-                  keys[:lockfile],
-                  normalise(dep_name)
-                )
-                next unless locked_version
-
-                if pipfile_object[keys[:pipfile]][dep_name].is_a?(Hash)
-                  pipfile_object[keys[:pipfile]][dep_name]["version"] =
-                    "==#{locked_version}"
-                else
-                  pipfile_object[keys[:pipfile]][dep_name] =
-                    "==#{locked_version}"
-                end
+                freeze_dependency(dep_name, pipfile_object, lockfile, keys)
               end
             end
 
             TomlRB.dump(pipfile_object)
           end
+
+          # rubocop:disable Metrics/PerceivedComplexity
+          def freeze_dependency(dep_name, pipfile_object, lockfile, keys)
+            locked_version = version_from_lockfile(
+              lockfile,
+              keys[:lockfile],
+              normalise(dep_name)
+            )
+            locked_ref = ref_from_lockfile(
+              lockfile,
+              keys[:lockfile],
+              normalise(dep_name)
+            )
+
+            pipfile_req = pipfile_object[keys[:pipfile]][dep_name]
+            if pipfile_req.is_a?(Hash) && locked_version
+              pipfile_req["version"] = "==#{locked_version}"
+            elsif pipfile_req.is_a?(Hash) && locked_ref && !pipfile_req["ref"]
+              pipfile_req["ref"] = locked_ref
+            elsif locked_version
+              pipfile_object[keys[:pipfile]][dep_name] =
+                "==#{locked_version}"
+            end
+          end
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def update_python_requirement(requirement)
             pipfile_object = TomlRB.parse(pipfile_content)
@@ -78,6 +90,15 @@ module Dependabot
             case details
             when String then details.gsub(/^==/, "")
             when Hash then details["version"]&.gsub(/^==/, "")
+            end
+          end
+
+          def ref_from_lockfile(lockfile, dep_type, dep_name)
+            details = JSON.parse(lockfile.content).
+                      dig(dep_type, normalise(dep_name))
+
+            case details
+            when Hash then details["ref"]
             end
           end
 

@@ -314,13 +314,22 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
         it "doesn't remove the subdependency" do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
 
-          updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
-          json_lockfile = JSON.parse(updated_lockfile.content)
+          expect(json_lockfile["default"]["raven"]["version"]).to eq("==6.7.0")
+          expect(json_lockfile["default"]["blinker"]["version"]).to eq("==1.4")
+        end
+      end
 
-          expect(json_lockfile["default"]["raven"]["version"]).
-            to eq("==6.7.0")
-          expect(json_lockfile["default"]["blinker"]["version"]).
-            to eq("==1.4")
+      context "with a git dependency" do
+        let(:pipfile_fixture_name) { "git_source_no_ref" }
+        let(:lockfile_fixture_name) { "git_source_no_ref.lock" }
+
+        context "when updating the non-git dependency" do
+          it "doesn't update the git dependency" do
+            expect(json_lockfile["default"]["requests"]["version"]).
+              to eq("==2.18.4")
+            expect(json_lockfile["default"]["pythonfinder"]).
+              to eq(JSON.parse(lockfile.content)["default"]["pythonfinder"])
+          end
         end
       end
 

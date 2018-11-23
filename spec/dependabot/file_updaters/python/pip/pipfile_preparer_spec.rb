@@ -80,6 +80,32 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfilePreparer do
           expect(updated_content).to include('requests = "*"')
         end
       end
+
+      context "that is a git dependency" do
+        let(:pipfile_fixture_name) { "git_source_no_ref" }
+        let(:lockfile_fixture_name) { "git_source_no_ref.lock" }
+
+        it "locks the dependency" do
+          expect(updated_content).to include(
+            "[packages.pythonfinder]\n"\
+            "git = \"https://github.com/sarugaku/pythonfinder.git\"\n"\
+            "ref = \"9ee85b83290850f99dec2c0ec58a084305047347\"\n"
+          )
+        end
+
+        context "but already has a reference" do
+          let(:pipfile_fixture_name) { "git_source" }
+          let(:lockfile_fixture_name) { "git_source.lock" }
+
+          it "leaves the dependency alone" do
+            expect(updated_content).to include(
+              "[packages.django]\n"\
+              "git = \"https://github.com/django/django.git\"\n"\
+              "ref = \"1.11.4\"\n"
+            )
+          end
+        end
+      end
     end
   end
 end
