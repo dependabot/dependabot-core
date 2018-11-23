@@ -220,7 +220,8 @@ module Dependabot
             path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
             next if path == "setup.py" && setup_file
 
-            path_setup_files << fetch_file_from_host(path)
+            path_setup_files << fetch_file_from_host(path).
+                                tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
             unfetchable_files << path
           end
