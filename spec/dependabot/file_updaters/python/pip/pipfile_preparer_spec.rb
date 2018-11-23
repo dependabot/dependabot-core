@@ -99,7 +99,7 @@ RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfilePreparer do
 
           it "leaves the dependency alone" do
             expect(updated_content).to include(
-              "[packages.django]\n"\
+              "[packages.pythonfinder]\n"\
               "git = \"https://github.com/sarugaku/pythonfinder.git\"\n"\
               "ref = \"v0.1.2\"\n"
             )
