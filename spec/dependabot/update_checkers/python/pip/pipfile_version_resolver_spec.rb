@@ -141,6 +141,20 @@ RSpec.describe namespace::PipfileVersionResolver do
       end
     end
 
+    context "with a dependency that can only be built on a mac" do
+      let(:pipfile_fixture_name) { "unsupported_dep" }
+      let(:lockfile_fixture_name) { "unsupported_dep.lock" }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to start_with(
+              "Dependabot detected a dependency that can't be built on linux"
+            )
+          end
+      end
+    end
+
     context "with a path dependency" do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do
