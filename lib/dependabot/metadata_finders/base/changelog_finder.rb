@@ -119,13 +119,17 @@ module Dependabot
 
         def fetch_file_text(file)
           @file_text ||= {}
-          @file_text[file.path] ||=
-            case source.provider
-            when "github" then fetch_github_file(file)
-            when "gitlab" then fetch_gitlab_file(file)
-            when "bitbucket" then fetch_bitbucket_file(file)
-            else raise "Unsupported provider '#{source.provider}"
-            end
+
+          unless @file_text.key?(file.path)
+            @file_text[file.path] =
+              case source.provider
+              when "github" then fetch_github_file(file)
+              when "gitlab" then fetch_gitlab_file(file)
+              when "bitbucket" then fetch_bitbucket_file(file)
+              else raise "Unsupported provider '#{source.provider}"
+              end
+          end
+
           return unless @file_text[file.path].valid_encoding?
 
           @file_text[file.path].force_encoding("UTF-8").encode.sub(/\n*\z/, "")
