@@ -1,3 +1,7 @@
+## v0.75.94, 24 November 2018
+
+- Python: Bump Pipenv to latest commit
+
 ## v0.75.93, 23 November 2018
 
 - Docker: Retry rogue 404s from dockerhub
