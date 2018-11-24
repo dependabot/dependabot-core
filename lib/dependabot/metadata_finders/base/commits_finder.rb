@@ -44,8 +44,6 @@ module Dependabot
           end
         end
 
-        private
-
         def new_tag
           new_version = dependency.version
 
@@ -56,6 +54,8 @@ module Dependabot
             tags.find { |t| t.include?(dependency.name) } || tags.first
           end
         end
+
+        private
 
         def previous_tag
           previous_version = dependency.previous_version

@@ -134,6 +134,7 @@ module Dependabot
 
         def new_version
           @new_version ||= git_source? ? new_ref : dependency.version
+          @new_version&.gsub(/^v/, "")
         end
 
         def previous_ref

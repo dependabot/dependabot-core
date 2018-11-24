@@ -737,6 +737,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               body: fixture("github", "business_files_no_changelog.json"),
               headers: json_header
             )
+          stub_request(:get, "#{business_repo_url}/contents/?ref=v1.5.0").
+            to_return(
+              status: 200,
+              body: fixture("github", "business_files_no_changelog.json"),
+              headers: json_header
+            )
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/business/compare/"\
@@ -782,6 +788,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
 
           before do
+            stub_request(:get, "#{business_repo_url}/contents/?ref=v1.6.0").
+              to_return(
+                status: 200,
+                body: fixture("github", "business_files_no_changelog.json"),
+                headers: json_header
+              )
             stub_request(
               :get,
               "https://api.github.com/repos/gocardless/business/compare/"\

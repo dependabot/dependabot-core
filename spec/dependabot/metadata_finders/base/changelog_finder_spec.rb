@@ -50,6 +50,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   end
   let(:dependency_previous_version) { "1.0.0" }
 
+  let(:dummy_commits_finder) do
+    instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
+  end
+  before do
+    allow(Dependabot::MetadataFinders::Base::CommitsFinder).
+      to receive(:new).and_return(dummy_commits_finder)
+    allow(dummy_commits_finder).to receive(:new_tag).and_return("v1.4.0")
+  end
+
   describe "#changelog_url" do
     subject { finder.changelog_url }
 
@@ -96,7 +105,40 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           fixture("github", "business_files_no_changelog.json")
         end
 
+        before do
+          stub_request(:get, github_url + "?ref=v1.4.0").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: github_response,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
         it { is_expected.to be_nil }
+
+        context "but with a changelog on the tag" do
+          before do
+            stub_request(:get, github_url + "?ref=v1.4.0").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: fixture("github", "business_files_v1.4.0.json"),
+                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: github_status,
+                body: fixture("github", "changelog_contents.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "gets the right URL" do
+            expect(subject).
+              to eq(
+                "https://github.com/gocardless/business/blob/v1.4.0/"\
+                "CHANGELOG.md"
+              )
+          end
+        end
       end
 
       context "with a docs folder" do
@@ -212,6 +254,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:github_response) { fixture("github", "not_found.json") }
         let(:github_status) { 404 }
 
+        before do
+          stub_request(:get, github_url + "?ref=v1.4.0").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: github_status,
+                      body: github_response,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
         it { is_expected.to be_nil }
       end
 
@@ -227,7 +277,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         context "when authentication fails" do
-          before { stub_request(:get, github_url).to_return(status: 404) }
+          before do
+            stub_request(:get, github_url).to_return(status: 404)
+            stub_request(:get, github_url + "?ref=v1.4.0").
+              to_return(status: 404)
+          end
+
           it { is_expected.to be_nil }
         end
 
@@ -454,6 +509,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_changelog_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: changelog_body,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "?ref=v1.4.0").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: github_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: changelog_body,

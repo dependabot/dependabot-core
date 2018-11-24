@@ -13,6 +13,7 @@ module Dependabot
     class Base
       class ChangelogFinder
         require_relative "changelog_pruner"
+        require_relative "commits_finder"
 
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(changelog history news changes release).freeze
@@ -89,10 +90,6 @@ module Dependabot
           @relevant_tag_changelog ||= changelog_from_ref(tag_for_new_version)
         end
 
-        def tag_for_new_version
-          nil
-        end
-
         def changelog_from_ref(ref)
           files =
             dependency_file_list(ref).
@@ -116,6 +113,14 @@ module Dependabot
           end
 
           nil
+        end
+
+        def tag_for_new_version
+          CommitsFinder.new(
+            dependency: dependency,
+            source: source,
+            credentials: credentials
+          ).new_tag
         end
 
         def full_changelog_text
@@ -243,6 +248,7 @@ module Dependabot
 
         def new_version
           @new_version ||= git_source? ? new_ref : dependency.version
+          @new_version&.gsub(/^v/, "")
         end
 
         def previous_ref
