@@ -40,6 +40,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
   end
   let(:dependency_previous_version) { "1.0.0" }
 
+  describe "#includes_new_version?" do
+    subject(:includes_new_version) { pruner.includes_new_version? }
+
+    context "when the new version is included" do
+      it { is_expected.to eq(true) }
+    end
+
+    context "when the new version is not included" do
+      let(:dependency_version) { "5.0.0" }
+      it { is_expected.to eq(false) }
+    end
+  end
+
   describe "#pruned_text" do
     subject(:pruned_text) { pruner.pruned_text }
     let(:dependency_version) { "1.4.0" }

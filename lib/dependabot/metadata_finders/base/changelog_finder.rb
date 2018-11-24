@@ -50,46 +50,72 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def changelog
           return unless source
 
           # Changelog won't be relevant for a git commit bump
           return if git_source? && !ref_changed?
-          return unless default_branch_changelog
-          return default_branch_changelog unless new_version
 
-          if fetch_file_text(default_branch_changelog)&.include?(new_version)
+          # If there is a changelog, and it includes the new version, return it
+          if new_version && default_branch_changelog &&
+             fetch_file_text(default_branch_changelog)&.include?(new_version)
             return default_branch_changelog
           end
 
+          # Otherwise, look for a changelog at the tag for this version
+          if new_version && relevant_tag_changelog &&
+             fetch_file_text(relevant_tag_changelog)&.include?(new_version)
+            return relevant_tag_changelog
+          end
+
+          # Fall back to the changelog (or nil) from the default branch
           default_branch_changelog
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def default_branch_changelog
           return unless source
 
-          @default_branch_changelog ||=
-            begin
-              files =
-                dependency_file_list.
-                select { |f| f.type == "file" }.
-                reject { |f| f.name.end_with?(".sh") }.
-                reject { |f| f.size > 1_000_000 }
+          @default_branch_changelog ||= changelog_from_ref(nil)
+        end
 
-              CHANGELOG_NAMES.each do |name|
-                candidates = files.select { |f| f.name =~ /#{name}/i }
-                file = candidates.first if candidates.one?
-                file ||=
-                  candidates.find do |f|
-                    candidates -= [f] && next if fetch_file_text(f).nil?
-                    new_version && fetch_file_text(f).include?(new_version)
-                  end
-                file ||= candidates.max_by(&:size)
-                return file if file
+        def relevant_tag_changelog
+          return unless source
+          return unless tag_for_new_version
+
+          @relevant_tag_changelog ||= changelog_from_ref(tag_for_new_version)
+        end
+
+        def tag_for_new_version
+          nil
+        end
+
+        def changelog_from_ref(ref)
+          files =
+            dependency_file_list(ref).
+            select { |f| f.type == "file" }.
+            reject { |f| f.name.end_with?(".sh") }.
+            reject { |f| f.size > 1_000_000 }
+
+          CHANGELOG_NAMES.each do |name|
+            candidates = files.select { |f| f.name =~ /#{name}/i }
+            file = candidates.first if candidates.one?
+            file ||=
+              candidates.find do |f|
+                candidates -= [f] && next if fetch_file_text(f).nil?
+                ChangelogPruner.new(
+                  dependency: dependency,
+                  changelog_text: fetch_file_text(f)
+                ).includes_new_version?
               end
+            file ||= candidates.max_by(&:size)
+            return file if file
+          end
 
-              nil
-            end
+          nil
         end
 
         def full_changelog_text
@@ -101,8 +127,8 @@ module Dependabot
         def fetch_file_text(file)
           @file_text ||= {}
 
-          unless @file_text.key?(file.path)
-            @file_text[file.path] =
+          unless @file_text.key?(file.download_url)
+            @file_text[file.download_url] =
               case source.provider
               when "github" then fetch_github_file(file)
               when "gitlab" then fetch_gitlab_file(file)
@@ -111,9 +137,11 @@ module Dependabot
               end
           end
 
-          return unless @file_text[file.path].valid_encoding?
+          return unless @file_text[file.download_url].valid_encoding?
 
-          @file_text[file.path].force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+          @file_text[file.download_url].
+            force_encoding("UTF-8").
+            encode.sub(/\n*\z/, "")
         end
 
         def fetch_github_file(file)
@@ -148,31 +176,35 @@ module Dependabot
             max_by(&:size)
         end
 
-        def dependency_file_list
-          @dependency_file_list ||= fetch_dependency_file_list
+        def dependency_file_list(ref = nil)
+          @dependency_file_list ||= {}
+          @dependency_file_list[ref] ||= fetch_dependency_file_list(ref)
         end
 
-        def fetch_dependency_file_list
+        def fetch_dependency_file_list(ref)
           case source.provider
-          when "github" then fetch_github_file_list
+          when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
 
-        def fetch_github_file_list
+        def fetch_github_file_list(ref)
           files = []
 
           if source.directory
-            files += github_client.contents(source.repo, path: source.directory)
+            opts = { path: source.directory, ref: ref }.compact
+            files += github_client.contents(source.repo, opts)
           end
 
-          files += github_client.contents(source.repo)
+          opts = { ref: ref }.compact
+          files += github_client.contents(source.repo, opts)
 
           %w(doc docs).each do |dir_name|
             if files.any? { |f| f.name == dir_name && f.type == "dir" }
-              files += github_client.contents(source.repo, path: dir_name)
+              opts = { path: dir_name, ref: ref }.compact
+              files += github_client.contents(source.repo, opts)
             end
           end
 

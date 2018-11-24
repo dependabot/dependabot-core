@@ -13,6 +13,10 @@ module Dependabot
           @changelog_text = changelog_text
         end
 
+        def includes_new_version?
+          !new_version_changelog_line.nil?
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
         def pruned_text
