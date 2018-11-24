@@ -1,3 +1,8 @@
+## v0.75.95, 24 November 2018
+
+- Fall back to looking for changelog on specific tag if it can't be found on
+  master
+
 ## v0.75.94, 24 November 2018
 
 - Python: Bump Pipenv to latest commit
