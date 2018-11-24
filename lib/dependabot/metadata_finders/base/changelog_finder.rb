@@ -72,27 +72,7 @@ module Dependabot
         def upgrade_guide_text
           return unless upgrade_guide
 
-          @upgrade_guide_text ||=
-            if source.provider == "github"
-              # Hitting the download URL directly causes encoding problems
-              raw_content = github_client.contents(
-                source.repo,
-                path: upgrade_guide.path
-              ).content
-              Base64.decode64(raw_content).force_encoding("UTF-8").encode
-            else
-              Excon.get(
-                upgrade_guide.download_url,
-                user: bitbucket_credential&.fetch("username"),
-                password: bitbucket_credential&.fetch("password"),
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              ).body
-            end
-
-          return unless @upgrade_guide_text.valid_encoding?
-
-          @upgrade_guide_text.force_encoding("UTF-8").encode.sub(/\n*\z/, "")
+          @upgrade_guide_text ||= fetch_file_text(upgrade_guide)
         end
 
         private
