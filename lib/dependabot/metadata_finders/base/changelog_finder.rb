@@ -219,13 +219,14 @@ module Dependabot
         end
 
         def fetch_bitbucket_file_list
+          branch = default_bitbucket_branch
           bitbucket_client.fetch_repo_contents(source.repo).map do |file|
             OpenStruct.new(
               name: file.fetch("path").split("/").last,
               type: file.fetch("type") == "commit_file" ? "file" : file["type"],
               size: file.fetch("size", 0),
-              html_url: "#{source.url}/src/master/#{file['path']}",
-              download_url: "#{source.url}/raw/master/#{file['path']}"
+              html_url: "#{source.url}/src/#{branch}/#{file['path']}",
+              download_url: "#{source.url}/raw/#{branch}/#{file['path']}"
             )
           end
         rescue Dependabot::Clients::Bitbucket::NotFound
@@ -303,6 +304,11 @@ module Dependabot
         def bitbucket_client
           @bitbucket_client ||= Dependabot::Clients::Bitbucket.
                                 for_bitbucket_dot_org(credentials: credentials)
+        end
+
+        def default_bitbucket_branch
+          @default_bitbucket_branch ||=
+            bitbucket_client.fetch_default_branch(source.repo)
         end
       end
     end

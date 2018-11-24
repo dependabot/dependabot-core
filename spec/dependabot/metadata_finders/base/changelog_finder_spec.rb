@@ -407,8 +407,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.bitbucket.org/2.0/repositories/org/business/src"\
         "?pagelen=100"
       end
+      let(:bitbucket_repo_url) do
+        "https://api.bitbucket.org/2.0/repositories/org/business"
+      end
       let(:bitbucket_raw_changelog_url) do
-        "https://bitbucket.org/org/business/raw/master/CHANGELOG.md"
+        "https://bitbucket.org/org/business/raw/default/CHANGELOG.md"
       end
 
       let(:bitbucket_status) { 200 }
@@ -425,6 +428,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: bitbucket_status,
                     body: bitbucket_response,
                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_repo_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
         stub_request(:get, bitbucket_raw_changelog_url).
           to_return(status: 200,
                     body: fixture("raw", "changelog.md"),
@@ -456,7 +463,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       it "gets the right URL" do
         is_expected.to eq(
-          "https://bitbucket.org/org/business/src/master/CHANGELOG.md"
+          "https://bitbucket.org/org/business/src/default/CHANGELOG.md"
         )
       end
 
@@ -646,8 +653,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.bitbucket.org/2.0/repositories/org/business/src"\
         "?pagelen=100"
       end
+      let(:bitbucket_repo_url) do
+        "https://api.bitbucket.org/2.0/repositories/org/business"
+      end
       let(:bitbucket_raw_changelog_url) do
-        "https://bitbucket.org/org/business/raw/master/CHANGELOG.md"
+        "https://bitbucket.org/org/business/raw/default/CHANGELOG.md"
       end
 
       let(:bitbucket_contents_response) do
@@ -665,6 +675,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: 200,
                     body: bitbucket_contents_response,
                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_repo_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
         stub_request(:get, bitbucket_raw_changelog_url).
           to_return(status: 200,
                     body: fixture("raw", "changelog.md"),
