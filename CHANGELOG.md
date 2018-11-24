@@ -1,3 +1,7 @@
+## v0.75.96, 24 November 2018
+
+- Handle non-master bitbucket branches in ChangelogFinder
+
 ## v0.75.95, 24 November 2018
 
 - Fall back to looking for changelog on specific tag if it can't be found on
