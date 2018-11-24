@@ -77,39 +77,47 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         def changelog
           return unless source
 
           # Changelog won't be relevant for a git commit bump
           return if git_source? && !ref_changed?
+          return unless default_branch_changelog
+          return default_branch_changelog unless new_version
 
-          files =
-            dependency_file_list.
-            select { |f| f.type == "file" }.
-            reject { |f| f.name.end_with?(".sh") }.
-            reject { |f| f.size > 1_000_000 }
-
-          CHANGELOG_NAMES.each do |name|
-            candidates = files.select { |f| f.name =~ /#{name}/i }
-            file = candidates.first if candidates.one?
-            file ||=
-              candidates.find do |f|
-                new_version = git_source? ? new_ref : dependency.version
-                candidates -= [f] && next if fetch_file_text(f).nil?
-                new_version && fetch_file_text(f).include?(new_version)
-              end
-            file ||= candidates.max_by(&:size)
-            return file if file
+          if fetch_file_text(default_branch_changelog)&.include?(new_version)
+            return default_branch_changelog
           end
 
-          nil
+          default_branch_changelog
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/AbcSize
+
+        def default_branch_changelog
+          return unless source
+
+          @default_branch_changelog ||=
+            begin
+              files =
+                dependency_file_list.
+                select { |f| f.type == "file" }.
+                reject { |f| f.name.end_with?(".sh") }.
+                reject { |f| f.size > 1_000_000 }
+
+              CHANGELOG_NAMES.each do |name|
+                candidates = files.select { |f| f.name =~ /#{name}/i }
+                file = candidates.first if candidates.one?
+                file ||=
+                  candidates.find do |f|
+                    candidates -= [f] && next if fetch_file_text(f).nil?
+                    new_version && fetch_file_text(f).include?(new_version)
+                  end
+                file ||= candidates.max_by(&:size)
+                return file if file
+              end
+
+              nil
+            end
+        end
 
         def full_changelog_text
           return unless changelog
@@ -164,7 +172,6 @@ module Dependabot
         end
 
         def new_version_changelog_line
-          new_version = git_source? ? new_ref : dependency.version
           return nil unless new_version
 
           changelog_line_for_version(new_version)
@@ -309,6 +316,10 @@ module Dependabot
           end
         rescue Gitlab::Error::NotFound
           []
+        end
+
+        def new_version
+          @new_version ||= git_source? ? new_ref : dependency.version
         end
 
         def previous_ref

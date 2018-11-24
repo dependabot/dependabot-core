@@ -66,7 +66,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, github_url + "CHANGELOG.md").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: github_status,
+                    body: changelog_body,
+                    headers: { "Content-Type" => "application/json" })
       end
+      let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       context "with a changelog" do
         let(:github_response) { fixture("github", "business_files.json") }
@@ -221,7 +227,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               to_return(status: github_status,
                         body: github_response,
                         headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md").
+              to_return(status: github_status,
+                        body: changelog_body,
+                        headers: { "Content-Type" => "application/json" })
           end
+          let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
           it "gets the right URL" do
             expect(subject).
@@ -289,6 +300,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:gitlab_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
       end
+      let(:gitlab_raw_changelog_url) do
+        "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
+      end
 
       let(:gitlab_status) { 200 }
       let(:gitlab_response) { fixture("gitlab", "business_files.json") }
@@ -304,6 +318,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: gitlab_status,
                     body: gitlab_response,
                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_raw_changelog_url).
+          to_return(status: 200,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       it "gets the right URL" do
@@ -324,6 +342,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.bitbucket.org/2.0/repositories/org/business/src"\
         "?pagelen=100"
       end
+      let(:bitbucket_raw_changelog_url) do
+        "https://bitbucket.org/org/business/raw/master/CHANGELOG.md"
+      end
 
       let(:bitbucket_status) { 200 }
       let(:bitbucket_response) { fixture("bitbucket", "business_files.json") }
@@ -339,24 +360,25 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: bitbucket_status,
                     body: bitbucket_response,
                     headers: { "Content-Type" => "application/json" })
+        stub_request(:get, bitbucket_raw_changelog_url).
+          to_return(status: 200,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
       end
 
       context "with credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "git_source",
-              "host" => "bitbucket.org",
-              "username" => "greysteil",
-              "password" => "secret_token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "git_source",
+            "host" => "bitbucket.org",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
         end
 
         it "uses the credentials" do
@@ -673,20 +695,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "with credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "git_source",
-              "host" => "bitbucket.org",
-              "username" => "greysteil",
-              "password" => "secret_token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "git_source",
+            "host" => "bitbucket.org",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
         end
 
         it "uses the credentials" do
@@ -749,8 +768,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "caches the call to GitHub" do
-            finder.changelog_url
-            finder.changelog_url
+            finder.upgrade_guide_url
+            finder.upgrade_guide_url
             expect(WebMock).to have_requested(:get, github_url).once
           end
         end
