@@ -524,7 +524,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   body: fixture("github", "business_releases.json"),
                   headers: json_header)
       stub_request(:get, "https://api.github.com/repos/gocardless/"\
-                         "business/contents/CHANGELOG.md").
+                         "business/contents/CHANGELOG.md?ref=master").
         to_return(status: 200,
                   body: fixture("github", "changelog_contents.json"),
                   headers: json_header)
@@ -889,7 +889,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               headers: json_header
             )
           stub_request(:get, "https://api.github.com/repos/gocardless/"\
-                         "business/contents/UPGRADE.md").
+                         "business/contents/UPGRADE.md?ref=master").
             to_return(
               status: 200,
               body: fixture("github", "upgrade_guide_contents.json"),
@@ -987,7 +987,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
           stub_request(:get, "https://api.github.com/repos/gocardless/"\
-                             "statesman/contents/CHANGELOG.md").
+                             "statesman/contents/CHANGELOG.md?ref=master").
             to_return(status: 200,
                       body: fixture("github", "changelog_contents.json"),
                       headers: json_header)
@@ -1191,7 +1191,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
           stub_request(:get, "https://api.github.com/repos/gocardless/"\
-                             "statesman/contents/CHANGELOG.md").
+                             "statesman/contents/CHANGELOG.md?ref=master").
             to_return(status: 200,
                       body: fixture("github", "changelog_contents.json"),
                       headers: json_header)

@@ -66,7 +66,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })
-        stub_request(:get, github_url + "CHANGELOG.md").
+        stub_request(:get, github_url + "CHANGELOG.md?ref=master").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: changelog_body,
@@ -100,6 +100,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       context "with a docs folder" do
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "scrapy/#{dependency_name}"
+          )
+        end
+        let(:dependency_name) { "scrapy" }
         let(:github_response) { fixture("github", "scrapy_files.json") }
         before do
           stub_request(:get, github_url + "docs").
@@ -114,14 +121,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:changelog_body_without_version) do
             fixture("github", "changelog_contents_japanese.json")
           end
+          let(:github_url) do
+            "https://api.github.com/repos/scrapy/scrapy/contents/"
+          end
 
           before do
-            stub_request(:get, github_url + "NEWS").
+            stub_request(:get, github_url + "NEWS?ref=master").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: changelog_body_without_version,
                         headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "docs/news.rst").
+            stub_request(:get, github_url + "docs/news.rst?ref=master").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: changelog_body,
@@ -173,12 +183,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             to_return(status: github_status,
                       body: fixture("github", "business_module_files.json"),
                       headers: { "Content-Type" => "application/json" })
-          stub_request(:get, github_url + "CHANGELOG.md").
+          stub_request(:get, github_url + "CHANGELOG.md?ref=master").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: changelog_body_without_version,
                       headers: { "Content-Type" => "application/json" })
-          stub_request(:get, github_url + "module/CHANGELOG.md").
+          stub_request(:get, github_url + "module/CHANGELOG.md?ref=master").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: changelog_body,
@@ -227,7 +237,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               to_return(status: github_status,
                         body: github_response,
                         headers: { "Content-Type" => "application/json" })
-            stub_request(:get, github_url + "CHANGELOG.md").
+            stub_request(:get, github_url + "CHANGELOG.md?ref=master").
               to_return(status: github_status,
                         body: changelog_body,
                         headers: { "Content-Type" => "application/json" })
@@ -429,7 +439,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
       let(:github_changelog_url) do
-        "https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md"
+        "https://api.github.com/repos/gocardless/business/contents/"\
+        "CHANGELOG.md?ref=master"
       end
       let(:github_contents_response) do
         fixture("github", "business_files.json")
@@ -795,7 +806,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
       let(:github_upgrade_guide_url) do
-        "https://api.github.com/repos/gocardless/business/contents/UPGRADE.md"
+        "https://api.github.com/repos/gocardless/business/contents/"\
+        "UPGRADE.md?ref=master"
       end
       let(:github_contents_response) do
         fixture("github", "business_files_with_upgrade_guide.json")

@@ -145,10 +145,7 @@ module Dependabot
 
         def fetch_github_file(file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = github_client.contents(
-            source.repo,
-            path: file.path
-          ).content
+          raw_content = github_client.get(file.url).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
