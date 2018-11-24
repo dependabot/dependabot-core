@@ -62,8 +62,7 @@ module Dependabot
             elsif pipfile_req.is_a?(Hash) && locked_ref && !pipfile_req["ref"]
               pipfile_req["ref"] = locked_ref
             elsif locked_version
-              pipfile_object[keys[:pipfile]][dep_name] =
-                "==#{locked_version}"
+              pipfile_object[keys[:pipfile]][dep_name] = "==#{locked_version}"
             end
           end
           # rubocop:enable Metrics/PerceivedComplexity
