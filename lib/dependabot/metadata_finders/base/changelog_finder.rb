@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
 require "excon"
 
 require "dependabot/clients/github_with_retries"
@@ -9,11 +8,12 @@ require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
       class ChangelogFinder
+        require_relative "changelog_pruner"
+
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(changelog history news changes release).freeze
 
@@ -29,41 +29,14 @@ module Dependabot
           changelog&.html_url
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def changelog_text
           return unless full_changelog_text
 
-          changelog_lines = full_changelog_text.split("\n")
-
-          slice_range =
-            if old_version_changelog_line && new_version_changelog_line
-              if old_version_changelog_line < new_version_changelog_line
-                Range.new(old_version_changelog_line, -1)
-              else
-                Range.new(new_version_changelog_line,
-                          old_version_changelog_line - 1)
-              end
-            elsif old_version_changelog_line
-              return if old_version_changelog_line.zero?
-
-              # Assumes changelog is in descending order
-              Range.new(0, old_version_changelog_line - 1)
-            elsif new_version_changelog_line
-              # Assumes changelog is in descending order
-              Range.new(new_version_changelog_line, -1)
-            else
-              return unless changelog_contains_relevant_versions?
-
-              # If the changelog contains any relevant versions, return it in
-              # full. We could do better here by fully parsing the changelog
-              Range.new(0, -1)
-            end
-
-          changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
+          ChangelogPruner.new(
+            dependency: dependency,
+            changelog_text: full_changelog_text
+          ).pruned_text
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def upgrade_guide_url
           upgrade_guide&.html_url
@@ -159,85 +132,6 @@ module Dependabot
 
         def fetch_bitbucket_file(file)
           bitbucket_client.get(file.download_url).body
-        end
-
-        def old_version_changelog_line
-          old_version = git_source? ? previous_ref : dependency.previous_version
-          return nil unless old_version
-
-          changelog_line_for_version(old_version)
-        end
-
-        def new_version_changelog_line
-          return nil unless new_version
-
-          changelog_line_for_version(new_version)
-        end
-
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
-        def changelog_line_for_version(version)
-          raise "No changelog text" unless full_changelog_text
-          return nil unless version
-
-          version = version.gsub(/^v/, "")
-          escaped_version = Regexp.escape(version)
-
-          changelog_lines = full_changelog_text.split("\n")
-
-          changelog_lines.find_index.with_index do |line, index|
-            next false unless line.include?(version)
-            next false if line.match?(/#{escaped_version}\.\./)
-            next true if line.start_with?("#", "!", "==")
-            next true if line.match?(/^v?#{escaped_version}:?/)
-            next true if line.match?(/^[\+\*\-] (version )?#{escaped_version}/i)
-            next true if line.match?(/^\d{4}-\d{2}-\d{2}/)
-            next true if changelog_lines[index + 1]&.match?(/^[=\-\+]{3,}\s*$/)
-
-            false
-          end
-        end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        def changelog_contains_relevant_versions?
-          # Assume the changelog is relevant if we can't parse the new version
-          return true unless version_class.correct?(dependency.version)
-
-          # Assume the changelog is relevant if it mentions the new version
-          # anywhere
-          return true if full_changelog_text.include?(dependency.version)
-
-          # Otherwise check if any intermediate versions are included in headers
-          versions_in_changelog_headers.any? do |version|
-            next false unless version <= version_class.new(dependency.version)
-            next true unless dependency.previous_version
-            next true unless version_class.correct?(dependency.previous_version)
-
-            version > version_class.new(dependency.previous_version)
-          end
-        end
-
-        def versions_in_changelog_headers
-          changelog_lines = full_changelog_text.split("\n")
-          header_lines =
-            changelog_lines.select.with_index do |line, index|
-              next true if line.start_with?("#", "!")
-              next true if line.match?(/^v?\d\.\d/)
-              next true if changelog_lines[index + 1]&.match?(/^[=-]+\s*$/)
-
-              false
-            end
-
-          versions = []
-          header_lines.each do |line|
-            cleaned_line = line.gsub(/^[^0-9]*/, "").gsub(/[\s,:].*/, "")
-            next if cleaned_line.empty? || !version_class.correct?(cleaned_line)
-
-            versions << version_class.new(cleaned_line)
-          end
-
-          versions
         end
 
         def upgrade_guide
@@ -358,10 +252,6 @@ module Dependabot
             dependency.previous_version.split(".").first.to_i >= 1
         end
 
-        def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
-        end
-
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::Gitlab.
                              for_gitlab_dot_com(credentials: credentials)
@@ -380,4 +270,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
