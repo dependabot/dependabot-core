@@ -149,13 +149,7 @@ module Dependabot
         end
 
         def fetch_bitbucket_file(file)
-          Excon.get(
-            file.download_url,
-            user: bitbucket_credential&.fetch("username"),
-            password: bitbucket_credential&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          ).body
+          bitbucket_client.get(file.download_url).body
         end
 
         def old_version_changelog_line
@@ -369,12 +363,6 @@ module Dependabot
         def bitbucket_client
           @bitbucket_client ||= Dependabot::Clients::Bitbucket.
                                 for_bitbucket_dot_org(credentials: credentials)
-        end
-
-        def bitbucket_credential
-          credentials.
-            select { |cred| cred["type"] == "git_source" }.
-            find { |cred| cred["host"] == "bitbucket.org" }
         end
       end
     end
