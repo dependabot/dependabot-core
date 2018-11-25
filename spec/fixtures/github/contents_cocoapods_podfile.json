@@ -1,0 +1,18 @@
+{
+  "name": "Podfile",
+  "path": "Podfile",
+  "sha": "5af277037643a9a1f1ac425125d6f43bf98458a8",
+  "size": 1117,
+  "url": "https://api.github.com/repos/leichunfeng/MVVMReactiveCocoa/contents/Podfile?ref=master",
+  "html_url": "https://github.com/leichunfeng/MVVMReactiveCocoa/blob/master/Podfile",
+  "git_url": "https://api.github.com/repos/leichunfeng/MVVMReactiveCocoa/git/blobs/5af277037643a9a1f1ac425125d6f43bf98458a8",
+  "download_url": "https://raw.githubusercontent.com/leichunfeng/MVVMReactiveCocoa/master/Podfile",
+  "type": "file",
+  "content": "c291cmNlICdodHRwczovL2dpdGh1Yi5jb20vQXJ0c3kvU3BlY3MuZ2l0Jwpz\nb3VyY2UgJ2h0dHBzOi8vZ2l0aHViLmNvbS9Db2NvYVBvZHMvU3BlY3MuZ2l0\nJwoKcGxhdGZvcm0gOmlvcywgJzguMCcKaW5oaWJpdF9hbGxfd2FybmluZ3Mh\nCgp0YXJnZXQgJ01WVk1SZWFjdGl2ZUNvY29hJyBkbwogICAgcG9kICdTRFdl\nYkltYWdlJywgJzMuNy42JwogICAgcG9kICdVSUFjdGl2aXR5SW5kaWNhdG9y\nLWZvci1TRFdlYkltYWdlJywgJzEuMicKICAgIHBvZCAnTUJQcm9ncmVzc0hV\nRCcsICcwLjkuMicKICAgIHBvZCAnU1NLZXljaGFpbicsICcxLjIuMycKICAg\nIHBvZCAnSVFLZXlib2FyZE1hbmFnZXInLCAnMy4yLjAuMycKICAgIHBvZCAn\nU1ZQdWxsVG9SZWZyZXNoJywgJzAuNC4xJwogICAgcG9kICdNS05ldHdvcmtL\naXQnLCAnMC44NycKICAgIHBvZCAnV2ViVmlld0phdmFzY3JpcHRCcmlkZ2Un\nLCAnNC4xLjUnCiAgICBwb2QgJ0Zvcm1hdHRlcktpdCcsICcxLjguMScKICAg\nIHBvZCAnRFpORW1wdHlEYXRhU2V0JywgJzEuNS4yJwogICAgcG9kICdPbm8n\nLCAnMS4yLjInCiAgICBwb2QgJ0ZNREInLCAnMi42LjInCiAgICBwb2QgJ1VN\nZW5nU29jaWFsJywgJzQuNCcKICAgIHBvZCAnR1BVSW1hZ2UnLCAnMC4xLjcn\nCiAgICBwb2QgJ0FwcGlyYXRlcicsICcyLjAuNScKICAgIHBvZCAnU0RWZXJz\naW9uJywgJzIuNicKICAgIHBvZCAnTUxlYWtzRmluZGVyJywgJzAuMi4wJwog\nICAgcG9kICdPY3RpY29uc0lPUycsIDpnaXQgPT4gJ2h0dHBzOi8vZ2l0aHVi\nLmNvbS9qYWNrc29uaC9PY3RpY29uc0lPUy5naXQnLCA6Y29tbWl0ID0+ICc0\nYmQzYjIxJwogICAgcG9kICdMQ0ZJbmZpbml0ZVNjcm9sbFZpZXcnLCA6Z2l0\nID0+ICdodHRwczovL2dpdGh1Yi5jb20vbGVpY2h1bmZlbmcvTENGSW5maW5p\ndGVTY3JvbGxWaWV3LmdpdCcsIDpjb21taXQgPT4gJ2QzMmQ5ODgnCiAgICBw\nb2QgJ1lZS2l0JywgOmdpdCA9PiAnaHR0cHM6Ly9naXRodWIuY29tL2xlaWNo\ndW5mZW5nL1lZS2l0LmdpdCcsIDpjb21taXQgPT4gJzYwMWIyMmQnCiAgICAK\nICAgIHRhcmdldCAnTVZWTVJlYWN0aXZlQ29jb2FUZXN0cycgZG8KICAgICAg\nICBpbmhlcml0ISA6c2VhcmNoX3BhdGhzCiAgICBlbmQKZW5kCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/leichunfeng/MVVMReactiveCocoa/contents/Podfile?ref=master",
+    "git": "https://api.github.com/repos/leichunfeng/MVVMReactiveCocoa/git/blobs/5af277037643a9a1f1ac425125d6f43bf98458a8",
+    "html": "https://github.com/leichunfeng/MVVMReactiveCocoa/blob/master/Podfile"
+  }
+}
