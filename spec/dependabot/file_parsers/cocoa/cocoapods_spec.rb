@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
               url: "https://github.com/Alamofire/Alamofire.git",
               branch: nil,
               ref: "4.3.0"
-            },
+            }
           }]
         end
 
