@@ -77,6 +77,15 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
       end
     end
 
+    context "with a sub-dependency" do
+      let(:podfile_body) { fixture("cocoa", "podfiles", "subdependency") }
+      let(:lockfile_body) { fixture("cocoa", "lockfiles", "subdependency") }
+
+      pending { expect(dependencies.length).to eq(2) }
+      pending { expect(dependencies.last.name).to eq("Alamofire") }
+      pending { expect(dependencies.last.requirements).to eq([]) }
+    end
+
     context "with a version specified as between two constraints" do
       let(:podfile_body) do
         fixture("cocoa", "podfiles", "version_between_bounds")
@@ -99,14 +108,19 @@ RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do
             requirement: ">= 0",
             file: "Podfile",
             groups: [],
-            source: nil
+            source: {
+              type: "git",
+              url: "https://github.com/Alamofire/Alamofire.git",
+              branch: nil,
+              ref: "4.3.0"
+            },
           }]
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Alamofire") }
         its(:version) { is_expected.to eq("4.3.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        pending { expect(subject.requirements).to eq(expected_requirements) }
       end
     end
 
