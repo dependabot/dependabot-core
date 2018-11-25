@@ -1,3 +1,7 @@
+## v0.75.97, 25 November 2018
+
+- Python: Bump pipenv commit
+
 ## v0.75.96, 24 November 2018
 
 - Handle non-master bitbucket branches in ChangelogFinder
