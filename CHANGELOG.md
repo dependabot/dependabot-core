@@ -1,3 +1,10 @@
+## v0.75.101, 26 November 2018
+
+- Python: Switch to released Pipenv
+- JS: Fetch npmrc and yarnrc files from parent directories if required
+- Python: Raise a resolvability error if max retries are exceeded
+- Python: Better environment setup during Pipenv UpdateChecker
+
 ## v0.75.100, 26 November 2018
 
 - Correct upgrade type labeling for git dependencies
