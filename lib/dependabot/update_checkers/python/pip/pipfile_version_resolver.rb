@@ -343,7 +343,7 @@ module Dependabot
               nil
             end
 
-            File.write(".python-version", python_version)
+            SharedHelpers.run_shell_command("pyenv local #{python_version}")
             return if pre_installed_python?(python_version)
 
             SharedHelpers.run_shell_command("pyenv install -s")
