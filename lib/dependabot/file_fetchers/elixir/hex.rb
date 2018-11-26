@@ -7,6 +7,9 @@ module Dependabot
     module Elixir
       class Hex < Dependabot::FileFetchers::Base
         APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m.freeze
+        STRING_ARG = %{(?:["'](.*?)["'])}
+        EVAL_FILE = /Code\.eval_file\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
+                    freeze
 
         def self.required_files_in?(filenames)
           filenames.include?("mix.exs")
@@ -23,6 +26,7 @@ module Dependabot
           fetched_files << mixfile
           fetched_files << lockfile if lockfile
           fetched_files += subapp_mixfiles
+          fetched_files += evaled_files
           fetched_files
         end
 
@@ -59,6 +63,14 @@ module Dependabot
           # If the path specified in apps_path doesn't exist then it's not being
           # used. We can just return an empty array of subapp files.
           []
+        end
+
+        def evaled_files
+          mixfile.content.scan(EVAL_FILE).map do |eval_file_args|
+            path = Pathname.new(File.join(directory, *eval_file_args.reverse)).
+                   cleanpath.to_path
+            fetch_file_from_host(path).tap { |f| f.support_file = true }
+          end
         end
       end
     end

@@ -75,6 +75,33 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
     end
   end
 
+  context "with an evaled file" do
+    before do
+      stub_request(:get, url + "mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_elixir_mixfile_with_eval_file.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "version?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_todo_txt.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the evaled file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(mix.exs mix.lock /version))
+    end
+  end
+
   context "with an umbrella app" do
     before do
       stub_request(:get, url + "?ref=sha").
