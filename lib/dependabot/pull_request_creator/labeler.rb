@@ -106,9 +106,11 @@ module Dependabot
         return dep.version if version_class.correct?(dep.version)
 
         source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
-        return dep.version unless source&.fetch("type") == "git"
+        type = source&.fetch("type", nil) || source&.fetch(:type)
+        return dep.version unless type == "git"
 
-        version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
+        ref = source.fetch("ref", nil) || source.fetch(:ref)
+        version_from_ref = ref&.gsub(/^v/, "")
         return dep.version unless version_from_ref
         return dep.version unless version_class.correct?(version_from_ref)
 
@@ -121,9 +123,11 @@ module Dependabot
 
         source = dep.previous_requirements.
                  find { |r| r.fetch(:source) }&.fetch(:source)
-        return version_str unless source&.fetch("type") == "git"
+        type = source&.fetch("type", nil) || source&.fetch(:type)
+        return version_str unless type == "git"
 
-        version_from_ref = source.fetch("ref")&.gsub(/^v/, "")
+        ref = source.fetch("ref", nil) || source.fetch(:ref)
+        version_from_ref = ref&.gsub(/^v/, "")
         return version_str unless version_from_ref
         return version_str unless version_class.correct?(version_from_ref)
 

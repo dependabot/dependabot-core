@@ -314,6 +314,41 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             let(:version) { "random" }
             it { is_expected.to eq(["dependencies"]) }
           end
+
+          context "for a git dependency" do
+            let(:version) { "6cf3d8c20aa5171b4f9f98ab8f4b6ced5ace912f" }
+            let(:previous_version) do
+              "9cd93a80d534ff616458af949b0d67aa10812d1a"
+            end
+            let(:requirements) do
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.5.0"
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.4.0"
+                }
+              }]
+            end
+
+            it { is_expected.to include("minor") }
+          end
         end
 
         context "without a previous version" do
