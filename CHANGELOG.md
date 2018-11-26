@@ -1,3 +1,8 @@
+## v0.75.102, 26 November 2018
+
+- Python: Use shared helper to switch python version
+- Python: Better handling of bad python requirements (fix spec)
+
 ## v0.75.101, 26 November 2018
 
 - Python: Switch to released Pipenv
