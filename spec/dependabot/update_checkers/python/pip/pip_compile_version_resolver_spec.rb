@@ -95,6 +95,37 @@ RSpec.describe namespace::PipCompileVersionResolver do
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
 
+      context "when updating is blocked" do
+        let(:dependency_name) { "python-dateutil" }
+        let(:dependency_version) { "2.6.1" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/shared.in",
+            requirement: "==2.6.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:latest_version) { Gem::Version.new("2.7.5") }
+
+        context "but only in an imported file" do
+          let(:dependency_files) do
+            [shared_file, manifest_file, generated_file]
+          end
+          let(:shared_file) do
+            Dependabot::DependencyFile.new(
+              name: "requirements/shared.in",
+              content:
+                fixture("python", "pip_compile_files", "python_dateutil.in")
+            )
+          end
+          let(:manifest_fixture_name) { "imports_shared.in" }
+          let(:generated_fixture_name) { "pip_compile_imports_shared.txt" }
+
+          it { is_expected.to be >= Gem::Version.new("2.6.1") }
+        end
+      end
+
       context "when unlocking causes a conflict (in the sub-dependencies)" do
         let(:manifest_fixture_name) { "unresolvable_if_unpinned.in" }
         let(:generated_fixture_name) do

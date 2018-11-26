@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/python/pip"
+require "dependabot/file_parsers/python/pip"
 require "dependabot/update_checkers/python/pip"
 require "dependabot/file_updaters/python/pip/requirement_replacer"
 require "dependabot/file_updaters/python/pip/setup_file_sanitizer"
@@ -58,16 +59,10 @@ module Dependabot
                     run_command(cmd)
                   end
 
-                  # Remove the created package details (so they aren't parsed)
-                  FileUtils.rm_rf("sanitized_package.egg-info")
-
                   # Remove any .python-version file before parsing the reqs
                   FileUtils.remove_entry(".python-version", true)
 
-                  parse_requirements_from_cwd_files.
-                    select { |dep| normalise(dep["name"]) == dependency.name }.
-                    find { |dep| dep["file"] == source_compiled_file_name }&.
-                    fetch("version")
+                  parse_updated_files
                 end
               rescue SharedHelpers::HelperSubprocessFailed => error
                 handle_pip_compile_errors(error)
@@ -356,6 +351,23 @@ module Dependabot
                     path
                   end.uniq.compact
               end
+          end
+
+          def parse_updated_files
+            updated_files =
+              dependency_files.map do |file|
+                next file if file.name == ".python-version"
+
+                updated_file = file.dup
+                updated_file.content = File.read(file.name)
+                updated_file
+              end
+
+            FileParsers::Python::Pip.new(
+              dependency_files: updated_files,
+              source: nil,
+              credentials: credentials
+            ).parse.find { |d| d.name == dependency.name }&.version
           end
 
           def setup_files

@@ -1,0 +1,3 @@
+-r shared.in
+
+moto==1.3.3
