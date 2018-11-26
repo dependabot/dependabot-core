@@ -1,3 +1,7 @@
+## v0.75.100, 26 November 2018
+
+- Correct upgrade type labeling for git dependencies
+
 ## v0.75.99, 26 November 2018
 
 - Elixir: Don't join support file names with directory
