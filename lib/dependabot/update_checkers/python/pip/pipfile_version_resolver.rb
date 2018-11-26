@@ -346,25 +346,24 @@ module Dependabot
             File.write(".python-version", python_version)
             return if pre_installed_python?(python_version)
 
-            puts python_version
             SharedHelpers.run_shell_command("pyenv install -s")
-            puts "1"
             SharedHelpers.run_shell_command(
               "pyenv exec pip install -r #{python_requirements_path}"
             )
-            puts "2"
           end
 
           def python_version
-            requirement = pipfile_python_requirement&.split(".")
-            requirement = requirement&.fill("*", (requirement&.length)..2)&.
-                          join(".")
-            requirement = "2.7.*" if @using_python_two
-
-            unless requirement
-              return python_version_file&.content ||
-                     PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-            end
+            requirement =
+              if @using_python_two
+                "2.7.*"
+              elsif pipfile_python_requirement&.match?(/^\d/)
+                parts = pipfile_python_requirement.split(".")
+                parts.fill("*", (parts.length)..2).join(".")
+              elsif python_version_file
+                python_version_file.content
+              else
+                PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+              end
 
             requirement = Utils::Python::Requirement.new(requirement)
 
