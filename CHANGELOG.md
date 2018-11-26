@@ -1,3 +1,8 @@
+## v0.75.103, 26 November 2018
+
+- Python: More tweaks to Pipenv environment handling
+- Python: Parse pip_compile results more accurately
+
 ## v0.75.102, 26 November 2018
 
 - Python: Use shared helper to switch python version
