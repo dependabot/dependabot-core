@@ -1,3 +1,8 @@
+## v0.75.98, 26 November 2018
+
+- Elixir: Use supporting files when parsing, checking and updating
+- Elixir: Fetch files that are evaled by mixfile
+
 ## v0.75.97, 25 November 2018
 
 - Python: Bump pipenv commit
