@@ -67,7 +67,7 @@ module Dependabot
 
         def evaled_files
           mixfile.content.scan(EVAL_FILE).map do |eval_file_args|
-            path = Pathname.new(File.join(directory, *eval_file_args.reverse)).
+            path = Pathname.new(File.join(*eval_file_args.reverse)).
                    cleanpath.to_path
             fetch_file_from_host(path).tap { |f| f.support_file = true }
           end

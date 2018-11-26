@@ -98,7 +98,7 @@ RSpec.describe Dependabot::FileFetchers::Elixir::Hex do
     it "fetches the evaled file" do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(mix.exs mix.lock /version))
+        to match_array(%w(mix.exs mix.lock version))
     end
   end
 
