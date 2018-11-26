@@ -127,7 +127,8 @@ module Dependabot
           # rubocop:disable Metrics/MethodLength
           def handle_pipenv_errors(error)
             if error.message.include?("no version found at all") ||
-               error.message.include?("Invalid specifier:")
+               error.message.include?("Invalid specifier:") ||
+               error.message.include?("Max retries exceeded")
               msg = clean_error_message(error.message)
               raise if msg.empty?
 
@@ -224,6 +225,7 @@ module Dependabot
                     next false if l.start_with?("CRITICAL:")
                     next false if l.start_with?("ERROR:")
                     next false if l.start_with?("packaging.specifiers")
+                    next false if l.include?("Max retries exceeded")
 
                     true
                   end.join.strip
