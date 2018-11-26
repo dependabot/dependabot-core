@@ -1,3 +1,7 @@
+## v0.75.99, 26 November 2018
+
+- Elixir: Don't join support file names with directory
+
 ## v0.75.98, 26 November 2018
 
 - Elixir: Use supporting files when parsing, checking and updating
