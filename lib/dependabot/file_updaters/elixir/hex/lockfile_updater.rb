@@ -60,7 +60,14 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
               File.write(path, mixfile_content_for_lockfile_generation(file))
             end
+
             File.write("mix.lock", lockfile.content)
+
+            dependency_files.select(&:support_file).each do |file|
+              path = file.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              File.write(path, file.content)
+            end
           end
 
           def mixfile_content_for_lockfile_generation(file)

@@ -162,6 +162,28 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::LockfileUpdater do
       end
     end
 
+    context "with a mix.exs that evals another file" do
+      let(:mixfile_body) do
+        fixture("elixir", "mixfiles", "loads_file_with_eval")
+      end
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "version",
+          content: fixture("elixir", "support_files", "version"),
+          support_file: true
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+        expect(updated_lockfile_content).to include(
+          "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+        )
+      end
+    end
+
     context "with an umbrella app" do
       let(:mixfile_fixture_name) { "umbrella" }
       let(:lockfile_fixture_name) { "umbrella" }

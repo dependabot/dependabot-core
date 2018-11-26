@@ -35,6 +35,7 @@ module Dependabot
               )
             end
             files << lockfile if lockfile
+            files += support_files
             files
           end
 
@@ -155,6 +156,10 @@ module Dependabot
 
           def lockfile
             @lockfile ||= dependency_files.find { |f| f.name == "mix.lock" }
+          end
+
+          def support_files
+            @support_files ||= dependency_files.select(&:support_file)
           end
 
           def wants_prerelease?

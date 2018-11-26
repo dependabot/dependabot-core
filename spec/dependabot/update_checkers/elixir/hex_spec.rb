@@ -378,6 +378,29 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
       it { is_expected.to eq(Gem::Version.new("1.2.2")) }
     end
 
+    context "with a mix.exs that evals another file" do
+      let(:mixfile_body) do
+        fixture("elixir", "mixfiles", "loads_file_with_eval")
+      end
+      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "version",
+          content: fixture("elixir", "support_files", "version"),
+          support_file: true
+        )
+      end
+
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "1.2.1" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "== 1.2.1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.2.2")) }
+    end
+
     context "with an umbrella application" do
       let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
       let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
