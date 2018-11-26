@@ -604,6 +604,18 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
               body: fixture("github", "packages_files_nested.json"),
               headers: json_header
             )
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/"\
+            ".npmrc?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/"\
+            ".yarnrc?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
         end
 
         it "fetches package.json from the workspace dependencies" do
@@ -905,12 +917,45 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
               body: fixture("github", "packages_files_nested.json"),
               headers: json_header
             )
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/"\
+            ".npmrc?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/"\
+            ".yarnrc?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
         end
 
         it "fetches package.json from the workspace dependencies" do
           expect(file_fetcher_instance.files.count).to eq(5)
           expect(file_fetcher_instance.files.map(&:name)).
             to include("packages/package2/package.json")
+        end
+
+        context "and an npmrc file in the parent directory" do
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/bump/contents/"\
+              ".npmrc?ref=sha"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "npmrc_content.json"),
+                headers: json_header
+              )
+          end
+
+          it "fetches the npmrc file" do
+            expect(file_fetcher_instance.files.count).to eq(6)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to include("../.npmrc")
+          end
         end
       end
     end

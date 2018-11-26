@@ -289,8 +289,10 @@ module Dependabot
               RegistryFinder.new(
                 dependency: dependency,
                 credentials: credentials,
-                npmrc_file: dependency_files.find { |f| f.name == ".npmrc" },
-                yarnrc_file: dependency_files.find { |f| f.name == ".yarnrc" }
+                npmrc_file: dependency_files.
+                            find { |f| f.name.end_with?(".npmrc") },
+                yarnrc_file: dependency_files.
+                             find { |f| f.name.end_with?(".yarnrc") }
               )
           end
 

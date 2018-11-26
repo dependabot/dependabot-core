@@ -167,11 +167,13 @@ module Dependabot
           end
 
           def npmrc_file
-            @npmrc_file ||= dependency_files.find { |f| f.name == ".npmrc" }
+            @npmrc_file ||= dependency_files.
+                            find { |f| f.name.end_with?(".npmrc") }
           end
 
           def yarnrc_file
-            @yarnrc_file ||= dependency_files.find { |f| f.name == ".yarnrc" }
+            @yarnrc_file ||= dependency_files.
+                             find { |f| f.name.end_with?(".yarnrc") }
           end
 
           def yarn_lock

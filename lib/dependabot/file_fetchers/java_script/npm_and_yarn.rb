@@ -59,11 +59,39 @@ module Dependabot
         def npmrc
           @npmrc ||= fetch_file_if_present(".npmrc")&.
                      tap { |f| f.support_file = true }
+
+          return @npmrc if @npmrc || directory == "/"
+
+          # Loop through parent directories looking for an npmrc
+          (1..directory.split("/").count).each do |i|
+            @npmrc = fetch_file_from_host("../" * i + ".npmrc")&.
+                     tap { |f| f.support_file = true }
+            break if @npmrc
+          rescue Dependabot::DependencyFileNotFound
+            # Ignore errors (.npmrc may not be present)
+            nil
+          end
+
+          @npmrc
         end
 
         def yarnrc
           @yarnrc ||= fetch_file_if_present(".yarnrc")&.
-                      tap { |f| f.support_file = true }
+                     tap { |f| f.support_file = true }
+
+          return @yarnrc if @yarnrc || directory == "/"
+
+          # Loop through parent directories looking for an yarnrc
+          (1..directory.split("/").count).each do |i|
+            @yarnrc = fetch_file_from_host("../" * i + ".yarnrc")&.
+                     tap { |f| f.support_file = true }
+            break if @yarnrc
+          rescue Dependabot::DependencyFileNotFound
+            # Ignore errors (.yarnrc may not be present)
+            nil
+          end
+
+          @yarnrc
         end
 
         def lerna_json

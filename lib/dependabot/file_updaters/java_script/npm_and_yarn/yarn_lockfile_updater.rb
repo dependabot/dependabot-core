@@ -322,8 +322,10 @@ module Dependabot
             reg = UpdateCheckers::JavaScript::NpmAndYarn::RegistryFinder.new(
               dependency: missing_dep,
               credentials: credentials,
-              npmrc_file: dependency_files.find { |f| f.name == ".npmrc" },
-              yarnrc_file: dependency_files.find { |f| f.name == ".yarnrc" }
+              npmrc_file: dependency_files.
+                          find { |f| f.name.end_with?(".npmrc") },
+              yarnrc_file: dependency_files.
+                           find { |f| f.name.end_with?(".yarnrc") }
             ).registry
 
             raise PrivateSourceAuthenticationFailure, reg
