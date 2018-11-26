@@ -71,9 +71,6 @@ module Dependabot
                 SharedHelpers.with_git_configured(credentials: credentials) do
                   write_temporary_dependency_files
 
-                  # Initialize a git repo to appease pip-tools
-                  IO.popen("git init", err: %i(child out)) if setup_files.any?
-
                   # Shell out to Pipenv, which handles everything for us.
                   # Whilst calling `lock` avoids doing an install as part of the
                   # pipenv flow, an install is still done by pip-tools in order
@@ -186,9 +183,6 @@ module Dependabot
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(update_pipfile: false)
 
-                # Initialize a git repo to appease pip-tools
-                IO.popen("git init", err: %i(child out)) if setup_files.any?
-
                 run_pipenv_command(
                   pipenv_environment_variables + "pyenv exec pipenv lock"
                 )
@@ -264,25 +258,19 @@ module Dependabot
 
           def sanitized_setup_file_content(file)
             @sanitized_setup_file_content ||= {}
-            if @sanitized_setup_file_content[file.name]
-              return @sanitized_setup_file_content[file.name]
-            end
-
-            @sanitized_setup_file_content[file.name] =
+            @sanitized_setup_file_content[file.name] ||=
               FileUpdaters::Python::Pip::SetupFileSanitizer.
               new(setup_file: file, setup_cfg: setup_cfg(file)).
               sanitized_content
           end
 
           def setup_cfg(file)
-            dependency_files.find do |f|
-              f.name == file.name.sub(/\.py$/, ".cfg")
-            end
+            config_name = file.name.sub(/\.py$/, ".cfg")
+            dependency_files.find { |f| f.name == config_name }
           end
 
           def pipfile_content(update_pipfile: true)
             content = pipfile.content
-            content = specify_python_requirement(content)
             return content unless update_pipfile
 
             content = freeze_other_dependencies(content)
@@ -323,20 +311,6 @@ module Dependabot
               replace_sources(credentials)
           end
 
-          def specify_python_requirement(content)
-            return content if pipfile_python_requirement
-
-            version =
-              dependency_files.find { |f| f.name == ".python-version" }&.
-              content
-
-            return content unless version
-
-            FileUpdaters::Python::Pip::PipfilePreparer.
-              new(pipfile_content: content).
-              update_python_requirement(version)
-          end
-
           def add_python_two_requirement_to_pipfile
             content = File.read("Pipfile")
 
@@ -358,7 +332,49 @@ module Dependabot
           def python_requirement_specified?
             return true if pipfile_python_requirement
 
-            dependency_files.any? { |f| f.name == ".python-version" }
+            !python_version_file.nil?
+          end
+
+          def set_up_python_environment
+            # Initialize a git repo to appease pip-tools
+            begin
+              SharedHelpers.run_shell_command("git init") if setup_files.any?
+            rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+              nil
+            end
+
+            File.write(".python-version", python_version)
+            return if pre_installed_python?(python_version)
+
+            puts python_version
+            SharedHelpers.run_shell_command("pyenv install -s")
+            puts "1"
+            SharedHelpers.run_shell_command(
+              "pyenv exec pip install -r #{python_requirements_path}"
+            )
+            puts "2"
+          end
+
+          def python_version
+            requirement = pipfile_python_requirement&.split(".")
+            requirement = requirement&.fill("*", (requirement&.length)..2)&.
+                          join(".")
+            requirement = "2.7.*" if @using_python_two
+
+            unless requirement
+              return python_version_file&.content ||
+                     PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+            end
+
+            requirement = Utils::Python::Requirement.new(requirement)
+
+            PythonVersions::PYTHON_VERSIONS.find do |version|
+              requirement.satisfied_by?(Utils::Python::Version.new(version))
+            end
+          end
+
+          def pre_installed_python?(version)
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
           end
 
           def check_private_sources_are_reachable
@@ -424,23 +440,9 @@ module Dependabot
             end
           end
 
-          def pipfile
-            dependency_files.find { |f| f.name == "Pipfile" }
-          end
-
-          def lockfile
-            dependency_files.find { |f| f.name == "Pipfile.lock" }
-          end
-
-          def setup_files
-            dependency_files.select { |f| f.name.end_with?("setup.py") }
-          end
-
-          def setup_cfg_files
-            dependency_files.select { |f| f.name.end_with?("setup.cfg") }
-          end
-
           def run_pipenv_command(cmd)
+            set_up_python_environment
+
             raw_response = nil
             IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
 
@@ -465,6 +467,8 @@ module Dependabot
             add_python_two_requirement_to_pipfile
             cmd = cmd.gsub("pipenv ", "pipenv --two ")
             retry
+          ensure
+            @using_python_two = nil
           end
 
           def may_be_using_wrong_python_version?(error_message)
@@ -492,11 +496,6 @@ module Dependabot
             end
           end
 
-          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
-          def normalise(name)
-            name.downcase.gsub(/[-_.]+/, "-")
-          end
-
           def config_variable_sources
             @config_variable_sources ||=
               credentials.
@@ -520,6 +519,36 @@ module Dependabot
             ]
 
             environment_variables.join(" ") + " "
+          end
+
+          def python_requirements_path
+            project_root = File.join(File.dirname(__FILE__), "../../../../..")
+            File.join(project_root, "helpers/python/requirements.txt")
+          end
+
+          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+          def normalise(name)
+            name.downcase.gsub(/[-_.]+/, "-")
+          end
+
+          def pipfile
+            dependency_files.find { |f| f.name == "Pipfile" }
+          end
+
+          def lockfile
+            dependency_files.find { |f| f.name == "Pipfile.lock" }
+          end
+
+          def setup_files
+            dependency_files.select { |f| f.name.end_with?("setup.py") }
+          end
+
+          def setup_cfg_files
+            dependency_files.select { |f| f.name.end_with?("setup.cfg") }
+          end
+
+          def python_version_file
+            dependency_files.find { |f| f.name == ".python-version" }
           end
         end
       end
