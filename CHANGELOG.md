@@ -1,3 +1,7 @@
+## v0.75.105, 27 November 2018
+
+- Handle symlinked files in FileFetcher
+
 ## v0.75.104, 27 November 2018
 
 - Handle git dependencies for libraries
