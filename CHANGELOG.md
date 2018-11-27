@@ -1,3 +1,7 @@
+## v0.75.104, 27 November 2018
+
+- Handle git dependencies for libraries
+
 ## v0.75.103, 26 November 2018
 
 - Python: More tweaks to Pipenv environment handling
