@@ -17,6 +17,7 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       def new_branch_name
         @name ||=
           if dependencies.count > 1 && updating_a_property?
@@ -25,6 +26,9 @@ module Dependabot
             dependency_set.fetch(:group)
           elsif dependencies.count > 1
             dependencies.map(&:name).join("-and-").tr(":", "-")
+          elsif library? && ref_changed?(dependencies.first)
+            dep = dependencies.first
+            "#{dep.name.tr(':', '-')}-#{new_ref(dep)}"
           elsif library?
             dep = dependencies.first
             "#{dep.name.tr(':', '-')}-#{sanitized_requirement(dep)}"
@@ -40,6 +44,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       private
 

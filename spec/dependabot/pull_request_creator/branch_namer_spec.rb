@@ -269,12 +269,12 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "business",
-          version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
-          previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+          version: new_version,
+          previous_version: previous_version,
           package_manager: "bundler",
           requirements: [{
             file: "Gemfile",
-            requirement: ">= 0",
+            requirement: nil,
             groups: [],
             source: {
               type: "git",
@@ -284,7 +284,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           }],
           previous_requirements: [{
             file: "Gemfile",
-            requirement: ">= 0",
+            requirement: nil,
             groups: [],
             source: {
               type: "git",
@@ -294,6 +294,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           }]
         )
       end
+      let(:new_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
+      let(:previous_version) { "2468a02a6230e59ed1232d95d1ad3ef157195b03" }
       let(:new_ref) { nil }
       let(:old_ref) { nil }
 
@@ -307,6 +309,15 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
         it "includes the ref rather than the commit" do
           expect(new_branch_name).to eq("dependabot/bundler/business-v1.1.0")
+        end
+
+        context "for a library" do
+          let(:new_version) { nil }
+          let(:previous_version) { nil }
+
+          it "includes the ref rather than the commit" do
+            expect(new_branch_name).to eq("dependabot/bundler/business-v1.1.0")
+          end
         end
       end
     end
