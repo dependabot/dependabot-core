@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 IMAGE_NAME="dependabot/dependabot-core-development"
 DOCKERFILE="Dockerfile.development"
 HELP=false
@@ -47,13 +49,14 @@ if [ "$#" -gt "0" ]; then
 fi
 
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
+CODE_DIR="/home/dependabot/dependabot-core"
 docker run --rm -ti \
-  -v "$(pwd)/Gemfile:/code/Gemfile" \
-  -v "$(pwd)/Gemfile.lock:/code/Gemfile.lock" \
-  -v "$(pwd)/dependabot-core.gemspec:/code/dependabot-core.gemspec" \
-  -v "$(pwd)/bin:/code/bin" \
-  -v "$(pwd)/lib:/code/lib" \
-  -v "$(pwd)/spec:/code/spec" \
-  -v "$(pwd)/helpers:/code/helpers" \
+  -v "$(pwd)/Gemfile:$CODE_DIR/Gemfile" \
+  -v "$(pwd)/Gemfile.lock:$CODE_DIR/Gemfile.lock" \
+  -v "$(pwd)/dependabot-core.gemspec:$CODE_DIR/dependabot-core.gemspec" \
+  -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/lib:$CODE_DIR/lib" \
+  -v "$(pwd)/spec:$CODE_DIR/spec" \
+  -v "$(pwd)/helpers:$CODE_DIR/helpers" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
