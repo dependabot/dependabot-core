@@ -270,6 +270,32 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
+      context "when a dependency file returns a symlink" do
+        before do
+          stub_request(:get, url + "requirements.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "symlinked_file_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "symlinked/requirements.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemfile_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("octokit") }
+        end
+      end
+
       context "when a dependency file is too big to download" do
         let(:blob_url) do
           "https://api.github.com/repos/#{repo}/git/blobs/"\

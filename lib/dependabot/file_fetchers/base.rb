@@ -239,6 +239,15 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       def fetch_file_content_from_github(path, repo, commit)
         tmp = github_client_for_source.contents(repo, path: path, ref: commit)
+
+        if tmp.type == "symlink"
+          tmp = github_client_for_source.contents(
+            repo,
+            path: tmp.target,
+            ref: commit
+          )
+        end
+
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       rescue Octokit::Forbidden => error
         raise unless error.message.include?("too_large")
