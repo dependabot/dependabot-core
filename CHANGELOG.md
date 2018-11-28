@@ -1,3 +1,8 @@
+## v0.75.106, 28 November 2018
+
+- Don't match versions that are superstrings in changelog pruner
+- Add Azure TODOs to metadata finders
+
 ## v0.75.105, 27 November 2018
 
 - Handle symlinked files in FileFetcher
