@@ -81,6 +81,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
     end
 
+    context "where the olf version is a substring of the new one" do
+      let(:changelog_text) { fixture("changelogs", "rails52.md") }
+      let(:dependency_version) { "5.2.1.1" }
+      let(:dependency_previous_version) { "5.2.1" }
+
+      it "prunes the changelog correctly" do
+        expect(pruned_text).
+          to eq("## Rails 5.2.1.1 (November 27, 2018) ##\n\n*   No changes.")
+      end
+    end
+
     context "that is in reverse order" do
       let(:changelog_body) do
         fixture("github", "changelog_contents_reversed.json")

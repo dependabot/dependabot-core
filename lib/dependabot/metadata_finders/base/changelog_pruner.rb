@@ -78,7 +78,7 @@ module Dependabot
           changelog_lines = changelog_text.split("\n")
 
           changelog_lines.find_index.with_index do |line, index|
-            next false unless line.include?(version)
+            next false unless line.match?(/(?<!\.)#{escaped_version}(?![.\-])/)
             next false if line.match?(/#{escaped_version}\.\./)
             next true if line.start_with?("#", "!", "==")
             next true if line.match?(/^v?#{escaped_version}:?/)
