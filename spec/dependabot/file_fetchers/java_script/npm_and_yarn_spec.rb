@@ -524,6 +524,63 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           expect(file_fetcher_instance.files.map(&:name)).
             to include("packages/package2/package.json")
         end
+
+        context "and a deeply nested package" do
+          before do
+            stub_request(
+              :get,
+              File.join(url, "packages/package1/package.json?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            stub_request(
+              :get,
+              File.join(url, "packages/package1?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "packages_files_nested2.json"),
+                headers: json_header
+              )
+            stub_request(
+              :get,
+              File.join(url, "packages/package1/package1?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "contents_js_library.json"),
+                headers: json_header
+              )
+            stub_request(
+              :get,
+              File.join(url, "packages/package1/package2?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "contents_python_repo.json"),
+                headers: json_header
+              )
+            stub_request(
+              :get,
+              File.join(url, "packages/package1/package2/package.json?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            stub_request(
+              :get,
+              File.join(url, "packages/package1/package1/package.json?ref=sha")
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "package_json_content.json"),
+                headers: json_header
+              )
+          end
+
+          it "fetches the nested package.jsons" do
+            expect(file_fetcher_instance.files.count).to eq(6)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to include("packages/package1/package1/package.json")
+          end
+        end
       end
 
       context "with a glob that specifies only the second package" do

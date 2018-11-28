@@ -198,20 +198,37 @@ module Dependabot
           dependency_files = []
 
           workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
-            package_json_path = File.join(workspace, "package.json")
-            npm_lock_path = File.join(workspace, "package-lock.json")
-            yarn_lock_path = File.join(workspace, "yarn.lock")
-            shrinkwrap_path = File.join(workspace, "npm-shrinkwrap.json")
+            dependency_files += fetch_lerna_packages_from_path(workspace)
+          end
 
-            begin
-              dependency_files << fetch_file_from_host(package_json_path)
-              dependency_files += [
-                fetch_file_if_present(npm_lock_path),
-                fetch_file_if_present(yarn_lock_path),
-                fetch_file_if_present(shrinkwrap_path)
-              ].compact
-            rescue Dependabot::DependencyFileNotFound
-              nil
+          dependency_files
+        end
+
+        def fetch_lerna_packages_from_path(path, nested = false)
+          dependency_files = []
+
+          package_json_path = File.join(path, "package.json")
+
+          begin
+            dependency_files << fetch_file_from_host(package_json_path)
+            dependency_files += [
+              fetch_file_if_present(File.join(path, "package-lock.json")),
+              fetch_file_if_present(File.join(path, "yarn.lock")),
+              fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
+            ].compact
+          rescue Dependabot::DependencyFileNotFound
+            matches_double_glob =
+              parsed_lerna_json["packages"].any? do |globbed_path|
+                next false unless globbed_path.include?("**")
+
+                File.fnmatch?(globbed_path, path)
+              end
+
+            if matches_double_glob && !nested
+              dependency_files +=
+                expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+                  fetch_lerna_packages_from_path(nested_path, true)
+                end
             end
           end
 
@@ -236,9 +253,10 @@ module Dependabot
         end
 
         def expanded_paths(path)
-          ignored_paths = path.scan(/!\((.*?)\)/)
+          ignored_paths = path.scan(/!\((.*?)\)/).flatten
+
           dir = directory.gsub(%r{(^/|/$)}, "")
-          path = path.gsub(%r{^\./}, "")
+          path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
           unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
                            "."
 
@@ -246,7 +264,7 @@ module Dependabot
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
             select { |filename| File.fnmatch?(path, filename) }.
-            reject { |fn| ignored_paths.include?(fn) }
+            reject { |fn| ignored_paths.any? { |path| fn.include?(path) } }
         end
 
         def parsed_package_json
