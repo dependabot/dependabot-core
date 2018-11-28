@@ -32,9 +32,13 @@ describe("updater", () => {
 
     const result = await updateDependencyFiles(
       tempDir,
-      "left-pad",
-      "1.1.3",
-      [{ file: "package.json", groups: ["dependencies"] }],
+      [
+        {
+          name: "left-pad",
+          version: "1.1.3",
+          requirements: [{ file: "package.json", groups: ["dependencies"] }]
+        }
+      ],
       "package-lock.json"
     );
     expect(result).toEqual({
