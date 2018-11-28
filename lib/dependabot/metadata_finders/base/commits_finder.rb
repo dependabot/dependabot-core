@@ -20,6 +20,7 @@ module Dependabot
 
         def commits_url
           return unless source
+          return if source.provider == "azure" # TODO: Fetch Azure commits
 
           path =
             case source.provider
@@ -32,6 +33,7 @@ module Dependabot
           "#{source.url}/#{path}"
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
         def commits
           return [] unless source
           return [] unless new_tag && previous_tag
@@ -40,9 +42,11 @@ module Dependabot
           when "github" then fetch_github_commits
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
+          when "azure" then [] # TODO: Fetch Azure commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def new_tag
           new_version = dependency.version
@@ -109,6 +113,8 @@ module Dependabot
             bitbucket_client.tags(source.repo).map { |tag| tag["name"] }
           when "gitlab"
             gitlab_client.tags(source.repo).map(&:name)
+          when "azure"
+            [] # TODO: Fetch Azure tags
           else raise "Unexpected source provider '#{source.provider}'"
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound,

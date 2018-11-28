@@ -191,6 +191,7 @@ module Dependabot
           when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
+          when "azure" then [] # TODO: Fetch files from Azure
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end

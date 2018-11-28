@@ -24,6 +24,7 @@ module Dependabot
           when "github" then "#{source.url}/releases"
           when "gitlab" then "#{source.url}/tags"
           when "bitbucket" then nil
+          when "azure" then "#{source.url}/tags"
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
@@ -189,6 +190,7 @@ module Dependabot
           when "github" then fetch_github_releases
           when "bitbucket" then [] # Bitbucket doesn't support releases
           when "gitlab" then fetch_gitlab_releases
+          when "azure" then [] # Azure can't list API for annotated tags
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end

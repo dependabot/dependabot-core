@@ -69,6 +69,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       let(:source) { nil }
       it { is_expected.to be_nil }
     end
+
+    context "with an azure source" do
+      let(:source) do
+        Dependabot::Source.
+          from_url("https://dev.azure.com/saigkill/_git/hoe-manns")
+      end
+
+      it "gets the right URL" do
+        expect(subject).
+          to eq("https://dev.azure.com/saigkill/_git/hoe-manns/tags")
+      end
+    end
   end
 
   describe "#releases_text" do
@@ -385,6 +397,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             "Some release notes"
           )
       end
+    end
+
+    context "with an azure source" do
+      let(:source) do
+        Dependabot::Source.
+          from_url("https://dev.azure.com/saigkill/_git/hoe-manns")
+      end
+
+      it { is_expected.to be_nil }
     end
 
     context "without a recognised source" do

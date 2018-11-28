@@ -402,6 +402,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
     end
 
+    context "with an azure source" do
+      let(:source) do
+        Dependabot::Source.
+          from_url("https://dev.azure.com/saigkill/_git/hoe-manns")
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "with a bitbucket source" do
       let(:bitbucket_url) do
         "https://api.bitbucket.org/2.0/repositories/org/business/src"\
