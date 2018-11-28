@@ -803,6 +803,32 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to include("packages/package2/package.json")
         end
 
+        context "that excludes a workspace" do
+          before do
+            stub_request(:get, File.join(url, "package.json?ref=sha")).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture(
+                  "github",
+                  "package_json_with_exclusion_workspace.json"
+                ),
+                headers: json_header
+              )
+          end
+
+          it "fetches package.json from the workspace dependencies" do
+            expect(file_fetcher_instance.files.map(&:name)).
+              to match_array(
+                %w(
+                  package.json
+                  package-lock.json
+                  packages/package1/package.json
+                )
+              )
+          end
+        end
+
         context "that uses nohoist" do
           before do
             stub_request(:get, File.join(url, "package.json?ref=sha")).

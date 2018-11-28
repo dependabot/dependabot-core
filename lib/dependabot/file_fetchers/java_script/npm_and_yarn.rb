@@ -227,13 +227,16 @@ module Dependabot
             end
 
           paths_array.flat_map do |path|
-            if path.include?("*") then expanded_paths(path)
+            # The packages/!(not-this-package) syntax is unique to Yarn
+            if path.include?("*") || path.include?("!(")
+              expanded_paths(path)
             else path
             end
           end
         end
 
         def expanded_paths(path)
+          ignored_paths = path.scan(/!\((.*?)\)/)
           dir = directory.gsub(%r{(^/|/$)}, "")
           path = path.gsub(%r{^\./}, "")
           unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
@@ -242,7 +245,8 @@ module Dependabot
           repo_contents(dir: unglobbed_path, raise_errors: false).
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-            select { |filename| File.fnmatch?(path, filename) }
+            select { |filename| File.fnmatch?(path, filename) }.
+            reject { |fn| ignored_paths.include?(fn) }
         end
 
         def parsed_package_json

@@ -1,0 +1,18 @@
+{
+  "name": "package.json",
+  "path": "package.json",
+  "sha": "5c7b3419e0056515122b981f1566ebe22c208251",
+  "size": 594,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/package.json",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/package.json?token=ABMwe0apDiKCctWHnEHnszRBAebVHjQnks5WJWD9wA%3D%3D",
+  "type": "file",
+  "content": "ewogICJuYW1lIjogImJ1bXAtdGVzdCIsCiAgInZlcnNpb24iOiAiMC4wLjEi\nLAogICJkZXNjcmlwdGlvbiI6ICIiLAogICJtYWluIjogImluZGV4LmpzIiwK\nICAicmVwb3NpdG9yeSI6IHsKICAgICJ0eXBlIjogImdpdCIsCiAgICAidXJs\nIjogImdpdCtodHRwczovL2dpdGh1Yi5jb20vZ29jYXJkbGVzcy9idW1wLXRl\nc3QuZ2l0IgogIH0sCiAgImF1dGhvciI6ICIiLAogICJsaWNlbnNlIjogIklT\nQyIsCiAgImJ1Z3MiOiB7CiAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNv\nbS9nb2NhcmRsZXNzL2J1bXAtdGVzdC9pc3N1ZXMiCiAgfSwKICAiaG9tZXBh\nZ2UiOiAiaHR0cHM6Ly9naXRodWIuY29tL2dvY2FyZGxlc3MvYnVtcC10ZXN0\nI3JlYWRtZSIsCiAgImRlcGVuZGVuY2llcyI6IHsKICAgICJwYWNrYWdlMSI6\nICJmaWxlOi4vcGFja2FnZXMvcGFja2FnZTEiLAogICAgImxvZGFzaCI6ICJe\nMS4zLjEiLAogICAgImNoYWxrIjogIjAuNC4wIiwKICAgICJzdG9wd29yZHMi\nOiAiMC4wLjEiCiAgfSwKICAiZGV2RGVwZW5kZW5jaWVzIjogewogICAgImV0\nYWciOiAiXjEuMC4wIgogIH0sCiAgIndvcmtzcGFjZXMiOiB7CiAgICAicGFj\na2FnZXMiOiBbCiAgICAgICJwYWNrYWdlcy8hKHBhY2thZ2UyKSIKICAgIF0K\nICB9Cn0=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/package.json?ref=master",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+    "html": "https://github.com/gocardless/bump/blob/master/package.json"
+  }
+}
