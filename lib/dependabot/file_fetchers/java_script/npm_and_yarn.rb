@@ -264,7 +264,7 @@ module Dependabot
             select { |file| file.type == "dir" }.
             map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
             select { |filename| File.fnmatch?(path, filename) }.
-            reject { |fn| ignored_paths.any? { |path| fn.include?(path) } }
+            reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
         end
 
         def parsed_package_json
