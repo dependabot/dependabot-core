@@ -158,21 +158,18 @@ function installArgsWithVersion(
   }
 }
 
-async function updateDependencyFiles(
-  directory,
-  depName,
-  desiredVersion,
-  requirements
-) {
+async function updateDependencyFiles(directory, dependencies) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
 
-  for (let reqs of requirements) {
-    updateRunResults = Object.assign(
-      updateRunResults,
-      await updateDependencyFile(directory, depName, desiredVersion, reqs)
-    );
+  for (let dep of dependencies) {
+    for (let reqs of dep.requirements) {
+      updateRunResults = Object.assign(
+        updateRunResults,
+        await updateDependencyFile(directory, dep.name, dep.version, reqs)
+      );
+    }
   }
 
   return updateRunResults;

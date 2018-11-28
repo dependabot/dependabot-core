@@ -20,13 +20,7 @@ const npm = require("npm");
 const installer = require("npm/lib/install");
 const { muteStderr, runAsync } = require("./helpers.js");
 
-async function updateDependencyFiles(
-  directory,
-  depName,
-  desiredVersion,
-  requirements,
-  lockfileName
-) {
+async function updateDependencyFiles(directory, dependencies, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -38,7 +32,14 @@ async function updateDependencyFiles(
   const oldPackage = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
-  const args = installArgs(depName, desiredVersion, requirements, oldPackage);
+  const args = dependencies.map(dependency => {
+    return installArgs(
+      dependency.name,
+      dependency.version,
+      dependency.requirements,
+      oldPackage
+    );
+  });
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
@@ -85,9 +86,9 @@ function installArgs(depName, desiredVersion, requirements, oldPackage) {
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
     );
-    return [`${originalVersion.replace(/#.*/, "")}#${desiredVersion}`];
+    return `${originalVersion.replace(/#.*/, "")}#${desiredVersion}`;
   } else {
-    return [`${depName}@${desiredVersion}`];
+    return `${depName}@${desiredVersion}`;
   }
 }
 

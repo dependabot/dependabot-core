@@ -41,9 +41,12 @@ module Dependabot
           TIMEOUT_FETCHING_PACKAGE =
             %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
 
-          def dependency
-            # For now, we'll only ever be updating a single dependency for JS
-            dependencies.first
+          def top_level_dependencies
+            dependencies.select(&:top_level?)
+          end
+
+          def sub_dependencies
+            dependencies.reject(&:top_level?)
           end
 
           def updated_yarn_lock(yarn_lock)
@@ -63,7 +66,7 @@ module Dependabot
           def run_yarn_updater(path, lockfile_name)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
-                if dependency.top_level?
+                if top_level_dependencies.any?
                   run_yarn_top_level_updater(path: path)
                 else
                   run_yarn_subdependency_updater(lockfile_name)
@@ -71,11 +74,15 @@ module Dependabot
               end
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
-            unfindable_str = "find package \"#{dependency.name}"
+            names = dependencies.map(&:name)
+            package_missing = names.any? do |name|
+              error.message.include?("find package \"#{name}")
+            end
+
             raise unless error.message.include?("The registry may be down") ||
                          error.message.include?("ETIMEDOUT") ||
                          error.message.include?("ENOBUFS") ||
-                         error.message.include?(unfindable_str)
+                         package_missing
 
             retry_count ||= 0
             retry_count += 1
@@ -87,14 +94,20 @@ module Dependabot
           # rubocop:enable Metrics/PerceivedComplexity
 
           def run_yarn_top_level_updater(path:)
+            top_level_deps_to_update = top_level_dependencies.map do |dep|
+              {
+                name: dep.name,
+                version: dep.version,
+                requirements: requirements_for_path(dep.requirements, path)
+              }
+            end
+
             SharedHelpers.run_helper_subprocess(
               command: "node #{yarn_helper_path}",
               function: "update",
               args: [
                 Dir.pwd,
-                dependency.name,
-                dependency.version,
-                requirements_for_path(dependency.requirements, path)
+                top_level_deps_to_update
               ]
             )
           end
@@ -125,7 +138,8 @@ module Dependabot
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
 
-              if error.message.include?(%("#{dependency.name}"))
+              names = dependencies.map(&:name)
+              if names.any? { |name| error.message.include?(%("#{name}")) }
                 # This happens if a new version has been published but npm is
                 # having consistency issues. We raise a bespoke error so we can
                 # capture and ignore it if we're trying to create a new PR
@@ -192,7 +206,7 @@ module Dependabot
               FileUtils.mkdir_p(Pathname.new(path).dirname)
 
               updated_content =
-                if update_package_json && dependency.top_level?
+                if update_package_json && top_level_dependencies.any?
                   updated_package_json_content(file)
                 else
                   file.content
@@ -213,7 +227,7 @@ module Dependabot
             yarn_locks.each do |f|
               FileUtils.mkdir_p(Pathname.new(f.name).dirname)
 
-              if dependency.top_level?
+              if top_level_dependencies.any?
                 File.write(f.name, f.content)
               else
                 File.write(f.name, prepared_yarn_lockfile_content(f.content))
@@ -225,7 +239,9 @@ module Dependabot
           # Remove the dependency we want to update from the lockfile and let
           # yarn find the latest resolvable version and fix the lockfile
           def prepared_yarn_lockfile_content(content)
-            content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
+            sub_dependencies.map(&:name).reduce(content) do |result, name|
+              result.gsub(/^#{Regexp.quote(name)}\@.*?\n\n/m, "")
+            end
           end
 
           def replace_ssh_sources(content)
@@ -361,7 +377,7 @@ module Dependabot
             @updated_package_json_content[file.name] ||=
               PackageJsonUpdater.new(
                 package_json: file,
-                dependencies: dependencies
+                dependencies: top_level_dependencies
               ).updated_package_json.content
           end
 
