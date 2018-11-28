@@ -1,3 +1,7 @@
+## v0.75.107, 28 November 2018
+
+- JS: Handle Yarn ignored package globs
+
 ## v0.75.106, 28 November 2018
 
 - Don't match versions that are superstrings in changelog pruner
