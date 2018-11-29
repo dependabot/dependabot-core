@@ -1,3 +1,8 @@
+## v0.75.111, 29 November 2018
+
+- Fix require problem that only affected requiring FileUpdaters first
+- JS: Raise a resolvability error when a scoped package can't be found
+
 ## v0.75.110, 29 November 2018
 
 - JS: Fetch path dependencies that are specified as links
