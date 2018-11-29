@@ -1,3 +1,9 @@
+## v0.75.112, 29 November 2018
+
+- Docker: Handle persistent 404s from Dockerhub
+- PHP: Handle updates to a manifest file where only one requirement needs to
+  change
+
 ## v0.75.111, 29 November 2018
 
 - Fix require problem that only affected requiring FileUpdaters first
