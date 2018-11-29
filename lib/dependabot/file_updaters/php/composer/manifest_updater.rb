@@ -13,19 +13,11 @@ module Dependabot
           end
 
           def updated_manifest_content
-            file = manifest
-
-            updated_content =
-              dependencies.
-              select { |dep| requirement_changed?(file, dep) }.
-              reduce(file.content.dup) do |content, dep|
-                updated_req =
-                  dep.requirements.find { |r| r[:file] == file.name }.
-                  fetch(:requirement)
-
-                old_req =
-                  dep.previous_requirements.find { |r| r[:file] == file.name }.
-                  fetch(:requirement)
+            dependencies.reduce(manifest.content.dup) do |content, dep|
+              updated_content = content
+              updated_requirements(dep).each do |new_req|
+                old_req = old_requirement(dep, new_req).fetch(:requirement)
+                updated_req = new_req.fetch(:requirement)
 
                 regex =
                   /
@@ -40,14 +32,30 @@ module Dependabot
                 if content == updated_content
                   raise "Expected content to change!"
                 end
-
-                updated_content
               end
+
+              updated_content
+            end
           end
 
           private
 
           attr_reader :dependencies, :manifest
+
+          def new_requirements(dependency)
+            dependency.requirements.select { |r| r[:file] == manifest.name }
+          end
+
+          def old_requirement(dependency, new_requirement)
+            dependency.previous_requirements.
+              select { |r| r[:file] == manifest.name }.
+              find { |r| r[:groups] == new_requirement[:groups] }
+          end
+
+          def updated_requirements(dependency)
+            new_requirements(dependency).
+              reject { |r| dependency.previous_requirements.include?(r) }
+          end
 
           def requirement_changed?(file, dependency)
             changed_requirements =

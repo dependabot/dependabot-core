@@ -135,6 +135,42 @@ RSpec.describe Dependabot::FileUpdaters::Php::Composer::ManifestUpdater do
       it { is_expected.to include "\"monolog/monolog\": \"1.22.1\"" }
     end
 
+    context "when the dependency is both development and runtime" do
+      let(:manifest_fixture_name) { "dev_and_runtime_dep" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "monolog/monolog",
+          version: "1.22.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.22.1",
+            groups: ["development"],
+            source: nil
+          }, {
+            file: "composer.json",
+            requirement: "^1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["development"],
+            source: nil
+          }, {
+            file: "composer.json",
+            requirement: "^1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it { is_expected.to include "\"monolog/monolog\": \"1.22.1\"" }
+    end
+
     context "with non-standard whitespace" do
       let(:manifest_fixture_name) { "non_standard_whitespace" }
 
