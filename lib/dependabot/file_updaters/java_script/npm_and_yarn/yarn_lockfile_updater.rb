@@ -149,10 +149,9 @@ module Dependabot
 
               # This happens if a new version has been published that relies on
               # subdependencies that have not yet been published.
-              raise if resolvable_before_update?(yarn_lock)
+              raise error if resolvable_before_update?(yarn_lock)
 
-              msg = "Error while updating #{yarn_lock.path}:\n#{error.message}"
-              raise Dependabot::DependencyFileNotResolvable, msg
+              raise_resolvability_error(error, yarn_lock)
             end
             if error.message.include?("Workspaces can only be enabled in priva")
               raise Dependabot::DependencyFileNotEvaluatable, error.message
@@ -170,7 +169,7 @@ module Dependabot
                 error.message.match(/package "(?<package_req>.*)?"/).
                 named_captures["package_req"].
                 split(/(?<=\w)\@/).first
-              handle_missing_package(package_name)
+              handle_missing_package(package_name, error, yarn_lock)
             end
 
             if error.message.match?(TIMEOUT_FETCHING_PACKAGE)
@@ -324,7 +323,7 @@ module Dependabot
             content.lines.reject { |l| l.match?(/\s*integrity sha/) }.join
           end
 
-          def handle_missing_package(package_name)
+          def handle_missing_package(package_name, error, yarn_lock)
             return unless package_name.start_with?("@")
 
             missing_dep = FileParsers::JavaScript::NpmAndYarn.new(
@@ -333,7 +332,7 @@ module Dependabot
               credentials: credentials
             ).parse.find { |dep| dep.name == package_name }
 
-            return unless missing_dep
+            raise_resolvability_error(error, yarn_lock) unless missing_dep
 
             reg = UpdateCheckers::JavaScript::NpmAndYarn::RegistryFinder.new(
               dependency: missing_dep,
@@ -345,6 +344,13 @@ module Dependabot
             ).registry
 
             raise PrivateSourceAuthenticationFailure, reg
+          end
+
+          def raise_resolvability_error(error, yarn_lock)
+            dependency_names = dependencies.map(&:name).join(", ")
+            msg = "Error whilst updating #{dependency_names} in "\
+                  "#{yarn_lock.path}:\n#{error.message}"
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           def handle_timeout(message)
