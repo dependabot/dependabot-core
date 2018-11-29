@@ -1,3 +1,8 @@
+## v0.75.110, 29 November 2018
+
+- JS: Fetch path dependencies that are specified as links
+- JS: Implement full unlock for resolving JS peer dependencies
+
 ## v0.75.109, 29 November 2018
 
 - Use Bundler 1.17.1 in Dockerfile
