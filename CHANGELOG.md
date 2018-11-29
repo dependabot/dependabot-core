@@ -1,3 +1,8 @@
+## v0.75.114, 29 November 2018
+
+- JS: Fix check if install resolved before update
+- JS: Handle versions without peer dependencies in latest_version_of_dep_with_satisfied_peer_reqs
+
 ## v0.75.113, 29 November 2018
 
 - Detect ESLint commit messages that include scopes
