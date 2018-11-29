@@ -656,4 +656,146 @@ RSpec.describe namespace::VersionResolver do
       end
     end
   end
+
+  describe "#latest_version_resolvable_with_full_unlock?" do
+    subject { resolver.latest_version_resolvable_with_full_unlock? }
+
+    context "updating a dependency that is a peer requirement" do
+      let(:dependency_files) { [package_json, npm_lock] }
+      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq(true) }
+
+      context "of multiple dependencies" do
+        let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
+        let(:npm_lock_fixture_name) { "peer_dependency_multiple.json" }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "0.14.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.14.2",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:react_modal_registry_listing_url) do
+          "https://registry.npmjs.org/react-modal"
+        end
+        let(:react_modal_registry_response) do
+          fixture("javascript", "npm_responses", "react-modal.json")
+        end
+        before do
+          stub_request(:get, react_modal_registry_listing_url).
+            to_return(status: 200, body: react_modal_registry_response)
+          stub_request(:get, react_modal_registry_listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        # Support for React 16 gets added to react-modal after a new peer
+        # dependency on react-dom is added. Dependabot doesn't know how to
+        # handle updating packages with multiple peer dependencies, so bails.
+        it { is_expected.to eq(false) }
+      end
+    end
+
+    context "updating a dependency with a peer requirement" do
+      let(:dependency_files) { [package_json, npm_lock] }
+      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react-dom",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#dependency_updates_from_full_unlock" do
+    subject { resolver.dependency_updates_from_full_unlock }
+
+    context "updating a dependency that is a peer requirement" do
+      let(:dependency_files) { [package_json, npm_lock] }
+      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "gets the right list of dependencies to update" do
+        expect(resolver.dependency_updates_from_full_unlock).
+          to match_array(
+            [{
+              dependency: Dependabot::Dependency.new(
+                name: "react",
+                version: "15.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^15.2.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::Utils::JavaScript::Version.new("16.3.1")
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "15.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^15.2.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::Utils::JavaScript::Version.new("16.6.0")
+            }]
+          )
+      end
+    end
+  end
 end
