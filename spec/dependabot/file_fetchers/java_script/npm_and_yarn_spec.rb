@@ -336,6 +336,34 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
       end
     end
 
+    context "that is specified as a link" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_path_link_content.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches package.json from path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("deps/etag/package.json")
+        path_file = file_fetcher_instance.files.
+                    find { |f| f.name == "deps/etag/package.json" }
+        expect(path_file.type).to eq("path_dependency")
+      end
+    end
+
     context "that has an unfetchable path" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).

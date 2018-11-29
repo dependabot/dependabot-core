@@ -112,7 +112,7 @@ module Dependabot
           unfetchable_deps = []
 
           path_dependency_details(fetched_files).each do |name, path|
-            path = path.sub(/^file:/, "")
+            path = path.sub(/^file:/, "").sub(/^link:/, "")
             filename = File.join(path, "package.json")
             cleaned_name = Pathname.new(filename).cleanpath.to_path
             next if fetched_files.map(&:name).include?(cleaned_name)
@@ -138,14 +138,16 @@ module Dependabot
               path_dependency_details_from_manifest(file)
           end
 
+          path_starts = %w(file: link:.)
+
           package_lock_path_deps =
             parsed_package_lock.fetch("dependencies", []).to_a.
-            select { |_, v| v.fetch("version", "").start_with?("file:") }.
+            select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
             map { |k, v| [k, v.fetch("version")] }
 
           shrinkwrap_path_deps =
             parsed_shrinkwrap.fetch("dependencies", []).to_a.
-            select { |_, v| v.fetch("version", "").start_with?("file:") }.
+            select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
             map { |k, v| [k, v.fetch("version")] }
 
           [
@@ -160,13 +162,14 @@ module Dependabot
 
           current_dir = file.name.rpartition("/").first
           current_dir = nil if current_dir == ""
+          path_dep_starts = %w(file: / ./ ../ ~/ link:.)
 
           JSON.parse(file.content).
             values_at(*FileParsers::JavaScript::NpmAndYarn::DEPENDENCY_TYPES).
             compact.flat_map(&:to_a).
-            select { |_, v| v.start_with?("file:", "/", "./", "../", "~/") }.
+            select { |_, v| v.start_with?(*path_dep_starts) }.
             map do |name, path|
-              path = path.sub(/^file:/, "")
+              path = path.sub(/^file:/, "").sub(/^link:/, "")
               path = File.join(current_dir, path) unless current_dir.nil?
               [name, Pathname.new(path).cleanpath.to_path]
             end
