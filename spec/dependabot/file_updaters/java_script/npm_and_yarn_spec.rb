@@ -1444,6 +1444,64 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
         end
       end
+
+      context "when sub dependency version is missing" do
+        let(:manifest_fixture_name) { "github_sub_dependency_missing.json" }
+        let(:npm_lock_fixture_name) { "github_sub_dependency_missing.json" }
+        let(:yarn_lock_fixture_name) { "github_sub_dependency_missing.lock" }
+
+        let(:dependency_name) { "test-missing-dep-npm-package" }
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-dep-npm-package",
+              branch: nil,
+              ref: ref
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-dep-npm-package",
+              branch: nil,
+              ref: old_ref
+            }
+          }]
+        end
+        let(:previous_version) { "dadcb3ff221860249c08960cddea6cee798c48da" }
+        let(:version) { "99c1a4e536a7ae8fcab93e7f433679e134302a90" }
+        let(:ref) { "v1.0.1" }
+        let(:old_ref) { "v1.0.0" }
+
+        context "npm only" do
+          let(:files) { [package_json, package_lock] }
+
+          it "raises a HelperSubprocessFailed error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          end
+        end
+
+        context "yarn only" do
+          let(:files) { [package_json, yarn_lock] }
+
+          it "raises a HelperSubprocessFailed error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          end
+        end
+      end
     end
 
     ######################

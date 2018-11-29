@@ -54,22 +54,62 @@ module Dependabot
               write_temporary_dependency_files
               lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
               path = Pathname.new(yarn_lock.name).dirname.to_s
-              updated_files = run_yarn_updater(path, lockfile_name)
+              updated_files = run_current_yarn_update(
+                path: path,
+                lockfile_name: lockfile_name
+              )
               updated_files.fetch(lockfile_name)
             end
           rescue SharedHelpers::HelperSubprocessFailed => error
             handle_yarn_lock_updater_error(error, yarn_lock)
           end
 
+          def run_current_yarn_update(path:, lockfile_name:)
+            top_level_dependency_updates = top_level_dependencies.map do |d|
+              {
+                name: d.name,
+                version: d.version,
+                requirements: requirements_for_path(d.requirements, path)
+              }
+            end
+
+            run_yarn_updater(
+              path: path,
+              lockfile_name: lockfile_name,
+              top_level_dependency_updates: top_level_dependency_updates
+            )
+          end
+
+          def run_previous_yarn_update(path:, lockfile_name:)
+            previous_top_level_dependencies = top_level_dependencies.map do |d|
+              {
+                name: d.name,
+                version: d.previous_version,
+                requirements: requirements_for_path(
+                  d.previous_requirements, path
+                )
+              }
+            end
+
+            run_yarn_updater(
+              path: path,
+              lockfile_name: lockfile_name,
+              top_level_dependency_updates: previous_top_level_dependencies
+            )
+          end
+
           # rubocop:disable Metrics/CyclomaticComplexity
           # rubocop:disable Metrics/PerceivedComplexity
-          def run_yarn_updater(path, lockfile_name)
+          def run_yarn_updater(path:, lockfile_name:,
+                               top_level_dependency_updates:)
             SharedHelpers.with_git_configured(credentials: credentials) do
               Dir.chdir(path) do
-                if top_level_dependencies.any?
-                  run_yarn_top_level_updater(path: path)
+                if top_level_dependency_updates.any?
+                  run_yarn_top_level_updater(
+                    top_level_dependency_updates: top_level_dependency_updates
+                  )
                 else
-                  run_yarn_subdependency_updater(lockfile_name)
+                  run_yarn_subdependency_updater(lockfile_name: lockfile_name)
                 end
               end
             end
@@ -93,26 +133,18 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
 
-          def run_yarn_top_level_updater(path:)
-            top_level_deps_to_update = top_level_dependencies.map do |dep|
-              {
-                name: dep.name,
-                version: dep.version,
-                requirements: requirements_for_path(dep.requirements, path)
-              }
-            end
-
+          def run_yarn_top_level_updater(top_level_dependency_updates:)
             SharedHelpers.run_helper_subprocess(
               command: "node #{yarn_helper_path}",
               function: "update",
               args: [
                 Dir.pwd,
-                top_level_deps_to_update
+                top_level_dependency_updates
               ]
             )
           end
 
-          def run_yarn_subdependency_updater(lockfile_name)
+          def run_yarn_subdependency_updater(lockfile_name:)
             SharedHelpers.run_helper_subprocess(
               command: "node #{yarn_helper_path}",
               function: "updateSubdependency",
@@ -187,7 +219,7 @@ module Dependabot
               write_temporary_dependency_files(update_package_json: false)
               lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
               path = Pathname.new(yarn_lock.name).dirname.to_s
-              run_yarn_updater(path, lockfile_name)
+              run_previous_yarn_update(path: path, lockfile_name: lockfile_name)
             end
 
             true
