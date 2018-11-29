@@ -644,7 +644,7 @@ module Dependabot
         return false if recent_commit_messages.none?
 
         semantic_messages = recent_commit_messages.select do |message|
-          ESLINT_PREFIXES.any? { |pre| message.start_with?("#{pre}:") }
+          ESLINT_PREFIXES.any? { |pre| message.start_with?(/#{pre}[:(]/) }
         end
 
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
