@@ -239,6 +239,7 @@ module Dependabot
               possible_versions_with_details.
               find do |version, details|
                 next false unless version > version_class.new(dep.version)
+                next true unless details["peerDependencies"]
 
                 details["peerDependencies"].all? do |peer_dep_name, req|
                   # Can't handle multiple peer dependencies
