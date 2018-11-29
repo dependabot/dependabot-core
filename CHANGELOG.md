@@ -1,3 +1,7 @@
+## v0.75.113, 29 November 2018
+
+- Detect ESLint commit messages that include scopes
+
 ## v0.75.112, 29 November 2018
 
 - Docker: Handle persistent 404s from Dockerhub
