@@ -346,10 +346,7 @@ RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
               to_return(status: 404)
           end
 
-          it "raises" do
-            expect { checker.latest_version }.
-              to raise_error(DockerRegistry2::NotFound)
-          end
+          it { is_expected.to eq("2.2-sdk") }
         end
       end
     end

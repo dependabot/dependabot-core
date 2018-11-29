@@ -146,7 +146,7 @@ module Dependabot
         end
 
         def version_of_latest_tag
-          return unless tags_from_registry.include?("latest")
+          return unless latest_digest
 
           tags_from_registry.
             select { |tag| canonical_version?(tag) }.
@@ -204,16 +204,23 @@ module Dependabot
 
         def digest_of(tag)
           @digests ||= {}
-          @digests[tag] ||=
+          return @digests[tag] if @digests.key?(tag)
+
+          @digests[tag] =
             begin
               docker_registry_client.digest(docker_repo_name, tag)
-            rescue RestClient::Exceptions::Timeout, DockerRegistry2::NotFound
+            rescue *transient_docker_errors => e
               attempt ||= 1
               attempt += 1
+              return if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
               raise if attempt > 3
 
               retry
             end
+        end
+
+        def transient_docker_errors
+          [RestClient::Exceptions::Timeout, DockerRegistry2::NotFound]
         end
 
         def affix_of(tag)
