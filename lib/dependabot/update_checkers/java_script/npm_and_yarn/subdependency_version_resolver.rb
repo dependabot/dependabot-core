@@ -6,7 +6,7 @@ require "dependabot/utils/java_script/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
-file_updater_path = "dependabot/file_updaters/java_script/npm_and_yarn/"
+file_updater_path = "dependabot/file_updaters/java_script/npm_and_yarn"
 require "#{file_updater_path}/npmrc_builder"
 require "#{file_updater_path}/package_json_preparer"
 
