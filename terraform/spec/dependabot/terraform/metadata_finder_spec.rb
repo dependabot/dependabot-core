@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/terraform/terraform"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/terraform/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Terraform::Terraform do
+RSpec.describe Dependabot::Terraform::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -90,11 +90,7 @@ RSpec.describe Dependabot::MetadataFinders::Terraform::Terraform do
         "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8"
       end
       let(:registry_response) do
-        fixture(
-          "terraform",
-          "registry_responses",
-          "hashicorp_consul_aws_0.3.8.json"
-        )
+        fixture("registry_responses", "hashicorp_consul_aws_0.3.8.json")
       end
       before do
         stub_request(:get, registry_url).
