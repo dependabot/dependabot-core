@@ -1,3 +1,9 @@
+## v0.75.118, 30 November 2018
+
+- Detect capitalisation of first word in commit message
+- Maven: Handle empty version tags
+- Python: Don't error on pip-compile cascading resolution issues
+
 ## v0.75.117, 30 November 2018
 
 - Better commit prefix detection
