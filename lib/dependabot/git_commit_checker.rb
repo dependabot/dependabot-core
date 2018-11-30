@@ -167,29 +167,38 @@ module Dependabot
       end
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
-      original_uri = uri
-      uri = uri_with_auth(uri)
-      uri = uri.gsub(%r{/$}, "")
-      uri += ".git" unless uri.end_with?(".git")
-      uri += "/info/refs?service=git-upload-pack"
-
       response = Excon.get(
-        uri,
+        service_pack_uri(uri),
         idempotent: true,
         **SharedHelpers.excon_defaults
       )
 
       return response.body if response.status == 200
-      if response.status >= 500 && original_uri.match?(KNOWN_HOSTS)
-        raise "Server error at #{original_uri}: #{response.body}"
+      if response.status >= 500 && uri.match?(KNOWN_HOSTS)
+        raise "Server error at #{uri}: #{response.body}"
       end
 
-      raise Dependabot::GitDependenciesNotReachable, [original_uri]
+      raise Dependabot::GitDependenciesNotReachable, [uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
-      raise if original_uri.match?(KNOWN_HOSTS)
+      retry_count ||= 0
+      retry_count += 1
 
-      raise Dependabot::GitDependenciesNotReachable, [original_uri]
+      sleep(rand(0.9)) && retry if retry_count < 2 && uri.match?(KNOWN_HOSTS)
+      raise if uri.match?(KNOWN_HOSTS)
+
+      raise Dependabot::GitDependenciesNotReachable, [uri]
+    end
+    # rubocop:enable Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/PerceivedComplexity
+
+    def service_pack_uri(uri)
+      service_pack_uri = uri_with_auth(uri)
+      service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+      service_pack_uri + "/info/refs?service=git-upload-pack"
     end
 
     def uri_with_auth(uri)
