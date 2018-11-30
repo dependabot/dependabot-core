@@ -1502,6 +1502,62 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
         end
       end
+
+      context "when a git src depednency doesn't have a valid package.json" do
+        let(:manifest_fixture_name) { "git_missing_version.json" }
+        let(:npm_lock_fixture_name) { "git_missing_version.json" }
+        let(:yarn_lock_fixture_name) { "git_missing_version.lock" }
+
+        let(:dependency_name) { "raven-js" }
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/getsentry/raven-js",
+              branch: nil,
+              ref: ref
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/getsentry/raven-js",
+              branch: nil,
+              ref: old_ref
+            }
+          }]
+        end
+        let(:previous_version) { "c2b377e7a254264fd4a1fe328e4e3cfc9e245570" }
+        let(:version) { "70b24ed25b73cc15472b2bd1c6032e22bf20d112" }
+        let(:ref) { "4.4.1" }
+        let(:old_ref) { "3.23.1" }
+
+        context "npm only" do
+          let(:files) { [package_json, package_lock] }
+
+          it "raises a HelperSubprocessFailed error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "yarn only" do
+          let(:files) { [package_json, yarn_lock] }
+
+          it "raises helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
     end
 
     ######################
