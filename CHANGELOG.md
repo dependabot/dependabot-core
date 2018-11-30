@@ -1,3 +1,7 @@
+## v0.75.117, 30 November 2018
+
+- Better commit prefix detection
+
 ## v0.75.116, 30 November 2018
 
 - .NET: Fetch the largest sln file, not the first
