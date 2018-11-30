@@ -76,11 +76,19 @@ module Dependabot
         end
 
         def sln_file
-          @sln_file ||=
-            begin
-              file = repo_contents.find { |f| f.name.end_with?(".sln") }
-              fetch_file_from_host(file.name) if file
-            end
+          return unless sln_file_name
+
+          @sln_file ||= fetch_file_from_host(sln_file_name)
+        end
+
+        def sln_file_name
+          sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
+
+          # If there are no sln files, just return `nil`
+          return if sln_files.none?
+
+          # Use the biggest sln file
+          sln_files.max_by(&:size).name
         end
 
         def directory_build_props_files

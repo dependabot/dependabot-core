@@ -156,7 +156,13 @@ module Dependabot
         end
 
         github_response.map do |f|
-          OpenStruct.new(name: f.name, path: f.path, type: f.type, sha: f.sha)
+          OpenStruct.new(
+            name: f.name,
+            path: f.path,
+            type: f.type,
+            sha: f.sha,
+            size: f.size
+          )
         end
       end
 
@@ -167,7 +173,8 @@ module Dependabot
             OpenStruct.new(
               name: file.name,
               path: file.path,
-              type: file.type == "blob" ? "file" : file.type
+              type: file.type == "blob" ? "file" : file.type,
+              size: 0 # GitLab doesn't return file size
             )
           end
       end
@@ -189,7 +196,8 @@ module Dependabot
           OpenStruct.new(
             name: File.basename(file.fetch("path")),
             path: file.fetch("path"),
-            type: type
+            type: type,
+            size: file.fetch("size", 0)
           )
         end
       end
