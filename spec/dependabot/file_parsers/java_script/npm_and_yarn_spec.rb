@@ -108,6 +108,12 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
           end
         end
 
+        context "that contains an empty version string for a sub-dep" do
+          let(:npm_lock_fixture_name) { "empty_version.json" }
+
+          its(:length) { is_expected.to eq(2) }
+        end
+
         context "that has URL versions (i.e., is from a bad version of npm)" do
           let(:package_json_fixture_name) { "url_versions.json" }
           let(:npm_lock_fixture_name) { "url_versions.json" }

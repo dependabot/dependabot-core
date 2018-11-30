@@ -78,7 +78,7 @@ module Dependabot
 
           yarn_locks.each do |yarn_lock|
             parse_yarn_lock(yarn_lock).each do |req, details|
-              next unless details["version"]
+              next unless details["version"] && details["version"] != ""
 
               # Note: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
@@ -133,7 +133,7 @@ module Dependabot
 
           object_with_dependencies.
             fetch("dependencies", {}).each do |name, details|
-              next unless details["version"]
+              next unless details["version"] && details["version"] != ""
 
               dependency_set << Dependency.new(
                 name: name,
