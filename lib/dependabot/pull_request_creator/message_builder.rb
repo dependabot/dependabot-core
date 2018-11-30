@@ -141,7 +141,7 @@ module Dependabot
       def pr_name_prefix
         prefix = commit_prefix.to_s
         prefix += security_prefix if includes_security_fixes?
-        prefix + pr_name_beginning
+        prefix + pr_name_first_word
       end
 
       def commit_prefix
@@ -163,12 +163,32 @@ module Dependabot
       def security_prefix
         return "🔒 " if commit_prefix == "⬆️ "
 
-        commit_prefix&.match(/^[a-z]/) ? "[security] " : "[Security] "
+        capitalize_first_word? ? "[Security] " : "[security] "
       end
 
-      def pr_name_beginning
+      def pr_name_first_word
         first_word = library? ? "update " : "bump "
-        commit_prefix&.match(/^[a-z]/) ? first_word : first_word.capitalize
+        capitalize_first_word? ? first_word.capitalize : first_word
+      end
+
+      def capitalize_first_word?
+        case last_dependabot_commit_style
+        when :gitmoji then true
+        when :contentional_prefix, :contentional_prefix_with_scope
+          last_dependabot_commit_message.match?(/: (\[Security\] )?(B|U)/)
+        else
+          if using_angular_commit_messages? || using_eslint_commit_messages?
+            prefixes = ANGULAR_PREFIXES + ESLINT_PREFIXES
+            semantic_msgs = recent_commit_messages.select do |message|
+              prefixes.any? { |pre| message.match?(/#{pre}[:(]/i) }
+            end
+
+            return true if semantic_msgs.all? { |m| m.match?(/:\s+\[?[A-Z]/) }
+            return false if semantic_msgs.all? { |m| m.match?(/:\s+\[?[a-z]/) }
+          end
+
+          !commit_prefix&.match(/^[a-z]/)
+        end
       end
 
       def build_commit_prefix_from_previous_commits
