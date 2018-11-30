@@ -1,3 +1,8 @@
+## v0.75.116, 30 November 2018
+
+- .NET: Fetch the largest sln file, not the first
+- Handle missing version/name in package.json
+
 ## v0.75.115, 30 November 2018
 
 - Retry timeouts fetching git repos from known sources
