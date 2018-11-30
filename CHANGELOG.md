@@ -1,3 +1,8 @@
+## v0.75.115, 30 November 2018
+
+- Retry timeouts fetching git repos from known sources
+- JS: Handle blank versions in FileParser
+
 ## v0.75.114, 29 November 2018
 
 - JS: Fix check if install resolved before update
