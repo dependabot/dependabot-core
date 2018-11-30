@@ -2043,7 +2043,7 @@
         "email": "dependabot[bot]@users.noreply.github.com",
         "date": "2017-11-24T07:02:27Z"
       },
-      "message": "chore(dependencies): Bump highline from 1.7.8 to 1.7.10\n\nBumps [highline](https://github.com/JEG2/highline) from 1.7.8 to 1.7.10.\n- [Changelog](https://github.com/JEG2/highline/blob/master/Changelog.md)\n- [Commits](https://github.com/JEG2/highline/compare/v1.7.8...v1.7.10)",
+      "message": "Bump highline from 1.7.8 to 1.7.10\n\nBumps [highline](https://github.com/JEG2/highline) from 1.7.8 to 1.7.10.\n- [Changelog](https://github.com/JEG2/highline/blob/master/Changelog.md)\n- [Commits](https://github.com/JEG2/highline/compare/v1.7.8...v1.7.10)",
       "tree": {
         "sha": "6cc4165760f17387e390b74d959f0490677191a5",
         "url": "https://api.github.com/repos/gocardless/bump/git/trees/6cc4165760f17387e390b74d959f0490677191a5"
@@ -2290,7 +2290,7 @@
         "email": "dependabot[bot]@users.noreply.github.com",
         "date": "2017-11-21T13:01:04Z"
       },
-      "message": "chore(dependencies): Bump webmock from 3.1.0 to 3.1.1\n\nBumps [webmock](https://github.com/bblimke/webmock) from 3.1.0 to 3.1.1.\n- [Changelog](https://github.com/bblimke/webmock/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/bblimke/webmock/compare/v3.1.0...v3.1.1)",
+      "message": "Bump webmock from 3.1.0 to 3.1.1\n\nBumps [webmock](https://github.com/bblimke/webmock) from 3.1.0 to 3.1.1.\n- [Changelog](https://github.com/bblimke/webmock/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/bblimke/webmock/compare/v3.1.0...v3.1.1)",
       "tree": {
         "sha": "08a252751d111cd0984164da583aebdd9b010b64",
         "url": "https://api.github.com/repos/gocardless/bump/git/trees/08a252751d111cd0984164da583aebdd9b010b64"

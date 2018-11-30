@@ -11,8 +11,8 @@ module Dependabot
     class MessageBuilder
       ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                             test).freeze
-      ESLINT_PREFIXES  = %w(Fix Update New Breaking Docs Build Upgrade
-                            Chore).freeze
+      ESLINT_PREFIXES  = %w(Breaking Build Chore Docs Fix New Update
+                            Upgrade).freeze
       GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
                             lipstick tada white_check_mark lock apple penguin
                             checkered_flag robot green_apple bookmark
@@ -138,31 +138,64 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
 
-      # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
       def pr_name_prefix
-        pr_name = ""
-        if using_angular_commit_messages?
+        prefix = commit_prefix.to_s
+        prefix += security_prefix if includes_security_fixes?
+        prefix + pr_name_beginning
+      end
+
+      def commit_prefix
+        # If there is a previous Dependabot commit, and it used a known style,
+        # use that as our model for subsequent commits
+        case last_dependabot_commit_style
+        when :gitmoji then "⬆️ "
+        when :contentional_prefix then "#{last_dependabot_commit_prefix}: "
+        when :contentional_prefix_with_scope
           scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
-          pr_name += "#{angular_commit_prefix}(#{scope}): "
-          pr_name += "[security] " if includes_security_fixes?
-          pr_name + (library? ? "update " : "bump ")
-        elsif using_eslint_commit_messages?
-          # https://eslint.org/docs/developer-guide/contributing/pull-requests
-          pr_name += "Upgrade: "
-          pr_name += "[Security] " if includes_security_fixes?
-          pr_name + (library? ? "Update " : "Bump ")
-        elsif using_gitmoji_commit_messages?
-          pr_name += "⬆️ "
-          pr_name += "🔒 " if includes_security_fixes?
-          pr_name + (library? ? "Update " : "Bump ")
+          "#{last_dependabot_commit_prefix}(#{scope}): "
         else
-          pr_name += "[Security] " if includes_security_fixes?
-          pr_name + (library? ? "Update " : "Bump ")
+          # Otherwise we need to detect the user's preferred style from the
+          # existing commits on their repo
+          build_commit_prefix_from_previous_commits
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      def security_prefix
+        return "🔒 " if commit_prefix == "⬆️ "
+
+        commit_prefix&.match(/^[a-z]/) ? "[security] " : "[Security] "
+      end
+
+      def pr_name_beginning
+        first_word = library? ? "update " : "bump "
+        commit_prefix&.match(/^[a-z]/) ? first_word : first_word.capitalize
+      end
+
+      def build_commit_prefix_from_previous_commits
+        if using_angular_commit_messages?
+          scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
+          "#{angular_commit_prefix}(#{scope}): "
+        elsif using_eslint_commit_messages?
+          # https://eslint.org/docs/developer-guide/contributing/pull-requests
+          "Upgrade: "
+        elsif using_gitmoji_commit_messages?
+          "⬆️ "
+        end
+      end
+
+      def last_dependabot_commit_style
+        return unless (msg = last_dependabot_commit_message)
+
+        return :gitmoji if msg.start_with?("⬆️")
+        return :contentional_prefix if msg.match?(/^(chore|build|upgrade):/i)
+        return unless msg.match?(/^(chore|build|upgrade)\(/i)
+
+        :contentional_prefix_with_scope
+      end
+
+      def last_dependabot_commit_prefix
+        last_dependabot_commit_message&.split(/[:(]/)&.first
+      end
 
       def requirement_commit_message_intro
         msg = "Updates the requirements on "
@@ -633,11 +666,32 @@ module Dependabot
       def using_angular_commit_messages?
         return false if recent_commit_messages.none?
 
-        semantic_messages = recent_commit_messages.select do |message|
-          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/) }
+        angular_messages = recent_commit_messages.select do |message|
+          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
         end
 
-        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
+        # Definitely not using Angular commits if < 30% match angular commits
+        if angular_messages.count.to_f / recent_commit_messages.count < 0.3
+          return false
+        end
+
+        eslint_only_pres = ESLINT_PREFIXES.map(&:downcase) - ANGULAR_PREFIXES
+        angular_only_pres = ANGULAR_PREFIXES - ESLINT_PREFIXES.map(&:downcase)
+
+        uses_eslint_only_pres =
+          recent_commit_messages.
+          any? { |m| eslint_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
+
+        uses_angular_only_pres =
+          recent_commit_messages.
+          any? { |m| angular_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
+
+        # If using any angular-only prefixes, return true
+        # (i.e., we assume Angular over ESLint when both are present)
+        return true if uses_angular_only_pres
+        return false if uses_eslint_only_pres
+
+        true
       end
 
       def using_eslint_commit_messages?
@@ -651,27 +705,41 @@ module Dependabot
       end
 
       def angular_commit_prefix
-        unless using_angular_commit_messages?
-          raise "Not using angular style commits!"
-        end
+        raise "Not using angular commits!" unless using_angular_commit_messages?
 
         recent_commits_using_chore =
           recent_commit_messages.
-          any? { |msg| msg.start_with?("chore") }
+          any? { |msg| msg.start_with?("chore", "Chore") }
 
         recent_commits_using_build =
           recent_commit_messages.
-          any? { |msg| msg.start_with?("build") }
+          any? { |msg| msg.start_with?("build", "Build") }
 
-        if last_dependabot_commit_message&.start_with?("chore")
-          "chore"
-        elsif last_dependabot_commit_message&.start_with?("build")
-          "build"
-        elsif recent_commits_using_chore && !recent_commits_using_build
-          "chore"
-        else
-          "build"
+        commit_prefix =
+          if recent_commits_using_chore && !recent_commits_using_build
+            "chore"
+          else
+            "build"
+          end
+
+        if capitalize_angular_commit_prefix?
+          commit_prefix = commit_prefix.capitalize
         end
+
+        commit_prefix
+      end
+
+      def capitalize_angular_commit_prefix?
+        semantic_messages = recent_commit_messages.select do |message|
+          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
+        end
+
+        if semantic_messages.none?
+          return last_dependabot_commit_message&.match?(/^A-Z/)
+        end
+
+        capitalized_msgs = semantic_messages.select { |m| m.match?(/^[A-Z]/) }
+        capitalized_msgs.count.to_f / semantic_messages.count > 0.5
       end
 
       def using_gitmoji_commit_messages?
@@ -701,7 +769,8 @@ module Dependabot
           reject { |c| c.commit&.message&.start_with?("Merge") }.
           map(&:commit).
           map(&:message).
-          compact
+          compact.
+          map(&:strip)
       end
 
       def recent_gitlab_commit_messages
@@ -712,7 +781,8 @@ module Dependabot
           reject { |c| c.author_email == "support@dependabot.com" }.
           reject { |c| c.message&.start_with?("merge !") }.
           map(&:message).
-          compact
+          compact.
+          map(&:strip)
       end
 
       def last_dependabot_commit_message
@@ -730,7 +800,8 @@ module Dependabot
         @recent_github_commit_messages.
           find { |c| c.author&.login == "dependabot[bot]" }&.
           commit&.
-          message
+          message&.
+          strip
       end
 
       def last_gitlab_dependabot_commit_message
@@ -739,7 +810,8 @@ module Dependabot
 
         @recent_gitlab_commit_messages.
           find { |c| c.author_email == "support@dependabot.com" }&.
-          message
+          message&.
+          strip
       end
 
       def github_client_for_source

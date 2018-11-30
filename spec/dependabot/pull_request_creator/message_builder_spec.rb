@@ -328,6 +328,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           is_expected.to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
         end
 
+        context "and capitalizes them" do
+          before do
+            stub_request(:get, watched_repo_url + "/commits").
+              to_return(
+                status: 200,
+                body: fixture("github", "commits_angular_capitalized.json"),
+                headers: json_header
+              )
+          end
+
+          it do
+            is_expected.to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
+          end
+        end
+
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
           it { is_expected.to start_with("chore(deps): [security] bump") }
