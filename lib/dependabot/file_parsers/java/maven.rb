@@ -152,8 +152,9 @@ module Dependabot
           return unless dependency_node.at_xpath("./version")
 
           version_content = dependency_node.at_xpath("./version").content.strip
+          version_content = evaluated_value(version_content, pom)
 
-          evaluated_value(version_content, pom)
+          version_content.empty? ? nil : version_content
         end
 
         def packaging_type(pom, dependency_node)

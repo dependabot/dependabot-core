@@ -499,6 +499,31 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
     end
 
+    context "for an empty version requirement" do
+      let(:pom_body) { fixture("java", "poms", "empty_version_pom.xml") }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.google.guava:guava")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: nil,
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
     context "with a repeated dependency" do
       let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
 
