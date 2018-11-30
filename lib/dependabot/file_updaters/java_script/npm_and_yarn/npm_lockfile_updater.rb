@@ -53,6 +53,7 @@ module Dependabot
           FORBIDDEN_PACKAGE =
             /(403 Forbidden|401 Unauthorized): (?<package_req>.*)/.freeze
           MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/.freeze
+          INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
 
           def top_level_dependencies
             dependencies.select(&:top_level?)
@@ -187,6 +188,11 @@ module Dependabot
               raise Dependabot::InconsistentRegistryResponse, error.message
             end
 
+            # When the package.json doesn't include a name or version
+            if error.message.match?(INVALID_PACKAGE)
+              raise_resolvability_error(error, lockfile)
+            end
+
             if error.message.start_with?("No matching vers", "404 Not Found") ||
                error.message.include?("not match any file(s) known to git") ||
                error.message.include?("Non-registry package missing package") ||
@@ -195,9 +201,7 @@ module Dependabot
               # subdependencies that have not yet been published.
               raise if resolvable_before_update?(lockfile)
 
-              msg = "Error while updating #{lockfile.path}:\n"\
-                    "#{error.message}"
-              raise Dependabot::DependencyFileNotResolvable, msg
+              raise_resolvability_error(error, lockfile)
             end
             if error.message.match?(FORBIDDEN_PACKAGE)
               package_name =
@@ -219,6 +223,13 @@ module Dependabot
           # rubocop:enable Metrics/CyclomaticComplexity
           # rubocop:enable Metrics/PerceivedComplexity
           # rubocop:enable Metrics/MethodLength
+
+          def raise_resolvability_error(error, lockfile)
+            dependency_names = dependencies.map(&:name).join(", ")
+            msg = "Error whilst updating #{dependency_names} in "\
+                  "#{lockfile.path}:\n#{error.message}"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
 
           def handle_missing_package(package_name)
             missing_dep = FileParsers::JavaScript::NpmAndYarn.new(

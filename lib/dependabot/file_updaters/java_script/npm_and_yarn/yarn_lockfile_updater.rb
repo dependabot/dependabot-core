@@ -40,6 +40,7 @@ module Dependabot
           UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/.freeze
           TIMEOUT_FETCHING_PACKAGE =
             %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
+          INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/.freeze
 
           def top_level_dependencies
             dependencies.select(&:top_level?)
@@ -167,6 +168,11 @@ module Dependabot
           # rubocop:disable Metrics/PerceivedComplexity
           # rubocop:disable Metrics/MethodLength
           def handle_yarn_lock_updater_error(error, yarn_lock)
+            # When the package.json doesn't include a name or version
+            if error.message.match?(INVALID_PACKAGE)
+              raise_resolvability_error(error, yarn_lock)
+            end
+
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
 
@@ -185,6 +191,7 @@ module Dependabot
 
               raise_resolvability_error(error, yarn_lock)
             end
+
             if error.message.include?("Workspaces can only be enabled in priva")
               raise Dependabot::DependencyFileNotEvaluatable, error.message
             end
@@ -207,6 +214,7 @@ module Dependabot
             if error.message.match?(TIMEOUT_FETCHING_PACKAGE)
               handle_timeout(error.message)
             end
+
             raise
           end
           # rubocop:enable Metrics/AbcSize
