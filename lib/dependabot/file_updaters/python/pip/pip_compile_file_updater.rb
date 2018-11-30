@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require "python_requirement_parser"
 require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_updaters/python/pip"
 require "dependabot/shared_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileUpdaters
     module Python
@@ -283,12 +285,27 @@ module Dependabot
               pip_compile_files.map(&:name).select do |fn|
                 compiled_file = dependency_files.
                                 find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
-                compiled_file&.content&.include?(dependency.name)
+                compiled_file_includes_dependency?(compiled_file)
               end
 
             filenames = [*files_from_reqs, *files_from_compiled_files].uniq
 
             order_filenames_for_compilation(filenames)
+          end
+
+          def compiled_file_includes_dependency?(compiled_file)
+            return false unless compiled_file
+
+            regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+
+            matches = []
+            compiled_file.content.scan(regex) { matches << Regexp.last_match }
+            matches.any? { |m| normalise(m[:name]) == dependency.name }
+          end
+
+          # See https://www.python.org/dev/peps/pep-0503/#normalized-names
+          def normalise(name)
+            name.downcase.gsub(/[-_.]+/, "-")
           end
 
           # If the files we need to update require one another then we need to
@@ -343,3 +360,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

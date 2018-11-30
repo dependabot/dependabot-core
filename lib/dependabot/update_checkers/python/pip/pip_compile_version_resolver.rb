@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "python_requirement_parser"
 require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_parsers/python/pip"
 require "dependabot/update_checkers/python/pip"
@@ -83,6 +84,10 @@ module Dependabot
           def handle_pip_compile_errors(error)
             if error.message.include?("Could not find a version")
               check_original_requirements_resolvable
+              # If the original requirements are resolvable but we get an
+              # incompatibility update after unlocking then it's likely to be
+              # due to problems with pip-compile's cascading resolution
+              return nil
             end
 
             if error.message.include?('Command "python setup.py egg_info') &&
@@ -260,30 +265,6 @@ module Dependabot
             end
           end
 
-          def source_pip_config_file_name
-            file_from_reqs =
-              dependency.requirements.
-              map { |r| r[:file] }.
-              find { |fn| fn.end_with?(".in") }
-
-            return file_from_reqs if file_from_reqs
-
-            pip_compile_filenames =
-              dependency_files.
-              select { |f| f.name.end_with?(".in") }.
-              map(&:name)
-
-            pip_compile_filenames.find do |fn|
-              req_file = dependency_files.
-                         find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
-              req_file&.content&.include?(dependency.name)
-            end
-          end
-
-          def source_compiled_file_name
-            source_pip_config_file_name.sub(/\.in$/, ".txt")
-          end
-
           def python_helper_path
             project_root = File.join(File.dirname(__FILE__), "../../../../..")
             File.join(project_root, "helpers/python/run.py")
@@ -309,12 +290,22 @@ module Dependabot
               pip_compile_files.map(&:name).select do |fn|
                 compiled_file = dependency_files.
                                 find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
-                compiled_file&.content&.include?(dependency.name)
+                compiled_file_includes_dependency?(compiled_file)
               end
 
             filenames = [*files_from_reqs, *files_from_compiled_files].uniq
 
             order_filenames_for_compilation(filenames)
+          end
+
+          def compiled_file_includes_dependency?(compiled_file)
+            return false unless compiled_file
+
+            regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+
+            matches = []
+            compiled_file.content.scan(regex) { matches << Regexp.last_match }
+            matches.any? { |m| normalise(m[:name]) == dependency.name }
           end
 
           # If the files we need to update require one another then we need to
