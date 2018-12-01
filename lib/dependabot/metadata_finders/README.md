@@ -7,14 +7,20 @@ supports.
 
 ## Public API
 
-Each `Dependabot::MetadataFinders` class implements the following methods:
+Each `Dependabot::MetadataFinders` class exposes the following methods:
 
-| Method           | Description                                                                                 |
-|------------------|---------------------------------------------------------------------------------------------|
-| `#source_url`    | A link to the source data for the dependency.                                               |
-| `#commits_url`   | A link to a commit diff between the previous version of the dependency and the new version. |
-| `#changelog_url` | A link to the changelog for the dependency.                                                 |
-| `#release_url`   | A link to the release notes for this version of the dependency.                             |
+| Method                | Description                                                                                 |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| `#source_url`         | A link to the source data for the dependency.                                               |
+| `#homepage_url`       | A link to the homepage for the dependency.                                                  |
+| `#commits_url`        | A link to a commit diff between the previous version of the dependency and the new version. |
+| `#commits`            | A list of commits between the previous version of the dependency and the new version.       |
+| `#changelog_url`      | A link to the changelog for the dependency.                                                 |
+| `#changelog_text`     | The relevant text from the changelog.                                                       |
+| `#release_url`        | A link to the release notes for this version of the dependency.                             |
+| `#release_text`       | The relevant text from the release notes                                                    |
+| `#upgrade_guide_url`  | A link to the upgrade guide for this upgrade (if it exists).                                |
+| `#upgrade_guide_text` | The text of the upgrade guide for this upgrade (if it exists).                              |
 
 An integration might look as follows:
 
