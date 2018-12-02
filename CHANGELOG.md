@@ -1,3 +1,7 @@
+## v0.75.120, 2 December 2018
+
+- JS: Handle missing `_npmUser` details
+
 ## v0.75.119, 2 December 2018
 
 - Add details of new maintainers to PRs (if they are the one that released
