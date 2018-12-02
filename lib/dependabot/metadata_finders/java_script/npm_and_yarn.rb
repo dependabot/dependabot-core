@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "excon"
+require "time"
+
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
 require "dependabot/utils"
@@ -47,7 +49,7 @@ module Dependabot
         def npm_releaser
           all_version_listings.
             find { |v, _| v == dependency.version }&.
-            last&.fetch("_npmUser")&.fetch("name")
+            last&.fetch("_npmUser", nil)&.fetch("name")
         end
 
         def previous_releasers
@@ -63,7 +65,7 @@ module Dependabot
 
           all_version_listings.
             reject { |v, _| Time.parse(times[v]) > cutoff }.
-            map { |_, d| d.fetch("_npmUser").fetch("name") }
+            map { |_, d| d.fetch("_npmUser", nil)&.fetch("name") }.compact
         end
 
         def find_source_from_registry

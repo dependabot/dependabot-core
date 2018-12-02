@@ -176,10 +176,6 @@
         "1.1.0": {
             "_from": ".",
             "_id": "etag@1.1.0",
-            "_npmUser": {
-                "email": "doug@somethingdoug.com",
-                "name": "dougwilson"
-            },
             "_npmVersion": "1.4.21",
             "_shasum": "e44af7bbabe2f998d9fc3bee00db0d34b29c13a3",
             "bugs": {
