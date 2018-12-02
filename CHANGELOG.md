@@ -1,3 +1,8 @@
+## v0.75.119, 2 December 2018
+
+- Add details of new maintainers to PRs (if they are the one that released
+  this JS package)
+
 ## v0.75.118, 30 November 2018
 
 - Detect capitalisation of first word in commit message
