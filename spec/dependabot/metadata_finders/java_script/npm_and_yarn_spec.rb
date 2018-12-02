@@ -12,7 +12,7 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
-      version: "1.0",
+      version: "1.6.0",
       requirements: [
         { file: "package.json", requirement: "^1.0", groups: [], source: nil }
       ],
@@ -320,6 +320,48 @@ RSpec.describe Dependabot::MetadataFinders::JavaScript::NpmAndYarn do
 
       it "returns the specified homepage" do
         expect(homepage_url).to eq("https://example.come/jshttp/etag")
+      end
+    end
+  end
+
+  describe "#maintainer_changes" do
+    subject(:maintainer_changes) { finder.maintainer_changes }
+    let(:npm_url) { "https://registry.npmjs.org/etag" }
+    let(:npm_all_versions_response) do
+      fixture("javascript", "npm_responses", "etag.json")
+    end
+
+    before do
+      stub_request(:get, npm_url).
+        to_return(status: 200, body: npm_all_versions_response)
+    end
+
+    context "when the user that pushed this version has pushed before" do
+      it { is_expected.to be_nil }
+    end
+
+    context "when the user that pushed this version hasn't pushed before" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.6.0",
+          previous_version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "gives details of the new releaser" do
+        expect(maintainer_changes).to eq(
+          "This version was pushed to npm by "\
+          "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser "\
+          "for etag since your current version."
+        )
       end
     end
   end

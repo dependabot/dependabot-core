@@ -96,6 +96,10 @@ module Dependabot
         @commits_finder.commits
       end
 
+      def maintainer_changes
+        nil
+      end
+
       private
 
       def source

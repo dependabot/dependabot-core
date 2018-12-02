@@ -20,6 +20,16 @@ module Dependabot
           listing&.last&.fetch("homepage", nil) || super
         end
 
+        def maintainer_changes
+          return unless npm_releaser
+          return unless npm_listing.dig("time", dependency.version)
+          return if previous_releasers.include?(npm_releaser)
+
+          "This version was pushed to npm by "\
+          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new "\
+          "releaser for #{dependency.name} since your current version."
+        end
+
         private
 
         def look_up_source
@@ -32,6 +42,28 @@ module Dependabot
           when "private_registry" then find_source_from_registry
           else raise "Unexpected source type: #{source_type}"
           end
+        end
+
+        def npm_releaser
+          all_version_listings.
+            find { |v, _| v == dependency.version }&.
+            last&.fetch("_npmUser")&.fetch("name")
+        end
+
+        def previous_releasers
+          times = npm_listing.fetch("time")
+
+          cutoff =
+            if dependency.previous_version && times[dependency.previous_version]
+              Time.parse(times[dependency.previous_version])
+            elsif times[dependency.version]
+              Time.parse(times[dependency.version]) - 1
+            end
+          return unless cutoff
+
+          all_version_listings.
+            reject { |v, _| Time.parse(times[v]) > cutoff }.
+            map { |_, d| d.fetch("_npmUser").fetch("name") }
         end
 
         def find_source_from_registry
@@ -82,9 +114,7 @@ module Dependabot
         end
 
         def latest_version_listing
-          return @latest_version_listing if @version_listing_lookup_attempted
-
-          @version_listing_lookup_attempted = true
+          return @latest_version_listing if defined?(@latest_version_listing)
 
           response = Excon.get(
             "#{dependency_url}/latest",
