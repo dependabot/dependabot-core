@@ -971,6 +971,86 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "and a change in maintainer" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.6.0",
+            previous_version: "1.0.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.6.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        let(:npm_url) { "https://registry.npmjs.org/etag" }
+        let(:npm_all_versions_response) do
+          fixture("javascript", "npm_responses", "etag.json")
+        end
+        let(:npm_latest_version_response) do
+          fixture("javascript", "npm_responses", "etag-1.0.0.json")
+        end
+        let(:business_repo_url) do
+          "https://api.github.com/repos/jshttp/etag"
+        end
+
+        before do
+          stub_request(:get, npm_url + "/latest").
+            to_return(status: 200, body: npm_latest_version_response)
+          stub_request(:get, npm_url).
+            to_return(status: 200, body: npm_all_versions_response)
+        end
+
+        before do
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/compare/"\
+            "v0.9.0...v1.5.0"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "business_compare_commits.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(:get, "#{business_repo_url}/contents/").
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "business_files_with_upgrade_guide.json"),
+              headers: json_header
+            )
+          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                         "business/contents/UPGRADE.md?ref=master").
+            to_return(
+              status: 200,
+              body: fixture("github", "upgrade_guide_contents.json"),
+              headers: json_header
+            )
+        end
+
+        it "has the right text" do
+          expect(pr_message).
+            to include(
+              "<details>\n"\
+              "<summary>Maintainer changes</summary>\n\n"\
+              "This version was pushed to npm by "\
+              "[dougwilson](https://www.npmjs.com/~dougwilson), a new "\
+              "releaser for etag since your current version.\n"\
+              "</details>"
+            )
+        end
+      end
+
       context "updating multiple dependencies" do
         let(:dependencies) { [dependency, dependency2] }
         let(:dependency2) do

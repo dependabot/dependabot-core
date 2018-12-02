@@ -370,6 +370,7 @@ module Dependabot
         msg += changelog_cascade(dep)
         msg += upgrade_guide_cascade(dep)
         msg += commits_cascade(dep)
+        msg += maintainer_changes_cascade(dep)
         msg += "\n<br />" unless msg == ""
         sanitize_links_and_mentions(msg)
       end
@@ -466,6 +467,14 @@ module Dependabot
         sanitize_template_tags(msg)
       end
 
+      def maintainer_changes_cascade(dep)
+        return "" unless maintainer_changes(dep)
+
+        msg = "\n<details>\n<summary>Maintainer changes</summary>\n\n"
+        msg += maintainer_changes(dep)
+        msg + "\n</details>"
+      end
+
       def serialized_vulnerability_details(details)
         msg = vulnerability_source_line(details)
 
@@ -543,6 +552,10 @@ module Dependabot
 
       def commits(dependency)
         metadata_finder(dependency).commits
+      end
+
+      def maintainer_changes(dependency)
+        metadata_finder(dependency).maintainer_changes
       end
 
       def source_url(dependency)
