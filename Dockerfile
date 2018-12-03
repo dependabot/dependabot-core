@@ -100,13 +100,11 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl -O https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz \
-    && tar xvf go1.11.2.linux-amd64.tar.gz \
-    && wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
-    && mv dep-linux-amd64 go/bin/dep \
-    && chmod +x go/bin/dep \
-    && mv go /root
-ENV PATH=/root/go/bin:$PATH GOPATH=/opt/go
+RUN curl https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz | tar -xz -C /opt \
+    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
+    && chmod +x /opt/go/bin/dep \
+    && mkdir /opt/go/gopath
+ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
 ### ELIXIR
