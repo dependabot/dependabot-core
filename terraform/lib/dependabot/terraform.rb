@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/terraform/requirement"
-require "dependabot/terraform/metadata_finder"
-
+# These all need to be required as the register various classes against a
+# lookup table of package manager names to concrete classes.
+#
 # TODO: in due course, these registrations shouldn't be necessary for
 #       dependabot-core to function, and the "registries" should live in a
 #       wrapper gem, not dependabot-core.
-
-Dependabot::Utils.
-  register_requirement_class("terraform", Dependabot::Terraform::Requirement)
-
-Dependabot::MetadataFinders.
-  register("terraform", Dependabot::Terraform::MetadataFinder)
+require "dependabot/terraform/requirement"
+require "dependabot/terraform/version"
+require "dependabot/terraform/metadata_finder"

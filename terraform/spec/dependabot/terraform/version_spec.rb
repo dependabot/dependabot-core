@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/terraform/version"
+require "dependabot/terraform/version"
 
-RSpec.describe Dependabot::Utils::Terraform::Version do
+RSpec.describe Dependabot::Terraform::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 

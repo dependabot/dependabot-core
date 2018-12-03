@@ -7,18 +7,19 @@
 # See, for example, https://releases.hashicorp.com/terraform/
 
 module Dependabot
-  module Utils
-    module Terraform
-      class Version < Gem::Version
-        def initialize(version)
-          @version_string = version.to_s
-          super
-        end
+  module Terraform
+    class Version < Gem::Version
+      def initialize(version)
+        @version_string = version.to_s
+        super
+      end
 
-        def to_s
-          @version_string
-        end
+      def to_s
+        @version_string
       end
     end
   end
 end
+
+Dependabot::Utils.
+  register_version_class("terraform", Dependabot::Terraform::Version)

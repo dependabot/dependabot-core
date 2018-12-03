@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/terraform/version"
+require "dependabot/terraform/version"
 require "dependabot/terraform/requirements_updater"
 
 RSpec.describe Dependabot::Terraform::RequirementsUpdater do
@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
   let(:latest_version) { version_class.new("0.3.7") }
   let(:tag_for_latest_version) { nil }
 
-  let(:version_class) { Dependabot::Utils::Terraform::Version }
+  let(:version_class) { Dependabot::Terraform::Version }
   let(:requirement) { "~> 0.2.1" }
   let(:source) do
     {

@@ -5,7 +5,7 @@
 # https://www.terraform.io/docs/modules/usage.html#module-versions #
 ####################################################################
 
-require "dependabot/utils/terraform/version"
+require "dependabot/terraform/version"
 require "dependabot/terraform/requirement"
 
 module Dependabot
@@ -128,7 +128,7 @@ module Dependabot
       end
 
       def version_class
-        Utils::Terraform::Version
+        Version
       end
 
       def requirement_class

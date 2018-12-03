@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/terraform"
 require "dependabot/terraform/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
