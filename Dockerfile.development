@@ -9,10 +9,15 @@ USER dependabot
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
     echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
-RUN mkdir -p /home/dependabot/dependabot-core/lib/dependabot \
-             /home/dependabot/dependabot-core/helpers
+RUN mkdir -p /home/dependabot/dependabot-core/lib/dependabot
 WORKDIR /home/dependabot/dependabot-core
 
-COPY Gemfile Gemfile.lock dependabot-core.gemspec .gitignore /home/dependabot/dependabot-core/
+ENV BUNDLE_PATH="/home/dependabot/.bundle"
+
+COPY Gemfile Gemfile.lock dependabot-core.gemspec /home/dependabot/dependabot-core/
 COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
-RUN bundle install --path="vendor"
+RUN bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/terraform
+COPY terraform/Gemfile terraform/Gemfile.lock terraform/dependabot-terraform.gemspec /home/dependabot/dependabot-core/terraform/
+RUN cd terraform && bundle install

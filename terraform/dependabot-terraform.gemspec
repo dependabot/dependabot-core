@@ -18,12 +18,16 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = []
 
-  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
-  Find.find("lib") do |path|
-    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
-      Find.prune
-    else
-      spec.files << path unless File.directory?(path)
+  if File.exist?("../.gitignore")
+    ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
+    if File.directory?("lib")
+      Find.find("lib") do |path|
+        if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
+          Find.prune
+        else
+          spec.files << path unless File.directory?(path)
+        end
+      end
     end
   end
 
