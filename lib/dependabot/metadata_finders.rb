@@ -12,30 +12,35 @@ require "dependabot/metadata_finders/rust/cargo"
 require "dependabot/metadata_finders/dotnet/nuget"
 require "dependabot/metadata_finders/go/dep"
 require "dependabot/metadata_finders/elm/elm_package"
-require "dependabot/metadata_finders/terraform/terraform"
 
 module Dependabot
   module MetadataFinders
-    # rubocop:disable Metrics/CyclomaticComplexity
+    @metadata_finders = {
+      "bundler" => MetadataFinders::Ruby::Bundler,
+      "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
+      "maven" => MetadataFinders::Java::Maven,
+      "gradle" => MetadataFinders::Java::Maven,
+      "pip" => MetadataFinders::Python::Pip,
+      "composer" => MetadataFinders::Php::Composer,
+      "submodules" => MetadataFinders::Git::Submodules,
+      "docker" => MetadataFinders::Docker::Docker,
+      "hex" => MetadataFinders::Elixir::Hex,
+      "cargo" => MetadataFinders::Rust::Cargo,
+      "nuget" => MetadataFinders::Dotnet::Nuget,
+      "dep" => MetadataFinders::Go::Dep,
+      "go_modules" => MetadataFinders::Go::Dep,
+      "elm-package" => MetadataFinders::Elm::ElmPackage
+    }
+
     def self.for_package_manager(package_manager)
-      case package_manager
-      when "bundler" then MetadataFinders::Ruby::Bundler
-      when "npm_and_yarn" then MetadataFinders::JavaScript::NpmAndYarn
-      when "maven", "gradle" then MetadataFinders::Java::Maven
-      when "pip" then MetadataFinders::Python::Pip
-      when "composer" then MetadataFinders::Php::Composer
-      when "submodules" then MetadataFinders::Git::Submodules
-      when "docker" then MetadataFinders::Docker::Docker
-      when "hex" then MetadataFinders::Elixir::Hex
-      when "cargo" then MetadataFinders::Rust::Cargo
-      when "nuget" then MetadataFinders::Dotnet::Nuget
-      when "dep" then MetadataFinders::Go::Dep
-      when "go_modules" then MetadataFinders::Go::Dep
-      when "elm-package" then MetadataFinders::Elm::ElmPackage
-      when "terraform" then MetadataFinders::Terraform::Terraform
-      else raise "Unsupported package_manager #{package_manager}"
-      end
+      metadata_finder = @metadata_finders[package_manager]
+      return metadata_finder if metadata_finder
+
+      raise "Unsupported package_manager #{package_manager}"
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def self.register(package_manager, metadata_finder)
+      @metadata_finders[package_manager] = metadata_finder
+    end
   end
 end
