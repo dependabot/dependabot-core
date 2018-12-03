@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/terraform/terraform"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/terraform/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
+RSpec.describe Dependabot::Terraform::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [terraform_file] }
@@ -14,7 +14,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
     Dependabot::DependencyFile.new(name: "main.tf", content: terraform_body)
   end
   let(:terraform_body) do
-    fixture("terraform", "config_files", terraform_fixture_name)
+    fixture("config_files", terraform_fixture_name)
   end
   let(:terraform_fixture_name) { "git_tags.tf" }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::FileParsers::Terraform::Terraform do
         )
       end
       let(:terragrunt_body) do
-        fixture("terraform", "config_files", terragrunt_fixture_name)
+        fixture("config_files", terragrunt_fixture_name)
       end
       let(:terragrunt_fixture_name) { "terragrunt.tfvars" }
 
