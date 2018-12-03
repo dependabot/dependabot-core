@@ -21,6 +21,8 @@ require "dependabot/utils/rust/requirement"
 require "dependabot/utils/go/requirement"
 require "dependabot/utils/elm/requirement"
 
+# TODO: in due course, these "registries" should live in a wrapper gem, not
+#       dependabot-core.
 module Dependabot
   module Utils
     @version_classes = {

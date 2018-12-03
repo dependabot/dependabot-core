@@ -14,10 +14,13 @@ module Dependabot
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/.freeze
     KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/.freeze
 
-    def initialize(dependency:, credentials:, ignored_versions: [])
+    def initialize(dependency:, credentials:, ignored_versions: [],
+                   requirement_class: nil, version_class: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
+      @requirement_class = requirement_class
+      @version_class = version_class
     end
 
     def git_dependency?
@@ -390,10 +393,14 @@ module Dependabot
     end
 
     def version_class
+      return @version_class if @version_class
+
       Utils.version_class_for_package_manager(dependency.package_manager)
     end
 
     def requirement_class
+      return @requirement_class if @requirement_class
+
       Utils.requirement_class_for_package_manager(dependency.package_manager)
     end
 

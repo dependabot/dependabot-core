@@ -3,6 +3,8 @@
 require "dependabot/update_checkers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/terraform/requirements_updater"
+require "dependabot/terraform/requirement"
+require "dependabot/terraform/version"
 
 module Dependabot
   module Terraform
@@ -36,6 +38,14 @@ module Dependabot
         # If the requirement comes from a proxy URL then there's no way for
         # us to update it
         !proxy_requirement?
+      end
+
+      def requirement_class
+        Requirement
+      end
+
+      def version_class
+        Version
       end
 
       private
@@ -173,7 +183,9 @@ module Dependabot
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            requirement_class: Requirement,
+            version_class: Version
           )
       end
     end
