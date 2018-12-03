@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/terraform/terraform"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/terraform/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
+RSpec.describe Dependabot::Terraform::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -28,7 +28,7 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
   let(:irrelevant_config) do
     Dependabot::DependencyFile.new(
       name: "other.tf",
-      content: fixture("terraform", "config_files", "registry.tf")
+      content: fixture("config_files", "registry.tf")
     )
   end
   let(:terraform_config) do
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
       content: terraform_body
     )
   end
-  let(:terraform_body) { fixture("terraform", "config_files", "git_tags.tf") }
+  let(:terraform_body) { fixture("config_files", "git_tags.tf") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "origin_label",
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
 
       context "with a registry dependency" do
         let(:terraform_body) do
-          fixture("terraform", "config_files", "registry.tf")
+          fixture("config_files", "registry.tf")
         end
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::FileUpdaters::Terraform::Terraform do
         let(:terragrunt_config) do
           Dependabot::DependencyFile.new(
             name: "main.tfvars",
-            content: fixture("terraform", "config_files", "terragrunt.tfvars")
+            content: fixture("config_files", "terragrunt.tfvars")
           )
         end
 
