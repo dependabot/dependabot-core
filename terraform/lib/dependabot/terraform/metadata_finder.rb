@@ -2,6 +2,7 @@
 
 require "excon"
 require "json"
+require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
 
