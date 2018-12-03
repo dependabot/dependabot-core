@@ -6,7 +6,7 @@
 ####################################################################
 
 require "dependabot/utils/terraform/version"
-require "dependabot/utils/terraform/requirement"
+require "dependabot/terraform/requirement"
 
 module Dependabot
   module Terraform
@@ -132,7 +132,7 @@ module Dependabot
       end
 
       def requirement_class
-        Utils::Terraform::Requirement
+        Requirement
       end
     end
   end

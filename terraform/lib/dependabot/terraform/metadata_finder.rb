@@ -65,6 +65,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::MetadataFinders.register("terraform",
-                                     Dependabot::Terraform::MetadataFinder)

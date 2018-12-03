@@ -21,7 +21,6 @@ require "dependabot/utils/ruby/requirement"
 require "dependabot/utils/rust/requirement"
 require "dependabot/utils/go/requirement"
 require "dependabot/utils/elm/requirement"
-require "dependabot/utils/terraform/requirement"
 
 # rubocop:disable Metrics/CyclomaticComplexity
 module Dependabot
@@ -45,23 +44,32 @@ module Dependabot
       end
     end
 
+    @requirement_classes = {
+      "bundler" => Utils::Ruby::Requirement,
+      "submodules" => Utils::Ruby::Requirement,
+      "docker" => Utils::Ruby::Requirement,
+      "nuget" => Utils::Dotnet::Requirement,
+      "maven" => Utils::Java::Requirement,
+      "gradle" => Utils::Java::Requirement,
+      "npm_and_yarn" => Utils::JavaScript::Requirement,
+      "pip" => Utils::Python::Requirement,
+      "composer" => Utils::Php::Requirement,
+      "hex" => Utils::Elixir::Requirement,
+      "cargo" => Utils::Rust::Requirement,
+      "dep" => Utils::Go::Requirement,
+      "go_modules" => Utils::Go::Requirement,
+      "elm-package" => Utils::Elm::Requirement
+    }
+
     def self.requirement_class_for_package_manager(package_manager)
-      case package_manager
-      when "bundler", "submodules", "docker" then Utils::Ruby::Requirement
-      when "nuget" then Utils::Dotnet::Requirement
-      when "maven" then Utils::Java::Requirement
-      when "gradle" then Utils::Java::Requirement
-      when "npm_and_yarn" then Utils::JavaScript::Requirement
-      when "pip" then Utils::Python::Requirement
-      when "composer" then Utils::Php::Requirement
-      when "hex" then Utils::Elixir::Requirement
-      when "cargo" then Utils::Rust::Requirement
-      when "dep" then Utils::Go::Requirement
-      when "go_modules" then Utils::Go::Requirement
-      when "elm-package" then Utils::Elm::Requirement
-      when "terraform" then Utils::Terraform::Requirement
-      else raise "Unsupported package_manager #{package_manager}"
-      end
+      requirement_class = @requirement_classes[package_manager]
+      return requirement_class if requirement_class
+
+      raise "Unsupported package_manager #{package_manager}"
+    end
+
+    def self.register_requirement_class(package_manager, requirement_class)
+      @requirement_classes[package_manager] = requirement_class
     end
   end
 end
