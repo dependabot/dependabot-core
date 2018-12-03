@@ -14,31 +14,35 @@ require "dependabot/file_fetchers/dotnet/nuget"
 require "dependabot/file_fetchers/go/dep"
 require "dependabot/file_fetchers/go/modules"
 require "dependabot/file_fetchers/elm/elm_package"
-require "dependabot/file_fetchers/terraform/terraform"
 
 module Dependabot
   module FileFetchers
-    # rubocop:disable Metrics/CyclomaticComplexity
+    @file_fetchers = {
+      "bundler" => FileFetchers::Ruby::Bundler,
+      "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn,
+      "maven" => FileFetchers::Java::Maven,
+      "gradle" => FileFetchers::Java::Gradle,
+      "pip" => FileFetchers::Python::Pip,
+      "composer" => FileFetchers::Php::Composer,
+      "submodules" => FileFetchers::Git::Submodules,
+      "docker" => FileFetchers::Docker::Docker,
+      "hex" => FileFetchers::Elixir::Hex,
+      "cargo" => FileFetchers::Rust::Cargo,
+      "nuget" => FileFetchers::Dotnet::Nuget,
+      "dep" => FileFetchers::Go::Dep,
+      "go_modules" => FileFetchers::Go::Modules,
+      "elm-package" => FileFetchers::Elm::ElmPackage
+    }
+
     def self.for_package_manager(package_manager)
-      case package_manager
-      when "bundler" then FileFetchers::Ruby::Bundler
-      when "npm_and_yarn" then FileFetchers::JavaScript::NpmAndYarn
-      when "maven" then FileFetchers::Java::Maven
-      when "gradle" then FileFetchers::Java::Gradle
-      when "pip" then FileFetchers::Python::Pip
-      when "composer" then FileFetchers::Php::Composer
-      when "submodules" then FileFetchers::Git::Submodules
-      when "docker" then FileFetchers::Docker::Docker
-      when "hex" then FileFetchers::Elixir::Hex
-      when "cargo" then FileFetchers::Rust::Cargo
-      when "nuget" then FileFetchers::Dotnet::Nuget
-      when "dep" then FileFetchers::Go::Dep
-      when "go_modules" then FileFetchers::Go::Modules
-      when "elm-package" then FileFetchers::Elm::ElmPackage
-      when "terraform" then FileFetchers::Terraform::Terraform
-      else raise "Unsupported package_manager #{package_manager}"
-      end
+      file_fetcher = @file_fetchers[package_manager]
+      return file_fetcher if file_fetcher
+
+      raise "Unsupported package_manager #{package_manager}"
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def self.register(package_manager, file_fetcher)
+      @file_fetchers[package_manager] = file_fetcher
+    end
   end
 end

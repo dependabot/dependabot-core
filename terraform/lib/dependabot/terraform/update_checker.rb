@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/terraform/requirements_updater"
@@ -191,3 +192,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.
+  register("terraform", Dependabot::Terraform::UpdateChecker)

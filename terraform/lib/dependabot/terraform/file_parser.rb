@@ -4,6 +4,7 @@ require "cgi"
 require "excon"
 require "nokogiri"
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
@@ -261,3 +262,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.
+  register("terraform", Dependabot::Terraform::FileParser)

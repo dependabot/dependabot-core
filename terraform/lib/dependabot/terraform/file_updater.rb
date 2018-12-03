@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
 
@@ -124,3 +125,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileUpdaters.
+  register("terraform", Dependabot::Terraform::FileUpdater)

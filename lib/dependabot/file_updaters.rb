@@ -14,31 +14,35 @@ require "dependabot/file_updaters/dotnet/nuget"
 require "dependabot/file_updaters/go/dep"
 require "dependabot/file_updaters/go/modules"
 require "dependabot/file_updaters/elm/elm_package"
-require "dependabot/file_updaters/terraform/terraform"
 
 module Dependabot
   module FileUpdaters
-    # rubocop:disable Metrics/CyclomaticComplexity
+    @file_updaters = {
+      "bundler" => FileUpdaters::Ruby::Bundler,
+      "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn,
+      "maven" => FileUpdaters::Java::Maven,
+      "gradle" => FileUpdaters::Java::Gradle,
+      "pip" => FileUpdaters::Python::Pip,
+      "composer" => FileUpdaters::Php::Composer,
+      "submodules" => FileUpdaters::Git::Submodules,
+      "docker" => FileUpdaters::Docker::Docker,
+      "hex" => FileUpdaters::Elixir::Hex,
+      "cargo" => FileUpdaters::Rust::Cargo,
+      "nuget" => FileUpdaters::Dotnet::Nuget,
+      "dep" => FileUpdaters::Go::Dep,
+      "go_modules" => FileUpdaters::Go::Modules,
+      "elm-package" => FileUpdaters::Elm::ElmPackage
+    }
+
     def self.for_package_manager(package_manager)
-      case package_manager
-      when "bundler" then FileUpdaters::Ruby::Bundler
-      when "npm_and_yarn" then FileUpdaters::JavaScript::NpmAndYarn
-      when "maven" then FileUpdaters::Java::Maven
-      when "gradle" then FileUpdaters::Java::Gradle
-      when "pip" then FileUpdaters::Python::Pip
-      when "composer" then FileUpdaters::Php::Composer
-      when "submodules" then FileUpdaters::Git::Submodules
-      when "docker" then FileUpdaters::Docker::Docker
-      when "hex" then FileUpdaters::Elixir::Hex
-      when "cargo" then FileUpdaters::Rust::Cargo
-      when "nuget" then FileUpdaters::Dotnet::Nuget
-      when "dep" then FileUpdaters::Go::Dep
-      when "go_modules" then FileUpdaters::Go::Modules
-      when "elm-package" then FileUpdaters::Elm::ElmPackage
-      when "terraform" then FileUpdaters::Terraform::Terraform
-      else raise "Unsupported package_manager #{package_manager}"
-      end
+      file_updater = @file_updaters[package_manager]
+      return file_updater if file_updater
+
+      raise "Unsupported package_manager #{package_manager}"
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def self.register(package_manager, file_updater)
+      @file_updaters[package_manager] = file_updater
+    end
   end
 end
