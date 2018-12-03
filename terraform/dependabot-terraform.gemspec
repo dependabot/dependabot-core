@@ -1,45 +1,41 @@
 # frozen_string_literal: true
 
 require "find"
-require "../lib/dependabot/version"
 
 Gem::Specification.new do |spec|
-  spec.name         = "dependabot-terraform"
-  spec.version      = Dependabot::VERSION
-  spec.summary      = "Terraform support for dependabot-core"
-  spec.description  = "Automated dependency management for Ruby, JavaScript, "\
-                      "Python, PHP, Elixir, Rust, Java, .NET, Elm and Go"
+  core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 
-  spec.author       = "Dependabot"
-  spec.email        = "support@dependabot.com"
-  spec.homepage     = "https://github.com/hmarr/dependabot-core"
-  spec.license      = "License Zero Prosperity Public License"
+  spec.name         = "dependabot-terraform"
+  spec.summary      = "Terraform support for dependabot-core"
+  spec.version      = core_gemspec.version
+  spec.description  = core_gemspec.description
+
+  spec.author       = core_gemspec.author
+  spec.email        = core_gemspec.email
+  spec.homepage     = core_gemspec.homepage
+  spec.license      = core_gemspec.license
 
   spec.require_path = "lib"
   spec.files        = []
 
-  spec.required_ruby_version = ">= 2.5.0"
-  spec.required_rubygems_version = ">= 2.7.3"
+  spec.required_ruby_version = core_gemspec.required_ruby_version
+  spec.required_rubygems_version = core_gemspec.required_ruby_version
 
   spec.add_dependency "dependabot-core", Dependabot::VERSION
 
-  spec.add_development_dependency "byebug", "~> 10.0"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rspec", "~> 3.8.0"
-  spec.add_development_dependency "rspec-its", "~> 1.2.0"
-  spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
-  spec.add_development_dependency "rubocop", "~> 0.60.0"
-  spec.add_development_dependency "vcr", "~> 4.0.0"
-  spec.add_development_dependency "webmock", "~> 3.4.0"
+  core_gemspec.development_dependencies.each do |dep|
+    spec.add_development_dependency dep.name, dep.requirement.to_s
+  end
 
   next unless File.exist?("../.gitignore")
 
   ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
 
-  next unless File.directory?("lib")
+  next unless File.directory?("lib") && File.directory?("helpers")
 
-  Find.find("lib") do |path|
-    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
+  prefix = "/" + File.basename(File.expand_path(__dir__)) + "/"
+  Find.find("lib", "helpers") do |path|
+    if ignores.any? { |i| File.fnmatch(i, prefix + path, File::FNM_DOTMATCH) }
       Find.prune
     else
       spec.files << path unless File.directory?(path)
