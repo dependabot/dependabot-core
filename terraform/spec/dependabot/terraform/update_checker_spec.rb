@@ -89,7 +89,6 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         url = "https://registry.terraform.io/v1/modules/"\
               "hashicorp/consul/aws/versions"
         registry_response = fixture(
-          "terraform",
           "registry_responses",
           "hashicorp_consul_aws_versions.json"
         )
