@@ -18,19 +18,6 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = []
 
-  if File.exist?("../.gitignore")
-    ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
-    if File.directory?("lib")
-      Find.find("lib") do |path|
-        if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
-          Find.prune
-        else
-          spec.files << path unless File.directory?(path)
-        end
-      end
-    end
-  end
-
   spec.required_ruby_version = ">= 2.5.0"
   spec.required_rubygems_version = ">= 2.7.3"
 
@@ -44,4 +31,18 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rubocop", "~> 0.60.0"
   spec.add_development_dependency "vcr", "~> 4.0.0"
   spec.add_development_dependency "webmock", "~> 3.4.0"
+
+  next unless File.exist?("../.gitignore")
+
+  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
+
+  next unless File.directory?("lib")
+
+  Find.find("lib") do |path|
+    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
+      Find.prune
+    else
+      spec.files << path unless File.directory?(path)
+    end
+  end
 end
