@@ -236,25 +236,13 @@ module Dependabot
       end
 
       def terraform_parser_path
-        Pathname.new(
-          "#{terraform_helper_path}/json2hcl.#{platform}"
-        ).cleanpath.to_path
+        helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
+        Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
       end
 
-      def platform
-        case RbConfig::CONFIG["arch"]
-        when /linux/ then "linux"
-        when /darwin/ then "darwin"
-        else raise "Invalid platform #{RbConfig::CONFIG['arch']}"
-        end
-      end
-
-      def terraform_helper_path
-        File.join(project_root, "helpers/terraform")
-      end
-
-      def project_root
-        File.join(File.dirname(__FILE__), "../../../..")
+      def native_helpers_root
+        default_path = File.join(__dir__, "../../../helpers/install-dir")
+        ENV.fetch("NATIVE_HELPERS_PATH", default_path)
       end
 
       def terraform_files
