@@ -2,10 +2,9 @@
 
 require "spec_helper"
 require "dependabot/utils/terraform/version"
-require "dependabot/update_checkers/terraform/terraform/requirements_updater"
+require "dependabot/terraform/requirements_updater"
 
-namespace = Dependabot::UpdateCheckers::Terraform::Terraform
-RSpec.describe namespace::RequirementsUpdater do
+RSpec.describe Dependabot::Terraform::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
