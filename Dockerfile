@@ -127,3 +127,10 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+
+### TERRAFORM
+
+COPY terraform/helpers/build /tmp/terraform-build
+RUN bash /tmp/terraform-build /opt/terraform
+ENV PATH="$PATH:/opt/terraform/bin" DEPENDABOT_NATIVE_HELPERS_PATH="/opt"

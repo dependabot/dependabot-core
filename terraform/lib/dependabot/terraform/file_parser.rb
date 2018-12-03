@@ -242,7 +242,7 @@ module Dependabot
 
       def native_helpers_root
         default_path = File.join(__dir__, "../../../helpers/install-dir")
-        ENV.fetch("NATIVE_HELPERS_PATH", default_path)
+        ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
       end
 
       def terraform_files

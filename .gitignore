@@ -20,3 +20,4 @@ vendor
 /helpers/python/src
 *git.store
 .vscode/
+/terraform/helpers/install-dir
