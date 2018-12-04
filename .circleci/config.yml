@@ -11,7 +11,7 @@ jobs:
       - run: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
       - run: docker pull ubuntu:18.04
       - run: |
-          BRANCH_TAG="ci-$(echo $BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
+          BRANCH_TAG="ci-$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
           echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
       - run: docker pull "dependabot/dependabot-core:$BRANCH_TAG" ||
              docker pull dependabot/dependabot-core:latest
