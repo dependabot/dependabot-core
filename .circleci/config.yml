@@ -8,8 +8,8 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: docker pull dependabot/dependabot-core:latest
-      - run: docker build -t dependabot/dependabot-core
-      - run: docker build -t dependabot-core-development -f Dockerfile.development
+      - run: docker build -t dependabot/dependabot-core .
+      - run: docker build -t dependabot-core-development -f Dockerfile.development .
       - run: bin/docker-dev-shell bash -c "cd terraform && rubocop"
       - run: bin/docker-dev-shell bash -c "cd terraform && rspec spec --format documentation"
 
