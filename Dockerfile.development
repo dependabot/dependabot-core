@@ -12,7 +12,9 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanil
 RUN mkdir -p /home/dependabot/dependabot-core/lib/dependabot
 WORKDIR /home/dependabot/dependabot-core
 
-ENV BUNDLE_PATH="/home/dependabot/.bundle"
+ENV BUNDLE_PATH="/home/dependabot/.bundle" \
+    BUNDLE_BIN=".bundle/binstubs" \
+    PATH=".bundle/binstubs:$PATH"
 
 COPY Gemfile Gemfile.lock dependabot-core.gemspec /home/dependabot/dependabot-core/
 COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
