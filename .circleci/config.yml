@@ -25,7 +25,7 @@ jobs:
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}
           paths:
-            - ~/dependabot-core/bundle
+            - ~/dependabot-core/vendor/bundle
             - ~/dependabot-core/helpers/yarn/node_modules
             - ~/dependabot-core/helpers/npm/node_modules
             - ~/dependabot-core/helpers/php/vendor
