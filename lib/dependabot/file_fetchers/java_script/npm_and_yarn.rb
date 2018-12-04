@@ -127,6 +127,11 @@ module Dependabot
 
           package_json_files += build_unfetchable_deps(unfetchable_deps)
 
+          if package_json_files.any?
+            package_json_files +=
+              path_dependencies(fetched_files + package_json_files)
+          end
+
           package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
         end
 
