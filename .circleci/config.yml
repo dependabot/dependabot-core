@@ -21,6 +21,8 @@ jobs:
       - run: docker build
              -t dependabot/dependabot-core-ci
              -f Dockerfile.ci
+             --cache-from ubuntu:18.04
+             --cache-from dependabot/dependabot-core:latest
              --cache-from dependabot/dependabot-core-ci:latest
              .
 
