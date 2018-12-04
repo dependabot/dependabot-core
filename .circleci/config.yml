@@ -8,38 +8,70 @@ jobs:
       - checkout
       - setup_remote_docker
 
-      - run: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
-      - run: docker pull ubuntu:18.04
-      - run: |
-          BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
-          echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
-      - run: docker pull "dependabot/dependabot-core-ci:core--$BRANCH_TAG" ||
-             docker pull dependabot/dependabot-core:latest
-      - run: docker build
-             -t dependabot/dependabot-core:latest
-             -t "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
-             --cache-from ubuntu:18.04
-             --cache-from "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
-             --cache-from dependabot/dependabot-core:latest
-             .
-      - run: docker push "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
+      - run:
+          name: Log in to the Docker registry
+          command: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
 
-      - run: rm .dockerignore  # we usually don't want tests etc, but here we do
-      - run: docker pull dependabot/dependabot-core-ci:latest || true
-      - run: docker build
-             -t dependabot/dependabot-core-ci
-             -f Dockerfile.ci
-             --cache-from ubuntu:18.04
-             --cache-from dependabot/dependabot-core:latest
-             --cache-from dependabot/dependabot-core-ci:latest
-             .
+      - run:
+          name: Generate branch tag (cache key for Docker images)
+          command: |
+            BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
+            echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
 
-      - run: docker run -ti dependabot/dependabot-core-ci
-             bash -c "cd terraform && rubocop"
-      - run: docker run -ti dependabot/dependabot-core-ci
+      - run:
+          name: Pull Docker base images & warm Docker cache
+          command: |
+            docker pull ubuntu:18.04
+            docker pull "dependabot/dependabot-core-ci:core--$BRANCH_TAG" ||
+              docker pull dependabot/dependabot-core:latest
+            docker pull "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" ||
+              docker pull dependabot/dependabot-core-ci:ci--latest || true
+
+      - run:
+          name: Build dependabot-core image
+          command: |
+            docker build \
+              -t dependabot/dependabot-core:latest \
+              -t "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
+              --cache-from ubuntu:18.04 \
+              --cache-from "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
+              --cache-from dependabot/dependabot-core:latest \
+              .
+
+      - run:
+          name: Push dependabot-core image to CI cache repo
+          command: docker push "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
+
+      - run:
+          name: Build dependabot-core-ci image
+          command: |
+            rm .dockerignore  # we usually don't want tests etc, but here we do
+            docker build \
+              -t "dependabot/dependabot-core-ci:latest" \
+              -t "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
+              -f Dockerfile.ci \
+              --cache-from ubuntu:18.04 \
+              --cache-from dependabot/dependabot-core:latest \
+              --cache-from dependabot/dependabot-core-ci:latest \
+              .
+
+      - run:
+          name: Rubocop
+          command: |
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd terraform && rubocop"
+
+      - run:
+          name: RSpec
+          command: |
+            docker run -ti dependabot/dependabot-core-ci \
              bash -c "cd terraform && rspec spec --format documentation"
 
-      - run: docker push dependabot/dependabot-core-ci
+      - run:
+          name: Push dependabot-core-ci image to CI cache repo
+          command: |
+            docker push "dependabot/dependabot-core-ci:ci--$BRANCH_TAG"
+            docker push "dependabot/dependabot-core-ci:latest"
 
   build:
     docker:
