@@ -32,7 +32,7 @@ build_image() {
   docker build -t "$IMAGE_NAME" -f "$DOCKERFILE" .
 }
 
-IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null)
+IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
 if [ -z "$IMAGE_ID" ]; then
   echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
   build_image

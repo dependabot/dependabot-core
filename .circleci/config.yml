@@ -12,7 +12,6 @@ jobs:
       - run: docker build -t dependabot/dependabot-core --cache-from dependabot/dependabot-core:0.1.47,ubuntu:18.04 .
       # TODO remove this! just here to generate the gemfile.lock...
       - run: bundle install && cd terraform && bundle install
-      - run: docker build -t dependabot-core-development -f Dockerfile.development .
       - run: bin/docker-dev-shell -- bash -c "cd terraform && rubocop"
       - run: bin/docker-dev-shell -- bash -c "cd terraform && rspec spec --format documentation"
 
