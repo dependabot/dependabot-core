@@ -90,10 +90,10 @@ module Dependabot
               raise Dependabot::DependencyFileNotResolvable, line.strip
             when /go: errors parsing go.mod/
               msg = stderr.gsub(path.to_s, "").strip
-              raise Dependabot::DependencyFileNotParseable.new(path, msg)
+              raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
             else
               msg = stderr.gsub(path.to_s, "").strip
-              raise Dependabot::DependencyFileNotParseable.new(path, msg)
+              raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
             end
           end
 

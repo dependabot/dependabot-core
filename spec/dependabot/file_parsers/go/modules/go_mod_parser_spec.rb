@@ -121,7 +121,9 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
 
       it "raises the correct error" do
         expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable)
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_path).to eq("/go.mod")
+          end
       end
     end
 
@@ -157,7 +159,10 @@ RSpec.describe Dependabot::FileParsers::Go::Modules::GoModParser do
 
       it "raises the correct error" do
         expect { parser.dependency_set }.
-          to raise_error(Dependabot::DependencyFileNotParseable, /v0 or v1/)
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_path).to eq("/go.mod")
+            expect(error.message).to match(/v0 or v1/)
+          end
       end
     end
   end
