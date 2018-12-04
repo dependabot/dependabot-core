@@ -8,7 +8,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: docker pull dependabot/dependabot-core:0.1.47
-      - run: docker build -t dependabot/dependabot-core --cache-from dependabot/dependabot-core .
+      - run: docker build -t dependabot/dependabot-core --cache-from dependabot/dependabot-core:0.1.47 .
       # TODO remove this! just here to generate the gemfile.lock...
       - run: bundle install && cd terraform && bundle install
       - run: docker build -t dependabot-core-development -f Dockerfile.development .
