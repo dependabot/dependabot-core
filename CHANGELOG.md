@@ -1,3 +1,7 @@
+## v0.75.122, 4 December 2018
+
+- JS: Recursively fetch path dependencies
+
 ## v0.75.121, 4 December 2018
 
 - Java: Handle null values in version strings
