@@ -1,3 +1,8 @@
+## v0.75.124, 4 December 2018
+
+- JS: Raise an authentication error for private, unscoped packages
+- JS: Handle `_npmUser` entries without a name
+
 ## v0.75.123, 4 December 2018
 
 - Go: Use correct file path when raising DependencyFileNotParseable
