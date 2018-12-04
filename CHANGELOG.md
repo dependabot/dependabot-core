@@ -1,3 +1,7 @@
+## v0.75.121, 4 December 2018
+
+- Java: Handle null values in version strings
+
 ## v0.75.120, 2 December 2018
 
 - JS: Handle missing `_npmUser` details
