@@ -1,3 +1,7 @@
+## v0.75.123, 4 December 2018
+
+- Go: Use correct file path when raising DependencyFileNotParseable
+
 ## v0.75.122, 4 December 2018
 
 - JS: Recursively fetch path dependencies
