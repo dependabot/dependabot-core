@@ -214,6 +214,18 @@ RSpec.describe Dependabot::Utils::Java::Version do
           it { is_expected.to eq(0) }
         end
 
+        context "null values 5" do
+          let(:version) { described_class.new("1.0.") }
+          let(:other_version) { described_class.new("1") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "null values 6" do
+          let(:version) { described_class.new("1.0-.2") }
+          let(:other_version) { described_class.new("1.0-0.2") }
+          it { is_expected.to eq(0) }
+        end
+
         context "case insensitivity" do
           let(:version) { described_class.new("1.0.FINAL") }
           let(:other_version) { described_class.new("1") }
