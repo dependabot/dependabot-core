@@ -18,6 +18,7 @@ jobs:
              --cache-from ubuntu:18.04
              --cache-from dependabot/dependabot-core:0.1.47
              .
+      - run: rm .dockerignore  # we usually don't want tests etc, but here we do
       - run: docker build -t dependabot-core-ci -f Dockerfile.ci .
 
       - run: docker run -ti dependabot-core-ci
