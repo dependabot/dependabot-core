@@ -1,5 +1,18 @@
 version: 2
 jobs:
+  reorg_build:
+    docker:
+      # Any image that includes the docker client will do
+      - image: circleci/ruby
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: docker pull dependabot/dependabot-core:latest
+      - run: docker build -t dependabot/dependabot-core
+      - run: docker build -t dependabot-core-development -f Dockerfile.development
+      - run: bin/docker-dev-shell bash -c "cd terraform && rubocop"
+      - run: bin/docker-dev-shell bash -c "cd terraform && rspec spec --format documentation"
+
   build:
     docker:
       - image: dependabot/dependabot-core:0.1.47
@@ -14,7 +27,6 @@ jobs:
 
       # Install dependencies
       - run: bundle install --path ~/dependabot-core/vendor/bundle
-      - run: cd terraform && bundle install --path ~/dependabot-core/vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
@@ -31,7 +43,6 @@ jobs:
             - ~/dependabot-core/helpers/php/vendor
 
       # Run code formatting linters
-      - run: cd terraform && bundle exec rubocop
       - run: bundle exec rubocop
       - run: cd helpers/yarn && node_modules/.bin/eslint lib test bin
       - run: cd helpers/npm && node_modules/.bin/eslint lib test bin
@@ -40,9 +51,15 @@ jobs:
       # Run tests
       - run: cd helpers/yarn && node_modules/.bin/jest
       - run: cd helpers/npm && node_modules/.bin/jest
-      - run: cd terraform && bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml --tag "~skip_ci"
       - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml --tag "~skip_ci"
       - store_test_results:
           path: ~/rspec
       - store_artifacts:
           path: ~/rspec
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - reorg_build
+      - build
