@@ -52,6 +52,7 @@ jobs:
               -f Dockerfile.ci \
               --cache-from ubuntu:18.04 \
               --cache-from dependabot/dependabot-core:latest \
+              --cache-from "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
               --cache-from dependabot/dependabot-core-ci:latest \
               .
 
