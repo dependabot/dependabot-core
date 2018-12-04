@@ -173,6 +173,21 @@ module Dependabot
               raise_resolvability_error(error, yarn_lock)
             end
 
+            if error.message.include?("Couldn't find package")
+              package_name =
+                error.message.match(/package "(?<package_req>.*)?"/).
+                named_captures["package_req"].
+                split(/(?<=\w)\@/).first
+              handle_missing_package(package_name, error, yarn_lock)
+            end
+
+            if error.message.match?(%r{/[^/]+: Not found})
+              package_name =
+                error.message.match(%r{/(?<package_name>[^/]+): Not found}).
+                named_captures["package_name"]
+              handle_missing_package(package_name, error, yarn_lock)
+            end
+
             if error.message.start_with?("Couldn't find any versions") ||
                error.message.include?(": Not found")
 
@@ -201,14 +216,6 @@ module Dependabot
                                named_captures.fetch("url")
 
               raise Dependabot::GitDependenciesNotReachable, dependency_url
-            end
-
-            if error.message.include?("Couldn't find package")
-              package_name =
-                error.message.match(/package "(?<package_req>.*)?"/).
-                named_captures["package_req"].
-                split(/(?<=\w)\@/).first
-              handle_missing_package(package_name, error, yarn_lock)
             end
 
             if error.message.match?(TIMEOUT_FETCHING_PACKAGE)
@@ -364,8 +371,6 @@ module Dependabot
           end
 
           def handle_missing_package(package_name, error, yarn_lock)
-            return unless package_name.start_with?("@")
-
             missing_dep = FileParsers::JavaScript::NpmAndYarn.new(
               dependency_files: dependency_files,
               source: nil,
@@ -383,7 +388,17 @@ module Dependabot
                            find { |f| f.name.end_with?(".yarnrc") }
             ).registry
 
+            # Sanitize Gemfury URLs
+            reg = reg.gsub(%r{(?<=\.fury\.io)/.*}, "")
+            return if central_registry?(reg) && !package_name.start_with?("@")
+
             raise PrivateSourceAuthenticationFailure, reg
+          end
+
+          def central_registry?(registry)
+            FileParsers::JavaScript::NpmAndYarn::CENTRAL_REGISTRIES.any? do |r|
+              r.include?(registry)
+            end
           end
 
           def raise_resolvability_error(error, yarn_lock)

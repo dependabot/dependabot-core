@@ -1305,6 +1305,40 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect { updater.updated_dependency_files }.
               to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
           end
+
+          context "that is unscoped" do
+            let(:manifest_fixture_name) { "private_source_unscoped.json" }
+            let(:yarn_lock_fixture_name) { "private_source_unscoped.lock" }
+
+            let(:dependency_name) { "my-private-dep-asdlfkasdf" }
+            let(:version) { "1.0.1" }
+            let(:previous_version) { "1.0.0" }
+            let(:requirements) do
+              [{
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: ["devDependencies"],
+                source: nil
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: ["devDependencies"],
+                source: nil
+              }]
+            end
+
+            it "raises a helpful error" do
+              expect { updater.updated_dependency_files }.
+                to raise_error do |error|
+                  expect(error).
+                    to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+                  expect(error.source).to eq("npm-proxy.fury.io")
+                end
+            end
+          end
         end
       end
 
