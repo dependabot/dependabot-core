@@ -1,0 +1,22 @@
+FROM dependabot/dependabot-core
+
+RUN useradd -m dependabot
+RUN chown -R dependabot:dependabot /usr/local/.pyenv /opt/go/gopath
+USER dependabot
+
+RUN mkdir -p /home/dependabot/dependabot-core
+WORKDIR /home/dependabot/dependabot-core
+
+ENV BUNDLE_PATH="/home/dependabot/.bundle" \
+    BUNDLE_BIN=".bundle/binstubs" \
+    PATH=".bundle/binstubs:$PATH"
+
+COPY Gemfile Gemfile.lock dependabot-core.gemspec /home/dependabot/dependabot-core/
+COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
+RUN bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/terraform
+COPY terraform/Gemfile terraform/Gemfile.lock terraform/dependabot-terraform.gemspec /home/dependabot/dependabot-core/terraform/
+RUN cd terraform && bundle install
+
+COPY --chown=dependabot . /home/dependabot/dependabot-core/
