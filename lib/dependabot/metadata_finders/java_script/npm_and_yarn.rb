@@ -49,7 +49,7 @@ module Dependabot
         def npm_releaser
           all_version_listings.
             find { |v, _| v == dependency.version }&.
-            last&.fetch("_npmUser", nil)&.fetch("name")
+            last&.fetch("_npmUser", nil)&.fetch("name", nil)
         end
 
         def previous_releasers
@@ -65,7 +65,7 @@ module Dependabot
 
           all_version_listings.
             reject { |v, _| Time.parse(times[v]) > cutoff }.
-            map { |_, d| d.fetch("_npmUser", nil)&.fetch("name") }.compact
+            map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }.compact
         end
 
         def find_source_from_registry

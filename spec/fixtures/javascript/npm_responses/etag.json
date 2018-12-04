@@ -603,8 +603,7 @@
             "_from": ".",
             "_id": "etag@1.5.0",
             "_npmUser": {
-                "email": "doug@somethingdoug.com",
-                "name": "dougwilson"
+                "email": "doug@somethingdoug.com"
             },
             "_npmVersion": "1.4.21",
             "_shasum": "8ca0f7a30b4b7305f034e8902fb8ec3c321491e4",
