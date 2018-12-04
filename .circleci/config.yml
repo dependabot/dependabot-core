@@ -13,16 +13,16 @@ jobs:
       - run: |
           BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
           echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
-      - run: docker pull "dependabot/dependabot-core-ci:core-$BRANCH_TAG" ||
+      - run: docker pull "dependabot/dependabot-core-ci:core--$BRANCH_TAG" ||
              docker pull dependabot/dependabot-core:latest
       - run: docker build
              -t dependabot/dependabot-core:latest
-             -t "dependabot/dependabot-core-ci:core-$BRANCH_TAG"
+             -t "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
              --cache-from ubuntu:18.04
-             --cache-from "dependabot/dependabot-core-ci:core-$BRANCH_TAG"
+             --cache-from "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
              --cache-from dependabot/dependabot-core:latest
              .
-      - run: docker push "dependabot/dependabot-core-ci:core-$BRANCH_TAG"
+      - run: docker push "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
 
       - run: rm .dockerignore  # we usually don't want tests etc, but here we do
       - run: docker pull dependabot/dependabot-core-ci:latest || true
