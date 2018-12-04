@@ -8,9 +8,6 @@ jobs:
       - checkout
       - setup_remote_docker
 
-      # TODO remove this! just here to generate the gemfile.lock...
-      - run: bundle install && cd terraform && bundle install
-
       - run: docker pull ubuntu:18.04
       - run: docker pull dependabot/dependabot-core:0.1.47
       - run: docker build
