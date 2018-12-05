@@ -570,6 +570,38 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
       end
 
+      context "with a relative link in the changelog" do
+        before do
+          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+                             "business/contents/CHANGELOG.md?ref=master").
+            to_return(
+              status: 200,
+              body: fixture("github", "changelog_contents_rel_link.json"),
+              headers: json_header
+            )
+        end
+
+        it "has the right text" do
+          expect(pr_message).
+            to eq(
+              "Bumps [business](https://github.com/gocardless/business) "\
+              "from 1.4.0 to 1.5.0.\n"\
+              "<details>\n"\
+              "<summary>Changelog</summary>\n\n"\
+              "*Sourced from [business's changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
+              "> ## 1.5.0 - June 2, 2015\n"\
+              "> \n"\
+              "> - Add 2016 holiday definitions\n"\
+              "> - See [holiday-deps](https://github.com/gocardless/"\
+              "business/blob/master/holiday/README.md)\n"\
+              "</details>\n"\
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+              "<br />"
+            )
+        end
+      end
+
       context "with SHA-1 versions" do
         let(:dependency) do
           Dependabot::Dependency.new(

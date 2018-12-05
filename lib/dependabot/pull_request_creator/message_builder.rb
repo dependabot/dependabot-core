@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "pathname"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab"
 require "dependabot/metadata_finders"
@@ -420,6 +421,7 @@ module Dependabot
           end
         msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
+        msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
         sanitize_template_tags(msg)
       end
 
@@ -439,6 +441,7 @@ module Dependabot
           end
         msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
+        msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
         sanitize_template_tags(msg)
       end
 
@@ -646,6 +649,20 @@ module Dependabot
         text.gsub(ISSUE_TAG_REGEX) do |mention|
           number = mention.tr("#", "").gsub("GH-", "")
           "[#{mention}](#{source_url(dependency)}/issues/#{number})"
+        end
+      end
+
+      def fix_relative_links(text:, base_url:)
+        text.gsub(/\[.*?\]\(\..*?\)/) do |link|
+          relative_path = link.match(/\((\..*?)\)/).captures.last
+          base = base_url.split("://").last.gsub(%r{[^/]*$}, "")
+          path = File.join(base, relative_path)
+          absolute_path =
+            base_url.sub(
+              %r{(?<=://).*$},
+              Pathname.new(path).cleanpath.to_s
+            )
+          link.gsub(relative_path, absolute_path)
         end
       end
 
