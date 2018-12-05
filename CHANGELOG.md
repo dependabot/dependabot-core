@@ -1,3 +1,7 @@
+## v0.75.125, 5 December 2018
+
+- JS: Raise a resolvability error for invalid requirements
+
 ## v0.75.124, 4 December 2018
 
 - JS: Raise an authentication error for private, unscoped packages
