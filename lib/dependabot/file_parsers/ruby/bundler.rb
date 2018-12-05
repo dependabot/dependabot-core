@@ -14,6 +14,16 @@ module Dependabot
         require "dependabot/file_parsers/ruby/bundler/file_preparer"
         require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
 
+        def parse
+          dependency_set = DependencySet.new
+          dependency_set += gemfile_dependencies
+          dependency_set += gemspec_dependencies
+          dependency_set += lockfile_dependencies
+          dependency_set.dependencies
+        end
+
+        private
+
         # Can't be a constant because some of these don't exist in bundler
         # 1.15, which Heroku uses, which causes an exception on boot.
         def sources
@@ -26,16 +36,6 @@ module Dependabot
             ::Bundler::Source::Metadata
           ]
         end
-
-        def parse
-          dependency_set = DependencySet.new
-          dependency_set += gemfile_dependencies
-          dependency_set += gemspec_dependencies
-          dependency_set += lockfile_dependencies
-          dependency_set.dependencies
-        end
-
-        private
 
         def gemfile_dependencies
           dependencies = DependencySet.new
