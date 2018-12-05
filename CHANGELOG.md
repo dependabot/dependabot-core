@@ -1,3 +1,9 @@
+## v0.76.1, 5 December 2018
+
+- JS: Don't check for yanked packages if using a private registry
+- Rust: Ensure parsed version matches requirement source
+- PHP: Bump composer/composer from 1.7.3 to 1.8.0
+
 ## v0.76.0, 5 December 2018
 
 - Terraform: (BREAKING) Split Terraform support out into a separate gem, still
