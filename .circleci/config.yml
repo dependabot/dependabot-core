@@ -13,29 +13,33 @@ jobs:
           command: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
 
       - run:
-          name: Generate branch tag (cache key for Docker images)
+          name: Prepare environment variables
           command: |
             BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
             echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
+
+            VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" lib/dependabot/version.rb)"
+            echo "export VERSION='$VERSION'" >> $BASH_ENV
 
       - run:
           name: Pull Docker base images & warm Docker cache
           command: |
             docker pull ubuntu:18.04
             docker pull "dependabot/dependabot-core-ci:core--$BRANCH_TAG" ||
-              docker pull dependabot/dependabot-core:latest
+              docker pull "dependabot/dependabot-core:latest"
             docker pull "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" ||
-              docker pull dependabot/dependabot-core-ci:ci--latest || true
+              docker pull "dependabot/dependabot-core-ci:ci--latest" || true
 
       - run:
           name: Build dependabot-core image
           command: |
             docker build \
-              -t dependabot/dependabot-core:latest \
+              -t "dependabot/dependabot-core:latest" \
+              -t "dependabot/dependabot-core:$VERSION" \
               -t "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
               --cache-from ubuntu:18.04 \
               --cache-from "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
-              --cache-from dependabot/dependabot-core:latest \
+              --cache-from "dependabot/dependabot-core:latest" \
               .
 
       - run:
@@ -51,9 +55,9 @@ jobs:
               -t "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
               -f Dockerfile.ci \
               --cache-from ubuntu:18.04 \
-              --cache-from dependabot/dependabot-core:latest \
+              --cache-from "dependabot/dependabot-core:latest" \
               --cache-from "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
-              --cache-from dependabot/dependabot-core-ci:latest \
+              --cache-from "dependabot/dependabot-core-ci:latest" \
               .
 
       - run:
@@ -67,6 +71,17 @@ jobs:
           command: |
             docker run -ti dependabot/dependabot-core-ci \
              bash -c "cd terraform && rspec spec --format documentation"
+
+      - run:
+          name: Push dependabot-core image to Docker hub, if on master
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              echo "Pushing dependabot-core:{latest,$VERSION}} to registry"
+              docker push "dependabot/dependabot-core:$VERSION"
+              docker push "dependabot/dependabot-core:latest"
+            else
+              echo "Not on master, skipping deployment"
+            fi
 
       - run:
           name: Push dependabot-core-ci image to CI cache repo
