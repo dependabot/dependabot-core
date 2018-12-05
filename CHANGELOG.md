@@ -1,3 +1,7 @@
+## v0.75.126, 5 December 2018
+
+- .NET: Pass URL string (not hash) when raising PrivateSourceTimedOut
+
 ## v0.75.125, 5 December 2018
 
 - JS: Raise a resolvability error for invalid requirements
