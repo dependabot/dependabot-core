@@ -196,7 +196,8 @@ module Dependabot
             if error.message.start_with?("No matching vers", "404 Not Found") ||
                error.message.include?("not match any file(s) known to git") ||
                error.message.include?("Non-registry package missing package") ||
-               error.message.include?("Cannot read property 'match' of ")
+               error.message.include?("Cannot read property 'match' of ") ||
+               error.message.include?("Invalid tag name")
               # This happens if a new version has been published that relies on
               # subdependencies that have not yet been published.
               raise if resolvable_before_update?(lockfile)

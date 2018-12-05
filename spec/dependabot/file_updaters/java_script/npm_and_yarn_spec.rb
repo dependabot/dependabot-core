@@ -1293,6 +1293,28 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with an invalid requirement in the package.json" do
+        let(:manifest_fixture_name) { "invalid_requirement.json" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:yarn_lock_fixture_name) { "yarn.lock" }
+
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "with a yarn lockfile" do
+          let(:files) { [package_json, yarn_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
+
       context "when there is a private dep we don't have access to" do
         let(:manifest_fixture_name) { "private_source.json" }
         let(:npm_lock_fixture_name) { "private_source.json" }
