@@ -14,31 +14,35 @@ require "dependabot/file_parsers/dotnet/nuget"
 require "dependabot/file_parsers/go/dep"
 require "dependabot/file_parsers/go/modules"
 require "dependabot/file_parsers/elm/elm_package"
-require "dependabot/file_parsers/terraform/terraform"
 
 module Dependabot
   module FileParsers
-    # rubocop:disable Metrics/CyclomaticComplexity
+    @file_parsers = {
+      "bundler" => FileParsers::Ruby::Bundler,
+      "npm_and_yarn" => FileParsers::JavaScript::NpmAndYarn,
+      "maven" => FileParsers::Java::Maven,
+      "gradle" => FileParsers::Java::Gradle,
+      "pip" => FileParsers::Python::Pip,
+      "composer" => FileParsers::Php::Composer,
+      "submodules" => FileParsers::Git::Submodules,
+      "docker" => FileParsers::Docker::Docker,
+      "hex" => FileParsers::Elixir::Hex,
+      "cargo" => FileParsers::Rust::Cargo,
+      "nuget" => FileParsers::Dotnet::Nuget,
+      "dep" => FileParsers::Go::Dep,
+      "go_modules" => FileParsers::Go::Modules,
+      "elm-package" => FileParsers::Elm::ElmPackage
+    }
+
     def self.for_package_manager(package_manager)
-      case package_manager
-      when "bundler" then FileParsers::Ruby::Bundler
-      when "npm_and_yarn" then FileParsers::JavaScript::NpmAndYarn
-      when "maven" then FileParsers::Java::Maven
-      when "gradle" then FileParsers::Java::Gradle
-      when "pip" then FileParsers::Python::Pip
-      when "composer" then FileParsers::Php::Composer
-      when "submodules" then FileParsers::Git::Submodules
-      when "docker" then FileParsers::Docker::Docker
-      when "hex" then FileParsers::Elixir::Hex
-      when "cargo" then FileParsers::Rust::Cargo
-      when "nuget" then FileParsers::Dotnet::Nuget
-      when "dep" then FileParsers::Go::Dep
-      when "go_modules" then FileParsers::Go::Modules
-      when "elm-package" then FileParsers::Elm::ElmPackage
-      when "terraform" then FileParsers::Terraform::Terraform
-      else raise "Unsupported package_manager #{package_manager}"
-      end
+      file_parser = @file_parsers[package_manager]
+      return file_parser if file_parser
+
+      raise "Unsupported package_manager #{package_manager}"
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
+
+    def self.register(package_manager, file_parser)
+      @file_parsers[package_manager] = file_parser
+    end
   end
 end

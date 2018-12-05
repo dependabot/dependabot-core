@@ -1,0 +1,10 @@
+inherit_from:
+  - rubocop-default.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+AllCops:
+  Exclude:
+    - 'terraform/**/*'

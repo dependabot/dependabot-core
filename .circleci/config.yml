@@ -1,5 +1,94 @@
 version: 2
 jobs:
+  reorg_build:
+    docker:
+      # Any image that includes the docker client will do
+      - image: circleci/ruby
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Log in to the Docker registry
+          command: docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
+
+      - run:
+          name: Prepare environment variables
+          command: |
+            BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
+            echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
+
+            VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" lib/dependabot/version.rb)"
+            echo "export VERSION='$VERSION'" >> $BASH_ENV
+
+      - run:
+          name: Pull Docker base images & warm Docker cache
+          command: |
+            docker pull ubuntu:18.04
+            docker pull "dependabot/dependabot-core-ci:core--$BRANCH_TAG" ||
+              docker pull "dependabot/dependabot-core:latest"
+            docker pull "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" ||
+              docker pull "dependabot/dependabot-core-ci:ci--latest" || true
+
+      - run:
+          name: Build dependabot-core image
+          command: |
+            docker build \
+              -t "dependabot/dependabot-core:latest" \
+              -t "dependabot/dependabot-core:$VERSION" \
+              -t "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
+              --cache-from ubuntu:18.04 \
+              --cache-from "dependabot/dependabot-core-ci:core--$BRANCH_TAG" \
+              --cache-from "dependabot/dependabot-core:latest" \
+              .
+
+      - run:
+          name: Push dependabot-core image to CI cache repo
+          command: docker push "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
+
+      - run:
+          name: Build dependabot-core-ci image
+          command: |
+            rm .dockerignore  # we usually don't want tests etc, but here we do
+            docker build \
+              -t "dependabot/dependabot-core-ci:latest" \
+              -t "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
+              -f Dockerfile.ci \
+              --cache-from ubuntu:18.04 \
+              --cache-from "dependabot/dependabot-core:latest" \
+              --cache-from "dependabot/dependabot-core-ci:ci--$BRANCH_TAG" \
+              --cache-from "dependabot/dependabot-core-ci:latest" \
+              .
+
+      - run:
+          name: Rubocop
+          command: |
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd terraform && rubocop"
+
+      - run:
+          name: RSpec
+          command: |
+            docker run -ti dependabot/dependabot-core-ci \
+             bash -c "cd terraform && rspec spec --format documentation"
+
+      - run:
+          name: Push dependabot-core image to Docker hub, if on master
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              echo "Pushing dependabot-core:{latest,$VERSION}} to registry"
+              docker push "dependabot/dependabot-core:$VERSION"
+              docker push "dependabot/dependabot-core:latest"
+            else
+              echo "Not on master, skipping deployment"
+            fi
+
+      - run:
+          name: Push dependabot-core-ci image to CI cache repo
+          command: |
+            docker push "dependabot/dependabot-core-ci:ci--$BRANCH_TAG"
+            docker push "dependabot/dependabot-core-ci:latest"
+
   build:
     docker:
       - image: dependabot/dependabot-core:0.1.47
@@ -13,7 +102,7 @@ jobs:
             - v1-dependencies-master
 
       # Install dependencies
-      - run: bundle install --path vendor/bundle
+      - run: bundle install --path ~/dependabot-core/vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
@@ -43,3 +132,10 @@ jobs:
           path: ~/rspec
       - store_artifacts:
           path: ~/rspec
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - reorg_build
+      - build

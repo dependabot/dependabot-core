@@ -28,11 +28,16 @@ module Dependabot
           GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m.freeze
           GEM_NOT_FOUND_ERROR_REGEX =
             /locked to (?<name>[^\s]+) \(|not find (?<name>[^\s]+)-\d/.freeze
-          GEMSPEC_SOURCES = [
-            ::Bundler::Source::Path,
-            ::Bundler::Source::Gemspec
-          ].freeze
           RETRYABLE_ERRORS = [::Bundler::HTTPError].freeze
+
+          # Can't be a constant because some of these don't exist in bundler
+          # 1.15, which Heroku uses, which causes an exception on boot.
+          def gemspec_sources
+            [
+              ::Bundler::Source::Path,
+              ::Bundler::Source::Gemspec
+            ]
+          end
 
           def initialize(dependencies:, dependency_files:, credentials:)
             @dependencies = dependencies
@@ -304,7 +309,7 @@ module Dependabot
 
             gemspec_specs =
               ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs.
-              select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
+              select { |s| gemspec_sources.include?(s.source.class) }
 
             gem_name =
               GemspecDependencyNameFinder.new(gemspec_content: gemspec_content).

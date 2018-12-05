@@ -33,12 +33,15 @@
 # - docker
 # - terraform
 
+$LOAD_PATH << "./terraform/lib"
+
 require "optparse"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
+require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
