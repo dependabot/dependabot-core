@@ -129,8 +129,21 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 
+### NEW NATIVE HELPERS LOCATION
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+
 ### TERRAFORM
 
-COPY terraform/helpers/build /tmp/terraform-build
-RUN bash /tmp/terraform-build /opt/terraform
-ENV PATH="$PATH:/opt/terraform/bin" DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+COPY terraform/helpers /opt/terraform/helpers
+RUN bash /opt/terraform/helpers/build /opt/terraform
+ENV PATH="$PATH:/opt/terraform/bin"
+
+
+### PYTHON (MERGE WITH SECTION FUTHER UP)
+
+COPY python/helpers /opt/python/helpers
+RUN bash /opt/python/helpers/build /opt/python
+ENV PATH="$PATH:/opt/python/bin"
+

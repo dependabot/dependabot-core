@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/python/pip"
-require_relative "../shared_examples_for_file_fetchers"
+require "spec_helper"
+require "dependabot/python/file_fetcher"
+require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::Python::Pip do
+RSpec.describe Dependabot::Python::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   describe ".required_files_in?" do

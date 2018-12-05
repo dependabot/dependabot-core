@@ -59,17 +59,21 @@ docker run --rm -ti \
   -v "$(pwd)/spec:$CODE_DIR/spec" \
   -v "$(pwd)/helpers:$CODE_DIR/helpers" \
   -v "$(pwd)/Gemfile:$CODE_DIR/Gemfile" \
-  -v "$(pwd)/terraform/Gemfile.lock:$CODE_DIR/terraform/Gemfile.lock" \
-  -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-core.gemspec" \
+  -v "$(pwd)/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
+  -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
-  -v "$(pwd)/docker/Gemfile.lock:$CODE_DIR/docker/Gemfile.lock" \
-  -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-core.gemspec" \
+  -v "$(pwd)/docker/Gemfile:$CODE_DIR/docker/Gemfile" \
+  -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
-  -v "$(pwd)/git_submodules/Gemfile.lock:$CODE_DIR/git_submodules/Gemfile.lock" \
+  -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
   -v "$(pwd)/git_submodules/dependabot-git-submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
   -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
   -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
+  -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
+  -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
+  -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
+  -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
