@@ -1,3 +1,10 @@
+## v0.76.0, 5 December 2018
+
+- Terraform: (BREAKING) Split Terraform support out into a separate gem, still
+  within the same repo. See #825 for more info.
+- Maven: Handle credentials that don't include auth details
+- Convert relative links in changelogs and release notes
+
 ## v0.75.126, 5 December 2018
 
 - .NET: Pass URL string (not hash) when raising PrivateSourceTimedOut
