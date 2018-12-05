@@ -52,5 +52,6 @@ try {
     }
 } catch (\Exception $e) {
     fwrite(STDOUT, json_encode(['error' => $e->getMessage()]));
+    error_clear_last();
     exit(1);
 }
