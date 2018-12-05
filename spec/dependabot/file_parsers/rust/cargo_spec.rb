@@ -569,7 +569,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("rand")
-              # Surprisingly, Rust's treats bare requirements as semver reqs
+              # Surprisingly, Rust treats bare requirements as semver reqs
               expect(dependency.version).to eq("0.4.1")
               expect(dependency.requirements).to eq(
                 [{
@@ -579,6 +579,31 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
                   source: nil
                 }]
               )
+            end
+          end
+
+          context "with a git version in the lockfile too" do
+            let(:lockfile_fixture_name) { "multiple_versions_git" }
+
+            its(:length) { is_expected.to eq(2) }
+
+            describe "the first dependency" do
+              subject(:dependency) { top_level_dependencies.first }
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("rand")
+                # Surprisingly, Rust treats bare requirements as semver reqs
+                expect(dependency.version).to eq("0.4.1")
+                expect(dependency.requirements).to eq(
+                  [{
+                    requirement: "0.4",
+                    file: "Cargo.toml",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                )
+              end
             end
           end
         end

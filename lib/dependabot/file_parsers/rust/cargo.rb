@@ -146,6 +146,12 @@ module Dependabot
               select { |p| req.satisfied_by?(version_class.new(p["version"])) }
           end
 
+          candidate_packages =
+            candidate_packages.
+            select do |p|
+              git_req?(declaration) ^ !p["source"]&.start_with?("git+")
+            end
+
           package =
             candidate_packages.
             max_by { |p| version_class.new(p["version"]) }
@@ -153,6 +159,10 @@ module Dependabot
           return unless package
 
           version_from_lockfile_details(package)
+        end
+
+        def git_req?(declaration)
+          source_from_declaration(declaration)&.fetch(:type, nil) == "git"
         end
 
         def git_source_details(declaration)
