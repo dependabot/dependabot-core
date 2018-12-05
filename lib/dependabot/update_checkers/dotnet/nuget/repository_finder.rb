@@ -115,7 +115,7 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, details.fetch(:url)
           end
 
-          def handle_timeout(repo_metadata_url)
+          def handle_timeout(repo_metadata_url:)
             raise if repo_metadata_url == DEFAULT_REPOSITORY_URL
 
             raise PrivateSourceTimedOut, repo_metadata_url
