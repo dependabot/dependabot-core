@@ -88,10 +88,9 @@ module Dependabot
 
             # Check if a dist tag was specified as a requirement. If it was, and
             # it exists, use it.
-            dist_tag_req =
-              dependency.requirements.
-              find { |req| dist_tags.include?(req[:requirement]) }&.
-              fetch(:requirement)
+            dist_tag_req = dependency.requirements.
+                           find { |r| dist_tags.include?(r[:requirement]) }&.
+                           fetch(:requirement)
 
             if dist_tag_req
               tag_vers =
@@ -176,16 +175,40 @@ module Dependabot
 
             @yanked[version] =
               begin
+                version_not_found =
+                  Excon.get(
+                    dependency_url + "/#{version}",
+                    SharedHelpers.excon_defaults.merge(
+                      headers: registry_auth_headers,
+                      idempotent: true
+                    )
+                  ).status == 404
+                version_not_found && version_endpoint_working?
+              rescue Excon::Error::Timeout
+                # Give the benefit of the doubt if the registry is playing up
+                false
+              end
+          end
+
+          def version_endpoint_working?
+            return true if dependency_registry == "registry.npmjs.org"
+
+            if defined?(@version_endpoint_working)
+              return @version_endpoint_working
+            end
+
+            @version_endpoint_working =
+              begin
                 Excon.get(
-                  dependency_url + "/#{version}",
+                  dependency_url + "/latest",
                   SharedHelpers.excon_defaults.merge(
                     headers: registry_auth_headers,
                     idempotent: true
                   )
-                ).status == 404
+                ).status < 400
               rescue Excon::Error::Timeout
                 # Give the benefit of the doubt if the registry is playing up
-                false
+                true
               end
           end
 
