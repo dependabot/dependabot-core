@@ -26,10 +26,15 @@ module Dependabot
         #   version range
         class FilePreparer
           VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
-          GEMSPEC_SOURCES = [
-            ::Bundler::Source::Path,
-            ::Bundler::Source::Gemspec
-          ].freeze
+
+          # Can't be a constant because some of these don't exist in bundler
+          # 1.15, which Heroku uses, which causes an exception on boot.
+          def gemspec_sources
+            [
+              ::Bundler::Source::Path,
+              ::Bundler::Source::Gemspec
+            ]
+          end
 
           def initialize(dependency_files:, dependency:,
                          remove_git_source: false,
@@ -249,7 +254,7 @@ module Dependabot
 
             gemspec_specs =
               ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs.
-              select { |s| GEMSPEC_SOURCES.include?(s.source.class) }
+              select { |s| gemspec_sources.include?(s.source.class) }
 
             gem_name =
               FileUpdaters::Ruby::Bundler::GemspecDependencyNameFinder.

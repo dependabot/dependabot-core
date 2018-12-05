@@ -14,14 +14,18 @@ module Dependabot
         require "dependabot/file_parsers/ruby/bundler/file_preparer"
         require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
 
-        SOURCES = [
-          NilClass,
-          ::Bundler::Source::Rubygems,
-          ::Bundler::Source::Git,
-          ::Bundler::Source::Path,
-          ::Bundler::Source::Gemspec,
-          ::Bundler::Source::Metadata
-        ].freeze
+        # Can't be a constant because some of these don't exist in bundler
+        # 1.15, which Heroku uses, which causes an exception on boot.
+        def sources
+          [
+            NilClass,
+            ::Bundler::Source::Rubygems,
+            ::Bundler::Source::Git,
+            ::Bundler::Source::Path,
+            ::Bundler::Source::Gemspec,
+            ::Bundler::Source::Metadata
+          ]
+        end
 
         def parse
           dependency_set = DependencySet.new
@@ -183,7 +187,7 @@ module Dependabot
             # interesting to say about the source, check that.
             source = source_from_lockfile(dependency.name)
           end
-          raise "Bad source: #{source}" unless SOURCES.include?(source.class)
+          raise "Bad source: #{source}" unless sources.include?(source.class)
 
           return nil if default_rubygems?(source)
 
