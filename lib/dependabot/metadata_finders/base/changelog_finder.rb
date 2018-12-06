@@ -116,11 +116,12 @@ module Dependabot
         end
 
         def tag_for_new_version
-          CommitsFinder.new(
-            dependency: dependency,
-            source: source,
-            credentials: credentials
-          ).new_tag
+          @tag_for_new_version ||=
+            CommitsFinder.new(
+              dependency: dependency,
+              source: source,
+              credentials: credentials
+            ).new_tag
         end
 
         def full_changelog_text
