@@ -12,8 +12,8 @@ Gem::Specification.new do |spec|
 
   spec.author       = "Dependabot"
   spec.email        = "support@dependabot.com"
-  spec.homepage     = "https://github.com/hmarr/dependabot-core"
-  spec.license      = "License Zero Prosperity Public License"
+  spec.homepage     = "https://github.com/dependabot/dependabot-core"
+  spec.license      = "Nonstandard" # License Zero Prosperity Public License
 
   spec.require_path = "lib"
   spec.files        = ["CHANGELOG.md", "LICENSE", "README.md"]
@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
-  spec.add_dependency "docker_registry2", "~> 1.4.1"
+  spec.add_dependency "docker_registry2", "~> 1.4"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gitlab", "~> 4.1"
   spec.add_dependency "gpgme", "~> 2.0"
@@ -34,13 +34,13 @@ Gem::Specification.new do |spec|
   spec.add_dependency "toml-rb", "~> 1.1", ">= 1.1.2"
 
   spec.add_development_dependency "byebug", "~> 10.0"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rspec", "~> 3.8.0"
-  spec.add_development_dependency "rspec-its", "~> 1.2.0"
+  spec.add_development_dependency "rake", "~> 12"
+  spec.add_development_dependency "rspec", "~> 3.8"
+  spec.add_development_dependency "rspec-its", "~> 1.2"
   spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
-  spec.add_development_dependency "rubocop", "~> 0.61.0"
-  spec.add_development_dependency "vcr", "~> 4.0.0"
-  spec.add_development_dependency "webmock", "~> 3.4.0"
+  spec.add_development_dependency "rubocop", "~> 0.61"
+  spec.add_development_dependency "vcr", "~> 4.0"
+  spec.add_development_dependency "webmock", "~> 3.4"
 
   next unless File.exist?(".gitignore")
 
