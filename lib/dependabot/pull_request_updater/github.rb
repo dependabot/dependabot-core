@@ -132,9 +132,23 @@ module Dependabot
       end
 
       def commit_message
-        github_client_for_source.
-          git_commit(source.repo, pull_request.head.sha).
-          message
+        @commit_message ||=
+          if pull_request.commits == 1
+            github_client_for_source.
+              git_commit(source.repo, pull_request.head.sha).
+              message
+          else
+            author_name = author_details&.fetch(:name, nil) || "dependabot[bot]"
+            commits =
+              github_client_for_source.
+              pull_request_commits(source.repo, pull_request_number)
+
+            commit =
+              commits.find { |c| c.commit.author.name == author_name } ||
+              commits.first
+
+            commit.commit.message
+          end
       end
 
       def commit_signature(tree, author_details_with_date)
