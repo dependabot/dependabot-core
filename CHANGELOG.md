@@ -1,3 +1,7 @@
+## v0.76.4, 6 December 2018
+
+- No code changes - testing automated releases
+
 ## v0.76.3, 6 December 2018
 
 - Start releasing to RubyGems
