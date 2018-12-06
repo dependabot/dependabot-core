@@ -1,3 +1,9 @@
+## v0.76.8, 6 December 2018
+
+- JS: Build relative paths for path dependencies of unfetchable path
+  dependencies
+- JS: Get correct version for path dependencies
+
 ## v0.76.7, 6 December 2018
 
 - No code changes - testing automated releases
