@@ -1,3 +1,7 @@
+## v0.76.2, 6 December 2018
+
+- Better detection of dependabot commit when updating a PR
+
 ## v0.76.1, 5 December 2018
 
 - JS: Don't check for yanked packages if using a private registry
