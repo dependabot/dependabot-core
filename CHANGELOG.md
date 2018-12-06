@@ -1,3 +1,7 @@
+## v0.76.9, 6 December 2018
+
+- Python: Handle bare version requirements in the RequirementUpdater
+
 ## v0.76.8, 6 December 2018
 
 - JS: Build relative paths for path dependencies of unfetchable path
