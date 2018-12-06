@@ -142,6 +142,7 @@ jobs:
       - run: |
           [ -d ~/.gem ] || mkdir ~/.gem
           echo "---\n:rubygems_api_key: $RUBYGEMS_API_KEY\n" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
 
       - restore_cache:
           keys:
