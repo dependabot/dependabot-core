@@ -60,9 +60,14 @@ module Dependabot
               {
                 name: dependency_name,
                 version: details_from_yarn_lock["version"] || "0.0.1",
-                dependencies: details_from_yarn_lock["dependencies"],
+                dependencies:
+                  replace_yarn_lock_file_paths(
+                    details_from_yarn_lock["dependencies"]
+                  ),
                 optionalDependencies:
-                  details_from_yarn_lock["optionalDependencies"]
+                  replace_yarn_lock_file_paths(
+                    details_from_yarn_lock["optionalDependencies"]
+                  )
               }.compact.to_json
             else
               {
@@ -70,6 +75,32 @@ module Dependabot
                 version: "0.0.1",
                 dependencies: details_from_npm_lock["requires"]
               }.compact.to_json
+            end
+          end
+
+          # If an unfetchable path dependency itself has path dependencies
+          # then the paths in the yarn.lock for them will be absolute, not
+          # relative. Worse, they may point to the user's local cache.
+          # We work around this by constructing a relative path to the
+          # (second-level) path dependencies.
+          def replace_yarn_lock_file_paths(dependencies_hash)
+            return unless dependencies_hash
+
+            dependencies_hash.each_with_object({}) do |(k, v), obj|
+              obj[k] = v
+              next unless v.start_with?("file:")
+
+              path_from_base =
+                parsed_yarn_lock.to_a.
+                find do |n, _|
+                  next false unless n.split(/(?<=\w)\@/).first == k
+
+                  n.split(/(?<=\w)\@/).last.start_with?("file:")
+                end&.first&.split(/(?<=\w)\@/)&.last&.gsub("file:", "")
+
+              next unless path_from_base
+
+              obj[k] = "file:" + File.join(inverted_path, path_from_base)
             end
           end
 
@@ -94,6 +125,16 @@ module Dependabot
                   args: [Dir.pwd]
                 )
               end
+          end
+
+          # The path back to the root lockfile
+          def inverted_path
+            path.split("/").map do |part|
+              next part if part == "."
+              next "tmp" if part == ".."
+
+              ".."
+            end.join("/")
           end
 
           def yarn_helper_path

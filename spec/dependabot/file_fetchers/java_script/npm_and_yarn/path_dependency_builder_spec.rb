@@ -111,7 +111,8 @@ RSpec.describe namespace::PathDependencyBuilder do
               name: "other_package",
               version: "0.0.2",
               dependencies: {
-                lodash: "^1.3.1"
+                lodash: "^1.3.1",
+                filedep: "file:../../../correct/path/filedep"
               },
               optionalDependencies: { etag: "^1.0.0" }
             }.to_json)
