@@ -34,6 +34,7 @@ Metrics/MethodLength:
 
 Metrics/BlockLength:
   Exclude:
+    - Rakefile
     - spec/**/*
     - dependabot-*.gemspec
 
