@@ -79,7 +79,7 @@ module Dependabot
           end
 
           # If an unfetchable path dependency itself has path dependencies
-          # then the paths in the yarn.lock for them will be absolute, not
+          # then the paths in the yarn.lock for them will be absolute, not
           # relative. Worse, they may point to the user's local cache.
           # We work around this by constructing a relative path to the
           # (second-level) path dependencies.
