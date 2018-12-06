@@ -135,7 +135,8 @@ jobs:
 
   release_gems:
     docker:
-      - image: circleci/ruby
+      - image: dependabot/dependabot-core:latest
+    working_directory: ~/dependabot-core
     steps:
       - checkout
 
