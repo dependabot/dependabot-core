@@ -1,3 +1,8 @@
+## v0.76.3, 6 December 2018
+
+- Start releasing to RubyGems
+- Fix gemspec warnings
+
 ## v0.76.2, 6 December 2018
 
 - Better detection of dependabot commit when updating a PR
