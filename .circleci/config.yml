@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  reorg_build:
+  build_and_test_reorg:
     docker:
       # Any image that includes the docker client will do
       - image: circleci/ruby
@@ -89,7 +89,7 @@ jobs:
             docker push "dependabot/dependabot-core-ci:ci--$BRANCH_TAG"
             docker push "dependabot/dependabot-core-ci:latest"
 
-  build:
+  test_core:
     docker:
       - image: dependabot/dependabot-core:0.1.47
     working_directory: ~/dependabot-core
@@ -133,9 +133,29 @@ jobs:
       - store_artifacts:
           path: ~/rspec
 
+  release_gems:
+    docker:
+      - image: circleci/ruby
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ .Branch }}
+            - v1-dependencies-master
+
+      - run: bundle install --path ~/dependabot-core/vendor/bundle
+      - run: bundle exec rake gems:release
+
 workflows:
   version: 2
   test:
     jobs:
-      - reorg_build
-      - build
+      - test_core
+      - build_and_test_reorg
+      - release_gems:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
