@@ -1,3 +1,7 @@
+## v0.76.6, 6 December 2018
+
+- No code changes - testing automated releases
+
 ## v0.76.5, 6 December 2018
 
 - Add omnibus gem
