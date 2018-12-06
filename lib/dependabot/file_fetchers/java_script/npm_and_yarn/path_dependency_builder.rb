@@ -59,7 +59,7 @@ module Dependabot
             if details_from_yarn_lock
               {
                 name: dependency_name,
-                version: "0.0.1",
+                version: details_from_yarn_lock["version"] || "0.0.1",
                 dependencies: details_from_yarn_lock["dependencies"],
                 optionalDependencies:
                   details_from_yarn_lock["optionalDependencies"]

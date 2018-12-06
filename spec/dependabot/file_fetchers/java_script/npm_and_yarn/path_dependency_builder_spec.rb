@@ -93,7 +93,7 @@ RSpec.describe namespace::PathDependencyBuilder do
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.type).to eq("path_dependency")
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
+            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
         end
       end
 
@@ -109,8 +109,10 @@ RSpec.describe namespace::PathDependencyBuilder do
           expect(dependency_file.content).
             to eq({
               name: "other_package",
-              version: "0.0.1",
-              dependencies: { lodash: "^1.3.1" },
+              version: "0.0.2",
+              dependencies: {
+                lodash: "^1.3.1"
+              },
               optionalDependencies: { etag: "^1.0.0" }
             }.to_json)
         end
