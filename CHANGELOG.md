@@ -1,3 +1,8 @@
+## v0.76.10, 6 December 2018
+
+- Cache commit tag lookup in changelog finder
+- Sanitize relative links in release notes
+
 ## v0.76.9, 6 December 2018
 
 - Python: Handle bare version requirements in the RequirementUpdater
