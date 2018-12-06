@@ -139,6 +139,9 @@ jobs:
     working_directory: ~/dependabot-core
     steps:
       - checkout
+      - run: |
+          [ -d ~/.gem ] || mkdir ~/.gem
+          echo "---\n:rubygems_api_key: $RUBYGEMS_API_KEY\n" > ~/.gem/credentials
 
       - restore_cache:
           keys:
