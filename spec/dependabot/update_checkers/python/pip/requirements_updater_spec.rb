@@ -178,6 +178,11 @@ RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
             let(:latest_resolvable_version) { "1.5.0.1" }
             its([:requirement]) { is_expected.to eq("==1.5.0.1") }
           end
+
+          context "without leading == (technically invalid)" do
+            let(:setup_py_req_string) { "1.4.0" }
+            its([:requirement]) { is_expected.to eq("1.5.0") }
+          end
         end
 
         context "and no requirement was specified" do
