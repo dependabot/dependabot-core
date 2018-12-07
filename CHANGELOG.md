@@ -1,3 +1,7 @@
+## v0.78.0, 7 December 2018
+
+- Extract git_submodules logic into a separate gem
+
 ## v0.77.2, 7 December 2018
 
 - Add top level docker file that requires docker classes
