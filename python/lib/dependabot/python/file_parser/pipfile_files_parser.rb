@@ -48,9 +48,7 @@ module Dependabot
             parsed_pipfile[keys[:pipfile]].map do |dep_name, req|
               group = keys[:lockfile]
               next unless req.is_a?(String) || req["version"]
-              if pipfile_lock && !dependency_version(dep_name, req, group)
-                next
-              end
+              next if pipfile_lock && !dependency_version(dep_name, req, group)
 
               dependencies <<
                 Dependency.new(
