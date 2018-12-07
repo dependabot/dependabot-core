@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/python/pip/pyproject_preparer"
+require "dependabot/python/file_updater/pyproject_preparer"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::PyprojectPreparer do
+RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   let(:preparer) { described_class.new(pyproject_content: pyproject_content) }
   let(:pyproject_content) do
     fixture("python", "pyproject_files", "pyproject.toml")

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/python/pip/requirements_updater"
+require "dependabot/python/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Python::Pip::RequirementsUpdater do
+RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

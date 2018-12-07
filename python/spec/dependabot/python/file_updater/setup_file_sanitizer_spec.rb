@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/python/pip/setup_file_sanitizer"
+require "dependabot/python/file_updater/setup_file_sanitizer"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::SetupFileSanitizer do
+RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
   let(:sanitizer) do
     described_class.new(setup_file: setup_file, setup_cfg: setup_cfg)
   end

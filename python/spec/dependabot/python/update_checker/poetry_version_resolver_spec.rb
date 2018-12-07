@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/python/pip/poetry_version_resolver"
+require "dependabot/python/update_checker/poetry_version_resolver"
 
-namespace = Dependabot::UpdateCheckers::Python::Pip
+namespace = Dependabot::Python::UpdateChecker
 RSpec.describe namespace::PoetryVersionResolver do
   let(:resolver) do
     described_class.new(

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/file_updaters/python/pip/requirement_replacer"
+require "dependabot/python/file_updater/requirement_replacer"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::RequirementReplacer do
+RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
   let(:replacer) do
     described_class.new(
       content: requirement_content,

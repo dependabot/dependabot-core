@@ -5,10 +5,10 @@ require "toml-rb"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/python/pip/poetry_file_updater"
+require "dependabot/python/file_updater/poetry_file_updater"
 require "dependabot/shared_helpers"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::PoetryFileUpdater do
+RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,

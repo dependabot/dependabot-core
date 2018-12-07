@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/python/pip/pipfile_file_updater"
+require "dependabot/python/file_updater/pipfile_file_updater"
 require "dependabot/shared_helpers"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfileFileUpdater do
+RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,

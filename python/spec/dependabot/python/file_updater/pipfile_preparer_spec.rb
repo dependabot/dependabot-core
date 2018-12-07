@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/python/pip/pipfile_preparer"
+require "dependabot/python/file_updater/pipfile_preparer"
 
-RSpec.describe Dependabot::FileUpdaters::Python::Pip::PipfilePreparer do
+RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
   let(:preparer) { described_class.new(pipfile_content: pipfile_content) }
 
   let(:pipfile_content) do

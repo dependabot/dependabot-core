@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/python/pip"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/python/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Python::Pip do
+RSpec.describe Dependabot::Python::UpdateChecker do
   it_behaves_like "an update checker"
 
   before do
