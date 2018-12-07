@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/docker/docker"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/docker/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Docker::Docker do
+RSpec.describe Dependabot::Docker::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [dockerfile] }
