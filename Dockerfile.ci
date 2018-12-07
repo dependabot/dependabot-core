@@ -21,4 +21,10 @@ COPY terraform/Gemfile \
      /home/dependabot/dependabot-core/terraform/
 RUN cd terraform && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/docker
+COPY docker/Gemfile \
+     docker/dependabot-docker.gemspec \
+     /home/dependabot/dependabot-core/docker/
+RUN cd docker && bundle install
+
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

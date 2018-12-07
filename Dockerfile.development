@@ -23,3 +23,7 @@ RUN bundle install
 RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile terraform/Gemfile.lock terraform/dependabot-terraform.gemspec /home/dependabot/dependabot-core/terraform/
 RUN cd terraform && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/docker
+COPY docker/Gemfile docker/Gemfile.lock docker/dependabot-docker.gemspec /home/dependabot/dependabot-core/docker/
+RUN cd docker && bundle install
