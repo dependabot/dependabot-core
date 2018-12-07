@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
-require "dependabot/utils/docker/credentials_finder"
+require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot
   module Docker
@@ -142,8 +142,7 @@ module Dependabot
       end
 
       def credentials_finder
-        @credentials_finder ||=
-          Dependabot::Utils::Docker::CredentialsFinder.new(credentials)
+        @credentials_finder ||= Utils::CredentialsFinder.new(credentials)
       end
 
       def standard_registry?(registry)

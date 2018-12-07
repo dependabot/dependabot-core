@@ -6,8 +6,8 @@ require "base64"
 require "dependabot/errors"
 
 module Dependabot
-  module Utils
-    module Docker
+  module Docker
+    module Utils
       class CredentialsFinder
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/docker/credentials_finder"
+require "dependabot/docker/utils/credentials_finder"
 
-RSpec.describe Dependabot::Utils::Docker::CredentialsFinder do
+RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
   let(:credentials) do
     [{
