@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/python/requirement"
-require "dependabot/utils/python/version"
+require "dependabot/python/requirement"
+require "dependabot/python/version"
 
-RSpec.describe Dependabot::Utils::Python::Requirement do
+RSpec.describe Dependabot::Python::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
-  let(:version_class) { Dependabot::Utils::Python::Version }
+  let(:version_class) { Dependabot::Python::Version }
 
   describe ".new" do
     subject { described_class.new(requirement_string) }
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Utils::Python::Requirement do
       end
     end
 
-    context "with a Utils::Python::Version" do
+    context "with a Python::Version" do
       let(:version) { version_class.new(version_string) }
 
       context "for the current version" do
