@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/ruby/bundler"
-require "dependabot/file_fetchers/python/pip"
 require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require "dependabot/file_fetchers/java/maven"
 require "dependabot/file_fetchers/java/gradle"
@@ -20,7 +19,6 @@ module Dependabot
       "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn,
       "maven" => FileFetchers::Java::Maven,
       "gradle" => FileFetchers::Java::Gradle,
-      "pip" => FileFetchers::Python::Pip,
       "composer" => FileFetchers::Php::Composer,
       "hex" => FileFetchers::Elixir::Hex,
       "cargo" => FileFetchers::Rust::Cargo,

@@ -301,3 +301,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileFetchers.
+  register("pip", Dependabot::Python::FileFetcher)

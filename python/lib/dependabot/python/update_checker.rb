@@ -223,3 +223,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.
+  register("pip", Dependabot::Python::UpdateChecker)

@@ -143,3 +143,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileUpdaters.
+  register("pip", Dependabot::Python::FileUpdater)

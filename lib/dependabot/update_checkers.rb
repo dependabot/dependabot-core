@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/update_checkers/ruby/bundler"
-require "dependabot/update_checkers/python/pip"
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/update_checkers/java/maven"
 require "dependabot/update_checkers/java/gradle"
@@ -20,7 +19,6 @@ module Dependabot
       "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn,
       "maven" => UpdateCheckers::Java::Maven,
       "gradle" => UpdateCheckers::Java::Gradle,
-      "pip" => UpdateCheckers::Python::Pip,
       "composer" => UpdateCheckers::Php::Composer,
       "hex" => UpdateCheckers::Elixir::Hex,
       "cargo" => UpdateCheckers::Rust::Cargo,

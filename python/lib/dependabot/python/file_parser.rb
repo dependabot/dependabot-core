@@ -215,3 +215,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.
+  register("pip", Dependabot::Python::FileParser)
