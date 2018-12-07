@@ -166,8 +166,7 @@ module Dependabot
         end
 
         def native_helpers_root
-          default_path = File.join(__dir__,
-                                   "../../../../python/helpers/install-dir")
+          default_path = File.join(__dir__, "../../../..")
           ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
         end
 
