@@ -1293,6 +1293,68 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "with a sub dependency name that can't be found" do
+        let(:manifest_fixture_name) do
+          "github_sub_dependency_name_missing.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "github_sub_dependency_name_missing.json"
+        end
+        let(:yarn_lock_fixture_name) do
+          "github_sub_dependency_name_missing.lock"
+        end
+
+        let(:dependency_name) { "test-missing-dep-name-npm-package" }
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-dep-name-npm-package",
+              branch: nil,
+              ref: ref
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-dep-name-npm-package",
+              branch: nil,
+              ref: old_ref
+            }
+          }]
+        end
+        let(:previous_version) { "1be88e036981a8511eacf3f20e0a21507349988d" }
+        let(:version) { "346e79a12f34c5937bf0f016bced0723f864fe19" }
+        let(:ref) { "v1.0.1" }
+        let(:old_ref) { "v1.0.0" }
+
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "with a yarn lockfile" do
+          let(:files) { [package_json, yarn_lock] }
+          it "raises a helpful error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
+
       context "with an invalid requirement in the package.json" do
         let(:manifest_fixture_name) { "invalid_requirement.json" }
         let(:npm_lock_fixture_name) { "package-lock.json" }
@@ -1502,10 +1564,17 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
 
       context "when sub dependency version is missing" do
-        let(:manifest_fixture_name) { "github_sub_dependency_missing.json" }
-        let(:npm_lock_fixture_name) { "github_sub_dependency_missing.json" }
-        let(:yarn_lock_fixture_name) { "github_sub_dependency_missing.lock" }
+        let(:manifest_fixture_name) do
+          "github_sub_dependency_version_missing.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "github_sub_dependency_version_missing.json"
+        end
+        let(:yarn_lock_fixture_name) do
+          "github_sub_dependency_version_missing.lock"
+        end
 
+        # TODO: rename this to test-missing-dep-version-npm-package
         let(:dependency_name) { "test-missing-dep-npm-package" }
         let(:requirements) do
           [{
