@@ -1,3 +1,10 @@
+## v0.76.11, 7 December 2018
+
+- Python: Ignore dependencies that we had to insert a version for
+- JS(npm): Raise helpful errer for forbidden missing deps
+- Gradle: Don't consider dependencies that concatenate properties to build a version
+- Maven: Check distribution type when looking up declaration to update
+
 ## v0.76.10, 6 December 2018
 
 - Cache commit tag lookup in changelog finder
