@@ -6,7 +6,6 @@ require "dependabot/metadata_finders/java_script/npm_and_yarn"
 require "dependabot/metadata_finders/java/maven"
 require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/git/submodules"
-require "dependabot/metadata_finders/docker/docker"
 require "dependabot/metadata_finders/elixir/hex"
 require "dependabot/metadata_finders/rust/cargo"
 require "dependabot/metadata_finders/dotnet/nuget"
@@ -23,7 +22,6 @@ module Dependabot
       "pip" => MetadataFinders::Python::Pip,
       "composer" => MetadataFinders::Php::Composer,
       "submodules" => MetadataFinders::Git::Submodules,
-      "docker" => MetadataFinders::Docker::Docker,
       "hex" => MetadataFinders::Elixir::Hex,
       "cargo" => MetadataFinders::Rust::Cargo,
       "nuget" => MetadataFinders::Dotnet::Nuget,
