@@ -36,14 +36,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
         requirement: "4.6.1",
         groups: [],
         source: nil,
-        metadata: nil
+        metadata: { packaging_type: "jar" }
       }],
       previous_requirements: [{
         file: "pom.xml",
         requirement: "4.5.3",
         groups: [],
         source: nil,
-        metadata: nil
+        metadata: { packaging_type: "jar" }
       }],
       package_manager: "maven"
     )
@@ -86,13 +86,15 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               file: "pom.xml",
               requirement: "[4.6.1]",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "[4.5.3]",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             package_manager: "maven"
           )
@@ -114,13 +116,15 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               file: "pom.xml",
               requirement: "1.6.0.RELEASE",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
               requirement: "1.5.8.RELEASE",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { packaging_type: "jar" }
             }],
             package_manager: "maven"
           )
@@ -149,7 +153,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               requirement: "3.0.0-M2",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: { packaging_type: "jar" }
             }],
             previous_requirements: [{
               file: "pom.xml",
@@ -162,7 +166,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
               requirement: "2.10.4",
               groups: [],
               source: nil,
-              metadata: nil
+              metadata: { packaging_type: "jar" }
             }],
             package_manager: "maven"
           )
@@ -184,26 +188,26 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 requirement: "3.0.0-M2",
                 groups: [],
                 source: { type: "maven_repo", url: "https://some.repo.com" },
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "3.0.0-M2",
                 groups: [],
                 source: { type: "maven_repo", url: "https://some.repo.com" },
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "3.0.0-M2",
                 groups: [],
                 source: nil,
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }, {
                 file: "pom.xml",
                 requirement: "2.10.4",
                 groups: [],
                 source: nil,
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }],
               package_manager: "maven"
             )
@@ -226,14 +230,14 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 requirement: "3.0.0-M2",
                 groups: [],
                 source: { type: "maven_repo", url: "https://some.repo.com" },
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "2.10.4",
                 groups: [],
                 source: nil,
-                metadata: nil
+                metadata: { packaging_type: "jar" }
               }],
               package_manager: "maven"
             )
@@ -254,13 +258,15 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 file: "pom.xml",
                 requirement: "4.6.1",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { packaging_type: "jar" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.5.3",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { packaging_type: "jar" }
               }],
               package_manager: "maven"
             ),
@@ -271,13 +277,15 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 file: "pom.xml",
                 requirement: "23.6-jre",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { packaging_type: "jar" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "23.3-jre",
                 groups: [],
-                source: nil
+                source: nil,
+                metadata: { packaging_type: "jar" }
               }],
               package_manager: "maven"
             )
@@ -307,14 +315,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 requirement: "5.0.0.RELEASE",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "springframework.version" }
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
+                }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE.1",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "springframework.version" }
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
+                }
               }],
               package_manager: "maven"
             ),
@@ -326,14 +340,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                 requirement: "5.0.0.RELEASE",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "springframework.version" }
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
+                }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.3.12.RELEASE",
                 groups: [],
                 source: nil,
-                metadata: { property_name: "springframework.version" }
+                metadata: {
+                  property_name: "springframework.version",
+                  packaging_type: "jar"
+                }
               }],
               package_manager: "maven"
             )
@@ -367,14 +387,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                   requirement: "5.0.0.RELEASE",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "springframework.version" }
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 previous_requirements: [{
                   file: "pom.xml",
                   requirement: "4.3.12.RELEASE.1",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "springframework.version" }
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 package_manager: "maven"
               )
@@ -403,14 +429,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                   requirement: "5.0.0.RELEASE",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "project.version" }
+                  metadata: {
+                    property_name: "project.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 previous_requirements: [{
                   file: "pom.xml",
                   requirement: "0.0.2-RELEASE",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "project.version" }
+                  metadata: {
+                    property_name: "project.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 package_manager: "maven"
               ),
@@ -422,14 +454,20 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
                   requirement: "5.0.0.RELEASE",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "project.version" }
+                  metadata: {
+                    property_name: "project.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 previous_requirements: [{
                   file: "pom.xml",
                   requirement: "0.0.2-RELEASE",
                   groups: [],
                   source: nil,
-                  metadata: { property_name: "project.version" }
+                  metadata: {
+                    property_name: "project.version",
+                    packaging_type: "jar"
+                  }
                 }],
                 package_manager: "maven"
               )
@@ -507,12 +545,16 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             file: "pom.xml",
             groups: [],
             source: nil,
-            metadata: { property_name: "guava.version" }
+            metadata: {
+              property_name: "guava.version",
+              packaging_type: "jar"
+            }
           }, {
             requirement: nil,
             file: "util/pom.xml",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { packaging_type: "jar" }
           }]
         end
         let(:dependency_previous_requirements) do
@@ -521,12 +563,16 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             file: "pom.xml",
             groups: [],
             source: nil,
-            metadata: { property_name: "guava.version" }
+            metadata: {
+              property_name: "guava.version",
+              packaging_type: "jar"
+            }
           }, {
             requirement: nil,
             file: "util/pom.xml",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { packaging_type: "jar" }
           }]
         end
         let(:dependency_name) { "com.google.guava:guava" }
@@ -546,7 +592,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             file: "legacy/some-spring-project/pom.xml",
             groups: [],
             source: nil,
-            metadata: { property_name: "spring.version" }
+            metadata: { property_name: "spring.version", packaging_type: "jar" }
           }]
         end
         let(:dependency_previous_requirements) do
@@ -555,7 +601,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             file: "legacy/some-spring-project/pom.xml",
             groups: [],
             source: nil,
-            metadata: { property_name: "spring.version" }
+            metadata: { property_name: "spring.version", packaging_type: "jar" }
           }]
         end
         let(:dependency_name) { "org.springframework:spring-aop" }
@@ -574,7 +620,8 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             requirement: "4.11",
             file: "business-app/pom.xml",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { packaging_type: "jar" }
           }]
         end
         let(:dependency_previous_requirements) do
@@ -582,7 +629,8 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             requirement: "4.10",
             file: "business-app/pom.xml",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { packaging_type: "jar" }
           }]
         end
         let(:dependency_name) { "junit:junit" }

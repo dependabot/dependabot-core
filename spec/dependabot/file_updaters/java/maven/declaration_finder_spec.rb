@@ -24,7 +24,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
   end
   let(:dependency_name) { "org.apache.httpcomponents:httpclient" }
   let(:dependency_version) { "4.5.3" }
-  let(:dependency_metadata) { nil }
+  let(:dependency_metadata) { { packaging_type: "jar" } }
   let(:declaring_requirement) do
     {
       requirement: dependency_version,
@@ -84,6 +84,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         "org.springframework.boot:spring-boot-starter-parent"
       end
       let(:dependency_version) { "1.5.9.RELEASE" }
+      let(:dependency_metadata) { { packaging_type: "pom" } }
 
       it "finds the declaration" do
         expect(declaration_nodes.count).to eq(1)
@@ -174,7 +175,9 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       let(:pom_fixture_name) { "nested_dependency_pom.xml" }
       let(:dependency_name) { "com.puppycrawl.tools:checkstyle" }
       let(:dependency_version) { "8.2" }
-      let(:dependency_metadata) { { property_name: "checkstyle.version" } }
+      let(:dependency_metadata) do
+        { property_name: "checkstyle.version", packaging_type: "jar" }
+      end
 
       it "finds the declaration" do
         expect(declaration_nodes.count).to eq(1)
@@ -244,6 +247,29 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           expect(declaration_nodes.first.at_css("groupId").content).
             to eq("org.apache.maven.plugins")
         end
+
+        context "but differ by distribution type" do
+          let(:pom_fixture_name) { "repeated_pom_multiple_types.xml" }
+
+          it "finds the declaration" do
+            expect(declaration_nodes.count).to eq(1)
+
+            expect(declaration_nodes.first).to be_a(Nokogiri::XML::Node)
+            expect(declaration_nodes.first.at_css("type")).to be_nil
+          end
+
+          context "looking for the bespoke type" do
+            let(:dependency_metadata) { { packaging_type: "test-jar" } }
+
+            it "finds the declaration" do
+              expect(declaration_nodes.count).to eq(1)
+
+              expect(declaration_nodes.first).to be_a(Nokogiri::XML::Node)
+              expect(declaration_nodes.first.at_css("type").content).
+                to eq("test-jar")
+            end
+          end
+        end
       end
     end
 
@@ -269,7 +295,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
           file: "map/pom.xml",
           groups: [],
           source: nil,
-          metadata: { property_name: "project.version" }
+          metadata: { property_name: "project.version", packaging_type: "jar" }
         }
       end
 
@@ -301,7 +327,8 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
             requirement: dependency_version,
             file: "pom.xml",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { packaging_type: "jar" }
           }
         end
 
@@ -340,7 +367,9 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       end
       let(:dependency_name) { "org.springframework:spring-aop" }
       let(:dependency_version) { "2.5.6" }
-      let(:dependency_metadata) { { property_name: "spring.version" } }
+      let(:dependency_metadata) do
+        { property_name: "spring.version", packaging_type: "jar" }
+      end
       let(:declaring_requirement) do
         {
           requirement: dependency_version,

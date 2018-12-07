@@ -59,6 +59,7 @@ module Dependabot
               ].compact.join(":")
 
               next false unless node_name == dependency_name
+              next false unless packaging_type_matches?(node)
 
               declaring_requirement_matches?(node)
             end
@@ -97,6 +98,21 @@ module Dependabot
             else
               node_requirement == declaring_requirement.fetch(:requirement)
             end
+          end
+
+          def packaging_type_matches?(node)
+            type = declaring_requirement.dig(:metadata, :packaging_type)
+            type == packaging_type(node)
+          end
+
+          def packaging_type(dependency_node)
+            return "pom" if dependency_node.child.node_name == "parent"
+            return "jar" unless dependency_node.at_xpath("./*/type")
+
+            packaging_type_content = dependency_node.at_xpath("./*/type").
+                                     content.strip
+
+            evaluated_value(packaging_type_content)
           end
 
           def evaluated_value(value)
