@@ -175,7 +175,7 @@ module Dependabot
                 error.message.match(MISSING_PACKAGE).
                 named_captures["package_req"].
                 split(/(?<=\w)\@/).first
-              handle_missing_package(package_name)
+              handle_missing_package(package_name, error, lockfile)
             end
             names = dependencies.map(&:name)
             if names.any? { |name| error.message.include?("#{name}@") } &&
@@ -209,7 +209,7 @@ module Dependabot
                 error.message.match(FORBIDDEN_PACKAGE).
                 named_captures["package_req"].
                 split(/(?<=\w)\@/).first
-              handle_missing_package(package_name)
+              handle_missing_package(package_name, error, lockfile)
             end
             if error.message.match?(UNREACHABLE_GIT)
               dependency_url =
@@ -232,14 +232,14 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          def handle_missing_package(package_name)
+          def handle_missing_package(package_name, error, lockfile)
             missing_dep = FileParsers::JavaScript::NpmAndYarn.new(
               dependency_files: dependency_files,
               source: nil,
               credentials: credentials
             ).parse.find { |dep| dep.name == package_name }
 
-            return unless missing_dep
+            raise_resolvability_error(error, lockfile) unless missing_dep
 
             reg = UpdateCheckers::JavaScript::NpmAndYarn::RegistryFinder.new(
               dependency: missing_dep,
@@ -250,11 +250,15 @@ module Dependabot
                            find { |f| f.name.end_with?(".yarnrc") }
             ).registry
 
-            if reg == "registry.npmjs.org" && !package_name.start_with?("@")
-              return
-            end
+            return if central_registry?(reg) && !package_name.start_with?("@")
 
             raise Dependabot::PrivateSourceAuthenticationFailure, reg
+          end
+
+          def central_registry?(registry)
+            FileParsers::JavaScript::NpmAndYarn::CENTRAL_REGISTRIES.any? do |r|
+              r.include?(registry)
+            end
           end
 
           def resolvable_before_update?(lockfile)
