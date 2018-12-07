@@ -1,12 +1,12 @@
-## `dependabot-terraform`
+## `dependabot-python`
 
-Terraform support for [`dependabot-core`][core-repo].
+Python support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
 1. Install native helpers
    ```
-   $ helpers/build helpers/install-dir/terraform
+   $ helpers/build helpers/install-dir/python
    ```
 
 2. Install Ruby dependencies
