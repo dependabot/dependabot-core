@@ -9,3 +9,4 @@ AllCops:
   Exclude:
     - 'terraform/**/*'
     - 'docker/**/*'
+    - 'git_submodules/**/*'
