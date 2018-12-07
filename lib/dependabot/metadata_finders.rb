@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders/ruby/bundler"
-require "dependabot/metadata_finders/python/pip"
 require "dependabot/metadata_finders/java_script/npm_and_yarn"
 require "dependabot/metadata_finders/java/maven"
 require "dependabot/metadata_finders/php/composer"
@@ -18,7 +17,6 @@ module Dependabot
       "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
       "maven" => MetadataFinders::Java::Maven,
       "gradle" => MetadataFinders::Java::Maven,
-      "pip" => MetadataFinders::Python::Pip,
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
       "cargo" => MetadataFinders::Rust::Cargo,
