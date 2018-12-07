@@ -8,3 +8,4 @@ inherit_mode:
 AllCops:
   Exclude:
     - 'terraform/**/*'
+    - 'docker/**/*'
