@@ -7,8 +7,8 @@ etag@^1.8.1:
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=
 
-test-missing-dep-npm-package@dependabot-fixtures/test-missing-dep-npm-package#v1.0.0:
-  version "1.0.0"
-  resolved "https://codeload.github.com/dependabot-fixtures/test-missing-dep-npm-package/tar.gz/dadcb3ff221860249c08960cddea6cee798c48da"
+test-missing-dep-version-npm-package@dependabot-fixtures/test-missing-dep-version-npm-package#v1.0.2:
+  version "1.0.2"
+  resolved "https://codeload.github.com/dependabot-fixtures/test-missing-dep-version-npm-package/tar.gz/f56186c1643a9a09a86dfe09b1890921330c28bb"
   dependencies:
     etag "^1.8.1"

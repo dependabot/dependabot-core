@@ -1574,8 +1574,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           "github_sub_dependency_version_missing.lock"
         end
 
-        # TODO: rename this to test-missing-dep-version-npm-package
-        let(:dependency_name) { "test-missing-dep-npm-package" }
+        let(:dependency_name) { "test-missing-dep-version-npm-package" }
         let(:requirements) do
           [{
             requirement: nil,
@@ -1584,7 +1583,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/"\
-                   "test-missing-dep-npm-package",
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: ref
             }
@@ -1598,16 +1597,16 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/"\
-                   "test-missing-dep-npm-package",
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: old_ref
             }
           }]
         end
-        let(:previous_version) { "dadcb3ff221860249c08960cddea6cee798c48da" }
-        let(:version) { "99c1a4e536a7ae8fcab93e7f433679e134302a90" }
-        let(:ref) { "v1.0.1" }
-        let(:old_ref) { "v1.0.0" }
+        let(:previous_version) { "f56186c1643a9a09a86dfe09b1890921330c28bb" }
+        let(:version) { "3deb2768be1591f2fdbdec40aa6a63ba6b270b40" }
+        let(:ref) { "v1.0.3" }
+        let(:old_ref) { "v1.0.2" }
 
         context "npm only" do
           let(:files) { [package_json, package_lock] }

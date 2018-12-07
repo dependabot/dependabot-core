@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/gocardless/bump-test#readme",
   "dependencies": {
-    "test-missing-dep-npm-package": "dependabot-fixtures/test-missing-dep-npm-package#v1.0.0"
+    "test-missing-dep-version-npm-package": "dependabot-fixtures/test-missing-dep-version-npm-package#v1.0.2"
   }
 }
