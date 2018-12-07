@@ -161,8 +161,14 @@ module Dependabot
         end
 
         def python_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/python/run.py")
+          helpers_dir = File.join(native_helpers_root, "python/helpers")
+          Pathname.new(File.join(helpers_dir, "run.py")).cleanpath.to_path
+        end
+
+        def native_helpers_root
+          default_path = File.join(__dir__,
+                                   "../../../../python/helpers/install-dir")
+          ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
