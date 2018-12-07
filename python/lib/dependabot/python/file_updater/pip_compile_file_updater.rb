@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
@@ -295,7 +295,7 @@ module Dependabot
         def compiled_file_includes_dependency?(compiled_file)
           return false unless compiled_file
 
-          regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
           matches = []
           compiled_file.content.scan(regex) { matches << Regexp.last_match }

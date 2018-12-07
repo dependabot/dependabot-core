@@ -3,8 +3,8 @@
 require "toml-rb"
 
 require "dependabot/shared_helpers"
-require "dependabot/utils/python/version"
-require "dependabot/utils/python/requirement"
+require "dependabot/python/version"
+require "dependabot/python/requirement"
 require "dependabot/python/python_versions"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
@@ -200,12 +200,11 @@ module Dependabot
 
           return python_version_file&.content unless requirement
 
-          requirements =
-            Utils::Python::Requirement.requirements_array(requirement)
+          requirements = Python::Requirement.requirements_array(requirement)
 
           PythonVersions::PYTHON_VERSIONS.find do |version|
             requirements.any? do |r|
-              r.satisfied_by?(Utils::Python::Version.new(version))
+              r.satisfied_by?(Python::Version.new(version))
             end
           end
         end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 
-describe PythonRequirementParser do
+RSpec.describe Dependabot::Python::RequirementParser do
   def parse(line)
     requirement =
       line.chomp.match(described_class::INSTALL_REQ_WITH_REQUIREMENT)

@@ -2,7 +2,7 @@
 
 require "toml-rb"
 
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
@@ -99,7 +99,7 @@ module Dependabot
           pipfile_lock_deps = parsed_lockfile[type]&.keys&.sort || []
           pipfile_lock_deps = pipfile_lock_deps.map { |n| normalise(n) }
 
-          regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
           # Find any requirement files that list the same dependencies as
           # the (old) Pipfile.lock. Any such files were almost certainly

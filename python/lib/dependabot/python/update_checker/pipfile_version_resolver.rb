@@ -9,7 +9,7 @@ require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/python_versions"
 require "dependabot/shared_helpers"
-require "dependabot/utils/python/version"
+require "dependabot/python/version"
 require "dependabot/errors"
 
 # rubocop:disable Metrics/ClassLength
@@ -88,7 +88,7 @@ module Dependabot
             end
           return unless @latest_resolvable_version_string
 
-          Utils::Python::Version.new(@latest_resolvable_version_string)
+          Python::Version.new(@latest_resolvable_version_string)
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
@@ -367,10 +367,10 @@ module Dependabot
               PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
-          requirement = Utils::Python::Requirement.new(requirement)
+          requirement = Python::Requirement.new(requirement)
 
           PythonVersions::PYTHON_VERSIONS.find do |version|
-            requirement.satisfied_by?(Utils::Python::Version.new(version))
+            requirement.satisfied_by?(Python::Version.new(version))
           end
         end
 
@@ -418,7 +418,7 @@ module Dependabot
           # unresolvable then the `latest_allowable_version` will be v3, and
           # we won't be ignoring v2.x releases like we should be.
           return lower_bound_req if latest_allowable_version.nil?
-          unless Utils::Python::Version.correct?(latest_allowable_version)
+          unless Python::Version.correct?(latest_allowable_version)
             return lower_bound_req
           end
 

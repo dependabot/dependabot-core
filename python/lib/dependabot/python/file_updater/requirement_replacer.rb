@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 
@@ -44,11 +44,11 @@ module Dependabot
 
           dec =
             if old_req.nil?
-              regex = PythonRequirementParser::INSTALL_REQ_WITHOUT_REQUIREMENT
+              regex = RequirementParser::INSTALL_REQ_WITHOUT_REQUIREMENT
               content.scan(regex) { matches << Regexp.last_match }
               matches.find { |m| normalise(m[:name]) == dependency_name }
             else
-              regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+              regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
               content.scan(regex) { matches << Regexp.last_match }
               matches.
                 select { |m| normalise(m[:name]) == dependency_name }.
@@ -63,10 +63,10 @@ module Dependabot
         def updated_dependency_declaration_string(old_req, new_req)
           if old_req
             original_dependency_declaration_string(old_req).
-              sub(PythonRequirementParser::REQUIREMENTS, new_req)
+              sub(RequirementParser::REQUIREMENTS, new_req)
           else
             original_dependency_declaration_string(old_req).
-              sub(PythonRequirementParser::NAME_WITH_EXTRAS) do |nm|
+              sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
                 nm + new_req
               end
           end

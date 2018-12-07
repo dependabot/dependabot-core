@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
@@ -62,7 +62,7 @@ module Dependabot
         end
 
         def original_dependency_declaration_string(requirement)
-          regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
           matches = []
 
           get_original_file(requirement.fetch(:file)).
@@ -86,13 +86,13 @@ module Dependabot
         def updated_dependency_declaration_string(new_req, old_req)
           updated_string =
             original_dependency_declaration_string(old_req).sub(
-              PythonRequirementParser::REQUIREMENTS,
+              RequirementParser::REQUIREMENTS,
               new_req.fetch(:requirement)
             )
           return updated_string unless requirement_includes_hashes?(old_req)
 
           updated_string.sub(
-            PythonRequirementParser::HASHES,
+            RequirementParser::HASHES,
             package_hashes_for(
               name: dependency.name,
               version: dependency.version,
@@ -109,21 +109,21 @@ module Dependabot
 
         def requirement_includes_hashes?(requirement)
           original_dependency_declaration_string(requirement).
-            match?(PythonRequirementParser::HASHES)
+            match?(RequirementParser::HASHES)
         end
 
         def hash_algorithm(requirement)
           return unless requirement_includes_hashes?(requirement)
 
           original_dependency_declaration_string(requirement).
-            match(PythonRequirementParser::HASHES).
+            match(RequirementParser::HASHES).
             named_captures.fetch("algorithm")
         end
 
         def hash_separator(requirement)
           return unless requirement_includes_hashes?(requirement)
 
-          hash_regex = PythonRequirementParser::HASH
+          hash_regex = RequirementParser::HASH
           current_separator =
             original_dependency_declaration_string(requirement).
             match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
@@ -131,7 +131,7 @@ module Dependabot
 
           default_separator =
             original_dependency_declaration_string(requirement).
-            match(PythonRequirementParser::HASH).
+            match(RequirementParser::HASH).
             pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
             named_captures.fetch("separator")
 

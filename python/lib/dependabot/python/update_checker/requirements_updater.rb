@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
+require "dependabot/python/requirement_parser"
 require "dependabot/python/update_checker"
-require "dependabot/utils/python/version"
-require "dependabot/utils/python/requirement"
+require "dependabot/python/version"
+require "dependabot/python/requirement"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -24,13 +25,13 @@ module Dependabot
           @has_lockfile = has_lockfile
 
           if latest_version
-            @latest_version = Utils::Python::Version.new(latest_version)
+            @latest_version = Python::Version.new(latest_version)
           end
 
           return unless latest_resolvable_version
 
           @latest_resolvable_version =
-            Utils::Python::Version.new(latest_resolvable_version)
+            Python::Version.new(latest_resolvable_version)
         end
 
         def updated_requirements
@@ -220,13 +221,13 @@ module Dependabot
             # True equality match
             requirement_strings.find { |r| requirement_class.new(r).exact? }.
               sub(
-                PythonRequirementParser::VERSION,
+                RequirementParser::VERSION,
                 latest_resolvable_version.to_s
               )
           else
             # Prefix match
             requirement_strings.find { |r| r.match?(/^(=+|\d)/) }.
-              sub(PythonRequirementParser::VERSION) do |v|
+              sub(RequirementParser::VERSION) do |v|
                 at_same_precision(latest_resolvable_version.to_s, v)
               end
           end
@@ -272,7 +273,7 @@ module Dependabot
         # Updates the version in a constraint to be the given version
         def bump_version(req_string, version_to_be_permitted)
           old_version = req_string.
-                        match(/(#{PythonRequirementParser::VERSION})/).
+                        match(/(#{RequirementParser::VERSION})/).
                         captures.first
 
           req_string.sub(
@@ -332,9 +333,9 @@ module Dependabot
         def update_greatest_version(req_string, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted =
-              Utils::Python::Version.new(version_to_be_permitted)
+              Python::Version.new(version_to_be_permitted)
           end
-          version = Utils::Python::Version.new(req_string.gsub(/<=?/, ""))
+          version = Python::Version.new(req_string.gsub(/<=?/, ""))
           version = version.release if version.prerelease?
 
           index_to_update = [
@@ -355,7 +356,7 @@ module Dependabot
         end
 
         def requirement_class
-          Utils::Python::Requirement
+          Python::Requirement
         end
       end
     end

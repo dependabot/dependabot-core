@@ -3,11 +3,11 @@
 require "excon"
 require "toml-rb"
 
-require "python_requirement_parser"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
-require "dependabot/utils/python/requirement"
+require "dependabot/python/requirement"
+require "dependabot/python/requirement_parser"
 
 module Dependabot
   module Python
@@ -142,7 +142,7 @@ module Dependabot
         reqs = reqs.map { |r| r.fetch(:requirement) }
         reqs = reqs.compact
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
-        reqs.any? { |r| Utils::Python::Requirement.new(r).exact? }
+        reqs.any? { |r| Python::Requirement.new(r).exact? }
       end
 
       def resolver_args

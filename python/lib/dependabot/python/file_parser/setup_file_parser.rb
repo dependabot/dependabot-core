@@ -99,7 +99,7 @@ module Dependabot
           requirements.each do |dep|
             next unless dep["requirement"]
 
-            Utils::Python::Requirement.new(dep["requirement"].split(","))
+            Python::Requirement.new(dep["requirement"].split(","))
           rescue Gem::Requirement::BadRequirementError => error
             raise Dependabot::DependencyFileNotEvaluatable, error.message
           end

@@ -7,7 +7,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
-require "dependabot/utils/python/requirement"
+require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/native_helpers"
 
@@ -145,7 +145,7 @@ module Dependabot
         requirements.each do |dep|
           next unless dep["requirement"]
 
-          Utils::Python::Requirement.new(dep["requirement"].split(","))
+          Python::Requirement.new(dep["requirement"].split(","))
         rescue Gem::Requirement::BadRequirementError => error
           raise Dependabot::DependencyFileNotEvaluatable, error.message
         end

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "python_requirement_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
 require "dependabot/python/update_checker"
 require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
-require "dependabot/utils/python/version"
+require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 
@@ -70,7 +70,7 @@ module Dependabot
             end
           return unless @latest_resolvable_version_string
 
-          Utils::Python::Version.new(@latest_resolvable_version_string)
+          Python::Version.new(@latest_resolvable_version_string)
         end
 
         def parse_requirements_from_cwd_files
@@ -242,7 +242,7 @@ module Dependabot
           # unresolvable then the `latest_allowable_version` will be v3, and
           # we won't be ignoring v2.x releases like we should be.
           return lower_bound_req if latest_allowable_version.nil?
-          unless Utils::Python::Version.correct?(latest_allowable_version)
+          unless Python::Version.correct?(latest_allowable_version)
             return lower_bound_req
           end
 
@@ -301,7 +301,7 @@ module Dependabot
         def compiled_file_includes_dependency?(compiled_file)
           return false unless compiled_file
 
-          regex = PythonRequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
 
           matches = []
           compiled_file.content.scan(regex) { matches << Regexp.last_match }
