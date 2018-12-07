@@ -63,5 +63,9 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-core.gemspec" \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$(pwd)/docker/Gemfile.lock:$CODE_DIR/docker/Gemfile.lock" \
+  -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-core.gemspec" \
+  -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
+  -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
