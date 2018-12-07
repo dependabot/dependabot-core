@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/docker/docker"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/docker/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Docker::Docker do
+RSpec.describe Dependabot::Docker::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do

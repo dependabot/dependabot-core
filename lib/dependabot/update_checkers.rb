@@ -7,7 +7,6 @@ require "dependabot/update_checkers/java/maven"
 require "dependabot/update_checkers/java/gradle"
 require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/git/submodules"
-require "dependabot/update_checkers/docker/docker"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/dotnet/nuget"
@@ -25,7 +24,6 @@ module Dependabot
       "pip" => UpdateCheckers::Python::Pip,
       "composer" => UpdateCheckers::Php::Composer,
       "submodules" => UpdateCheckers::Git::Submodules,
-      "docker" => UpdateCheckers::Docker::Docker,
       "hex" => UpdateCheckers::Elixir::Hex,
       "cargo" => UpdateCheckers::Rust::Cargo,
       "nuget" => UpdateCheckers::Dotnet::Nuget,
