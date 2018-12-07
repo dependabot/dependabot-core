@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.license      = core_gemspec.license
 
   spec.require_path = "lib"
-  spec.files        = []
+  spec.files        = Dir["lib/**/*"]
 
   spec.required_ruby_version = core_gemspec.required_ruby_version
   spec.required_rubygems_version = core_gemspec.required_ruby_version
@@ -25,20 +25,5 @@ Gem::Specification.new do |spec|
 
   core_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, dep.requirement.to_s
-  end
-
-  next unless File.exist?("../.gitignore")
-
-  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
-
-  next unless File.directory?("lib") && File.directory?("helpers")
-
-  prefix = "/" + File.basename(File.expand_path(__dir__)) + "/"
-  Find.find("lib", "helpers") do |path|
-    if ignores.any? { |i| File.fnmatch(i, prefix + path, File::FNM_DOTMATCH) }
-      Find.prune
-    else
-      spec.files << path unless File.directory?(path)
-    end
   end
 end
