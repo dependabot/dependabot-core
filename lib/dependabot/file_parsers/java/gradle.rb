@@ -175,7 +175,7 @@ module Dependabot
         end
 
         def evaluated_value(value, buildfile)
-          return value unless value.match?(PROPERTY_REGEX)
+          return value unless value.scan(PROPERTY_REGEX).count == 1
 
           property_name  = value.match(PROPERTY_REGEX).
                            named_captures.fetch("property_name")

@@ -94,6 +94,17 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       end
     end
 
+    context "with a version using two properties" do
+      let(:buildfile_fixture_name) { "concatenated_properties.gradle" }
+
+      its(:length) { is_expected.to eq(8) }
+
+      it "excludes the dependency with the missing property" do
+        expect(dependencies.map(&:name)).
+          to_not include("org.scala-lang:scala-library")
+      end
+    end
+
     context "with a missing property" do
       let(:buildfile_fixture_name) { "missing_property.gradle" }
 
