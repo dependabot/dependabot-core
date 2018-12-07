@@ -92,8 +92,8 @@ def parse_setup(directory):
 
         global fake_open
         def fake_open(*args, **kwargs):
-            content = ("VERSION = (0, 0, 1)\n"
-                       "__version__ = '0.0.1'\n"
+            content = ("VERSION = ('0', '0', '1+dependabot')\n"
+                       "__version__ = '0.0.1+dependabot'\n"
                        "__author__ = 'someone'\n"
                        "__title__ = 'something'\n"
                        "__description__ = 'something'\n"
@@ -113,7 +113,7 @@ def parse_setup(directory):
         content = re.sub(version_re, "", content)
 
         # Set variables likely to be imported
-        __version__ = '0.0.1'
+        __version__ = '0.0.1+dependabot'
         __author__ = 'someone'
         __title__ = 'something'
         __description__ = 'something'

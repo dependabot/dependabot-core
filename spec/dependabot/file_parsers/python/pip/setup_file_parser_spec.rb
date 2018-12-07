@@ -138,6 +138,15 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
     context "with an import of a config file" do
       let(:setup_file_fixture_name) { "imports_version.py" }
       its(:length) { is_expected.to eq(14) }
+
+      context "with a inserted version" do
+        let(:setup_file_fixture_name) { "imports_version_for_dep.py" }
+
+        it "excludes the dependency importing a version" do
+          expect(dependencies.count).to eq(14)
+          expect(dependencies.map(&:name)).to_not include("acme")
+        end
+      end
     end
   end
 end

@@ -29,6 +29,10 @@ module Dependabot
               # probably blocked. Ignore it.
               next if dep["markers"].include?("<")
 
+              # If the requirement is our inserted version, ignore it
+              # (we wouldn't be able to update it)
+              next if dep["version"] == "0.0.1+dependabot"
+
               dependencies <<
                 Dependency.new(
                   name: normalised_name(dep["name"]),
