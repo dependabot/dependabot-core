@@ -84,3 +84,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.
+  register_version_class("pip", Dependabot::Python::Version)

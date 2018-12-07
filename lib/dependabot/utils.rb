@@ -5,7 +5,6 @@ require "dependabot/utils/elixir/version"
 require "dependabot/utils/java/version"
 require "dependabot/utils/java_script/version"
 require "dependabot/utils/php/version"
-require "dependabot/utils/python/version"
 require "dependabot/utils/rust/version"
 require "dependabot/utils/go/version"
 require "dependabot/utils/elm/version"
@@ -15,7 +14,6 @@ require "dependabot/utils/elixir/requirement"
 require "dependabot/utils/java/requirement"
 require "dependabot/utils/java_script/requirement"
 require "dependabot/utils/php/requirement"
-require "dependabot/utils/python/requirement"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/utils/rust/requirement"
 require "dependabot/utils/go/requirement"
@@ -33,7 +31,6 @@ module Dependabot
       "maven" => Utils::Java::Version,
       "gradle" => Utils::Java::Version,
       "npm_and_yarn" => Utils::JavaScript::Version,
-      "pip" => Utils::Python::Version,
       "composer" => Utils::Php::Version,
       "hex" => Utils::Elixir::Version,
       "cargo" => Utils::Rust::Version,
@@ -61,7 +58,6 @@ module Dependabot
       "maven" => Utils::Java::Requirement,
       "gradle" => Utils::Java::Requirement,
       "npm_and_yarn" => Utils::JavaScript::Requirement,
-      "pip" => Utils::Python::Requirement,
       "composer" => Utils::Php::Requirement,
       "hex" => Utils::Elixir::Requirement,
       "cargo" => Utils::Rust::Requirement,

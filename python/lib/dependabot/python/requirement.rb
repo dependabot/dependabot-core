@@ -126,3 +126,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.
+  register_requirement_class("pip", Dependabot::Python::Requirement)
