@@ -67,5 +67,9 @@ docker run --rm -ti \
   -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-core.gemspec" \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$(pwd)/git_submodules/Gemfile.lock:$CODE_DIR/git_submodules/Gemfile.lock" \
+  -v "$(pwd)/git_submodules/dependabot-git-submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
+  -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
+  -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

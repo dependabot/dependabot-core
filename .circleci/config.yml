@@ -69,6 +69,9 @@ jobs:
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd docker && rubocop"
 
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd git_submodules && rubocop"
+
       - run:
           name: RSpec
           command: |
@@ -77,6 +80,9 @@ jobs:
 
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd docker && rspec spec --format documentation"
+
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd git_submodules && rspec spec --format documentation"
 
       - run:
           name: Push dependabot-core image to Docker hub, if on master

@@ -5,9 +5,8 @@ require "find"
 Gem::Specification.new do |spec|
   core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 
-  spec.name         = "dependabot-omnibus"
-  spec.summary      = "Meta-package that depends on all core dependabot-core " \
-                      "package managers"
+  spec.name         = "dependabot-git-submodules"
+  spec.summary      = "Git Submodules support for dependabot-core"
   spec.version      = core_gemspec.version
   spec.description  = core_gemspec.description
 
@@ -17,10 +16,14 @@ Gem::Specification.new do |spec|
   spec.license      = core_gemspec.license
 
   spec.require_path = "lib"
-  spec.files        = ["lib/dependabot/omnibus.rb"]
+  spec.files        = Dir["lib/**/*"]
+
+  spec.required_ruby_version = core_gemspec.required_ruby_version
+  spec.required_rubygems_version = core_gemspec.required_ruby_version
 
   spec.add_dependency "dependabot-core", Dependabot::VERSION
-  spec.add_dependency "dependabot-docker", Dependabot::VERSION
-  spec.add_dependency "dependabot-git-submodules", Dependabot::VERSION
-  spec.add_dependency "dependabot-terraform", Dependabot::VERSION
+
+  core_gemspec.development_dependencies.each do |dep|
+    spec.add_development_dependency dep.name, dep.requirement.to_s
+  end
 end

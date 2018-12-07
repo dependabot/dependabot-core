@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/git/submodules"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/git_submodules/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
+RSpec.describe Dependabot::GitSubmodules::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::FileUpdaters::Git::Submodules do
   end
   let(:gitmodules) do
     Dependabot::DependencyFile.new(
-      content: fixture("git", "gitmodules", ".gitmodules"),
+      content: fixture("gitmodules", ".gitmodules"),
       name: ".gitmodules"
     )
   end

@@ -27,3 +27,7 @@ RUN cd terraform && bundle install
 RUN mkdir -p /home/dependabot/dependabot-core/docker
 COPY docker/Gemfile docker/Gemfile.lock docker/dependabot-docker.gemspec /home/dependabot/dependabot-core/docker/
 RUN cd docker && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/git_submodules
+COPY git_submodules/Gemfile git_submodules/Gemfile.lock git_submodules/dependabot-git-submodules.gemspec /home/dependabot/dependabot-core/git_submodules/
+RUN cd git_submodules && bundle install

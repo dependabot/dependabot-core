@@ -3,10 +3,10 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/git/submodules"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/git_submodules/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Git::Submodules do
+RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
