@@ -1,3 +1,7 @@
+## v0.77.2, 7 December 2018
+
+- Add top level docker file that requires docker classes
+
 ## v0.77.1, 7 December 2018
 
 - Simplify dependabot-docker gemspec
