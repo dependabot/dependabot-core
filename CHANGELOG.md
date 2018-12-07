@@ -1,3 +1,7 @@
+## v0.77.0, 7 December 2018
+
+- Move Docker support to a separate gem
+
 ## v0.76.11, 7 December 2018
 
 - Python: Ignore dependencies that we had to insert a version for
