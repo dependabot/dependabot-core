@@ -1,3 +1,8 @@
+## v0.77.1, 7 December 2018
+
+- Simplify dependabot-docker gemspec
+- Add /pkg to gitignore
+
 ## v0.77.0, 7 December 2018
 
 - Move Docker support to a separate gem
