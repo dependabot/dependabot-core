@@ -1,6 +1,7 @@
 /.bundle/
 /.env
 /tmp
+/pkg
 /dependabot-*.gem
 Gemfile.lock
 /helpers/yarn/node_modules
