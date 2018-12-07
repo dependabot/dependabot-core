@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/git/submodules"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/git_submodules/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
+RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -65,7 +65,7 @@ RSpec.describe Dependabot::UpdateCheckers::Git::Submodules do
       stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
         to_return(
           status: 200,
-          body: fixture("git", "upload_packs", "manifesto"),
+          body: fixture("upload_packs", "manifesto"),
           headers: {
             "content-type" => "application/x-git-upload-pack-advertisement"
           }

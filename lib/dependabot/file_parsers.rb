@@ -6,7 +6,6 @@ require "dependabot/file_parsers/java_script/npm_and_yarn"
 require "dependabot/file_parsers/java/maven"
 require "dependabot/file_parsers/java/gradle"
 require "dependabot/file_parsers/php/composer"
-require "dependabot/file_parsers/git/submodules"
 require "dependabot/file_parsers/elixir/hex"
 require "dependabot/file_parsers/rust/cargo"
 require "dependabot/file_parsers/dotnet/nuget"
@@ -23,7 +22,6 @@ module Dependabot
       "gradle" => FileParsers::Java::Gradle,
       "pip" => FileParsers::Python::Pip,
       "composer" => FileParsers::Php::Composer,
-      "submodules" => FileParsers::Git::Submodules,
       "hex" => FileParsers::Elixir::Hex,
       "cargo" => FileParsers::Rust::Cargo,
       "nuget" => FileParsers::Dotnet::Nuget,

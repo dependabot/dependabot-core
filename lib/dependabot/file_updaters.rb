@@ -6,7 +6,6 @@ require "dependabot/file_updaters/java_script/npm_and_yarn"
 require "dependabot/file_updaters/java/maven"
 require "dependabot/file_updaters/java/gradle"
 require "dependabot/file_updaters/php/composer"
-require "dependabot/file_updaters/git/submodules"
 require "dependabot/file_updaters/elixir/hex"
 require "dependabot/file_updaters/rust/cargo"
 require "dependabot/file_updaters/dotnet/nuget"
@@ -23,7 +22,6 @@ module Dependabot
       "gradle" => FileUpdaters::Java::Gradle,
       "pip" => FileUpdaters::Python::Pip,
       "composer" => FileUpdaters::Php::Composer,
-      "submodules" => FileUpdaters::Git::Submodules,
       "hex" => FileUpdaters::Elixir::Hex,
       "cargo" => FileUpdaters::Rust::Cargo,
       "nuget" => FileUpdaters::Dotnet::Nuget,

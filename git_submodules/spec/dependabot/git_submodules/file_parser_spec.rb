@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/git/submodules"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/git_submodules/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Git::Submodules do
+RSpec.describe Dependabot::GitSubmodules::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) do
@@ -27,7 +27,7 @@ RSpec.describe Dependabot::FileParsers::Git::Submodules do
     Dependabot::DependencyFile.new(name: "relative/url", content: "sha3")
   end
   let(:gitmodules_body) do
-    fixture("git", "gitmodules", ".gitmodules")
+    fixture("gitmodules", ".gitmodules")
   end
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
