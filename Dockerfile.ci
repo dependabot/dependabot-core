@@ -19,7 +19,11 @@ RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile \
      terraform/dependabot-terraform.gemspec \
      /home/dependabot/dependabot-core/terraform/
-RUN cd terraform && bundle install
+COPY python/Gemfile \
+     python/dependabot-python.gemspec \
+     /home/dependabot/dependabot-core/python/
+RUN cd terraform && bundle install && \
+    cd ../python && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/docker
 COPY docker/Gemfile \
