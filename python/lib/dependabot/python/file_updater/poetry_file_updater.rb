@@ -5,7 +5,7 @@ require "toml-rb"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
-require "dependabot/python/versions"
+require "dependabot/python/python_versions"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 

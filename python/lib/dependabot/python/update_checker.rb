@@ -4,6 +4,7 @@ require "excon"
 require "toml-rb"
 
 require "python_requirement_parser"
+require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/requirement"

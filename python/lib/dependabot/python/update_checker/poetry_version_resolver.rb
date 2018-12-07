@@ -11,7 +11,7 @@ require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/native_helpers"
-require "dependabot/python/versions"
+require "dependabot/python/python_versions"
 
 module Dependabot
   module Python

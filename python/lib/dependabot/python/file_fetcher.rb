@@ -2,6 +2,7 @@
 
 require "toml-rb"
 
+require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/file_parser"
 require "dependabot/errors"

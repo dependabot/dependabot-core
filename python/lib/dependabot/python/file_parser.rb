@@ -3,6 +3,7 @@
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
