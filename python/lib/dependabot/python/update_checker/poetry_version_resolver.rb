@@ -10,8 +10,8 @@ require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
 require "dependabot/errors"
-require "python_versions"
 require "dependabot/python/native_helpers"
+require "dependabot/python/versions"
 
 module Dependabot
   module Python
