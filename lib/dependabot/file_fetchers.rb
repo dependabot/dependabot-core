@@ -6,7 +6,6 @@ require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require "dependabot/file_fetchers/java/maven"
 require "dependabot/file_fetchers/java/gradle"
 require "dependabot/file_fetchers/php/composer"
-require "dependabot/file_fetchers/git/submodules"
 require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/file_fetchers/rust/cargo"
 require "dependabot/file_fetchers/dotnet/nuget"
@@ -23,7 +22,6 @@ module Dependabot
       "gradle" => FileFetchers::Java::Gradle,
       "pip" => FileFetchers::Python::Pip,
       "composer" => FileFetchers::Php::Composer,
-      "submodules" => FileFetchers::Git::Submodules,
       "hex" => FileFetchers::Elixir::Hex,
       "cargo" => FileFetchers::Rust::Cargo,
       "nuget" => FileFetchers::Dotnet::Nuget,

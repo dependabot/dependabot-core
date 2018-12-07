@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/git/submodules"
-require_relative "../shared_examples_for_file_fetchers"
+require "spec_helper"
+require "dependabot/git_submodules/file_fetcher"
+require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::Git::Submodules do
+RSpec.describe Dependabot::GitSubmodules::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
