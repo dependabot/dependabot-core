@@ -103,7 +103,7 @@ module Dependabot
             return version
           end
 
-          FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
+          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             deps = updated_lockfile[keys.fetch(:lockfile)] || {}
             version =
               deps.transform_keys { |k| normalise(k) }.
@@ -258,7 +258,7 @@ module Dependabot
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
           @sanitized_setup_file_content[file.name] ||=
-            FileUpdaters::Python::Pip::SetupFileSanitizer.
+            Python::FileUpdater::SetupFileSanitizer.
             new(setup_file: file, setup_cfg: setup_cfg(file)).
             sanitized_content
         end
@@ -279,7 +279,7 @@ module Dependabot
         end
 
         def freeze_other_dependencies(pipfile_content)
-          FileUpdaters::Python::Pip::PipfilePreparer.
+          Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content).
             freeze_top_level_dependencies_except([dependency], lockfile)
         end
@@ -305,7 +305,7 @@ module Dependabot
         end
 
         def add_private_sources(pipfile_content)
-          FileUpdaters::Python::Pip::PipfilePreparer.
+          Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content).
             replace_sources(credentials)
         end
@@ -314,7 +314,7 @@ module Dependabot
           content = File.read("Pipfile")
 
           updated_content =
-            FileUpdaters::Python::Pip::PipfilePreparer.
+            Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: content).
             update_python_requirement("2.7.15")
 

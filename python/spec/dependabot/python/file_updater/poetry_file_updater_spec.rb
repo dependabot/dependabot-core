@@ -20,13 +20,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   let(:pyproject) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
-      content: fixture("python", "pyproject_files", pyproject_fixture_name)
+      content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "pyproject.lock",
-      content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+      content: fixture("pyproject_locks", lockfile_fixture_name)
     )
   end
   let(:pyproject_fixture_name) { "version_not_specified.toml" }
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "poetry.lock",
-          content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+          content: fixture("pyproject_locks", lockfile_fixture_name)
         )
       end
 

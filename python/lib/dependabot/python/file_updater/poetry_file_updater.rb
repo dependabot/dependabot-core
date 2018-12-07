@@ -2,11 +2,12 @@
 
 require "toml-rb"
 
-require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/utils/python/version"
 require "dependabot/utils/python/requirement"
 require "python_versions"
+require "dependabot/python/file_updater"
+require "dependabot/python/native_helpers"
 
 module Dependabot
   module Python
@@ -217,7 +218,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "pyproject.toml"), pyproject_content)
             SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{python_helper_path}",
+              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
               function: "get_pyproject_hash",
               args: [dir]
             )
@@ -244,11 +245,6 @@ module Dependabot
           updated_file = file.dup
           updated_file.content = content
           updated_file
-        end
-
-        def python_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/python/run.py")
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

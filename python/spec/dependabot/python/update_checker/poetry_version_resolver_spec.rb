@@ -30,14 +30,14 @@ RSpec.describe namespace::PoetryVersionResolver do
   let(:pyproject) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
-      content: fixture("python", "pyproject_files", pyproject_fixture_name)
+      content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
   let(:pyproject_fixture_name) { "exact_version.toml" }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "pyproject.lock",
-      content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+      content: fixture("pyproject_locks", lockfile_fixture_name)
     )
   end
   let(:lockfile_fixture_name) { "exact_version.lock" }
@@ -83,7 +83,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
             name: "poetry.lock",
-            content: fixture("python", "pyproject_locks", lockfile_fixture_name)
+            content: fixture("pyproject_locks", lockfile_fixture_name)
           )
         end
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }

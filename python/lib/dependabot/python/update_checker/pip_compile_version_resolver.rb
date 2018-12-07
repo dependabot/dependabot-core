@@ -8,6 +8,7 @@ require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/utils/python/version"
 require "dependabot/shared_helpers"
+require "dependabot/python/native_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -74,7 +75,7 @@ module Dependabot
 
         def parse_requirements_from_cwd_files
           SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{python_helper_path}",
+            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
             function: "parse_requirements",
             args: [Dir.pwd]
           )
@@ -203,7 +204,7 @@ module Dependabot
           end
 
           @sanitized_setup_file_content[file.name] =
-            FileUpdaters::Python::Pip::SetupFileSanitizer.
+            Python::FileUpdater::SetupFileSanitizer.
             new(setup_file: file, setup_cfg: setup_cfg(file)).
             sanitized_content
         end
@@ -222,7 +223,7 @@ module Dependabot
           req = dependency.requirements.find { |r| r[:file] == file.name }
           return file.content unless req&.fetch(:requirement)
 
-          FileUpdaters::Python::Pip::RequirementReplacer.new(
+          Python::FileUpdater::RequirementReplacer.new(
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: req[:requirement],
@@ -325,7 +326,7 @@ module Dependabot
         end
 
         def requirement_map
-          child_req_regex = FileFetchers::Python::Pip::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||=
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = file.content.scan(child_req_regex).flatten
@@ -353,7 +354,7 @@ module Dependabot
               updated_file
             end
 
-          FileParsers::Python::Pip.new(
+          Python::FileParser.new(
             dependency_files: updated_files,
             source: nil,
             credentials: credentials

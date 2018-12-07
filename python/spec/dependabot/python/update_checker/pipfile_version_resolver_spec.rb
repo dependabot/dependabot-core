@@ -30,14 +30,14 @@ RSpec.describe namespace::PipfileVersionResolver do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("python", "pipfiles", pipfile_fixture_name)
+      content: fixture("pipfiles", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("python", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:lockfile_fixture_name) { "exact_version.lock" }
@@ -160,7 +160,7 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:setupfile) do
         Dependabot::DependencyFile.new(
           name: "mydep/setup.py",
-          content: fixture("python", "setup_files", setupfile_fixture_name)
+          content: fixture("setup_files", setupfile_fixture_name)
         )
       end
       let(:setupfile_fixture_name) { "small.py" }
@@ -179,7 +179,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         let(:setup_cfg) do
           Dependabot::DependencyFile.new(
             name: "mydep/setup.cfg",
-            content: fixture("python", "setup_files", "setup.cfg")
+            content: fixture("setup_files", "setup.cfg")
           )
         end
 

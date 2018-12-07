@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
   let(:dependency_files) { [requirements] }
   let(:requirements) do
     Dependabot::DependencyFile.new(
-      content: fixture("python", "requirements", requirements_fixture_name),
+      content: fixture("requirements", requirements_fixture_name),
       name: "requirements.txt"
     )
   end
@@ -64,13 +64,13 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:pipfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile",
-          content: fixture("python", "pipfiles", "version_not_specified")
+          content: fixture("pipfiles", "version_not_specified")
         )
       end
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile.lock",
-          content: fixture("python", "lockfiles", "version_not_specified.lock")
+          content: fixture("lockfiles", "version_not_specified.lock")
         )
       end
 
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:pipfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile",
-          content: fixture("python", "pipfiles", "exact_version")
+          content: fixture("pipfiles", "exact_version")
         )
       end
 
@@ -147,14 +147,14 @@ RSpec.describe Dependabot::Python::FileUpdater do
         Dependabot::DependencyFile.new(
           name: "pyproject.toml",
           content:
-            fixture("python", "pyproject_files", "version_not_specified.toml")
+            fixture("pyproject_files", "version_not_specified.toml")
         )
       end
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "pyproject.lock",
           content:
-            fixture("python", "pyproject_locks", "version_not_specified.lock")
+            fixture("pyproject_locks", "version_not_specified.lock")
         )
       end
 
@@ -192,13 +192,13 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.in",
-          content: fixture("python", "pip_compile_files", "unpinned.in")
+          content: fixture("pip_compile_files", "unpinned.in")
         )
       end
       let(:generated_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.txt",
-          content: fixture("python", "requirements", "pip_compile_unpinned.txt")
+          content: fixture("requirements", "pip_compile_unpinned.txt")
         )
       end
       let(:dependency) do

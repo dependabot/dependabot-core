@@ -325,7 +325,7 @@ module Dependabot
         end
 
         def requirement_map
-          child_req_regex = FileFetchers::Python::Pip::CHILD_REQUIREMENT_REGEX
+          child_req_regex = Python::FileFetcher::CHILD_REQUIREMENT_REGEX
           @requirement_map ||=
             pip_compile_files.each_with_object({}) do |file, req_map|
               paths = file.content.scan(child_req_regex).flatten

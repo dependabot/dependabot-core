@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
-  let(:pypi_response) { fixture("python", "pypi_simple_response.html") }
+  let(:pypi_response) { fixture("pypi_simple_response.html") }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -35,21 +35,21 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("python", "pipfiles", pipfile_fixture_name)
+      content: fixture("pipfiles", pipfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
   let(:pyproject) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
-      content: fixture("python", "pyproject_files", pyproject_fixture_name)
+      content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
   let(:pyproject_fixture_name) { "exact_version.toml" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",
-      content: fixture("python", "requirements", requirements_fixture_name)
+      content: fixture("requirements", requirements_fixture_name)
     )
   end
   let(:requirements_fixture_name) { "version_specified.txt" }
@@ -129,13 +129,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:dependency_name) { "Luigi_ext" }
       let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext/" }
       let(:pypi_response) do
-        fixture("python", "pypi_simple_response_underscore.html")
+        fixture("pypi_simple_response_underscore.html")
       end
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
       context "and contains spaces" do
         let(:pypi_response) do
-          fixture("python", "pypi_simple_response_space.html")
+          fixture("pypi_simple_response_space.html")
         end
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
       end
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           [
             Dependabot::DependencyFile.new(
               name: "pip.conf",
-              content: fixture("python", "conf_files", "custom_index")
+              content: fixture("conf_files", "custom_index")
             )
           ]
         end
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         "https://pypi.weasyldev.com/weasyl/source/+simple/luigi/"
       end
       let(:extra_response) do
-        fixture("python", "pypi_simple_response_extra.html")
+        fixture("pypi_simple_response_extra.html")
       end
       before do
         stub_request(:get, extra_url).
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           [
             Dependabot::DependencyFile.new(
               name: "pip.conf",
-              content: fixture("python", "conf_files", "extra_index")
+              content: fixture("conf_files", "extra_index")
             )
           ]
         end
@@ -292,7 +292,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           [
             Dependabot::DependencyFile.new(
               name: "requirements.txt",
-              content: fixture("python", "requirements", "extra_index.txt")
+              content: fixture("requirements", "extra_index.txt")
             )
           ]
         end
@@ -362,13 +362,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.in",
-          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+          content: fixture("pip_compile_files", manifest_fixture_name)
         )
       end
       let(:generated_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.txt",
-          content: fixture("python", "requirements", generated_fixture_name)
+          content: fixture("requirements", generated_fixture_name)
         )
       end
       let(:manifest_fixture_name) { "unpinned.in" }
@@ -600,7 +600,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       let(:pypi_url) { "https://pypi.python.org/simple/requests/" }
       let(:pypi_response) do
-        fixture("python", "pypi_simple_response_requests.html")
+        fixture("pypi_simple_response_requests.html")
       end
 
       context "for a library" do
@@ -608,7 +608,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           stub_request(:get, "https://pypi.org/pypi/pendulum/json").
             to_return(
               status: 200,
-              body: fixture("python", "pypi_response_pendulum.json")
+              body: fixture("pypi_response_pendulum.json")
             )
         end
 

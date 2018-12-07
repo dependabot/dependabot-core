@@ -18,13 +18,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
-      content: fixture("python", "pipfiles", pipfile_fixture_name)
+      content: fixture("pipfiles", pipfile_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile.lock",
-      content: fixture("python", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
@@ -338,7 +338,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:setupfile) do
           Dependabot::DependencyFile.new(
             name: "mydep/setup.py",
-            content: fixture("python", "setup_files", setupfile_fixture_name)
+            content: fixture("setup_files", setupfile_fixture_name)
           )
         end
         let(:setupfile_fixture_name) { "small.py" }
@@ -366,13 +366,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           let(:setup_cfg) do
             Dependabot::DependencyFile.new(
               name: "mydep/setup.cfg",
-              content: fixture("python", "setup_files", "setup.cfg")
+              content: fixture("setup_files", "setup.cfg")
             )
           end
           let(:requirements_file) do
             Dependabot::DependencyFile.new(
               name: "requirements.txt",
-              content: fixture("python", "requirements", "pbr.txt")
+              content: fixture("requirements", "pbr.txt")
             )
           end
 
@@ -391,20 +391,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           let(:setupfile) do
             Dependabot::DependencyFile.new(
               name: "setup.py",
-              content: fixture("python", "setup_files", setupfile_fixture_name)
+              content: fixture("setup_files", setupfile_fixture_name)
             )
           end
           let(:setupfile_fixture_name) { "with_pbr.py" }
           let(:setup_cfg) do
             Dependabot::DependencyFile.new(
               name: "setup.cfg",
-              content: fixture("python", "setup_files", "setup.cfg")
+              content: fixture("setup_files", "setup.cfg")
             )
           end
           let(:requirements_file) do
             Dependabot::DependencyFile.new(
               name: "requirements.txt",
-              content: fixture("python", "requirements", "pbr.txt")
+              content: fixture("requirements", "pbr.txt")
             )
           end
 
@@ -427,7 +427,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",
             content: fixture(
-              "python",
               "requirements",
               "hard_names_runtime.txt"
             )
@@ -452,7 +451,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "req-dev.txt",
             content: fixture(
-              "python",
               "requirements",
               "version_not_specified_dev.txt"
             )
@@ -476,7 +474,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",
-            content: fixture("python", "requirements", "pbr.txt")
+            content: fixture("requirements", "pbr.txt")
           )
         end
 

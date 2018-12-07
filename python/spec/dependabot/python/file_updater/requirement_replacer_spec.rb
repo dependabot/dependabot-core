@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
   end
 
   let(:requirement_content) do
-    fixture("python", "pip_compile_files", "bounded.in")
+    fixture("pip_compile_files", "bounded.in")
   end
   let(:dependency_name) { "attrs" }
   let(:old_requirement) { "<=17.4.0" }
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
 
       context "and another requirement with the same ending" do
         let(:requirement_content) do
-          fixture("python", "pip_compile_files", "superstring.in")
+          fixture("pip_compile_files", "superstring.in")
         end
         let(:dependency_name) { "sqlalchemy" }
         it { is_expected.to include("\nSQLAlchemy==1.11.5") }

@@ -76,7 +76,7 @@ module Dependabot
 
         def parsed_setup_file
           @parsed_setup_file ||=
-            FileParsers::Python::Pip::SetupFileParser.new(
+            Python::FileParser::SetupFileParser.new(
               dependency_files: [
                 setup_file&.dup&.tap { |f| f.name = "setup.py" },
                 setup_cfg&.dup&.tap { |f| f.name = "setup.cfg" }

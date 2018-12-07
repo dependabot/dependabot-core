@@ -18,13 +18,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
   let(:manifest_file) do
     Dependabot::DependencyFile.new(
       name: "requirements/test.in",
-      content: fixture("python", "pip_compile_files", manifest_fixture_name)
+      content: fixture("pip_compile_files", manifest_fixture_name)
     )
   end
   let(:generated_file) do
     Dependabot::DependencyFile.new(
       name: "requirements/test.txt",
-      content: fixture("python", "requirements", generated_fixture_name)
+      content: fixture("requirements", generated_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "unpinned.in" }
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:setup_file) do
         Dependabot::DependencyFile.new(
           name: "setup.py",
-          content: fixture("python", "setup_files", setup_fixture_name)
+          content: fixture("setup_files", setup_fixture_name)
         )
       end
       let(:manifest_fixture_name) { "imports_setup.in" }
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         let(:requirement_file) do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",
-            content: fixture("python", "requirements", "pbr.txt")
+            content: fixture("requirements", "pbr.txt")
           )
         end
         let(:dependency_requirements) do
@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",
             content:
-              fixture("python", "requirements", "pip_compile_unpinned.txt")
+              fixture("requirements", "pip_compile_unpinned.txt")
           )
         end
 
@@ -323,13 +323,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.in",
             content:
-              fixture("python", "pip_compile_files", manifest_fixture_name)
+              fixture("pip_compile_files", manifest_fixture_name)
           )
         end
         let(:generated_file2) do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.txt",
-            content: fixture("python", "requirements", generated_fixture_name)
+            content: fixture("requirements", generated_fixture_name)
           )
         end
 
@@ -337,13 +337,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "requirements/mirror2.in",
             content:
-              fixture("python", "pip_compile_files", "imports_mirror.in")
+              fixture("pip_compile_files", "imports_mirror.in")
           )
         end
         let(:generated_file3) do
           Dependabot::DependencyFile.new(
             name: "requirements/mirror2.txt",
-            content: fixture("python", "requirements", generated_fixture_name)
+            content: fixture("requirements", generated_fixture_name)
           )
         end
 
@@ -351,13 +351,13 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           Dependabot::DependencyFile.new(
             name: "requirements/mirror.in",
             content:
-              fixture("python", "pip_compile_files", "imports_dev.in")
+              fixture("pip_compile_files", "imports_dev.in")
           )
         end
         let(:generated_file4) do
           Dependabot::DependencyFile.new(
             name: "requirements/mirror.txt",
-            content: fixture("python", "requirements", generated_fixture_name)
+            content: fixture("requirements", generated_fixture_name)
           )
         end
 

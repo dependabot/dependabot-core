@@ -8,7 +8,7 @@ require "dependabot/python/file_updater/pyproject_preparer"
 RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   let(:preparer) { described_class.new(pyproject_content: pyproject_content) }
   let(:pyproject_content) do
-    fixture("python", "pyproject_files", "pyproject.toml")
+    fixture("pyproject_files", "pyproject.toml")
   end
 
   describe "#replace_sources" do
@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
     context "with a pyproject that has a {{ name }} variable" do
       let(:pyproject_content) do
-        fixture("python", "pyproject_files", "needs_sanitization.toml")
+        fixture("pyproject_files", "needs_sanitization.toml")
       end
 
       it "replaces the {{ name }} variable" do
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       )
     end
     let(:pyproject_lock_body) do
-      fixture("python", "pyproject_locks", pyproject_lock_fixture_name)
+      fixture("pyproject_locks", pyproject_lock_fixture_name)
     end
     let(:pyproject_lock_fixture_name) { "pyproject.lock" }
 

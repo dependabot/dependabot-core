@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
   let(:dependency_files) { [requirements] }
   let(:requirements) do
     Dependabot::DependencyFile.new(
-      content: fixture("python", "requirements", requirements_fixture_name),
+      content: fixture("requirements", requirements_fixture_name),
       name: "requirements.txt"
     )
   end
@@ -274,7 +274,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
         let(:more_requirements) do
           Dependabot::DependencyFile.new(
-            content: fixture("python", "requirements", "version_specified.txt"),
+            content: fixture("requirements", "version_specified.txt"),
             name: "more_requirements.txt"
           )
         end
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       let(:dependency_files) { [setup] }
       let(:setup) do
         Dependabot::DependencyFile.new(
-          content: fixture("python", "setup_files", "setup.py"),
+          content: fixture("setup_files", "setup.py"),
           name: "setup.py"
         )
       end
@@ -436,7 +436,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
       let(:constraints) do
         Dependabot::DependencyFile.new(
-          content: fixture("python", "constraints", "specific.txt"),
+          content: fixture("constraints", "specific.txt"),
           name: "constraints.txt"
         )
       end

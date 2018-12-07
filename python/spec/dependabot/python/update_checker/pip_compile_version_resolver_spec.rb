@@ -30,13 +30,13 @@ RSpec.describe namespace::PipCompileVersionResolver do
   let(:manifest_file) do
     Dependabot::DependencyFile.new(
       name: "requirements/test.in",
-      content: fixture("python", "pip_compile_files", manifest_fixture_name)
+      content: fixture("pip_compile_files", manifest_fixture_name)
     )
   end
   let(:generated_file) do
     Dependabot::DependencyFile.new(
       name: "requirements/test.txt",
-      content: fixture("python", "requirements", generated_fixture_name)
+      content: fixture("requirements", generated_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "unpinned.in" }
@@ -116,7 +116,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
             Dependabot::DependencyFile.new(
               name: "requirements/shared.in",
               content:
-                fixture("python", "pip_compile_files", "python_dateutil.in")
+                fixture("pip_compile_files", "python_dateutil.in")
             )
           end
           let(:manifest_fixture_name) { "imports_shared.in" }
@@ -170,13 +170,13 @@ RSpec.describe namespace::PipCompileVersionResolver do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.in",
             content:
-              fixture("python", "pip_compile_files", manifest_fixture_name2)
+              fixture("pip_compile_files", manifest_fixture_name2)
           )
         end
         let(:generated_file2) do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.txt",
-            content: fixture("python", "requirements", generated_fixture_name2)
+            content: fixture("requirements", generated_fixture_name2)
           )
         end
         let(:manifest_fixture_name2) { manifest_fixture_name }
@@ -276,7 +276,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:setup_file) do
         Dependabot::DependencyFile.new(
           name: "setup.py",
-          content: fixture("python", "setup_files", setup_fixture_name)
+          content: fixture("setup_files", setup_fixture_name)
         )
       end
       let(:manifest_fixture_name) { "imports_setup.in" }

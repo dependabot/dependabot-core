@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
   let(:setup_file) do
     Dependabot::DependencyFile.new(
       name: "setup.py",
-      content: fixture("python", "setup_files", setup_file_fixture_name)
+      content: fixture("setup_files", setup_file_fixture_name)
     )
   end
   let(:setup_cfg) { nil }
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
       let(:setup_cfg) do
         Dependabot::DependencyFile.new(
           name: "setup.cfg",
-          content: fixture("python", "setup_files", "setup.cfg")
+          content: fixture("setup_files", "setup.cfg")
         )
       end
 

@@ -15,7 +15,7 @@ require "dependabot/python/native_helpers"
 
 module Dependabot
   module Python
-    class UpdateCheckers
+    class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
@@ -140,13 +140,13 @@ module Dependabot
         end
 
         def sanitize_pyproject_content(pyproject_content)
-          FileUpdaters::Python::Pip::PyprojectPreparer.
+          Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             sanitize
         end
 
         def freeze_other_dependencies(pyproject_content)
-          FileUpdaters::Python::Pip::PyprojectPreparer.
+          Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             freeze_top_level_dependencies_except([dependency], lockfile)
         end

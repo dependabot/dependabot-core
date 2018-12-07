@@ -29,7 +29,7 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
           excluded_names = dependencies.map(&:name)
 
-          FileParsers::Python::Pip::DEPENDENCY_GROUP_KEYS.each do |keys|
+          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             next unless pipfile_object[keys[:pipfile]]
 
             pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|

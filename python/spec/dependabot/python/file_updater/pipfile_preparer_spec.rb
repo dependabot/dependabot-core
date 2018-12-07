@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
   let(:preparer) { described_class.new(pipfile_content: pipfile_content) }
 
   let(:pipfile_content) do
-    fixture("python", "pipfiles", pipfile_fixture_name)
+    fixture("pipfiles", pipfile_fixture_name)
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
 
@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
     let(:lockfile) do
       Dependabot::DependencyFile.new(
         name: "Pipfile.lock",
-        content: fixture("python", "lockfiles", lockfile_fixture_name)
+        content: fixture("lockfiles", lockfile_fixture_name)
       )
     end
     let(:pipfile_fixture_name) { "version_not_specified" }
