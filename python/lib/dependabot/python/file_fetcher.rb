@@ -3,7 +3,7 @@
 require "toml-rb"
 
 require "dependabot/file_fetchers/base"
-require "dependabot/file_parsers/python/pip"
+require "dependabot/python/file_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -251,7 +251,7 @@ module Dependabot
                   gsub(CHILD_REQUIREMENT_REGEX, "")
 
         tmp_file = DependencyFile.new(name: file.name, content: content)
-        Dependabot::FileParsers::Python::Pip.
+        Dependabot::Python::FileParser.
           new(dependency_files: [tmp_file], source: source).
           parse.any?
       rescue Dependabot::DependencyFileNotEvaluatable

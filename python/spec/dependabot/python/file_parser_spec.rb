@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/python/pip"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/python/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Python::Pip do
+RSpec.describe Dependabot::Python::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
     )
   end
   let(:requirements_body) do
-    fixture("python", "requirements", requirements_fixture_name)
+    fixture("requirements", requirements_fixture_name)
   end
   let(:requirements_fixture_name) { "version_specified.txt" }
 
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:constraints) do
           Dependabot::DependencyFile.new(
             name: "constraints.txt",
-            content: fixture("python", "constraints", "less_than.txt")
+            content: fixture("constraints", "less_than.txt")
           )
         end
 
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:constraints) do
           Dependabot::DependencyFile.new(
             name: "constraints.txt",
-            content: fixture("python", "constraints", "specific.txt")
+            content: fixture("constraints", "specific.txt")
           )
         end
 
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements) do
         Dependabot::DependencyFile.new(
           name: "requirements-dev.txt",
-          content: fixture("python", "requirements", "version_specified.txt")
+          content: fixture("requirements", "version_specified.txt")
         )
       end
 
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements) do
         Dependabot::DependencyFile.new(
           name: "dev-requirements.txt",
-          content: fixture("python", "requirements", "version_specified.txt")
+          content: fixture("requirements", "version_specified.txt")
         )
       end
 
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements) do
         Dependabot::DependencyFile.new(
           name: "requirements/dev.txt",
-          content: fixture("python", "requirements", "version_specified.txt")
+          content: fixture("requirements", "version_specified.txt")
         )
       end
 
@@ -420,13 +420,13 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:requirements) do
         Dependabot::DependencyFile.new(
           name: "requirements.txt",
-          content: fixture("python", "requirements", "with_setup_path.txt")
+          content: fixture("requirements", "with_setup_path.txt")
         )
       end
       let(:setup_file) do
         Dependabot::DependencyFile.new(
           name: "setup.py",
-          content: fixture("python", "setup_files", "setup.py")
+          content: fixture("setup_files", "setup.py")
         )
       end
 
@@ -481,7 +481,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
             name: "setup.py",
-            content: fixture("python", "setup_files", "with_parse_reqs.py")
+            content: fixture("setup_files", "with_parse_reqs.py")
           )
         end
 
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
             name: "setup.py",
-            content: fixture("python", "setup_files", "requires_main.py")
+            content: fixture("setup_files", "requires_main.py")
           )
         end
 
@@ -540,13 +540,13 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
             name: "setup.py",
-            content: fixture("python", "setup_files", "with_pbr.py")
+            content: fixture("setup_files", "with_pbr.py")
           )
         end
         let(:setup_cfg) do
           Dependabot::DependencyFile.new(
             name: "setup.cfg",
-            content: fixture("python", "setup_files", "setup.cfg")
+            content: fixture("setup_files", "setup.cfg")
           )
         end
 
@@ -578,7 +578,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:child_requirements) do
         Dependabot::DependencyFile.new(
           name: "more_requirements.txt",
-          content: fixture("python", "requirements", "version_specified.txt")
+          content: fixture("requirements", "version_specified.txt")
         )
       end
 
@@ -641,13 +641,13 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.in",
-          content: fixture("python", "pip_compile_files", manifest_fixture_name)
+          content: fixture("pip_compile_files", manifest_fixture_name)
         )
       end
       let(:generated_file) do
         Dependabot::DependencyFile.new(
           name: "requirements/test.txt",
-          content: fixture("python", "requirements", generated_fixture_name)
+          content: fixture("requirements", generated_fixture_name)
         )
       end
       let(:manifest_fixture_name) { "unpinned.in" }
@@ -681,7 +681,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
           let(:generated_file) do
             Dependabot::DependencyFile.new(
               name: "requirements.txt",
-              content: fixture("python", "requirements", generated_fixture_name)
+              content: fixture("requirements", generated_fixture_name)
             )
           end
 
@@ -760,7 +760,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:setup_file) do
         Dependabot::DependencyFile.new(
           name: "setup.py",
-          content: fixture("python", "setup_files", "setup.py")
+          content: fixture("setup_files", "setup.py")
         )
       end
 
@@ -788,7 +788,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
             name: "setup.py",
-            content: fixture("python", "setup_files", "markers.py")
+            content: fixture("setup_files", "markers.py")
           )
         end
 
@@ -824,9 +824,9 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         )
       end
 
-      let(:pipfile_body) { fixture("python", "pipfiles", pipfile_fixture_name) }
+      let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
       let(:lockfile_body) do
-        fixture("python", "lockfiles", lockfile_fixture_name)
+        fixture("lockfiles", lockfile_fixture_name)
       end
       let(:pipfile_fixture_name) { "version_not_specified" }
       let(:lockfile_fixture_name) { "version_not_specified.lock" }
@@ -863,7 +863,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:setup_file) do
           Dependabot::DependencyFile.new(
             name: "mydep/setup.py",
-            content: fixture("python", "setup_files", "small.py"),
+            content: fixture("setup_files", "small.py"),
             support_file: true
           )
         end
@@ -884,7 +884,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:pipfile) do
         Dependabot::DependencyFile.new(
           name: "Pipfile",
-          content: fixture("python", "pipfiles", "version_not_specified")
+          content: fixture("pipfiles", "version_not_specified")
         )
       end
 
@@ -913,7 +913,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
         let(:pipfile) do
           Dependabot::DependencyFile.new(
             name: "Pipfile",
-            content: fixture("python", "pipfiles", "version_not_specified")
+            content: fixture("pipfiles", "version_not_specified")
           )
         end
 
@@ -962,13 +962,13 @@ RSpec.describe Dependabot::FileParsers::Python::Pip do
       let(:pyproject) do
         Dependabot::DependencyFile.new(
           name: "pyproject.toml",
-          content: fixture("python", "pyproject_files", "pyproject.toml")
+          content: fixture("pyproject_files", "pyproject.toml")
         )
       end
       let(:pyproject_lock) do
         Dependabot::DependencyFile.new(
           name: "pyproject.lock",
-          content: fixture("python", "pyproject_locks", "pyproject.lock")
+          content: fixture("pyproject_locks", "pyproject.lock")
         )
       end
 

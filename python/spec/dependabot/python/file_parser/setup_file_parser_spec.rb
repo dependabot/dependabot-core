@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/python/pip/setup_file_parser"
+require "dependabot/python/file_parser/setup_file_parser"
 
-RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
+RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
   let(:parser) { described_class.new(dependency_files: files) }
 
   let(:files) { [setup_file] }
@@ -15,7 +15,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::SetupFileParser do
     )
   end
   let(:setup_file_body) do
-    fixture("python", "setup_files", setup_file_fixture_name)
+    fixture("setup_files", setup_file_fixture_name)
   end
   let(:setup_file_fixture_name) { "setup.py" }
 

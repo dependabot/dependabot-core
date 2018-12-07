@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/python/pip/pipfile_files_parser"
+require "dependabot/python/file_parser/pipfile_files_parser"
 
-RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
+RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
   let(:files) { [pipfile, lockfile] }
 
@@ -14,9 +14,9 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PipfileFilesParser do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Pipfile.lock", content: lockfile_body)
   end
-  let(:pipfile_body) { fixture("python", "pipfiles", pipfile_fixture_name) }
+  let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
   let(:lockfile_body) do
-    fixture("python", "lockfiles", lockfile_fixture_name)
+    fixture("lockfiles", lockfile_fixture_name)
   end
   let(:pipfile_fixture_name) { "version_not_specified" }
   let(:lockfile_fixture_name) { "version_not_specified.lock" }

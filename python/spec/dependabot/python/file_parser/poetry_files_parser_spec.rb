@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/python/pip/poetry_files_parser"
+require "dependabot/python/file_parser/poetry_files_parser"
 
-RSpec.describe Dependabot::FileParsers::Python::Pip::PoetryFilesParser do
+RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
 
   let(:files) { [pyproject] }
@@ -15,7 +15,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PoetryFilesParser do
     )
   end
   let(:pyproject_body) do
-    fixture("python", "pyproject_files", pyproject_fixture_name)
+    fixture("pyproject_files", pyproject_fixture_name)
   end
   let(:pyproject_fixture_name) { "pyproject.toml" }
 
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileParsers::Python::Pip::PoetryFilesParser do
         )
       end
       let(:pyproject_lock_body) do
-        fixture("python", "pyproject_locks", pyproject_lock_fixture_name)
+        fixture("pyproject_locks", pyproject_lock_fixture_name)
       end
       let(:pyproject_lock_fixture_name) { "pyproject.lock" }
 
