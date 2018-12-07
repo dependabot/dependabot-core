@@ -19,9 +19,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
       def self.parse(obj)
-        if obj.is_a?(Gem::Version)
-          return ["=", Python::Version.new(obj.to_s)]
-        end
+        return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"

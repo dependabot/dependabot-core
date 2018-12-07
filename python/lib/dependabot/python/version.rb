@@ -25,9 +25,7 @@ module Dependabot
         version, @local_version = version.split("+")
         version ||= ""
         version = normalise_prerelease(version)
-        if @local_version
-          @local_version = normalise_prerelease(@local_version)
-        end
+        @local_version = normalise_prerelease(@local_version) if @local_version
         super
       end
 
