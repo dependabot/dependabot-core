@@ -3,10 +3,10 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/python/pip"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/python/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Python::Pip do
+RSpec.describe Dependabot::Python::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when there is a github link in the pypi response" do
-      let(:pypi_response) { fixture("python", "pypi_response.json") }
+      let(:pypi_response) { fixture("pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
           with(basic_auth: %w(username password)).
           to_return(status: 200, body: pypi_response)
       end
-      let(:pypi_response) { fixture("python", "pypi_response.json") }
+      let(:pypi_response) { fixture("pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when the dependency came from a local repository" do
-      let(:pypi_response) { fixture("python", "pypi_response.json") }
+      let(:pypi_response) { fixture("pypi_response.json") }
       let(:version) { "1.0+gc.1" }
 
       it { is_expected.to be_nil }
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when there is a bitbucket link in the pypi response" do
-      let(:pypi_response) { fixture("python", "pypi_response_bitbucket.json") }
+      let(:pypi_response) { fixture("pypi_response_bitbucket.json") }
 
       it { is_expected.to eq("https://bitbucket.org/spotify/luigi") }
 
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
 
     context "when there is a source link in the pypi description" do
       let(:pypi_response) do
-        fixture("python", "pypi_response_description_source.json")
+        fixture("pypi_response_description_source.json")
       end
 
       context "for a different dependency" do
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when there is not a recognised source link in the pypi response" do
-      let(:pypi_response) { fixture("python", "pypi_response_no_source.json") }
+      let(:pypi_response) { fixture("pypi_response_no_source.json") }
 
       before do
         stub_request(:get, "http://initd.org/psycopg/").
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
           stub_request(:get, "http://initd.org/psycopg/").
             to_return(
               status: 200,
-              body: fixture("python", "psycopg_homepage.html")
+              body: fixture("psycopg_homepage.html")
             )
         end
 
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
 
     context "when the pypi link resolves to a redirect" do
       let(:redirect_url) { "https://pypi.org/pypi/LuiGi/json" }
-      let(:pypi_response) { fixture("python", "pypi_response.json") }
+      let(:pypi_response) { fixture("pypi_response.json") }
 
       before do
         stub_request(:get, pypi_url).
@@ -218,7 +218,7 @@ RSpec.describe Dependabot::MetadataFinders::Python::Pip do
     end
 
     context "when there is a homepage link in the pypi response" do
-      let(:pypi_response) { fixture("python", "pypi_response_no_source.json") }
+      let(:pypi_response) { fixture("pypi_response_no_source.json") }
 
       it "returns the specified homepage" do
         expect(homepage_url).to eq("http://initd.org/psycopg/")
