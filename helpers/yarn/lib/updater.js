@@ -66,12 +66,12 @@ class LightweightInstall extends Install {
   }
 }
 
-async function allDependencyRanges(config) {
+async function flattenAllDependencies(config) {
   const manifest = await config.readRootManifest();
   return Object.assign(
     {},
-    manifest.peerDependencies,
     manifest.optionalDependencies,
+    manifest.peerDependencies,
     manifest.devDependencies,
     manifest.dependencies
   );
@@ -136,6 +136,9 @@ function installArgsWithVersion(
 ) {
   const source = requirements.source;
 
+  // TODO: Use logic from npm updater to find original version instead of doing
+  // all this mad git shorthand logic
+  // e.g. const originalVersion = flattenAllDependencies(oldPackage)[depName];
   if (source && source.type === "git") {
     // Handle packages added using the github shorthand, e.g.
     // - yarn add discord.js@discordjs/discord.js
@@ -219,14 +222,23 @@ async function updateDependencyFile(
   // Despite the innocent-sounding name, this actually does all the hard work
   await add.init();
 
-  // Dedupe the updated lockfile, and replace the version requirement in it
-  // (which will currently be an exact version, not a requirement range)
   const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"), depName);
+
+  const newVersionRequirement = requirements.requirement;
+
+  const flattenedDependencies = await flattenAllDependencies(config);
+  const existingVersionRequirement = flattenedDependencies[depName];
+
+  // Replace the version requirement in the lockfile (which will currently be an
+  // exact version, not a requirement range)
+  // If we don't have new requirement (e.g. git source) use the existing version
+  // requirement from the package manifest
   const replacedDeclarationYarnLock = replaceDeclaration(
     originalYarnLock,
     dedupedYarnLock,
     depName,
-    requirements.requirement
+    newVersionRequirement,
+    existingVersionRequirement
   );
 
   // Do a normal install to ensure the lockfile doesn't change when we do

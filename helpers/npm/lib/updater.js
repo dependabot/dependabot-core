@@ -68,15 +68,21 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   return { [lockfileName]: updatedLockfile };
 }
 
+function flattenAllDependencies(packageJson) {
+  return Object.assign(
+    {},
+    packageJson.optionalDependencies,
+    packageJson.peerDependencies,
+    packageJson.devDependencies,
+    packageJson.dependencies
+  );
+}
+
 function installArgs(depName, desiredVersion, requirements, oldPackage) {
   const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
-    let originalVersion =
-      (oldPackage["dependencies"] || {})[depName] ||
-      (oldPackage["devDependencies"] || {})[depName] ||
-      (oldPackage["peerDependencies"] || {})[depName] ||
-      (oldPackage["optionalDependencies"] || {})[depName];
+    let originalVersion = flattenAllDependencies(oldPackage)[depName];
 
     if (!originalVersion) {
       originalVersion = source.url;
