@@ -514,7 +514,7 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
               expect(updated_yarn_lock.content).to include("is-number")
-              expect(updated_yarn_lock.content).to_not include("0c6b15a88bc")
+              expect(updated_yarn_lock.content).to include("0c6b15a88bc")
               expect(updated_yarn_lock.content).to_not include("af885e2e890")
               expect(updated_yarn_lock.content).
                 to include("is-number@git+ssh://git@github.com:jonschlinkert")
@@ -2071,6 +2071,57 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
             expect(parsed_file.dig("dependencies", "etag")).to be_nil
             expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
           end
+        end
+      end
+
+      context "when package resolutions create invalid lockfile requirements" do
+        let(:manifest_fixture_name) { "resolutions_invalid.json" }
+        let(:yarn_lock_fixture_name) { "resolutions_invalid.lock" }
+
+        let(:dependency_name) { "graphql" }
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/graphql/graphql-js",
+              branch: nil,
+              ref: "npm"
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/graphql/graphql-js",
+              branch: nil,
+              ref: "npm"
+            }
+          }]
+        end
+        let(:previous_version) { "c67add85a6f47d58aa510897d520278fffd23611" }
+        let(:version) { "241058716a075a04fd6a84cd76151cd94c3ffd3a" }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(yarn.lock))
+
+          # All graphql requirements should be flattened to the git version
+          # This "invalid" requirement is created by the "resolutions" glob
+          # targetting all graphql dependency names and resolving it to the git
+          # version
+          expect(updated_yarn_lock.content).to include(
+            "graphql@0.11.7, "\
+            "\"graphql@git://github.com/graphql/graphql-js.git#npm\":"
+          )
+          expect(updated_yarn_lock.content).
+            to include("241058716a075a04fd6a84cd76151cd94c3ffd3a")
         end
       end
     end

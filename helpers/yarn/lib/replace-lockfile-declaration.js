@@ -5,6 +5,8 @@ const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
 // Get an array of a dependency's requested version ranges from a lockfile
 function getRequestedVersions(depName, lockfileJson) {
   const requestedVersions = [];
+  // TODO: Rethink this regex matching, for example, we don't currently match:
+  // @dependabot/pack-core@^git+ssh://git@github.com:dependabot/pack-core.git
   const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(lockfileJson).forEach(([name, _]) => {
@@ -19,7 +21,13 @@ function getRequestedVersions(depName, lockfileJson) {
   return requestedVersions;
 }
 
-module.exports = (oldLockfileContent, newLockfileContent, depName, newReq) => {
+module.exports = (
+  oldLockfileContent,
+  newLockfileContent,
+  depName,
+  newVersionRequirement,
+  existingVersionRequirement
+) => {
   const oldJson = parse(oldLockfileContent).object;
   const newJson = parse(newLockfileContent).object;
 
@@ -35,9 +43,13 @@ module.exports = (oldLockfileContent, newLockfileContent, depName, newReq) => {
     return !oldPackageReqs.includes(pattern);
   });
 
+  // If the new lockfile has entries that don't exist in the old lockfile,
+  // replace these version requirements with a range (will currently be an
+  // exact version because we tell yarn to install a specific version)
   if (reqToReplace) {
-    newJson[`${depName}@${newReq || oldPackageReqs[0]}`] =
-      newJson[`${depName}@${reqToReplace}`];
+    newJson[
+      `${depName}@${newVersionRequirement || existingVersionRequirement}`
+    ] = newJson[`${depName}@${reqToReplace}`];
     delete newJson[`${depName}@${reqToReplace}`];
   }
 
