@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/ruby/bundler"
-require "dependabot/file_updaters/python/pip"
 require "dependabot/file_updaters/java_script/npm_and_yarn"
 require "dependabot/file_updaters/java/maven"
 require "dependabot/file_updaters/java/gradle"
@@ -20,7 +19,6 @@ module Dependabot
       "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn,
       "maven" => FileUpdaters::Java::Maven,
       "gradle" => FileUpdaters::Java::Gradle,
-      "pip" => FileUpdaters::Python::Pip,
       "composer" => FileUpdaters::Php::Composer,
       "hex" => FileUpdaters::Elixir::Hex,
       "cargo" => FileUpdaters::Rust::Cargo,
