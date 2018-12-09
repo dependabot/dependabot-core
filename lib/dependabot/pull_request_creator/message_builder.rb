@@ -851,7 +851,8 @@ module Dependabot
           github_client_for_source.commits(source.repo)
 
         @recent_github_commit_messages.
-          find { |c| c.author&.login == "dependabot[bot]" }&.
+          reject { |c| c.commit&.message&.start_with?("Merge") }.
+          find { |c| c.commit.author&.name == "dependabot[bot]" }&.
           commit&.
           message&.
           strip
