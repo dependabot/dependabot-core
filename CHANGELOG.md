@@ -1,3 +1,7 @@
+## v0.79.1, 9 December 2018
+
+- Python: Add system dependencies into Dockerfile
+
 ## v0.79.0, 9 December 2018
 
 - Extract python logic into a separate gem
