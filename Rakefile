@@ -13,6 +13,7 @@ gemspecs = %w(
   terraform/dependabot-terraform.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git-submodules.gemspec
+  python/dependabot-python.gemspec
   omnibus/dependabot-omnibus.gemspec
 )
 
