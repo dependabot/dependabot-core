@@ -1,3 +1,7 @@
+## v0.79.2, 9 December 2018
+
+- Python: Catch ValueError and treat as a FileNotEvaluatable error
+
 ## v0.79.1, 9 December 2018
 
 - Python: Add system dependencies into Dockerfile
