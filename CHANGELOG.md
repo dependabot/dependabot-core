@@ -1,3 +1,8 @@
+## v0.79.0, 9 December 2018
+
+- Extract python logic into a separate gem
+- Yarn: Fix lockfile for invalid resolutions
+
 ## v0.78.0, 7 December 2018
 
 - Extract git_submodules logic into a separate gem
