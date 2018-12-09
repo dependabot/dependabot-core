@@ -5,6 +5,7 @@ require "English"
 require "net/http"
 require "uri"
 require "json"
+require "shellwords"
 require "rubygems/package"
 require "./lib/dependabot/version"
 
@@ -22,6 +23,16 @@ gemspecs = %w(
   go_modules/dependabot-go_modules.gemspec
   omnibus/dependabot-omnibus.gemspec
 )
+
+namespace :ci do
+  task :rubocop do
+    packages = changed_packages
+    puts "Running rubocop on: #{packages.join(', ')}"
+    packages.each do |package|
+      `rubocop #{package}`
+    end
+  end
+end
 
 namespace :gems do
   task build: :clean do
@@ -79,4 +90,25 @@ def rubygems_release_exists?(name, version)
   body = JSON.parse(response.body)
   existing_versions = body.map { |b| b["number"] }
   existing_versions.include?(version)
+end
+
+def changed_packages
+  range = ENV["CIRCLE_COMPARE_URL"].split("/").last
+  core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
+                  config helpers lib spec)
+  core_changed = commit_range_changes_paths?(range, core_paths)
+
+  packages = %w(./docker ./python ./terraform).select do |package|
+    next true if core_changed
+
+    commit_range_changes_paths?(range, [package])
+  end
+
+  packages.insert(0, "./") if core_changed
+  packages
+end
+
+def commit_range_changes_paths?(range, paths)
+  cmd = %w(git diff --quiet) + [range, "--"] + paths
+  !system(Shellwords.join(cmd))
 end
