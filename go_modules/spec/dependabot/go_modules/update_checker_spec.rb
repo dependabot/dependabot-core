@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/go/modules"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/go_modules/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Modules do
+RSpec.describe Dependabot::GoModules::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
