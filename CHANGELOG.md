@@ -1,3 +1,7 @@
+## v0.80.0, 10 December 2018
+
+- Extract .NET logic into a separate gem
+
 ## v0.79.4, 10 December 2018
 
 - Python: Update remaining relative paths following reorg
