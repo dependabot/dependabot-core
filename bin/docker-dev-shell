@@ -52,7 +52,6 @@ echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot/dependabot-core"
 docker run --rm -ti \
   -v "$(pwd)/Gemfile:$CODE_DIR/Gemfile" \
-  -v "$(pwd)/Gemfile.lock:$CODE_DIR/Gemfile.lock" \
   -v "$(pwd)/dependabot-core.gemspec:$CODE_DIR/dependabot-core.gemspec" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/lib:$CODE_DIR/lib" \
