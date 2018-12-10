@@ -5,8 +5,8 @@ require "find"
 Gem::Specification.new do |spec|
   core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 
-  spec.name         = "dependabot-dotnet"
-  spec.summary      = ".NET support for dependabot-core"
+  spec.name         = "dependabot-nuget"
+  spec.summary      = ".NET (NuGet) support for dependabot-core"
   spec.version      = core_gemspec.version
   spec.description  = core_gemspec.description
 

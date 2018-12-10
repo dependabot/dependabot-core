@@ -35,3 +35,7 @@ RUN cd git_submodules && bundle install
 RUN mkdir -p /home/dependabot/dependabot-core/python
 COPY python/Gemfile python/dependabot-python.gemspec /home/dependabot/dependabot-core/python/
 RUN cd python && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/nuget
+COPY nuget/Gemfile nuget/dependabot-nuget.gemspec /home/dependabot/dependabot-core/nuget/
+RUN cd nuget && bundle install

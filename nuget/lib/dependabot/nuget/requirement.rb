@@ -9,9 +9,7 @@ module Dependabot
   module Nuget
     class Requirement < Gem::Requirement
       def self.parse(obj)
-        if obj.is_a?(Gem::Version)
-          return ["=", Nuget::Version.new(obj.to_s)]
-        end
+        return ["=", Nuget::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"

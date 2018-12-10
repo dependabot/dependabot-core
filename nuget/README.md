@@ -1,6 +1,6 @@
-## `dependabot-docker`
+## `dependabot-nuget`
 
-Docker support for [`dependabot-core`][core-repo].
+NuGet support for [`dependabot-core`][core-repo].
 
 ### Running locally
 

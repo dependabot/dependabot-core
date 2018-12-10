@@ -14,6 +14,7 @@ gemspecs = %w(
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git-submodules.gemspec
   python/dependabot-python.gemspec
+  nuget/dependabot-nuget.gemspec
   omnibus/dependabot-omnibus.gemspec
 )
 
