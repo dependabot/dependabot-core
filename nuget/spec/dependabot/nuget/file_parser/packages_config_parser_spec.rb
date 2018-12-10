@@ -3,13 +3,13 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/dotnet/nuget/packages_config_parser"
+require "dependabot/nuget/file_parser/packages_config_parser"
 
-RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PackagesConfigParser do
+RSpec.describe Dependabot::Nuget::FileParser::PackagesConfigParser do
   let(:file) do
     Dependabot::DependencyFile.new(name: "packages.config", content: file_body)
   end
-  let(:file_body) { fixture("dotnet", "packages_configs", "packages.config") }
+  let(:file_body) { fixture("packages_configs", "packages.config") }
   let(:parser) { described_class.new(packages_config: file) }
 
   describe "dependency_set" do

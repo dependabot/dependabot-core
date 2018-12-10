@@ -2,17 +2,17 @@
 
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/dotnet/nuget"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/nuget/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
+RSpec.describe Dependabot::Nuget::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [csproj_file] }
   let(:csproj_file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
   end
-  let(:csproj_body) { fixture("dotnet", "csproj", "basic.csproj") }
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
       let(:vbproj_file) do
         Dependabot::DependencyFile.new(
           name: "my.vbproj",
-          content: fixture("dotnet", "csproj", "basic2.csproj")
+          content: fixture("csproj", "basic2.csproj")
         )
       end
 
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
       let(:packages_config) do
         Dependabot::DependencyFile.new(
           name: "packages.config",
-          content: fixture("dotnet", "packages_configs", "packages.config")
+          content: fixture("packages_configs", "packages.config")
         )
       end
 
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
         let(:packages_config) do
           Dependabot::DependencyFile.new(
             name: "dir/packages.config",
-            content: fixture("dotnet", "packages_configs", "packages.config")
+            content: fixture("packages_configs", "packages.config")
           )
         end
 
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget do
       let(:imported_file) do
         Dependabot::DependencyFile.new(
           name: "commonprops.props",
-          content: fixture("dotnet", "csproj", "commonprops.props")
+          content: fixture("csproj", "commonprops.props")
         )
       end
 

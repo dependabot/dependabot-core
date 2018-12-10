@@ -3,13 +3,13 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/dotnet/nuget/project_file_parser"
+require "dependabot/nuget/file_parser/project_file_parser"
 
-RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
+RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
-  let(:file_body) { fixture("dotnet", "csproj", "basic.csproj") }
+  let(:file_body) { fixture("csproj", "basic.csproj") }
   let(:parser) { described_class.new(dependency_files: [file]) }
 
   describe "dependency_set" do
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
       end
 
       context "with version ranges" do
-        let(:file_body) { fixture("dotnet", "csproj", "ranges.csproj") }
+        let(:file_body) { fixture("csproj", "ranges.csproj") }
 
         its(:length) { is_expected.to eq(4) }
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
       end
 
       context "with an update specified" do
-        let(:file_body) { fixture("dotnet", "csproj", "update.csproj") }
+        let(:file_body) { fixture("csproj", "update.csproj") }
 
         it "has the right details" do
           expect(dependencies.map(&:name)).
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
 
       context "with a property version" do
         let(:file_body) do
-          fixture("dotnet", "csproj", "property_version.csproj")
+          fixture("csproj", "property_version.csproj")
         end
 
         describe "the property dependency" do
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
 
         context "that is indirect" do
           let(:file_body) do
-            fixture("dotnet", "csproj", "property_version_indirect.csproj")
+            fixture("csproj", "property_version_indirect.csproj")
           end
 
           subject(:dependency) do
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
 
         context "that can't be found" do
           let(:file_body) do
-            fixture("dotnet", "csproj", "missing_property_version.csproj")
+            fixture("csproj", "missing_property_version.csproj")
           end
 
           describe "the property dependency" do
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
       end
 
       context "with a nuproj" do
-        let(:file_body) { fixture("dotnet", "csproj", "basic.nuproj") }
+        let(:file_body) { fixture("csproj", "basic.nuproj") }
 
         it "has the right details" do
           expect(dependencies.map(&:name)).
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::ProjectFileParser do
       end
 
       context "with an interpolated value" do
-        let(:file_body) { fixture("dotnet", "csproj", "interpolated.proj") }
+        let(:file_body) { fixture("csproj", "interpolated.proj") }
 
         it "excludes the dependencies specified using interpolation" do
           expect(dependencies.count).to eq(0)

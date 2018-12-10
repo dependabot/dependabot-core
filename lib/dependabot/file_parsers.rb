@@ -7,7 +7,6 @@ require "dependabot/file_parsers/java/gradle"
 require "dependabot/file_parsers/php/composer"
 require "dependabot/file_parsers/elixir/hex"
 require "dependabot/file_parsers/rust/cargo"
-require "dependabot/file_parsers/dotnet/nuget"
 require "dependabot/file_parsers/go/dep"
 require "dependabot/file_parsers/go/modules"
 require "dependabot/file_parsers/elm/elm_package"
@@ -22,7 +21,6 @@ module Dependabot
       "composer" => FileParsers::Php::Composer,
       "hex" => FileParsers::Elixir::Hex,
       "cargo" => FileParsers::Rust::Cargo,
-      "nuget" => FileParsers::Dotnet::Nuget,
       "dep" => FileParsers::Go::Dep,
       "go_modules" => FileParsers::Go::Modules,
       "elm-package" => FileParsers::Elm::ElmPackage

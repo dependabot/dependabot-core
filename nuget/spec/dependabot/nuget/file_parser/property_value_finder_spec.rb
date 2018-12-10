@@ -3,13 +3,13 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/dotnet/nuget/property_value_finder"
+require "dependabot/nuget/file_parser/property_value_finder"
 
-RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
+RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
   let(:file) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: file_body)
   end
-  let(:file_body) { fixture("dotnet", "csproj", csproj_fixture_name) }
+  let(:file_body) { fixture("csproj", csproj_fixture_name) }
   let(:csproj_fixture_name) { "property_version.csproj" }
   let(:finder) { described_class.new(dependency_files: files) }
   let(:files) { [file] }
@@ -58,14 +58,14 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
           content: file_body
         )
       end
-      let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
+      let(:file_body) { fixture("csproj", "property_version.csproj") }
       let(:build_file) do
         Dependabot::DependencyFile.new(
           name: "Directory.Build.props",
           content: build_file_body
         )
       end
-      let(:build_file_body) { fixture("dotnet", "property_files", "imports") }
+      let(:build_file_body) { fixture("property_files", "imports") }
       let(:imported_file) do
         Dependabot::DependencyFile.new(
           name: "build/dependencies.props",
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::FileParsers::Dotnet::Nuget::PropertyValueFinder do
         )
       end
       let(:imported_file_body) do
-        fixture("dotnet", "property_files", "dependency.props")
+        fixture("property_files", "dependency.props")
       end
 
       let(:property_name) { "XunitPackageVersion" }

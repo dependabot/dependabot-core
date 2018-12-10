@@ -3,83 +3,84 @@
 require "nokogiri"
 
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
 module Dependabot
-  module FileParsers
-    module Dotnet
-      class Nuget < Dependabot::FileParsers::Base
-        require "dependabot/file_parsers/base/dependency_set"
-        require "dependabot/file_parsers/dotnet/nuget/project_file_parser"
-        require "dependabot/file_parsers/dotnet/nuget/packages_config_parser"
+  module Nuget
+    class FileParser < Dependabot::FileParsers::Base
+      require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/project_file_parser"
+      require_relative "file_parser/packages_config_parser"
 
-        PACKAGE_CONF_DEPENDENCY_SELECTOR = "packages > packages"
+      PACKAGE_CONF_DEPENDENCY_SELECTOR = "packages > packages"
 
-        def parse
-          dependency_set = DependencySet.new
-          dependency_set += project_file_dependencies
-          dependency_set += packages_config_dependencies
-          dependency_set.dependencies
+      def parse
+        dependency_set = DependencySet.new
+        dependency_set += project_file_dependencies
+        dependency_set += packages_config_dependencies
+        dependency_set.dependencies
+      end
+
+      private
+
+      def project_file_dependencies
+        dependency_set = DependencySet.new
+
+        (project_files + project_import_files).each do |file|
+          parser = project_file_parser
+          dependency_set += parser.dependency_set(project_file: file)
         end
 
-        private
+        dependency_set
+      end
 
-        def project_file_dependencies
-          dependency_set = DependencySet.new
+      def packages_config_dependencies
+        dependency_set = DependencySet.new
 
-          (project_files + project_import_files).each do |file|
-            parser = project_file_parser
-            dependency_set += parser.dependency_set(project_file: file)
-          end
-
-          dependency_set
+        packages_config_files.each do |file|
+          parser = PackagesConfigParser.new(packages_config: file)
+          dependency_set += parser.dependency_set
         end
 
-        def packages_config_dependencies
-          dependency_set = DependencySet.new
+        dependency_set
+      end
 
-          packages_config_files.each do |file|
-            parser = PackagesConfigParser.new(packages_config: file)
-            dependency_set += parser.dependency_set
-          end
+      def project_file_parser
+        @project_file_parser ||=
+          ProjectFileParser.new(dependency_files: dependency_files)
+      end
 
-          dependency_set
+      def project_files
+        dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
+      end
+
+      def packages_config_files
+        dependency_files.select do |f|
+          f.name.split("/").last.casecmp("packages.config").zero?
         end
+      end
 
-        def project_file_parser
-          @project_file_parser ||=
-            ProjectFileParser.new(dependency_files: dependency_files)
-        end
+      def project_import_files
+        dependency_files -
+          project_files -
+          packages_config_files -
+          [nuget_config]
+      end
 
-        def project_files
-          dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$/) }
-        end
+      def nuget_config
+        dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+      end
 
-        def packages_config_files
-          dependency_files.select do |f|
-            f.name.split("/").last.casecmp("packages.config").zero?
-          end
-        end
+      def check_required_files
+        return if project_files.any? || packages_config_files.any?
 
-        def project_import_files
-          dependency_files -
-            project_files -
-            packages_config_files -
-            [nuget_config]
-        end
-
-        def nuget_config
-          dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
-        end
-
-        def check_required_files
-          return if project_files.any? || packages_config_files.any?
-
-          raise "No project file or packages.config!"
-        end
+        raise "No project file or packages.config!"
       end
     end
   end
 end
+
+Dependabot::FileParsers.register("nuget", Dependabot::Nuget::FileParser)

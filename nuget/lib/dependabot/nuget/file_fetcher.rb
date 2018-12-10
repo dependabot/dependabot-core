@@ -213,5 +213,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("nuget", Dependabot::Nuget::FileFetcher)
+Dependabot::FileFetchers.register("nuget", Dependabot::Nuget::FileFetcher)
