@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/rust/cargo/file_preparer"
+require "dependabot/cargo/update_checker/file_preparer"
 
-RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
+RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
   let(:preparer) do
     described_class.new(
       dependency_files: dependency_files,
@@ -23,13 +23,13 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Cargo.toml",
-      content: fixture("rust", "manifests", manifest_fixture_name)
+      content: fixture("manifests", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Cargo.lock",
-      content: fixture("rust", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "bare_version_specified" }

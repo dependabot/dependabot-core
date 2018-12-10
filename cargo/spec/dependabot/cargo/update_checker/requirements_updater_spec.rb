@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/rust/cargo/requirements_updater"
+require "dependabot/cargo/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::RequirementsUpdater do
+RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

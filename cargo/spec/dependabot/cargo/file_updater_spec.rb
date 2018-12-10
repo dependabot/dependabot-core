@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/rust/cargo"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/cargo/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
+RSpec.describe Dependabot::Cargo::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -32,8 +32,8 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
   end
-  let(:manifest_body) { fixture("rust", "manifests", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("rust", "lockfiles", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
   let(:manifest_fixture_name) { "bare_version_specified" }
   let(:lockfile_fixture_name) { "bare_version_specified" }
 

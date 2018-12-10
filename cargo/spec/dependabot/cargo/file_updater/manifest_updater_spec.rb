@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/rust/cargo/manifest_updater"
+require "dependabot/cargo/file_updater/manifest_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::ManifestUpdater do
+RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
   let(:updater) do
     described_class.new(
       manifest: manifest,
@@ -16,7 +16,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::ManifestUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
   end
-  let(:manifest_body) { fixture("rust", "manifests", manifest_fixture_name) }
+  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
   let(:manifest_fixture_name) { "bare_version_specified" }
 
   let(:dependency) do

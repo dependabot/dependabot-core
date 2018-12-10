@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/rust/cargo/file_preparer"
-require "dependabot/update_checkers/rust/cargo/version_resolver"
+require "dependabot/cargo/update_checker/file_preparer"
+require "dependabot/cargo/update_checker/version_resolver"
 
-RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
+RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
   subject(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -24,7 +24,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
     }]
   end
   let(:dependency_files) do
-    Dependabot::UpdateCheckers::Rust::Cargo::FilePreparer.new(
+    Dependabot::Cargo::UpdateChecker::FilePreparer.new(
       dependency_files: unprepared_dependency_files,
       dependency: dependency,
       unlock_requirement: true
@@ -34,13 +34,13 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Cargo.toml",
-      content: fixture("rust", "manifests", manifest_fixture_name)
+      content: fixture("manifests", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Cargo.lock",
-      content: fixture("rust", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "bare_version_specified" }
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
       let(:workspace_child) do
         Dependabot::DependencyFile.new(
           name: "lib/sub_crate/Cargo.toml",
-          content: fixture("rust", "manifests", "workspace_child")
+          content: fixture("manifests", "workspace_child")
         )
       end
       let(:dependency_name) { "log" }
@@ -285,14 +285,14 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver do
         let(:workspace_child) do
           Dependabot::DependencyFile.new(
             name: "Cargo.toml",
-            content: fixture("rust", "manifests", "workspace_child"),
+            content: fixture("manifests", "workspace_child"),
             directory: "/lib/sub_crate"
           )
         end
         let(:manifest) do
           Dependabot::DependencyFile.new(
             name: "../../Cargo.toml",
-            content: fixture("rust", "manifests", "blank_version"),
+            content: fixture("manifests", "blank_version"),
             directory: "/lib/sub_crate"
           )
         end

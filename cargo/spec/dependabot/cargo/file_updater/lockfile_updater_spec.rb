@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/rust/cargo/lockfile_updater"
+require "dependabot/cargo/file_updater/lockfile_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
+RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
@@ -26,8 +26,8 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
   end
-  let(:manifest_body) { fixture("rust", "manifests", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("rust", "lockfiles", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
   let(:manifest_fixture_name) { "bare_version_specified" }
   let(:lockfile_fixture_name) { "bare_version_specified" }
 
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
         let(:path_dependency_file) do
           Dependabot::DependencyFile.new(
             name: "src/s3/Cargo.toml",
-            content: fixture("rust", "manifests", "cargo-registry-s3")
+            content: fixture("manifests", "cargo-registry-s3")
           )
         end
 
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::FileUpdaters::Rust::Cargo::LockfileUpdater do
         let(:workspace_child) do
           Dependabot::DependencyFile.new(
             name: "lib/sub_crate/Cargo.toml",
-            content: fixture("rust", "manifests", "workspace_child")
+            content: fixture("manifests", "workspace_child")
           )
         end
         let(:dependency) do

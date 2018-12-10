@@ -2,19 +2,17 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/rust/cargo"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/cargo/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
+RSpec.describe Dependabot::Cargo::UpdateChecker do
   it_behaves_like "an update checker"
 
   before do
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
-  let(:crates_response) do
-    fixture("rust", "crates_io_responses", crates_fixture_name)
-  end
+  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
   let(:crates_fixture_name) { "#{dependency_name}.json" }
 
   let(:checker) do
@@ -39,11 +37,11 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     [
       Dependabot::DependencyFile.new(
         name: "Cargo.toml",
-        content: fixture("rust", "manifests", manifest_fixture_name)
+        content: fixture("manifests", manifest_fixture_name)
       ),
       Dependabot::DependencyFile.new(
         name: "Cargo.lock",
-        content: fixture("rust", "lockfiles", lockfile_fixture_name)
+        content: fixture("lockfiles", lockfile_fixture_name)
       )
     ]
   end
@@ -246,7 +244,7 @@ RSpec.describe Dependabot::UpdateCheckers::Rust::Cargo do
     subject { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
-      expect(Dependabot::UpdateCheckers::Rust::Cargo::VersionResolver).
+      expect(Dependabot::Cargo::UpdateChecker::VersionResolver).
         to receive(:new).
         and_call_original
       expect(checker.latest_resolvable_version).

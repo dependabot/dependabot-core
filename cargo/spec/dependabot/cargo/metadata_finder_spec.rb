@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/rust/cargo"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/cargo/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Rust::Cargo do
+RSpec.describe Dependabot::Cargo::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::MetadataFinders::Rust::Cargo do
         )
     end
     let(:crates_response) do
-      fixture("rust", "crates_io_responses", crates_fixture_name)
+      fixture("crates_io_responses", crates_fixture_name)
     end
     let(:crates_fixture_name) { "bitflags.json" }
 

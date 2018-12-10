@@ -5,7 +5,6 @@ require "dependabot/metadata_finders/java_script/npm_and_yarn"
 require "dependabot/metadata_finders/java/maven"
 require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/elixir/hex"
-require "dependabot/metadata_finders/rust/cargo"
 require "dependabot/metadata_finders/go/dep"
 require "dependabot/metadata_finders/elm/elm_package"
 
@@ -18,7 +17,6 @@ module Dependabot
       "gradle" => MetadataFinders::Java::Maven,
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
-      "cargo" => MetadataFinders::Rust::Cargo,
       "dep" => MetadataFinders::Go::Dep,
       "go_modules" => MetadataFinders::Go::Dep,
       "elm-package" => MetadataFinders::Elm::ElmPackage
