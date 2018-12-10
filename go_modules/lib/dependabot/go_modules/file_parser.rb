@@ -5,6 +5,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/utils/go/path_converter"
 require "dependabot/errors"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 
 module Dependabot
@@ -125,3 +126,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.
+  register("go_modules", Dependabot::GoModules::FileParser)
