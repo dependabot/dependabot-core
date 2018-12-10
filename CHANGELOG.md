@@ -1,3 +1,7 @@
+## v0.81.0, 10 December 2018
+
+- Extract Rust logic into a separate gem
+
 ## v0.80.1, 10 December 2018
 
 - Add another missing require
