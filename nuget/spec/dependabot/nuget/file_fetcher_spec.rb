@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/dotnet/nuget"
-require_relative "../shared_examples_for_file_fetchers"
+require "spec_helper"
+require "dependabot/source"
+require "dependabot/nuget/file_fetcher"
+require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget do
+RSpec.describe Dependabot::Nuget::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do

@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/file_fetchers/dotnet/nuget/import_paths_finder"
+require "dependabot/nuget/file_fetcher/import_paths_finder"
 
-RSpec.describe Dependabot::FileFetchers::Dotnet::Nuget::ImportPathsFinder do
+RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
   let(:finder) { described_class.new(project_file: project_file) }
 
   let(:project_file) do
     Dependabot::DependencyFile.new(content: csproj_body, name: csproj_name)
   end
   let(:csproj_name) { "my.csproj" }
-  let(:csproj_body) { fixture("dotnet", "csproj", fixture_name) }
+  let(:csproj_body) { fixture("csproj", fixture_name) }
 
   describe "#import_paths" do
     subject(:import_paths) { finder.import_paths }
