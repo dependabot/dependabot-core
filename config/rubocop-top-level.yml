@@ -16,3 +16,4 @@ AllCops:
     - 'maven/**/*'
     - 'python/**/*'
     - 'cargo/**/*'
+    - 'go_modules/**/*'

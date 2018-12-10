@@ -45,6 +45,7 @@ COPY git_submodules/Gemfile \
      /home/dependabot/dependabot-core/git_submodules/
 RUN cd git_submodules && bundle install
 
+<<<<<<< HEAD
 RUN mkdir -p /home/dependabot/dependabot-core/maven
 COPY maven/Gemfile \
      maven/dependabot-maven.gemspec \
@@ -68,5 +69,11 @@ COPY cargo/Gemfile \
      cargo/dependabot-cargo.gemspec \
      /home/dependabot/dependabot-core/cargo/
 RUN cd cargo && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/go_modules
+COPY go_modules/Gemfile \
+     go_modules/dependabot-go_modules.gemspec \
+     /home/dependabot/dependabot-core/go_modules/
+RUN cd go_modules && bundle install
 
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

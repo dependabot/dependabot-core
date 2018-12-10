@@ -29,4 +29,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
+  spec.add_dependency "dependabot-go_modules", Dependabot::VERSION
 end
