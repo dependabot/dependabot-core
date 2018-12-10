@@ -5,7 +5,7 @@ require "find"
 Gem::Specification.new do |spec|
   core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 
-  spec.name         = "dependabot-git-submodules"
+  spec.name         = "dependabot-git_submodules"
   spec.summary      = "Git Submodules support for dependabot-core"
   spec.version      = core_gemspec.version
   spec.description  = core_gemspec.description

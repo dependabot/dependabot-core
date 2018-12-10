@@ -1,4 +1,4 @@
-## `dependabot-git-submodules`
+## `dependabot-git_submodules`
 
 Git Submodules support for [`dependabot-core`][core-repo].
 

@@ -67,7 +67,7 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
   -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
-  -v "$(pwd)/git_submodules/dependabot-git-submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
+  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
   -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
   -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
   -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
