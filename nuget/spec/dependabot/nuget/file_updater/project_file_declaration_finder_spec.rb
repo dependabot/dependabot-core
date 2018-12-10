@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/dotnet/nuget/project_file_declaration_finder"
+require "dependabot/nuget/file_updater/project_file_declaration_finder"
 
-namespace = Dependabot::FileUpdaters::Dotnet::Nuget
+namespace = Dependabot::Nuget::FileUpdater
 RSpec.describe namespace::ProjectFileDeclarationFinder do
   let(:finder) do
     described_class.new(
@@ -29,7 +29,7 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
   let(:csproj) do
     Dependabot::DependencyFile.new(
       name: "my.csproj",
-      content: fixture("dotnet", "csproj", csproj_fixture_name)
+      content: fixture("csproj", csproj_fixture_name)
     )
   end
   let(:csproj_fixture_name) { "basic.csproj" }

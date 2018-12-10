@@ -2,16 +2,16 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/dotnet/nuget/property_value_updater"
+require "dependabot/nuget/file_updater/property_value_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
+RSpec.describe Dependabot::Nuget::FileUpdater::PropertyValueUpdater do
   let(:updater) { described_class.new(dependency_files: files) }
   let(:files) { [project_file] }
 
   let(:project_file) do
     Dependabot::DependencyFile.new(
       name: "my.csproj",
-      content: fixture("dotnet", "csproj", csproj_fixture_name)
+      content: fixture("csproj", csproj_fixture_name)
     )
   end
   let(:csproj_fixture_name) { "property_version.csproj" }
@@ -43,14 +43,14 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
           content: file_body
         )
       end
-      let(:file_body) { fixture("dotnet", "csproj", "property_version.csproj") }
+      let(:file_body) { fixture("csproj", "property_version.csproj") }
       let(:build_file) do
         Dependabot::DependencyFile.new(
           name: "Directory.Build.props",
           content: build_file_body
         )
       end
-      let(:build_file_body) { fixture("dotnet", "property_files", "imports") }
+      let(:build_file_body) { fixture("property_files", "imports") }
       let(:imported_file) do
         Dependabot::DependencyFile.new(
           name: "build/dependencies.props",
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget::PropertyValueUpdater do
         )
       end
       let(:imported_file_body) do
-        fixture("dotnet", "property_files", "dependency.props")
+        fixture("property_files", "dependency.props")
       end
 
       let(:property_name) { "XunitPackageVersion" }

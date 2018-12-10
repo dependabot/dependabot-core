@@ -3,10 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/dotnet/nuget/"\
-        "packages_config_declaration_finder"
+require "dependabot/nuget/file_updater/packages_config_declaration_finder"
 
-namespace = Dependabot::FileUpdaters::Dotnet::Nuget
+namespace = Dependabot::Nuget::FileUpdater
 RSpec.describe namespace::PackagesConfigDeclarationFinder do
   let(:finder) do
     described_class.new(
@@ -29,7 +28,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
   let(:packages_config) do
     Dependabot::DependencyFile.new(
       name: "packages.config",
-      content: fixture("dotnet", "packages_configs", fixture_name)
+      content: fixture("packages_configs", fixture_name)
     )
   end
   let(:fixture_name) { "packages.config" }

@@ -2,10 +2,10 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/dotnet/nuget"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/nuget/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
+RSpec.describe Dependabot::Nuget::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -25,7 +25,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
   let(:csproj_file) do
     Dependabot::DependencyFile.new(content: csproj_body, name: "my.csproj")
   end
-  let(:csproj_body) { fixture("dotnet", "csproj", "basic.csproj") }
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
       end
 
       context "with a version range" do
-        let(:csproj_body) { fixture("dotnet", "csproj", "ranges.csproj") }
+        let(:csproj_body) { fixture("csproj", "ranges.csproj") }
         let(:dependency_name) { "Dep1" }
         let(:version) { "2.1" }
         let(:previous_version) { nil }
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
 
       context "with a property version" do
         let(:csproj_body) do
-          fixture("dotnet", "csproj", "property_version.csproj")
+          fixture("csproj", "property_version.csproj")
         end
         let(:dependency_name) { "Nuke.Common" }
         let(:version) { "0.1.500" }
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
       let(:dependency_files) { [packages_config] }
       let(:packages_config) do
         Dependabot::DependencyFile.new(
-          content: fixture("dotnet", "packages_configs", "packages.config"),
+          content: fixture("packages_configs", "packages.config"),
           name: "packages.config"
         )
       end
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
       context "that is nested" do
         let(:packages_config) do
           Dependabot::DependencyFile.new(
-            content: fixture("dotnet", "packages_configs", "packages.config"),
+            content: fixture("packages_configs", "packages.config"),
             name: "dir/packages.config"
           )
         end
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::FileUpdaters::Dotnet::Nuget do
       let(:dependency_files) { [csproj_file, vbproj_file] }
       let(:vbproj_file) do
         Dependabot::DependencyFile.new(
-          content: fixture("dotnet", "csproj", "basic2.csproj"),
+          content: fixture("csproj", "basic2.csproj"),
           name: "my.vbproj"
         )
       end
