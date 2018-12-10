@@ -67,12 +67,16 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
   -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
-  -v "$(pwd)/git_submodules/dependabot-git-submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
+  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
   -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
   -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
   -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
   -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
+  -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
+  -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-core.gemspec" \
+  -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
+  -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

@@ -1,6 +1,6 @@
-## `dependabot-git_submodules`
+## `dependabot-nuget`
 
-Git Submodules support for [`dependabot-core`][core-repo].
+NuGet support for [`dependabot-core`][core-repo].
 
 ### Running locally
 

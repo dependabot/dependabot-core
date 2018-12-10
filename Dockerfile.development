@@ -29,9 +29,13 @@ COPY docker/Gemfile docker/dependabot-docker.gemspec /home/dependabot/dependabot
 RUN cd docker && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/git_submodules
-COPY git_submodules/Gemfile git_submodules/dependabot-git-submodules.gemspec /home/dependabot/dependabot-core/git_submodules/
+COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec /home/dependabot/dependabot-core/git_submodules/
 RUN cd git_submodules && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/python
 COPY python/Gemfile python/dependabot-python.gemspec /home/dependabot/dependabot-core/python/
 RUN cd python && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/nuget
+COPY nuget/Gemfile nuget/dependabot-nuget.gemspec /home/dependabot/dependabot-core/nuget/
+RUN cd nuget && bundle install

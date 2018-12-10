@@ -10,4 +10,5 @@ AllCops:
     - 'terraform/**/*'
     - 'docker/**/*'
     - 'git_submodules/**/*'
+    - 'nuget/**/*'
     - 'python/**/*'
