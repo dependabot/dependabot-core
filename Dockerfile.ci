@@ -45,4 +45,10 @@ COPY nuget/Gemfile \
      /home/dependabot/dependabot-core/nuget/
 RUN cd nuget && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/cargo
+COPY cargo/Gemfile \
+     cargo/dependabot-cargo.gemspec \
+     /home/dependabot/dependabot-core/cargo/
+RUN cd cargo && bundle install
+
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

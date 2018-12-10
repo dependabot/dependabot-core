@@ -78,5 +78,9 @@ docker run --rm -ti \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-core.gemspec" \
   -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
+  -v "$(pwd)/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
+  -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-core.gemspec" \
+  -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
+  -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

@@ -37,6 +37,7 @@ $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./cargo/lib"
 
 require "optparse"
 require "dependabot/file_fetchers"
@@ -48,6 +49,7 @@ require "dependabot/terraform"
 require "dependabot/docker"
 require "dependabot/git_submodules"
 require "dependabot/nuget"
+require "dependabot/cargo"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
