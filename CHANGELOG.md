@@ -1,3 +1,8 @@
+## v0.79.3, 10 December 2018
+
+- Python: Update requirement path in PipfileVersionResolver
+- Exclude merge commits when looking for latest dependabot commit message
+
 ## v0.79.2, 9 December 2018
 
 - Python: Catch ValueError and treat as a FileNotEvaluatable error
