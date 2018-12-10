@@ -3,14 +3,15 @@
 require "excon"
 require "toml-rb"
 
+require "dependabot/errors"
+require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater/pipfile_preparer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/python_versions"
-require "dependabot/shared_helpers"
+require "dependabot/python/native_helpers"
 require "dependabot/python/version"
-require "dependabot/errors"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -350,7 +351,8 @@ module Dependabot
           return if pre_installed_python?(python_version)
 
           SharedHelpers.run_shell_command(
-            "pyenv exec pip install -r #{python_requirements_path}"
+            "pyenv exec pip install -r " + \
+            NativeHelpers.python_requirements_path
           )
         end
 
@@ -520,11 +522,6 @@ module Dependabot
           ]
 
           environment_variables.join(" ") + " "
-        end
-
-        def python_requirements_path
-          project_root = File.join(File.dirname(__FILE__), "../../../..")
-          File.join(project_root, "helpers/python/requirements.txt")
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

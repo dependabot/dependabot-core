@@ -265,11 +265,6 @@ module Dependabot
           end
         end
 
-        def python_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/python/run.py")
-        end
-
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
           name.downcase.gsub(/[-_.]+/, "-")

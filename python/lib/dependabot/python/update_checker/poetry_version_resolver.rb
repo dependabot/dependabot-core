@@ -3,13 +3,13 @@
 require "excon"
 require "toml-rb"
 
+require "dependabot/errors"
+require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater/pyproject_preparer"
 require "dependabot/python/update_checker"
-require "dependabot/shared_helpers"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
-require "dependabot/errors"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 
@@ -55,9 +55,8 @@ module Dependabot
 
               if python_version && !pre_installed_python?(python_version)
                 run_poetry_command("pyenv install -s")
-                run_poetry_command(
-                  "pyenv exec pip install -r #{python_requirements_path}"
-                )
+                run_poetry_command("pyenv exec pip install -r " + \
+                                   NativeHelpers.python_requirements_path)
               end
 
               # Shell out to Poetry, which handles everything for us.

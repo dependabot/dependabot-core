@@ -152,9 +152,8 @@ module Dependabot
             if python_version && !pre_installed_python?(python_version)
               run_poetry_command("pyenv install -s")
               run_poetry_command("pyenv exec pip install --upgrade pip")
-              run_poetry_command(
-                "pyenv exec pip install -r #{python_requirements_path}"
-              )
+              run_poetry_command("pyenv exec pip install -r " + \
+                                 NativeHelpers.python_requirements_path)
             end
 
             run_poetry_command("pyenv exec poetry lock")
@@ -270,11 +269,6 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
-        end
-
-        def python_requirements_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/python/requirements.txt")
         end
       end
     end
