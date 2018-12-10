@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
-require "dependabot/metadata_finders/dotnet/nuget"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/nuget/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
+RSpec.describe Dependabot::Nuget::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -44,7 +44,6 @@ RSpec.describe Dependabot::MetadataFinders::Dotnet::Nuget do
     end
     let(:nuget_response) do
       fixture(
-        "dotnet",
         "nuspecs",
         "Microsoft.Extensions.DependencyModel.nuspec"
       )
