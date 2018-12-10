@@ -5,7 +5,7 @@ require "dependabot/file_parsers/base"
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
-      require_relative "modules/go_mod_parser"
+      require "dependabot/file_parsers/go/modules/go_mod_parser"
 
       def parse
         go_mod_dependencies.dependencies
@@ -15,7 +15,7 @@ module Dependabot
 
       def go_mod_dependencies
         @go_mod_dependencies ||=
-          Modules::GoModParser.
+          Dependabot::FileParsers::Go::Modules::GoModParser.
           new(dependency_files: dependency_files, credentials: credentials).
           dependency_set
       end
