@@ -73,7 +73,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           to raise_error do |error|
             expect(error).
               to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-            expect(error.message).to include("no matching version")
+            expect(error.message).to include("failed to select a version")
           end
       end
 
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
               expect(error.message).
-                to include("version `^99.0.0` found for package `regex`")
+                to include("version for the requirement `regex = \"^99.0.0\"`")
             end
         end
       end

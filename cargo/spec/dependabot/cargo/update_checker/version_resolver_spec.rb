@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
             expect(error.message).
-              to include("version `= 99.0.0` found for package `regex`")
+              to include("version for the requirement `regex = \"= 99.0.0\"`")
           end
       end
 
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
               expect(error.message).
-                to include("version `^99.0.0` found for package `regex`")
+                to include("version for the requirement `regex = \"^99.0.0\"`")
             end
         end
       end

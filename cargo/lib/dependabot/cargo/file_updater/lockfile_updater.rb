@@ -52,8 +52,8 @@ module Dependabot
         end
 
         def handle_cargo_error(error)
-          raise unless error.message.include?("no matching version")
-          raise if error.message.include?("`#{dependency.name}`")
+          raise unless error.message.include?("failed to select a version")
+          raise if error.message.include?("`#{dependency.name} ")
 
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
