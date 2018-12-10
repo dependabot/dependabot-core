@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/cargo/file_parser"
 require "dependabot/dependency_file"
 require "dependabot/source"

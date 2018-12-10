@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/rust/version"
+require "dependabot/cargo/version"
 
-RSpec.describe Dependabot::Utils::Rust::Version do
+RSpec.describe Dependabot::Cargo::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
