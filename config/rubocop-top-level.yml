@@ -12,3 +12,4 @@ AllCops:
     - 'git_submodules/**/*'
     - 'nuget/**/*'
     - 'python/**/*'
+    - 'cargo/**/*'

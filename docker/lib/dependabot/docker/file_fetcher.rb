@@ -38,5 +38,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileFetchers.
-  register("docker", Dependabot::Docker::FileFetcher)
+Dependabot::FileFetchers.register("docker", Dependabot::Docker::FileFetcher)

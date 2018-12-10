@@ -39,3 +39,7 @@ RUN cd python && bundle install
 RUN mkdir -p /home/dependabot/dependabot-core/nuget
 COPY nuget/Gemfile nuget/dependabot-nuget.gemspec /home/dependabot/dependabot-core/nuget/
 RUN cd nuget && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/cargo
+COPY cargo/Gemfile cargo/dependabot-cargo.gemspec /home/dependabot/dependabot-core/cargo/
+RUN cd cargo && bundle install

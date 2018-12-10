@@ -6,7 +6,6 @@ require "dependabot/update_checkers/java/maven"
 require "dependabot/update_checkers/java/gradle"
 require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/elixir/hex"
-require "dependabot/update_checkers/rust/cargo"
 require "dependabot/update_checkers/go/dep"
 require "dependabot/update_checkers/go/modules"
 require "dependabot/update_checkers/elm/elm_package"
@@ -20,7 +19,6 @@ module Dependabot
       "gradle" => UpdateCheckers::Java::Gradle,
       "composer" => UpdateCheckers::Php::Composer,
       "hex" => UpdateCheckers::Elixir::Hex,
-      "cargo" => UpdateCheckers::Rust::Cargo,
       "dep" => UpdateCheckers::Go::Dep,
       "go_modules" => UpdateCheckers::Go::Modules,
       "elm-package" => UpdateCheckers::Elm::ElmPackage
