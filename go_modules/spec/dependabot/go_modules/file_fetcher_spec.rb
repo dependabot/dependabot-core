@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/go/modules"
-require_relative "../shared_examples_for_file_fetchers"
+require "spec_helper"
+require "dependabot/go_modules/file_fetcher"
+require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::Go::Modules, :vcr do
+RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
   it_behaves_like "a dependency file fetcher"
 
   let(:repo) { "dependabot-fixtures/go-modules-lib" }
