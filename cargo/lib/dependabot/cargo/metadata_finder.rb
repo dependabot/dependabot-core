@@ -60,3 +60,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::MetadataFinders.register("cargo", Dependabot::Cargo::MetadataFinder)
