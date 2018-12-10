@@ -1,5 +1,6 @@
 github.com/Masterminds/vcs v1.12.0 h1:bt9Hb4XlfmEfLnVA0MVz2NO0GFuMN5vX8iOWW38Xde4=
 github.com/Masterminds/vcs v1.12.0/go.mod h1:N09YCmOQr6RLxC6UNHzuVwAdodYbbnycGHSmwVJjcKA=
 github.com/dependabot/dependabot-core v0.74.6 h1:SB2Oyie+Ex9ARXLHbFrnoQSWSixAG4ORHA+s6YEvVag=
+github.com/dependabot/dependabot-core v0.79.4 h1:d3/V6TTj+58ULw6824RK2zR+esZQw3bU/vRkCtCh4JU=
 github.com/dependabot/gomodules-extracted v0.0.0-20181020215834-1b2f850478a3 h1:Xj2leY0FVyZuo+p59vkIWG3dIqo+QtjskT5O1iTiywA=
 github.com/dependabot/gomodules-extracted v0.0.0-20181020215834-1b2f850478a3/go.mod h1:+dRXSrUymjpT4yzKtn1QmeknT1S/yAHRr35en18dHp8=

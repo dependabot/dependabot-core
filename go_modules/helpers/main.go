@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/dependabot/dependabot-core/helpers/go/importresolver"
-	"github.com/dependabot/dependabot-core/helpers/go/updatechecker"
-	"github.com/dependabot/dependabot-core/helpers/go/updater"
+	"github.com/dependabot/dependabot-core/go_modules/helpers/importresolver"
+	"github.com/dependabot/dependabot-core/go_modules/helpers/updatechecker"
+	"github.com/dependabot/dependabot-core/go_modules/helpers/updater"
 )
 
 type HelperParams struct {
