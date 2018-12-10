@@ -1,3 +1,8 @@
+## v0.80.1, 10 December 2018
+
+- Add another missing require
+- Add missing require
+
 ## v0.80.0, 10 December 2018
 
 - Extract .NET logic into a separate gem
