@@ -3,10 +3,10 @@
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/dependency"
-require "dependabot/file_parsers/go/modules"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/go_modules/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Go::Modules do
+RSpec.describe Dependabot::GoModules::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:parser) { described_class.new(dependency_files: files, source: source) }
