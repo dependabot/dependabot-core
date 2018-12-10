@@ -21,9 +21,7 @@ module Dependabot
       # Use Cargo::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
       def self.parse(obj)
-        if obj.is_a?(Gem::Version)
-          return ["=", Cargo::Version.new(obj.to_s)]
-        end
+        return ["=", Cargo::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"
