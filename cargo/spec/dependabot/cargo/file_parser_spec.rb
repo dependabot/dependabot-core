@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/file_parsers/rust/cargo"
+require "dependabot/cargo/file_parser"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require_relative "../shared_examples_for_file_parsers"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Rust::Cargo do
+RSpec.describe Dependabot::Cargo::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -21,13 +21,13 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Cargo.toml",
-      content: fixture("rust", "manifests", manifest_fixture_name)
+      content: fixture("manifests", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Cargo.lock",
-      content: fixture("rust", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "bare_version_specified" }
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         let(:path_dependency_manifest) do
           Dependabot::DependencyFile.new(
             name: "src/s3/Cargo.toml",
-            content: fixture("rust", "manifests", "cargo-registry-s3"),
+            content: fixture("manifests", "cargo-registry-s3"),
             type: "path_dependency"
           )
         end
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
         let(:workspace_child) do
           Dependabot::DependencyFile.new(
             name: "lib/sub_crate/Cargo.toml",
-            content: fixture("rust", "manifests", "workspace_child")
+            content: fixture("manifests", "workspace_child")
           )
         end
 
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
           let(:workspace_child) do
             Dependabot::DependencyFile.new(
               name: "lib/sub_crate/Cargo.toml",
-              content: fixture("rust", "manifests", "workspace_child")
+              content: fixture("manifests", "workspace_child")
             )
           end
           let(:workspace_child2) do
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::FileParsers::Rust::Cargo do
             )
           end
           let(:workspace_child2_body) do
-            fixture("rust", "manifests", "workspace_child_with_path_dependency")
+            fixture("manifests", "workspace_child_with_path_dependency")
           end
 
           describe "top level dependencies" do
