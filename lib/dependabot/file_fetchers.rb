@@ -6,7 +6,6 @@ require "dependabot/file_fetchers/java/maven"
 require "dependabot/file_fetchers/java/gradle"
 require "dependabot/file_fetchers/php/composer"
 require "dependabot/file_fetchers/elixir/hex"
-require "dependabot/file_fetchers/rust/cargo"
 require "dependabot/file_fetchers/go/dep"
 require "dependabot/file_fetchers/go/modules"
 require "dependabot/file_fetchers/elm/elm_package"
@@ -20,7 +19,6 @@ module Dependabot
       "gradle" => FileFetchers::Java::Gradle,
       "composer" => FileFetchers::Php::Composer,
       "hex" => FileFetchers::Elixir::Hex,
-      "cargo" => FileFetchers::Rust::Cargo,
       "dep" => FileFetchers::Go::Dep,
       "go_modules" => FileFetchers::Go::Modules,
       "elm-package" => FileFetchers::Elm::ElmPackage
