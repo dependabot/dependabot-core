@@ -1,3 +1,7 @@
+## v0.79.4, 10 December 2018
+
+- Python: Update remaining relative paths following reorg
+
 ## v0.79.3, 10 December 2018
 
 - Python: Update requirement path in PipfileVersionResolver
