@@ -2,9 +2,9 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/dotnet/nuget/version_finder"
+require "dependabot/nuget/update_checker/version_finder"
 
-RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
+RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -32,7 +32,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
   let(:csproj) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
   end
-  let(:csproj_body) { fixture("dotnet", "csproj", "basic.csproj") }
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
 
   let(:credentials) do
     [{
@@ -52,12 +52,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
     "https://api-v2v3search-0.nuget.org/query"\
     "?q=microsoft.extensions.dependencymodel&prerelease=true"
   end
-  let(:version_class) { Dependabot::Utils::Dotnet::Version }
+  let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
-    fixture("dotnet", "nuget_responses", "versions.json")
+    fixture("nuget_responses", "versions.json")
   end
   let(:nuget_search_results) do
-    fixture("dotnet", "nuget_responses", "search_results.json")
+    fixture("nuget_responses", "search_results.json")
   end
 
   before do
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
       let(:config_file) do
         Dependabot::DependencyFile.new(
           name: "NuGet.Config",
-          content: fixture("dotnet", "configs", "nuget.config")
+          content: fixture("configs", "nuget.config")
         )
       end
       let(:dependency_files) { [csproj, config_file] }
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
           with(basic_auth: %w(my passw0rd)).
           to_return(
             status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            body: fixture("nuget_responses", "myget_base.json")
           )
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
-            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
+            content: fixture("configs", "with_v2_endpoints.config")
           )
         end
 
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
             stub_request(:get, repo_url).
               to_return(
                 status: 200,
-                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
+                body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
           stub_request(:get, url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+              body: fixture("nuget_responses", "myget_base.json")
             )
 
           custom_v3_nuget_versions_url =
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
           stub_request(:get, custom_v2_nuget_versions_url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "v2_versions.xml")
+              body: fixture("nuget_responses", "v2_versions.xml")
             )
         end
 
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
           with(basic_auth: %w(my passw0rd)).
           to_return(
             status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            body: fixture("nuget_responses", "myget_base.json")
           )
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
@@ -238,8 +238,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::VersionFinder do
                     "microsoft.extensions.dependencymodel.nuspec",
         repo_url: "https://api.nuget.org/v3/index.json",
         source_url: nil,
-        version: Dependabot::Utils::Dotnet::Version.
-                 new("1.0.0.pre.rc2.pre.002702")
+        version: Dependabot::Nuget::Version.new("1.0.0.pre.rc2.pre.002702")
       )
     end
   end

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/dotnet/requirement"
-require "dependabot/utils/dotnet/version"
+require "dependabot/nuget/requirement"
+require "dependabot/nuget/version"
 
-RSpec.describe Dependabot::Utils::Dotnet::Requirement do
+RSpec.describe Dependabot::Nuget::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 

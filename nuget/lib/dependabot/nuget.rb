@@ -4,3 +4,6 @@
 # lookup table of package manager names to concrete classes.
 require "dependabot/nuget/file_fetcher"
 require "dependabot/nuget/file_parser"
+require "dependabot/nuget/update_checker"
+require "dependabot/nuget/requirement"
+require "dependabot/nuget/version"

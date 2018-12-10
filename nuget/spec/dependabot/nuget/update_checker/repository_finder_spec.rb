@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/dotnet/nuget/repository_finder"
+require "dependabot/nuget/update_checker/repository_finder"
 
-RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
+RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
           with(basic_auth: %w(my passw0rd)).
           to_return(
             status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            body: fixture("nuget_responses", "myget_base.json")
           )
       end
 
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
             with(basic_auth: nil).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+              body: fixture("nuget_responses", "myget_base.json")
             )
         end
 
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
       let(:config_file) do
         Dependabot::DependencyFile.new(
           name: "NuGet.Config",
-          content: fixture("dotnet", "configs", "nuget.config")
+          content: fixture("configs", "nuget.config")
         )
       end
 
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
           with(basic_auth: %w(my passw0rd)).
           to_return(
             status: 200,
-            body: fixture("dotnet", "nuget_responses", "myget_base.json")
+            body: fixture("nuget_responses", "myget_base.json")
           )
       end
 
@@ -213,7 +213,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
-            content: fixture("dotnet", "configs", "numeric_key.config")
+            content: fixture("configs", "numeric_key.config")
           )
         end
 
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
           stub_request(:get, repo_url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+              body: fixture("nuget_responses", "myget_base.json")
             )
         end
 
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
-            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
+            content: fixture("configs", "with_v2_endpoints.config")
           )
         end
 
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
             stub_request(:get, repo_url).
               to_return(
                 status: 200,
-                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
+                body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RepositoryFinder do
           stub_request(:get, url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+              body: fixture("nuget_responses", "myget_base.json")
             )
         end
 

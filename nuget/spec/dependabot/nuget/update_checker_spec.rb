@@ -2,10 +2,10 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/dotnet/nuget"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/nuget/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
+RSpec.describe Dependabot::Nuget::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -35,7 +35,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
   let(:csproj) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
   end
-  let(:csproj_body) { fixture("dotnet", "csproj", "basic.csproj") }
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
 
   let(:credentials) do
     [{
@@ -55,12 +55,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
     "https://api-v2v3search-0.nuget.org/query"\
     "?q=microsoft.extensions.dependencymodel&prerelease=true"
   end
-  let(:version_class) { Dependabot::Utils::Dotnet::Version }
+  let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
-    fixture("dotnet", "nuget_responses", "versions.json")
+    fixture("nuget_responses", "versions.json")
   end
   let(:nuget_search_results) do
-    fixture("dotnet", "nuget_responses", "search_results.json")
+    fixture("nuget_responses", "search_results.json")
   end
 
   before do
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
       context "that is used for multiple dependencies" do
         let(:csproj_body) do
-          fixture("dotnet", "csproj", "property_version.csproj")
+          fixture("csproj", "property_version.csproj")
         end
 
         it "does not delegate to latest_version" do
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
       context "that is used for a single dependencies" do
         let(:csproj_body) do
-          fixture("dotnet", "csproj", "single_dep_property_version.csproj")
+          fixture("csproj", "single_dep_property_version.csproj")
         end
 
         it "delegates to latest_version" do
@@ -181,14 +181,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         "?q=nuke.common&prerelease=true"
       end
       let(:nuget_search_results) do
-        fixture(
-          "dotnet", "nuget_responses", "search_result_nuke_common.json"
-        )
+        fixture("nuget_responses", "search_result_nuke_common.json")
       end
 
       context "that is used for multiple dependencies" do
         let(:csproj_body) do
-          fixture("dotnet", "csproj", "property_version.csproj")
+          fixture("csproj", "property_version.csproj")
         end
 
         context "where all dependencies can update to the latest version" do
@@ -199,7 +197,6 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
             codegeneration_search_result =
               fixture(
-                "dotnet",
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               )
@@ -218,7 +215,6 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
             codegeneration_search_result =
               fixture(
-                "dotnet",
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               ).gsub("0.9.0", "0.8.9")
@@ -268,7 +264,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
       let(:config_file) do
         Dependabot::DependencyFile.new(
           name: "NuGet.Config",
-          content: fixture("dotnet", "configs", "nuget.config")
+          content: fixture("configs", "nuget.config")
         )
       end
       let(:dependency_files) { [csproj, config_file] }
@@ -277,7 +273,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
-            content: fixture("dotnet", "configs", "with_v2_endpoints.config")
+            content: fixture("configs", "with_v2_endpoints.config")
           )
         end
 
@@ -294,7 +290,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
             stub_request(:get, repo_url).
               to_return(
                 status: 200,
-                body: fixture("dotnet", "nuget_responses", "v2_base.xml")
+                body: fixture("nuget_responses", "v2_base.xml")
               )
           end
 
@@ -302,7 +298,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
           stub_request(:get, url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "myget_base.json")
+              body: fixture("nuget_responses", "myget_base.json")
             )
 
           custom_v3_nuget_versions_url =
@@ -322,7 +318,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
           stub_request(:get, custom_v2_nuget_versions_url).
             to_return(
               status: 200,
-              body: fixture("dotnet", "nuget_responses", "v2_versions.xml")
+              body: fixture("nuget_responses", "v2_versions.xml")
             )
         end
 
@@ -413,14 +409,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
         "?q=nuke.common&prerelease=true"
       end
       let(:nuget_search_results) do
-        fixture(
-          "dotnet", "nuget_responses", "search_result_nuke_common.json"
-        )
+        fixture("nuget_responses", "search_result_nuke_common.json")
       end
 
       context "that is used for multiple dependencies" do
         let(:csproj_body) do
-          fixture("dotnet", "csproj", "property_version.csproj")
+          fixture("csproj", "property_version.csproj")
         end
 
         context "where all dependencies can update to the latest version" do
@@ -431,7 +425,6 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget do
 
             codegeneration_search_result =
               fixture(
-                "dotnet",
                 "nuget_responses",
                 "search_result_nuke_codegeneration.json"
               )

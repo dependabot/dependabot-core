@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/dotnet/nuget/requirements_updater"
+require "dependabot/nuget/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
+RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -33,7 +33,7 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
     }
   end
 
-  let(:version_class) { Dependabot::Utils::Dotnet::Version }
+  let(:version_class) { Dependabot::Nuget::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -94,8 +94,40 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
 
         it "updates both requirements" do
           expect(updater.updated_requirements).to match_array(
-            [
-              {
+            [{
+              file: "my.csproj",
+              requirement: "23.6-jre",
+              groups: [],
+              source: {
+                type: "nuget_repo",
+                url: "https://api.nuget.org/v3/index.json",
+                source_url: nil,
+                nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                            "microsoft.extensions.dependencymodel/1.2.3/"\
+                            "microsoft.extensions.dependencymodel.nuspec"
+              }
+            }, {
+              file: "another/my.csproj",
+              requirement: "[23.6-jre]",
+              groups: [],
+              source: {
+                type: "nuget_repo",
+                url: "https://api.nuget.org/v3/index.json",
+                source_url: nil,
+                nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                            "microsoft.extensions.dependencymodel/1.2.3/"\
+                            "microsoft.extensions.dependencymodel.nuspec"
+              }
+            }]
+          )
+        end
+
+        context "and one is a range requirement" do
+          let(:other_requirement_string) { "[23.0,)" }
+
+          it "updates only the specific requirement" do
+            expect(updater.updated_requirements).to match_array(
+              [{
                 file: "my.csproj",
                 requirement: "23.6-jre",
                 groups: [],
@@ -107,50 +139,12 @@ RSpec.describe Dependabot::UpdateCheckers::Dotnet::Nuget::RequirementsUpdater do
                               "microsoft.extensions.dependencymodel/1.2.3/"\
                               "microsoft.extensions.dependencymodel.nuspec"
                 }
-              },
-              {
+              }, {
                 file: "another/my.csproj",
-                requirement: "[23.6-jre]",
+                requirement: "[23.0,)",
                 groups: [],
-                source: {
-                  type: "nuget_repo",
-                  url: "https://api.nuget.org/v3/index.json",
-                  source_url: nil,
-                  nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                              "microsoft.extensions.dependencymodel/1.2.3/"\
-                              "microsoft.extensions.dependencymodel.nuspec"
-                }
-              }
-            ]
-          )
-        end
-
-        context "and one is a range requirement" do
-          let(:other_requirement_string) { "[23.0,)" }
-
-          it "updates only the specific requirement" do
-            expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "my.csproj",
-                  requirement: "23.6-jre",
-                  groups: [],
-                  source: {
-                    type: "nuget_repo",
-                    url: "https://api.nuget.org/v3/index.json",
-                    source_url: nil,
-                    nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                                "microsoft.extensions.dependencymodel/1.2.3/"\
-                                "microsoft.extensions.dependencymodel.nuspec"
-                  }
-                },
-                {
-                  file: "another/my.csproj",
-                  requirement: "[23.0,)",
-                  groups: [],
-                  source: nil
-                }
-              ]
+                source: nil
+              }]
             )
           end
         end
