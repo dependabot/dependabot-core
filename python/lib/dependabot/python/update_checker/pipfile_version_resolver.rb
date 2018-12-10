@@ -523,7 +523,7 @@ module Dependabot
         end
 
         def python_requirements_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
+          project_root = File.join(File.dirname(__FILE__), "../../../..")
           File.join(project_root, "helpers/python/requirements.txt")
         end
 
