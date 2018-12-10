@@ -15,16 +15,18 @@ COPY Gemfile dependabot-core.gemspec /home/dependabot/dependabot-core/
 COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
 RUN bundle install
 
-RUN mkdir -p /home/dependabot/dependabot-core/terraform \
-             /home/dependabot/dependabot-core/python
+
+RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile \
      terraform/dependabot-terraform.gemspec \
      /home/dependabot/dependabot-core/terraform/
+RUN cd terraform && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/python
 COPY python/Gemfile \
      python/dependabot-python.gemspec \
      /home/dependabot/dependabot-core/python/
-RUN cd terraform && bundle install && \
-    cd ../python && bundle install
+RUN cd python && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/docker
 COPY docker/Gemfile \
