@@ -1,3 +1,11 @@
+## v0.82.0, 11 December 2018
+
+- Reorg Elm
+- Python: Make helpers build file executable
+- Handle spaces in GitHub file paths
+- Python: Test that python version error is for updating this dependency
+- Python: Ignore upgrades that break Python compatibility quietly
+
 ## v0.81.1, 10 December 2018
 
 - Rust: Register cargo metadata finder
