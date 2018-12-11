@@ -7,7 +7,6 @@ require "dependabot/shared_helpers"
 require "dependabot/elm/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-
 RSpec.describe Dependabot::Elm::FileUpdater do
   it_behaves_like "a dependency file updater"
 
