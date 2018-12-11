@@ -22,8 +22,7 @@ module Dependabot
       "npm_and_yarn" => Utils::JavaScript::Version,
       "composer" => Utils::Php::Version,
       "hex" => Utils::Elixir::Version,
-      "dep" => Utils::Go::Version,
-      "go_modules" => Utils::Go::Version
+      "dep" => Utils::Go::Version
     }
 
     def self.version_class_for_package_manager(package_manager)
