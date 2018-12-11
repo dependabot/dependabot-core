@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/modules"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/go_modules/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Go::Modules do
+RSpec.describe Dependabot::GoModules::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -25,13 +26,13 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules do
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
-  let(:go_mod_body) { fixture("go", "go_mods", go_mod_fixture_name) }
+  let(:go_mod_body) { fixture("go_mods", go_mod_fixture_name) }
   let(:go_mod_fixture_name) { "go.mod" }
 
   let(:go_sum) do
     Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
   end
-  let(:go_sum_body) { fixture("go", "go_mods", go_sum_fixture_name) }
+  let(:go_sum_body) { fixture("go_mods", go_sum_fixture_name) }
   let(:go_sum_fixture_name) { "go.sum" }
 
   let(:dependency) do

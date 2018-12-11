@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/modules/go_mod_updater"
+require "dependabot/go_modules/file_updater/go_mod_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
+RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
       go_mod: go_mod,
@@ -24,7 +24,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
-  let(:go_mod_body) { fixture("go", "go_mods", go_mod_fixture_name) }
+  let(:go_mod_body) { fixture("go_mods", go_mod_fixture_name) }
   let(:go_mod_fixture_name) { "go.mod" }
 
   let(:dependency) do
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Modules::GoModUpdater do
           let(:go_sum) do
             Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
           end
-          let(:go_sum_body) { fixture("go", "go_mods", go_sum_fixture_name) }
+          let(:go_sum_body) { fixture("go_mods", go_sum_fixture_name) }
           let(:go_sum_fixture_name) { "go.sum" }
           subject(:updated_go_sum_content) { updater.updated_go_sum_content }
 
