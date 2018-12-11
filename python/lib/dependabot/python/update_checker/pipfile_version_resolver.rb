@@ -157,6 +157,7 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
+             error.message.include?(dependency.name) &&
              python_requirement_specified?
             # The latest version of the dependency we're updating to needs a
             # different Python version. Skip the update.
