@@ -43,8 +43,7 @@ module Dependabot
       "npm_and_yarn" => Utils::JavaScript::Requirement,
       "composer" => Utils::Php::Requirement,
       "hex" => Utils::Elixir::Requirement,
-      "dep" => Utils::Go::Requirement,
-      "go_modules" => Utils::Go::Requirement
+      "dep" => Utils::Go::Requirement
     }
 
     def self.requirement_class_for_package_manager(package_manager)
