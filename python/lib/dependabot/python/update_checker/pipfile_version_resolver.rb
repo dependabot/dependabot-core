@@ -156,6 +156,14 @@ module Dependabot
             return nil
           end
 
+          if error.message.include?("UnsupportedPythonVersion") &&
+             python_requirement_specified?
+            # The latest version of the dependency we're updating to needs a
+            # different Python version. Skip the update.
+            check_original_requirements_resolvable
+            return
+          end
+
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")

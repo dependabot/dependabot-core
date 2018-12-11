@@ -229,6 +229,23 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
       end
 
+      context "where updating to the latest would break Python compatibility" do
+        let(:pipfile_fixture_name) { "required_python_blocking" }
+        let(:dependency_name) { "django" }
+        let(:dependency_version) { "1.1.14" }
+        let(:dependency_requirements) do
+          [{
+            file: "Pipfile",
+            requirement: "==1.1.14",
+            groups: ["default"],
+            source: nil
+          }]
+        end
+        let(:latest_version) { Gem::Version.new("2.1.4") }
+
+        it { is_expected.to eq(Gem::Version.new("1.11.17")) }
+      end
+
       context "for a resolution that has caused trouble in the past" do
         let(:dependency_files) { [pipfile] }
         let(:pipfile_fixture_name) { "problematic_resolution" }
