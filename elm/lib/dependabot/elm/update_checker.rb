@@ -124,4 +124,4 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.register("elm", Dependabot::Elm::UpdateChecker)
+Dependabot::UpdateCheckers.register("elm_package", Dependabot::Elm::UpdateChecker)

@@ -77,4 +77,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.register("elm", Dependabot::Elm::FileUpdater)
+Dependabot::FileUpdaters.register("elm_package", Dependabot::Elm::FileUpdater)

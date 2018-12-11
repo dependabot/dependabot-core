@@ -20,4 +20,4 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.register("elm", Dependabot::Elm::MetadataFinder)
+Dependabot::MetadataFinders.register("elm_package", Dependabot::Elm::MetadataFinder)

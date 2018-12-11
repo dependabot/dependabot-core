@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/elm/version"
-require "dependabot/utils/elm/requirement"
+require "dependabot/elm/version"
+require "dependabot/elm/requirement"
 require "dependabot/elm/update_checker"
 
 module Dependabot
@@ -61,11 +61,11 @@ module Dependabot
         end
 
         def version_class
-          Utils::Elm::Version
+          Elm::Version
         end
 
         def requirement_class
-          Utils::Elm::Requirement
+          Elm::Requirement
         end
       end
     end

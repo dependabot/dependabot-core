@@ -4,7 +4,7 @@ require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/utils/elm/requirement"
+require "dependabot/elm/requirement"
 
 module Dependabot
   module Elm
@@ -104,7 +104,7 @@ module Dependabot
       end
 
       def version_for(version_requirement)
-        req = Dependabot::Utils::Elm::Requirement.new(version_requirement)
+        req = Dependabot::Elm::Requirement.new(version_requirement)
 
         return unless req.exact?
 
@@ -134,4 +134,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.register("elm", Dependabot::Elm::FileParser)
+Dependabot::FileParsers.register("elm_package", Dependabot::Elm::FileParser)

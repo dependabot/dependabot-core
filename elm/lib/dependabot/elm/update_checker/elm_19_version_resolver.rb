@@ -6,7 +6,7 @@ require "dependabot/elm/file_parser"
 require "dependabot/elm/update_checker"
 require "dependabot/elm/update_checker/cli_parser"
 require "dependabot/elm/update_checker/requirements_updater"
-require "dependabot/utils/elm/requirement"
+require "dependabot/elm/requirement"
 
 module Dependabot
   module Elm
@@ -184,11 +184,11 @@ module Dependabot
         end
 
         def version_class
-          Utils::Elm::Version
+          Elm::Version
         end
 
         def requirement_class
-          Utils::Elm::Requirement
+          Elm::Requirement
         end
       end
     end

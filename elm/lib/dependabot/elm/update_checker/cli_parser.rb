@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/elm/version"
+require "dependabot/elm/version"
 require "dependabot/elm/update_checker"
 
 module Dependabot
@@ -17,11 +17,11 @@ module Dependabot
 
           # Parse new installs
           text.scan(INSTALL_DEPENDENCY_REGEX).
-            each { |n, v| installs[n] = Utils::Elm::Version.new(v) }
+            each { |n, v| installs[n] = Elm::Version.new(v) }
 
           # Parse upgrades
           text.scan(UPGRADE_DEPENDENCY_REGEX).
-            each { |n, v| installs[n] = Utils::Elm::Version.new(v) }
+            each { |n, v| installs[n] = Elm::Version.new(v) }
 
           installs
         end
