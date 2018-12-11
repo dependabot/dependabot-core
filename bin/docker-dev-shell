@@ -62,6 +62,10 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$(pwd)/elm/Gemfile:$CODE_DIR/elm/Gemfile" \
+  -v "$(pwd)/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \
+  -v "$(pwd)/elm/lib:$CODE_DIR/elm/lib" \
+  -v "$(pwd)/elm/spec:$CODE_DIR/elm/spec" \
   -v "$(pwd)/docker/Gemfile:$CODE_DIR/docker/Gemfile" \
   -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \

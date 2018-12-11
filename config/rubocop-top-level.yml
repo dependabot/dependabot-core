@@ -8,6 +8,7 @@ inherit_mode:
 AllCops:
   Exclude:
     - 'terraform/**/*'
+    - 'elm/**/*'
     - 'docker/**/*'
     - 'git_submodules/**/*'
     - 'nuget/**/*'

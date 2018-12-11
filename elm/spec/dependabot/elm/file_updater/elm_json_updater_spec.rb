@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/elm/elm_package/elm_json_updater"
+require "dependabot/elm/file_updater/elm_json_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage::ElmJsonUpdater do
+RSpec.describe Dependabot::Elm::FileUpdater::ElmJsonUpdater do
   let(:updater) do
     described_class.new(
       elm_json_file: elm_json_file,
@@ -15,7 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage::ElmJsonUpdater do
 
   let(:elm_json_file) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm", "elm_jsons", elm_json_file_fixture_name),
+      content: fixture("elm_jsons", elm_json_file_fixture_name),
       name: "elm.json"
     )
   end

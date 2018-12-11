@@ -21,6 +21,12 @@ COPY terraform/Gemfile \
      /home/dependabot/dependabot-core/terraform/
 RUN cd terraform && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/elm
+COPY elm/Gemfile \
+     elm/dependabot-elm.gemspec \
+     /home/dependabot/dependabot-core/elm/
+RUN cd elm && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/python
 COPY python/Gemfile \
      python/dependabot-python.gemspec \

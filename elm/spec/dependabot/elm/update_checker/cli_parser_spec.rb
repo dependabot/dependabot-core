@@ -3,12 +3,12 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/elm/elm_package/cli_parser"
+require "dependabot/elm/update_checker/cli_parser"
 
-namespace = Dependabot::UpdateCheckers::Elm::ElmPackage
+namespace = Dependabot::Elm::UpdateChecker
 RSpec.describe namespace::CliParser do
   def elm_version(version_string)
-    Dependabot::Utils::Elm::Version.new(version_string)
+    Dependabot::Elm::Version.new(version_string)
   end
   describe "#decode_install_preview" do
     subject { described_class.decode_install_preview(output) }

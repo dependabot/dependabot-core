@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/elm/requirement"
-require "dependabot/utils/elm/version"
+require "dependabot/elm/requirement"
+require "dependabot/elm/version"
 
-RSpec.describe Dependabot::Utils::Elm::Requirement do
+RSpec.describe Dependabot::Elm::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
 
@@ -56,9 +56,9 @@ RSpec.describe Dependabot::Utils::Elm::Requirement do
       end
     end
 
-    context "with a Utils::Elm::Version" do
+    context "with a Elm::Version" do
       let(:version) do
-        Dependabot::Utils::Elm::Version.new(version_string)
+        Dependabot::Elm::Version.new(version_string)
       end
 
       context "for the current version" do

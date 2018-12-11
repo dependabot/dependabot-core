@@ -91,4 +91,4 @@ module Dependabot
 end
 
 Dependabot::Utils.
-  register_requirement_class("elm_package", Dependabot::Elm::Requirement)
+  register_requirement_class("elm-package", Dependabot::Elm::Requirement)

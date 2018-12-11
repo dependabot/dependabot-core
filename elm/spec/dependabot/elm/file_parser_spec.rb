@@ -3,24 +3,24 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/elm/elm_package"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/elm/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Elm::ElmPackage do
+RSpec.describe Dependabot::Elm::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [elm_package] }
   let(:elm_package) do
     Dependabot::DependencyFile.new(
       name: "elm-package.json",
-      content: fixture("elm", "elm_packages", elm_package_fixture_name)
+      content: fixture("elm_packages", elm_package_fixture_name)
     )
   end
   let(:elm_package_fixture_name) { "one_fixture_to_test_them_all" }
   let(:elm_json) do
     Dependabot::DependencyFile.new(
       name: "elm.json",
-      content: fixture("elm", "elm_jsons", elm_json_fixture_name)
+      content: fixture("elm_jsons", elm_json_fixture_name)
     )
   end
   let(:elm_json_fixture_name) { "app.json" }

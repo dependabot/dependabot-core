@@ -134,4 +134,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.register("elm_package", Dependabot::Elm::FileParser)
+Dependabot::FileParsers.register("elm-package", Dependabot::Elm::FileParser)

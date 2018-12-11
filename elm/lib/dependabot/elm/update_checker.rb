@@ -9,9 +9,9 @@ require "dependabot/errors"
 module Dependabot
   module Elm
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      require_relative "udpate_checker/requirements_updater"
-      require_relative "udpate_checker/elm_18_version_resolver"
-      require_relative "udpate_checker/elm_19_version_resolver"
+      require_relative "update_checker/requirements_updater"
+      require_relative "update_checker/elm_18_version_resolver"
+      require_relative "update_checker/elm_19_version_resolver"
 
       def latest_version
         @latest_version ||= candidate_versions.max
@@ -124,4 +124,4 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.register("elm_package", Dependabot::Elm::UpdateChecker)
+Dependabot::UpdateCheckers.register("elm-package", Dependabot::Elm::UpdateChecker)

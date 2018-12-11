@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/elm/elm_package"
-require_relative "../shared_examples_for_file_fetchers"
+require "spec_helper"
+require "dependabot/elm/file_fetcher"
+require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::FileFetchers::Elm::ElmPackage do
+RSpec.describe Dependabot::Elm::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do

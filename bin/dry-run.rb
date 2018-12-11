@@ -38,6 +38,7 @@ $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./cargo/lib"
+$LOAD_PATH << "./elm/lib"
 
 require "optparse"
 require "dependabot/file_fetchers"
@@ -50,6 +51,7 @@ require "dependabot/docker"
 require "dependabot/git_submodules"
 require "dependabot/nuget"
 require "dependabot/cargo"
+require "dependabot/elm"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

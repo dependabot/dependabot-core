@@ -4,10 +4,11 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
-require "dependabot/file_updaters/elm/elm_package"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/elm/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
+
+RSpec.describe Dependabot::Elm::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -29,14 +30,14 @@ RSpec.describe Dependabot::FileUpdaters::Elm::ElmPackage do
   let(:files) { [elm_package_file, elm_json_file] }
   let(:elm_package_file) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm", "elm_packages", elm_package_file_fixture_name),
+      content: fixture("elm_packages", elm_package_file_fixture_name),
       name: "elm-package.json"
     )
   end
   let(:elm_package_file_fixture_name) { "elm_css_and_datetimepicker" }
   let(:elm_json_file) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm", "elm_jsons", elm_json_file_fixture_name),
+      content: fixture("elm_jsons", elm_json_file_fixture_name),
       name: "elm.json"
     )
   end

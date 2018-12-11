@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/elm/elm_package/requirements_updater"
+require "dependabot/elm/update_checker/requirements_updater"
 
-the_class = Dependabot::UpdateCheckers::Elm::ElmPackage::RequirementsUpdater
+the_class = Dependabot::Elm::UpdateChecker::RequirementsUpdater
 RSpec.describe the_class do
   let(:updater) do
     described_class.new(

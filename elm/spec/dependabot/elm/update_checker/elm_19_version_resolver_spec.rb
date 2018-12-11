@@ -3,13 +3,12 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/elm/elm_package"
-require "dependabot/update_checkers/elm/elm_package/elm_19_version_resolver"
+require "dependabot/elm/update_checker/elm_19_version_resolver"
 
-namespace = Dependabot::UpdateCheckers::Elm::ElmPackage
+namespace = Dependabot::Elm::UpdateChecker
 RSpec.describe namespace::Elm19VersionResolver do
   def elm_version(version_string)
-    Dependabot::Utils::Elm::Version.new(version_string)
+    Dependabot::Elm::Version.new(version_string)
   end
 
   let(:resolver) do
@@ -23,7 +22,7 @@ RSpec.describe namespace::Elm19VersionResolver do
   let(:elm_json) do
     Dependabot::DependencyFile.new(
       name: "elm.json",
-      content: fixture("elm", "elm_jsons", fixture_name)
+      content: fixture("elm_jsons", fixture_name)
     )
   end
   let(:fixture_name) { "app.json" }

@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/elm/elm_package"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/elm/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
+RSpec.describe Dependabot::Elm::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -46,7 +45,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
 
   let(:elm_package) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm", "elm_packages", fixture_name),
+      content: fixture("elm_packages", fixture_name),
       name: "elm-package.json",
       directory: directory
     )
@@ -66,7 +65,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
         "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
       end
 
       before do
@@ -92,7 +91,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
         "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
       end
       let(:unlock_level) { :all }
 
@@ -114,7 +113,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
         "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm", "elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
       end
       let(:unlock_level) { :all }
 
@@ -134,7 +133,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
       "https://package.elm-lang.org/packages/realWorld/ElmPackage/releases.json"
     end
     let(:elm_package_response) do
-      fixture("elm", "elm_package_responses", "elm-lang-core.json")
+      fixture("elm_package_responses", "elm-lang-core.json")
     end
 
     before do
@@ -142,7 +141,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
         to_return(status: 200, body: elm_package_response)
     end
 
-    it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("5.1.1")) }
+    it { is_expected.to eq(Dependabot::Elm::Version.new("5.1.1")) }
 
     context "when the registry 404s" do
       before { stub_request(:get, elm_package_url).to_return(status: 404) }
@@ -151,7 +150,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elm::ElmPackage do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 5.0.0"] }
-      it { is_expected.to eq(Dependabot::Utils::Elm::Version.new("4.0.5")) }
+      it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
     end
   end
 end

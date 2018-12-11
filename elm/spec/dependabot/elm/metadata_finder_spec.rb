@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/elm/elm_package"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/elm/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Elm::ElmPackage do
+RSpec.describe Dependabot::Elm::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do

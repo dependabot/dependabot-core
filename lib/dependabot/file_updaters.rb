@@ -8,7 +8,6 @@ require "dependabot/file_updaters/php/composer"
 require "dependabot/file_updaters/elixir/hex"
 require "dependabot/file_updaters/go/dep"
 require "dependabot/file_updaters/go/modules"
-require "dependabot/file_updaters/elm/elm_package"
 
 module Dependabot
   module FileUpdaters
@@ -20,8 +19,7 @@ module Dependabot
       "composer" => FileUpdaters::Php::Composer,
       "hex" => FileUpdaters::Elixir::Hex,
       "dep" => FileUpdaters::Go::Dep,
-      "go_modules" => FileUpdaters::Go::Modules,
-      "elm-package" => FileUpdaters::Elm::ElmPackage
+      "go_modules" => FileUpdaters::Go::Modules
     }
 
     def self.for_package_manager(package_manager)

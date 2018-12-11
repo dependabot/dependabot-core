@@ -5,7 +5,7 @@ require "dependabot/file_updaters/base"
 
 module Dependabot
   module Elm
-    class FileUpdater < Base
+    class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/elm_package_updater"
       require_relative "file_updater/elm_json_updater"
 
@@ -77,4 +77,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.register("elm_package", Dependabot::Elm::FileUpdater)
+Dependabot::FileUpdaters.register("elm-package", Dependabot::Elm::FileUpdater)
