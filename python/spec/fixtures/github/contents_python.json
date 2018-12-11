@@ -176,19 +176,19 @@
     }
   },
   {
-    "name": "app",
-    "path": "app",
+    "name": "app ",
+    "path": "app ",
     "sha": "f9e84e24364972f3aa4f92b869a622db1f260fa1",
     "size": 0,
-    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app?ref=develop",
-    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app",
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app%20?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app%20",
     "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/f9e84e24364972f3aa4f92b869a622db1f260fa1",
     "download_url": null,
     "type": "dir",
     "_links": {
-      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app?ref=develop",
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app%20?ref=develop",
       "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/f9e84e24364972f3aa4f92b869a622db1f260fa1",
-      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app"
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app%20"
     }
   },
   {

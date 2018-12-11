@@ -141,6 +141,7 @@ module Dependabot
       end
 
       def github_repo_contents(path)
+        path = path.gsub(" ", "%20")
         github_response = github_client_for_source.
                           contents(repo, path: path, ref: commit)
 

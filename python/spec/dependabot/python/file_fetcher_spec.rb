@@ -243,6 +243,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "setup_content.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, url + "app%20?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, body: "[]", headers: json_header)
       end
 
       it "fetches the requirements.txt and the setup.py file" do
