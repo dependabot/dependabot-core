@@ -8,7 +8,6 @@ require "dependabot/file_parsers/php/composer"
 require "dependabot/file_parsers/elixir/hex"
 require "dependabot/file_parsers/go/dep"
 require "dependabot/file_parsers/go/modules"
-require "dependabot/file_parsers/elm/elm_package"
 
 module Dependabot
   module FileParsers
@@ -20,8 +19,7 @@ module Dependabot
       "composer" => FileParsers::Php::Composer,
       "hex" => FileParsers::Elixir::Hex,
       "dep" => FileParsers::Go::Dep,
-      "go_modules" => FileParsers::Go::Modules,
-      "elm-package" => FileParsers::Elm::ElmPackage
+      "go_modules" => FileParsers::Go::Modules
     }
 
     def self.for_package_manager(package_manager)

@@ -6,7 +6,6 @@ require "dependabot/metadata_finders/java/maven"
 require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/elixir/hex"
 require "dependabot/metadata_finders/go/dep"
-require "dependabot/metadata_finders/elm/elm_package"
 
 module Dependabot
   module MetadataFinders
@@ -18,8 +17,7 @@ module Dependabot
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
       "dep" => MetadataFinders::Go::Dep,
-      "go_modules" => MetadataFinders::Go::Dep,
-      "elm-package" => MetadataFinders::Elm::ElmPackage
+      "go_modules" => MetadataFinders::Go::Dep
     }
 
     def self.for_package_manager(package_manager)

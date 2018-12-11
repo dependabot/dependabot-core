@@ -11,6 +11,7 @@ require "./lib/dependabot/version"
 gemspecs = %w(
   dependabot-core.gemspec
   terraform/dependabot-terraform.gemspec
+  elm/dependabot-elm.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   python/dependabot-python.gemspec

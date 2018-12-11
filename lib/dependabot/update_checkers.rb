@@ -8,7 +8,6 @@ require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/go/dep"
 require "dependabot/update_checkers/go/modules"
-require "dependabot/update_checkers/elm/elm_package"
 
 module Dependabot
   module UpdateCheckers
@@ -20,8 +19,7 @@ module Dependabot
       "composer" => UpdateCheckers::Php::Composer,
       "hex" => UpdateCheckers::Elixir::Hex,
       "dep" => UpdateCheckers::Go::Dep,
-      "go_modules" => UpdateCheckers::Go::Modules,
-      "elm-package" => UpdateCheckers::Elm::ElmPackage
+      "go_modules" => UpdateCheckers::Go::Modules
     }
 
     def self.for_package_manager(package_manager)

@@ -79,6 +79,9 @@ jobs:
               bash -c "cd nuget && rubocop"
 
             docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd elm && rubocop"
+
+            docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd cargo && rubocop"
 
       - run:
@@ -98,6 +101,9 @@ jobs:
 
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd nuget && rspec spec --format documentation"
+
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd elm && rspec spec --format documentation"
 
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd cargo && rspec spec --format documentation"

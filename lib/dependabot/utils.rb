@@ -5,7 +5,6 @@ require "dependabot/utils/java/version"
 require "dependabot/utils/java_script/version"
 require "dependabot/utils/php/version"
 require "dependabot/utils/go/version"
-require "dependabot/utils/elm/version"
 
 require "dependabot/utils/elixir/requirement"
 require "dependabot/utils/java/requirement"
@@ -13,7 +12,6 @@ require "dependabot/utils/java_script/requirement"
 require "dependabot/utils/php/requirement"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/utils/go/requirement"
-require "dependabot/utils/elm/requirement"
 
 # TODO: in due course, these "registries" should live in a wrapper gem, not
 #       dependabot-core.
@@ -29,8 +27,7 @@ module Dependabot
       "composer" => Utils::Php::Version,
       "hex" => Utils::Elixir::Version,
       "dep" => Utils::Go::Version,
-      "go_modules" => Utils::Go::Version,
-      "elm-package" => Utils::Elm::Version
+      "go_modules" => Utils::Go::Version
     }
 
     def self.version_class_for_package_manager(package_manager)
@@ -54,8 +51,7 @@ module Dependabot
       "composer" => Utils::Php::Requirement,
       "hex" => Utils::Elixir::Requirement,
       "dep" => Utils::Go::Requirement,
-      "go_modules" => Utils::Go::Requirement,
-      "elm-package" => Utils::Elm::Requirement
+      "go_modules" => Utils::Go::Requirement
     }
 
     def self.requirement_class_for_package_manager(package_manager)
