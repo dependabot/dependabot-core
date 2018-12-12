@@ -1,3 +1,7 @@
+## v0.82.2, 12 December 2018
+
+- Rust: recursively fetch workspace and path dependency files
+
 ## v0.82.1, 12 December 2018
 
 - Fix elm reorg by adding elm.rb
