@@ -1,3 +1,7 @@
+## v0.82.1, 12 December 2018
+
+- Fix elm reorg by adding elm.rb
+
 ## v0.82.0, 11 December 2018
 
 - Reorg Elm
