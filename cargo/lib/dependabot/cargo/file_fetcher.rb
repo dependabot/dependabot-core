@@ -27,41 +27,53 @@ module Dependabot
         fetched_files << cargo_toml
         fetched_files << cargo_lock if cargo_lock
         fetched_files << rust_toolchain if rust_toolchain
-        fetched_files += workspace_files
-        fetched_files += path_dependency_files
-        fetched_files
+        fetched_files += fetch_path_dependency_and_workspace_files
+        fetched_files.uniq
       end
 
-      def workspace_files
-        @workspace_files ||=
+      def fetch_path_dependency_and_workspace_files(files = nil)
+        fetched_files = files || [cargo_toml]
+
+        fetched_files += path_dependency_files(fetched_files)
+        fetched_files += fetched_files.flat_map { |f| workspace_files(f) }
+        fetched_files.uniq!
+
+        return fetched_files if fetched_files == files
+
+        fetch_path_dependency_and_workspace_files(fetched_files)
+      end
+
+      def workspace_files(cargo_toml)
+        @workspace_files ||= {}
+        @workspace_files[cargo_toml.name] ||=
           fetch_workspace_files(
             file: cargo_toml,
             previously_fetched_files: []
           )
       end
 
-      def path_dependency_files
-        @path_dependency_files ||=
-          begin
-            fetched_path_dependency_files = []
-            [cargo_toml, *workspace_files].each do |file|
-              fetched_path_dependency_files +=
-                fetch_path_dependency_files(
-                  file: file,
-                  previously_fetched_files: [cargo_toml, *workspace_files] +
-                                            fetched_path_dependency_files
-                )
-            end
+      def path_dependency_files(fetched_files)
+        @path_dependency_files ||= {}
+        fetched_path_dependency_files = []
+        fetched_files.each do |file|
+          @path_dependency_files[file.name] ||=
+            fetch_path_dependency_files(
+              file: file,
+              previously_fetched_files: fetched_files +
+                                        fetched_path_dependency_files
+            )
 
-            fetched_path_dependency_files
-          end
+          fetched_path_dependency_files += @path_dependency_files[file.name]
+        end
+
+        fetched_path_dependency_files
       end
 
       def fetch_workspace_files(file:, previously_fetched_files:)
         current_dir = file.name.split("/")[0..-2].join("/")
         current_dir = nil if current_dir == ""
 
-        workspace_dependency_paths_from_file(file).flat_map do |path|
+        files = workspace_dependency_paths_from_file(file).flat_map do |path|
           path = File.join(current_dir, path) unless current_dir.nil?
           path = Pathname.new(path).cleanpath.to_path
 
@@ -77,6 +89,9 @@ module Dependabot
             )
           [fetched_file, *grandchild_requirement_files]
         end.compact
+
+        files.each { |f| f.support_file = file != cargo_toml }
+        files
       end
 
       def fetch_path_dependency_files(
