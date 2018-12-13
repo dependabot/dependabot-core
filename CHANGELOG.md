@@ -1,3 +1,9 @@
+## v0.83.1, 13 December 2018
+
+- Retry GitHub errors when labeling a PR
+- JS: Handle relative resolved paths in shrinkwrap.json
+- Go: Better file parsing (prefer revision to version for git dependencies)
+
 ## v0.83.0, 13 December 2018
 
 - Elm: Rename elm-package to elm everywhere
