@@ -41,7 +41,7 @@ module Dependabot
 
               dependency_set << Dependency.new(
                 name: details.fetch("name"),
-                version: nil,
+                version: version_from_declaration(details),
                 package_manager: "dep",
                 requirements: [{
                   requirement: requirement_from_declaration(details),
@@ -104,6 +104,19 @@ module Dependabot
               type: "default",
               source: source
             }
+          end
+        end
+
+        def version_from_declaration(declaration)
+          lockfile_details =
+            parsed_file(lockfile).fetch("projects", []).
+            find { |details| details["name"] == declaration.fetch("name") }
+
+          if source_from_declaration(declaration).fetch(:type) == "git"
+            lockfile_details["revision"] ||
+              version_from_lockfile(lockfile_details)
+          else
+            version_from_lockfile(lockfile_details)
           end
         end
 

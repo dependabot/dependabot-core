@@ -170,7 +170,8 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("github.com/globalsign/mgo")
-            expect(dependency.version).to eq("r2018.04.23")
+            expect(dependency.version).
+              to eq("efe0945164a7e582241f37ae8983c075f8f2e870")
             expect(dependency.requirements).to eq(
               [{
                 requirement: nil,
