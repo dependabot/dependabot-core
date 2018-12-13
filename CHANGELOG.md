@@ -1,3 +1,9 @@
+## v0.82.4, 13 December 2018
+
+- Elm: Register package manager as just elm, as well as elm-package
+- Python: Bump hashin from 0.14.0 to 0.14.1 in /python/helpers
+- JS: Bump npm from 6.4.1 to 6.5.0
+
 ## v0.82.2, 12 December 2018
 
 - Rust: recursively fetch workspace and path dependency files
