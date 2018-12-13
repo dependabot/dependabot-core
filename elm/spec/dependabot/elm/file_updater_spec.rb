@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Elm::FileUpdater do
         groups: [],
         source: nil
       }],
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Elm::FileUpdater do
               groups: [],
               source: nil
             }],
-            package_manager: "elm-package"
+            package_manager: "elm"
           )
         end
 
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Elm::FileUpdater do
             groups: [],
             source: nil
           }],
-          package_manager: "elm-package"
+          package_manager: "elm"
         )
       end
 

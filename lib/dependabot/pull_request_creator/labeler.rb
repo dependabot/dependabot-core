@@ -24,7 +24,7 @@ module Dependabot
         "cargo" => { name: "rust", colour: "000000" },
         "dep" => { name: "go", colour: "16e2e2" },
         "go_modules" => { name: "go", colour: "16e2e2" },
-        "elm-package" => { name: "elm", colour: "76d3f2" }
+        "elm" => { name: "elm", colour: "76d3f2" }
       }.freeze
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,

@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       name: dependency_name,
       version: dependency_version,
       requirements: requirements,
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
   let(:dependency_name) { "realWorld/ElmPackage" }

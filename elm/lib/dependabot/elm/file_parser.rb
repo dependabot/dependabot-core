@@ -38,7 +38,7 @@ module Dependabot
                 source: nil, # elm-package only has elm-package sources
                 file: "elm-package.json"
               }],
-              package_manager: "elm-package"
+              package_manager: "elm"
             )
         end
 
@@ -89,7 +89,7 @@ module Dependabot
           name: name,
           version: version_for(requirement)&.to_s,
           requirements: direct ? requirements : [],
-          package_manager: "elm-package"
+          package_manager: "elm"
         )
       end
 
@@ -134,5 +134,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.register("elm-package", Dependabot::Elm::FileParser)
 Dependabot::FileParsers.register("elm", Dependabot::Elm::FileParser)

@@ -31,7 +31,7 @@ RSpec.describe namespace::Elm19VersionResolver do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
   let(:dependency_name) { "elm/parser" }

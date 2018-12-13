@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Elm::MetadataFinder do
         groups: [],
         source: nil
       }],
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
   subject(:finder) do

@@ -28,7 +28,7 @@
 # - nuget
 # - dep
 # - go_modules
-# - elm-package
+# - elm
 # - submodules
 # - docker
 # - terraform

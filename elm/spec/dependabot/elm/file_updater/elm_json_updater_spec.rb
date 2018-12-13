@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Elm::FileUpdater::ElmJsonUpdater do
         groups: [],
         source: nil
       }],
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
 

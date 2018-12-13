@@ -33,7 +33,7 @@ RSpec.describe namespace::Elm18VersionResolver do
       name: dependency_name,
       version: dependency_version,
       requirements: dependency_requirements,
-      package_manager: "elm-package"
+      package_manager: "elm"
     )
   end
   let(:dependency_name) { "rtfeldman/elm-css" }
@@ -225,7 +225,7 @@ RSpec.describe namespace::Elm18VersionResolver do
               source: nil,
               file: "elm-package.json"
             }],
-            package_manager: "elm-package"
+            package_manager: "elm"
           )
         new_elm_css =
           Dependabot::Dependency.new(
@@ -244,7 +244,7 @@ RSpec.describe namespace::Elm18VersionResolver do
               source: nil,
               file: "elm-package.json"
             }],
-            package_manager: "elm-package"
+            package_manager: "elm"
           )
 
         expect(subject).to match_array([new_elm_css, new_datetimepicker])
@@ -274,7 +274,7 @@ RSpec.describe namespace::Elm18VersionResolver do
                 source: nil,
                 file: "elm-package.json"
               }],
-              package_manager: "elm-package"
+              package_manager: "elm"
             )
           new_elm_css =
             Dependabot::Dependency.new(
@@ -293,7 +293,7 @@ RSpec.describe namespace::Elm18VersionResolver do
                 source: nil,
                 file: "elm-package.json"
               }],
-              package_manager: "elm-package"
+              package_manager: "elm"
             )
 
           expect(subject).to match_array([new_elm_css, new_datetimepicker])
