@@ -20,3 +20,4 @@ end
 
 Dependabot::Utils.
   register_version_class("elm-package", Dependabot::Elm::Version)
+Dependabot::Utils.register_version_class("elm", Dependabot::Elm::Version)

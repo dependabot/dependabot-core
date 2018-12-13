@@ -126,3 +126,4 @@ end
 
 Dependabot::UpdateCheckers.
   register("elm-package", Dependabot::Elm::UpdateChecker)
+Dependabot::UpdateCheckers.register("elm", Dependabot::Elm::UpdateChecker)

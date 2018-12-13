@@ -51,3 +51,4 @@ module Dependabot
 end
 
 Dependabot::FileFetchers.register("elm-package", Dependabot::Elm::FileFetcher)
+Dependabot::FileFetchers.register("elm", Dependabot::Elm::FileFetcher)
