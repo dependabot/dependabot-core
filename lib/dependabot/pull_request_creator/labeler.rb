@@ -62,6 +62,12 @@ module Dependabot
           pull_request_number,
           labels_for_pr
         )
+      rescue Octokit::UnprocessableEntity
+        retrying ||= false
+        raise if retrying
+
+        retrying = true
+        retry
       end
 
       private
