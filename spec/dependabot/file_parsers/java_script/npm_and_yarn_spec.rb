@@ -597,6 +597,32 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             end
           end
         end
+
+        context "that has relative resolved paths" do
+          let(:shrinkwrap_fixture_name) { "relative.json" }
+
+          its(:length) { is_expected.to eq(2) }
+
+          context "with a version specified" do
+            describe "the first dependency" do
+              subject { top_level_dependencies.first }
+
+              it { is_expected.to be_a(Dependabot::Dependency) }
+              its(:name) { is_expected.to eq("fetch-factory") }
+              its(:version) { is_expected.to eq("0.0.1") }
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: "^0.0.1",
+                    file: "package.json",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                )
+              end
+            end
+          end
+        end
       end
 
       context "with a yarn.lock" do
