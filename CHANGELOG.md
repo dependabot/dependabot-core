@@ -1,3 +1,7 @@
+## v0.83.0, 13 December 2018
+
+- Elm: Rename elm-package to elm everywhere
+
 ## v0.82.4, 13 December 2018
 
 - Elm: Register package manager as just elm, as well as elm-package
