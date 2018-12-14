@@ -15,7 +15,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
     )
   end
 
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Gradle::Version }
   let(:ignored_versions) { [] }
   let(:target_version_details) do
     {
