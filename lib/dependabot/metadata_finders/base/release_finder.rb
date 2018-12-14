@@ -96,10 +96,14 @@ module Dependabot
         end
 
         def filter_releases_using_previous_release(releases)
+          return releases if releases.index(previous_release).nil?
+
           releases.first(releases.index(previous_release))
         end
 
         def filter_releases_using_updated_release(releases)
+          return releases if releases.index(updated_release).nil?
+
           releases[releases.index(updated_release)..-1]
         end
 
