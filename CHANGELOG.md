@@ -1,3 +1,7 @@
+## v0.85.0, 14 December 2018
+
+- Move Maven into separate gem
+
 ## v0.84.1, 14 December 2018
 
 - Add php72-memcached to Dockerfile
