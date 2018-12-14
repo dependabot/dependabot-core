@@ -13,5 +13,6 @@ AllCops:
     - 'git_submodules/**/*'
     - 'nuget/**/*'
     - 'gradle/**/*'
+    - 'maven/**/*'
     - 'python/**/*'
     - 'cargo/**/*'

@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/elixir/version"
-require "dependabot/utils/java/version"
 require "dependabot/utils/java_script/version"
 require "dependabot/utils/php/version"
 require "dependabot/utils/go/version"
 
 require "dependabot/utils/elixir/requirement"
-require "dependabot/utils/java/requirement"
 require "dependabot/utils/java_script/requirement"
 require "dependabot/utils/php/requirement"
 require "dependabot/utils/ruby/requirement"
@@ -21,7 +19,6 @@ module Dependabot
       "bundler" => Gem::Version,
       "submodules" => Gem::Version,
       "docker" => Gem::Version,
-      "maven" => Utils::Java::Version,
       "npm_and_yarn" => Utils::JavaScript::Version,
       "composer" => Utils::Php::Version,
       "hex" => Utils::Elixir::Version,
@@ -44,7 +41,6 @@ module Dependabot
       "bundler" => Utils::Ruby::Requirement,
       "submodules" => Utils::Ruby::Requirement,
       "docker" => Utils::Ruby::Requirement,
-      "maven" => Utils::Java::Requirement,
       "npm_and_yarn" => Utils::JavaScript::Requirement,
       "composer" => Utils::Php::Requirement,
       "hex" => Utils::Elixir::Requirement,

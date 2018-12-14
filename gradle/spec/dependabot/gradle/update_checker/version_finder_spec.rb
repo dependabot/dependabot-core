@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       ignored_versions: ignored_versions
     )
   end
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Gradle::Version }
   let(:ignored_versions) { [] }
 
   let(:dependency) do

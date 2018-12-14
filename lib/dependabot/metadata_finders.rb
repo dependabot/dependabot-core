@@ -2,7 +2,6 @@
 
 require "dependabot/metadata_finders/ruby/bundler"
 require "dependabot/metadata_finders/java_script/npm_and_yarn"
-require "dependabot/metadata_finders/java/maven"
 require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/elixir/hex"
 require "dependabot/metadata_finders/go/dep"
@@ -12,7 +11,6 @@ module Dependabot
     @metadata_finders = {
       "bundler" => MetadataFinders::Ruby::Bundler,
       "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
-      "maven" => MetadataFinders::Java::Maven,
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
       "dep" => MetadataFinders::Go::Dep,
