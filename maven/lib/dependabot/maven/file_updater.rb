@@ -152,3 +152,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileUpdaters.register("maven", Dependabot::Maven::FileUpdater)

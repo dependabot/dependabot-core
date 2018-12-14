@@ -174,7 +174,7 @@ module Dependabot
         end
 
         def property_regex
-          FileParsers::Java::Maven::PROPERTY_REGEX
+          Maven::FileParser::PROPERTY_REGEX
         end
 
         def pom?(content)

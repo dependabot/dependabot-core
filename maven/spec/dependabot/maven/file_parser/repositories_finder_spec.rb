@@ -2,16 +2,16 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/java/maven/repositories_finder"
+require "dependabot/maven/file_parser/repositories_finder"
 
-RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
+RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
   let(:finder) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [base_pom] }
   let(:base_pom) do
     Dependabot::DependencyFile.new(
       name: "pom.xml",
-      content: fixture("java", "poms", base_pom_fixture_name)
+      content: fixture("poms", base_pom_fixture_name)
     )
   end
   let(:base_pom_fixture_name) { "basic_pom.xml" }
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::RepositoriesFinder do
         let(:child_pom) do
           Dependabot::DependencyFile.new(
             name: "child/pom.xml",
-            content: fixture("java", "poms", child_pom_fixture_name)
+            content: fixture("poms", child_pom_fixture_name)
           )
         end
         let(:child_pom_fixture_name) { "custom_repositories_child_pom.xml" }

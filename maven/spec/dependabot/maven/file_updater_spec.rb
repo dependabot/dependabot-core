@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
-require "dependabot/file_updaters/java/maven"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/maven/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Java::Maven do
+RSpec.describe Dependabot::Maven::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
   let(:pom) do
     Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
   end
-  let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "org.apache.httpcomponents:httpclient",
@@ -72,12 +72,12 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       end
 
       context "with rogue whitespace" do
-        let(:pom_body) { fixture("java", "poms", "whitespace.xml") }
+        let(:pom_body) { fixture("poms", "whitespace.xml") }
         its(:content) { is_expected.to include "<version>4.6.1</version>" }
       end
 
       context "when the requirement is a hard requirement" do
-        let(:pom_body) { fixture("java", "poms", "hard_requirement_pom.xml") }
+        let(:pom_body) { fixture("poms", "hard_requirement_pom.xml") }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "org.apache.httpcomponents:httpclient",
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
       context "with a plugin dependency using the default groupId" do
         let(:pom_body) do
-          fixture("java", "poms", "plugin_dependencies_missing_group_id.xml")
+          fixture("poms", "plugin_dependencies_missing_group_id.xml")
         end
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       end
 
       context "with a repeated dependency" do
-        let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
+        let(:pom_body) { fixture("poms", "repeated_pom.xml") }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "org.apache.maven.plugins:maven-javadoc-plugin",
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
         context "when both versions are hard-coded, and one is up-to-date" do
           let(:pom_body) do
-            fixture("java", "poms", "repeated_no_property_pom.xml")
+            fixture("poms", "repeated_no_property_pom.xml")
           end
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -219,7 +219,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
         context "when both versions are hard-coded, and are identical" do
           let(:pom_body) do
-            fixture("java", "poms", "repeated_pom_identical.xml")
+            fixture("poms", "repeated_pom_identical.xml")
           end
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
             directory: "/subdirectory"
           )
         end
-        let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        let(:pom_body) { fixture("poms", "property_pom.xml") }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -375,7 +375,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
         context "with a suffix" do
           let(:pom_body) do
-            fixture("java", "poms", "property_pom_single_suffix.xml")
+            fixture("poms", "property_pom_single_suffix.xml")
           end
           let(:dependencies) do
             [
@@ -417,7 +417,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
 
         context "with a version that could accidentally replace others" do
           let(:pom_body) do
-            fixture("java", "poms", "project_version_pom.xml")
+            fixture("poms", "project_version_pom.xml")
           end
           let(:dependencies) do
             [
@@ -495,37 +495,37 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven do
       let(:multimodule_pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
-          content: fixture("java", "poms", "multimodule_pom.xml")
+          content: fixture("poms", "multimodule_pom.xml")
         )
       end
       let(:util_pom) do
         Dependabot::DependencyFile.new(
           name: "util/pom.xml",
-          content: fixture("java", "poms", "util_pom.xml")
+          content: fixture("poms", "util_pom.xml")
         )
       end
       let(:business_app_pom) do
         Dependabot::DependencyFile.new(
           name: "business-app/pom.xml",
-          content: fixture("java", "poms", "business_app_pom.xml")
+          content: fixture("poms", "business_app_pom.xml")
         )
       end
       let(:legacy_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
+          content: fixture("poms", "legacy_pom.xml")
         )
       end
       let(:webapp_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/webapp/pom.xml",
-          content: fixture("java", "poms", "webapp_pom.xml")
+          content: fixture("poms", "webapp_pom.xml")
         )
       end
       let(:some_spring_project_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
+          content: fixture("poms", "some_spring_project_pom.xml")
         )
       end
       let(:dependency) do

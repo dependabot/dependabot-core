@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/java/requirement"
-require "dependabot/utils/java/version"
+require "dependabot/maven/requirement"
+require "dependabot/maven/version"
 
-RSpec.describe Dependabot::Utils::Java::Requirement do
+RSpec.describe Dependabot::Maven::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 
@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
 
       it "creates a requirement object" do
         expect(requirement).to be_satisfied_by(
-          Dependabot::Utils::Java::Version.new("Finchley.SR4")
+          Dependabot::Maven::Version.new("Finchley.SR4")
         )
       end
     end
@@ -108,9 +108,9 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
       end
     end
 
-    context "with a Utils::Java::Version" do
+    context "with a Maven::Version" do
       let(:version) do
-        Dependabot::Utils::Java::Version.new(version_string)
+        Dependabot::Maven::Version.new(version_string)
       end
 
       context "for the current version" do

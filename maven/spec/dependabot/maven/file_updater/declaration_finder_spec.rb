@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java/maven/declaration_finder"
+require "dependabot/maven/file_updater/declaration_finder"
 
-RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
+RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -38,7 +38,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
   let(:pom) do
     Dependabot::DependencyFile.new(
       name: "pom.xml",
-      content: fixture("java", "poms", pom_fixture_name)
+      content: fixture("poms", pom_fixture_name)
     )
   end
   let(:pom_fixture_name) { "basic_pom.xml" }
@@ -278,13 +278,13 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
-          content: fixture("java", "poms", "sigtran.pom")
+          content: fixture("poms", "sigtran.pom")
         )
       end
       let(:child_pom) do
         Dependabot::DependencyFile.new(
           name: "map/pom.xml",
-          content: fixture("java", "poms", "sigtran-map.pom")
+          content: fixture("poms", "sigtran-map.pom")
         )
       end
       let(:dependency_name) { "uk.me.lwood.sigtran:sigtran-tcap" }
@@ -317,7 +317,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
         let(:pom) do
           Dependabot::DependencyFile.new(
             name: "pom.xml",
-            content: fixture("java", "poms", "missing_property_group_id.xml")
+            content: fixture("poms", "missing_property_group_id.xml")
           )
         end
         let(:dependency_name) { "io.reactivex.rxjava2:rxjava" }
@@ -350,19 +350,19 @@ RSpec.describe Dependabot::FileUpdaters::Java::Maven::DeclarationFinder do
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
-          content: fixture("java", "poms", "multimodule_pom.xml")
+          content: fixture("poms", "multimodule_pom.xml")
         )
       end
       let(:child_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
+          content: fixture("poms", "legacy_pom.xml")
         )
       end
       let(:grandchild_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
+          content: fixture("poms", "some_spring_project_pom.xml")
         )
       end
       let(:dependency_name) { "org.springframework:spring-aop" }

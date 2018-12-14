@@ -249,3 +249,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.register("maven", Dependabot::Maven::FileParser)

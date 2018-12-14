@@ -3,11 +3,11 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java/maven"
-require "dependabot/utils/java/version"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/maven/update_checker"
+require "dependabot/maven/version"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
+RSpec.describe Dependabot::Maven::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -48,9 +48,9 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Maven::Version }
   let(:maven_central_releases) do
-    fixture("java", "maven_central_metadata", "with_release.xml")
+    fixture("maven_central_metadata", "with_release.xml")
   end
 
   let(:maven_central_version_files_url) do
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     "com/google/guava/guava/23.6-jre/"
   end
   let(:maven_central_version_files) do
-    fixture("java", "maven_central_version_files", "guava-23.6.html")
+    fixture("maven_central_version_files", "guava-23.6.html")
   end
 
   before do
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
   let(:pom) do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
-  let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when Maven Central doesn't return a release tag" do
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "no_release.xml")
+        fixture("maven_central_metadata", "no_release.xml")
       end
 
       it { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "com/google/guava/guava/23.7-rc1-android/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.7.html")
+        fixture("maven_central_version_files", "guava-23.7.html")
       end
 
       it { is_expected.to eq(version_class.new("23.7-rc1-android")) }
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "with_date_releases.xml")
+        fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:dependency_name) { "commons-collections:commons-collections" }
       let(:dependency_version) { "3.1" }
@@ -113,7 +113,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       end
       let(:maven_central_version_files) do
         fixture(
-          "java",
           "maven_central_version_files",
           "commons-collections-3.2.2.html"
         )
@@ -129,7 +128,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         end
         let(:maven_central_version_files) do
           fixture(
-            "java",
             "maven_central_version_files",
             "commons-collections-20040616.html"
           )
@@ -146,13 +144,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "com/google/guava/guava/23.0/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.0.html")
+        fixture("maven_central_version_files", "guava-23.0.html")
       end
       it { is_expected.to eq(version_class.new("23.0")) }
     end
 
     context "when the version comes from a property" do
-      let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
+      let(:pom_body) { fixture("poms", "property_pom_single.xml") }
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
@@ -162,7 +160,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-beans/23.0/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "spring-beans-23.0.html")
+        fixture("maven_central_version_files", "spring-beans-23.0.html")
       end
       let(:dependency_requirements) do
         [{
@@ -178,7 +176,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       it { is_expected.to eq(version_class.new("23.0")) }
 
       context "that affects multiple dependencies" do
-        let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        let(:pom_body) { fixture("poms", "property_pom.xml") }
         it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
@@ -189,7 +187,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when the version comes from a property" do
-      let(:pom_body) { fixture("java", "poms", "property_pom_single.xml") }
+      let(:pom_body) { fixture("poms", "property_pom_single.xml") }
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
@@ -199,7 +197,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-beans/23.0/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "spring-beans-23.0.html")
+        fixture("maven_central_version_files", "spring-beans-23.0.html")
       end
       let(:dependency_requirements) do
         [{
@@ -226,7 +224,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         let(:other_pom) do
           Dependabot::DependencyFile.new(
             name: "other/pom.xml",
-            content: fixture("java", "poms", "property_pom_other.xml")
+            content: fixture("poms", "property_pom_other.xml")
           )
         end
 
@@ -234,12 +232,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       end
 
       context "that affects multiple dependencies" do
-        let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+        let(:pom_body) { fixture("poms", "property_pom.xml") }
         it { is_expected.to be_nil }
       end
 
       context "for a repeated dependency" do
-        let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
+        let(:pom_body) { fixture("poms", "repeated_pom.xml") }
         let(:maven_central_metadata_url) do
           "https://repo.maven.apache.org/maven2/"\
           "org/apache/maven/plugins/maven-javadoc-plugin/maven-metadata.xml"
@@ -250,7 +248,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         end
         let(:maven_central_version_files) do
           fixture(
-            "java",
             "maven_central_version_files",
             "maven-javadoc-plugin-23.0.html"
           )
@@ -276,7 +273,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
         context "that affects multiple dependencies" do
           let(:pom_body) do
-            fixture("java", "poms", "repeated_multi_property_pom.xml")
+            fixture("poms", "repeated_multi_property_pom.xml")
           end
           let(:metadata) do
             {
@@ -316,37 +313,37 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       let(:multimodule_pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
-          content: fixture("java", "poms", "multimodule_pom.xml")
+          content: fixture("poms", "multimodule_pom.xml")
         )
       end
       let(:util_pom) do
         Dependabot::DependencyFile.new(
           name: "util/pom.xml",
-          content: fixture("java", "poms", "util_pom.xml")
+          content: fixture("poms", "util_pom.xml")
         )
       end
       let(:business_app_pom) do
         Dependabot::DependencyFile.new(
           name: "business-app/pom.xml",
-          content: fixture("java", "poms", "business_app_pom.xml")
+          content: fixture("poms", "business_app_pom.xml")
         )
       end
       let(:legacy_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
+          content: fixture("poms", "legacy_pom.xml")
         )
       end
       let(:webapp_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/webapp/pom.xml",
-          content: fixture("java", "poms", "webapp_pom.xml")
+          content: fixture("poms", "webapp_pom.xml")
         )
       end
       let(:some_spring_project_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
+          content: fixture("poms", "some_spring_project_pom.xml")
         )
       end
 
@@ -391,7 +388,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         end
         let(:maven_central_version_files) do
           fixture(
-            "java",
             "maven_central_version_files",
             "spring-aop-23.0.html"
           )
@@ -445,13 +441,13 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     end
 
     context "with a non-property pom" do
-      let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+      let(:pom_body) { fixture("poms", "basic_pom.xml") }
       it { is_expected.to be_falsey }
     end
 
     context "with a property pom" do
       let(:dependency_name) { "org.springframework:spring-beans" }
-      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:pom_body) { fixture("poms", "property_pom.xml") }
       let(:maven_central_metadata_url_beans) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
@@ -465,7 +461,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-beans/23.6-jre/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "spring-beans-23.6.html")
+        fixture("maven_central_version_files", "spring-beans-23.6.html")
       end
 
       let(:dependency_requirements) do
@@ -488,12 +484,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         stub_request(:get, maven_central_metadata_url_beans).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, maven_central_metadata_url_context).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
@@ -521,7 +517,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
     context "with a property pom" do
       let(:dependency_name) { "org.springframework:spring-beans" }
-      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:pom_body) { fixture("poms", "property_pom.xml") }
       let(:maven_central_metadata_url_beans) do
         "https://repo.maven.apache.org/maven2/"\
         "org/springframework/spring-beans/maven-metadata.xml"
@@ -535,7 +531,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         "org/springframework/spring-beans/23.6-jre/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "spring-beans-23.6.html")
+        fixture("maven_central_version_files", "spring-beans-23.6.html")
       end
       let(:dependency_requirements) do
         [{
@@ -558,12 +554,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
         stub_request(:get, maven_central_metadata_url_beans).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, maven_central_metadata_url_context).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
@@ -673,12 +669,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
     subject { checker.requirements_unlocked_or_can_be? }
 
     context "with a basic POM" do
-      let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+      let(:pom_body) { fixture("poms", "basic_pom.xml") }
       it { is_expected.to eq(true) }
     end
 
     context "with a property POM" do
-      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:pom_body) { fixture("poms", "property_pom.xml") }
       let(:dependency_name) { "org.springframework:spring-context" }
       let(:dependency_version) { "4.3.12.RELEASE.1" }
       let(:dependency_requirements) do
@@ -697,11 +693,11 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
 
       context "that inherits from a parent POM downloaded for support" do
         let(:dependency_files) { [pom, parent_pom] }
-        let(:pom_body) { fixture("java", "poms", "sigtran-map.pom") }
+        let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
           Dependabot::DependencyFile.new(
             name: "../pom_parent.xml",
-            content: fixture("java", "poms", "sigtran.pom")
+            content: fixture("poms", "sigtran.pom")
           )
         end
         let(:dependency_name) { "uk.me.lwood.sigtran:sigtran-tcap" }
@@ -724,7 +720,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
       end
 
       context "that inherits from a remote POM" do
-        let(:pom_body) { fixture("java", "poms", "remote_parent_pom.xml") }
+        let(:pom_body) { fixture("poms", "remote_parent_pom.xml") }
 
         let(:struts_apps_maven_url) do
           "https://repo.maven.apache.org/maven2/"\
@@ -735,10 +731,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven do
           "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
         end
         let(:struts_apps_maven_response) do
-          fixture("java", "poms", "struts2-apps-2.5.10.pom")
+          fixture("poms", "struts2-apps-2.5.10.pom")
         end
         let(:struts_parent_maven_response) do
-          fixture("java", "poms", "struts2-parent-2.5.10.pom")
+          fixture("poms", "struts2-parent-2.5.10.pom")
         end
 
         before do

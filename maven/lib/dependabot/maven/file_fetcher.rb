@@ -124,3 +124,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileFetchers.register("maven", Dependabot::Maven::FileFetcher)

@@ -105,3 +105,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.
+  register_requirement_class("maven", Dependabot::Maven::Requirement)

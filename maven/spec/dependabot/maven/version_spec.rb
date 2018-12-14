@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/java/version"
+require "dependabot/maven/version"
 
-RSpec.describe Dependabot::Utils::Java::Version do
+RSpec.describe Dependabot::Maven::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Utils::Java::Version do
       end
     end
 
-    context "compared to a Utils::Java::Version" do
+    context "compared to a Maven::Version" do
       context "that is lower" do
         let(:other_version) { described_class.new("0.9.0") }
         it { is_expected.to eq(1) }

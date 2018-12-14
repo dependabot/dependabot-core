@@ -3,17 +3,17 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/java/maven"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/maven/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Java::Maven do
+RSpec.describe Dependabot::Maven::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [pom] }
   let(:pom) do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
-  let(:pom_body) { fixture("java", "poms", "basic_pom.xml") }
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "with rogue whitespace" do
-      let(:pom_body) { fixture("java", "poms", "whitespace.xml") }
+      let(:pom_body) { fixture("poms", "whitespace.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
     context "for dependencyManagement dependencies" do
       let(:pom_body) do
-        fixture("java", "poms", "dependency_management_pom.xml")
+        fixture("poms", "dependency_management_pom.xml")
       end
 
       its(:length) { is_expected.to eq(2) }
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for plugin dependencies" do
-      let(:pom_body) { fixture("java", "poms", "plugin_dependencies_pom.xml") }
+      let(:pom_body) { fixture("poms", "plugin_dependencies_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
       context "missing a groupId" do
         let(:pom_body) do
-          fixture("java", "poms", "plugin_dependencies_missing_group_id.xml")
+          fixture("poms", "plugin_dependencies_missing_group_id.xml")
         end
 
         its(:length) { is_expected.to eq(2) }
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
       context "with a groupId buried in a configuration" do
         # This groupId doesn't belong to the plugin, and should not be used
-        let(:pom_body) { fixture("java", "poms", "powerunit_pom.xml") }
+        let(:pom_body) { fixture("poms", "powerunit_pom.xml") }
 
         it "doesn't include the plugin" do
           expect(dependencies.map(&:name)).
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
     context "for extension dependencies" do
       let(:pom_body) do
-        fixture("java", "poms", "extension_dependencies_pom.xml")
+        fixture("poms", "extension_dependencies_pom.xml")
       end
 
       its(:length) { is_expected.to eq(2) }
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
     context "for pluginManagement dependencies" do
       let(:pom_body) do
-        fixture("java", "poms", "plugin_management_dependencies_pom.xml")
+        fixture("poms", "plugin_management_dependencies_pom.xml")
       end
 
       its(:length) { is_expected.to eq(2) }
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for versions defined by a property" do
-      let(:pom_body) { fixture("java", "poms", "property_pom.xml") }
+      let(:pom_body) { fixture("poms", "property_pom.xml") }
 
       its(:length) { is_expected.to eq(4) }
 
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
 
       context "where the property is the project version" do
-        let(:pom_body) { fixture("java", "poms", "project_version_pom.xml") }
+        let(:pom_body) { fixture("poms", "project_version_pom.xml") }
 
         its(:length) { is_expected.to eq(3) }
 
@@ -302,7 +302,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       end
 
       context "when the property is missing" do
-        let(:pom_body) { fixture("java", "poms", "missing_property.xml") }
+        let(:pom_body) { fixture("poms", "missing_property.xml") }
 
         its(:length) { is_expected.to eq(2) }
 
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
         end
 
         context "and is required for all dependencies" do
-          let(:pom_body) { fixture("java", "poms", "missing_property_all.xml") }
+          let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
           it "raises a helpful error" do
             expect { parser.parse }.
@@ -328,11 +328,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
       context "that inherits from a parent POM downloaded for support" do
         let(:files) { [pom, parent_pom] }
-        let(:pom_body) { fixture("java", "poms", "sigtran-map.pom") }
+        let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
           Dependabot::DependencyFile.new(
             name: "../pom_parent.xml",
-            content: fixture("java", "poms", "sigtran.pom")
+            content: fixture("poms", "sigtran.pom")
           )
         end
 
@@ -362,7 +362,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for a version inherited from a parent pom" do
-      let(:pom_body) { fixture("java", "poms", "pom_with_parent.xml") }
+      let(:pom_body) { fixture("poms", "pom_with_parent.xml") }
 
       its(:length) { is_expected.to eq(8) }
 
@@ -390,11 +390,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
     context "for a groupId inherited from a parent pom" do
       let(:files) { [pom, child_pom] }
-      let(:pom_body) { fixture("java", "poms", "sigtran.pom") }
+      let(:pom_body) { fixture("poms", "sigtran.pom") }
       let(:child_pom) do
         Dependabot::DependencyFile.new(
           name: "sigtran-map/pom.xml",
-          content: fixture("java", "poms", "sigtran-map.pom")
+          content: fixture("poms", "sigtran-map.pom")
         )
       end
 
@@ -407,11 +407,11 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
 
       context "when the parent was downloaded only as a supporting POM" do
         let(:files) { [pom, parent_pom] }
-        let(:pom_body) { fixture("java", "poms", "sigtran-map.pom") }
+        let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
           Dependabot::DependencyFile.new(
             name: "../pom_parent.xml",
-            content: fixture("java", "poms", "sigtran.pom")
+            content: fixture("poms", "sigtran.pom")
           )
         end
 
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for a version range" do
-      let(:pom_body) { fixture("java", "poms", "range_pom.xml") }
+      let(:pom_body) { fixture("poms", "range_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for a hard requirement" do
-      let(:pom_body) { fixture("java", "poms", "hard_requirement_pom.xml") }
+      let(:pom_body) { fixture("poms", "hard_requirement_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -475,7 +475,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for a versionless requirement" do
-      let(:pom_body) { fixture("java", "poms", "versionless_pom.xml") }
+      let(:pom_body) { fixture("poms", "versionless_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -500,7 +500,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for an empty version requirement" do
-      let(:pom_body) { fixture("java", "poms", "empty_version_pom.xml") }
+      let(:pom_body) { fixture("poms", "empty_version_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -525,7 +525,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "with a repeated dependency" do
-      let(:pom_body) { fixture("java", "poms", "repeated_pom.xml") }
+      let(:pom_body) { fixture("poms", "repeated_pom.xml") }
 
       its(:length) { is_expected.to eq(1) }
 
@@ -561,7 +561,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
     end
 
     context "for a dependency with compiler plugins" do
-      let(:pom_body) { fixture("java", "poms", "compiler_plugins.xml") }
+      let(:pom_body) { fixture("poms", "compiler_plugins.xml") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -595,37 +595,37 @@ RSpec.describe Dependabot::FileParsers::Java::Maven do
       let(:multimodule_pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
-          content: fixture("java", "poms", "multimodule_pom.xml")
+          content: fixture("poms", "multimodule_pom.xml")
         )
       end
       let(:util_pom) do
         Dependabot::DependencyFile.new(
           name: "util/pom.xml",
-          content: fixture("java", "poms", "util_pom.xml")
+          content: fixture("poms", "util_pom.xml")
         )
       end
       let(:business_app_pom) do
         Dependabot::DependencyFile.new(
           name: "business-app/pom.xml",
-          content: fixture("java", "poms", "business_app_pom.xml")
+          content: fixture("poms", "business_app_pom.xml")
         )
       end
       let(:legacy_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
+          content: fixture("poms", "legacy_pom.xml")
         )
       end
       let(:webapp_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/webapp/pom.xml",
-          content: fixture("java", "poms", "webapp_pom.xml")
+          content: fixture("poms", "webapp_pom.xml")
         )
       end
       let(:some_spring_project_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
+          content: fixture("poms", "some_spring_project_pom.xml")
         )
       end
 

@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java/maven/version_finder"
+require "dependabot/maven/update_checker/version_finder"
 
-RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
+RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -14,7 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       ignored_versions: ignored_versions
     )
   end
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Maven::Version }
   let(:credentials) { [] }
   let(:ignored_versions) { [] }
 
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
   let(:pom) do
     Dependabot::DependencyFile.new(
       name: "pom.xml",
-      content: fixture("java", "poms", pom_fixture_name)
+      content: fixture("poms", pom_fixture_name)
     )
   end
   let(:pom_fixture_name) { "basic_pom.xml" }
@@ -52,14 +52,14 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
     "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
-    fixture("java", "maven_central_metadata", "with_release.xml")
+    fixture("maven_central_metadata", "with_release.xml")
   end
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/23.6-jre/"
   end
   let(:maven_central_version_files) do
-    fixture("java", "maven_central_version_files", "guava-23.6.html")
+    fixture("maven_central_version_files", "guava-23.6.html")
   end
 
   before do
@@ -78,10 +78,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
 
     context "when the latest version hasn't actually been released" do
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.6-no-jar.html")
+        fixture("maven_central_version_files", "guava-23.6-no-jar.html")
       end
       let(:old_maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.5.html")
+        fixture("maven_central_version_files", "guava-23.5.html")
       end
       before do
         stub_request(
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         "com/google/guava/guava/23.7-rc1-android/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.7.html")
+        fixture("maven_central_version_files", "guava-23.7.html")
       end
       its([:version]) do
         is_expected.to eq(version_class.new("23.7-rc1-android"))
@@ -120,11 +120,10 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         "commons-collections/commons-collections/3.2.2/"
       end
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "with_date_releases.xml")
+        fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:maven_central_version_files) do
         fixture(
-          "java",
           "maven_central_version_files",
           "commons-collections-3.2.2.html"
         )
@@ -140,7 +139,6 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         end
         let(:maven_central_version_files) do
           fixture(
-            "java",
             "maven_central_version_files",
             "commons-collections-20040616.html"
           )
@@ -157,7 +155,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         "com/google/guava/guava/22.0/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-22.0.html")
+        fixture("maven_central_version_files", "guava-22.0.html")
       end
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
@@ -169,7 +167,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         "com/google/guava/guava/23.0/"
       end
       let(:maven_central_version_files) do
-        fixture("java", "maven_central_version_files", "guava-23.0.html")
+        fixture("maven_central_version_files", "guava-23.0.html")
       end
       its([:version]) { is_expected.to eq(version_class.new("23.0")) }
     end
@@ -278,7 +276,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         stub_request(:get, jboss_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, jboss_plugins_metadata_url).
           to_return(status: 404, body: "")
@@ -347,7 +345,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
         stub_request(:get, jboss_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, jboss_plugins_metadata_url).
           to_return(status: 404, body: "")
@@ -374,7 +372,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::VersionFinder do
       context "that augment the central repo" do
         before do
           body =
-            fixture("java", "maven_central_metadata", "with_date_releases.xml")
+            fixture("maven_central_metadata", "with_date_releases.xml")
           stub_request(:get, maven_central_metadata_url).
             to_return(status: 200, body: body)
         end

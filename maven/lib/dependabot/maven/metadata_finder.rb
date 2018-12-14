@@ -170,3 +170,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::MetadataFinders.
+  register("maven", Dependabot::Maven::MetadataFinder)

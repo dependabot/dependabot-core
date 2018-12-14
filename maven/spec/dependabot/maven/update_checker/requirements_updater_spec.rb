@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/java/maven/requirements_updater"
+require "dependabot/maven/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
+RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -25,7 +25,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater do
   let(:pom_req_string) { "23.3-jre" }
   let(:latest_version) { version_class.new("23.6-jre") }
 
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Maven::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }

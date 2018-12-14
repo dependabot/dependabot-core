@@ -2,16 +2,16 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/java/maven/property_value_finder"
+require "dependabot/maven/file_parser/property_value_finder"
 
-RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
+RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
   let(:finder) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [base_pom] }
   let(:base_pom) do
     Dependabot::DependencyFile.new(
       name: "pom.xml",
-      content: fixture("java", "poms", base_pom_fixture_name)
+      content: fixture("poms", base_pom_fixture_name)
     )
   end
   let(:base_pom_fixture_name) { "property_pom.xml" }
@@ -52,13 +52,13 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
       let(:child_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/pom.xml",
-          content: fixture("java", "poms", "legacy_pom.xml")
+          content: fixture("poms", "legacy_pom.xml")
         )
       end
       let(:grandchild_pom) do
         Dependabot::DependencyFile.new(
           name: "legacy/some-spring-project/pom.xml",
-          content: fixture("java", "poms", "some_spring_project_pom.xml")
+          content: fixture("poms", "some_spring_project_pom.xml")
         )
       end
 
@@ -82,10 +82,10 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
         "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
       end
       let(:struts_apps_maven_response) do
-        fixture("java", "poms", "struts2-apps-2.5.10.pom")
+        fixture("poms", "struts2-apps-2.5.10.pom")
       end
       let(:struts_parent_maven_response) do
-        fixture("java", "poms", "struts2-parent-2.5.10.pom")
+        fixture("poms", "struts2-parent-2.5.10.pom")
       end
 
       before do
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::FileParsers::Java::Maven::PropertyValueFinder do
           "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_response) do
-          fixture("java", "poms", "struts2-parent-2.5.10.pom")
+          fixture("poms", "struts2-parent-2.5.10.pom")
         end
 
         before do

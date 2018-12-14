@@ -156,3 +156,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.register("maven", Dependabot::Maven::UpdateChecker)
