@@ -1,3 +1,7 @@
+## v0.84.1, 14 December 2018
+
+- Add php72-memcached to Dockerfile
+
 ## v0.84.0, 14 December 2018
 
 - Move Gradle into separate gem
