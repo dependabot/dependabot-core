@@ -16,6 +16,7 @@ gemspecs = %w(
   git_submodules/dependabot-git_submodules.gemspec
   python/dependabot-python.gemspec
   nuget/dependabot-nuget.gemspec
+  gradle/dependabot-gradle.gemspec
   cargo/dependabot-cargo.gemspec
   omnibus/dependabot-omnibus.gemspec
 )

@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
   spec.add_dependency "dependabot-git_submodules", Dependabot::VERSION
+  spec.add_dependency "dependabot-gradle", Dependabot::VERSION
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-python", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
