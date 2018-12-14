@@ -3,7 +3,6 @@
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/update_checkers/java/maven"
-require "dependabot/update_checkers/java/gradle"
 require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/go/dep"
@@ -15,7 +14,6 @@ module Dependabot
       "bundler" => UpdateCheckers::Ruby::Bundler,
       "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn,
       "maven" => UpdateCheckers::Java::Maven,
-      "gradle" => UpdateCheckers::Java::Gradle,
       "composer" => UpdateCheckers::Php::Composer,
       "hex" => UpdateCheckers::Elixir::Hex,
       "dep" => UpdateCheckers::Go::Dep,

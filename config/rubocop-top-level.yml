@@ -12,5 +12,6 @@ AllCops:
     - 'docker/**/*'
     - 'git_submodules/**/*'
     - 'nuget/**/*'
+    - 'gradle/**/*'
     - 'python/**/*'
     - 'cargo/**/*'
