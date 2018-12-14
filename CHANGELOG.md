@@ -1,3 +1,8 @@
+## v0.84.0, 14 December 2018
+
+- Move Gradle into separate gem
+- Add safeguard for not filtering releases by nil
+
 ## v0.83.2, 14 December 2018
 
 - Rust: Handle unfetchable git refs better
