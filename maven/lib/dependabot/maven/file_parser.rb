@@ -3,249 +3,248 @@
 require "nokogiri"
 
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
 
 # The best Maven documentation is at:
 # - http://maven.apache.org/pom.html
 module Dependabot
-  module FileParsers
-    module Java
-      class Maven < Dependabot::FileParsers::Base
-        require "dependabot/file_parsers/base/dependency_set"
-        require_relative "maven/property_value_finder"
+  module Maven
+    class FileParser < Dependabot::FileParsers::Base
+      require "dependabot/file_parsers/base/dependency_set"
+      require_relative "file_parser/property_value_finder"
 
-        # The following "dependencies" are candidates for updating:
-        # - The project's parent
-        # - Any dependencies (incl. those in dependencyManagement or plugins)
-        # - Any plugins (incl. those in pluginManagement)
-        # - Any extensions
-        DEPENDENCY_SELECTOR = "project > parent, "\
-                              "dependencies > dependency, "\
-                              "extensions > extension"
-        PLUGIN_SELECTOR     = "plugins > plugin"
+      # The following "dependencies" are candidates for updating:
+      # - The project's parent
+      # - Any dependencies (incl. those in dependencyManagement or plugins)
+      # - Any plugins (incl. those in pluginManagement)
+      # - Any extensions
+      DEPENDENCY_SELECTOR = "project > parent, "\
+                            "dependencies > dependency, "\
+                            "extensions > extension"
+      PLUGIN_SELECTOR     = "plugins > plugin"
 
-        # Regex to get the property name from a declaration that uses a property
-        PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      # Regex to get the property name from a declaration that uses a property
+      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
 
-        def parse
-          dependency_set = DependencySet.new
-          pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
-          dependency_set.dependencies
+      def parse
+        dependency_set = DependencySet.new
+        pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        dependency_set.dependencies
+      end
+
+      private
+
+      def pomfile_dependencies(pom)
+        dependency_set = DependencySet.new
+
+        errors = []
+        doc = Nokogiri::XML(pom.content)
+        doc.remove_namespaces!
+
+        doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
+          dep = dependency_from_dependency_node(pom, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => error
+          errors << error
         end
 
-        private
-
-        def pomfile_dependencies(pom)
-          dependency_set = DependencySet.new
-
-          errors = []
-          doc = Nokogiri::XML(pom.content)
-          doc.remove_namespaces!
-
-          doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
-            dep = dependency_from_dependency_node(pom, dependency_node)
-            dependency_set << dep if dep
-          rescue DependencyFileNotEvaluatable => error
-            errors << error
-          end
-
-          doc.css(PLUGIN_SELECTOR).each do |dependency_node|
-            dep = dependency_from_plugin_node(pom, dependency_node)
-            dependency_set << dep if dep
-          rescue DependencyFileNotEvaluatable => error
-            errors << error
-          end
-
-          raise errors.first if errors.any? && dependency_set.dependencies.none?
-
-          dependency_set
+        doc.css(PLUGIN_SELECTOR).each do |dependency_node|
+          dep = dependency_from_plugin_node(pom, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => error
+          errors << error
         end
 
-        def dependency_from_dependency_node(pom, dependency_node)
-          return unless (name = dependency_name(dependency_node, pom))
-          return if internal_dependency_names.include?(name)
+        raise errors.first if errors.any? && dependency_set.dependencies.none?
 
-          build_dependency(pom, dependency_node, name)
-        end
+        dependency_set
+      end
 
-        def dependency_from_plugin_node(pom, dependency_node)
-          return unless (name = plugin_name(dependency_node, pom))
-          return if internal_dependency_names.include?(name)
+      def dependency_from_dependency_node(pom, dependency_node)
+        return unless (name = dependency_name(dependency_node, pom))
+        return if internal_dependency_names.include?(name)
 
-          build_dependency(pom, dependency_node, name)
-        end
+        build_dependency(pom, dependency_node, name)
+      end
 
-        def build_dependency(pom, dependency_node, name)
-          property_details =
-            {
-              property_name: version_property_name(dependency_node),
-              property_source: property_source(dependency_node, pom)
-            }.compact
+      def dependency_from_plugin_node(pom, dependency_node)
+        return unless (name = plugin_name(dependency_node, pom))
+        return if internal_dependency_names.include?(name)
 
-          Dependency.new(
-            name: name,
-            version: dependency_version(pom, dependency_node),
-            package_manager: "maven",
-            requirements: [{
-              requirement: dependency_requirement(pom, dependency_node),
-              file: pom.name,
-              groups: [],
-              source: nil,
-              metadata: {
-                packaging_type: packaging_type(pom, dependency_node)
-              }.merge(property_details)
-            }]
-          )
-        end
+        build_dependency(pom, dependency_node, name)
+      end
 
-        def dependency_name(dependency_node, pom)
-          return unless dependency_node.at_xpath("./groupId")
-          return unless dependency_node.at_xpath("./artifactId")
+      def build_dependency(pom, dependency_node, name)
+        property_details =
+          {
+            property_name: version_property_name(dependency_node),
+            property_source: property_source(dependency_node, pom)
+          }.compact
 
-          [
-            evaluated_value(
-              dependency_node.at_xpath("./groupId").content.strip,
-              pom
-            ),
-            evaluated_value(
-              dependency_node.at_xpath("./artifactId").content.strip,
-              pom
-            )
-          ].join(":")
-        end
+        Dependency.new(
+          name: name,
+          version: dependency_version(pom, dependency_node),
+          package_manager: "maven",
+          requirements: [{
+            requirement: dependency_requirement(pom, dependency_node),
+            file: pom.name,
+            groups: [],
+            source: nil,
+            metadata: {
+              packaging_type: packaging_type(pom, dependency_node)
+            }.merge(property_details)
+          }]
+        )
+      end
 
-        def plugin_name(dependency_node, pom)
-          return unless plugin_group_id(pom, dependency_node)
-          return unless dependency_node.at_xpath("./artifactId")
+      def dependency_name(dependency_node, pom)
+        return unless dependency_node.at_xpath("./groupId")
+        return unless dependency_node.at_xpath("./artifactId")
 
-          [
-            plugin_group_id(pom, dependency_node),
-            evaluated_value(
-              dependency_node.at_xpath("./artifactId").content.strip,
-              pom
-            )
-          ].join(":")
-        end
-
-        def plugin_group_id(pom, node)
-          return "org.apache.maven.plugins" unless node.at_xpath("./groupId")
-
+        [
           evaluated_value(
-            node.at_xpath("./groupId").content.strip,
+            dependency_node.at_xpath("./groupId").content.strip,
+            pom
+          ),
+          evaluated_value(
+            dependency_node.at_xpath("./artifactId").content.strip,
             pom
           )
-        end
+        ].join(":")
+      end
 
-        def dependency_version(pom, dependency_node)
-          requirement = dependency_requirement(pom, dependency_node)
-          return nil unless requirement
+      def plugin_name(dependency_node, pom)
+        return unless plugin_group_id(pom, dependency_node)
+        return unless dependency_node.at_xpath("./artifactId")
 
-          # If a range is specified then we can't tell the exact version
-          return nil if requirement.include?(",")
+        [
+          plugin_group_id(pom, dependency_node),
+          evaluated_value(
+            dependency_node.at_xpath("./artifactId").content.strip,
+            pom
+          )
+        ].join(":")
+      end
 
-          # Remove brackets if present (and not denoting a range)
-          requirement.gsub(/[\(\)\[\]]/, "").strip
-        end
+      def plugin_group_id(pom, node)
+        return "org.apache.maven.plugins" unless node.at_xpath("./groupId")
 
-        def dependency_requirement(pom, dependency_node)
-          return unless dependency_node.at_xpath("./version")
+        evaluated_value(
+          node.at_xpath("./groupId").content.strip,
+          pom
+        )
+      end
 
-          version_content = dependency_node.at_xpath("./version").content.strip
-          version_content = evaluated_value(version_content, pom)
+      def dependency_version(pom, dependency_node)
+        requirement = dependency_requirement(pom, dependency_node)
+        return nil unless requirement
 
-          version_content.empty? ? nil : version_content
-        end
+        # If a range is specified then we can't tell the exact version
+        return nil if requirement.include?(",")
 
-        def packaging_type(pom, dependency_node)
-          return "pom" if dependency_node.node_name == "parent"
-          return "jar" unless dependency_node.at_xpath("./type")
+        # Remove brackets if present (and not denoting a range)
+        requirement.gsub(/[\(\)\[\]]/, "").strip
+      end
 
-          packaging_type_content = dependency_node.at_xpath("./type").
-                                   content.strip
+      def dependency_requirement(pom, dependency_node)
+        return unless dependency_node.at_xpath("./version")
 
-          evaluated_value(packaging_type_content, pom)
-        end
+        version_content = dependency_node.at_xpath("./version").content.strip
+        version_content = evaluated_value(version_content, pom)
 
-        def version_property_name(dependency_node)
-          return unless dependency_node.at_xpath("./version")
+        version_content.empty? ? nil : version_content
+      end
 
-          version_content = dependency_node.at_xpath("./version").content.strip
+      def packaging_type(pom, dependency_node)
+        return "pom" if dependency_node.node_name == "parent"
+        return "jar" unless dependency_node.at_xpath("./type")
 
-          return unless version_content.match?(PROPERTY_REGEX)
+        packaging_type_content = dependency_node.at_xpath("./type").
+                                 content.strip
 
-          version_content.
-            match(PROPERTY_REGEX).
-            named_captures.fetch("property")
-        end
+        evaluated_value(packaging_type_content, pom)
+      end
 
-        def evaluated_value(value, pom)
-          return value unless value.match?(PROPERTY_REGEX)
+      def version_property_name(dependency_node)
+        return unless dependency_node.at_xpath("./version")
 
-          property_name = value.match(PROPERTY_REGEX).
-                          named_captures.fetch("property")
-          property_value = value_for_property(property_name, pom)
+        version_content = dependency_node.at_xpath("./version").content.strip
 
-          value.gsub(PROPERTY_REGEX, property_value)
-        end
+        return unless version_content.match?(PROPERTY_REGEX)
 
-        def property_source(dependency_node, pom)
-          property_name = version_property_name(dependency_node)
-          return unless property_name
+        version_content.
+          match(PROPERTY_REGEX).
+          named_captures.fetch("property")
+      end
 
-          declaring_pom =
-            property_value_finder.
-            property_details(property_name: property_name, callsite_pom: pom)&.
-            fetch(:file)
+      def evaluated_value(value, pom)
+        return value unless value.match?(PROPERTY_REGEX)
 
-          return declaring_pom if declaring_pom
+        property_name = value.match(PROPERTY_REGEX).
+                        named_captures.fetch("property")
+        property_value = value_for_property(property_name, pom)
 
-          msg = "Property not found: #{property_name}"
-          raise DependencyFileNotEvaluatable, msg
-        end
+        value.gsub(PROPERTY_REGEX, property_value)
+      end
 
-        def value_for_property(property_name, pom)
-          value =
-            property_value_finder.
-            property_details(property_name: property_name, callsite_pom: pom)&.
-            fetch(:value)
+      def property_source(dependency_node, pom)
+        property_name = version_property_name(dependency_node)
+        return unless property_name
 
-          return value if value
+        declaring_pom =
+          property_value_finder.
+          property_details(property_name: property_name, callsite_pom: pom)&.
+          fetch(:file)
 
-          msg = "Property not found: #{property_name}"
-          raise DependencyFileNotEvaluatable, msg
-        end
+        return declaring_pom if declaring_pom
 
-        # Cached, since this can makes calls to the registry (to get property
-        # values from parent POMs)
-        def property_value_finder
-          @property_value_finder ||=
-            PropertyValueFinder.new(dependency_files: dependency_files)
-        end
+        msg = "Property not found: #{property_name}"
+        raise DependencyFileNotEvaluatable, msg
+      end
 
-        def pomfiles
-          # Note: this (correctly) excludes any parent POMs that were downloaded
-          @pomfiles ||=
-            dependency_files.select { |f| f.name.end_with?("pom.xml") }
-        end
+      def value_for_property(property_name, pom)
+        value =
+          property_value_finder.
+          property_details(property_name: property_name, callsite_pom: pom)&.
+          fetch(:value)
 
-        def internal_dependency_names
-          @internal_dependency_names ||=
-            dependency_files.map do |pom|
-              doc = Nokogiri::XML(pom.content)
-              group_id    = doc.at_css("project > groupId") ||
-                            doc.at_css("project > parent > groupId")
-              artifact_id = doc.at_css("project > artifactId")
+        return value if value
 
-              next unless group_id && artifact_id
+        msg = "Property not found: #{property_name}"
+        raise DependencyFileNotEvaluatable, msg
+      end
 
-              [group_id.content.strip, artifact_id.content.strip].join(":")
-            end.compact
-        end
+      # Cached, since this can makes calls to the registry (to get property
+      # values from parent POMs)
+      def property_value_finder
+        @property_value_finder ||=
+          PropertyValueFinder.new(dependency_files: dependency_files)
+      end
 
-        def check_required_files
-          raise "No pom.xml!" unless get_original_file("pom.xml")
-        end
+      def pomfiles
+        # Note: this (correctly) excludes any parent POMs that were downloaded
+        @pomfiles ||=
+          dependency_files.select { |f| f.name.end_with?("pom.xml") }
+      end
+
+      def internal_dependency_names
+        @internal_dependency_names ||=
+          dependency_files.map do |pom|
+            doc = Nokogiri::XML(pom.content)
+            group_id    = doc.at_css("project > groupId") ||
+                          doc.at_css("project > parent > groupId")
+            artifact_id = doc.at_css("project > artifactId")
+
+            next unless group_id && artifact_id
+
+            [group_id.content.strip, artifact_id.content.strip].join(":")
+          end.compact
+      end
+
+      def check_required_files
+        raise "No pom.xml!" unless get_original_file("pom.xml")
       end
     end
   end

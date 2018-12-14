@@ -2,10 +2,10 @@
 
 require "nokogiri"
 require "dependabot/shared_helpers"
-require "dependabot/file_parsers/java/maven/repositories_finder"
-require "dependabot/update_checkers/java/maven"
-require "dependabot/utils/java/version"
-require "dependabot/utils/java/requirement"
+require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/update_checker"
+require "dependabot/maven/version"
+require "dependabot/maven/requirement"
 
 module Dependabot
   module UpdateCheckers
@@ -43,7 +43,7 @@ module Dependabot
               select { |v| matches_dependency_version_type?(v.fetch(:version)) }
 
             ignored_versions.each do |req|
-              ignore_req = Utils::Java::Requirement.new(req.split(","))
+              ignore_req = Maven::Requirement.new(req.split(","))
               possible_versions =
                 possible_versions.
                 reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
@@ -124,7 +124,7 @@ module Dependabot
                 Nokogiri::XML(response.body)
               rescue Excon::Error::Socket, Excon::Error::Timeout
                 central =
-                  FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+                  Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
                 raise if repository_details.fetch("url") == central
 
                 Nokogiri::XML("")
@@ -133,7 +133,7 @@ module Dependabot
 
           def check_response(response, repository_url)
             central =
-              FileParsers::Java::Maven::RepositoriesFinder::CENTRAL_REPO_URL
+              Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
 
             return unless [401, 403].include?(response.status)
             return if @forbidden_urls.include?(repository_url)
@@ -158,7 +158,7 @@ module Dependabot
 
           def pom_repository_details
             @pom_repository_details ||=
-              FileParsers::Java::Maven::RepositoriesFinder.
+              Maven::FileParser::RepositoriesFinder.
               new(dependency_files: dependency_files).
               repository_urls(pom: pom).
               map do |url|
@@ -216,7 +216,7 @@ module Dependabot
           end
 
           def version_class
-            Utils::Java::Version
+            Maven::Version
           end
         end
       end
