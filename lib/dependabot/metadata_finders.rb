@@ -13,7 +13,6 @@ module Dependabot
       "bundler" => MetadataFinders::Ruby::Bundler,
       "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
       "maven" => MetadataFinders::Java::Maven,
-      "gradle" => MetadataFinders::Java::Maven,
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
       "dep" => MetadataFinders::Go::Dep,
