@@ -3,20 +3,20 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java/gradle"
-require "dependabot/utils/java/version"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/gradle/update_checker"
+require "dependabot/gradle/version"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
+RSpec.describe Dependabot::Gradle::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:maven_central_metadata_url) do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
-  let(:version_class) { Dependabot::Utils::Java::Version }
+  let(:version_class) { Dependabot::Gradle::Version }
   let(:maven_central_releases) do
-    fixture("java", "maven_central_metadata", "with_release.xml")
+    fixture("maven_central_metadata", "with_release.xml")
   end
 
   before do
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
@@ -61,7 +61,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
 
     context "when Maven Central doesn't return a release tag" do
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "no_release.xml")
+        fixture("maven_central_metadata", "no_release.xml")
       end
 
       it { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "with_date_releases.xml")
+        fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:dependency_version) { "3.1" }
       it { is_expected.to eq(version_class.new("3.2.2")) }
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
     end
 
     it "delegates to the RequirementsUpdater" do
-      expect(Dependabot::UpdateCheckers::Java::Maven::RequirementsUpdater).
+      expect(described_class::RequirementsUpdater).
         to receive(:new).
         with(
           requirements: dependency_requirements,
@@ -270,12 +270,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         stub_request(:get, maven_central_metadata_url_gradle_plugin).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, maven_central_metadata_url_stdlib).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
@@ -329,17 +329,17 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         stub_request(:get, jcenter_metadata_url_protoc).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, jcenter_metadata_url_protobuf_java).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, jcenter_metadata_url_protobuf_java_util).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 
@@ -393,12 +393,12 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle do
         stub_request(:get, maven_central_metadata_url_gradle_plugin).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
         stub_request(:get, maven_central_metadata_url_stdlib).
           to_return(
             status: 200,
-            body: fixture("java", "maven_central_metadata", "with_release.xml")
+            body: fixture("maven_central_metadata", "with_release.xml")
           )
       end
 

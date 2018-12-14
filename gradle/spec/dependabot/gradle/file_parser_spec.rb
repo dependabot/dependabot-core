@@ -3,17 +3,17 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/java/gradle"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/gradle/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Java::Gradle do
+RSpec.describe Dependabot::Gradle::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [buildfile] }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle do
       let(:subproject_buildfile) do
         Dependabot::DependencyFile.new(
           name: "app/build.gradle",
-          content: fixture("java", "buildfiles", buildfile_fixture_name)
+          content: fixture("buildfiles", buildfile_fixture_name)
         )
       end
 

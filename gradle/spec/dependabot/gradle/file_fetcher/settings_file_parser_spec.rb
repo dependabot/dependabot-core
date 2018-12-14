@@ -2,15 +2,15 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_fetchers/java/gradle/settings_file_parser"
+require "dependabot/gradle/file_fetcher/settings_file_parser"
 
-RSpec.describe Dependabot::FileFetchers::Java::Gradle::SettingsFileParser do
+RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
   let(:finder) { described_class.new(settings_file: settings_file) }
 
   let(:settings_file) do
     Dependabot::DependencyFile.new(
       name: "settings.gradle",
-      content: fixture("java", "gradle_settings_files", fixture_name)
+      content: fixture("settings_files", fixture_name)
     )
   end
   let(:fixture_name) { "simple_settings.gradle" }

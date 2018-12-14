@@ -3,22 +3,22 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java/gradle/dependency_set_updater"
+require "dependabot/gradle/file_updater/dependency_set_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Java::Gradle::DependencySetUpdater do
+RSpec.describe Dependabot::Gradle::FileUpdater::DependencySetUpdater do
   let(:updater) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [buildfile, irrelevant_file] }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:irrelevant_file) do
     Dependabot::DependencyFile.new(
       name: "nested/build.gradle",
-      content: fixture("java", "buildfiles", "basic_build.gradle")
+      content: fixture("buildfiles", "basic_build.gradle")
     )
   end
 

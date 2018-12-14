@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/java/maven"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/gradle/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Java::Maven do
+RSpec.describe Dependabot::Gradle::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -44,14 +44,14 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
       "https://repo.maven.apache.org/maven2/com/google/guava/"\
       "guava/23.3-jre/guava-23.3-jre.pom"
     end
-    let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
+    let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
     before do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
     end
 
     context "when the github link is buried in the pom" do
-      let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
+      let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
       it { is_expected.to eq("https://github.com/google/guava") }
 
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     end
 
     context "when there is no github link in the pom" do
-      let(:maven_response) { fixture("java", "poms", "okhttp-3.10.0.xml") }
+      let(:maven_response) { fixture("poms", "okhttp-3.10.0.xml") }
       let(:dependency_name) { "com.squareup.okhttp3:okhttp" }
       let(:dependency_version) { "3.10.0" }
       let(:maven_url) do
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
           stub_request(:get, parent_url).
             to_return(
               status: 200,
-              body: fixture("java", "poms", "parent-3.10.0.xml")
+              body: fixture("poms", "parent-3.10.0.xml")
             )
         end
 
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
             stub_request(:get, parent_url).
               to_return(
                 status: 200,
-                body: fixture("java", "poms", "parent-unrelated-3.10.0.xml")
+                body: fixture("poms", "parent-unrelated-3.10.0.xml")
               )
 
             allow_any_instance_of(Dependabot::FileFetchers::Base).
@@ -154,12 +154,12 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
     end
 
     context "when the github link includes a property" do
-      let(:maven_response) { fixture("java", "poms", "property_url_pom.xml") }
+      let(:maven_response) { fixture("poms", "property_url_pom.xml") }
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
 
       context "that is nested" do
         let(:maven_response) do
-          fixture("java", "poms", "nested_property_url_pom.xml")
+          fixture("poms", "nested_property_url_pom.xml")
         end
 
         it do
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
 
     context "when there is a github link in the maven response" do
       let(:maven_response) do
-        fixture("java", "poms", "mockito-core-2.11.0.xml")
+        fixture("poms", "mockito-core-2.11.0.xml")
       end
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -190,7 +190,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
         "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
-        fixture("java", "poms", "mockito-core-2.11.0.xml")
+        fixture("poms", "mockito-core-2.11.0.xml")
       end
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::MetadataFinders::Java::Maven do
         "mockito-core-2.11.0.pom"
       end
       let(:maven_response) do
-        fixture("java", "poms", "mockito-core-2.11.0.xml")
+        fixture("poms", "mockito-core-2.11.0.xml")
       end
 
       before do

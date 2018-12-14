@@ -2,16 +2,16 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/java/gradle/property_value_finder"
+require "dependabot/gradle/file_parser/property_value_finder"
 
-RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
+RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
   let(:finder) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [buildfile] }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "single_property_build.gradle" }
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::PropertyValueFinder do
       let(:callsite_buildfile) do
         Dependabot::DependencyFile.new(
           name: "myapp/build.gradle",
-          content: fixture("java", "buildfiles", callsite_fixture_name)
+          content: fixture("buildfiles", callsite_fixture_name)
         )
       end
       let(:callsite_fixture_name) { "basic_build.gradle" }

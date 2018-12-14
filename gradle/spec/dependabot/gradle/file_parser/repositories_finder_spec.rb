@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/java/gradle/repositories_finder"
+require "dependabot/gradle/file_parser/repositories_finder"
 
-RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
+RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
@@ -17,7 +17,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileParsers::Java::Gradle::RepositoriesFinder do
           let(:subproject) do
             Dependabot::DependencyFile.new(
               name: "myapp/build.gradle",
-              content: fixture("java", "buildfiles", "basic_build.gradle")
+              content: fixture("buildfiles", "basic_build.gradle")
             )
           end
 

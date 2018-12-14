@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/java/requirement"
-require "dependabot/utils/java/version"
+require "dependabot/gradle/requirement"
+require "dependabot/gradle/version"
 
-RSpec.describe Dependabot::Utils::Java::Requirement do
+RSpec.describe Dependabot::Gradle::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 
@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
 
       it "creates a requirement object" do
         expect(requirement).to be_satisfied_by(
-          Dependabot::Utils::Java::Version.new("Finchley.SR4")
+          Dependabot::Gradle::Version.new("Finchley.SR4")
         )
       end
     end
@@ -108,9 +108,9 @@ RSpec.describe Dependabot::Utils::Java::Requirement do
       end
     end
 
-    context "with a Utils::Java::Version" do
+    context "with a Gradle::Version" do
       let(:version) do
-        Dependabot::Utils::Java::Version.new(version_string)
+        Dependabot::Gradle::Version.new(version_string)
       end
 
       context "for the current version" do

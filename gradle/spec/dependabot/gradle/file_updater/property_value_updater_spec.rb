@@ -3,22 +3,22 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java/gradle/property_value_updater"
+require "dependabot/gradle/file_updater/property_value_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Java::Gradle::PropertyValueUpdater do
+RSpec.describe Dependabot::Gradle::FileUpdater::PropertyValueUpdater do
   let(:updater) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [buildfile, subproject_buildfile] }
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:subproject_buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", subproject_fixture_name)
+      content: fixture("buildfiles", subproject_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "shortform_build.gradle" }

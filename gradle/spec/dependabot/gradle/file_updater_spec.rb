@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
-require "dependabot/file_updaters/java/gradle"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/gradle/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
+RSpec.describe Dependabot::Gradle::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
         let(:subproject_buildfile) do
           Dependabot::DependencyFile.new(
             name: "app/build.gradle",
-            content: fixture("java", "buildfiles", buildfile_fixture_name)
+            content: fixture("buildfiles", buildfile_fixture_name)
           )
         end
 
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::FileUpdaters::Java::Gradle do
           Dependabot::DependencyFile.new(
             name: "subproject/build.gradle",
             content:
-              fixture("java", "buildfiles", subproject_fixture_name)
+              fixture("buildfiles", subproject_fixture_name)
           )
         end
 

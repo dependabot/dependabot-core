@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java/gradle/version_finder"
+require "dependabot/gradle/update_checker/version_finder"
 
-RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
+RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -28,7 +28,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
   let(:buildfile) do
     Dependabot::DependencyFile.new(
       name: "build.gradle",
-      content: fixture("java", "buildfiles", buildfile_fixture_name)
+      content: fixture("buildfiles", buildfile_fixture_name)
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
@@ -44,7 +44,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
     "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
-    fixture("java", "maven_central_metadata", "with_release.xml")
+    fixture("maven_central_metadata", "with_release.xml")
   end
 
   before do
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
 
     context "when there are date-based versions" do
       let(:maven_central_releases) do
-        fixture("java", "maven_central_metadata", "with_date_releases.xml")
+        fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:dependency_version) { "3.1" }
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         stub_request(:get, google_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "google_metadata", "com_google_guava.xml")
+            body: fixture("google_metadata", "com_google_guava.xml")
           )
       end
 
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
         stub_request(:get, google_metadata_url).
           to_return(
             status: 200,
-            body: fixture("java", "google_metadata", "com_google_guava.xml")
+            body: fixture("google_metadata", "com_google_guava.xml")
           )
       end
 
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::UpdateCheckers::Java::Gradle::VersionFinder do
             to_return(
               status: 200,
               body:
-                fixture("java", "maven_central_metadata", "with_release.xml")
+                fixture("maven_central_metadata", "with_release.xml")
             )
           stub_request(:get, magnusja_metadata_url).
             to_raise(Excon::Error::Timeout)
