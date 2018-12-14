@@ -10,8 +10,12 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class VersionResolver
+        UNABLE_TO_UPDATE =
+          /Unable to update (?<url>.*?)$/.freeze
         BRANCH_NOT_FOUND_REGEX =
-          /failed to find branch `(?<branch>[^`]+)`/.freeze
+          /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m.freeze
+        REF_NOT_FOUND_REGEX =
+          /#{UNABLE_TO_UPDATE}.*revspec '.*' not found/m.freeze
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
@@ -115,9 +119,17 @@ module Dependabot
           end
 
           if error.message.match?(BRANCH_NOT_FOUND_REGEX)
-            branch = error.message.match(BRANCH_NOT_FOUND_REGEX).
-                     named_captures.fetch("branch")
-            raise Dependabot::BranchNotFound, branch
+            dependency_url =
+              error.message.match(BRANCH_NOT_FOUND_REGEX).
+              named_captures.fetch("url").split(/[#?]/).first
+            raise Dependabot::GitDependencyReferenceNotFound, dependency_url
+          end
+
+          if error.message.match?(REF_NOT_FOUND_REGEX)
+            dependency_url =
+              error.message.match(REF_NOT_FOUND_REGEX).
+              named_captures.fetch("url").split(/[#?]/).first
+            raise Dependabot::GitDependencyReferenceNotFound, dependency_url
           end
 
           if resolvability_error?(error.message)

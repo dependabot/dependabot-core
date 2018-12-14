@@ -344,8 +344,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
       context "with a git dependency" do
         let(:manifest_fixture_name) { "git_dependency" }
 
-        describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+        describe "the last dependency" do
+          subject(:dependency) { dependencies.last }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)

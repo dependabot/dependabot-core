@@ -199,6 +199,31 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         it { is_expected.to eq(dependency_version) }
       end
 
+      context "with an unfetchable locked ref for an unrelated git dep" do
+        let(:manifest_fixture_name) { "git_dependency" }
+        let(:lockfile_fixture_name) { "git_dependency_unfetchable_ref" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: string_req,
+            groups: [],
+            source: source
+          }]
+        end
+        let(:dependency_name) { "time" }
+        let(:dependency_version) { "0.1.39" }
+        let(:string_req) { "0.1.12" }
+        let(:source) { nil }
+
+        it "raises a GitDependencyReferenceNotFound error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency).
+                to eq("https://github.com/BurntSushi/utf8-ranges")
+            end
+        end
+      end
+
       context "with an unreachable branch" do
         let(:manifest_fixture_name) { "git_dependency_with_unreachable_branch" }
         let(:lockfile_fixture_name) { "git_dependency_with_unreachable_branch" }
@@ -212,10 +237,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           }
         end
 
-        it "raises a BranchNotFound error" do
+        it "raises a GitDependencyReferenceNotFound error" do
           expect { subject }.
-            to raise_error(Dependabot::BranchNotFound) do |error|
-              expect(error.branch_name).to eq("no_exist")
+            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency).
+                to eq("https://github.com/BurntSushi/utf8-ranges")
             end
         end
       end

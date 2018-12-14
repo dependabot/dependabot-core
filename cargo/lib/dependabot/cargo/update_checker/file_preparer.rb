@@ -132,7 +132,8 @@ module Dependabot
               ">= #{lower_bound_version}"
             end
 
-          unless Cargo::Version.correct?(latest_allowable_version) &&
+          unless latest_allowable_version &&
+                 Cargo::Version.correct?(latest_allowable_version) &&
                  Cargo::Version.new(latest_allowable_version) >=
                  Cargo::Version.new(lower_bound_version)
             return lower_bound_req

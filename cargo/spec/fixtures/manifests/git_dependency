@@ -4,4 +4,5 @@ version = "0.1.0"    # the current version, obeying semver
 authors = ["support@dependabot.com"]
 
 [dependencies]
+time = "0.1.12"
 utf8-ranges = { git = "https://github.com/BurntSushi/utf8-ranges" }
