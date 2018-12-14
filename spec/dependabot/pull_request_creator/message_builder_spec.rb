@@ -1173,23 +1173,34 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
         end
 
-        context "for Maven" do
+        context "for a property dependency (e.g., with Maven)" do
+          before do
+            statesman_repo_url =
+              "https://api.github.com/repos/gocardless/statesman"
+            stub_request(:get, "#{statesman_repo_url}/compare/v1.4.0...v1.5.0").
+              to_return(
+                status: 200,
+                body: fixture("github", "business_compare_commits.json"),
+                headers: json_header
+              )
+          end
+
           let(:dependency) do
             Dependabot::Dependency.new(
-              name: "org.springframework:spring-beans",
-              version: "4.3.15.RELEASE",
-              previous_version: "4.3.12.RELEASE",
-              package_manager: "maven",
+              name: "business",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "bundler",
               requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.15.RELEASE",
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
                 groups: [],
                 source: nil,
                 metadata: { property_name: "springframework.version" }
               }],
               previous_requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE",
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
                 groups: [],
                 source: nil,
                 metadata: { property_name: "springframework.version" }
@@ -1198,20 +1209,20 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:dependency2) do
             Dependabot::Dependency.new(
-              name: "org.springframework:spring-context",
-              version: "4.3.15.RELEASE",
-              previous_version: "4.3.12.RELEASE",
-              package_manager: "maven",
+              name: "statesman",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "bundler",
               requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.15.RELEASE",
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
                 groups: [],
                 source: nil,
                 metadata: { property_name: "springframework.version" }
               }],
               previous_requirements: [{
-                file: "pom.xml",
-                requirement: "4.3.12.RELEASE",
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
                 groups: [],
                 source: nil,
                 metadata: { property_name: "springframework.version" }
@@ -1219,41 +1230,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
 
-          let(:spring_beans_maven_url) do
-            "https://repo.maven.apache.org/maven2/org/springframework/"\
-            "spring-beans/4.3.15.RELEASE/spring-beans-4.3.15.RELEASE.pom"
-          end
-          let(:spring_context_maven_url) do
-            "https://repo.maven.apache.org/maven2/org/springframework/"\
-            "spring-context/4.3.15.RELEASE/spring-context-4.3.15.RELEASE.pom"
-          end
-          let(:guava_parent_maven_url) do
-            "https://repo.maven.apache.org/maven2/com/google/guava/"\
-            "guava-parent/23.3-jre/guava-parent-23.3-jre.pom"
-          end
-          let(:maven_response) { fixture("java", "poms", "guava-23.3-jre.xml") }
-          let(:pom) do
-            Dependabot::DependencyFile.new(
-              name: "pom.xml",
-              content: fixture("java", "poms", "property_pom.xml")
-            )
-          end
-          let(:files) { [pom] }
-
-          before do
-            stub_request(:get, spring_beans_maven_url).
-              to_return(status: 200, body: maven_response)
-            stub_request(:get, spring_context_maven_url).
-              to_return(status: 200, body: maven_response)
-            stub_request(:get, guava_parent_maven_url).
-              to_return(status: 200, body: maven_response)
-          end
-
           it "has the right intro" do
             expect(pr_message).
               to start_with(
-                "Bumps `springframework.version` "\
-                "from 4.3.12.RELEASE to 4.3.15.RELEASE.\n\n"
+                "Bumps `springframework.version` from 1.4.0 to 1.5.0.\n\n"
               )
           end
         end
