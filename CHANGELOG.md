@@ -1,3 +1,7 @@
+## v0.83.2, 14 December 2018
+
+- Rust: Handle unfetchable git refs better
+
 ## v0.83.1, 13 December 2018
 
 - Retry GitHub errors when labeling a PR
