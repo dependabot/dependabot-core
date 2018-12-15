@@ -129,10 +129,8 @@ module Dependabot
               requirements.flat_map do |r|
                 next r if requirement_satisfied?(r, req[:groups])
 
-                if req[:groups] == ["development"]
-                  fixed_development_requirements(r)
-                else
-                  fixed_requirements(r)
+                if req[:groups] == ["development"] then bumped_requirements(r)
+                else widened_requirements(r)
                 end
               end
 
@@ -167,7 +165,7 @@ module Dependabot
             binding_reqs.sort_by { |r| r.requirements.first.last }
           end
 
-          def fixed_requirements(req)
+          def widened_requirements(req)
             op, version = req.requirements.first
 
             case op
@@ -185,7 +183,7 @@ module Dependabot
             end
           end
 
-          def fixed_development_requirements(req)
+          def bumped_requirements(req)
             op, version = req.requirements.first
 
             case op
