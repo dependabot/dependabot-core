@@ -1638,7 +1638,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            update_strategy: :widen_ranges,
+            update_strategy: :bump_versions_if_necessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
@@ -1667,7 +1667,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            update_strategy: :widen_ranges,
+            update_strategy: :bump_versions_if_necessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.8.0",
             updated_source: requirements.first[:source]
@@ -1696,7 +1696,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         expect(requirements_updater).
           to receive(:new).with(
             requirements: requirements,
-            update_strategy: :widen_ranges,
+            update_strategy: :bump_versions_if_necessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]

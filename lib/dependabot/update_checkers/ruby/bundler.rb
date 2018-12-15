@@ -79,7 +79,7 @@ module Dependabot
           end
 
           # Otherwise, widen ranges for libraries and bump versions for apps
-          dependency.version.nil? ? :widen_ranges : :bump_versions
+          dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
         end
 
         private

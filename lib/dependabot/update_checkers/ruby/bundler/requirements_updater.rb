@@ -9,7 +9,8 @@ module Dependabot
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 
-          ALLOWED_UPDATE_STRATEGIES = %i(widen_ranges bump_versions).freeze
+          ALLOWED_UPDATE_STRATEGIES =
+            %i(bump_versions bump_versions_if_necessary).freeze
 
           def initialize(requirements:, update_strategy:, updated_source:,
                          latest_version:, latest_resolvable_version:)
@@ -29,11 +30,11 @@ module Dependabot
           def updated_requirements
             requirements.map do |req|
               if req[:file].match?(/\.gemspec/)
-                updated_gemspec_requirement(req)
+                update_gemspec_requirement(req)
               else
                 # If a requirement doesn't come from a gemspec, it must be from
                 # a Gemfile.
-                updated_gemfile_requirement(req)
+                update_gemfile_requirement(req)
               end
             end
           end
@@ -50,15 +51,26 @@ module Dependabot
             raise "Unknown update strategy: #{update_strategy}"
           end
 
-          def always_update?
-            update_strategy == :bump_versions
-          end
-
-          def updated_gemfile_requirement(req)
+          def update_gemfile_requirement(req)
             req = req.merge(source: updated_source)
             return req unless latest_resolvable_version
-            return req if new_version_satisfies?(req) && !always_update?
 
+            case update_strategy
+            when :bump_versions
+              update_version_requirement(req)
+            when :bump_versions_if_necessary
+              update_version_requirement_if_needed(req)
+            else raise "Unexpected update strategy: #{update_strategy}"
+            end
+          end
+
+          def update_version_requirement_if_needed(req)
+            return req if new_version_satisfies?(req)
+
+            update_version_requirement(req)
+          end
+
+          def update_version_requirement(req)
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
 
@@ -115,7 +127,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/PerceivedComplexity
-          def updated_gemspec_requirement(req)
+          def update_gemspec_requirement(req)
             return req unless latest_version && latest_resolvable_version
 
             requirements =

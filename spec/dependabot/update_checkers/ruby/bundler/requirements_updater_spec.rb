@@ -132,7 +132,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         end
 
         context "for a library" do
-          let(:update_strategy) { :widen_ranges }
+          let(:update_strategy) { :bump_versions_if_necessary }
 
           context "and the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }
