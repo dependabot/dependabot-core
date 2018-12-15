@@ -7,7 +7,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      library: library,
+      update_strategy: update_strategy,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version,
       updated_source: updated_source
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
   let(:gemspec_groups) { [] }
   let(:updated_source) { nil }
 
-  let(:library) { false }
+  let(:update_strategy) { :bump_versions }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
         end
 
         context "for a library" do
-          let(:library) { true }
+          let(:update_strategy) { :widen_ranges }
 
           context "and the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }

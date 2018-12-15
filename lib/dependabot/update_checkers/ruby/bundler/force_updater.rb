@@ -17,11 +17,12 @@ module Dependabot
       class Bundler
         class ForceUpdater
           def initialize(dependency:, dependency_files:, credentials:,
-                         target_version:)
-            @dependency       = dependency
-            @dependency_files = dependency_files
-            @credentials      = credentials
-            @target_version   = target_version
+                         target_version:, requirements_update_strategy:)
+            @dependency                   = dependency
+            @dependency_files             = dependency_files
+            @credentials                  = credentials
+            @target_version               = target_version
+            @requirements_update_strategy = requirements_update_strategy
           end
 
           def updated_dependencies
@@ -31,7 +32,7 @@ module Dependabot
           private
 
           attr_reader :dependency, :dependency_files, :credentials,
-                      :target_version
+                      :target_version, :requirements_update_strategy
 
           def force_update
             in_a_temporary_bundler_context do
@@ -200,7 +201,7 @@ module Dependabot
               requirements:
                 RequirementsUpdater.new(
                   requirements: original_dep.requirements,
-                  library: library?,
+                  update_strategy: requirements_update_strategy,
                   updated_source: source_for(original_dep),
                   latest_version: updated_spec.version.to_s,
                   latest_resolvable_version: updated_spec.version.to_s
@@ -230,10 +231,6 @@ module Dependabot
           def sanitized_lockfile_body
             re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
             lockfile.content.gsub(re, "")
-          end
-
-          def library?
-            dependency.version.nil?
           end
 
           def write_temporary_dependency_files

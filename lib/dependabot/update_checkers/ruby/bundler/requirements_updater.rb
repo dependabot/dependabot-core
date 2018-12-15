@@ -9,14 +9,16 @@ module Dependabot
         class RequirementsUpdater
           class UnfixableRequirement < StandardError; end
 
-          def initialize(requirements:, library:, updated_source:,
+          ALLOWED_UPDATE_STRATEGIES = %i(widen_ranges bump_versions).freeze
+
+          def initialize(requirements:, update_strategy:, updated_source:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-
-            @library = library
-
             @latest_version = Gem::Version.new(latest_version) if latest_version
             @updated_source = updated_source
+            @update_strategy = update_strategy
+
+            check_update_strategy
 
             return unless latest_resolvable_version
 
@@ -39,16 +41,23 @@ module Dependabot
           private
 
           attr_reader :requirements, :updated_source,
-                      :latest_version, :latest_resolvable_version
+                      :latest_version, :latest_resolvable_version,
+                      :update_strategy
 
-          def library?
-            @library
+          def check_update_strategy
+            return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+
+            raise "Unknown update strategy: #{update_strategy}"
+          end
+
+          def always_update?
+            update_strategy == :bump_versions
           end
 
           def updated_gemfile_requirement(req)
             req = req.merge(source: updated_source)
             return req unless latest_resolvable_version
-            return req if library? && new_version_satisfies?(req)
+            return req if new_version_satisfies?(req) && !always_update?
 
             requirements =
               req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }

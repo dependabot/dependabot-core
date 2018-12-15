@@ -46,7 +46,7 @@ module Dependabot
         def updated_requirements
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            library: library?,
+            update_strategy: requirements_update_strategy,
             updated_source: updated_source,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
@@ -72,6 +72,16 @@ module Dependabot
             end
         end
 
+        def requirements_update_strategy
+          # If passed in as an option (in the base class) honour that option
+          if @requirements_update_strategy
+            return @requirements_update_strategy.to_sym
+          end
+
+          # Otherwise, widen ranges for libraries and bump versions for apps
+          dependency.version.nil? ? :widen_ranges : :bump_versions
+        end
+
         private
 
         def latest_version_resolvable_with_full_unlock?
@@ -88,10 +98,6 @@ module Dependabot
           end
         rescue Dependabot::DependencyFileNotResolvable
           false
-        end
-
-        def library?
-          dependency.version.nil?
         end
 
         def updated_dependencies_after_full_unlock
@@ -261,7 +267,8 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials,
-              target_version: latest_version
+              target_version: latest_version,
+              requirements_update_strategy: requirements_update_strategy
             )
         end
 

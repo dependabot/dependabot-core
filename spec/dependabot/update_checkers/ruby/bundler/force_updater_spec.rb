@@ -14,6 +14,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
       dependency: dependency,
       dependency_files: dependency_files,
       target_version: target_version,
+      requirements_update_strategy: update_strategy,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -35,6 +36,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::ForceUpdater do
   let(:dependency_name) { "rspec-mocks" }
   let(:current_version) { "3.5.0" }
   let(:target_version) { "3.6.0" }
+  let(:update_strategy) { :bump_versions }
   let(:requirements) do
     [{
       file: "Gemfile",
