@@ -314,6 +314,33 @@ RSpec.describe namespace::VersionResolver do
     context "with no lockfile" do
       let(:dependency_files) { [package_json] }
 
+      context "updating a tightly coupled monorepo dep" do
+        let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "vue",
+            version: nil,
+            requirements: [{
+              file: "package.json",
+              requirement: "2.5.20",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        context "with other parts of the monorepo present" do
+          let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+          it { is_expected.to be_nil }
+        end
+
+        context "without other parts of the monorepo" do
+          let(:manifest_fixture_name) { "monorepo_dep_single.json" }
+          it { is_expected.to eq(latest_allowable_version) }
+        end
+      end
+
       context "updating a dependency without peer dependency issues" do
         let(:manifest_fixture_name) { "package.json" }
         let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
@@ -660,6 +687,52 @@ RSpec.describe namespace::VersionResolver do
   describe "#latest_version_resolvable_with_full_unlock?" do
     subject { resolver.latest_version_resolvable_with_full_unlock? }
 
+    context "updating a tightly coupled monorepo dep" do
+      let(:dependency_files) { [package_json] }
+      let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "vue",
+          version: nil,
+          requirements: [{
+            file: "package.json",
+            requirement: "2.5.20",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:vue_template_compiler_registry_listing_url) do
+        "https://registry.npmjs.org/vue-template-compiler"
+      end
+      let(:vue_template_compiler_registry_response) do
+        fixture("javascript", "npm_responses", "vue-template-compiler.json")
+      end
+      let(:vue_registry_listing_url) { "https://registry.npmjs.org/vue" }
+      let(:vue_registry_response) do
+        fixture("javascript", "npm_responses", "vue.json")
+      end
+      before do
+        stub_request(:get, vue_template_compiler_registry_listing_url).
+          to_return(status: 200, body: vue_template_compiler_registry_response)
+        stub_request(
+          :get,
+          vue_template_compiler_registry_listing_url + "/latest"
+        ).to_return(status: 200, body: "{}")
+        stub_request(:get, vue_registry_listing_url).
+          to_return(status: 200, body: vue_registry_response)
+        stub_request(:get, vue_registry_listing_url + "/latest").
+          to_return(status: 200, body: "{}")
+      end
+
+      context "with other parts of the monorepo present" do
+        let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+        it { is_expected.to eq(true) }
+      end
+    end
+
     context "updating a dependency that is a peer requirement" do
       let(:dependency_files) { [package_json, npm_lock] }
       let(:manifest_fixture_name) { "peer_dependency.json" }
@@ -744,6 +817,84 @@ RSpec.describe namespace::VersionResolver do
 
   describe "#dependency_updates_from_full_unlock" do
     subject { resolver.dependency_updates_from_full_unlock }
+
+    context "updating a tightly coupled monorepo dep" do
+      let(:dependency_files) { [package_json] }
+      let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "vue",
+          version: nil,
+          requirements: [{
+            file: "package.json",
+            requirement: "2.5.20",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:vue_template_compiler_registry_listing_url) do
+        "https://registry.npmjs.org/vue-template-compiler"
+      end
+      let(:vue_template_compiler_registry_response) do
+        fixture("javascript", "npm_responses", "vue-template-compiler.json")
+      end
+      let(:vue_registry_listing_url) { "https://registry.npmjs.org/vue" }
+      let(:vue_registry_response) do
+        fixture("javascript", "npm_responses", "vue.json")
+      end
+      before do
+        stub_request(:get, vue_template_compiler_registry_listing_url).
+          to_return(status: 200, body: vue_template_compiler_registry_response)
+        stub_request(
+          :get,
+          vue_template_compiler_registry_listing_url + "/latest"
+        ).to_return(status: 200, body: "{}")
+        stub_request(:get, vue_registry_listing_url).
+          to_return(status: 200, body: vue_registry_response)
+        stub_request(:get, vue_registry_listing_url + "/latest").
+          to_return(status: 200, body: "{}")
+      end
+
+      context "with other parts of the monorepo present" do
+        let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+
+        it "gets the right list of dependencies to update" do
+          expect(resolver.dependency_updates_from_full_unlock).
+            to match_array(
+              [{
+                dependency: Dependabot::Dependency.new(
+                  name: "vue",
+                  version: nil,
+                  package_manager: "npm_and_yarn",
+                  requirements: [{
+                    file: "package.json",
+                    requirement: "2.5.20",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                ),
+                version: Dependabot::Utils::JavaScript::Version.new("2.5.21")
+              }, {
+                dependency: Dependabot::Dependency.new(
+                  name: "vue-template-compiler",
+                  version: nil,
+                  package_manager: "npm_and_yarn",
+                  requirements: [{
+                    file: "package.json",
+                    requirement: "2.5.20",
+                    groups: ["dependencies"],
+                    source: nil
+                  }]
+                ),
+                version: Dependabot::Utils::JavaScript::Version.new("2.5.21")
+              }]
+            )
+        end
+      end
+    end
 
     context "updating a dependency that is a peer requirement" do
       let(:dependency_files) { [package_json, npm_lock] }
