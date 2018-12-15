@@ -1,3 +1,7 @@
+## v0.85.1, 15 December 2018
+
+- JS: Group PRs for tightly couple monorepo deps (currently just Vue)
+
 ## v0.85.0, 14 December 2018
 
 - Move Maven into separate gem
