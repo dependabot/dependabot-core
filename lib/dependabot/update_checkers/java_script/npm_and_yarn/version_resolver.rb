@@ -20,6 +20,10 @@ module Dependabot
         class VersionResolver
           require_relative "latest_version_finder"
 
+          TIGHTLY_COUPLED_MONOREPOS = {
+            "vue" => %w(vue vue-template-compiler)
+          }.freeze
+
           # Error message from yarn add:
           # " > @reach/router@1.2.1" has incorrect \
           # peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
@@ -55,6 +59,7 @@ module Dependabot
 
           def latest_resolvable_version
             return latest_allowable_version if git_dependency?(dependency)
+            return if part_of_tightly_locked_monorepo?
 
             unless relevant_unmet_peer_dependencies.any?
               return latest_allowable_version
@@ -71,6 +76,9 @@ module Dependabot
 
           def dependency_updates_from_full_unlock
             return if git_dependency?(dependency)
+            if part_of_tightly_locked_monorepo?
+              return updated_monorepo_dependencies
+            end
             return if newly_broken_peer_reqs_from_dep.any?
 
             updates =
@@ -106,6 +114,46 @@ module Dependabot
                 dependency_files: dependency_files,
                 ignored_versions: []
               )
+          end
+
+          def part_of_tightly_locked_monorepo?
+            monorepo_dep_names =
+              TIGHTLY_COUPLED_MONOREPOS.values.
+              find { |deps| deps.include?(dependency.name) }
+            return false unless monorepo_dep_names
+
+            deps_to_update =
+              top_level_dependencies.
+              select { |d| monorepo_dep_names.include?(d.name) }
+
+            deps_to_update.count > 1
+          end
+
+          def updated_monorepo_dependencies
+            monorepo_dep_names =
+              TIGHTLY_COUPLED_MONOREPOS.values.
+              find { |deps| deps.include?(dependency.name) }
+
+            deps_to_update =
+              top_level_dependencies.
+              select { |d| monorepo_dep_names.include?(d.name) }
+
+            updates = []
+            deps_to_update.each do |dep|
+              next if git_dependency?(dep)
+              next if dep.version &&
+                      version_class.new(dep.version) >= latest_allowable_version
+
+              updated_version =
+                latest_version_finder(dep).
+                possible_versions.
+                find { |v| v == latest_allowable_version }
+              next unless updated_version
+
+              updates << { dependency: dep, version: updated_version }
+            end
+
+            updates
           end
 
           def peer_dependency_errors
