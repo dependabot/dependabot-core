@@ -147,3 +147,7 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
     PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin"
 
+### ELIXIR (MERGE WITH SECTION FUTHER UP)
+
+COPY hex/helpers /opt/hex/helpers
+RUN cd /opt/hex/helpers && mix deps.get && cd -

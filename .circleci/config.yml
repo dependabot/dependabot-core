@@ -88,6 +88,9 @@ jobs:
               bash -c "cd maven && rubocop"
 
             docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd hex && rubocop"
+
+            docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd cargo && rubocop"
 
             docker run -ti dependabot/dependabot-core-ci \
@@ -119,6 +122,9 @@ jobs:
 
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd maven && rspec spec --format documentation"
+
+            docker run -ti dependabot/dependabot-core-ci \
+              bash -c "cd hex && rspec spec --format documentation"
 
             docker run -ti dependabot/dependabot-core-ci \
               bash -c "cd cargo && rspec spec --format documentation"
@@ -160,7 +166,6 @@ jobs:
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
-      - run: cd helpers/elixir && mix deps.get
       - run: cd helpers/go && make linux
 
       - save_cache:

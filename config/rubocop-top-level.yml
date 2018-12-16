@@ -15,5 +15,6 @@ AllCops:
     - 'gradle/**/*'
     - 'maven/**/*'
     - 'python/**/*'
+    - 'hex/**/*'
     - 'cargo/**/*'
     - 'go_modules/**/*'

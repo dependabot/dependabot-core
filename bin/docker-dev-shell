@@ -90,6 +90,10 @@ docker run --rm -ti \
   -v "$(pwd)/gradle/dependabot-gradle.gemspec:$CODE_DIR/gradle/dependabot-gradle.gemspec" \
   -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
   -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
+  -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
+  -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
+  -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
+  -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
   -v "$(pwd)/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
   -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-core.gemspec" \
   -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \

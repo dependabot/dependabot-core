@@ -59,9 +59,7 @@ module Dependabot
           drop_while { |l| !l.start_with?('{"result":') }.
           join
 
-        if result_json.empty?
-          raise DependencyFileNotEvaluatable, error.message
-        end
+        raise DependencyFileNotEvaluatable, error.message if result_json.empty?
 
         JSON.parse(result_json).fetch("result")
       end
