@@ -126,3 +126,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.register("hex", Dependabot::Hex::FileParser)

@@ -271,3 +271,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.register("hex", Dependabot::Hex::UpdateChecker)

@@ -3,7 +3,6 @@
 require "dependabot/file_fetchers/ruby/bundler"
 require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require "dependabot/file_fetchers/php/composer"
-require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/file_fetchers/go/dep"
 
 module Dependabot
@@ -12,7 +11,6 @@ module Dependabot
       "bundler" => FileFetchers::Ruby::Bundler,
       "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn,
       "composer" => FileFetchers::Php::Composer,
-      "hex" => FileFetchers::Elixir::Hex,
       "dep" => FileFetchers::Go::Dep
     }
 

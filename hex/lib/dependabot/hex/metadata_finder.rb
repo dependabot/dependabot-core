@@ -66,3 +66,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::MetadataFinders.register("hex", Dependabot::Hex::MetadataFinder)

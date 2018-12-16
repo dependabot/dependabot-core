@@ -67,3 +67,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileUpdaters.register("hex", Dependabot::Hex::FileUpdater)

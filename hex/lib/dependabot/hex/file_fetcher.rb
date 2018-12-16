@@ -75,3 +75,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileFetchers.register("hex", Dependabot::Hex::FileFetcher)
