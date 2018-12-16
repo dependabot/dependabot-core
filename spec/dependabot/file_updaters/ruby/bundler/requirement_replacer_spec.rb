@@ -192,7 +192,6 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
 
     context "with a gemspec" do
       let(:file_type) { :gemspec }
-
       let(:content) { fixture("ruby", "gemspecs", "example") }
 
       context "when declared with `add_runtime_dependency`" do
@@ -215,6 +214,24 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
           %(s.add_runtime_dependency("business", *rouge_versions))
         end
         it { is_expected.to eq(content) }
+      end
+
+      context "with an exact requirement" do
+        let(:content) { fixture("ruby", "gemspecs", "exact") }
+
+        context "when declared with `=` operator" do
+          let(:dependency_name) { "statesman" }
+          let(:updated_requirement) { "= 1.5.0" }
+          let(:previous_requirement) { "= 1.0.0" }
+          it { is_expected.to include(%(d_dependency 'statesman', '= 1.5.0')) }
+        end
+
+        context "when declared with no operator" do
+          let(:dependency_name) { "business" }
+          let(:updated_requirement) { "= 1.5.0" }
+          let(:previous_requirement) { "= 1.0.0" }
+          it { is_expected.to include(%(d_dependency 'business', '1.5.0')) }
+        end
       end
 
       context "when declared with `add_development_dependency`" do

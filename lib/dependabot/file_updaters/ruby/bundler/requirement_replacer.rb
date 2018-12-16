@@ -101,9 +101,13 @@ module Dependabot
 
               quote_characters = extract_quote_characters_from(req_nodes)
               space_after_specifier = space_after_specifier?(req_nodes)
+              use_equality_operator = use_equality_operator?(req_nodes)
 
-              new_req =
-                new_requirement_string(quote_characters, space_after_specifier)
+              new_req = new_requirement_string(
+                quote_characters: quote_characters,
+                space_after_specifier: space_after_specifier,
+                use_equality_operator: use_equality_operator
+              )
               if req_nodes.any?
                 replace(range_for(req_nodes), new_req)
               else
@@ -166,15 +170,46 @@ module Dependabot
               req_string.include?(" ")
             end
 
-            def new_requirement_string(quote_characters, space_after_specifier)
+            def use_equality_operator?(requirement_nodes)
+              return true if requirement_nodes.none?
+
+              req_string =
+                case requirement_nodes.first.type
+                when :str, :dstr
+                  requirement_nodes.first.loc.expression.source
+                else
+                  requirement_nodes.first.children.first.loc.expression.source
+                end
+
+              req_string.match?(/(?<![<>])=/)
+            end
+
+            def new_requirement_string(quote_characters:,
+                                       space_after_specifier:,
+                                       use_equality_operator:)
               open_quote, close_quote = quote_characters
               new_requirement_string =
                 updated_requirement.split(",").
-                map { |r| %(#{open_quote}#{r.strip}#{close_quote}) }.
-                join(", ")
+                map do |r|
+                  req_string = serialized_req(r, use_equality_operator)
+                  %(#{open_quote}#{req_string}#{close_quote})
+                end.join(", ")
 
               new_requirement_string.delete!(" ") unless space_after_specifier
               new_requirement_string
+            end
+
+            def serialized_req(req, use_equality_operator)
+              tmp_req = req
+
+              # Gem::Requirement serializes exact matches as a string starting
+              # with `=`. We may need to remove that equality operator if it
+              # wasn't used originally.
+              unless use_equality_operator
+                tmp_req = tmp_req.gsub(/(?<![<>])=/, "")
+              end
+
+              tmp_req.strip
             end
 
             def range_for(nodes)
