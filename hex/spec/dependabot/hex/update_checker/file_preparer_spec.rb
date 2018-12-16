@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/elixir/hex/file_preparer"
+require "dependabot/hex/update_checker/file_preparer"
 
-RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
+RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
   let(:preparer) do
     described_class.new(
       dependency_files: dependency_files,
@@ -37,13 +37,13 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::FilePreparer do
 
   let(:mixfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("elixir", "mixfiles", mixfile_fixture_name),
+      content: fixture("mixfiles", mixfile_fixture_name),
       name: "mix.exs"
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("elixir", "lockfiles", lockfile_fixture_name),
+      content: fixture("lockfiles", lockfile_fixture_name),
       name: "mix.lock"
     )
   end

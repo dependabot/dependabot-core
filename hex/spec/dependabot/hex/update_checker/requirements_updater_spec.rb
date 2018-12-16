@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/elixir/hex/requirements_updater"
+require "dependabot/hex/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::RequirementsUpdater do
+RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

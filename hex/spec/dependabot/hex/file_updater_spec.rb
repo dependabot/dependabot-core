@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/elixir/hex"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/hex/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
+RSpec.describe Dependabot::Hex::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -28,14 +28,14 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("elixir", "mixfiles", mixfile_fixture_name),
+      content: fixture("mixfiles", mixfile_fixture_name),
       name: "mix.exs"
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "mix.lock",
-      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:mixfile_fixture_name) { "exact_version" }
@@ -111,13 +111,13 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex do
         let(:sub_mixfile1) do
           Dependabot::DependencyFile.new(
             name: "apps/dependabot_business/mix.exs",
-            content: fixture("elixir", "mixfiles", "dependabot_business")
+            content: fixture("mixfiles", "dependabot_business")
           )
         end
         let(:sub_mixfile2) do
           Dependabot::DependencyFile.new(
             name: "apps/dependabot_web/mix.exs",
-            content: fixture("elixir", "mixfiles", "dependabot_web")
+            content: fixture("mixfiles", "dependabot_web")
           )
         end
 

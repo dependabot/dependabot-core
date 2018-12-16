@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/elixir/hex/lockfile_updater"
+require "dependabot/hex/file_updater/lockfile_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::LockfileUpdater do
+RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -22,14 +22,14 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::LockfileUpdater do
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("elixir", "mixfiles", mixfile_fixture_name),
+      content: fixture("mixfiles", mixfile_fixture_name),
       name: "mix.exs"
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "mix.lock",
-      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:mixfile_fixture_name) { "exact_version" }
@@ -164,14 +164,14 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::LockfileUpdater do
 
     context "with a mix.exs that evals another file" do
       let(:mixfile_body) do
-        fixture("elixir", "mixfiles", "loads_file_with_eval")
+        fixture("mixfiles", "loads_file_with_eval")
       end
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
       let(:files) { [mixfile, lockfile, support_file] }
       let(:support_file) do
         Dependabot::DependencyFile.new(
           name: "version",
-          content: fixture("elixir", "support_files", "version"),
+          content: fixture("support_files", "version"),
           support_file: true
         )
       end
@@ -191,13 +191,13 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::LockfileUpdater do
       let(:sub_mixfile1) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_business/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_business")
+          content: fixture("mixfiles", "dependabot_business")
         )
       end
       let(:sub_mixfile2) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_web/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_web")
+          content: fixture("mixfiles", "dependabot_web")
         )
       end
 

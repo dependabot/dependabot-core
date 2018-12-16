@@ -6,7 +6,7 @@ require "dependabot/shared_helpers"
 
 module Dependabot
   module Hex
-    class FileUpdater < Base
+    class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/mixfile_updater"
       require_relative "file_updater/lockfile_updater"
 

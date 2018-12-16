@@ -3,6 +3,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/hex/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -89,27 +90,23 @@ module Dependabot
 
       def mix_env
         {
-          "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
-          "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
-          "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
+          "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+          "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
+          "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
           "MIX_QUIET" => "1"
         }
       end
 
       def elixir_helper_path
-        File.join(project_root, "helpers/elixir/bin/run.exs")
+        File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
       end
 
       def elixir_helper_parse_deps_path
-        File.join(project_root, "helpers/elixir/bin/parse_deps.exs")
+        File.join(NativeHelpers.hex_helpers_dir, "lib/parse_deps.exs")
       end
 
       def check_required_files
         raise "No mixfile!" if mixfiles.none?
-      end
-
-      def project_root
-        File.join(File.dirname(__FILE__), "../../../..")
       end
 
       def symbolize_keys(hash)

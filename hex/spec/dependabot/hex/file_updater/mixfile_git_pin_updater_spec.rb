@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/elixir/hex/mixfile_git_pin_updater"
+require "dependabot/hex/file_updater/mixfile_git_pin_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::MixfileGitPinUpdater do
+RSpec.describe Dependabot::Hex::FileUpdater::MixfileGitPinUpdater do
   let(:updater) do
     described_class.new(
       mixfile_content: mixfile_content,
@@ -16,7 +16,7 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::MixfileGitPinUpdater do
   end
 
   let(:mixfile_content) do
-    fixture("elixir", "mixfiles", mixfile_fixture_name)
+    fixture("mixfiles", mixfile_fixture_name)
   end
   let(:mixfile_fixture_name) { "git_source_tag_can_update" }
   let(:previous_pin) { "v1.2.0" }

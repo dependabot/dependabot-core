@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/elixir/hex/mixfile_updater"
+require "dependabot/hex/file_updater/mixfile_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::MixfileUpdater do
+RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
   let(:updater) do
     described_class.new(
       mixfile: mixfile,
@@ -15,7 +15,7 @@ RSpec.describe Dependabot::FileUpdaters::Elixir::Hex::MixfileUpdater do
 
   let(:mixfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("elixir", "mixfiles", mixfile_fixture_name),
+      content: fixture("mixfiles", mixfile_fixture_name),
       name: "mix.exs"
     )
   end

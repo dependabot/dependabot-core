@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/elixir/version"
+require "dependabot/hex/version"
 
-RSpec.describe Dependabot::Utils::Elixir::Version do
+RSpec.describe Dependabot::Hex::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Utils::Elixir::Version do
       end
     end
 
-    context "compared to a Utils::Python::Version" do
+    context "compared to a Hex::Version" do
       context "that is lower" do
         let(:other_version) { described_class.new("0.9.0") }
         it { is_expected.to eq(1) }

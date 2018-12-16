@@ -3,11 +3,11 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/elixir/hex"
+require "dependabot/hex/update_checker"
 require "dependabot/errors"
-require_relative "../shared_examples_for_update_checkers"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
+RSpec.describe Dependabot::Hex::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -52,12 +52,12 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "mix.lock")
   end
 
-  let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
-  let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+  let(:mixfile_body) { fixture("mixfiles", "minor_version") }
+  let(:lockfile_body) { fixture("lockfiles", "minor_version") }
 
   let(:hex_url) { "https://hex.pm/api/packages/#{dependency_name}" }
   let(:hex_response) do
-    fixture("elixir", "registry_api", "#{dependency_name}_response.json")
+    fixture("registry_api", "#{dependency_name}_response.json")
   end
 
   before do
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         let(:dependency_requirements) do
           [{ file: "mix.exs", requirement: "~> 1.3", groups: [], source: nil }]
         end
-        let(:mixfile_body) { fixture("elixir", "mixfiles", "major_version") }
+        let(:mixfile_body) { fixture("mixfiles", "major_version") }
 
         it { is_expected.to eq(Gem::Version.new("1.4.3")) }
       end
@@ -112,8 +112,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     context "with a dependency with a git source" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+      let(:mixfile_body) { fixture("mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
       let(:dependency_name) { "phoenix" }
       let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
@@ -170,8 +170,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         [{ file: "mix.exs", requirement: "== 1.2.1", groups: [], source: nil }]
       end
 
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "exact_version") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:mixfile_body) { fixture("mixfiles", "exact_version") }
+      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
 
       it { is_expected.to eq(Gem::Version.new("1.2.2")) }
     end
@@ -183,15 +183,15 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
         [{ file: "mix.exs", requirement: "~> 1.2.1", groups: [], source: nil }]
       end
 
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "minor_version") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "minor_version") }
+      let(:mixfile_body) { fixture("mixfiles", "minor_version") }
+      let(:lockfile_body) { fixture("lockfiles", "minor_version") }
 
       it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
     context "with a dependency with a private source" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "private_package") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "private_package") }
+      let(:mixfile_body) { fixture("mixfiles", "private_package") }
+      let(:lockfile_body) { fixture("lockfiles", "private_package") }
 
       before { `mix hex.organization deauth dependabot` }
 
@@ -264,8 +264,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     context "with a dependency with a git source" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+      let(:mixfile_body) { fixture("mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
       context "that is not the dependency we're checking" do
         let(:dependency_name) { "plug" }
@@ -312,10 +312,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
           context "that can update" do
             let(:mixfile_body) do
-              fixture("elixir", "mixfiles", "git_source_tag_can_update")
+              fixture("mixfiles", "git_source_tag_can_update")
             end
             let(:lockfile_body) do
-              fixture("elixir", "lockfiles", "git_source_tag_can_update")
+              fixture("lockfiles", "git_source_tag_can_update")
             end
 
             it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
@@ -323,10 +323,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
           context "that can't update (because of resolvability)" do
             let(:mixfile_body) do
-              fixture("elixir", "mixfiles", "git_source")
+              fixture("mixfiles", "git_source")
             end
             let(:lockfile_body) do
-              fixture("elixir", "lockfiles", "git_source")
+              fixture("lockfiles", "git_source")
             end
 
             it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
@@ -337,10 +337,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
           let(:ref) { nil }
           context "and can update" do
             let(:mixfile_body) do
-              fixture("elixir", "mixfiles", "git_source_no_tag")
+              fixture("mixfiles", "git_source_no_tag")
             end
             let(:lockfile_body) do
-              fixture("elixir", "lockfiles", "git_source_no_tag")
+              fixture("lockfiles", "git_source_no_tag")
             end
             let(:ref) { nil }
             it "updates the dependency" do
@@ -353,10 +353,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
           context "and is blocked from updating" do
             let(:mixfile_body) do
-              fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+              fixture("mixfiles", "git_source_no_tag_blocked")
             end
             let(:lockfile_body) do
-              fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
+              fixture("lockfiles", "git_source_no_tag_blocked")
             end
             let(:ref) { nil }
             it { is_expected.to be_nil }
@@ -366,8 +366,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     context "with a mix.exs that opens another file" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "loads_file") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:mixfile_body) { fixture("mixfiles", "loads_file") }
+      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
 
       let(:dependency_name) { "phoenix" }
       let(:version) { "1.2.1" }
@@ -380,14 +380,14 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
     context "with a mix.exs that evals another file" do
       let(:mixfile_body) do
-        fixture("elixir", "mixfiles", "loads_file_with_eval")
+        fixture("mixfiles", "loads_file_with_eval")
       end
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "exact_version") }
+      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
       let(:files) { [mixfile, lockfile, support_file] }
       let(:support_file) do
         Dependabot::DependencyFile.new(
           name: "version",
-          content: fixture("elixir", "support_files", "version"),
+          content: fixture("support_files", "version"),
           support_file: true
         )
       end
@@ -402,19 +402,19 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     end
 
     context "with an umbrella application" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "umbrella") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "umbrella") }
+      let(:mixfile_body) { fixture("mixfiles", "umbrella") }
+      let(:lockfile_body) { fixture("lockfiles", "umbrella") }
       let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
       let(:sub_mixfile1) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_business/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_business")
+          content: fixture("mixfiles", "dependabot_business")
         )
       end
       let(:sub_mixfile2) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_web/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_web")
+          content: fixture("mixfiles", "dependabot_web")
         )
       end
 
@@ -443,8 +443,8 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
     it { is_expected.to eq(Gem::Version.new("1.3.6")) }
 
     context "with a dependency with a git source" do
-      let(:mixfile_body) { fixture("elixir", "mixfiles", "git_source") }
-      let(:lockfile_body) { fixture("elixir", "lockfiles", "git_source") }
+      let(:mixfile_body) { fixture("mixfiles", "git_source") }
+      let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
       context "that is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
@@ -470,10 +470,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
         context "and has no tag and can update" do
           let(:mixfile_body) do
-            fixture("elixir", "mixfiles", "git_source_no_tag")
+            fixture("mixfiles", "git_source_no_tag")
           end
           let(:lockfile_body) do
-            fixture("elixir", "lockfiles", "git_source_no_tag")
+            fixture("lockfiles", "git_source_no_tag")
           end
           let(:ref) { nil }
           it "updates the dependency" do
@@ -486,10 +486,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
         context "and is blocked from updating" do
           let(:mixfile_body) do
-            fixture("elixir", "mixfiles", "git_source_no_tag_blocked")
+            fixture("mixfiles", "git_source_no_tag_blocked")
           end
           let(:lockfile_body) do
-            fixture("elixir", "lockfiles", "git_source_no_tag_blocked")
+            fixture("lockfiles", "git_source_no_tag_blocked")
           end
           let(:ref) { nil }
           it { is_expected.to be_nil }
@@ -529,10 +529,10 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex do
 
     context "updating a git source" do
       let(:mixfile_body) do
-        fixture("elixir", "mixfiles", "git_source_tag_can_update")
+        fixture("mixfiles", "git_source_tag_can_update")
       end
       let(:lockfile_body) do
-        fixture("elixir", "lockfiles", "git_source_tag_can_update")
+        fixture("lockfiles", "git_source_tag_can_update")
       end
       let(:dependency_name) { "phoenix" }
       let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }

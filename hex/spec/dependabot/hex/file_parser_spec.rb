@@ -2,23 +2,23 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/elixir/hex"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/hex/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Elixir::Hex do
+RSpec.describe Dependabot::Hex::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [mixfile, lockfile] }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
       name: "mix.exs",
-      content: fixture("elixir", "mixfiles", mixfile_fixture_name)
+      content: fixture("mixfiles", mixfile_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "mix.lock",
-      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:mixfile_fixture_name) { "minor_version" }
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       let(:support_file) do
         Dependabot::DependencyFile.new(
           name: "version",
-          content: fixture("elixir", "support_files", "version"),
+          content: fixture("support_files", "version"),
           support_file: true
         )
       end
@@ -338,13 +338,13 @@ RSpec.describe Dependabot::FileParsers::Elixir::Hex do
       let(:sub_mixfile1) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_business/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_business")
+          content: fixture("mixfiles", "dependabot_business")
         )
       end
       let(:sub_mixfile2) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_web/mix.exs",
-          content: fixture("elixir", "mixfiles", "dependabot_web")
+          content: fixture("mixfiles", "dependabot_web")
         )
       end
 

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/elixir/requirement"
-require "dependabot/utils/elixir/version"
+require "dependabot/hex/requirement"
+require "dependabot/hex/version"
 
-RSpec.describe Dependabot::Utils::Elixir::Requirement do
+RSpec.describe Dependabot::Hex::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 
@@ -38,8 +38,8 @@ RSpec.describe Dependabot::Utils::Elixir::Requirement do
       end
     end
 
-    context "with a Utils::Elixir::Version" do
-      let(:version) { Dependabot::Utils::Elixir::Version.new(version_string) }
+    context "with a Hex::Version" do
+      let(:version) { Dependabot::Hex::Version.new(version_string) }
 
       context "for the current version" do
         let(:version_string) { "1.0.0" }

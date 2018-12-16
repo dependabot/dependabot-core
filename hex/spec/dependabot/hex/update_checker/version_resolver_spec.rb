@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/elixir/hex/version_resolver"
+require "dependabot/hex/update_checker/version_resolver"
 
-RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
+RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -43,13 +43,11 @@ RSpec.describe Dependabot::UpdateCheckers::Elixir::Hex::VersionResolver do
       content: mixfile_fixture_body
     )
   end
-  let(:mixfile_fixture_body) do
-    fixture("elixir", "mixfiles", mixfile_fixture_name)
-  end
+  let(:mixfile_fixture_body) { fixture("mixfiles", mixfile_fixture_name) }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "mix.lock",
-      content: fixture("elixir", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
 
