@@ -3,6 +3,7 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/hex/file_parser"
+require "dependabot/hex/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Hex::FileParser do

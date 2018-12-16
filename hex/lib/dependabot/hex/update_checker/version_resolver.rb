@@ -2,6 +2,7 @@
 
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
+require "dependabot/hex/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -143,23 +144,19 @@ module Dependabot
 
         def mix_env
           {
-            "MIX_EXS" => File.join(project_root, "helpers/elixir/mix.exs"),
-            "MIX_LOCK" => File.join(project_root, "helpers/elixir/mix.lock"),
-            "MIX_DEPS" => File.join(project_root, "helpers/elixir/deps"),
+            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
+            "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
             "MIX_QUIET" => "1"
           }
         end
 
         def elixir_helper_path
-          File.join(project_root, "helpers/elixir/bin/run.exs")
+          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
         end
 
         def elixir_helper_check_update_path
-          File.join(project_root, "helpers/elixir/bin/check_update.exs")
-        end
-
-        def project_root
-          File.join(File.dirname(__FILE__), "../../../../..")
+          File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
         end
 
         def organization_credentials

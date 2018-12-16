@@ -16,6 +16,8 @@ module Dependabot
                         '(\+[0-9a-zA-Z\-.]+)?'
 
       def self.correct?(version)
+        return false if version.nil?
+
         version = version.to_s.split("+").first if version.to_s.include?("+")
         super
       end
