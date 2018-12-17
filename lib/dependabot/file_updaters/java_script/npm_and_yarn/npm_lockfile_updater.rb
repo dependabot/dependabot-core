@@ -64,21 +64,12 @@ module Dependabot
           end
 
           def updatable_dependencies(lockfile)
-            path = Pathname.new(lockfile.name).dirname.to_s
+            lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
             dependencies.reject do |dependency|
-              top_level_dependency_not_required?(dependency, path) ||
-                dependency_up_to_date?(lockfile, dependency)
+              dependency_up_to_date?(lockfile, dependency) ||
+                top_level_dependency_update_not_required?(dependency,
+                                                          lockfile_dir)
             end
-          end
-
-          def requirements_for_path(requirements, path)
-            return requirements if path.to_s == "."
-
-            requirements.map do |r|
-              next unless r[:file].start_with?("#{path}/")
-
-              r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
-            end.compact
           end
 
           def dependency_up_to_date?(lockfile, dependency)
@@ -100,9 +91,14 @@ module Dependabot
           # Prevent changes to the lockfile when the dependency has been
           # required in a package.json outside the current folder (e.g. lerna
           # proj)
-          def top_level_dependency_not_required?(dependency, path)
-            dependency.top_level? &&
-              requirements_for_path(dependency.requirements, path).empty?
+          def top_level_dependency_update_not_required?(dependency,
+                                                        lockfile_dir)
+            requirements_for_path = dependency.requirements.select do |req|
+              req_dir = Pathname.new(req[:file]).dirname.to_s
+              req_dir == lockfile_dir
+            end
+
+            dependency.top_level? && requirements_for_path.empty?
           end
 
           def run_current_npm_update(lockfile_name:)
