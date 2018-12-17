@@ -62,6 +62,7 @@ module Dependabot
         DEPENDENCY_TYPES.each do |type|
           manifest_files.each do |file|
             parsed_file(file).fetch(type, {}).each do |name, requirement|
+              next unless name == name_from_declaration(name, requirement)
               next if lockfile && !version_from_lockfile(name, requirement)
 
               dependency_set << Dependency.new(
@@ -119,6 +120,15 @@ module Dependabot
         return declaration["version"] if declaration["version"]
 
         nil
+      end
+
+      def name_from_declaration(name, declaration)
+        return name if declaration.is_a?(String)
+        unless declaration.is_a?(Hash)
+          raise "Unexpected dependency declaration: #{declaration}"
+        end
+
+        declaration.fetch("package", name)
       end
 
       def source_from_declaration(declaration)

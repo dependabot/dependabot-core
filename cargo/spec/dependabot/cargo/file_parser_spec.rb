@@ -84,6 +84,30 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
+      context "with a dependency using an alias" do
+        let(:manifest_fixture_name) { "alias" }
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("regex")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.1.41",
+                file: "Cargo.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+
       context "which is part of a workspace but not the root" do
         let(:manifest_fixture_name) { "workspace_child" }
 
