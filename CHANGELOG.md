@@ -1,3 +1,9 @@
+## v0.85.3, 17 December 2018
+
+- Rust: Ignore aliased dependencies
+- Bump cython from 0.29.1 to 0.29.2 in /python/helpers
+- Ruby: More careful replacement of equality matcher requirements
+
 ## v0.85.2, 15 December 2018
 
 - Switch Ruby RequirementsUpdater logic to use an update strategy, which can be
