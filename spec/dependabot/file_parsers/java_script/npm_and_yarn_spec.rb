@@ -1121,7 +1121,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             its(:requirements) do
               is_expected.to match_array(
                 [{
-                  requirement: "^2.5.1",
+                  requirement: "^3.6.0",
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: nil

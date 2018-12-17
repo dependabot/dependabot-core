@@ -906,10 +906,12 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
       end
     end
 
-    context "with a lerna.json, and lockfiles" do
+    context "with a lerna.json and both yarn and npm lockfiles" do
       let(:files) do
         [
           package_json,
+          package_lock,
+          yarn_lock,
           lerna_json,
           package1,
           package1_yarn_lock,
@@ -923,6 +925,8 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         ]
       end
       let(:manifest_fixture_name) { "lerna.json" }
+      let(:npm_lock_fixture_name) { "lerna.json" }
+      let(:yarn_lock_fixture_name) { "lerna.lock" }
       let(:lerna_json) do
         Dependabot::DependencyFile.new(
           name: "lerna.json",
