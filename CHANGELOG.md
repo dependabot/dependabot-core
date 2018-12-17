@@ -1,3 +1,8 @@
+## v0.86.0, 17 December 2018
+
+- Npm: Fix issue where the wrong lockfile was updated when using both Lerna and
+  npm lockfiles
+
 ## v0.85.3, 17 December 2018
 
 - Rust: Ignore aliased dependencies
