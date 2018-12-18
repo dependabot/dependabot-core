@@ -244,6 +244,13 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           body: fixture("github", "contents_dotnet_csproj_basic.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, File.join(url, "src?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_old.json"),
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     it "fetches the packages.config" do
@@ -333,6 +340,45 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
             src/src.props
           )
         )
+    end
+
+    context "that is nested in a src directory" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_nested_sln.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_with_sln.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/FSharp.sln?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nested.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.count).to eq(4)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.Config
+              src/GraphQL.Common/GraphQL.Common.csproj
+              src/GraphQL.Common/packages.config
+              src/src.props
+            )
+          )
+      end
     end
 
     context "with a Directory.Build.props file" do

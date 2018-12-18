@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "find"
-
 Gem::Specification.new do |spec|
   core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 

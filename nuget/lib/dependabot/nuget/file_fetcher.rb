@@ -75,16 +75,19 @@ module Dependabot
           end.compact
       end
 
-      def sln_file
-        return unless sln_file_name
-
-        @sln_file ||= fetch_file_from_host(sln_file_name)
-      end
-
       def sln_file_name
         sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
+        src_dir = repo_contents.any? { |f| f.name == "src" && f.type == "dir" }
 
-        # If there are no sln files, just return `nil`
+        # If there are no sln files but there is a src directory, check that dir
+        if sln_files.none? && src_dir
+          sln_files = repo_contents(dir: "src").
+                      select { |f| f.name.end_with?(".sln") }.
+                      map { |file| file.dup }.
+                      map { |file| file.tap { |f| f.name = "src/" + f.name } }
+        end
+
+        # Return `nil` if no sln files were found
         return if sln_files.none?
 
         # Use the biggest sln file
@@ -136,6 +139,12 @@ module Dependabot
               nil
             end.compact
           end
+      end
+
+      def sln_file
+        return unless sln_file_name
+
+        @sln_file ||= fetch_file_from_host(sln_file_name)
       end
 
       def csproj_file
