@@ -1,3 +1,7 @@
+## v0.86.1, 18 December 2018
+
+- .NET: Check src directory for sln files by default
+
 ## v0.86.0, 17 December 2018
 
 - Npm: Fix issue where the wrong lockfile was updated when using both Lerna and
