@@ -12,6 +12,7 @@ module Dependabot
       def self.required_files_in?(filenames)
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
+        return true if filenames.any? { |f| f.match?("^src$") }
 
         filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
       end
