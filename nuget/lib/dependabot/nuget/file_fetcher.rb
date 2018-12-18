@@ -83,8 +83,7 @@ module Dependabot
         # If there are no sln files but there is a src directory, check that dir
         if sln_files.none? && src_dir
           sln_files = repo_contents(dir: "src").
-                      select { |f| f.name.end_with?(".sln") }.
-                      map { |file| file.dup }.
+                      select { |f| f.name.end_with?(".sln") }.map(&:dup).
                       map { |file| file.tap { |f| f.name = "src/" + f.name } }
         end
 
