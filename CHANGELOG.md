@@ -1,3 +1,7 @@
+## v0.86.2, 18 December 2018
+
+- Allow .NET repos with a src directory through
+
 ## v0.86.1, 18 December 2018
 
 - .NET: Check src directory for sln files by default
