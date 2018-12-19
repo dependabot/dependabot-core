@@ -9,6 +9,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
+        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:)
           @dependency       = dependency
@@ -95,27 +97,30 @@ module Dependabot
         end
 
         def index_urls
-          main_index_url =
-            config_variable_index_urls[:main] ||
-            pipfile_index_urls[:main] ||
-            requirement_file_index_urls[:main] ||
-            pip_conf_index_urls[:main] ||
-            "https://pypi.python.org/simple/"
-
-          if main_index_url
-            main_index_url = main_index_url.strip.gsub(%r{/*$}, "") + "/"
-          end
-
           extra_index_urls =
             config_variable_index_urls[:extra] +
             pipfile_index_urls[:extra] +
             requirement_file_index_urls[:extra] +
             pip_conf_index_urls[:extra]
 
-          extra_index_urls =
-            extra_index_urls.map { |url| url.strip.gsub(%r{/*$}, "") + "/" }
+          extra_index_urls = extra_index_urls.map do |url|
+            clean_check_and_remove_environment_variables(url)
+          end
 
           [main_index_url, *extra_index_urls].uniq
+        end
+
+        def main_index_url
+          url =
+            config_variable_index_urls[:main] ||
+            pipfile_index_urls[:main] ||
+            requirement_file_index_urls[:main] ||
+            pip_conf_index_urls[:main] ||
+            "https://pypi.python.org/simple/"
+
+          return unless url
+
+          clean_check_and_remove_environment_variables(url)
         end
 
         def registry_response_for_dependency(index_url)
@@ -199,6 +204,27 @@ module Dependabot
             map { |cred| cred["index-url"] }
 
           urls
+        end
+
+        def clean_check_and_remove_environment_variables(url)
+          url = url.strip.gsub(%r{/*$}, "") + "/"
+          return url unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
+
+          config_variable_urls =
+            [
+              config_variable_index_urls[:main],
+              *config_variable_index_urls[:extra]
+            ].
+            compact.
+            map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
+
+          regexp = url.split(ENVIRONMENT_VARIABLE_REGEX).
+                   map { |part| Regexp.quote(part) }.
+                   join(".+")
+          authed_url = config_variable_urls.find { |u| u.match?(regexp) }
+          return authed_url if authed_url
+
+          raise PrivateSourceAuthenticationFailure, url
         end
 
         def ignore_reqs
