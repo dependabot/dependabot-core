@@ -19,21 +19,18 @@ module Dependabot
         ).freeze
 
         def homepage_url
-          if new_source_type == "default" || new_source_type == "rubygems"
-            if rubygems_listing["homepage_uri"]
-              return rubygems_listing["homepage_uri"]
-            end
-          end
+          return super unless %w(default rubygems).include?(new_source_type)
+          return super unless rubygems_api_response["homepage_uri"]
 
-          super
+          rubygems_api_response["homepage_uri"]
         end
 
         private
 
         def look_up_source
           case new_source_type
-          when "default", "rubygems" then find_source_from_rubygems_listing
           when "git" then find_source_from_git_url
+          when "default", "rubygems" then find_source_from_rubygems
           else raise "Unexpected source type: #{new_source_type}"
           end
         end
@@ -48,8 +45,13 @@ module Dependabot
           sources.first[:type] || sources.first.fetch("type")
         end
 
-        def find_source_from_rubygems_listing
-          source_url = rubygems_listing.
+        def find_source_from_rubygems
+          api_source = find_source_from_rubygems_api_response
+          return api_source if api_source
+        end
+
+        def find_source_from_rubygems_api_response
+          source_url = rubygems_api_response.
                        values_at(*SOURCE_KEYS).
                        compact.
                        find { |url| Source.from_url(url) }
@@ -64,8 +66,8 @@ module Dependabot
           Source.from_url(url)
         end
 
-        def rubygems_listing
-          return @rubygems_listing unless @rubygems_listing.nil?
+        def rubygems_api_response
+          return @rubygems_api_response unless @rubygems_api_response.nil?
 
           response =
             Excon.get(
@@ -77,10 +79,10 @@ module Dependabot
           response_body = response.body
           response_body = augment_private_response_if_appropriate(response_body)
 
-          @rubygems_listing = JSON.parse(response_body)
-          append_slash_to_source_code_uri(@rubygems_listing)
+          @rubygems_api_response = JSON.parse(response_body)
+          append_slash_to_source_code_uri(@rubygems_api_response)
         rescue JSON::ParserError, Excon::Error::Timeout
-          @rubygems_listing = {}
+          @rubygems_api_response = {}
         end
 
         def append_slash_to_source_code_uri(listing)
