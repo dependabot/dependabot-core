@@ -1,3 +1,7 @@
+## v0.86.3, 19 December 2018
+
+- Ruby: Fetch gemspec to look for source if API is not available
+
 ## v0.86.2, 18 December 2018
 
 - Allow .NET repos with a src directory through
