@@ -121,7 +121,8 @@ module Dependabot
         def v3_nuget_listings
           return @v3_nuget_listings unless @v3_nuget_listings.nil?
 
-          dependency_urls.
+          @v3_nuget_listings ||=
+            dependency_urls.
             select { |details| details.fetch(:repository_type) == "v3" }.
             map do |url_details|
               versions = versions_for_v3_repository(url_details)
@@ -134,7 +135,8 @@ module Dependabot
         def v2_nuget_listings
           return @v2_nuget_listings unless @v2_nuget_listings.nil?
 
-          dependency_urls.
+          @v2_nuget_listings ||=
+            dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
             map do |url_details|
               response = Excon.get(
