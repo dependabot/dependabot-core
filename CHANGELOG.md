@@ -1,3 +1,8 @@
+## v0.86.4, 19 December 2018
+
+- Python: Raise issue for Python URLs that contain an environment variable
+- Python: Extract LatestVersionFinder tests into separate file
+
 ## v0.86.3, 19 December 2018
 
 - Ruby: Fetch gemspec to look for source if API is not available
