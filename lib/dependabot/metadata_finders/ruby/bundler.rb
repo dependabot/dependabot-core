@@ -47,7 +47,9 @@ module Dependabot
 
         def find_source_from_rubygems
           api_source = find_source_from_rubygems_api_response
-          return api_source if api_source
+          return api_source if api_source || new_source_type == "default"
+
+          find_source_from_gemspec_download
         end
 
         def find_source_from_rubygems_api_response
@@ -66,8 +68,54 @@ module Dependabot
           Source.from_url(url)
         end
 
+        def find_source_from_gemspec_download
+          github_urls = []
+          return unless rubygems_marshalled_gemspec_response
+
+          rubygems_marshalled_gemspec_response.scan(Source::SOURCE_REGEX) do
+            github_urls << Regexp.last_match.to_s
+          end
+
+          source_url = github_urls.find do |url|
+            repo = Source.from_url(url).repo
+            repo.downcase.end_with?(dependency.name)
+          end
+          return unless source_url
+
+          Source.from_url(source_url)
+        end
+
+        # Note: This response MUST NOT be unmarshalled
+        # (as calling Marshal.load is unsafe)
+        def rubygems_marshalled_gemspec_response
+          if defined?(@rubygems_marshalled_gemspec_response)
+            return @rubygems_marshalled_gemspec_response
+          end
+
+          gemspec_uri =
+            "#{registry_url}quick/Marshal.4.8/"\
+            "#{dependency.name}-#{dependency.version}.gemspec.rz"
+
+          response =
+            Excon.get(
+              gemspec_uri,
+              headers: registry_auth_headers,
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+
+          if response.status >= 400
+            return @rubygems_marshalled_gemspec_response = nil
+          end
+
+          @rubygems_marshalled_gemspec_response =
+            Zlib::Inflate.inflate(response.body)
+        rescue Zlib::DataError
+          @rubygems_marshalled_gemspec_response = nil
+        end
+
         def rubygems_api_response
-          return @rubygems_api_response unless @rubygems_api_response.nil?
+          return @rubygems_api_response if defined?(@rubygems_api_response)
 
           response =
             Excon.get(
@@ -76,6 +124,8 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
+          return @rubygems_api_response = {} if response.status >= 400
+
           response_body = response.body
           response_body = augment_private_response_if_appropriate(response_body)
 

@@ -56,12 +56,18 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
       let(:source) do
         { type: "rubygems", url: "https://SECRET_CODES@repo.fury.io/grey/" }
       end
-      let(:rubygems_url) do
+      let(:rubygems_api_url) do
         "https://repo.fury.io/grey/api/v1/gems/business.json"
+      end
+      let(:rubygems_gemspec_url) do
+        "https://repo.fury.io/grey/quick/Marshal.4.8/business-1.0.gemspec.rz"
+      end
+      let(:gemspec_response) do
+        fixture("ruby", "rubygems_responses", "business-1.0.0.gemspec.rz")
       end
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
       before do
-        stub_request(:get, rubygems_url).
+        stub_request(:get, rubygems_api_url).
           with(headers: { "Authorization" => "Basic U0VDUkVUX0NPREVTOg==" }).
           to_return(status: 200, body: rubygems_response)
       end
@@ -87,11 +93,11 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
             }
           ]
         end
-        let(:rubygems_url) do
+        let(:rubygems_api_url) do
           "https://gems.greysteil.com/api/v1/gems/business.json"
         end
         before do
-          stub_request(:get, rubygems_url).
+          stub_request(:get, rubygems_api_url).
             with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
             to_return(status: 200, body: rubygems_response)
         end
@@ -120,6 +126,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               :get,
               "https://rubygems.org/api/v1/gems/business.json"
             )
+          expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
         end
 
         context "but the response doesn't match" do
@@ -132,16 +139,36 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
               body: fixture("ruby", "rubygems_response.json").
                     gsub("1.5.0", "1.5.1")
             )
+
+            stub_request(:get, rubygems_gemspec_url).
+              to_return(status: 200, body: gemspec_response)
           end
 
-          it "hits Rubygems but doesn't augment the details" do
-            expect(finder.source_url).to be_nil
+          it "falls back to getting them gemspec" do
+            expect(finder.source_url).
+              to eq("https://github.com/gocardless/business")
             expect(WebMock).
               to have_requested(
                 :get,
                 "https://rubygems.org/api/v1/gems/business.json"
               )
+            expect(WebMock).to have_requested(:get, rubygems_gemspec_url)
           end
+        end
+      end
+
+      context "but the response is a 400" do
+        before do
+          stub_request(:get, rubygems_api_url).
+            to_return(status: 400, body: "bad request")
+          stub_request(:get, rubygems_gemspec_url).
+            to_return(status: 200, body: gemspec_response)
+        end
+
+        it "falls back to getting them gemspec" do
+          expect(finder.source_url).
+            to eq("https://github.com/gocardless/business")
+          expect(WebMock).to have_requested(:get, rubygems_gemspec_url)
         end
       end
     end
@@ -218,10 +245,12 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
     end
 
     context "for a default source" do
-      let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+      let(:rubygems_api_url) do
+        "https://rubygems.org/api/v1/gems/business.json"
+      end
       let(:rubygems_response_code) { 200 }
       before do
-        stub_request(:get, rubygems_url).
+        stub_request(:get, rubygems_api_url).
           to_return(status: rubygems_response_code, body: rubygems_response)
       end
 
@@ -232,7 +261,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it "caches the call to rubygems" do
           2.times { source_url }
-          expect(WebMock).to have_requested(:get, rubygems_url).once
+          expect(WebMock).to have_requested(:get, rubygems_api_url).once
         end
 
         context "that contains a . suffix (not .git)" do
@@ -273,7 +302,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it "caches the call to rubygems" do
           2.times { source_url }
-          expect(WebMock).to have_requested(:get, rubygems_url).once
+          expect(WebMock).to have_requested(:get, rubygems_api_url).once
         end
       end
 
@@ -286,7 +315,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it "caches the call to rubygems" do
           2.times { source_url }
-          expect(WebMock).to have_requested(:get, rubygems_url).once
+          expect(WebMock).to have_requested(:get, rubygems_api_url).once
         end
       end
 
@@ -299,7 +328,7 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
         it "caches the call to rubygems" do
           2.times { source_url }
-          expect(WebMock).to have_requested(:get, rubygems_url).once
+          expect(WebMock).to have_requested(:get, rubygems_api_url).once
         end
       end
 
@@ -314,11 +343,11 @@ RSpec.describe Dependabot::MetadataFinders::Ruby::Bundler do
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
-    let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
+    let(:rubygems_api_url) { "https://rubygems.org/api/v1/gems/business.json" }
     let(:rubygems_response_code) { 200 }
 
     before do
-      stub_request(:get, rubygems_url).
+      stub_request(:get, rubygems_api_url).
         to_return(status: rubygems_response_code, body: rubygems_response)
     end
 
