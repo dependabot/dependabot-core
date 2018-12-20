@@ -1,3 +1,7 @@
+## v0.86.6, 20 December 2018
+
+- Git: Raise a helpful error if a submodule path doesn't actually point to asubmodule
+
 ## v0.86.5, 20 December 2018
 
 - Actually cache nuget listing results
