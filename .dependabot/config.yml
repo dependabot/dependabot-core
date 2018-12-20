@@ -1,0 +1,22 @@
+version: 1
+update_configs:
+  - package_manager: "ruby:bundler"
+    directory: "/"
+    update_schedule: "live"
+    default_reviewers:
+    - greysteil
+  - package_manager: "elixir:hex"
+    directory: "/helpers/elixir"
+    update_schedule: "live"
+  - package_manager: "javascript"
+    directory: "/helpers/yarn"
+    update_schedule: "live"
+  - package_manager: "javascript"
+    directory: "/helpers/npm"
+    update_schedule: "live"
+  - package_manager: "php:composer"
+    directory: "/helpers/php"
+    update_schedule: "live"
+  - package_manager: "python"
+    directory: "/python/helpers"
+    update_schedule: "live"
