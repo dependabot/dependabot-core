@@ -47,11 +47,7 @@ module Dependabot
                cleanpath.to_path.gsub(%r{^/*}, "")
         sha =  case source.provider
                when "github"
-                 github_client_for_source.contents(
-                   repo,
-                   path: path,
-                   ref: commit
-                 ).sha
+                 fetch_github_submodule_commit(path)
                when "gitlab"
                  tmp_path = path.gsub(%r{^/*}, "")
                  gitlab_client.get_file(repo, tmp_path, commit).blob_id
@@ -66,6 +62,19 @@ module Dependabot
         )
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         raise Dependabot::DependencyFileNotFound, path
+      end
+
+      def fetch_github_submodule_commit(path)
+        content = github_client_for_source.contents(
+          repo,
+          path: path,
+          ref: commit
+        )
+        if content.is_a?(Array) || content.type != "submodule"
+          raise Dependabot::DependencyFileNotFound, path
+        end
+
+        content.sha
       end
     end
   end

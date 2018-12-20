@@ -102,6 +102,54 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
             to raise_error(Dependabot::DependencyFileNotFound)
         end
       end
+
+      context "that has a path that returns a file" do
+        before do
+          stub_request(:get, url + "about/documents?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemfile_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "manifesto?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemfile_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a DependencyFileNotFound error with details" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+
+      context "that has a path that returns a repo" do
+        before do
+          stub_request(:get, url + "about/documents?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "repo_contents.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "manifesto?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "repo_contents.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a DependencyFileNotFound error with details" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
     end
 
     context "with a GitLab source" do
