@@ -1,3 +1,7 @@
+## v0.86.5, 20 December 2018
+
+- Actually cache nuget listing results
+
 ## v0.86.4, 19 December 2018
 
 - Python: Raise issue for Python URLs that contain an environment variable
