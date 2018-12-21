@@ -168,6 +168,7 @@ module Dependabot
 
         def error_suggests_bad_python_version?(message)
           return true if message.include?("not find a version that satisfies")
+          return true if message.include?("No matching distribution found")
 
           message.include?('Command "python setup.py egg_info" failed')
         end
