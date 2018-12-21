@@ -1,3 +1,7 @@
+## v0.86.7, 21 December 2018
+
+- Python: Treat no matching distribution found as suggesting bad Python version
+
 ## v0.86.6, 20 December 2018
 
 - Git: Raise a helpful error if a submodule path doesn't actually point to asubmodule
