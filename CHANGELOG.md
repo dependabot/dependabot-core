@@ -1,3 +1,7 @@
+## v0.86.8, 21 December 2018
+
+- Add python3-enchant dependency
+
 ## v0.86.7, 21 December 2018
 
 - Python: Treat no matching distribution found as suggesting bad Python version
