@@ -1,3 +1,7 @@
+## v0.86.9, 21 December 2018
+
+- Python: Correctly sanitize path dependency paths in pip-compile compiled files
+
 ## v0.86.8, 21 December 2018
 
 - Add python3-enchant dependency
