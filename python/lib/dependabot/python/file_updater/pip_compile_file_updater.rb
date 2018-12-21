@@ -71,7 +71,7 @@ module Dependabot
               updated_content = File.read(file.name)
 
               updated_content =
-                replace_header_with_original(updated_content, file.content)
+                post_process_compiled_file(updated_content, file)
               next if updated_content == file.content
 
               file.dup.tap { |f| f.content = updated_content }
@@ -230,6 +230,11 @@ module Dependabot
           ).updated_content
         end
 
+        def post_process_compiled_file(updated_content, file)
+          content = replace_header_with_original(updated_content, file.content)
+          replace_absolute_file_paths(content, file.content)
+        end
+
         def replace_header_with_original(updated_content, original_content)
           original_header_lines =
             original_content.lines.take_while { |l| l.start_with?("#") }
@@ -238,6 +243,26 @@ module Dependabot
             updated_content.lines.drop_while { |l| l.start_with?("#") }
 
           [*original_header_lines, *updated_content_lines].join
+        end
+
+        def replace_absolute_file_paths(updated_content, original_content)
+          content = updated_content
+
+          update_count = 0
+          original_content.lines.each do |original_line|
+            next unless original_line.start_with?("-e")
+
+            line_to_update =
+              updated_content.lines.
+              select { |l| l.start_with?("-e") }.
+              at(update_count)
+            raise "Mismatch in editable requirements!" unless line_to_update
+
+            content = content.gsub(line_to_update, original_line)
+            update_count += 1
+          end
+
+          content
         end
 
         def pip_compile_options(filename)

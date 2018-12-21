@@ -162,6 +162,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).
+          to include("-e file:///Users/greysteil/code/python-test")
+        expect(updated_files.first.content).to_not include("tmp/dependabot")
+        expect(updated_files.first.content).
           to include("pbr==4.0.2                # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
