@@ -38,6 +38,7 @@ RUN apt-get update \
       tk-dev \
       libxml2-dev \
       libxmlsec1-dev \
+      python3-enchant \
     && locale-gen en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
