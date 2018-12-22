@@ -13,14 +13,15 @@ module Dependabot
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
                 :author_details, :signature_key, :vulnerabilities_fixed,
-                :reviewers, :assignees, :milestone, :branch_name_separator
+                :reviewers, :assignees, :milestone, :branch_name_separator,
+                :auto_merge
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
-                   label_language: false)
+                   label_language: false, auto_merge: false)
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -36,6 +37,7 @@ module Dependabot
       @vulnerabilities_fixed = vulnerabilities_fixed
       @branch_name_separator = branch_name_separator
       @label_language        = label_language
+      @auto_merge            = auto_merge
 
       check_dependencies_have_previous_version
     end
@@ -93,7 +95,8 @@ module Dependabot
         pr_name: message_builder.pr_name,
         author_details: author_details,
         labeler: labeler,
-        assignee: assignees&.first
+        assignee: assignees&.first,
+        auto_merge: auto_merge
       )
     end
 

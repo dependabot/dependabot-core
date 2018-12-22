@@ -9,11 +9,11 @@ module Dependabot
     class Gitlab
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :author_details, :labeler, :assignee
+                  :author_details, :labeler, :assignee, :auto_merge
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, assignee:)
+                     author_details:, labeler:, assignee:, auto_merge:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -25,6 +25,7 @@ module Dependabot
         @author_details = author_details
         @labeler        = labeler
         @assignee       = assignee
+        @auto_merge     = auto_merge
       end
 
       def create
@@ -38,7 +39,12 @@ module Dependabot
         end
 
         labeler.create_default_labels_if_required
-        create_merge_request
+        merge_request = create_merge_request
+        return unless merge_request
+
+        accept_merge_request_when_pipeline_succeeds(merge_request) if auto_merge
+
+        merge_request
       end
 
       private
@@ -110,6 +116,14 @@ module Dependabot
           remove_source_branch: true,
           assignee_id: assignee,
           labels: labeler.labels_for_pr.join(",")
+        )
+      end
+
+      def accept_merge_request_when_pipeline_succeeds(merge_request)
+        gitlab_client_for_source.accept_merge_request(
+          source.repo,
+          merge_request.iid,
+          merge_when_pipeline_succeeds: true
         )
       end
 
