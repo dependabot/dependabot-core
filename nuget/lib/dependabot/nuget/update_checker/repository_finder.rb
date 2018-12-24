@@ -141,6 +141,7 @@ module Dependabot
             map { |c| { url: c.fetch("url"), token: c["token"] } }
         end
 
+        # rubocop:disable Metrics/AbcSize
         def config_file_repositories
           return [] unless config_file
 
@@ -163,11 +164,14 @@ module Dependabot
             known_urls.include?(s.fetch(:url))
           end
 
+          sources.select! { |s| s.fetch(:url)&.include?("://") }
+
           add_config_file_credentials(sources: sources, doc: doc)
           sources.each { |details| details.delete(:key) }
 
           sources
         end
+        # rubocop:enable Metrics/AbcSize
 
         def default_repository_details
           {
