@@ -1,3 +1,7 @@
+## v0.86.10, 24 December 2018
+
+- .NET: Filter out non-URL repos
+
 ## v0.86.9, 21 December 2018
 
 - Python: Correctly sanitize path dependency paths in pip-compile compiled files
