@@ -79,7 +79,7 @@ module Dependabot
             if package_lock
               parsed_package_lock.fetch("dependencies", {}).
                 map { |_, details| details["resolved"] }.compact.
-                reject { |url| !url.is_a?(String) }.
+                select { |url| url.is_a?(String) }.
                 reject { |url| url.start_with?("git") }
             elsif yarn_lock
               yarn_lock.content.scan(/ resolved "(.*?)"/).flatten
