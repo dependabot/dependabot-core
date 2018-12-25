@@ -1,3 +1,8 @@
+## v0.86.11, 25 December 2018
+
+- Ruby: Ensure gemspec paths are always pathnames
+- JS: Handle non-string entries for resolution
+
 ## v0.86.10, 24 December 2018
 
 - .NET: Filter out non-URL repos
