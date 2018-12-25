@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems_version_patch"
+
 module Dependabot
   class Dependency
     attr_reader :name, :version, :requirements, :package_manager,

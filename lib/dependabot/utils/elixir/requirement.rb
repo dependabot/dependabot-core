@@ -10,7 +10,7 @@ module Dependabot
         OR_SEPARATOR = /\s+or\s+/.freeze
 
         # Add the double-equality matcher to the list of allowed operations
-        OPS["=="] = ->(v, r) { v == r }
+        OPS = OPS.merge("==" => ->(v, r) { v == r })
 
         # Override the version pattern to allow local versions
         quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
@@ -45,7 +45,8 @@ module Dependabot
 
         def satisfied_by?(version)
           version = Utils::Elixir::Version.new(version.to_s)
-          super
+
+          requirements.all? { |op, rv| (OPS[op] || OPS["="]).call(version, rv) }
         end
       end
     end

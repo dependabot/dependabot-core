@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "rubygems_version_patch"
 
 # Elm versions require major, minor and patch to be present
 # They don't allow any letters

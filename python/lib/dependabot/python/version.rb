@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "dependabot/utils"
+require "rubygems_version_patch"
+
 # Python versions can include a local version identifier, which Ruby can't
 # parser. This class augments Gem::Version with local version identifier info.
 # See https://www.python.org/dev/peps/pep-0440 for details.

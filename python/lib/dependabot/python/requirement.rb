@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/utils"
 require "dependabot/python/version"
 
 module Dependabot
@@ -8,8 +9,10 @@ module Dependabot
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 
       # Add equality and arbitrary-equality matchers
-      OPS["=="] = ->(v, r) { v == r }
-      OPS["==="] = ->(v, r) { v.to_s == r.to_s }
+      OPS = OPS.merge(
+        "==" => ->(v, r) { v == r },
+        "===" => ->(v, r) { v.to_s == r.to_s }
+      )
 
       quoted = OPS.keys.sort_by(&:length).reverse.
                map { |k| Regexp.quote(k) }.join("|")
@@ -57,7 +60,8 @@ module Dependabot
 
       def satisfied_by?(version)
         version = Python::Version.new(version.to_s)
-        super
+
+        requirements.all? { |op, rv| (OPS[op] || OPS["="]).call(version, rv) }
       end
 
       def exact?

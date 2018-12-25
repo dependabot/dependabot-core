@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems_version_patch"
+
 # Elixir versions can include build information, which Ruby can't parse.
 # This class augments Gem::Version with build information.
 # See https://hexdocs.pm/elixir/Version.html for details.

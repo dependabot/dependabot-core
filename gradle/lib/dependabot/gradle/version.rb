@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "rubygems_version_patch"
 
 # Java versions use dots and dashes when tokenising their versions.
 # Gem::Version converts a "-" to ".pre.", so we override the `to_s` method.

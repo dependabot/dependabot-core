@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems_version_patch"
+
 # JavaScript pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
 # converts into 1.0.1.pre.rc1. We override the `to_s` method to stop that
 # alteration.
