@@ -83,8 +83,6 @@ module Dependabot
           gemspec_files = []
           unfetchable_gems = []
 
-          gemspec_paths = fetch_gemspec_paths
-
           gemspec_paths.each do |path|
             # Get any gemspecs at the path itself
             gemspecs_at_path = fetch_gemspecs_from_directory(path)
@@ -112,6 +110,10 @@ module Dependabot
           end
 
           gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
+        end
+
+        def gemspec_paths
+          fetch_gemspec_paths.map { |path| Pathname.new(path) }
         end
 
         def require_relative_files(files)
