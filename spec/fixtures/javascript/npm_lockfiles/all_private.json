@@ -35,7 +35,7 @@
         },
         "iconv-lite": {
             "version": "0.4.19",
-            "resolved": "https://npm.fury.io/dependabot/iconv-lite/-/iconv-lite-0.4.19.tgz",
+            "resolved": false,
             "integrity": "sha512-oTZqweIP51xaGPI4uPa56/Pri/480R+mo7SeU+YETByQNhDG55ycFyNLIgta9vXhILrxXDmF7ZGhqZIcuN0gJQ=="
         },
         "is-stream": {
