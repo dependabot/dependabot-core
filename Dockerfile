@@ -51,8 +51,8 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
     && apt-get install -y ruby2.5 ruby2.5-dev \
-    && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.17.1
+    && gem update --system 3.0.1 \
+    && gem install bundler -v 1.17.2 --no-document
 
 
 ### PYTHON
@@ -61,10 +61,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.8 && cd - \
-    && pyenv install 3.6.7 \
+    && cd /usr/local/.pyenv && git checkout f07184b3 && cd - \
+    && pyenv install 3.6.8 \
     && pyenv install 2.7.15 \
-    && pyenv global 3.6.7
+    && pyenv global 3.6.8
 
 
 ### JAVASCRIPT
