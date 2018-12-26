@@ -1,3 +1,7 @@
+## v0.86.15, 26 December 2018
+
+- Rust: Handle binary specifications when using 2018 edition
+
 ## v0.86.14, 26 December 2018
 
 - Bump rubygems and Python versions
