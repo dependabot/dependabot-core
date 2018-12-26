@@ -1,3 +1,7 @@
+## v0.86.16, 26 December 2018
+
+- Rust: Handle projects that are part of a workspace (but hard to detect)
+
 ## v0.86.15, 26 December 2018
 
 - Rust: Handle binary specifications when using 2018 edition
