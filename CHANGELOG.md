@@ -1,3 +1,7 @@
+## v0.86.13, 26 December 2018
+
+- Java: Make <=> public
+
 ## v0.86.12, 26 December 2018
 
 - Opt in to Rubygems 4 behaviour through monkey patch
