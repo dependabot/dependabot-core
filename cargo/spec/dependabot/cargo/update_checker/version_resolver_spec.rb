@@ -88,6 +88,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
+    context "with a binary specified" do
+      let(:manifest_fixture_name) { "binary" }
+      let(:lockfile_fixture_name) { "bare_version_specified" }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
     context "with a yanked version (for another dependency)" do
       let(:manifest_fixture_name) { "yanked_version" }
       let(:lockfile_fixture_name) { "yanked_version" }

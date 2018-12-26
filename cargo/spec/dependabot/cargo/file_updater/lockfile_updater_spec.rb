@@ -104,6 +104,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         )
       end
 
+      context "with a binary specified" do
+        let(:manifest_fixture_name) { "binary" }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "time"\nversion = "0.1.40"))
+        end
+      end
+
       context "with a blank requirement" do
         let(:manifest_fixture_name) { "blank_version" }
         let(:lockfile_fixture_name) { "blank_version" }

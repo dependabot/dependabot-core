@@ -202,8 +202,10 @@ module Dependabot
         def sanitized_manifest_content(content)
           object = TomlRB.parse(content)
 
+          object.delete("bin")
+
           package_name = object.dig("package", "name")
-          return content unless package_name&.match?(/[\{\}]/)
+          return TomlRB.dump(object) unless package_name&.match?(/[\{\}]/)
 
           if lockfile
             raise "Sanitizing name for pkg with lockfile. Investigate!"

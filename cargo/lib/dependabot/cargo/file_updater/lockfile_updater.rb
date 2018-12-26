@@ -138,6 +138,7 @@ module Dependabot
           content = updated_manifest_content(file)
           content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
+          content = remove_binary_specifications(content)
           content
         end
 
@@ -177,6 +178,12 @@ module Dependabot
             content = content.gsub(ssh_url, https_url)
           end
           content
+        end
+
+        def remove_binary_specifications(content)
+          parsed_manifest = TomlRB.parse(content)
+          parsed_manifest.delete("bin")
+          TomlRB.dump(parsed_manifest)
         end
 
         def post_process_lockfile(content)
