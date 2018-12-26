@@ -46,8 +46,7 @@ module Dependabot
               run_cargo_command(command)
             end
 
-            new_lockfile_content = File.read("Cargo.lock")
-            updated_version = get_version_from_lockfile(new_lockfile_content)
+            updated_version = fetch_version_from_new_lockfile
 
             return if updated_version.nil?
             return updated_version if git_dependency?
@@ -58,7 +57,9 @@ module Dependabot
           handle_cargo_errors(error)
         end
 
-        def get_version_from_lockfile(lockfile_content)
+        def fetch_version_from_new_lockfile
+          check_rust_workspace_root unless File.exist?("Cargo.lock")
+          lockfile_content = File.read("Cargo.lock")
           versions = TomlRB.parse(lockfile_content).fetch("package").
                      select { |p| p["name"] == dependency.name }
 
@@ -109,6 +110,22 @@ module Dependabot
 
           File.write(lockfile.name, lockfile.content) if lockfile
           File.write(toolchain.name, toolchain.content) if toolchain
+        end
+
+        def check_rust_workspace_root
+          cargo_toml = original_dependency_files.
+                       select { |f| f.name.end_with?("../Cargo.toml") }.
+                       max_by { |f| f.name.length }
+          return unless TomlRB.parse(cargo_toml.content)["workspace"]
+
+          msg = "This project is part of a Rust workspace but is not the "\
+                "workspace root."\
+
+          if cargo_toml.directory != "/"
+            msg += "Please update your settings so Dependabot points at the "\
+                   "workspace root instead of #{cargo_toml.directory}."
+          end
+          raise Dependabot::DependencyFileNotResolvable, msg
         end
 
         def handle_cargo_errors(error)

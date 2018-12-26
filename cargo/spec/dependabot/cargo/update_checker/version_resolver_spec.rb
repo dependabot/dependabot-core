@@ -310,6 +310,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
       it { is_expected.to be >= Gem::Version.new("0.4.4") }
 
+      context "but Dependabot has been asked to run on only a child" do
+        let(:unprepared_dependency_files) { [manifest, workspace_child] }
+        let(:manifest) do
+          Dependabot::DependencyFile.new(
+            name: "../../Cargo.toml",
+            directory: "lib/sub_crate/",
+            content: fixture("manifests", "workspace_root")
+          )
+        end
+        let(:workspace_child) do
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            directory: "lib/sub_crate/",
+            content: fixture("manifests", "workspace_child")
+          )
+        end
+        let(:requirements) do
+          [{
+            requirement: "=0.4.0",
+            file: "Cargo.toml",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the right details are included
+              expect(error.message).to include("part of a Rust workspace")
+            end
+        end
+      end
+
       context "but it is not correctly set up" do
         let(:unprepared_dependency_files) do
           [manifest, workspace_child]
