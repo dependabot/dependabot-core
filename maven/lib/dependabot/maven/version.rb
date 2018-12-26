@@ -52,18 +52,6 @@ module Dependabot
         end
       end
 
-      private
-
-      def tokens
-        @tokens ||=
-          begin
-            version = @version_string.to_s.downcase
-            version = fill_tokens(version)
-            version = trim_version(version)
-            split_into_prefixed_tokens(version).map { |t| t[1..-1] }
-          end
-      end
-
       def <=>(other)
         version = stringify_version(@version_string)
         version = fill_tokens(version)
@@ -92,6 +80,18 @@ module Dependabot
         end
 
         0
+      end
+
+      private
+
+      def tokens
+        @tokens ||=
+          begin
+            version = @version_string.to_s.downcase
+            version = fill_tokens(version)
+            version = trim_version(version)
+            split_into_prefixed_tokens(version).map { |t| t[1..-1] }
+          end
       end
 
       def stringify_version(version)
