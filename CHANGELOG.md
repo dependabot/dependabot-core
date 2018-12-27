@@ -1,3 +1,7 @@
+## v0.86.17, 27 December 2018
+
+- Add ext-sqlite3 support for PHP by adding in Dockerfile
+
 ## v0.86.16, 26 December 2018
 
 - Rust: Handle projects that are part of a workspace (but hard to detect)
