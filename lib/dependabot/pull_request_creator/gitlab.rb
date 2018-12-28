@@ -9,11 +9,13 @@ module Dependabot
     class Gitlab
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :author_details, :labeler, :assignee
+                  :author_details, :labeler, :approvers, :assignee,
+                  :milestone
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, assignee:)
+                     author_details:, labeler:, approvers:, assignee:,
+                     milestone:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -24,7 +26,9 @@ module Dependabot
         @pr_name        = pr_name
         @author_details = author_details
         @labeler        = labeler
+        @approvers      = approvers
         @assignee       = assignee
+        @milestone      = milestone
       end
 
       def create
@@ -38,7 +42,12 @@ module Dependabot
         end
 
         labeler.create_default_labels_if_required
-        create_merge_request
+        merge_request = create_merge_request
+        return unless merge_request
+
+        annotate_merge_request(merge_request)
+
+        merge_request
       end
 
       private
@@ -123,7 +132,24 @@ module Dependabot
           description: pr_description,
           remove_source_branch: true,
           assignee_id: assignee,
-          labels: labeler.labels_for_pr.join(",")
+          labels: labeler.labels_for_pr.join(","),
+          milestone_id: milestone
+        )
+      end
+
+      def annotate_merge_request(merge_request)
+        add_approvers_to_merge_request(merge_request) if approvers&.any?
+      end
+
+      def add_approvers_to_merge_request(merge_request)
+        approvers_hash =
+          Hash[approvers.keys.map { |k| [k.to_sym, approvers[k]] }]
+
+        gitlab_client_for_source.edit_merge_request_approvers(
+          source.repo,
+          merge_request.iid,
+          approver_ids: approvers_hash[:approvers] || [],
+          approver_group_ids: approvers_hash[:group_approvers] || []
         )
       end
 
