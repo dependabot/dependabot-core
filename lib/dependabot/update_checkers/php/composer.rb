@@ -52,8 +52,18 @@ module Dependabot
             requirements: dependency.requirements,
             latest_version: latest_version&.to_s,
             latest_resolvable_version: latest_resolvable_version&.to_s,
-            library: library?
+            update_strategy: requirements_update_strategy,
           ).updated_requirements
+        end
+
+        def requirements_update_strategy
+          # If passed in as an option (in the base class) honour that option
+          if @requirements_update_strategy
+            return @requirements_update_strategy.to_sym
+          end
+
+          # Otherwise, widen ranges for libraries and bump versions for apps
+          library? ? :bump_versions_if_necessary : :bump_versions
         end
 
         private

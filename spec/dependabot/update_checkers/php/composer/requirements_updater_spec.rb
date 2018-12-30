@@ -7,7 +7,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      library: library,
+      update_strategy: update_strategy,
       latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
@@ -24,7 +24,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
   end
   let(:composer_json_req_string) { "^1.4.0" }
 
-  let(:library) { false }
+  let(:update_strategy) { :bump_versions }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
     end
 
     context "for an app requirement" do
-      let(:library) { false }
+      let(:update_strategy) { :bump_versions }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
     end
 
     context "for a library requirement" do
-      let(:library) { true }
+      let(:update_strategy) { :bump_versions_if_necessary }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }

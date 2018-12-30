@@ -21,11 +21,15 @@ module Dependabot
             /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
           OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
           SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/.freeze
+          ALLOWED_UPDATE_STRATEGIES =
+            %i(bump_versions bump_versions_if_necessary).freeze
 
-          def initialize(requirements:, library:,
+          def initialize(requirements:, update_strategy:,
                          latest_version:, latest_resolvable_version:)
             @requirements = requirements
-            @library = library
+            @update_strategy = update_strategy
+
+            check_update_strategy
 
             if latest_version
               @latest_version = version_class.new(latest_version)
@@ -45,7 +49,14 @@ module Dependabot
 
           private
 
-          attr_reader :requirements, :latest_version, :latest_resolvable_version
+          attr_reader :requirements, :update_strategy,
+                      :latest_version, :latest_resolvable_version
+
+          def check_update_strategy
+            return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
+
+            raise "Unknown update strategy: #{update_strategy}"
+          end
 
           # rubocop:disable Metrics/PerceivedComplexity
           def updated_requirement(req)
@@ -63,8 +74,11 @@ module Dependabot
             return req if req_satisfied_by_latest_resolvable?(req_string)
 
             new_req =
-              if library? then updated_library_requirement(req, or_separator)
-              else updated_app_requirement(req, or_separator)
+              case update_strategy
+              when :bump_versions_if_necessary
+                updated_library_requirement(req, or_separator)
+              when :bump_versions
+                updated_app_requirement(req, or_separator)
               end
 
             new_req_string =
@@ -84,10 +98,6 @@ module Dependabot
             new_version_string = latest_resolvable_version.to_s
             new_req = req_string.sub(real_version, new_version_string)
             req.merge(requirement: new_req)
-          end
-
-          def library?
-            @library
           end
 
           def updated_app_requirement(req, or_separator)
