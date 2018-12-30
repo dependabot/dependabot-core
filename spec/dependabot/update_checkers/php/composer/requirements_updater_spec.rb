@@ -41,8 +41,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
       its([:requirement]) { is_expected.to eq(composer_json_req_string) }
     end
 
-    context "for an app requirement" do
-      let(:update_strategy) { :bump_versions }
+    context "with bump_versions_if_necessary as the update strategy" do
+      let(:update_strategy) { :bump_versions_if_necessary }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }
@@ -130,6 +130,11 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
           context "specified at two digits" do
             let(:composer_json_req_string) { "^0.2" }
             its([:requirement]) { is_expected.to eq("^1.5") }
+          end
+
+          context "that covers the new version" do
+            let(:composer_json_req_string) { "^1.4" }
+            its([:requirement]) { is_expected.to eq("^1.4") }
           end
 
           context "with a stability flag" do
@@ -260,8 +265,8 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
       end
     end
 
-    context "for a library requirement" do
-      let(:update_strategy) { :bump_versions_if_necessary }
+    context "with widen_ranges as the update strategy" do
+      let(:update_strategy) { :widen_ranges }
 
       context "when there is a resolvable version" do
         let(:latest_resolvable_version) { "1.5.0" }

@@ -22,7 +22,7 @@ module Dependabot
           OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
           SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/.freeze
           ALLOWED_UPDATE_STRATEGIES =
-            %i(bump_versions bump_versions_if_necessary).freeze
+            %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 
           def initialize(requirements:, update_strategy:,
                          latest_version:, latest_resolvable_version:)
@@ -71,13 +71,14 @@ module Dependabot
             return req unless req_string.match?(/\d/)
             return req if numeric_or_string_reqs.none?
             return updated_alias(req) if req_string.match?(ALIAS_REGEX)
-            return req if req_satisfied_by_latest_resolvable?(req_string)
+            return req if req_satisfied_by_latest_resolvable?(req_string) &&
+                          update_strategy != :bump_versions
 
             new_req =
               case update_strategy
-              when :bump_versions_if_necessary
+              when :widen_ranges
                 updated_library_requirement(req, or_separator)
-              when :bump_versions
+              when :bump_versions, :bump_versions_if_necessary
                 updated_app_requirement(req, or_separator)
               end
 

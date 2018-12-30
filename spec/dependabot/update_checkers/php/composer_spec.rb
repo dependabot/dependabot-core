@@ -773,7 +773,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
           requirements: dependency_requirements,
           latest_version: "1.7.0",
           latest_resolvable_version: "1.6.0",
-          update_strategy: :bump_versions
+          update_strategy: :bump_versions_if_necessary
         ).
         and_call_original
       expect(checker.updated_requirements).

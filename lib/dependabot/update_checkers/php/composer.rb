@@ -63,7 +63,7 @@ module Dependabot
           end
 
           # Otherwise, widen ranges for libraries and bump versions for apps
-          library? ? :bump_versions_if_necessary : :bump_versions
+          library? ? :widen_ranges : :bump_versions_if_necessary
         end
 
         private
