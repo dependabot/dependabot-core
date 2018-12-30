@@ -59,6 +59,7 @@ module Dependabot
           end
 
           # rubocop:disable Metrics/PerceivedComplexity
+          # rubocop:disable Metrics/CyclomaticComplexity
           def updated_requirement(req)
             req_string = req[:requirement].strip
             or_string_reqs = req_string.split(OR_SEPARATOR)
@@ -77,9 +78,9 @@ module Dependabot
             new_req =
               case update_strategy
               when :widen_ranges
-                updated_library_requirement(req, or_separator)
+                widen_requirement(req, or_separator)
               when :bump_versions, :bump_versions_if_necessary
-                updated_app_requirement(req, or_separator)
+                update_requirement_version(req, or_separator)
               end
 
             new_req_string =
@@ -87,6 +88,7 @@ module Dependabot
             new_req.merge(requirement: new_req_string)
           end
           # rubocop:enable Metrics/PerceivedComplexity
+          # rubocop:enable Metrics/CyclomaticComplexity
 
           def updated_alias(req)
             req_string = req[:requirement]
@@ -101,23 +103,7 @@ module Dependabot
             req.merge(requirement: new_req)
           end
 
-          def updated_app_requirement(req, or_separator)
-            current_requirement = req[:requirement]
-            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
-
-            updated_requirement =
-              if reqs.count > 1
-                "^#{latest_resolvable_version}"
-              elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
-                update_range_requirement(current_requirement, or_separator)
-              else
-                update_version_string(current_requirement)
-              end
-
-            req.merge(requirement: updated_requirement)
-          end
-
-          def updated_library_requirement(req, or_separator)
+          def widen_requirement(req, or_separator)
             current_requirement = req[:requirement]
             reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
@@ -130,6 +116,24 @@ module Dependabot
                 update_wildcard_requirement(current_requirement, or_separator)
               elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
                 update_range_requirement(current_requirement, or_separator)
+              else
+                update_version_string(current_requirement)
+              end
+
+            req.merge(requirement: updated_requirement)
+          end
+
+          def update_requirement_version(req, or_separator)
+            current_requirement = req[:requirement]
+            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
+
+            updated_requirement =
+              if reqs.count > 1
+                "^#{latest_resolvable_version}"
+              elsif reqs.any? { |r| r.match?(/<|(\s+-\s+)/) }
+                update_range_requirement(current_requirement, or_separator)
+              elsif reqs.any? { |r| r.match?(/>[^=]/) }
+                current_requirement
               else
                 update_version_string(current_requirement)
               end

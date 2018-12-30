@@ -229,20 +229,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
       context "when given credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "composer_repository",
-              "registry" => "php.fury.io",
-              "username" => "user",
-              "password" => "pass"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "php.fury.io",
+            "username" => "user",
+            "password" => "pass"
+          }]
         end
 
         it "uses the credentials" do
@@ -447,20 +444,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
       context "with good credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "composer_repository",
-              "registry" => "php.fury.io",
-              "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
-              "password" => ""
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "php.fury.io",
+            "username" => "yFu9PBmw1HxNjFB818TW", # Throwaway account
+            "password" => ""
+          }]
         end
 
         it { is_expected.to be >= Gem::Version.new("2.2.0") }
@@ -468,20 +462,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
 
       context "with bad credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "composer_repository",
-              "registry" => "php.fury.io",
-              "username" => "bad",
-              "password" => ""
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "php.fury.io",
+            "username" => "bad",
+            "password" => ""
+          }]
         end
 
         it "raises a helpful error message" do

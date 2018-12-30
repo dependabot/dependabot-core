@@ -245,20 +245,243 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
           it "updates both requirements" do
             expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "composer.json",
-                  requirement: "1.5.0",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/composer.json",
-                  requirement: "1.*.*",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "composer.json",
+                requirement: "1.5.0",
+                groups: [],
+                source: nil
+              }, {
+                file: "another/composer.json",
+                requirement: "1.*.*",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+    end
+
+    context "with bump_versions as the update strategy" do
+      let(:update_strategy) { :bump_versions }
+
+      context "when there is a resolvable version" do
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        context "and a full version was previously specified" do
+          let(:composer_json_req_string) { "1.2.3" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "and a version with a v-prefix was previously specified" do
+          let(:composer_json_req_string) { "v1.2.3" }
+          its([:requirement]) { is_expected.to eq("v1.5.0") }
+        end
+
+        context "and a non-numeric version was previously specified" do
+          let(:composer_json_req_string) { "@stable" }
+          its([:requirement]) { is_expected.to eq("@stable") }
+        end
+
+        context "and a branch was previously specified" do
+          let(:composer_json_req_string) { "dev-long-line-fixers2" }
+          its([:requirement]) { is_expected.to eq("dev-long-line-fixers2") }
+
+          context "in an or requirement" do
+            context "when the requirement is satisfied" do
+              let(:composer_json_req_string) { "^1.5.0 || dev-master" }
+              its([:requirement]) do
+                is_expected.to eq(composer_json_req_string)
+              end
+            end
+
+            context "when the requirement is not satisfied" do
+              let(:composer_json_req_string) { "dev-master || ^0.9.0" }
+              its([:requirement]) { is_expected.to eq("^1.5.0 || dev-master") }
+            end
+          end
+        end
+
+        context "and a commit sha was previously specified" do
+          let(:composer_json_req_string) { "dev-master#c87d856" }
+          its([:requirement]) { is_expected.to eq("dev-master#c87d856") }
+        end
+
+        context "and a stability flag was specified" do
+          let(:composer_json_req_string) { "1.2.3@dev" }
+          its([:requirement]) { is_expected.to eq("1.5.0@dev") }
+        end
+
+        context "and an alias was specified" do
+          let(:composer_json_req_string) { "mybranch as 1.2.x" }
+          its([:requirement]) { is_expected.to eq(composer_json_req_string) }
+
+          context "that specifies a numeric version" do
+            let(:composer_json_req_string) { "1.2.0 as 1.0.0" }
+            its([:requirement]) { is_expected.to eq("1.5.0 as 1.0.0") }
+          end
+        end
+
+        context "and a partial version was previously specified" do
+          let(:composer_json_req_string) { "0.1" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "and only the major part was previously specified" do
+          let(:composer_json_req_string) { "1" }
+          let(:latest_resolvable_version) { "4.5.0" }
+          its([:requirement]) { is_expected.to eq("4.5.0") }
+        end
+
+        context "and the new version has fewer digits than the old one" do
+          let(:composer_json_req_string) { "1.1.0.1" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
+
+        context "and the new version has much fewer digits than the old one" do
+          let(:composer_json_req_string) { "1.1.0.1" }
+          let(:latest_resolvable_version) { "4" }
+          its([:requirement]) { is_expected.to eq("4") }
+        end
+
+        context "and a caret was previously specified" do
+          let(:composer_json_req_string) { "^0.2.3" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "specified at two digits" do
+            let(:composer_json_req_string) { "^0.2" }
+            its([:requirement]) { is_expected.to eq("^1.5") }
+          end
+
+          context "that covers the new version" do
+            let(:composer_json_req_string) { "^1.4" }
+            its([:requirement]) { is_expected.to eq("^1.5") }
+          end
+
+          context "with a stability flag" do
+            let(:composer_json_req_string) { "^0.2.3@dev" }
+            its([:requirement]) { is_expected.to eq("^1.5.0@dev") }
+          end
+        end
+
+        context "and a >= was previously specified" do
+          let(:composer_json_req_string) { ">= 1.2.3" }
+          its([:requirement]) { is_expected.to eq(">= 1.5.0") }
+        end
+
+        context "and a > was previously specified" do
+          let(:composer_json_req_string) { "> 1.2.3" }
+          its([:requirement]) { is_expected.to eq("> 1.2.3") }
+        end
+
+        context "and a tilda was previously specified" do
+          let(:latest_resolvable_version) { "2.5.3" }
+
+          context "with three digits" do
+            let(:composer_json_req_string) { "~1.5.1" }
+            its([:requirement]) { is_expected.to eq("~2.5.3") }
+          end
+
+          context "with two digits" do
+            let(:composer_json_req_string) { "~1.4" }
+            its([:requirement]) { is_expected.to eq("~2.5") }
+          end
+        end
+
+        context "and a pre-release was previously specified" do
+          let(:composer_json_req_string) { "^0.2.3beta" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+        end
+
+        context "and a * was previously specified" do
+          context "and two *'s were specified" do
+            let(:composer_json_req_string) { "1.4.*" }
+            its([:requirement]) { is_expected.to eq("1.5.*") }
+          end
+
+          context "and two *'s were specified" do
+            let(:composer_json_req_string) { "1.*.*" }
+            its([:requirement]) { is_expected.to eq("1.*.*") }
+
+            context "that aren't satisfied" do
+              let(:composer_json_req_string) { "0.*.*" }
+              its([:requirement]) { is_expected.to eq("1.*.*") }
+            end
+          end
+
+          context "with fewer digits than the new version" do
+            let(:composer_json_req_string) { "0.*" }
+            its([:requirement]) { is_expected.to eq("1.*") }
+          end
+
+          context "with just *" do
+            let(:composer_json_req_string) { "*" }
+            its([:requirement]) { is_expected.to eq("*") }
+          end
+        end
+
+        context "and a < was previously specified" do
+          let(:composer_json_req_string) { "< 1.2.3" }
+          its([:requirement]) { is_expected.to eq("< 1.5.1") }
+        end
+
+        context "and a - was previously specified" do
+          let(:composer_json_req_string) { "1.2.3 - 1.4.0" }
+          its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+
+          context "with a pre-release version" do
+            let(:composer_json_req_string) { "1.2.3-rc1 - 1.4.0" }
+            its([:requirement]) { is_expected.to eq("1.2.3-rc1 - 1.6.0") }
+          end
+        end
+
+        context "and there were multiple specifications" do
+          let(:composer_json_req_string) { "> 1.0.0 < 1.2.0" }
+          its([:requirement]) { is_expected.to eq("^1.5.0") }
+
+          context "specified with commas" do
+            let(:composer_json_req_string) { "> 1.0.0, < 1.2.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "specified with ||" do
+            let(:composer_json_req_string) { "^0.0.0 || ^2.0.0" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+
+          context "that include a pre-release" do
+            let(:composer_json_req_string) { ">=1.2.0,<1.4.0-dev" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
+        end
+
+        context "and there were multiple requirements" do
+          let(:requirements) { [composer_json_req, other_composer_json_req] }
+
+          let(:other_composer_json_req) do
+            {
+              file: "another/composer.json",
+              requirement: other_requirement_string,
+              groups: [],
+              source: nil
+            }
+          end
+          let(:composer_json_req_string) { "1.2.3" }
+          let(:other_requirement_string) { "0.*.*" }
+
+          it "updates both requirements" do
+            expect(updater.updated_requirements).to match_array(
+              [{
+                file: "composer.json",
+                requirement: "1.5.0",
+                groups: [],
+                source: nil
+              }, {
+                file: "another/composer.json",
+                requirement: "1.*.*",
+                groups: [],
+                source: nil
+              }]
             )
           end
         end
@@ -465,20 +688,17 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
 
           it "updates the requirement that needs to be updated" do
             expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "composer.json",
-                  requirement: "^1.2.3",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/composer.json",
-                  requirement: "0.*.* || 1.*.*",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "composer.json",
+                requirement: "^1.2.3",
+                groups: [],
+                source: nil
+              }, {
+                file: "another/composer.json",
+                requirement: "0.*.* || 1.*.*",
+                groups: [],
+                source: nil
+              }]
             )
           end
         end
