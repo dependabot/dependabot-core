@@ -1,3 +1,9 @@
+## v0.86.18, 30 December 2018
+
+- PHP: Handle > requirements correctly when bumping versions
+- PHP: Add widen_ranges update strategy to PHP
+- PHP: Allow update strategy to be passed as an option
+
 ## v0.86.17, 27 December 2018
 
 - Add ext-sqlite3 support for PHP by adding in Dockerfile
