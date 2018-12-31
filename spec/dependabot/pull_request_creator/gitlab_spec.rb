@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/gitlab"
 
@@ -120,6 +121,42 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         to have_requested(:post, "#{repo_api_url}/repository/commits")
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/merge_requests")
+    end
+
+    context "with a submodule" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "manifesto",
+            type: "submodule",
+            content: "sha1"
+          )
+        ]
+      end
+
+      before do
+        stub_request(:put, "#{repo_api_url}/repository/submodules/manifesto").
+          to_return(status: 200,
+                    body: fixture("gitlab", "create_commit.json"),
+                    headers: json_header)
+      end
+
+      it "pushes a commit to GitLab and creates a merge request" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(
+            :put, "#{repo_api_url}/repository/submodules/manifesto"
+          ).with(
+            body: hash_including(
+              branch: branch_name,
+              commit_sha: "sha1",
+              commit_message: commit_message
+            )
+          )
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests")
+      end
     end
 
     context "when the branch already exists" do

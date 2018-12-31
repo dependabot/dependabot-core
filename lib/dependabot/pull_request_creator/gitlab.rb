@@ -82,8 +82,10 @@ module Dependabot
       end
 
       def create_commit
-        # TODO: Handle submodule updates on GitLab
-        # (see https://gitlab.com/gitlab-org/gitlab-ce/issues/41213)
+        if files.count == 1 && files.first.type == "submodule"
+          return create_submodule_update_commit
+        end
+
         actions = files.map do |file|
           {
             action: "update",
@@ -97,6 +99,18 @@ module Dependabot
           branch_name,
           commit_message,
           actions
+        )
+      end
+
+      def create_submodule_update_commit
+        file = files.first
+
+        gitlab_client_for_source.edit_submodule(
+          source.repo,
+          file.path.gsub(%r{^/}, ""),
+          branch: branch_name,
+          commit_sha: file.content,
+          commit_message: commit_message
         )
       end
 
