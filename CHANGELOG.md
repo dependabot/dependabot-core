@@ -1,3 +1,7 @@
+## v0.86.19, 31 December 2018
+
+- Patch Rubygems requirement equality
+
 ## v0.86.18, 30 December 2018
 
 - PHP: Handle > requirements correctly when bumping versions
