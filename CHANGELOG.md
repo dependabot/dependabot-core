@@ -1,3 +1,7 @@
+## v0.86.20, 31 December 2018
+
+- Update GitLab submodules
+
 ## v0.86.19, 31 December 2018
 
 - Patch Rubygems requirement equality
