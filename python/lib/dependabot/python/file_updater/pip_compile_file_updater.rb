@@ -232,6 +232,7 @@ module Dependabot
 
         def post_process_compiled_file(updated_content, file)
           content = replace_header_with_original(updated_content, file.content)
+          content = update_hashes_if_required(content, file.content)
           replace_absolute_file_paths(content, file.content)
         end
 
@@ -263,6 +264,16 @@ module Dependabot
           end
 
           content
+        end
+
+        def update_hashes_if_required(updated_content, _original_content)
+          # TODO: Update the hashes if required.
+          # See https://github.com/dependabot/feedback/issues/235
+          #
+          # 1. Parse the old and new files
+          # 2. For any dependency where the number of hashes has changed, use
+          #    hashin to update the hashes
+          updated_content
         end
 
         def pip_compile_options(filename)
