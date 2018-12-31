@@ -2,6 +2,7 @@
 
 require "dependabot/utils"
 require "dependabot/terraform/version"
+require "rubygems_requirement_patch"
 
 # Just ensures that Terraform requirements use Terraform versions
 module Dependabot

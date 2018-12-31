@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/php/version"
+require "rubygems_requirement_patch"
 
 module Dependabot
   module Utils

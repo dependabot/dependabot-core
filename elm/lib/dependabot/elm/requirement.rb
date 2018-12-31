@@ -2,6 +2,7 @@
 
 require "dependabot/utils"
 require "dependabot/elm/version"
+require "rubygems_requirement_patch"
 
 module Dependabot
   module Elm

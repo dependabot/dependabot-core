@@ -41,21 +41,21 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with a ~ version specified" do
       let(:requirement_string) { "~1.5.1" }
-      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
     end
 
     context "with a hyphen range specified" do
       let(:requirement_string) { "1.0.0 - 1.5.0" }
-      it { is_expected.to eq(Gem::Requirement.new(["<= 1.5.0", ">= 1.0.0"])) }
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")) }
     end
 
     context "with a ~> version specified" do
       let(:requirement_string) { "~>1.5.1" }
-      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
 
       context "specified to 2 places" do
         let(:requirement_string) { "~> 0.5" }
-        it { is_expected.to eq(Gem::Requirement.new("~> 0.5.0")) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 0.5").to_s) }
       end
     end
 
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with a *" do
       let(:requirement_string) { "1.*" }
-      it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
     end
 
     context "with an x" do
@@ -85,11 +85,11 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
 
     context "with multiple intersecting requirements" do
       let(:requirement_string) { ">=1.0.0 <=1.5.0" }
-      it { is_expected.to eq([Gem::Requirement.new("<= 1.5.0", ">= 1.0.0")]) }
+      it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
 
       context "separated by &&" do
         let(:requirement_string) { ">=1.0.0 && <=1.5.0" }
-        it { is_expected.to eq([Gem::Requirement.new("<= 1.5.0", ">= 1.0.0")]) }
+        it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
       end
     end
 

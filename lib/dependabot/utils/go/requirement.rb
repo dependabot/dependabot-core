@@ -7,6 +7,7 @@
 ################################################################################
 
 require "dependabot/utils/go/version"
+require "rubygems_requirement_patch"
 
 module Dependabot
   module Utils
