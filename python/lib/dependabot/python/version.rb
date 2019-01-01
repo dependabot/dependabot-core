@@ -65,6 +65,14 @@ module Dependabot
         lhsegments.count <=> rhsegments.count
       end
 
+      def prerelease?
+        if @version_string.match?(/^([0-9]+[.\-])+(post|rev|r)?\d+$/)
+          return false
+        end
+
+        super
+      end
+
       private
 
       def normalise_prerelease(version)
@@ -76,9 +84,11 @@ module Dependabot
         version.
           gsub("alpha", "a").
           gsub("beta", "b").
-          gsub("preview", "rc").
-          gsub("pre", "rc").
-          gsub(/([\d.\-_])c([\d.\-_])?/, '\1rc\2').
+          gsub("preview", "c").
+          gsub("pre", "c").
+          gsub("post", "r").
+          gsub("rev", "r").
+          gsub(/([\d.\-_])rc([\d.\-_])?/, '\1c\2').
           tr("-", ".").
           gsub(/(\d)([a-z])/i, '\1.\2')
       end
