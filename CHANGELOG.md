@@ -1,3 +1,8 @@
+## v0.86.22, 1 January 2019
+
+- Revert "Patch Rubygems requirement equality"
+- Bump rubygems and bundler versions
+
 ## v0.86.21, 1 January 2019
 
 - Ruby: Less strict requirement comparison
