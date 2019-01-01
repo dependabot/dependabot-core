@@ -282,10 +282,8 @@ module Dependabot
               ).join(hash_separator(mtch.to_s))
             )
 
-            updated_content_with_hashes = updated_content_with_hashes.gsub(
-              mtch.to_s,
-              updated_string
-            )
+            updated_content_with_hashes = updated_content_with_hashes.
+                                          gsub(mtch.to_s, updated_string)
           end
           updated_content_with_hashes
         end
