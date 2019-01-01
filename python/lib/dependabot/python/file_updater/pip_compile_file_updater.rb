@@ -4,6 +4,7 @@ require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
+require "dependabot/python/native_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -266,14 +267,82 @@ module Dependabot
           content
         end
 
-        def update_hashes_if_required(updated_content, _original_content)
-          # TODO: Update the hashes if required.
-          # See https://github.com/dependabot/feedback/issues/235
-          #
-          # 1. Parse the old and new files
-          # 2. For any dependency where the number of hashes has changed, use
-          #    hashin to update the hashes
-          updated_content
+        def update_hashes_if_required(updated_content, original_content)
+          deps_to_update =
+            deps_to_augment_hashes_for(updated_content, original_content)
+
+          updated_content_with_hashes = updated_content
+          deps_to_update.each do |mtch|
+            updated_string = mtch.to_s.sub(
+              RequirementParser::HASHES,
+              package_hashes_for(
+                name: mtch.named_captures.fetch("name"),
+                version: mtch.named_captures.fetch("version"),
+                algorithm: mtch.named_captures.fetch("algorithm")
+              ).join(hash_separator(mtch.to_s))
+            )
+
+            updated_content_with_hashes = updated_content_with_hashes.gsub(
+              mtch.to_s,
+              updated_string
+            )
+          end
+          updated_content_with_hashes
+        end
+
+        def deps_to_augment_hashes_for(updated_content, original_content)
+          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+
+          new_matches = []
+          updated_content.scan(regex) { new_matches << Regexp.last_match }
+
+          old_matches = []
+          original_content.scan(regex) { old_matches << Regexp.last_match }
+
+          new_deps = []
+          changed_hashes_deps = []
+
+          new_matches.each do |mtch|
+            nm = mtch.named_captures["name"]
+            old_match = old_matches.find { |m| m.named_captures["name"] == nm }
+
+            next new_deps << mtch unless old_match
+            next unless old_match.named_captures["hashes"]
+
+            old_count = old_match.named_captures["hashes"].split("--hash").count
+            new_count = mtch.named_captures["hashes"].split("--hash").count
+            changed_hashes_deps << mtch if new_count < old_count
+          end
+
+          return [] if changed_hashes_deps.none?
+
+          [*new_deps, *changed_hashes_deps]
+        end
+
+        def package_hashes_for(name:, version:, algorithm:)
+          SharedHelpers.run_helper_subprocess(
+            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            function: "get_dependency_hash",
+            args: [name, version, algorithm]
+          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+        end
+
+        def hash_separator(requirement_string)
+          hash_regex = RequirementParser::HASH
+          return unless requirement_string.match?(hash_regex)
+
+          current_separator =
+            requirement_string.
+            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
+            named_captures.fetch("separator")
+
+          default_separator =
+            requirement_string.
+            match(RequirementParser::HASH).
+            pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
+            named_captures.fetch("separator")
+
+          current_separator || default_separator
         end
 
         def pip_compile_options(filename)

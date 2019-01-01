@@ -117,6 +117,28 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).to include("4b90b09eeeb9b88c35bc64")
         expect(updated_files.first.content).to include("# This file is autogen")
       end
+
+      context "that need to be augmented with hashin" do
+        let(:manifest_fixture_name) { "extra_hashes.in" }
+        let(:generated_fixture_name) { "pip_compile_extra_hashes.txt" }
+        let(:dependency_name) { "pyasn1-modules" }
+        let(:dependency_version) { "0.1.5" }
+        let(:dependency_previous_version) { "0.1.4" }
+
+        it "updates the requirements.txt, keeping all the hashes" do
+          expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).
+            to include("pyasn1-modules==0.1.5")
+          expect(updated_files.first.content).
+            to include("--hash=sha256:b437be576bdf440fc0e930")
+          expect(updated_files.first.content).
+            to include("pyasn1==0.3.7")
+          expect(updated_files.first.content).
+            to include("--hash=sha256:bb6f5d5507621e0298794b")
+          expect(updated_files.first.content).
+            to include("# via pyasn1-modules")
+        end
+      end
     end
 
     context "with an unsafe dependency" do
