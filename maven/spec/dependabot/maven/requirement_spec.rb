@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Maven::Requirement do
 
     context "with a dynamic version requirement" do
       let(:requirement_string) { "1.+" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
     end
 
     context "with a hard requirement" do

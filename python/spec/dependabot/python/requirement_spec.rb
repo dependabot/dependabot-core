@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with a ~=" do
       let(:requirement_string) { "~= 1.3.0" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
     end
 
     context "with a ==" do
@@ -45,16 +45,16 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with a ~" do
       let(:requirement_string) { "~1.2.3" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.3").to_s) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.2.3")) }
 
       context "for two digits" do
         let(:requirement_string) { "~1.2" }
-        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
       end
 
       context "for one digits" do
         let(:requirement_string) { "~1" }
-        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
       end
     end
 
@@ -75,11 +75,11 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
 
       context "without a prefix" do
         let(:requirement_string) { "1.3.*" }
-        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.3.0")) }
       end
     end
 
@@ -96,9 +96,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with an array" do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
-      its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0"]).to_s)
-      end
+      it { is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0"])) }
     end
 
     context "with a pre-release version" do

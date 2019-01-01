@@ -8,7 +8,6 @@
 
 require "dependabot/utils"
 require "dependabot/cargo/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Cargo

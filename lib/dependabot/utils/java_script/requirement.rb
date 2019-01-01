@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/java_script/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Utils
@@ -58,14 +57,12 @@ module Dependabot
         private
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def convert_js_constraint_to_ruby_constraint(req_string)
           return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
           req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")
 
           if req_string.empty? then ">= 0"
-          elsif req_string.start_with?("~>") then req_string
           elsif req_string.start_with?("~") then convert_tilde_req(req_string)
           elsif req_string.start_with?("^") then convert_caret_req(req_string)
           elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
@@ -74,7 +71,6 @@ module Dependabot
           end
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def convert_tilde_req(req_string)
           version = req_string.gsub(/^~\>?/, "")

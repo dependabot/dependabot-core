@@ -3,7 +3,6 @@
 require "bundler_definition_ruby_version_patch"
 require "bundler_definition_bundler_version_patch"
 require "bundler_git_source_patch"
-require "rubygems_requirement_patch"
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/ruby/bundler/requirements_updater"

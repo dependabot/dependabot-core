@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Cargo::Requirement do
 
     context "with an ~> version specified" do
       let(:requirement_string) { "~> 1.5.1" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
+      it { is_expected.to eq(Gem::Requirement.new("~> 1.5.1")) }
     end
 
     context "with a comma separated list" do
