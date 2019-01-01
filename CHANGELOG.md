@@ -1,3 +1,8 @@
+## v0.86.21, 1 January 2019
+
+- Ruby: Less strict requirement comparison
+- Add TODO to Python pip_compile file updater
+
 ## v0.86.20, 31 December 2018
 
 - Update GitLab submodules
