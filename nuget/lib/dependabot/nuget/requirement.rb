@@ -2,7 +2,6 @@
 
 require "dependabot/utils"
 require "dependabot/nuget/version"
-require "rubygems_requirement_patch"
 
 # For details on .NET version constraints see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/java_script/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Utils

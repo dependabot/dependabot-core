@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rubygems_version_patch"
-require "rubygems_requirement_patch"
 
 module Dependabot
   class Dependency

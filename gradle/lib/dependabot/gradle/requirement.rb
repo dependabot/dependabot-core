@@ -2,7 +2,6 @@
 
 require "dependabot/utils"
 require "dependabot/gradle/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Gradle

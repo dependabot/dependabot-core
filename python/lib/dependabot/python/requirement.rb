@@ -2,7 +2,6 @@
 
 require "dependabot/utils"
 require "dependabot/python/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Python

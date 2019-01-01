@@ -2,7 +2,6 @@
 
 require "dependabot/utils"
 require "dependabot/maven/version"
-require "rubygems_requirement_patch"
 
 module Dependabot
   module Maven
