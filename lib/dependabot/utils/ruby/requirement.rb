@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems_requirement_patch"
+
 module Dependabot
   module Utils
     module Ruby
