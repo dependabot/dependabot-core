@@ -1,3 +1,7 @@
+## v0.86.24, 1 January 2019
+
+- Python: Augment hashes from pip-compile if necessary
+
 ## v0.86.23, 1 January 2019
 
 - Bump rubygems and bundler versions
