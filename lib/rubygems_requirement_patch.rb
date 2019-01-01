@@ -15,9 +15,9 @@ module Gem
       # An == check is sufficient unless any requirements use ~>
       return true unless _tilde_requirements.any?
 
-      # If any requirements use ~> we use the stricter `#eql?` that also checks
-      # that version precision is the same
-      _tilde_requirements.eql?(other._tilde_requirements)
+      # If any requirements use ~> we check that the strings are equal so that
+      # version precision is considered
+      _tilde_requirements.map(&:to_s) == other._tilde_requirements.map(&:to_s)
     end
     # rubocop:enable Style/CaseEquality
 
