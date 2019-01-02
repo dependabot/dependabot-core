@@ -1,3 +1,8 @@
+## v0.87.0, 2 January 2019
+
+- Go (modules): reorg
+- JS: Handle requirements with an || when bumping versions
+
 ## v0.86.25, 2 January 2019
 
 - Raise RepoNotFound errors when creating PRs
