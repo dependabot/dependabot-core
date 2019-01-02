@@ -1,3 +1,8 @@
+## v0.87.1, 2 January 2019
+
+- Register GoModules::Requirement class
+- Add go_modules package to Rakefile
+
 ## v0.87.0, 2 January 2019
 
 - Go (modules): reorg
