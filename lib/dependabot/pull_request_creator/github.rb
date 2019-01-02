@@ -47,6 +47,12 @@ module Dependabot
         annotate_pull_request(pull_request)
 
         pull_request
+      rescue Octokit::Forbidden => error
+        raise unless error.message.include?("Repository was archived")
+        raise RepoArchived
+      rescue Octokit::NotFound => error
+        raise if repo_exists?
+        raise RepoNotFound
       end
 
       private
@@ -77,6 +83,13 @@ module Dependabot
           head: "#{source.repo.split('/').first}:#{branch_name}",
           state: "all"
         ).any?
+      end
+
+      def repo_exists?
+        github_client_for_source.repo(source.repo)
+        true
+      rescue Octokit::NotFound
+        false
       end
 
       def create_commit

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/github"
 
@@ -180,6 +181,49 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits")
+      end
+    end
+
+    context "when the repo doesn't exist" do
+      before do
+        stub_request(:get, repo_api_url).
+          to_return(status: 404,
+                    body: fixture("github", "not_found.json"),
+                    headers: json_header)
+        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
+          to_return(status: 404,
+                    body: fixture("github", "not_found.json"),
+                    headers: json_header)
+        stub_request(:post, "#{repo_api_url}/git/trees").
+          to_return(status: 404,
+                    body: fixture("github", "not_found.json"),
+                    headers: json_header)
+      end
+
+      it "raises a helpful error" do
+        expect { creator.create }.
+          to raise_error(Dependabot::PullRequestCreator::RepoNotFound)
+      end
+
+      context "when the repo does exist but we got a 404" do
+        before do
+          stub_request(:get, repo_api_url).
+            to_return(status: 200,
+                      body: fixture("github", "bump_repo.json"),
+                      headers: json_header)
+          stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
+            to_return(status: 404,
+                      body: fixture("github", "not_found.json"),
+                      headers: json_header)
+          stub_request(:post, "#{repo_api_url}/git/trees").
+            to_return(status: 404,
+                      body: fixture("github", "not_found.json"),
+                      headers: json_header)
+        end
+
+        it "raises a normal error" do
+          expect { creator.create }.to raise_error(Octokit::NotFound)
+        end
       end
     end
 

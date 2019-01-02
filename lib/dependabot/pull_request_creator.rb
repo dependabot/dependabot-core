@@ -10,6 +10,9 @@ module Dependabot
     require "dependabot/pull_request_creator/branch_namer"
     require "dependabot/pull_request_creator/labeler"
 
+    class RepoNotFound < StandardError; end
+    class RepoArchived < StandardError; end
+
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
                 :author_details, :signature_key, :vulnerabilities_fixed,
