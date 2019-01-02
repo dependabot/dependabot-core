@@ -6,6 +6,7 @@
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md               #
 ################################################################################
 
+require "dependabot/utils"
 require "dependabot/go_modules/version"
 
 module Dependabot
@@ -146,3 +147,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.
+  register_requirement_class("go_modules", Dependabot::GoModules::Requirement)
