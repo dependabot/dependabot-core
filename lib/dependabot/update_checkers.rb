@@ -5,7 +5,6 @@ require "dependabot/update_checkers/java_script/npm_and_yarn"
 require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/elixir/hex"
 require "dependabot/update_checkers/go/dep"
-require "dependabot/update_checkers/go/modules"
 
 module Dependabot
   module UpdateCheckers
@@ -14,8 +13,7 @@ module Dependabot
       "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn,
       "composer" => UpdateCheckers::Php::Composer,
       "hex" => UpdateCheckers::Elixir::Hex,
-      "dep" => UpdateCheckers::Go::Dep,
-      "go_modules" => UpdateCheckers::Go::Modules
+      "dep" => UpdateCheckers::Go::Dep
     }
 
     def self.for_package_manager(package_manager)

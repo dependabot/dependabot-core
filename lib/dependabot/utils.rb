@@ -22,8 +22,7 @@ module Dependabot
       "npm_and_yarn" => Utils::JavaScript::Version,
       "composer" => Utils::Php::Version,
       "hex" => Utils::Elixir::Version,
-      "dep" => Utils::Go::Version,
-      "go_modules" => Utils::Go::Version
+      "dep" => Utils::Go::Version
     }
 
     def self.version_class_for_package_manager(package_manager)
@@ -44,8 +43,7 @@ module Dependabot
       "npm_and_yarn" => Utils::JavaScript::Requirement,
       "composer" => Utils::Php::Requirement,
       "hex" => Utils::Elixir::Requirement,
-      "dep" => Utils::Go::Requirement,
-      "go_modules" => Utils::Go::Requirement
+      "dep" => Utils::Go::Requirement
     }
 
     def self.requirement_class_for_package_manager(package_manager)

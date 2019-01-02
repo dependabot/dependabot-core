@@ -41,6 +41,7 @@ $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./elm/lib"
+$LOAD_PATH << "./go_modules/lib"
 
 require "optparse"
 require "dependabot/file_fetchers"
@@ -56,6 +57,7 @@ require "dependabot/gradle"
 require "dependabot/maven"
 require "dependabot/cargo"
 require "dependabot/elm"
+require "dependabot/go_modules"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

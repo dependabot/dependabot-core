@@ -1,0 +1,159 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/refs/heads/without-go-mod
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.13.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Authorization:
+      - token <TOKEN>
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Mon, 10 Dec 2018 15:19:28 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Status:
+      - 200 OK
+      X-Ratelimit-Limit:
+      - '5000'
+      X-Ratelimit-Remaining:
+      - '4988'
+      X-Ratelimit-Reset:
+      - '1544458092'
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Authorization, Cookie, X-GitHub-OTP
+      Etag:
+      - W/"4a6eff12041eae1f1e43165fd600b4e4"
+      Last-Modified:
+      - Thu, 18 Oct 2018 21:49:07 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Oauth-Scopes:
+      - repo
+      X-Accepted-Oauth-Scopes:
+      - repo
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Github-Request-Id:
+      - 2444:4CFA:E298FF:1DF739B:5C0E8400
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/without-go-mod","node_id":"MDM6UmVmMTUzMDA4NTQxOndpdGhvdXQtZ28tbW9k","url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/refs/heads/without-go-mod","object":{"sha":"d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d","type":"commit","url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/commits/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d"}}'
+    http_version: 
+  recorded_at: Mon, 10 Dec 2018 15:19:28 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/?ref=d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.13.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Authorization:
+      - token <TOKEN>
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Mon, 10 Dec 2018 15:19:29 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Status:
+      - 200 OK
+      X-Ratelimit-Limit:
+      - '5000'
+      X-Ratelimit-Remaining:
+      - '4987'
+      X-Ratelimit-Reset:
+      - '1544458092'
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Authorization, Cookie, X-GitHub-OTP
+      Etag:
+      - W/"8493b1f0b35078913095d4bfb7b7ae86c6fabf49"
+      Last-Modified:
+      - Thu, 18 Oct 2018 21:49:07 GMT
+      X-Oauth-Scopes:
+      - repo
+      X-Accepted-Oauth-Scopes:
+      - ''
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Github-Request-Id:
+      - 3B84:4CFA:E29920:1DF73E8:5C0E8400
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"go.sum","path":"go.sum","sha":"8ca1633b2d6b54a5c3ba889c167c4617d3ab0ef8","size":499,"url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/go.sum?ref=d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d","html_url":"https://github.com/dependabot-fixtures/go-modules-lib/blob/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/go.sum","git_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/blobs/8ca1633b2d6b54a5c3ba889c167c4617d3ab0ef8","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/go-modules-lib/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/go.sum","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/go.sum?ref=d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d","git":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/blobs/8ca1633b2d6b54a5c3ba889c167c4617d3ab0ef8","html":"https://github.com/dependabot-fixtures/go-modules-lib/blob/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/go.sum"}},{"name":"main.go","path":"main.go","sha":"fe50cd1cd5a72c588d896251c4a0b511cccdc56b","size":94,"url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/main.go?ref=d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d","html_url":"https://github.com/dependabot-fixtures/go-modules-lib/blob/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/main.go","git_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/blobs/fe50cd1cd5a72c588d896251c4a0b511cccdc56b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/go-modules-lib/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/main.go","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/main.go?ref=d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d","git":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/blobs/fe50cd1cd5a72c588d896251c4a0b511cccdc56b","html":"https://github.com/dependabot-fixtures/go-modules-lib/blob/d455ffdfb0a0b03adb1d1c86cf2aea1dd6157d7d/main.go"}}]'
+    http_version: 
+  recorded_at: Mon, 10 Dec 2018 15:19:29 GMT
+recorded_with: VCR 4.0.0

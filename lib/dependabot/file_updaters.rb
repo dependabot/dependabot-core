@@ -5,7 +5,6 @@ require "dependabot/file_updaters/java_script/npm_and_yarn"
 require "dependabot/file_updaters/php/composer"
 require "dependabot/file_updaters/elixir/hex"
 require "dependabot/file_updaters/go/dep"
-require "dependabot/file_updaters/go/modules"
 
 module Dependabot
   module FileUpdaters
@@ -14,8 +13,7 @@ module Dependabot
       "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn,
       "composer" => FileUpdaters::Php::Composer,
       "hex" => FileUpdaters::Elixir::Hex,
-      "dep" => FileUpdaters::Go::Dep,
-      "go_modules" => FileUpdaters::Go::Modules
+      "dep" => FileUpdaters::Go::Dep
     }
 
     def self.for_package_manager(package_manager)

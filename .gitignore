@@ -22,3 +22,4 @@ vendor
 *git.store
 .vscode/
 /terraform/helpers/install-dir
+/go_modules/helpers/install-dir

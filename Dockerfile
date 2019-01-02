@@ -144,9 +144,16 @@ RUN bash /opt/terraform/helpers/build /opt/terraform
 ENV PATH="$PATH:/opt/terraform/bin"
 
 
-### PYTHON (MERGE WITH SECTION FUTHER UP)
+### PYTHON NEW HELPERS
 
 COPY python/helpers /opt/python/helpers
 RUN bash /opt/python/helpers/build /opt/python
 ENV PATH="$PATH:/opt/python/bin"
+
+
+### GO MODULES NEW HELPERS
+
+COPY go_modules/helpers /opt/go_modules/helpers
+RUN bash /opt/go_modules/helpers/build /opt/go_modules
+ENV PATH="$PATH:/opt/go_modules/bin"
 

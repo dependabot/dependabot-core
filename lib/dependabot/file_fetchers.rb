@@ -5,7 +5,6 @@ require "dependabot/file_fetchers/java_script/npm_and_yarn"
 require "dependabot/file_fetchers/php/composer"
 require "dependabot/file_fetchers/elixir/hex"
 require "dependabot/file_fetchers/go/dep"
-require "dependabot/file_fetchers/go/modules"
 
 module Dependabot
   module FileFetchers
@@ -14,8 +13,7 @@ module Dependabot
       "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn,
       "composer" => FileFetchers::Php::Composer,
       "hex" => FileFetchers::Elixir::Hex,
-      "dep" => FileFetchers::Go::Dep,
-      "go_modules" => FileFetchers::Go::Modules
+      "dep" => FileFetchers::Go::Dep
     }
 
     def self.for_package_manager(package_manager)

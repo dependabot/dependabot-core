@@ -13,8 +13,7 @@ module Dependabot
       "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
       "composer" => MetadataFinders::Php::Composer,
       "hex" => MetadataFinders::Elixir::Hex,
-      "dep" => MetadataFinders::Go::Dep,
-      "go_modules" => MetadataFinders::Go::Dep
+      "dep" => MetadataFinders::Go::Dep
     }
 
     def self.for_package_manager(package_manager)
