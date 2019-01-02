@@ -47,12 +47,8 @@ module Dependabot
         annotate_pull_request(pull_request)
 
         pull_request
-      rescue Octokit::Forbidden => error
-        raise unless error.message.include?("Repository was archived")
-        raise RepoArchived
-      rescue Octokit::NotFound => error
-        raise if repo_exists?
-        raise RepoNotFound
+      rescue Octokit::Error => error
+        handle_error(error)
       end
 
       private
@@ -240,6 +236,21 @@ module Dependabot
           parent_sha: base_commit,
           signature_key: signature_key
         ).signature
+      end
+
+      def handle_error(error)
+        case error
+        when Octokit::Forbidden
+          raise error unless error.message.include?("Repository was archived")
+
+          raise RepoArchived
+        when Octokit::NotFound
+          raise error if repo_exists?
+
+          raise RepoNotFound
+        else
+          raise error
+        end
       end
     end
   end
