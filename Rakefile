@@ -19,6 +19,7 @@ gemspecs = %w(
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
   cargo/dependabot-cargo.gemspec
+  go_modules/dependabot-go_modules.gemspec
   omnibus/dependabot-omnibus.gemspec
 )
 
