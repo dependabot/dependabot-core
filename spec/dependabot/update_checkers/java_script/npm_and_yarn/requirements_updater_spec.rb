@@ -207,6 +207,11 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
             let(:package_json_req_string) { "^v1.2.3" }
             its([:requirement]) { is_expected.to eq("^v1.5.0") }
           end
+
+          context "with a || separator" do
+            let(:package_json_req_string) { "^0.5.1 || ^1.2.3" }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
+          end
         end
 
         context "and a pre-release was previously specified" do
@@ -278,20 +283,17 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
           it "updates both requirements" do
             expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "package.json",
-                  requirement: "^1.5.0",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/package.json",
-                  requirement: "^1.x.x",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "package.json",
+                requirement: "^1.5.0",
+                groups: [],
+                source: nil
+              }, {
+                file: "another/package.json",
+                requirement: "^1.x.x",
+                groups: [],
+                source: nil
+              }]
             )
           end
 
@@ -306,20 +308,17 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
               it "updates the non-prerelease requirement" do
                 expect(updater.updated_requirements).to match_array(
-                  [
-                    {
-                      file: "package.json",
-                      requirement: "1.1.0-alpha.1",
-                      groups: [],
-                      source: nil
-                    },
-                    {
-                      file: "another/package.json",
-                      requirement: "1.1.0-alpha.1",
-                      groups: [],
-                      source: nil
-                    }
-                  ]
+                  [{
+                    file: "package.json",
+                    requirement: "1.1.0-alpha.1",
+                    groups: [],
+                    source: nil
+                  }, {
+                    file: "another/package.json",
+                    requirement: "1.1.0-alpha.1",
+                    groups: [],
+                    source: nil
+                  }]
                 )
               end
             end
@@ -356,6 +355,16 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
           context "that this version doesn't satisfy" do
             let(:package_json_req_string) { "^v0.2.3" }
             its([:requirement]) { is_expected.to eq("^v1.5.0") }
+          end
+
+          context "with a || separator" do
+            let(:package_json_req_string) { "^0.5.1 || ^1.2.3" }
+            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+
+            context "that this version doesn't satisfy" do
+              let(:latest_resolvable_version) { "2.1.0" }
+              its([:requirement]) { is_expected.to eq("^2.1.0") }
+            end
           end
         end
       end
@@ -553,57 +562,48 @@ RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
 
           it "updates the requirement that needs to be updated" do
             expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "package.json",
-                  requirement: "^1.2.3",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/package.json",
-                  requirement: "^1.x.x",
-                  groups: [],
-                  source: nil
-                }
-              ]
+              [{
+                file: "package.json",
+                requirement: "^1.2.3",
+                groups: [],
+                source: nil
+              }, {
+                file: "another/package.json",
+                requirement: "^1.x.x",
+                groups: [],
+                source: nil
+              }]
             )
           end
 
           context "for the same file" do
             let(:requirements) do
-              [
-                {
-                  requirement: "0.1.x",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                },
-                {
-                  requirement: "^0.1.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }
-              ]
+              [{
+                requirement: "0.1.x",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }, {
+                requirement: "^0.1.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }]
             end
 
             it "updates both requirements" do
               expect(updater.updated_requirements).to match_array(
-                [
-                  {
-                    requirement: "1.5.x",
-                    file: "package.json",
-                    groups: ["dependencies"],
-                    source: nil
-                  },
-                  {
-                    requirement: "^1.5.0",
-                    file: "package.json",
-                    groups: ["devDependencies"],
-                    source: nil
-                  }
-                ]
+                [{
+                  requirement: "1.5.x",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }, {
+                  requirement: "^1.5.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: nil
+                }]
               )
             end
           end

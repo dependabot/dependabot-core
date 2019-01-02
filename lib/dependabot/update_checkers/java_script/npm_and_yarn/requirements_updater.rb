@@ -90,7 +90,8 @@ module Dependabot
               return req.merge(requirement: updated_req)
             end
 
-            req.merge(requirement: update_version_string(current_requirement))
+            reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
+            req.merge(requirement: update_version_string(reqs.first))
           end
 
           def update_version_requirement_if_needed(req)
