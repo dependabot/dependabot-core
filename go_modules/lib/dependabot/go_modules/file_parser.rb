@@ -3,7 +3,7 @@
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
-require "dependabot/utils/go/path_converter"
+require "dependabot/go_modules/path_converter"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -102,7 +102,7 @@ module Dependabot
       end
 
       def git_source(dep)
-        url = Utils::Go::PathConverter.git_url_for_path(dep["Path"])
+        url = PathConverter.git_url_for_path(dep["Path"])
 
         # Currently, we have no way of knowing whether the commit tagged
         # is being used because a branch is being followed or because a
