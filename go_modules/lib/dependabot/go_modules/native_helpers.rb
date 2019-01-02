@@ -4,15 +4,11 @@ module Dependabot
   module GoModules
     module NativeHelpers
       def self.helper_path
-        clean_path(File.join(helpers_dir, "bin/helper"))
-      end
-
-      def self.helpers_dir
-        File.join(native_helpers_root, "go_modules/helpers")
+        clean_path(File.join(native_helpers_root, "go_modules/bin/helper"))
       end
 
       def self.native_helpers_root
-        default_path = File.join(__dir__, "../../../..")
+        default_path = File.join(__dir__, "../../../helpers/install-dir")
         ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
       end
 
