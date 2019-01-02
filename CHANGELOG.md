@@ -1,3 +1,11 @@
+## v0.86.25, 2 January 2019
+
+- Raise RepoNotFound errors when creating PRs
+- Merge pull request #875 from dependabot/dependabot/composer/helpers/php/friendsofphp/php-cs-fixer-2.13.2
+- Bump friendsofphp/php-cs-fixer from 2.13.1 to 2.13.2 in /helpers/php
+- Python: Don't treat post-releases as pre-releases
+- Save a couple of lines
+
 ## v0.86.24, 1 January 2019
 
 - Python: Augment hashes from pip-compile if necessary
