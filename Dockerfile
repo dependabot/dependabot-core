@@ -2,10 +2,14 @@ FROM ubuntu:18.04
 
 ### SYSTEM DEPENDENCIES
 
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LC_ALL="en_US.UTF-8" \
+    LANG="en_US.UTF-8"
+
 # Everything from `make` onwards in apt-get install is only installed to ensure
 # Python support works with all packages (which may require specific libraries
 # at install time).
-ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
@@ -40,8 +44,6 @@ RUN apt-get update \
       libxmlsec1-dev \
       python3-enchant \
     && locale-gen en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8
 
 
 ### RUBY
@@ -132,28 +134,16 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 
-### NEW NATIVE HELPERS LOCATION
-
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-
-
-### TERRAFORM
+### NEW NATIVE HELPERS
 
 COPY terraform/helpers /opt/terraform/helpers
-RUN bash /opt/terraform/helpers/build /opt/terraform
-ENV PATH="$PATH:/opt/terraform/bin"
-
-
-### PYTHON NEW HELPERS
-
 COPY python/helpers /opt/python/helpers
-RUN bash /opt/python/helpers/build /opt/python
-ENV PATH="$PATH:/opt/python/bin"
-
-
-### GO MODULES NEW HELPERS
-
 COPY go_modules/helpers /opt/go_modules/helpers
-RUN bash /opt/go_modules/helpers/build /opt/go_modules
-ENV PATH="$PATH:/opt/go_modules/bin"
+
+RUN bash /opt/terraform/helpers/build /opt/terraform && \
+    bash /opt/python/helpers/build /opt/python && \
+    bash /opt/go_modules/helpers/build /opt/go_modules
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
+    PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin"
 
