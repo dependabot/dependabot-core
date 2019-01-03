@@ -100,6 +100,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       it { is_expected.to eq(false) }
     end
 
+    context "when one dependency uses multiple properties" do
+      let(:pom_body) { fixture("poms", "property_pom_suffix.xml") }
+      it { is_expected.to eq(false) }
+    end
+
     context "when one dependency isn't listed" do
       before do
         stub_request(:get, maven_central_metadata_url_context).

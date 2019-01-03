@@ -272,6 +272,33 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
 
+      context "with multiple properties" do
+        let(:pom_body) { fixture("poms", "property_pom_suffix.xml") }
+
+        describe "the second dependency" do
+          subject(:dependency) { dependencies[1] }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("org.springframework:spring-context")
+            expect(dependency.version).to eq("4.3.12.RELEASE-context")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "4.3.12.RELEASE-context",
+                file: "pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  property_name: "springframework.version",
+                  property_source: "pom.xml",
+                  packaging_type: "jar"
+                }
+              }]
+            )
+          end
+        end
+      end
+
       context "where the property is the project version" do
         let(:pom_body) { fixture("poms", "project_version_pom.xml") }
 
