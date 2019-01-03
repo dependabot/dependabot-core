@@ -9,7 +9,7 @@ require "shellwords"
 require "rubygems/package"
 require "./lib/dependabot/version"
 
-gemspecs = %w(
+GEMSPECS = %w(
   dependabot-core.gemspec
   terraform/dependabot-terraform.gemspec
   elm/dependabot-elm.gemspec
@@ -40,7 +40,7 @@ namespace :gems do
     pkg_path = File.join(root_path, "pkg")
     Dir.mkdir(pkg_path) unless File.directory?(pkg_path)
 
-    gemspecs.each do |gemspec_path|
+    GEMSPECS.each do |gemspec_path|
       puts "> Building #{gemspec_path}"
       Dir.chdir(File.dirname(gemspec_path)) do
         gemspec = Bundler.load_gemspec_uncached(File.basename(gemspec_path))
@@ -53,7 +53,7 @@ namespace :gems do
   task release: [:build] do
     guard_tag_match
 
-    gemspecs.each do |gemspec_path|
+    GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
       gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
       if rubygems_release_exists?(gem_name, Dependabot::VERSION)
@@ -98,7 +98,10 @@ def changed_packages
                   config helpers lib spec)
   core_changed = commit_range_changes_paths?(range, core_paths)
 
-  packages = %w(./docker ./python ./terraform).select do |package|
+  all_packages = GEMSPECS.
+                 select { |gs| gs.include?("/") }.
+                 map { |gs| "./" + gs.split("/").first }
+  packages = all_packages.select do |package|
     next true if core_changed
 
     commit_range_changes_paths?(range, [package])
