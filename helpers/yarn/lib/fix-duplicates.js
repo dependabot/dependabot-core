@@ -3,9 +3,22 @@ const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
   .default;
 const semver = require("semver");
 
-// Inspired by yarn-tools. Altered to ensure the latest version is always used
+function flattenIndirectDependencies(packages) {
+  return (packages || []).reduce((acc, { pkg }) => {
+    if ("dependencies" in pkg) {
+      return acc.concat(Object.keys(pkg.dependencies));
+    }
+    return acc;
+  }, []);
+}
+
+// Inspired by yarn-deduplicate. Altered to ensure the latest version is always used
 // for version ranges which allow it.
-module.exports = (data, includePackages = []) => {
+module.exports = (data, updatedDependencyName) => {
+  if (!updatedDependencyName) {
+    throw new Error("Yarn fix duplicates: must provide dependency name");
+  }
+
   const json = parse(data).object;
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
@@ -23,11 +36,23 @@ module.exports = (data, includePackages = []) => {
     }
   });
 
-  Object.entries(packages)
-    .filter(([name]) => {
-      if (includePackages.length === 0) return true;
-      return includePackages.includes(name);
-    })
+  const packageEntries = Object.entries(packages);
+
+  const updatedPackageEntry = packageEntries.filter(([name]) => {
+    return updatedDependencyName === name;
+  });
+
+  const updatedDependencyPackage =
+    updatedPackageEntry[0] && updatedPackageEntry[0][1];
+
+  const indirectDependencies = flattenIndirectDependencies(
+    updatedDependencyPackage
+  );
+
+  const packagesToDedupe = [updatedDependencyName, ...indirectDependencies];
+
+  packageEntries
+    .filter(([name]) => packagesToDedupe.includes(name))
     .forEach(([name, packages]) => {
       // Reverse sort, so we'll find the maximum satisfying version first
       const versions = packages.map(p => p.pkg.version).sort(semver.rcompare);

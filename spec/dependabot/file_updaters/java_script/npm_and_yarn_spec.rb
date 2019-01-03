@@ -1880,6 +1880,38 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
         end
       end
 
+      context "when there's a duplicate indirect dependency" do
+        let(:manifest_fixture_name) { "duplicate_indirect_dependency.json" }
+        let(:yarn_lock_fixture_name) { "duplicate_indirect_dependency.lock" }
+
+        let(:dependency_name) { "graphql-cli" }
+        let(:version) { "3.0.4" }
+        let(:previous_version) { "3.0.3" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "3.0.4",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "3.0.3",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+
+        it "removes old version" do
+          expect(updated_yarn_lock.content).to include("rimraf@2.6.3")
+
+          # Cleaned up in fix-duplicates.js
+          expect(updated_yarn_lock.content).to_not include("rimraf-2.6.2")
+        end
+      end
+
       context "with a sub-dependency" do
         let(:manifest_fixture_name) { "no_lockfile_change.json" }
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
