@@ -1,3 +1,7 @@
+## v0.87.4, 3 January 2019
+
+- Go (dep): Handle unreachable vanity URLs in parser
+
 ## v0.87.3, 3 January 2019
 
 - .NET: Extend timeout for .NET repos
