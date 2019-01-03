@@ -81,7 +81,7 @@ module Dependabot
             nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
           end
 
-        source_url.gsub("${#{property_name}}", property_value)
+        source_url.gsub(source_url.match(regex).to_s, property_value)
       end
 
       def source_from_anywhere_in_pom(pom)

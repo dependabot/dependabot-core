@@ -186,7 +186,8 @@ module Dependabot
                         named_captures.fetch("property")
         property_value = value_for_property(property_name, pom)
 
-        value.gsub(PROPERTY_REGEX, property_value)
+        new_value = value.gsub(value.match(PROPERTY_REGEX).to_s, property_value)
+        evaluated_value(new_value, pom)
       end
 
       def property_source(dependency_node, pom)

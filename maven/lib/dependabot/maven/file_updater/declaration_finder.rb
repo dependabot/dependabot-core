@@ -128,7 +128,10 @@ module Dependabot
 
           return value unless property_value
 
-          value.gsub(Maven::FileParser::PROPERTY_REGEX, property_value)
+          value.gsub(
+            value.match(Maven::FileParser::PROPERTY_REGEX).to_s,
+            property_value
+          )
         end
 
         def property_value_finder

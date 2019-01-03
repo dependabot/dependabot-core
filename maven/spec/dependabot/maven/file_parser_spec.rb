@@ -255,10 +255,10 @@ RSpec.describe Dependabot::Maven::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.springframework:spring-context")
-          expect(dependency.version).to eq("4.3.12.RELEASE.1")
+          expect(dependency.version).to eq("4.3.12.RELEASE")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "4.3.12.RELEASE.1",
+              requirement: "4.3.12.RELEASE",
               file: "pom.xml",
               groups: [],
               source: nil,

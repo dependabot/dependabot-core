@@ -612,11 +612,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             ),
             Dependabot::Dependency.new(
               name: "org.springframework:spring-context",
-              version: "23.6-jre.1",
-              previous_version: "4.3.12.RELEASE.1",
+              version: "23.6-jre",
+              previous_version: "4.3.12.RELEASE",
               requirements: [{
                 file: "pom.xml",
-                requirement: "23.6-jre.1",
+                requirement: "23.6-jre",
                 groups: [],
                 source: {
                   type: "maven_repo",
@@ -630,7 +630,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               }],
               previous_requirements: [{
                 file: "pom.xml",
-                requirement: "4.3.12.RELEASE.1",
+                requirement: "4.3.12.RELEASE",
                 groups: [],
                 source: nil,
                 metadata: {

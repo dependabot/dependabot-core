@@ -26,6 +26,8 @@ module Dependabot
 
           @update_possible ||=
             dependencies_using_property.all? do |dep|
+              next false if includes_property_reference?(updated_version(dep))
+
               versions = VersionFinder.new(
                 dependency: dep,
                 dependency_files: dependency_files,
@@ -33,7 +35,7 @@ module Dependabot
                 ignored_versions: ignored_versions
               ).versions.map { |v| v.fetch(:version) }
 
-              versions.include?(target_version) || versions.none?
+              versions.include?(updated_version(dep)) || versions.none?
             end
         end
 
@@ -87,6 +89,10 @@ module Dependabot
             dependency.requirements.
             find { |r| r.dig(:metadata, :property_name) == property_name }&.
             dig(:metadata, :property_source)
+        end
+
+        def includes_property_reference?(string)
+          string.match?(Maven::FileParser::PROPERTY_REGEX)
         end
 
         def version_string(dep)
