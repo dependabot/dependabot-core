@@ -207,15 +207,6 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
             dependencies.find { |d| d.name == "k8s.io/apimachinery" }
           end
 
-          before do
-            stub_request(:get, "https://k8s.io/apimachinery?go-get=1").
-              to_return(
-                status: 200,
-                body:
-                  fixture("go", "repo_responses", "k8s_io_apimachinery.html")
-              )
-          end
-
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("k8s.io/apimachinery")
@@ -234,6 +225,34 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
                 }
               }]
             )
+          end
+
+          context "that returns a 404" do
+            let(:manifest_fixture_name) { "proxy_git_source_not_found.toml" }
+            let(:lockfile_fixture_name) { "proxy_git_source_not_found.lock" }
+
+            it "raises the correct error" do
+              expect { parser.parse }.
+                to raise_error do |err|
+                  expect(err).to be_a(Dependabot::DependencyFileNotResolvable)
+                  expect(err.message).
+                    to eq("dependabot.com/unknown returned a 404")
+                end
+            end
+          end
+
+          context "that is not resolvable" do
+            let(:manifest_fixture_name) { "proxy_git_source_unresolvable.toml" }
+            let(:lockfile_fixture_name) { "proxy_git_source_unresolvable.lock" }
+
+            it "raises the correct error" do
+              expect { parser.parse }.
+                to raise_error do |err|
+                  expect(err).to be_a(Dependabot::DependencyFileNotResolvable)
+                  expect(err.message).
+                    to eq("Cannot detect VCS for unresolvablelkajs.com/unknown")
+                end
+            end
           end
         end
       end

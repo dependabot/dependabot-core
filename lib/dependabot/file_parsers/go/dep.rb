@@ -138,6 +138,18 @@ module Dependabot
 
         def git_source(path)
           Dependabot::Utils::Go::PathConverter.git_url_for_path(path)
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+          if error.message == "Cannot detect VCS"
+            msg = error.message + " for #{path}"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error.message.end_with?("Not Found")
+            msg = "#{path} returned a 404"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          raise
         end
 
         def parsed_file(file)
