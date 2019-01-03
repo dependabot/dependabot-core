@@ -1,3 +1,9 @@
+## v0.87.3, 3 January 2019
+
+- .NET: Extend timeout for .NET repos
+- Maven: More tests for versions that use multiple properties
+- Maven: Handle properties with a suffix better
+
 ## v0.87.2, 3 January 2019
 
 - Reduce the number of layers in the docker image
