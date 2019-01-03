@@ -220,9 +220,9 @@ module Dependabot
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
           # q=microsoft.aspnetcore.mvc&prerelease=true
           SharedHelpers.excon_defaults.merge(
-            connect_timeout: 10,
-            write_timeout: 10,
-            read_timeout: 10
+            connect_timeout: 20,
+            write_timeout: 20,
+            read_timeout: 20
           )
         end
       end
