@@ -1,3 +1,7 @@
+## v0.87.2, 3 January 2019
+
+- Reduce the number of layers in the docker image
+
 ## v0.87.1, 2 January 2019
 
 - Register GoModules::Requirement class
