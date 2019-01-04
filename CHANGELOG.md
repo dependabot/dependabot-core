@@ -1,3 +1,7 @@
+## v0.87.6, 4 January 2019
+
+- Yarn: de-duplicate indirect dependencies
+
 ## v0.87.5, 4 January 2019
 
 - Handle empty versions properly when a build or local version is possible
@@ -835,7 +839,7 @@
 
 ## v0.75.16, 6 November 2018
 
-- Python:  Bump poetry from 0.12.5 to 0.12.6
+- Python: Bump poetry from 0.12.5 to 0.12.6
 - JS: Handle version resolution for sub-dependencies when not updating manifest
 - Add a common interface for provider client (thanks @codisart)
 
@@ -1015,7 +1019,7 @@
 
 ## v0.74.6, 25 October 2018
 
-- JS: Don't update the  attribute for git dependencies in npm6 lockfiles
+- JS: Don't update the attribute for git dependencies in npm6 lockfiles
 - Rust: Guard against trying to update dependencies with multiple source types
 
 ## v0.74.5, 25 October 2018
@@ -1868,7 +1872,7 @@
 - JS: Bump npm from 6.4.0 to 6.4.1
 - Python: Fetch setup.cfg if present
 - Python: Check whether setup.py is using pbr
-- Python: Handle setup.py files that use a __name__ == '__main__' structure
+- Python: Handle setup.py files that use a **name** == '**main**' structure
 
 ## v0.69.4, 29 August 2018
 
@@ -2393,7 +2397,7 @@
 ## v0.61.90, 20 July 2018
 
 - JS: Store version as git SHA for git dependencies using Yarn
-- JS: Fall back to  when an updated version can't be found
+- JS: Fall back to when an updated version can't be found
 
 ## v0.61.89, 20 July 2018
 
@@ -3269,7 +3273,7 @@
 
 - BREAKING: Require a type attribute for git source credentials
 - BREAKING: Require a hostname when specifying an api_endpoint for a
-            Dependabot::Source
+  Dependabot::Source
 - PHP: Set credentials for all known git sources (means private Bitbucket and
   Gitlab repos are now supported)
 - Rust: Set credentials for all known git sources (means private Bitbucket and
@@ -5326,7 +5330,7 @@
 
 ## v0.38.2, 13 December 2017
 
-- Python: Handle * version strings in UpdateChecker
+- Python: Handle \* version strings in UpdateChecker
 
 ## v0.38.1, 13 December 2017
 
@@ -6659,20 +6663,19 @@
 
 ## v0.3.2, 09 May 2017
 
--  Don't discard DependencyFile details when updating (#24)
+- Don't discard DependencyFile details when updating (#24)
 
 ## v0.3.1, 09 May 2017
 
--  Support fetching dependency files from a specified directory (#23)
-
+- Support fetching dependency files from a specified directory (#23)
 
 ## v0.3.0, 09 May 2017
 
--  BREAKING: Rename Node to JavaScript everywhere (#22)
+- BREAKING: Rename Node to JavaScript everywhere (#22)
 
 ## v0.2.1, 03 May 2017
 
--  Store the failed git command on GitCommandError (#21)
+- Store the failed git command on GitCommandError (#21)
 
 ## v0.2.0, 02 May 2017
 
