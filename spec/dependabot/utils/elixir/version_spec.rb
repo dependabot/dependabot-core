@@ -30,6 +30,11 @@ RSpec.describe Dependabot::Utils::Elixir::Version do
       it { is_expected.to eq(false) }
     end
 
+    context "with a blank version" do
+      let(:version_string) { "" }
+      it { is_expected.to eq(true) }
+    end
+
     context "with an invalid version" do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
@@ -47,6 +52,11 @@ RSpec.describe Dependabot::Utils::Elixir::Version do
     context "with build information" do
       let(:version_string) { "1.0.0+gc.1" }
       it { is_expected.to eq "1.0.0+gc.1" }
+    end
+
+    context "with a blank version" do
+      let(:version_string) { "" }
+      it { is_expected.to eq "" }
     end
 
     context "with pre-release details" do

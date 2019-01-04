@@ -17,14 +17,16 @@ module Dependabot
 
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)
-        version = version&.to_s&.split("+")&.first
+        version = version.to_s.split("+").first if version.to_s.include?("+")
+
         super(version)
       end
 
       def initialize(version)
         @version_string = version.to_s.gsub(/^v/, "")
         version = version.gsub(/^v/, "") if version.is_a?(String)
-        version = version&.to_s&.split("+")&.first
+        version = version.to_s.split("+").first if version.to_s.include?("+")
+
         super
       end
 

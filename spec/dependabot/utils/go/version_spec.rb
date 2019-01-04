@@ -29,6 +29,11 @@ RSpec.describe Dependabot::Utils::Go::Version do
       let(:version_string) { "va1.0.0" }
       it { is_expected.to eq(false) }
     end
+
+    context "with an empty string" do
+      let(:version_string) { "" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#to_s" do
@@ -52,6 +57,11 @@ RSpec.describe Dependabot::Utils::Go::Version do
     context "with a leading v" do
       let(:version_string) { "v1.0.0" }
       it { is_expected.to eq "1.0.0" }
+    end
+
+    context "with an empty string" do
+      let(:version_string) { "" }
+      it { is_expected.to eq "" }
     end
   end
 

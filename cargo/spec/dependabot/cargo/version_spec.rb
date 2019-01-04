@@ -30,6 +30,11 @@ RSpec.describe Dependabot::Cargo::Version do
       it { is_expected.to eq "1.0.0-pre1+something" }
     end
 
+    context "with a blank version" do
+      let(:version_string) { "" }
+      it { is_expected.to eq "" }
+    end
+
     context "with a version (not a version string)" do
       let(:version_string) { described_class.new("1.0.0") }
       it { is_expected.to eq "1.0.0" }
