@@ -148,11 +148,16 @@ module Dependabot
       def version_of_latest_tag
         return unless latest_digest
 
-        tags_from_registry.
+        candidate_tag =
+          tags_from_registry.
           select { |tag| canonical_version?(tag) }.
-          select { |t| digest_of(t) == latest_digest }.
-          map { |t| version_class.new(numeric_version_from(t)) }.
-          max
+          sort_by { |t| version_class.new(numeric_version_from(t)) }.
+          reverse.
+          find { |t| digest_of(t) == latest_digest }
+
+        return unless candidate_tag
+
+        version_class.new(numeric_version_from(candidate_tag))
       end
 
       def canonical_version?(tag)

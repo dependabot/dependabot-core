@@ -150,25 +150,17 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
       end
       let(:version) { "12.10" }
-      let(:latest_version) { "17.04" }
 
       before do
-        versions =
-          %w(10.04 12.04.5 12.04 12.10 13.04 13.10 14.04.1 14.04.2 14.04.3
-             14.04.4 14.04.5 14.04 14.10 15.04 15.10 16.04 16.10 17.04 17.10) -
-          [latest_version]
-
-        versions.each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
-            and_return(
-              status: 200,
-              body: "",
-              headers: JSON.parse(headers_response)
-            )
-        end
+        stub_request(:head, repo_url + "manifests/17.10").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
 
         # Stub the latest version to return a different digest
-        [latest_version, "latest"].each do |version|
+        ["17.04", "latest"].each do |version|
           stub_request(:head, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
@@ -293,21 +285,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:latest_versions) { %w(2-sdk 2.1-sdk 2.1.401-sdk) }
 
       before do
-        versions =
-          %w(1-sdk 1.0-sdk 1.0.4-sdk 1.0.5-sdk 1.0.7-sdk 1.1-sdk 1.1.1-sdk
-             1.1.2-sdk 1.1.4-sdk 1.1.5-sdk 2-sdk 2.0-sdk 2.0.0-sdk 2.0.3-sdk
-             2.1-sdk 2.1.300-sdk 2.1.301-sdk 2.1.302-sdk 2.1.400-sdk 2.1.401-sdk
-             2.2-sdk) -
-          latest_versions
-
-        versions.each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
-            and_return(
-              status: 200,
-              body: "",
-              headers: JSON.parse(headers_response)
-            )
-        end
+        stub_request(:head, repo_url + "manifests/2.2-sdk").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
 
         # Stub the latest version to return a different digest
         [*latest_versions, "latest"].each do |version|
