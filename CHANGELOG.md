@@ -1,3 +1,7 @@
+## v0.87.7, 4 January 2019
+
+- Docker: Reduce number of calls to Dockerhub when determining latest version
+
 ## v0.87.6, 4 January 2019
 
 - Yarn: de-duplicate indirect dependencies
