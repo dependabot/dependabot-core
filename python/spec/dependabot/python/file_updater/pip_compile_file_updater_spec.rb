@@ -128,11 +128,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         it "updates the requirements.txt, keeping all the hashes" do
           expect(updated_files.count).to eq(1)
           expect(updated_files.first.content).
-            to include("pyasn1-modules==0.1.5")
+            to include("pyasn1-modules==0.1.5 \\\n    --hash=sha256:01")
           expect(updated_files.first.content).
             to include("--hash=sha256:b437be576bdf440fc0e930")
           expect(updated_files.first.content).
-            to include("pyasn1==0.3.7")
+            to include("pyasn1==0.3.7 \\\n    --hash=sha256:16")
           expect(updated_files.first.content).
             to include("--hash=sha256:bb6f5d5507621e0298794b")
           expect(updated_files.first.content).

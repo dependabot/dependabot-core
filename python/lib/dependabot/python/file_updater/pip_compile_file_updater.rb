@@ -279,7 +279,7 @@ module Dependabot
                 name: mtch.named_captures.fetch("name"),
                 version: mtch.named_captures.fetch("version"),
                 algorithm: mtch.named_captures.fetch("algorithm")
-              ).join(hash_separator(mtch.to_s))
+              ).sort.join(hash_separator(mtch.to_s))
             )
 
             updated_content_with_hashes = updated_content_with_hashes.
