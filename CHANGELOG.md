@@ -1,3 +1,7 @@
+## v0.87.5, 4 January 2019
+
+- Handle empty versions properly when a build or local version is possible
+
 ## v0.87.4, 3 January 2019
 
 - Go (dep): Handle unreachable vanity URLs in parser
