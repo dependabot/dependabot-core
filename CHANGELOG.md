@@ -1,3 +1,7 @@
+## v0.87.8, 4 January 2019
+
+- Python: Order additional hashes alphabetically when updating pip-compile files
+
 ## v0.87.7, 4 January 2019
 
 - Docker: Reduce number of calls to Dockerhub when determining latest version
