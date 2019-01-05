@@ -1,3 +1,7 @@
+## v0.87.9, 5 January 2019
+
+- Elixir: Handle whitespace before commas when updating mixfiles
+
 ## v0.87.8, 4 January 2019
 
 - Python: Order additional hashes alphabetically when updating pip-compile files
