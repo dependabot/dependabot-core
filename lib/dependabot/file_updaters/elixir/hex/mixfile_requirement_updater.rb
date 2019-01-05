@@ -43,7 +43,7 @@ module Dependabot
             requirement_line_regex =
               if previous_requirement
                 /
-                  :#{Regexp.escape(dependency_name)},.*
+                  :#{Regexp.escape(dependency_name)}\s*,.*
                   #{Regexp.escape(previous_requirement)}
                 /x
               else

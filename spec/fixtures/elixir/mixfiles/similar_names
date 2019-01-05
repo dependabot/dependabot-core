@@ -17,7 +17,7 @@ defmodule DependabotTest.Mixfile do
 
   defp deps do
     [
-      {:plug, "~> 1.3"},
+      {:plug , "~> 1.3"},
       {:absinthe_plug, "~> 1.3"},
       {:plug_cloudflare, "~> 1.3"}
     ]
