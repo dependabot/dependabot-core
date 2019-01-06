@@ -28,7 +28,7 @@ module Dependabot
                             children_crossing building_construction iphone
                             clown_face egg see_no_evil camera_flash).freeze
       ISSUE_TAG_REGEX =
-        /(?<=[\s(\\]|^)(?<tag>(?:\#|GH-)\d+)(?=[^A-z0-9\-]|$)/.freeze
+        /(?<=[\s(\\]|^)(?<tag>(?:\#|GH-)\d+)(?=[^A-Za-z0-9\-]|$)/.freeze
       GITHUB_REF_REGEX = %r{github\.com/[^/\s]+/[^/\s]+/(?:issue|pull)}.freeze
 
       attr_reader :source, :dependencies, :files, :credentials,

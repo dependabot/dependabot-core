@@ -71,8 +71,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "26f4887ec647493f044836363537e329d9d213aa) Bump version to v1.4.0\n"\
     "- [`7abe4c2`](https://github.com/gocardless/business/commit/"\
     "7abe4c2dc0161904c40c221a48999d12995fbea7) "\
-    "Merge pull request [#9](https://github-redirect.dependabot.com/"\
-    "gocardless/business/issues/9) from gocardless/custom-calendars\n"\
+    "[Fix [#9](https://github-redirect.dependabot.com/"\
+    "gocardless/business/issues/9)] Allow custom calendars\n"\
     "- [`1c72c35`](https://github.com/gocardless/business/commit/"\
     "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076) Allow custom calendars\n"\
     "- [`0bfb8c3`](https://github.com/gocardless/business/commit/"\

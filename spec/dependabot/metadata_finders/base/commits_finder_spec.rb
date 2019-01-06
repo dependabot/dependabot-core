@@ -533,8 +533,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                           "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076"
               },
               {
-                message: "Merge pull request #9 from gocardless/"\
-                          "custom-calendars\n\nAllow custom calendars",
+                message: "[Fix #9] Allow custom calendars",
                 sha: "7abe4c2dc0161904c40c221a48999d12995fbea7",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "7abe4c2dc0161904c40c221a48999d12995fbea7"
