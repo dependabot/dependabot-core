@@ -1,3 +1,8 @@
+## v0.87.10, 6 January 2019
+
+- Better GitHub issue sanitization
+- Gradle: Handle packaging types in versions
+
 ## v0.87.9, 5 January 2019
 
 - Elixir: Handle whitespace before commas when updating mixfiles
