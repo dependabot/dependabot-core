@@ -55,6 +55,14 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       its(:length) { is_expected.to eq(8) }
 
+      it "handles packaging types" do
+        expect(dependencies.map(&:name)).
+          to include("com.sparkjava:spark-core")
+
+        dep = dependencies.find { |d| d.name == "com.sparkjava:spark-core" }
+        expect(dep.version).to eq("2.5.4")
+      end
+
       it "includes property dependencies" do
         expect(dependencies.map(&:name)).
           to include("org.jetbrains.kotlin:kotlin-stdlib-jre8")

@@ -61,6 +61,7 @@ module Dependabot
           declaration = Regexp.last_match.named_captures.fetch("declaration")
 
           group, name, version = declaration.split(":")
+          version, _packaging_type = version.split("@")
           details = { group: group, name: name, version: version }
 
           dep = dependency_from(details_hash: details, buildfile: buildfile)
