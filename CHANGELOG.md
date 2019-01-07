@@ -1,3 +1,7 @@
+## v0.87.13, 7 January 2019
+
+- Cargo: If a file is both a support_file and a dependency file, treat as a dependency file only
+
 ## v0.87.12, 7 January 2019
 
 - Cargo: Handle aliased dependencies better in file preparer
