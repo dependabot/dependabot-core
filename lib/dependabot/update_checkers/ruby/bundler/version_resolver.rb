@@ -78,11 +78,17 @@ module Dependabot
             in_a_temporary_bundler_context do
               dep = dependency_from_definition
 
-              # If the dependency wasn't found in the definition, it's because
-              # the Gemfile didn't import the gemspec. This is unusual, but
-              # the correct behaviour if/when it happens is to behave as if
-              # the repo was gemspec-only
-              next latest_version_details unless dep
+              # If the dependency wasn't found in the definition, but *is*
+              # included in a gemspec, it's because the Gemfile didn't import
+              # the gemspec. This is unusual, but the correct behaviour if/when
+              # it happens is to behave as if the repo was gemspec-only.
+              if dep.nil? && dependency.requirements.any?
+                next latest_version_details
+              end
+
+              # Otherwise, if the dependency wasn't found it's because it is a
+              # subdependency that was removed when attempting to update it.
+              next nil if dep.nil?
 
               # If the old Gemfile index was used then it won't have checked
               # Ruby compatibility. Fix that by doing the check manually (and
@@ -125,8 +131,11 @@ module Dependabot
               ).prepared_dependency_files
           end
 
-          def dependency_from_definition
-            dependencies_to_unlock = [dependency.name, *subdependencies]
+          # rubocop:disable Metrics/CyclomaticComplexity
+          # rubocop:disable Metrics/PerceivedComplexity
+          def dependency_from_definition(unlock_subdependencies: true)
+            dependencies_to_unlock = [dependency.name]
+            dependencies_to_unlock += subdependencies if unlock_subdependencies
             begin
               definition = build_definition(dependencies_to_unlock)
               definition.resolve_remotely!
@@ -141,8 +150,16 @@ module Dependabot
               retry
             end
 
-            definition.resolve.find { |d| d.name == dependency.name }
+            dep = definition.resolve.find { |d| d.name == dependency.name }
+            return dep if dep
+            return if dependency.requirements.any? || !unlock_subdependencies
+
+            # If no definition was found and we're updating a sub-dependency,
+            # try again but without unlocking any other sub-dependencies
+            dependency_from_definition(unlock_subdependencies: false)
           end
+          # rubocop:enable Metrics/CyclomaticComplexity
+          # rubocop:enable Metrics/PerceivedComplexity
 
           def unlock_yanked_gem(dependencies_to_unlock, error)
             raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)

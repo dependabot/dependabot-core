@@ -110,6 +110,15 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
         let(:requirements) { [] }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
+
+        context "that will be removed if other sub-dependencies are updated" do
+          let(:gemfile_fixture_name) { "subdependency_change" }
+          let(:lockfile_fixture_name) { "subdependency_change.lock" }
+          let(:dependency_name) { "nokogiri" }
+          let(:requirements) { [] }
+
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.7.1")) }
+        end
       end
 
       context "with a Bundler version specified" do
