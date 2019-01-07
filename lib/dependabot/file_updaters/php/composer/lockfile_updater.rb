@@ -85,21 +85,24 @@ module Dependabot
                 named_captures.fetch("url")
               raise GitDependenciesNotReachable, dependency_url
             end
+
             if error.message.start_with?("Failed to clone")
               dependency_url =
                 error.message.match(/Failed to clone (?<url>.*?) via/).
                 named_captures.fetch("url")
               raise GitDependenciesNotReachable, dependency_url
             end
+
             if error.message.start_with?("Could not find a key for ACF PRO")
               raise MissingEnvironmentVariable, "ACF_PRO_KEY"
             end
-            if error.message.start_with?("Unknown downloader type: npm-signatu")
+
+            if error.message.start_with?("Unknown downloader type: npm-sign") ||
+               error.message.include?("file could not be downloaded") ||
+               error.message.include?("configuration does not allow connect")
               raise DependencyFileNotResolvable, error.message
             end
-            if error.message.include?("file could not be downloaded")
-              raise DependencyFileNotResolvable, error.message
-            end
+
             if error.message.start_with?("Allowed memory size")
               raise Dependabot::OutOfMemory
             end
@@ -109,12 +112,14 @@ module Dependabot
                        named_captures.fetch("source")
               raise PrivateSourceAuthenticationFailure, source
             end
+
             if error.message.include?("Argument 1 passed to Composer")
               msg = "One of your Composer plugins is not compatible with the "\
                     "latest version of Composer. Please update Composer and "\
                     "try running `composer update` to debug further."
               raise DependencyFileNotResolvable, msg
             end
+
             raise error
           end
           # rubocop:enable Metrics/PerceivedComplexity
