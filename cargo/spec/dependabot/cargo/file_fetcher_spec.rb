@@ -327,6 +327,22 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml))
       end
+
+      context "and specifies the dependency as a path dependency, too" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_workspace_and_path_root.json"
+          )
+        end
+
+        it "fetches the workspace dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml))
+          expect(file_fetcher_instance.files.map(&:support_file?)).
+            to match_array([false, false])
+        end
+      end
     end
 
     context "that is not fetchable" do

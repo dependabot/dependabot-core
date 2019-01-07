@@ -178,6 +178,7 @@ module Dependabot
           names = []
           parsed_manifest.fetch(type, {}).each do |nm, req|
             next unless dependency.name == name_from_declaration(nm, req)
+
             names << nm
           end
           names

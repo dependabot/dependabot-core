@@ -38,9 +38,14 @@ module Dependabot
         fetched_files += fetched_files.flat_map { |f| workspace_files(f) }
         fetched_files.uniq!
 
-        return fetched_files if fetched_files == files
+        updated_files = fetched_files.reject(&:support_file?)
+        updated_files +=
+          fetched_files.
+          reject { |f| updated_files.map(&:name).include?(f.name) }
 
-        fetch_path_dependency_and_workspace_files(fetched_files)
+        return updated_files if updated_files == files
+
+        fetch_path_dependency_and_workspace_files(updated_files)
       end
 
       def workspace_files(cargo_toml)
