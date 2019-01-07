@@ -13,8 +13,35 @@ $request = json_decode(file_get_contents('php://stdin'), true);
 // Increase the default memory limit. Calling `composer update` is otherwise
 // vulnerable to scenarios where there are unconstrained versions, resulting in
 // it checking huge numbers of dependency combinations and causing OOM issues.
-$memory_limit = getenv('COMPOSER_MEMORY_LIMIT') ?: '1900M';
-ini_set('memory_limit', $memory_limit);
+// This logic is a duplicate of the logic found in Composer
+$memoryInBytes = function ($value) {
+    $unit = strtolower(substr($value, -1, 1));
+    $value = (int) $value;
+    switch($unit) {
+        case 'g':
+            $value *= 1024;
+        // no break (cumulative multiplier)
+        case 'm':
+            $value *= 1024;
+        // no break (cumulative multiplier)
+        case 'k':
+            $value *= 1024;
+    }
+
+    return $value;
+};
+
+$memoryLimit = trim(ini_get('memory_limit'));
+// Increase memory_limit if it is lower than 1900MB
+if ($memoryLimit != -1 && $memoryInBytes($memoryLimit) < 1024 * 1024 * 1900) {
+    ini_set('memory_limit', '1900M');
+}
+
+// Set user defined memory limit
+if ($memoryLimit = getenv('COMPOSER_MEMORY_LIMIT')) {
+    ini_set('memory_limit', $memoryLimit);
+}
+unset($memoryInBytes, $memoryLimit);
 
 date_default_timezone_set('Europe/London');
 
