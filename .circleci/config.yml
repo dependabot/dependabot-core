@@ -62,11 +62,11 @@ jobs:
 
       - run:
           name: Rubocop
-          command: bundle exec rake ci:rubocop
+          command: docker run -ti dependabot/dependabot-core-ci bash -c "rake ci:rubocop"
 
       - run:
           name: RSpec
-          command: bundle exec rake ci:rspec
+          command: docker run -ti dependabot/dependabot-core-ci bash -c "rake ci:rspec"
 
       - run:
           name: Push dependabot-core image to Docker hub, if on master
