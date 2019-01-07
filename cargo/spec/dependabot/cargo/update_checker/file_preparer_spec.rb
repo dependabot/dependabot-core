@@ -90,6 +90,36 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             expect(prepared_manifest_file.content).
               to include('regex = ">= 0.1"')
           end
+
+          context "when the dependency is specified as an alias" do
+            let(:manifest_fixture_name) { "alias" }
+            let(:dependency_name) { "time" }
+            let(:string_req) { "0.1.12" }
+
+            it "updates the requirement" do
+              expect(prepared_manifest_file.content).
+                to include(
+                  "[dependencies.alias]\n"\
+                  "package = \"time\"\n"\
+                  "version = \">= 0.1.12\""
+                )
+            end
+          end
+
+          context "when another dependency is aliased to the same name" do
+            let(:manifest_fixture_name) { "alias" }
+            let(:dependency_name) { "alias" }
+            let(:string_req) { "0.1.12" }
+
+            it "doesn' update the requirement" do
+              expect(prepared_manifest_file.content).
+                to include(
+                  "[dependencies.alias]\n"\
+                  "package = \"time\"\n"\
+                  "version = \"0.1.12\""
+                )
+            end
+          end
         end
 
         context "with a support file (e.g., a path dependency manifest)" do

@@ -68,14 +68,16 @@ module Dependabot
           parsed_manifest = TomlRB.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
+            dependency_names_for_type(parsed_manifest, type).each do |name|
+              req = parsed_manifest.dig(type, name)
 
-            updated_req = temporary_requirement_for_resolution(filename)
+              updated_req = temporary_requirement_for_resolution(filename)
 
-            if req.is_a?(Hash)
-              parsed_manifest[type][dependency.name]["version"] = updated_req
-            else
-              parsed_manifest[type][dependency.name] = updated_req
+              if req.is_a?(Hash)
+                parsed_manifest[type][name]["version"] = updated_req
+              else
+                parsed_manifest[type][name] = updated_req
+              end
             end
           end
 
@@ -86,18 +88,18 @@ module Dependabot
           parsed_manifest = TomlRB.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
-            next unless req.is_a?(Hash)
-            next unless [req["tag"], req["rev"]].compact.uniq.count == 1
+            dependency_names_for_type(parsed_manifest, type).each do |name|
+              req = parsed_manifest.dig(type, name)
+              next unless req.is_a?(Hash)
+              next unless [req["tag"], req["rev"]].compact.uniq.count == 1
 
-            if req["tag"]
-              parsed_manifest[type][dependency.name]["tag"] =
-                replacement_git_pin
-            end
+              if req["tag"]
+                parsed_manifest[type][name]["tag"] = replacement_git_pin
+              end
 
-            if req["rev"]
-              parsed_manifest[type][dependency.name]["rev"] =
-                replacement_git_pin
+              if req["rev"]
+                parsed_manifest[type][name]["rev"] = replacement_git_pin
+              end
             end
           end
 
@@ -170,6 +172,24 @@ module Dependabot
             select { |p| p["name"] == dependency.name }.
             find { |p| p["source"].end_with?(dependency.version) }.
             fetch("version")
+        end
+
+        def dependency_names_for_type(parsed_manifest, type)
+          names = []
+          parsed_manifest.fetch(type, {}).each do |nm, req|
+            next unless dependency.name == name_from_declaration(nm, req)
+            names << nm
+          end
+          names
+        end
+
+        def name_from_declaration(name, declaration)
+          return name if declaration.is_a?(String)
+          unless declaration.is_a?(Hash)
+            raise "Unexpected dependency declaration: #{declaration}"
+          end
+
+          declaration.fetch("package", name)
         end
 
         def manifest_files
