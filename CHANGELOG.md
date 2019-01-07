@@ -1,3 +1,8 @@
+## v0.87.12, 7 January 2019
+
+- Cargo: Handle aliased dependencies better in file preparer
+- Ruby: Handle subdependency updates when the subdep gets removed
+
 ## v0.87.11, 7 January 2019
 
 - PHP: Cowardly ignore of stefandoorn/sitemap-plugin error we can't figure out
