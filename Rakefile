@@ -29,6 +29,7 @@ namespace :ci do
     packages = changed_packages
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
+      puts "> cd #{package} && bundle exec rubocop"
       system("cd #{package} && bundle exec rubocop")
     end
   end
@@ -37,6 +38,7 @@ namespace :ci do
     packages = changed_packages
     puts "Running rspec on: #{packages.join(', ')}"
     packages.each do |package|
+      puts "> cd #{package} && bundle exec rspec spec"
       system("cd #{package} && bundle exec rspec spec")
     end
   end
