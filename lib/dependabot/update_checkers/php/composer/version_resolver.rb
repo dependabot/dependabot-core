@@ -165,6 +165,12 @@ module Dependabot
               # dependency is no longer required and is just cruft in the
               # composer.json. In this case we just ignore the dependency.
               nil
+            elsif error.message.include?("stefandoorn/sitemap-plugin-1.0.0.0")
+              # We get a recurring error when attempting to update this repo
+              # which doesn't recur locally and we can't figure out how to fix!
+              #
+              # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
+              nil
             else
               raise error
             end
