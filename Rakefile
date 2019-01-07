@@ -22,14 +22,22 @@ GEMSPECS = %w(
   cargo/dependabot-cargo.gemspec
   go_modules/dependabot-go_modules.gemspec
   omnibus/dependabot-omnibus.gemspec
-)
+).freeze
 
 namespace :ci do
   task :rubocop do
     packages = changed_packages
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
-      `rubocop #{package}`
+      system("cd #{package} && bundle exec rubocop")
+    end
+  end
+
+  task :rspec do
+    packages = changed_packages
+    puts "Running rspec on: #{packages.join(', ')}"
+    packages.each do |package|
+      system("cd #{package} && bundle exec rspec spec")
     end
   end
 end

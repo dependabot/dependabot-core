@@ -62,69 +62,11 @@ jobs:
 
       - run:
           name: Rubocop
-          command: |
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd terraform && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd docker && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd git_submodules && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd python && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd nuget && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd elm && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd gradle && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd maven && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd cargo && rubocop"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd go_modules && rubocop"
+          command: bundle exec rake ci:rubocop
 
       - run:
           name: RSpec
-          command: |
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd terraform && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd docker && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd git_submodules && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd python && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd nuget && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd elm && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd gradle && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd maven && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd cargo && rspec spec --format documentation"
-
-            docker run -ti dependabot/dependabot-core-ci \
-              bash -c "cd go_modules && rspec spec --format documentation"
+          command: bundle exec rake ci:rspec
 
       - run:
           name: Push dependabot-core image to Docker hub, if on master
