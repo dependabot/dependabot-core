@@ -49,7 +49,7 @@ jobs:
 
       - run:
           name: Push dependabot-core image to CI cache repo
-          command:
+          command: |
             if [ -n "$DOCKER_USER" ] && [ -n "$DOCKER_PASSWORD" ]; then
               docker push "dependabot/dependabot-core-ci:core--$BRANCH_TAG"
             else
