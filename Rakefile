@@ -5,10 +5,11 @@ require "English"
 require "net/http"
 require "uri"
 require "json"
+require "shellwords"
 require "rubygems/package"
 require "./lib/dependabot/version"
 
-gemspecs = %w(
+GEMSPECS = %w(
   dependabot-core.gemspec
   terraform/dependabot-terraform.gemspec
   elm/dependabot-elm.gemspec
@@ -21,7 +22,25 @@ gemspecs = %w(
   cargo/dependabot-cargo.gemspec
   go_modules/dependabot-go_modules.gemspec
   omnibus/dependabot-omnibus.gemspec
-)
+).freeze
+
+namespace :ci do
+  task :rubocop do
+    packages = changed_packages
+    puts "Running rubocop on: #{packages.join(', ')}"
+    packages.each do |package|
+      system("cd #{package} && bundle exec rubocop")
+    end
+  end
+
+  task :rspec do
+    packages = changed_packages
+    puts "Running rspec on: #{packages.join(', ')}"
+    packages.each do |package|
+      system("cd #{package} && bundle exec rspec spec")
+    end
+  end
+end
 
 namespace :gems do
   task build: :clean do
@@ -29,7 +48,7 @@ namespace :gems do
     pkg_path = File.join(root_path, "pkg")
     Dir.mkdir(pkg_path) unless File.directory?(pkg_path)
 
-    gemspecs.each do |gemspec_path|
+    GEMSPECS.each do |gemspec_path|
       puts "> Building #{gemspec_path}"
       Dir.chdir(File.dirname(gemspec_path)) do
         gemspec = Bundler.load_gemspec_uncached(File.basename(gemspec_path))
@@ -42,7 +61,7 @@ namespace :gems do
   task release: [:build] do
     guard_tag_match
 
-    gemspecs.each do |gemspec_path|
+    GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
       gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
       if rubygems_release_exists?(gem_name, Dependabot::VERSION)
@@ -79,4 +98,30 @@ def rubygems_release_exists?(name, version)
   body = JSON.parse(response.body)
   existing_versions = body.map { |b| b["number"] }
   existing_versions.include?(version)
+end
+
+def changed_packages
+  all_packages = GEMSPECS.
+                 select { |gs| gs.include?("/") }.
+                 map { |gs| "./" + gs.split("/").first }
+  return all_packages if ENV["CIRCLE_COMPARE_URL"].nil?
+
+  range = ENV["CIRCLE_COMPARE_URL"].split("/").last
+  core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
+                  config helpers lib spec)
+  core_changed = commit_range_changes_paths?(range, core_paths)
+
+  packages = all_packages.select do |package|
+    next true if core_changed
+
+    commit_range_changes_paths?(range, [package])
+  end
+
+  packages.insert(0, "./") if core_changed
+  packages
+end
+
+def commit_range_changes_paths?(range, paths)
+  cmd = %w(git diff --quiet) + [range, "--"] + paths
+  !system(Shellwords.join(cmd))
 end
