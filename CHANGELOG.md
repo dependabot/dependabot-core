@@ -1,3 +1,9 @@
+## v0.87.11, 7 January 2019
+
+- PHP: Cowardly ignore of stefandoorn/sitemap-plugin error we can't figure out
+- PHP: Serve resolution error for non-https requests when they're disallowed
+- PHP: Improve memory limit handling in PHP helper
+
 ## v0.87.10, 6 January 2019
 
 - Better GitHub issue sanitization
