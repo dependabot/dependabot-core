@@ -101,14 +101,16 @@ def rubygems_release_exists?(name, version)
 end
 
 def changed_packages
+  all_packages = GEMSPECS.
+                 select { |gs| gs.include?("/") }.
+                 map { |gs| "./" + gs.split("/").first }
+  return all_packages if ENV["CIRCLE_COMPARE_URL"].nil?
+
   range = ENV["CIRCLE_COMPARE_URL"].split("/").last
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
                   config helpers lib spec)
   core_changed = commit_range_changes_paths?(range, core_paths)
 
-  all_packages = GEMSPECS.
-                 select { |gs| gs.include?("/") }.
-                 map { |gs| "./" + gs.split("/").first }
   packages = all_packages.select do |package|
     next true if core_changed
 
