@@ -84,7 +84,23 @@ module Dependabot
 
         def convert_hyphen_req(req_string)
           lower_bound, upper_bound = req_string.split(/\s+-\s+/)
-          [">= #{lower_bound}", "<= #{upper_bound}"]
+          lower_bound_parts = lower_bound.split(".")
+          lower_bound_parts.fill("0", lower_bound_parts.length...3)
+
+          upper_bound_parts = upper_bound.split(".")
+          upper_bound_range =
+            if upper_bound_parts.length < 3
+              # When upper bound is a partial version treat these as an X-range
+              if upper_bound_parts[-1].to_i.positive?
+                upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1
+              end
+              upper_bound_parts.fill("0", upper_bound_parts.length...3)
+              "< #{upper_bound_parts.join('.')}.a"
+            else
+              "<= #{upper_bound_parts.join('.')}"
+            end
+
+          [">= #{lower_bound_parts.join('.')}", upper_bound_range]
         end
 
         def ruby_range(req_string)
@@ -97,13 +113,17 @@ module Dependabot
           "~> #{parts.join('.')}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def convert_caret_req(req_string)
           version = req_string.gsub(/^\^/, "")
           parts = version.split(".")
-          parts = parts.fill(0, parts.length...3)
+          parts = parts.fill("x", parts.length...3)
           first_non_zero = parts.find { |d| d != "0" }
           first_non_zero_index =
             first_non_zero ? parts.index(first_non_zero) : parts.count - 1
+          # If the requirement has a blank minor or patch version increment the
+          # previous index value with 1
+          first_non_zero_index -= 1 if first_non_zero == "x"
           upper_bound = parts.map.with_index do |part, i|
             if i < first_non_zero_index then part
             elsif i == first_non_zero_index then (part.to_i + 1).to_s
@@ -114,6 +134,7 @@ module Dependabot
 
           [">= #{version}", "< #{upper_bound}"]
         end
+        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end
