@@ -231,7 +231,8 @@ module Dependabot
               download_url: "#{source.url}/raw/#{branch}/#{file['path']}"
             )
           end
-        rescue Dependabot::Clients::Bitbucket::NotFound
+        rescue Dependabot::Clients::Bitbucket::NotFound,
+               Dependabot::Clients::Bitbucket::Unauthorized
           []
         end
 
