@@ -108,6 +108,16 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
       end
     end
 
+    context "with a local VCS source" do
+      let(:manifest_fixture_name) { "local_vcs_source" }
+      let(:dependency_files) { [manifest] }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     # This test is extremely slow, as it neds to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do

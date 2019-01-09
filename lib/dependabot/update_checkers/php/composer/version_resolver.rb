@@ -137,6 +137,12 @@ module Dependabot
             elsif error.message.include?("package requires php") ||
                   error.message.include?("cannot require itself")
               raise Dependabot::DependencyFileNotResolvable, error.message
+            elsif error.message.include?("No driver found to handle VCS") &&
+                  !error.message.include?("@") && !error.message.include?("://")
+              msg = "Dependabot detected a VCS requirement with a local path, "\
+                    "rather than a URL. Dependabot does not support this "\
+                    "setup.\n\nThe underlying error was:\n\n#{error.message}"
+              raise Dependabot::DependencyFileNotResolvable, msg
             elsif error.message.include?("requirements could not be resolved")
               # We should raise a Dependabot::DependencyFileNotResolvable error
               # here, but can't confidently distinguish between cases where we
