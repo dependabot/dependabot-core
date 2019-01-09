@@ -1,3 +1,8 @@
+## v0.87.15, 9 January 2019
+
+- PHP: Raise resolvability issue when working with local VCS errors
+- Bump @dependabot/yarn-lib from 1.12.3 to 1.13.0 in /helpers/yarn
+
 ## v0.87.14, 9 January 2019
 
 - Handle Bitbucket 401s during changelog lookup
