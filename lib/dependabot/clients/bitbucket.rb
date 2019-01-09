@@ -7,6 +7,7 @@ module Dependabot
   module Clients
     class Bitbucket
       class NotFound < StandardError; end
+      class Unauthorized < StandardError; end
 
       #######################
       # Constructor methods #
@@ -84,6 +85,7 @@ module Dependabot
           **SharedHelpers.excon_defaults
         )
         raise NotFound if response.status == 404
+        raise Unauthorized if response.status == 401
 
         response
       end

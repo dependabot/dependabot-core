@@ -118,7 +118,8 @@ module Dependabot
           else raise "Unexpected source provider '#{source.provider}'"
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound,
-               Dependabot::Clients::Bitbucket::NotFound
+               Dependabot::Clients::Bitbucket::NotFound,
+               Dependabot::Clients::Bitbucket::Unauthorized
           []
         end
 
@@ -178,7 +179,8 @@ module Dependabot
                 html_url: commit.dig("links", "html", "href")
               }
             end
-        rescue Dependabot::Clients::Bitbucket::NotFound
+        rescue Dependabot::Clients::Bitbucket::NotFound,
+               Dependabot::Clients::Bitbucket::Unauthorized
           []
         end
 
