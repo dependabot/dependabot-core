@@ -202,17 +202,18 @@ module Dependabot
 
           if source.directory
             opts = { path: source.directory, ref: ref }.compact
-            files += github_client.contents(source.repo, opts)
+            tmp_files = github_client.contents(source.repo, opts)
+            files += tmp_files if tmp_files.is_a?(Array)
           end
 
           opts = { ref: ref }.compact
           files += github_client.contents(source.repo, opts)
 
-          %w(doc docs).each do |dir_name|
-            if files.any? { |f| f.name == dir_name && f.type == "dir" }
-              opts = { path: dir_name, ref: ref }.compact
-              files += github_client.contents(source.repo, opts)
-            end
+          files.uniq.each do |f|
+            next unless %w(doc docs).include?(f.name) && f.type == "dir"
+
+            opts = { path: f.path, ref: ref }.compact
+            files += github_client.contents(source.repo, opts)
           end
 
           files

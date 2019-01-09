@@ -248,6 +248,32 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           finder.changelog_url
           expect(WebMock).to have_requested(:get, github_url).once
         end
+
+        context "that isn't a directory" do
+          before do
+            stub_request(:get, github_url + "packages/stryker").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: fixture("github", "changelog_contents.json"),
+                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: fixture("github", "business_files.json"),
+                        headers: { "Content-Type" => "application/json" })
+            stub_request(:get, github_url + "CHANGELOG.md?ref=master").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: github_status,
+                        body: changelog_body,
+                        headers: { "Content-Type" => "application/json" })
+          end
+
+          it "gets the right URL" do
+            expect(subject).
+              to eq("https://github.com/gocardless/business/blob/master"\
+                    "/CHANGELOG.md")
+          end
+        end
       end
 
       context "when the github_repo doesn't exists" do
