@@ -57,6 +57,12 @@ COPY gradle/Gemfile \
      /home/dependabot/dependabot-core/gradle/
 RUN cd gradle && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/hex
+COPY hex/Gemfile \
+     hex/dependabot-hex.gemspec \
+     /home/dependabot/dependabot-core/hex/
+RUN cd hex && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/nuget
 COPY nuget/Gemfile \
      nuget/dependabot-nuget.gemspec \

@@ -120,7 +120,6 @@ jobs:
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
       - run: cd helpers/php && composer install
-      - run: cd helpers/elixir && mix deps.get
       - run: cd helpers/go && make linux
 
       - save_cache:

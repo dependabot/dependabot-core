@@ -52,6 +52,10 @@ RUN mkdir -p /home/dependabot/dependabot-core/gradle
 COPY gradle/Gemfile gradle/dependabot-gradle.gemspec /home/dependabot/dependabot-core/gradle/
 RUN cd gradle && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/hex
+COPY hex/Gemfile hex/dependabot-hex.gemspec /home/dependabot/dependabot-core/hex/
+RUN cd hex && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/cargo
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec /home/dependabot/dependabot-core/cargo/
 RUN cd cargo && bundle install

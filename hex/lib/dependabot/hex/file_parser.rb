@@ -1,0 +1,125 @@
+# frozen_string_literal: true
+
+require "dependabot/dependency"
+require "dependabot/file_parsers"
+require "dependabot/file_parsers/base"
+require "dependabot/hex/native_helpers"
+require "dependabot/shared_helpers"
+require "dependabot/errors"
+
+# For docs, see https://hexdocs.pm/mix/Mix.Tasks.Deps.html
+module Dependabot
+  module Hex
+    class FileParser < Dependabot::FileParsers::Base
+      require "dependabot/file_parsers/base/dependency_set"
+
+      def parse
+        dependency_set = DependencySet.new
+
+        dependency_details.each do |dep|
+          git_dependency = dep["source"]&.fetch("type") == "git"
+
+          dependency_set <<
+            Dependency.new(
+              name: dep["name"],
+              version: git_dependency ? dep["checksum"] : dep["version"],
+              requirements: [{
+                requirement: dep["requirement"],
+                groups: dep["groups"],
+                source: dep["source"] && symbolize_keys(dep["source"]),
+                file: dep["from"]
+              }],
+              package_manager: "hex"
+            )
+        end
+
+        dependency_set.dependencies.sort_by(&:name)
+      end
+
+      private
+
+      def dependency_details
+        SharedHelpers.in_a_temporary_directory do
+          write_sanitized_mixfiles
+          write_supporting_files
+          File.write("mix.lock", lockfile.content) if lockfile
+          FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
+
+          SharedHelpers.run_helper_subprocess(
+            env: mix_env,
+            command: "mix run #{elixir_helper_path}",
+            function: "parse",
+            args: [Dir.pwd],
+            popen_opts: { err: %i(child out) }
+          )
+        end
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+        result_json =
+          error.message.lines.
+          drop_while { |l| !l.start_with?('{"result":') }.
+          join
+
+        raise DependencyFileNotEvaluatable, error.message if result_json.empty?
+
+        JSON.parse(result_json).fetch("result")
+      end
+
+      def write_sanitized_mixfiles
+        mixfiles.each do |file|
+          path = file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, sanitize_mixfile(file.content))
+        end
+      end
+
+      def write_supporting_files
+        dependency_files.select(&:support_file).each do |file|
+          path = file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, file.content)
+        end
+      end
+
+      def sanitize_mixfile(content)
+        content.
+          gsub(/File\.read!\(.*?\)/, '"0.0.1"').
+          gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
+      end
+
+      def mix_env
+        {
+          "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+          "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
+          "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
+          "MIX_QUIET" => "1"
+        }
+      end
+
+      def elixir_helper_path
+        File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
+      end
+
+      def elixir_helper_parse_deps_path
+        File.join(NativeHelpers.hex_helpers_dir, "lib/parse_deps.exs")
+      end
+
+      def check_required_files
+        raise "No mixfile!" if mixfiles.none?
+      end
+
+      def symbolize_keys(hash)
+        Hash[hash.keys.map { |k| [k.to_sym, hash[k]] }]
+      end
+
+      def mixfiles
+        dependency_files.select { |f| f.name.end_with?("mix.exs") }
+      end
+
+      def lockfile
+        @lockfile ||= get_original_file("mix.lock")
+      end
+    end
+  end
+end
+
+Dependabot::FileParsers.register("hex", Dependabot::Hex::FileParser)
