@@ -137,8 +137,7 @@ module Dependabot
           @parsed_gemspecs ||= {}
           @parsed_gemspecs[file.name] ||=
             SharedHelpers.in_a_temporary_directory do
-              File.write(file.name, file.content)
-              imported_ruby_files.each do |f|
+              [file, *imported_ruby_files].each do |f|
                 path = f.name
                 FileUtils.mkdir_p(Pathname.new(path).dirname)
                 File.write(path, f.content)
@@ -280,7 +279,7 @@ module Dependabot
         def gemspecs
           # The gemspecs for this project will be at the top level
           @gemspecs ||= prepared_dependency_files.select do |file|
-            file.name.match?(%r{^[^/]*\.gemspec$})
+            file.name.match?(%r{^*\.gemspec$})
           end
         end
 

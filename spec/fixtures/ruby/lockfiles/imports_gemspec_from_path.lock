@@ -1,0 +1,19 @@
+PATH
+  remote: subdir
+  specs:
+    example (0.9.3)
+      business (~> 1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.13.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  example!
+
+BUNDLED WITH
+   1.16.1
