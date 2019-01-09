@@ -1,3 +1,7 @@
+## v0.88.1, 9 January 2019
+
+- Better handling of directories in changelog finder
+
 ## v0.88.0, 9 January 2019
 
 - Elixir reorg
