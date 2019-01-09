@@ -1,3 +1,8 @@
+## v0.87.14, 9 January 2019
+
+- Handle Bitbucket 401s during changelog lookup
+- Handle Bitbucket 401s during commit lookup
+
 ## v0.87.13, 7 January 2019
 
 - Cargo: If a file is both a support_file and a dependency file, treat as a dependency file only
