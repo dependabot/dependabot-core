@@ -523,7 +523,7 @@ module Dependabot
 
       def truncated_line
         # Tables can spill out of truncated details, so we close them
-        "></table> ... (truncated)\n"
+        "></tr></table> ... (truncated)\n"
       end
 
       def releases_url(dependency)
