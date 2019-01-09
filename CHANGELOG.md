@@ -1,3 +1,7 @@
+## v0.88.0, 9 January 2019
+
+- Elixir reorg
+
 ## v0.87.15, 9 January 2019
 
 - PHP: Raise resolvability issue when working with local VCS errors
