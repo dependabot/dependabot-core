@@ -279,7 +279,7 @@ module Dependabot
         def gemspecs
           # The gemspecs for this project will be at the top level
           @gemspecs ||= prepared_dependency_files.select do |file|
-            file.name.match?(%r{^*\.gemspec$})
+            file.name.match?(/^*\.gemspec$/)
           end
         end
 
