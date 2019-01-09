@@ -129,8 +129,9 @@ module Dependabot
             elsif error.message.include?("requested PHP extension")
               extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
               msg = "Dependabot's installed extensions didn't match those "\
-                    "required by your application. Please add the following "\
-                    "extensions to the platform config in your composer.json: "\
+                    "required by your application.\n\n"\
+                    "Please add the following extensions to the platform "\
+                    "config in your composer.json to allow Dependabot to run: "\
                     "#{extensions.join(', ')}.\n\n"\
                     "The full error raised was:\n\n#{error.message}"
               raise Dependabot::DependencyFileNotResolvable, msg
