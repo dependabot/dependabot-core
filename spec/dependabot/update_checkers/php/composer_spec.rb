@@ -358,7 +358,7 @@ RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
                   expect(error.message).
                     to include("extension ext-maxminddb * is missing")
                   expect(error.message).
-                    to include("in your composer.json: ext-maxminddb.\n")
+                    to include("to allow Dependabot to run: ext-maxminddb.\n")
                 end
             end
           end
