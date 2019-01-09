@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+install_dir=$1
+if [ -z "$install_dir" ]; then
+  echo "usage: $0 INSTALL_DIR"
+  exit 1
+fi
+
+if [ ! -d "$install_dir/bin" ]; then
+  mkdir -p "$install_dir/bin"
+fi
+
+mix local.hex --force
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cd "$helpers_dir"
+mix deps.get
