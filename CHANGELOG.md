@@ -1,3 +1,7 @@
+## v0.88.2, 10 January 2019
+
+- JS: Handle ~ and ^ version requirements with blank minor.patch version
+
 ## v0.88.1, 9 January 2019
 
 - Better handling of directories in changelog finder
