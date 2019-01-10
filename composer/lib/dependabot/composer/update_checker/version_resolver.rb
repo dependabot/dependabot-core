@@ -3,6 +3,7 @@
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
+require "dependabot/composer/native_helpers"
 
 module Dependabot
   module Composer
@@ -187,8 +188,7 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
 
         def php_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/php/bin/run.php")
+          NativeHelpers.composer_helper_path
         end
 
         def composer_file

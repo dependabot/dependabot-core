@@ -102,5 +102,9 @@ docker run --rm -ti \
   -v "$(pwd)/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
   -v "$(pwd)/go_modules/lib:$CODE_DIR/go_modules/lib" \
   -v "$(pwd)/go_modules/spec:$CODE_DIR/go_modules/spec" \
+  -v "$(pwd)/composer/Gemfile:$CODE_DIR/composer/Gemfile" \
+  -v "$(pwd)/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
+  -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
+  -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

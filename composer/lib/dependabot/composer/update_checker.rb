@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require "excon"
+require "json"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-
-require "json"
 
 module Dependabot
   module Composer

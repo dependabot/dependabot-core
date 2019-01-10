@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
-      it { is_expected.to eq(Dependabot::Utils::Php::Version.new("1.0")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.0")) }
     end
 
     context "with a library that requires itself" do

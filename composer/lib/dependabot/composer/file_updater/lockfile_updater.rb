@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/composer/file_updater"
-require "dependabot/composer/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/composer/file_updater"
+require "dependabot/composer/version"
+require "dependabot/composer/native_helpers"
 
 module Dependabot
   module Composer
@@ -226,8 +227,7 @@ module Dependabot
         end
 
         def php_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/php/bin/run.php")
+          NativeHelpers.composer_helper_path
         end
 
         def credentials_env
