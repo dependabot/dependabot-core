@@ -33,20 +33,90 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
       end
 
+      context "for two digits with x" do
+        let(:requirement_string) { "^1.2.x" }
+        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
+      end
+
       context "with a pre-1.0.0 dependency" do
         let(:requirement_string) { "^0.2.3" }
         it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.a")) }
+      end
+
+      context "with a pre-1.0.0 specifying major.minor.patch version" do
+        let(:requirement_string) { "^0.0.3" }
+        it { is_expected.to eq(described_class.new(">= 0.0.3", "< 0.0.4")) }
+      end
+
+      context "with a pre-1.0.0 specifying major.minor version only" do
+        let(:requirement_string) { "^0.0" }
+        it { is_expected.to eq(described_class.new(">= 0.0", "< 0.1.0.a")) }
+      end
+
+      context "with a pre-1.0.0 specifying major.minor.x version" do
+        let(:requirement_string) { "^0.0.x" }
+        it { is_expected.to eq(described_class.new(">= 0.0", "< 0.1.0.a")) }
+      end
+
+      context "with a pre-1.0.0 specifying major.minor.* version" do
+        let(:requirement_string) { "^0.0.*" }
+        it { is_expected.to eq(described_class.new(">= 0.0", "< 0.1.0.a")) }
+      end
+
+      context "with a pre-1.0.0 specifying major version only" do
+        let(:requirement_string) { "^0" }
+        it { is_expected.to eq(described_class.new(">= 0", "< 1.0.0.a")) }
       end
     end
 
     context "with a ~ version specified" do
       let(:requirement_string) { "~1.5.1" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
+
+      context "with a pre-1.0.0 specifying major.minor.patch version" do
+        let(:requirement_string) { "~0.0.3" }
+        it { is_expected.to eq(described_class.new("~> 0.0.3")) }
+      end
+
+      context "with a pre-1.0.0 specifying major.minor version only" do
+        let(:requirement_string) { "~0.0" }
+        it { is_expected.to eq(described_class.new("~> 0.0.0")) }
+      end
+
+      context "with a pre-1.0.0 specifying major version only" do
+        let(:requirement_string) { "~0" }
+        it { is_expected.to eq(described_class.new("~> 0.0")) }
+      end
     end
 
     context "with a hyphen range specified" do
       let(:requirement_string) { "1.0.0 - 1.5.0" }
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")) }
+
+      context "with a partial starting major.minor version (patch omitted)" do
+        let(:requirement_string) { "1.2 - 2.3.4" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.2.0", "<= 2.3.4")) }
+      end
+
+      context "with a partial ending major version (minor and patch omitted)" do
+        let(:requirement_string) { "1.2.3 - 2" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.2.3", "< 3.0.0.a")) }
+      end
+
+      context "with a partial ending major.minor version (patch omitted)" do
+        let(:requirement_string) { "1.2.3 - 2.3" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.2.3", "< 2.4.0.a")) }
+      end
+
+      context "with a partial ending major.minor.x version" do
+        let(:requirement_string) { "1.2.3 - 2.3.x" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.2.3", "< 2.4.0.a")) }
+      end
+
+      context "with a partial ending major.minor.* version" do
+        let(:requirement_string) { "1.2.3 - 2.3.*" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.2.3", "< 2.4.0.a")) }
+      end
     end
 
     context "with a ~> version specified" do
@@ -64,7 +134,12 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
       it { is_expected.to eq(Gem::Requirement.new(">= 0")) }
     end
 
-    context "with a *" do
+    context "with empty version" do
+      let(:requirement_string) { "" }
+      it { is_expected.to eq(Gem::Requirement.new(">= 0")) }
+    end
+
+    context "with an *" do
       let(:requirement_string) { "1.*" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
     end
@@ -72,6 +147,26 @@ RSpec.describe Dependabot::Utils::JavaScript::Requirement do
     context "with an x" do
       let(:requirement_string) { "^1.1.x" }
       it { is_expected.to eq(described_class.new(">= 1.1", "< 2.0.0.a")) }
+
+      context "with only major version" do
+        let(:requirement_string) { "1.x" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+      end
+
+      context "with major.minor version" do
+        let(:requirement_string) { "1.2.x" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
+      end
+
+      context "with only major version (minor * inferred)" do
+        let(:requirement_string) { "1" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+      end
+
+      context "with major.minor version (patch * inferred)" do
+        let(:requirement_string) { "1.2" }
+        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
+      end
     end
 
     context "with a 'v' prefix" do
