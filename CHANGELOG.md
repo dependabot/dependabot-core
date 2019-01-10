@@ -1,3 +1,8 @@
+## v0.88.3, 10 January 2019
+
+- Ruby: Add Ruby 2.6.0 to list of rubies in RubyRequirementSetter
+- Handle git dependencies when creating PR message for libraries
+
 ## v0.88.2, 10 January 2019
 
 - JS: Handle ~ and ^ version requirements with blank minor.patch version
