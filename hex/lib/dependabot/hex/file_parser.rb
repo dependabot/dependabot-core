@@ -50,7 +50,7 @@ module Dependabot
             command: "mix run #{elixir_helper_path}",
             function: "parse",
             args: [Dir.pwd],
-            popen_opts: { err: %i(child out) }
+            stderr_to_stdout: true
           )
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
