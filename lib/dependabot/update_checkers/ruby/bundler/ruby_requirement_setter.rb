@@ -9,7 +9,7 @@ module Dependabot
       class Bundler
         class RubyRequirementSetter
           RUBY_VERSIONS =
-            %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.7 2.4.4 2.5.1).freeze
+            %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.5 2.5.3 2.6.0).freeze
 
           attr_reader :gemspec
 
