@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/php/composer"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/composer/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Php::Composer do
+RSpec.describe Dependabot::Composer::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [composer_json, lockfile] }

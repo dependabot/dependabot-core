@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/php/version"
+require "dependabot/composer/version"
 
-RSpec.describe Dependabot::Utils::Php::Version do
+RSpec.describe Dependabot::Composer::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 

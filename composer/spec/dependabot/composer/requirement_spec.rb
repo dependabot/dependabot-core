@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/php/requirement"
+require "dependabot/composer/requirement"
 
-RSpec.describe Dependabot::Utils::Php::Requirement do
+RSpec.describe Dependabot::Composer::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 

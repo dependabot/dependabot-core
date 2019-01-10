@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/php/composer/version_resolver"
+require "dependabot/composer/update_checker/version_resolver"
 
-RSpec.describe Dependabot::UpdateCheckers::Php::Composer::VersionResolver do
+RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
   subject(:resolver) do
     described_class.new(
       credentials: credentials,

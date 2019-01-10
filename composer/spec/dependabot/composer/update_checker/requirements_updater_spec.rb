@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/php/composer/requirements_updater"
+require "dependabot/composer/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Php::Composer::RequirementsUpdater do
+RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

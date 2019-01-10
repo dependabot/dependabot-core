@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/php/composer/manifest_updater"
+require "dependabot/composer/file_updater/manifest_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Php::Composer::ManifestUpdater do
+RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
   let(:updater) do
     described_class.new(
       manifest: manifest,

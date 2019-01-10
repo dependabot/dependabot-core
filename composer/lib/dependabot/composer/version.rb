@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/utils"
 require "rubygems_version_patch"
 
 # PHP pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
@@ -7,18 +8,19 @@ require "rubygems_version_patch"
 # alteration.
 
 module Dependabot
-  module Utils
-    module Php
-      class Version < Gem::Version
-        def initialize(version)
-          @version_string = version.to_s
-          super
-        end
+  module Composer
+    class Version < Gem::Version
+      def initialize(version)
+        @version_string = version.to_s
+        super
+      end
 
-        def to_s
-          @version_string
-        end
+      def to_s
+        @version_string
       end
     end
   end
 end
+
+Dependabot::Utils.
+  register_version_class("composer", Dependabot::Composer::Version)

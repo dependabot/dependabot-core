@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/php/composer"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/composer/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Php::Composer do
+RSpec.describe Dependabot::Composer::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do

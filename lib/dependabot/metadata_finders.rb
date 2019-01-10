@@ -2,7 +2,6 @@
 
 require "dependabot/metadata_finders/ruby/bundler"
 require "dependabot/metadata_finders/java_script/npm_and_yarn"
-require "dependabot/metadata_finders/php/composer"
 require "dependabot/metadata_finders/go/dep"
 
 module Dependabot
@@ -10,7 +9,6 @@ module Dependabot
     @metadata_finders = {
       "bundler" => MetadataFinders::Ruby::Bundler,
       "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
-      "composer" => MetadataFinders::Php::Composer,
       "dep" => MetadataFinders::Go::Dep
     }
 

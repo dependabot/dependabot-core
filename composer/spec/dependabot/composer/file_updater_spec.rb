@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/php/composer"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/composer/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Php::Composer do
+RSpec.describe Dependabot::Composer::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do

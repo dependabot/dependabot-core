@@ -3,10 +3,10 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/php/composer"
-require_relative "../shared_examples_for_metadata_finders"
+require "dependabot/composer/metadata_finder"
+require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::MetadataFinders::Php::Composer do
+RSpec.describe Dependabot::Composer::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do

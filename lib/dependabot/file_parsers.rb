@@ -2,7 +2,6 @@
 
 require "dependabot/file_parsers/ruby/bundler"
 require "dependabot/file_parsers/java_script/npm_and_yarn"
-require "dependabot/file_parsers/php/composer"
 require "dependabot/file_parsers/go/dep"
 
 module Dependabot
@@ -10,7 +9,6 @@ module Dependabot
     @file_parsers = {
       "bundler" => FileParsers::Ruby::Bundler,
       "npm_and_yarn" => FileParsers::JavaScript::NpmAndYarn,
-      "composer" => FileParsers::Php::Composer,
       "dep" => FileParsers::Go::Dep
     }
 

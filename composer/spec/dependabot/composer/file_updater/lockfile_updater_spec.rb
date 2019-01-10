@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/php/composer/lockfile_updater"
+require "dependabot/composer/file_updater/lockfile_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Php::Composer::LockfileUpdater do
+RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
   let(:updater) do
     described_class.new(
       dependency_files: files,
