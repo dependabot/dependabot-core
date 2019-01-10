@@ -29,13 +29,13 @@ RSpec.describe Dependabot::Composer::FileUpdater do
   let(:composer_json) do
     Dependabot::DependencyFile.new(
       name: "composer.json",
-      content: fixture("php", "composer_files", manifest_fixture_name)
+      content: fixture("composer_files", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "composer.lock",
-      content: fixture("php", "lockfiles", lockfile_fixture_name)
+      content: fixture("lockfiles", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "exact_version" }

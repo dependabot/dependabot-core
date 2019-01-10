@@ -1,0 +1,18 @@
+{
+  "name": "composer.lock",
+  "path": "composer.lock",
+  "sha": "5c7b3419e0056515122b981f1566ebe22c208251",
+  "size": 594,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/composer.lock?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/composer.lock",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/composer.lock?token=ABMwe0apDiKCctWHnEHnszRBAebVHjQnks5WJWD9wA%3D%3D",
+  "type": "file",
+  "content": "ewogICJuYW1lIjogImJ1bXAtdGVzdCIsCiAgInZlcnNpb24iOiAiMC4wLjEi\nLAogICJkZXNjcmlwdGlvbiI6ICIiLAogICJtYWluIjogImluZGV4LmpzIiwK\nICAic2NyaXB0cyI6IHsKICAgICJ0ZXN0IjogImVjaG8gXCJFcnJvcjogbm8g\ndGVzdCBzcGVjaWZpZWRcIiAmJiBleGl0IDEiCiAgfSwKICAicmVwb3NpdG9y\neSI6IHsKICAgICJ0eXBlIjogImdpdCIsCiAgICAidXJsIjogImdpdCtodHRw\nczovL2dpdGh1Yi5jb20vZ29jYXJkbGVzcy9idW1wLXRlc3QuZ2l0IgogIH0s\nCiAgImF1dGhvciI6ICIiLAogICJsaWNlbnNlIjogIklTQyIsCiAgImJ1Z3Mi\nOiB7CiAgICAidXJsIjogImh0dHBzOi8vZ2l0aHViLmNvbS9nb2NhcmRsZXNz\nL2J1bXAtdGVzdC9pc3N1ZXMiCiAgfSwKICAiaG9tZXBhZ2UiOiAiaHR0cHM6\nLy9naXRodWIuY29tL2dvY2FyZGxlc3MvYnVtcC10ZXN0I3JlYWRtZSIsCiAg\nImRlcGVuZGVuY2llcyI6IHsKICAgICJsb2Rhc2giOiAiXjEuMy4xIiwKICAg\nICJjaGFsayI6ICIwLjQuMCIsCiAgICAic3RvcHdvcmRzIjogIjAuMC4xIgog\nIH0sCiAgImRldkRlcGVuZGVuY2llcyI6IHsKICAgICJldGFnIjogIl4xLjAu\nMCIKICB9Cn0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/bump/contents/composer.lock?ref=master",
+    "git": "https://api.github.com/repos/gocardless/bump/git/blobs/5c7b3419e0056515122b981f1566ebe22c208251",
+    "html": "https://github.com/gocardless/bump/blob/master/composer.lock"
+  }
+}

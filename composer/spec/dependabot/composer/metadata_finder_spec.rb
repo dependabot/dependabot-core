@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     end
 
     context "when there is a github link in the packagist response" do
-      let(:packagist_response) { fixture("php", "packagist_response.json") }
+      let(:packagist_response) { fixture("packagist_response.json") }
 
       it { is_expected.to eq("https://github.com/Seldaek/monolog") }
 
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is a bitbucket link in the packagist response" do
       let(:packagist_response) do
-        fixture("php", "packagist_response_bitbucket.json")
+        fixture("packagist_response_bitbucket.json")
       end
 
       it { is_expected.to eq("https://bitbucket.org/Seldaek/monolog") }
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is not a source link in the packagist response" do
       let(:packagist_response) do
-        fixture("php", "packagist_response_no_source.json")
+        fixture("packagist_response_no_source.json")
       end
 
       it { is_expected.to be_nil }
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when the packagist link resolves to a redirect" do
       let(:redirect_url) { "https://packagist.org/p/monolog/Monolog.json" }
-      let(:packagist_response) { fixture("php", "packagist_response.json") }
+      let(:packagist_response) { fixture("packagist_response.json") }
 
       before do
         stub_request(:get, packagist_url).
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     end
 
     context "when the packagist link 404s" do
-      let(:packagist_response) { fixture("php", "packagist_response.json") }
+      let(:packagist_response) { fixture("packagist_response.json") }
 
       before { stub_request(:get, packagist_url).to_return(status: 404) }
       it { is_expected.to be_nil }

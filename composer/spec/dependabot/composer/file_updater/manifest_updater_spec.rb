@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "composer.json",
-      content: fixture("php", "composer_files", manifest_fixture_name)
+      content: fixture("composer_files", manifest_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "exact_version" }

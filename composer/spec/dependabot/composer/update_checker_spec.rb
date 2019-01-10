@@ -43,13 +43,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:files) { [composer_file, lockfile] }
   let(:composer_file) do
     Dependabot::DependencyFile.new(
-      content: fixture("php", "composer_files", manifest_fixture_name),
+      content: fixture("composer_files", manifest_fixture_name),
       name: "composer.json"
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
-      content: fixture("php", "lockfiles", lockfile_fixture_name),
+      content: fixture("lockfiles", lockfile_fixture_name),
       name: "composer.lock"
     )
   end
@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
   before do
     sanitized_name = dependency_name.downcase.tr("/", ":")
-    fixture = fixture("php", "packagist_responses", "#{sanitized_name}.json")
+    fixture = fixture("packagist_responses", "#{sanitized_name}.json")
     url = "https://packagist.org/p/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: fixture)
   end
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     subject { checker.latest_version }
 
     let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
-    let(:packagist_response) { fixture("php", "packagist_response.json") }
+    let(:packagist_response) { fixture("packagist_response.json") }
 
     before do
       stub_request(:get, packagist_url).
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           package_manager: "composer"
         )
       end
-      let(:gemfury_response) { fixture("php", "gemfury_response.json") }
+      let(:gemfury_response) { fixture("gemfury_response.json") }
       let(:gemfury_url) do
         "https://php.fury.io/dependabot-throwaway/packages.json"
       end
@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:path_dep) do
         Dependabot::DependencyFile.new(
           name: "components/path_dep/composer.json",
-          content: fixture("php", "composer_files", "path_dep")
+          content: fixture("composer_files", "path_dep")
         )
       end
       before do
@@ -392,7 +392,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:path_dep) do
         Dependabot::DependencyFile.new(
           name: "components/path_dep/composer.json",
-          content: fixture("php", "composer_files", "path_dep")
+          content: fixture("composer_files", "path_dep")
         )
       end
       before do
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       before do
         url = "https://php.fury.io/dependabot-throwaway/packages.json"
         stub_request(:get, url).
-          to_return(status: 200, body: fixture("php", "gemfury_response.json"))
+          to_return(status: 200, body: fixture("gemfury_response.json"))
       end
 
       context "with good credentials" do
@@ -685,7 +685,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         stub_request(:get, "https://wpackagist.org/packages.json").
           to_return(
             status: 200,
-            body: fixture("php", "wpackagist_response.json")
+            body: fixture("wpackagist_response.json")
           )
       end
 

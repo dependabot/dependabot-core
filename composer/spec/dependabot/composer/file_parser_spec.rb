@@ -23,9 +23,9 @@ RSpec.describe Dependabot::Composer::FileParser do
     )
   end
   let(:composer_json_body) do
-    fixture("php", "composer_files", composer_json_fixture_name)
+    fixture("composer_files", composer_json_fixture_name)
   end
-  let(:lockfile_body) { fixture("php", "lockfiles", lockfile_fixture_name) }
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
   let(:composer_json_fixture_name) { "minor_version" }
   let(:lockfile_fixture_name) { "minor_version" }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       let(:path_dep) do
         Dependabot::DependencyFile.new(
           name: "components/path_dep/composer.json",
-          content: fixture("php", "composer_files", "path_dep")
+          content: fixture("composer_files", "path_dep")
         )
       end
 
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a bad lockfile" do
-      let(:lockfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      let(:lockfile_body) { fixture("composer_files", "unparseable") }
 
       it "raises a DependencyFileNotParseable error" do
         expect { dependencies.length }.
@@ -231,7 +231,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a bad composer.json" do
-      let(:composer_json_body) { fixture("ruby", "gemfiles", "Gemfile") }
+      let(:composer_json_body) { fixture("composer_files", "unparseable") }
 
       it "raises a DependencyFileNotParseable error" do
         expect { dependencies.length }.
