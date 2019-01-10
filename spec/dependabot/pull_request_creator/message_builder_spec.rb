@@ -429,6 +429,44 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0")
         end
 
+        context "with a git dependency" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "bundler",
+              requirements: [{
+                file: "package.json",
+                requirement: nil,
+                groups: [],
+                source: {
+                  ref: "v0.4.1",
+                  url: "https://github.com/wireapp/wire-web-config-default",
+                  type: "git",
+                  branch: nil
+                }
+              }],
+              previous_requirements: [{
+                file: "Gemfile",
+                requirement: nil,
+                groups: [],
+                source: {
+                  ref: "v0.3.0",
+                  url: "https://github.com/wireapp/wire-web-config-default",
+                  type: "git",
+                  branch: nil
+                }
+              }]
+            )
+          end
+
+          it "has the right title" do
+            expect(pr_name).
+              to eq("Update business requirement from v0.3.0 to v0.4.1")
+          end
+        end
+
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
           it { is_expected.to start_with("[Security] Update business") }

@@ -632,7 +632,11 @@ module Dependabot
           old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
         return gemspec.fetch(:requirement) if gemspec
 
-        old_reqs.first.fetch(:requirement)
+        req = old_reqs.first.fetch(:requirement)
+        return req if req
+        return previous_ref(dependency) if ref_changed?(dependency)
+
+        raise "No previous requirement!"
       end
 
       def new_library_requirement(dependency)
@@ -643,7 +647,11 @@ module Dependabot
           updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
         return gemspec.fetch(:requirement) if gemspec
 
-        updated_reqs.first.fetch(:requirement)
+        req = updated_reqs.first.fetch(:requirement)
+        return req if req
+        return new_ref(dependency) if ref_changed?(dependency)
+
+        raise "No new requirement!"
       end
 
       def link_issues(text:, dependency:)
