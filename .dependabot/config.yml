@@ -7,6 +7,10 @@ update_configs:
     default_reviewers:
     - greysteil
 
+  - package_manager: "php:composer"
+    directory: "/helpers/php"
+    update_schedule: "live"
+
   - package_manager: "elixir:hex"
     directory: "/hex/helpers"
     update_schedule: "live"
@@ -17,10 +21,6 @@ update_configs:
 
   - package_manager: "javascript"
     directory: "/helpers/npm"
-    update_schedule: "live"
-
-  - package_manager: "php:composer"
-    directory: "/helpers/php"
     update_schedule: "live"
 
   - package_manager: "python"
