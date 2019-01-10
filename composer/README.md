@@ -1,12 +1,12 @@
-## `dependabot-hex`
+## `dependabot-composer`
 
-Elixir support for [`dependabot-core`][core-repo].
+PHP support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
 1. Install native helpers
    ```
-   $ helpers/build helpers/install-dir/hex
+   $ helpers/build helpers/install-dir/composer
    ```
 
 2. Install Ruby dependencies
