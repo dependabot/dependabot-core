@@ -2,4 +2,6 @@
 /.env
 /tmp
 /dependabot-*.gem
+/helpers/php/vendor
+/helpers/php/.php_cs.cache
 Gemfile.lock
