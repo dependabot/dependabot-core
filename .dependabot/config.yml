@@ -8,7 +8,7 @@ update_configs:
     - greysteil
 
   - package_manager: "elixir:hex"
-    directory: "/helpers/elixir"
+    directory: "/hex/helpers"
     update_schedule: "live"
 
   - package_manager: "javascript"
