@@ -49,9 +49,9 @@ the helpers:
 1. `bundle install`
 2. `cd helpers/yarn && yarn install --production && cd -`
 3. `cd helpers/npm && npm install --production && cd -`
-4. `cd helpers/php && composer install --no-dev && cd -`
-5. `cd helpers/python && pyenv exec pip install -r requirements.txt && cd -`
-6. `cd helpers/elixir && mix deps.get && cd -`
+4. `cd composer/helpers && composer install --no-dev && cd -`
+5. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
+6. `cd elixir/helpers && mix deps.get && cd -`
 
 ## Architecture
 
