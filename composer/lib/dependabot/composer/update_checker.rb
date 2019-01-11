@@ -149,6 +149,12 @@ module Dependabot
           **SharedHelpers.excon_defaults
         )
 
+        parse_registry_response(response, url)
+      rescue Excon::Error::Socket, Excon::Error::Timeout
+        []
+      end
+
+      def parse_registry_response(response, url)
         return [] unless response.status == 200
 
         listing = JSON.parse(response.body)
@@ -157,8 +163,9 @@ module Dependabot
         return [] unless listing.dig("packages", dependency.name.downcase)
 
         listing.dig("packages", dependency.name.downcase).keys
-      rescue Excon::Error::Socket, Excon::Error::Timeout
-        []
+      rescue JSON::ParserError
+        msg = "'#{url}' does not contain valid JSON"
+        raise DependencyFileNotResolvable, msg
       end
 
       def library?

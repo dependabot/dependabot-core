@@ -219,6 +219,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("1.17.0")) }
       end
 
+      context "when an empty body is returned" do
+        before do
+          stub_request(:get, gemfury_url).to_return(status: 200, body: "")
+        end
+
+        it "raises a helpful error" do
+          expect { checker.latest_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+              expect(error.message).to include(gemfury_url)
+            end
+        end
+      end
+
       context "when a hash with bad keys is returned" do
         before do
           stub_request(:get, gemfury_url).
