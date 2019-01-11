@@ -1,3 +1,7 @@
+## v0.89.1, 11 January 2019
+
+- Add missing requires
+
 ## v0.89.0, 11 January 2019
 
 - PHP reorg
