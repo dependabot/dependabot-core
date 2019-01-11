@@ -2,5 +2,6 @@
 /.env
 /tmp
 /deps
+/helpers/deps/
 /dependabot-*.gem
 Gemfile.lock
