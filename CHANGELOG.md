@@ -1,3 +1,10 @@
+## v0.89.2, 11 January 2019
+
+- Require composer from omnibus
+- Update README for refactor install instructions
+- PHP: Handle blank responses from registries
+- Add composer to Dockerfile.ci and loadpath in dry-run
+
 ## v0.89.1, 11 January 2019
 
 - Add missing requires
