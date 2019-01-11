@@ -5,6 +5,7 @@ require "tmpdir"
 require "excon"
 require "English"
 require "digest"
+require "open3"
 
 module Dependabot
   module SharedHelpers
@@ -62,34 +63,51 @@ module Dependabot
     end
 
     class HelperSubprocessFailed < StandardError
-      def initialize(message, command)
+      def initialize(message:, error_context:)
         super(message)
-        @command = command
+        @error_context = error_context
+        @command = error_context[:command]
       end
 
       def raven_context
-        { fingerprint: [@command] }
+        { fingerprint: [@command], extra: @error_context }
       end
     end
 
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
-                                   popen_opts: {})
-      raw_response = nil
-      popen_args = [env, command, "w+"].compact
-      IO.popen(*popen_args, popen_opts) do |process|
-        process.write(JSON.dump(function: function, args: args))
-        process.close_write
-        raw_response = process.read
-      end
+                                   stderr_to_stdout: false)
+      start = Time.now
+      stdin_data = JSON.dump(function: function, args: args)
+      env_cmd = [env, command].compact
+      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
+      time_taken = Time.now - start
 
-      response = JSON.parse(raw_response)
-      return response["result"] if $CHILD_STATUS.success?
+      # Some package managers output useful stuff to stderr instead of stdout so
+      # we want to parse this, most package manager will output garbage here so
+      # would mess up json response from stdout
+      stdout = "#{stderr}\n#{stdout}" if stderr_to_stdout
 
-      raise HelperSubprocessFailed.new(response["error"], command)
+      error_context = {
+        command: command,
+        function: function,
+        args: args,
+        time_taken: time_taken,
+        stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+        process_exit_value: process.to_s
+      }
+
+      response = JSON.parse(stdout)
+      return response["result"] if process.success?
+
+      raise HelperSubprocessFailed.new(
+        message: response["error"],
+        error_context: error_context
+      )
     rescue JSON::ParserError
-      raise HelperSubprocessFailed.new(raw_response, command) if raw_response
-
-      raise HelperSubprocessFailed.new("No output from command", command)
+      raise HelperSubprocessFailed.new(
+        message: stdout || "No output from command",
+        error_context: error_context
+      )
     end
 
     def self.excon_middleware
@@ -183,18 +201,23 @@ module Dependabot
     end
 
     def self.run_shell_command(command)
-      raw_response = nil
-      IO.popen(command, err: %i(child out)) do |process|
-        raw_response = process.read
-      end
+      start = Time.now
+      stdout, process = Open3.capture2e(command)
+      time_taken = start - Time.now
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return if $CHILD_STATUS.success?
+      return if process.success?
+
+      error_context = {
+        command: command,
+        time_taken: time_taken,
+        process_exit_value: process.to_s
+      }
 
       raise SharedHelpers::HelperSubprocessFailed.new(
-        raw_response,
-        command
+        message: stdout,
+        error_context: error_context
       )
     end
   end

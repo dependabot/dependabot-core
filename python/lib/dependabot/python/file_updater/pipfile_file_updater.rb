@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-
+require "open3"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
@@ -237,15 +237,23 @@ module Dependabot
           )
         end
 
-        def run_pipenv_command(cmd)
-          raw_response = nil
-          IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
+        def run_pipenv_command(command)
+          start = Time.now
+          stdout, process = Open3.capture2e(command)
+          time_taken = start - Time.now
 
           # Raise an error with the output from the shell session if Pipenv
           # returns a non-zero status
-          return if $CHILD_STATUS.success?
+          return if process.success?
 
-          raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            message: stdout,
+            error_context: {
+              command: command,
+              time_taken: time_taken,
+              process_exit_value: process.to_s
+            }
+          )
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -256,9 +264,9 @@ module Dependabot
             end
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)
-          raise relevant_error if cmd.include?("--two")
+          raise relevant_error if command.include?("--two")
 
-          cmd = cmd.gsub("pipenv ", "pipenv --two ")
+          command = command.gsub("pipenv ", "pipenv --two ")
           retry
         end
 

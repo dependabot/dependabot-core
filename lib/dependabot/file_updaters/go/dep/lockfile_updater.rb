@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-
+require "open3"
 require "dependabot/shared_helpers"
 require "dependabot/dependency_file"
 require "dependabot/file_updaters/go/dep"
@@ -51,18 +51,21 @@ module Dependabot
           attr_reader :dependencies, :dependency_files, :credentials
 
           def run_shell_command(command, env = {})
-            raw_response = nil
-            IO.popen(env, command, err: %i(child out)) do |process|
-              raw_response = process.read
-            end
+            start = Time.now
+            stdout, process = Open3.capture2e(env, command)
+            time_taken = start - Time.now
 
             # Raise an error with the output from the shell session if dep
             # returns a non-zero status
-            return if $CHILD_STATUS.success?
+            return if process.success?
 
             raise SharedHelpers::HelperSubprocessFailed.new(
-              raw_response,
-              command
+              message: stdout,
+              error_context: {
+                command: command,
+                time_taken: time_taken,
+                process_exit_value: process.to_s
+              }
             )
           end
 

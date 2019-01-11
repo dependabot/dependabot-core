@@ -2,7 +2,7 @@
 
 require "excon"
 require "toml-rb"
-
+require "open3"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
@@ -452,17 +452,26 @@ module Dependabot
           end
         end
 
-        def run_pipenv_command(cmd)
+        # rubocop:disable Metrics/MethodLength
+        def run_pipenv_command(command)
           set_up_python_environment
 
-          raw_response = nil
-          IO.popen(cmd, err: %i(child out)) { |p| raw_response = p.read }
+          start = Time.now
+          stdout, process = Open3.capture2e(command)
+          time_taken = start - Time.now
 
           # Raise an error with the output from the shell session if Pipenv
           # returns a non-zero status
-          return if $CHILD_STATUS.success?
+          return if process.success?
 
-          raise SharedHelpers::HelperSubprocessFailed.new(raw_response, cmd)
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            message: stdout,
+            error_context: {
+              command: command,
+              time_taken: time_taken,
+              process_exit_value: process.to_s
+            }
+          )
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -477,11 +486,12 @@ module Dependabot
 
           @using_python_two = true
           add_python_two_requirement_to_pipfile
-          cmd = cmd.gsub("pipenv ", "pipenv --two ")
+          command = command.gsub("pipenv ", "pipenv --two ")
           retry
         ensure
           @using_python_two = nil
         end
+        # rubocop:enable Metrics/MethodLength
 
         def may_be_using_wrong_python_version?(error_message)
           return false if python_requirement_specified?

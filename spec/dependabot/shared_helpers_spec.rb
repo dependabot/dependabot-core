@@ -55,6 +55,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:function) { "example" }
     let(:args) { ["foo"] }
     let(:env) { nil }
+    let(:stderr_to_stdout) { false }
 
     subject(:run_subprocess) do
       project_root = File.join(File.dirname(__FILE__), "../..")
@@ -64,7 +65,8 @@ RSpec.describe Dependabot::SharedHelpers do
         command: command,
         function: function,
         args: args,
-        env: env
+        env: env,
+        stderr_to_stdout: stderr_to_stdout
       )
     end
 
@@ -78,6 +80,21 @@ RSpec.describe Dependabot::SharedHelpers do
 
         it "runs the function passed, as expected" do
           expect(run_subprocess).to eq("function" => function, "args" => args)
+        end
+      end
+
+      context "when sending stderr to stdout" do
+        let(:stderr_to_stdout) { true }
+        let(:function) { "useful_error" }
+
+        it "raises a HelperSubprocessFailed error with stderr output" do
+          expect { run_subprocess }.
+            to raise_error(
+              Dependabot::SharedHelpers::HelperSubprocessFailed
+            ) do |error|
+              expect(error.message).
+                to include("Some useful error")
+            end
         end
       end
     end

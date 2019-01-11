@@ -3,6 +3,7 @@
 require "cgi"
 require "excon"
 require "nokogiri"
+require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -222,17 +223,22 @@ module Dependabot
             File.write("tmp.tf", file.content)
 
             command = "#{terraform_parser_path} -reverse < tmp.tf"
-            raw_response = nil
-            IO.popen(command) { |process| raw_response = process.read }
+            start = Time.now
+            stdout, process = Open3.capture2(command)
+            time_taken = start - Time.now
 
-            unless $CHILD_STATUS.success?
+            unless process.success?
               raise SharedHelpers::HelperSubprocessFailed.new(
-                raw_response,
-                command
+                message: stdout,
+                error_context: {
+                  command: command,
+                  time_taken: time_taken,
+                  process_exit_value: process.to_s
+                }
               )
             end
 
-            JSON.parse(raw_response)
+            JSON.parse(stdout)
           end
       end
 

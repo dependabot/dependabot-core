@@ -59,7 +59,7 @@ module Dependabot
             args: [Dir.pwd,
                    dependency.name,
                    organization_credentials],
-            popen_opts: { err: %i(child out) }
+            stderr_to_stdout: true
           )
         end
 
