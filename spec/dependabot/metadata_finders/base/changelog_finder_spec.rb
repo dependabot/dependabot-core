@@ -627,12 +627,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it { is_expected.to be_nil }
 
-          context "when the package manager is composer" do
-            let(:package_manager) { "composer" }
-            let(:raw_changelog) { fixture("raw", "changelog.md") }
-            it { is_expected.to eq(raw_changelog.sub(/\n*\z/, "")) }
-          end
-
           context "when the ref has changed" do
             let(:new_ref) { "v1.4.0" }
             let(:old_ref) { "v1.0.0" }

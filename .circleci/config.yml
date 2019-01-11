@@ -119,7 +119,6 @@ jobs:
       - run: bundle install --path ~/dependabot-core/vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
-      - run: cd helpers/php && composer install
       - run: cd helpers/go && make linux
 
       - save_cache:
@@ -128,13 +127,11 @@ jobs:
             - ~/dependabot-core/vendor/bundle
             - ~/dependabot-core/helpers/yarn/node_modules
             - ~/dependabot-core/helpers/npm/node_modules
-            - ~/dependabot-core/helpers/php/vendor
 
       # Run code formatting linters
       - run: bundle exec rubocop
       - run: cd helpers/yarn && node_modules/.bin/eslint lib test bin
       - run: cd helpers/npm && node_modules/.bin/eslint lib test bin
-      - run: cd helpers/php && vendor/bin/php-cs-fixer fix --dry-run
 
       # Run tests
       - run: cd helpers/yarn && node_modules/.bin/jest

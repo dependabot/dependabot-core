@@ -2,7 +2,6 @@
 
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/file_updaters/java_script/npm_and_yarn"
-require "dependabot/file_updaters/php/composer"
 require "dependabot/file_updaters/go/dep"
 
 module Dependabot
@@ -10,7 +9,6 @@ module Dependabot
     @file_updaters = {
       "bundler" => FileUpdaters::Ruby::Bundler,
       "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn,
-      "composer" => FileUpdaters::Php::Composer,
       "dep" => FileUpdaters::Go::Dep
     }
 

@@ -140,6 +140,7 @@ COPY terraform/helpers /opt/terraform/helpers
 COPY python/helpers /opt/python/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
+COPY composer/helpers /opt/composer/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
     PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
@@ -148,4 +149,5 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
     bash /opt/python/helpers/build /opt/python && \
     bash /opt/go_modules/helpers/build /opt/go_modules && \
-    bash /opt/hex/helpers/build /opt/hex
+    bash /opt/hex/helpers/build /opt/hex && \
+    bash /opt/composer/helpers/build /opt/composer

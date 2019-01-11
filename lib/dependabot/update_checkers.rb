@@ -2,7 +2,6 @@
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/java_script/npm_and_yarn"
-require "dependabot/update_checkers/php/composer"
 require "dependabot/update_checkers/go/dep"
 
 module Dependabot
@@ -10,7 +9,6 @@ module Dependabot
     @update_checkers = {
       "bundler" => UpdateCheckers::Ruby::Bundler,
       "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn,
-      "composer" => UpdateCheckers::Php::Composer,
       "dep" => UpdateCheckers::Go::Dep
     }
 

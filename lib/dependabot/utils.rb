@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 require "dependabot/utils/java_script/version"
-require "dependabot/utils/php/version"
 require "dependabot/utils/go/version"
 
 require "dependabot/utils/java_script/requirement"
-require "dependabot/utils/php/requirement"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/utils/go/requirement"
 
@@ -18,7 +16,6 @@ module Dependabot
       "submodules" => Gem::Version,
       "docker" => Gem::Version,
       "npm_and_yarn" => Utils::JavaScript::Version,
-      "composer" => Utils::Php::Version,
       "dep" => Utils::Go::Version
     }
 
@@ -38,7 +35,6 @@ module Dependabot
       "submodules" => Utils::Ruby::Requirement,
       "docker" => Utils::Ruby::Requirement,
       "npm_and_yarn" => Utils::JavaScript::Requirement,
-      "composer" => Utils::Php::Requirement,
       "dep" => Utils::Go::Requirement
     }
 
