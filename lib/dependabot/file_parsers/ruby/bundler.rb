@@ -277,10 +277,10 @@ module Dependabot
         end
 
         def gemspecs
-          # The gemspecs for this project will be at the top level
-          @gemspecs ||= prepared_dependency_files.select do |file|
-            file.name.match?(/^*\.gemspec$/)
-          end
+          # Path gemspecs are excluded (they're supporting files)
+          @gemspecs ||= prepared_dependency_files.
+                        select { |file| file.name.end_with?(".gemspec") }.
+                        reject { |file| file.support_file? }
         end
 
         def imported_ruby_files
