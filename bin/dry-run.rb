@@ -60,6 +60,7 @@ require "dependabot/hex"
 require "dependabot/cargo"
 require "dependabot/elm"
 require "dependabot/go_modules"
+require "dependabot/composer"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

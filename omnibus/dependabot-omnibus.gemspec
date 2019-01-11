@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
+  spec.add_dependency "dependabot-composer", Dependabot::VERSION
   spec.add_dependency "dependabot-core", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
