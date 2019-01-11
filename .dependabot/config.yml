@@ -8,7 +8,7 @@ update_configs:
     - greysteil
 
   - package_manager: "php:composer"
-    directory: "/helpers/php"
+    directory: "composer/helpers"
     update_schedule: "live"
 
   - package_manager: "elixir:hex"
