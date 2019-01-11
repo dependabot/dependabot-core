@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
@@ -133,20 +134,24 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/MethodLength
         def run_command(command)
           command = command.dup
-          raw_response = nil
-          IO.popen(command, err: %i(child out)) do |process|
-            raw_response = process.read
-          end
+          start = Time.now
+          stdout, process = Open3.capture2e(command)
+          time_taken = start - Time.now
 
           # Raise an error with the output from the shell session if
           # pip-compile returns a non-zero status
-          return if $CHILD_STATUS.success?
+          return if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
-            raw_response,
-            command
+            message: stdout,
+            error_context: {
+              command: command,
+              time_taken: time_taken,
+              process_exit_value: process.to_s
+            }
           )
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
@@ -165,6 +170,7 @@ module Dependabot
         ensure
           FileUtils.remove_entry(".python-version", true)
         end
+        # rubocop:enable Metrics/MethodLength
 
         def error_suggests_bad_python_version?(message)
           return true if message.include?("not find a version that satisfies")

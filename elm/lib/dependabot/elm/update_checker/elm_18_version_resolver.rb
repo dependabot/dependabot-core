@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/elm/file_parser"
@@ -156,18 +157,21 @@ module Dependabot
         end
 
         def run_shell_command(command)
-          raw_response = nil
-          IO.popen(command, err: %i(child out)) do |process|
-            raw_response = process.read
-          end
+          start = Time.now
+          stdout, process = Open3.capture2e(command)
+          time_taken = start - Time.now
 
           # Raise an error with the output from the shell session if Elm
           # returns a non-zero status
-          return raw_response if $CHILD_STATUS.success?
+          return stdout if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
-            raw_response,
-            command
+            message: stdout,
+            error_context: {
+              command: command,
+              time_taken: time_taken,
+              process_exit_value: process.to_s
+            }
           )
         end
 
