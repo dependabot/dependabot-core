@@ -31,7 +31,7 @@ namespace :ci do
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
       puts "> cd #{package} && bundle exec rubocop"
-      system("cd #{package} && bundle exec rubocop")
+      exit 1 unless system("cd #{package} && bundle exec rubocop")
     end
   end
 
@@ -40,7 +40,7 @@ namespace :ci do
     puts "Running rspec on: #{packages.join(', ')}"
     packages.each do |package|
       puts "> cd #{package} && bundle exec rspec spec"
-      system("cd #{package} && bundle exec rspec spec")
+      exit 1 unless system("cd #{package} && bundle exec rspec spec")
     end
   end
 end
