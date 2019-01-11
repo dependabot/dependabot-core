@@ -1,3 +1,9 @@
+## v0.89.0, 11 January 2019
+
+- PHP reorg
+- Change subprocess IO.popen to Open3.capture2
+- Add error context when helper subprocesses fail
+
 ## v0.88.3, 10 January 2019
 
 - Ruby: Add Ruby 2.6.0 to list of rubies in RubyRequirementSetter
