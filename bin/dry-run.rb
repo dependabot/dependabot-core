@@ -43,6 +43,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./go_modules/lib"
+$LOAD_PATH << "./composer/lib"
 
 require "optparse"
 require "dependabot/file_fetchers"
