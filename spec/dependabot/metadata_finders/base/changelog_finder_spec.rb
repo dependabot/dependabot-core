@@ -506,6 +506,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:bitbucket_status) { 404 }
         it { is_expected.to be_nil }
       end
+
+      context "that is private" do
+        let(:bitbucket_status) { 403 }
+        it { is_expected.to be_nil }
+      end
     end
 
     context "without a source" do

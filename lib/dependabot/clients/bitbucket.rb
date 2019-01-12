@@ -8,6 +8,7 @@ module Dependabot
     class Bitbucket
       class NotFound < StandardError; end
       class Unauthorized < StandardError; end
+      class Forbidden < StandardError; end
 
       #######################
       # Constructor methods #
@@ -82,10 +83,11 @@ module Dependabot
           user: credentials&.fetch("username"),
           password: credentials&.fetch("password"),
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **Dependabot::SharedHelpers.excon_defaults
         )
-        raise NotFound if response.status == 404
         raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
+        raise NotFound if response.status == 404
 
         response
       end

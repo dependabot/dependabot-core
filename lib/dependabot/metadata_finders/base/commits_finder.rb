@@ -119,7 +119,8 @@ module Dependabot
           end
         rescue Octokit::NotFound, Gitlab::Error::NotFound,
                Dependabot::Clients::Bitbucket::NotFound,
-               Dependabot::Clients::Bitbucket::Unauthorized
+               Dependabot::Clients::Bitbucket::Unauthorized,
+               Dependabot::Clients::Bitbucket::Forbidden
           []
         end
 
@@ -180,7 +181,8 @@ module Dependabot
               }
             end
         rescue Dependabot::Clients::Bitbucket::NotFound,
-               Dependabot::Clients::Bitbucket::Unauthorized
+               Dependabot::Clients::Bitbucket::Unauthorized,
+               Dependabot::Clients::Bitbucket::Forbidden
           []
         end
 

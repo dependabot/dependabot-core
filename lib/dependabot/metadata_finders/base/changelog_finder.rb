@@ -233,7 +233,8 @@ module Dependabot
             )
           end
         rescue Dependabot::Clients::Bitbucket::NotFound,
-               Dependabot::Clients::Bitbucket::Unauthorized
+               Dependabot::Clients::Bitbucket::Unauthorized,
+               Dependabot::Clients::Bitbucket::Forbidden
           []
         end
 
