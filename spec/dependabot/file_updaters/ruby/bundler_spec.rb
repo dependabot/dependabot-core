@@ -880,7 +880,8 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
           let(:gemspec) do
             Dependabot::DependencyFile.new(
               content: gemspec_body,
-              name: "plugins/example/example.gemspec"
+              name: "plugins/example/example.gemspec",
+              support_file: true
             )
           end
 
@@ -1068,6 +1069,52 @@ RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler do
             it "returns an updated Gemfile and Gemfile.lock" do
               expect(updated_files.map(&:name)).
                 to match_array(["Gemfile", "Gemfile.lock"])
+            end
+          end
+
+          context "when updating a gemspec with a path" do
+            let(:gemfile_fixture_name) { "imports_gemspec_from_path" }
+            let(:lockfile_fixture_name) { "imports_gemspec_from_path.lock" }
+            let(:gemspec) do
+              Dependabot::DependencyFile.new(
+                content: gemspec_body,
+                name: "subdir/example.gemspec"
+              )
+            end
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "business",
+                version: "1.8.0",
+                previous_version: "1.4.0",
+                requirements: [{
+                  file: "subdir/example.gemspec",
+                  requirement: requirement,
+                  groups: [],
+                  source: nil
+                }, {
+                  file: "Gemfile",
+                  requirement: requirement,
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "subdir/example.gemspec",
+                  requirement: "~> 1.0",
+                  groups: [],
+                  source: nil
+                }, {
+                  file: "Gemfile",
+                  requirement: "~> 1.4.0",
+                  groups: [],
+                  source: nil
+                }],
+                package_manager: "bundler"
+              )
+            end
+
+            it "returns an updated gemspec, Gemfile and Gemfile.lock" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(Gemfile Gemfile.lock subdir/example.gemspec))
             end
           end
 

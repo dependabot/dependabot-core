@@ -652,7 +652,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
         let(:gemspec) do
           Dependabot::DependencyFile.new(
             content: fixture("ruby", "gemspecs", gemspec_fixture_name),
-            name: "plugins/example/example.gemspec"
+            name: "plugins/example/example.gemspec",
+            support_file: true
           )
         end
         let(:gemspec_fixture_name) { "no_overlap" }
@@ -1146,25 +1147,50 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
       let(:gemfile_fixture_name) { "imports_gemspec" }
       let(:gemspec_fixture_name) { "small_example" }
       let(:requirements) do
-        [
-          {
-            file: "Gemfile",
-            requirement: "~> 1.2.0",
-            groups: [],
-            source: nil
-          },
-          {
-            file: "example.gemspec",
-            requirement: "~> 1.0",
-            groups: [],
-            source: nil
-          }
-        ]
+        [{
+          file: "Gemfile",
+          requirement: "~> 1.2.0",
+          groups: [],
+          source: nil
+        }, {
+          file: "example.gemspec",
+          requirement: "~> 1.0",
+          groups: [],
+          source: nil
+        }]
       end
 
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("1.8.0"))
+      end
+
+      context "when the gemspec has a path" do
+        let(:gemfile_fixture_name) { "imports_gemspec_from_path" }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            content: fixture("ruby", "gemspecs", gemspec_fixture_name),
+            name: "subdir/example.gemspec"
+          )
+        end
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.2.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "subdir/example.gemspec",
+            requirement: "~> 1.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "doesn't just fall back to latest_version" do
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("1.8.0"))
+        end
       end
 
       context "when an old required ruby is specified in the gemspec" do

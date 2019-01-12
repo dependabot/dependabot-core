@@ -339,7 +339,8 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
       let(:gemspec) do
         Dependabot::DependencyFile.new(
           content: gemspec_body,
-          name: "some/example.gemspec"
+          name: "some/example.gemspec",
+          support_file: true
         )
       end
       let(:gemspec_body) { fixture("ruby", "gemspecs", "small_example") }

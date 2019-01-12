@@ -288,7 +288,8 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:gemspec) do
         Dependabot::DependencyFile.new(
           name: "plugins/example/example.gemspec",
-          content: fixture("ruby", "gemspecs", "example")
+          content: fixture("ruby", "gemspecs", "example"),
+          support_file: true
         )
       end
 
@@ -445,17 +446,21 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
         it "fetches details from the gemspec" do
           expect(dependencies.map(&:name)).
-            to match_array(%w(business))
-          expect(dependencies.map(&:requirements)).
+            to match_array(%w(business statesman))
+          expect(dependencies.first.name).to eq("business")
+          expect(dependencies.first.requirements).
             to match_array(
-              [
-                [{
-                  requirement: "~> 1.0",
-                  groups: ["runtime"],
-                  source: nil,
-                  file: "subdir/example.gemspec"
-                }]
-              ]
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: [:default],
+                source: nil
+              }, {
+                file: "subdir/example.gemspec",
+                requirement: "~> 1.0",
+                groups: ["runtime"],
+                source: nil
+              }]
             )
         end
       end

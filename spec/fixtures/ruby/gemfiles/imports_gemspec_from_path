@@ -2,3 +2,6 @@
 source "https://rubygems.org"
 
 gemspec path: 'subdir'
+
+gem "business", "~> 1.4.0"
+gem "statesman", "~> 1.2.0"

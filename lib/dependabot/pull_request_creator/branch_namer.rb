@@ -155,7 +155,7 @@ module Dependabot
       end
 
       def library?
-        if files.map(&:name).any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
+        if files.map(&:name).any? { |name| name.end_with?(".gemspec") }
           return true
         end
 

@@ -708,8 +708,7 @@ module Dependabot
       end
 
       def library?
-        filenames = files.map(&:name)
-        return true if filenames.any? { |nm| nm.match?(%r{^[^/]*\.gemspec$}) }
+        return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
 
         dependencies.none?(&:appears_in_lockfile?)
       end

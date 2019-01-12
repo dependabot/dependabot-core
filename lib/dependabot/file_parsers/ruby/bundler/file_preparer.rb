@@ -20,7 +20,8 @@ module Dependabot
               files << DependencyFile.new(
                 name: file.name,
                 content: sanitize_gemspec_content(file.content),
-                directory: file.directory
+                directory: file.directory,
+                support_file: file.support_file?
               )
             end
 
