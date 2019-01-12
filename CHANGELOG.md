@@ -1,3 +1,7 @@
+## v0.89.3, 12 January 2019
+
+- Ruby: Handle fetching gemspecs which specify a path
+
 ## v0.89.2, 11 January 2019
 
 - Require composer from omnibus
