@@ -1,6 +1,6 @@
 ## v0.89.4, 12 January 2019
 
-- Handle 403 forbidden responses from GitHub
+- Handle 403 forbidden responses from Bitbucket
 
 ## v0.89.3, 12 January 2019
 
