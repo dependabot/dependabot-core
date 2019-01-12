@@ -76,7 +76,8 @@ module Dependabot
               files << DependencyFile.new(
                 name: file.name,
                 content: sanitize_gemspec_content(file.content),
-                directory: file.directory
+                directory: file.directory,
+                support_file: file.support_file?
               )
             end
 
@@ -132,7 +133,9 @@ module Dependabot
           end
 
           def top_level_gemspecs
-            dependency_files.select { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+            dependency_files.
+              select { |f| f.name.end_with?(".gemspec") }.
+              reject(&:support_file?)
           end
 
           def ruby_version_file

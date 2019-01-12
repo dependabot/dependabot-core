@@ -288,7 +288,8 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
       let(:gemspec) do
         Dependabot::DependencyFile.new(
           name: "plugins/example/example.gemspec",
-          content: fixture("ruby", "gemspecs", "example")
+          content: fixture("ruby", "gemspecs", "example"),
+          support_file: true
         )
       end
 
@@ -431,6 +432,37 @@ RSpec.describe Dependabot::FileParsers::Ruby::Bundler do
 
       it "doesn't include the gemspec dependency (i.e., itself)" do
         expect(dependencies.map(&:name)).to match_array(%w(business statesman))
+      end
+
+      context "with a gemspec from a specific path" do
+        let(:gemfile_fixture_name) { "imports_gemspec_from_path" }
+        let(:lockfile_fixture_name) { "imports_gemspec_from_path.lock" }
+        let(:gemspec) do
+          Dependabot::DependencyFile.new(
+            name: "subdir/example.gemspec",
+            content: fixture("ruby", "gemspecs", "small_example")
+          )
+        end
+
+        it "fetches details from the gemspec" do
+          expect(dependencies.map(&:name)).
+            to match_array(%w(business statesman))
+          expect(dependencies.first.name).to eq("business")
+          expect(dependencies.first.requirements).
+            to match_array(
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: [:default],
+                source: nil
+              }, {
+                file: "subdir/example.gemspec",
+                requirement: "~> 1.0",
+                groups: ["runtime"],
+                source: nil
+              }]
+            )
+        end
       end
 
       context "with two gemspecs" do

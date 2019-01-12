@@ -8,6 +8,7 @@ module Dependabot
   module FileFetchers
     module Ruby
       class Bundler < Dependabot::FileFetchers::Base
+        require "dependabot/file_fetchers/ruby/bundler/gemspec_finder"
         require "dependabot/file_fetchers/ruby/bundler/path_gemspec_finder"
         require "dependabot/file_fetchers/ruby/bundler/child_gemfile_finder"
         require "dependabot/file_fetchers/ruby/bundler/require_relative_finder"
@@ -30,11 +31,13 @@ module Dependabot
           fetched_files = []
           fetched_files << gemfile if gemfile
           fetched_files << lockfile if gemfile && lockfile
+          fetched_files += child_gemfiles
           fetched_files += gemspecs
           fetched_files << ruby_version_file if ruby_version_file
-          fetched_files += child_gemfiles
           fetched_files += path_gemspecs
           fetched_files += require_relative_files(fetched_files)
+
+          fetched_files = uniq_files(fetched_files)
 
           check_required_files_present
 
@@ -42,7 +45,13 @@ module Dependabot
             raise "Invalid set of files: #{fetched_files.map(&:name)}"
           end
 
-          fetched_files.uniq
+          fetched_files
+        end
+
+        def uniq_files(fetched_files)
+          uniq_files = fetched_files.reject(&:support_file?).uniq
+          uniq_files += fetched_files.
+                        reject { |f| uniq_files.map(&:name).include?(f.name) }
         end
 
         def check_required_files_present
@@ -64,10 +73,29 @@ module Dependabot
         end
 
         def gemspecs
-          gemspecs = repo_contents.select { |f| f.name.end_with?(".gemspec") }
-          @gemspecs ||= gemspecs.map { |gs| fetch_file_from_host(gs.name) }
+          return @gemspecs if defined?(@gemspecs)
+
+          gemspecs_paths =
+            gemspec_directories.
+            flat_map do |d|
+              repo_contents(dir: d).
+                select { |f| f.name.end_with?(".gemspec") }.
+                map { |f| File.join(d, f.name) }
+            end
+
+          @gemspecs = gemspecs_paths.map { |n| fetch_file_from_host(n) }
         rescue Octokit::NotFound
           []
+        end
+
+        def gemspec_directories
+          gemfiles = ([gemfile] + child_gemfiles).compact
+          directories =
+            gemfiles.flat_map do |file|
+              GemspecFinder.new(gemfile: file).gemspec_directories
+            end.uniq
+
+          directories.empty? ? ["."] : directories
         end
 
         def ruby_version_file
@@ -83,7 +111,7 @@ module Dependabot
           gemspec_files = []
           unfetchable_gems = []
 
-          gemspec_paths.each do |path|
+          path_gemspec_paths.each do |path|
             # Get any gemspecs at the path itself
             gemspecs_at_path = fetch_gemspecs_from_directory(path)
 
@@ -112,8 +140,8 @@ module Dependabot
           gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
         end
 
-        def gemspec_paths
-          fetch_gemspec_paths.map { |path| Pathname.new(path) }
+        def path_gemspec_paths
+          fetch_path_gemspec_paths.map { |path| Pathname.new(path) }
         end
 
         def require_relative_files(files)
@@ -136,7 +164,7 @@ module Dependabot
             map { |fp| fetch_file_from_host(fp) }
         end
 
-        def fetch_gemspec_paths
+        def fetch_path_gemspec_paths
           if lockfile
             parsed_lockfile = ::Bundler::LockfileParser.new(
               sanitized_lockfile_content

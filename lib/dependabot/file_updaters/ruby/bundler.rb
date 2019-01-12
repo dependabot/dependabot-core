@@ -16,7 +16,7 @@ module Dependabot
             /^Gemfile\.lock$/,
             /^gems\.rb$/,
             /^gems\.locked$/,
-            %r{^[^/]*\.gemspec$}
+            /^*\.gemspec$/
           ]
         end
 
@@ -113,7 +113,9 @@ module Dependabot
         end
 
         def top_level_gemspecs
-          dependency_files.select { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+          dependency_files.
+            select { |file| file.name.end_with?(".gemspec") }.
+            reject(&:support_file?)
         end
       end
     end

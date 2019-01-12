@@ -94,10 +94,10 @@ module Dependabot
             File.write(lockfile.name, sanitized_lockfile_body)
 
             top_level_gemspecs.each do |gemspec|
-              File.write(
-                gemspec.name,
-                sanitized_gemspec_content(updated_gemspec_content(gemspec))
-              )
+              path = gemspec.name
+              FileUtils.mkdir_p(Pathname.new(path).dirname)
+              updated_content = updated_gemspec_content(gemspec)
+              File.write(path, sanitized_gemspec_content(updated_content))
             end
 
             write_ruby_version_file
@@ -248,7 +248,9 @@ module Dependabot
           end
 
           def top_level_gemspecs
-            dependency_files.select { |f| f.name.match?(%r{^[^/]*\.gemspec$}) }
+            dependency_files.
+              select { |file| file.name.end_with?(".gemspec") }.
+              reject(&:support_file?)
           end
 
           def ruby_version_file
