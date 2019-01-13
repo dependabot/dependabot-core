@@ -5,7 +5,7 @@ require "nokogiri"
 
 require "dependabot/shared_helpers"
 require "dependabot/source"
-require "dependabot/dep/shared_helper"
+require "dependabot/dep/native_helpers"
 
 module Dependabot
   module Dep
@@ -15,7 +15,7 @@ module Dependabot
         import_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
 
         SharedHelpers.run_helper_subprocess(
-          command: Dep::SharedHelper.path,
+          command: NativeHelpers.helper_path,
           function: "getVcsRemoteForImport",
           args: { import: import_path }
         )
