@@ -20,3 +20,4 @@ AllCops:
     - 'go_modules/**/*'
     - 'dep/**/*'
     - 'composer/**/*'
+    - 'omnibus/**/*'
