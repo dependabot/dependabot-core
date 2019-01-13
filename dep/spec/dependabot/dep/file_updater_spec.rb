@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/dep"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/dep/file_updater"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::Go::Dep do
+RSpec.describe Dependabot::Dep::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -28,8 +29,8 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Gopkg.lock", content: lockfile_body)
   end
-  let(:manifest_body) { fixture("go", "gopkg_tomls", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("go", "gopkg_locks", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("gopkg_tomls", manifest_fixture_name) }
+  let(:lockfile_body) { fixture("gopkg_locks", lockfile_fixture_name) }
   let(:manifest_fixture_name) { "bare_version.toml" }
   let(:lockfile_fixture_name) { "bare_version.lock" }
 

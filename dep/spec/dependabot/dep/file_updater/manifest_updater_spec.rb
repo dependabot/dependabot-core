@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/dep/manifest_updater"
+require "dependabot/dep/file_updater/manifest_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Go::Dep::ManifestUpdater do
+RSpec.describe Dependabot::Dep::FileUpdater::ManifestUpdater do
   let(:updater) do
     described_class.new(
       manifest: manifest,
@@ -16,7 +16,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::ManifestUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(name: "Gopkg.toml", content: manifest_body)
   end
-  let(:manifest_body) { fixture("go", "gopkg_tomls", manifest_fixture_name) }
+  let(:manifest_body) { fixture("gopkg_tomls", manifest_fixture_name) }
   let(:manifest_fixture_name) { "bare_version.toml" }
 
   let(:dependency) do

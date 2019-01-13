@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/go/dep"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/dep/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::Go::Dep do
+RSpec.describe Dependabot::Dep::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:parser) { described_class.new(dependency_files: files, source: source) }
@@ -14,13 +15,13 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Gopkg.toml",
-      content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+      content: fixture("gopkg_tomls", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Gopkg.lock",
-      content: fixture("go", "gopkg_locks", lockfile_fixture_name)
+      content: fixture("gopkg_locks", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "cockroach.toml" }
@@ -37,7 +38,7 @@ RSpec.describe Dependabot::FileParsers::Go::Dep do
     stub_request(:get, "https://golang.org/x/text?go-get=1").
       to_return(
         status: 200,
-        body: fixture("go", "repo_responses", "golang_org_text.html")
+        body: fixture("repo_responses", "golang_org_text.html")
       )
   end
 

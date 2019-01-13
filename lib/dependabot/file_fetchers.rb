@@ -2,14 +2,12 @@
 
 require "dependabot/file_fetchers/ruby/bundler"
 require "dependabot/file_fetchers/java_script/npm_and_yarn"
-require "dependabot/file_fetchers/go/dep"
 
 module Dependabot
   module FileFetchers
     @file_fetchers = {
       "bundler" => FileFetchers::Ruby::Bundler,
-      "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn,
-      "dep" => FileFetchers::Go::Dep
+      "npm_and_yarn" => FileFetchers::JavaScript::NpmAndYarn
     }
 
     def self.for_package_manager(package_manager)

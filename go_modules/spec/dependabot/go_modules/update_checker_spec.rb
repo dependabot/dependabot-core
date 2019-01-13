@@ -57,12 +57,12 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     it "updates minor (but not major) semver versions" do
       expect(latest_resolvable_version).
-        to eq(Dependabot::Utils::Go::Version.new("1.1.0"))
+        to eq(Dependabot::GoModules::Version.new("1.1.0"))
     end
 
     it "doesn't update major semver versions" do
       expect(latest_resolvable_version).
-        to_not eq(Dependabot::Utils::Go::Version.new("2.0.0"))
+        to_not eq(Dependabot::GoModules::Version.new("2.0.0"))
     end
 
     context "with a go.mod excluded version" do
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
       it "doesn't update to the excluded version" do
         expect(latest_resolvable_version).
-          to eq(Dependabot::Utils::Go::Version.new("1.0.1"))
+          to eq(Dependabot::GoModules::Version.new("1.0.1"))
       end
     end
 
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
       it "updates to newer pre-releases" do
         expect(latest_resolvable_version).
-          to eq(Dependabot::Utils::Go::Version.new("1.2.0-pre2"))
+          to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
 
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
       it "updates the version" do
         expect(latest_resolvable_version).
-          to eq(Dependabot::Utils::Go::Version.new("1.1.0"))
+          to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 

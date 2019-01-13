@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/go/version"
+require "dependabot/dep/version"
 
-RSpec.describe Dependabot::Utils::Go::Version do
+RSpec.describe Dependabot::Dep::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Utils::Go::Version do
     context "with a version that Gem::Version would mangle" do
       let(:version_string) { "1.0.0-pre1" }
       it "doesn't mangle it" do
-        is_expected.to eq "#<Dependabot::Utils::Go::Version \"1.0.0-pre1\">"
+        is_expected.to eq "#<Dependabot::Dep::Version \"1.0.0-pre1\">"
       end
     end
   end

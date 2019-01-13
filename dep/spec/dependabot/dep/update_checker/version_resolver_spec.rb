@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/go/dep/version_resolver"
+require "dependabot/dep/update_checker/version_resolver"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
+RSpec.describe Dependabot::Dep::UpdateChecker::VersionResolver do
   subject(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -25,11 +25,11 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::VersionResolver do
     [
       Dependabot::DependencyFile.new(
         name: "Gopkg.toml",
-        content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+        content: fixture("gopkg_tomls", manifest_fixture_name)
       ),
       Dependabot::DependencyFile.new(
         name: "Gopkg.lock",
-        content: fixture("go", "gopkg_locks", lockfile_fixture_name)
+        content: fixture("gopkg_locks", lockfile_fixture_name)
       )
     ]
   end

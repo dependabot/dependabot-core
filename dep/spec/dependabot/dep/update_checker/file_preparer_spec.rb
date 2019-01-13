@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/go/dep/file_preparer"
+require "dependabot/dep/update_checker/file_preparer"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
+RSpec.describe Dependabot::Dep::UpdateChecker::FilePreparer do
   let(:preparer) do
     described_class.new(
       dependency_files: dependency_files,
@@ -25,13 +25,13 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::FilePreparer do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "Gopkg.toml",
-      content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+      content: fixture("gopkg_tomls", manifest_fixture_name)
     )
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "Gopkg.lock",
-      content: fixture("go", "gopkg_locks", lockfile_fixture_name)
+      content: fixture("gopkg_locks", lockfile_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "bare_version.toml" }

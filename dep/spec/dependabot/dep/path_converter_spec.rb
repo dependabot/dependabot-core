@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/go/path_converter"
+require "dependabot/dep/path_converter"
 
-RSpec.describe Dependabot::Utils::Go::PathConverter do
+RSpec.describe Dependabot::Dep::PathConverter do
   describe ".git_url_for_path" do
     subject { described_class.git_url_for_path(path) }
 
@@ -68,14 +68,14 @@ RSpec.describe Dependabot::Utils::Go::PathConverter do
           to_return(status: 200, body: vanity_response)
       end
       let(:vanity_response) do
-        fixture("go", "repo_responses", "k8s_io_apimachinery.html")
+        fixture("repo_responses", "k8s_io_apimachinery.html")
       end
 
       it { is_expected.to eq("https://github.com/kubernetes/apimachinery") }
 
       context "and returns a git source hosted with an unknown provider" do
         let(:vanity_response) do
-          fixture("go", "repo_responses", "unknown_git_source.html")
+          fixture("repo_responses", "unknown_git_source.html")
 
           it { is_expected.to eq("https://sf.com/kubernetes/apimachinery") }
         end

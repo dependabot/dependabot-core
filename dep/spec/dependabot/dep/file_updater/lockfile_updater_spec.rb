@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/go/dep/lockfile_updater"
+require "dependabot/dep/file_updater/lockfile_updater"
 
-RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
+RSpec.describe Dependabot::Dep::FileUpdater::LockfileUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
@@ -26,8 +26,8 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Gopkg.lock", content: lockfile_body)
   end
-  let(:manifest_body) { fixture("go", "gopkg_tomls", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("go", "gopkg_locks", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("gopkg_tomls", manifest_fixture_name) }
+  let(:lockfile_body) { fixture("gopkg_locks", lockfile_fixture_name) }
   let(:manifest_fixture_name) { "bare_version.toml" }
   let(:lockfile_fixture_name) { "bare_version.lock" }
 
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::FileUpdaters::Go::Dep::LockfileUpdater do
         let(:main) do
           Dependabot::DependencyFile.new(name: "main.go", content: main_body)
         end
-        let(:main_body) { fixture("go", "go_files", "main.go") }
+        let(:main_body) { fixture("go_files", "main.go") }
         let(:manifest_fixture_name) { "tilda.toml" }
         let(:lockfile_fixture_name) { "tilda.lock" }
 

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/go/dep/requirements_updater"
+require "dependabot/dep/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
+RSpec.describe Dependabot::Dep::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -29,7 +29,7 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::RequirementsUpdater do
 
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
-  let(:version_class) { Dependabot::Utils::Go::Version }
+  let(:version_class) { Dependabot::Dep::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }

@@ -2,14 +2,12 @@
 
 require "dependabot/update_checkers/ruby/bundler"
 require "dependabot/update_checkers/java_script/npm_and_yarn"
-require "dependabot/update_checkers/go/dep"
 
 module Dependabot
   module UpdateCheckers
     @update_checkers = {
       "bundler" => UpdateCheckers::Ruby::Bundler,
-      "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn,
-      "dep" => UpdateCheckers::Go::Dep
+      "npm_and_yarn" => UpdateCheckers::JavaScript::NpmAndYarn
     }
 
     def self.for_package_manager(package_manager)

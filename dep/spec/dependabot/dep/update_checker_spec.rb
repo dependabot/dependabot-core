@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/go/dep"
-require_relative "../shared_examples_for_update_checkers"
+require "spec_helper"
+require "dependabot/dep/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
+RSpec.describe Dependabot::Dep::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -28,11 +29,11 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep do
     [
       Dependabot::DependencyFile.new(
         name: "Gopkg.toml",
-        content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+        content: fixture("gopkg_tomls", manifest_fixture_name)
       ),
       Dependabot::DependencyFile.new(
         name: "Gopkg.lock",
-        content: fixture("go", "gopkg_locks", lockfile_fixture_name)
+        content: fixture("gopkg_locks", lockfile_fixture_name)
       )
     ]
   end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/go/dep/latest_version_finder"
+require "dependabot/dep/update_checker/latest_version_finder"
 
-RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
+RSpec.describe Dependabot::Dep::UpdateChecker::LatestVersionFinder do
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -26,11 +26,11 @@ RSpec.describe Dependabot::UpdateCheckers::Go::Dep::LatestVersionFinder do
     [
       Dependabot::DependencyFile.new(
         name: "Gopkg.toml",
-        content: fixture("go", "gopkg_tomls", manifest_fixture_name)
+        content: fixture("gopkg_tomls", manifest_fixture_name)
       ),
       Dependabot::DependencyFile.new(
         name: "Gopkg.lock",
-        content: fixture("go", "gopkg_locks", lockfile_fixture_name)
+        content: fixture("gopkg_locks", lockfile_fixture_name)
       )
     ]
   end
