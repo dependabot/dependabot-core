@@ -76,6 +76,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
           let(:csproj_req_string) { "23.*" }
           it { is_expected.to eq(csproj_req) }
         end
+
+        context "that is just a wildcard" do
+          let(:csproj_req_string) { "*" }
+          it { is_expected.to eq(csproj_req) }
+        end
       end
 
       context "and there were multiple requirements" do
