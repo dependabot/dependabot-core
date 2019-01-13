@@ -1,0 +1,6 @@
+/.bundle/
+/.env
+/tmp
+/dependabot-*.gem
+/helpers/go-helpers.*64
+Gemfile.lock
