@@ -98,6 +98,10 @@ docker run --rm -ti \
   -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-core.gemspec" \
   -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
   -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \
+  -v "$(pwd)/dep/Gemfile:$CODE_DIR/dep/Gemfile" \
+  -v "$(pwd)/dep/dependabot-dep.gemspec:$CODE_DIR/dep/dependabot-dep.gemspec" \
+  -v "$(pwd)/dep/lib:$CODE_DIR/dep/lib" \
+  -v "$(pwd)/dep/spec:$CODE_DIR/dep/spec" \
   -v "$(pwd)/go_modules/Gemfile:$CODE_DIR/go_modules/Gemfile" \
   -v "$(pwd)/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
   -v "$(pwd)/go_modules/lib:$CODE_DIR/go_modules/lib" \
