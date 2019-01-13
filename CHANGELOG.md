@@ -1,3 +1,7 @@
+## v0.89.5, 13 January 2019
+
+- .NET: Handle wildcard requirements without any digits
+
 ## v0.89.4, 12 January 2019
 
 - Handle 403 forbidden responses from Bitbucket
