@@ -2,6 +2,7 @@
 
 require "find"
 
+# rubocop:disable Metrics/BlockLength
 Gem::Specification.new do |spec|
   core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
 
@@ -34,3 +35,4 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-python", Dependabot::VERSION
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
 end
+# rubocop:disable Metrics/BlockLength
