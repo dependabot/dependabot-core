@@ -119,7 +119,6 @@ jobs:
       - run: bundle install --path ~/dependabot-core/vendor/bundle
       - run: cd helpers/yarn && yarn install
       - run: cd helpers/npm && yarn install
-      - run: cd helpers/go && make linux
 
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}
