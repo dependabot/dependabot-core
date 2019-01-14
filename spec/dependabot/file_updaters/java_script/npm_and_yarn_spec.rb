@@ -1686,6 +1686,22 @@ RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
           end
         end
       end
+
+      context "with an invalid package name" do
+        let(:manifest_fixture_name) { "invalid_package_name.json" }
+        let(:npm_lock_fixture_name) { "invalid_package_name.json" }
+        let(:dependency_name) { "fetch-factory:" }
+
+        # Currently only npm returns a useful error
+        context "with an npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+
+          it "raises a helpful error" do
+            expect { updater.updated_dependency_files }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
     end
 
     ######################
