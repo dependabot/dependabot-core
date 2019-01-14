@@ -703,8 +703,9 @@ module Dependabot
       end
 
       def ref_changed?(dependency)
-        previous_ref(dependency) && new_ref(dependency) &&
-          previous_ref(dependency) != new_ref(dependency)
+        return false unless previous_ref(dependency)
+
+        previous_ref(dependency) != new_ref(dependency)
       end
 
       def library?

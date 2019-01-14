@@ -433,8 +433,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "business",
-              version: "1.5.0",
-              previous_version: "1.4.0",
+              version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+              previous_version: nil,
               package_manager: "bundler",
               requirements: [{
                 file: "package.json",
@@ -464,6 +464,39 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the right title" do
             expect(pr_name).
               to eq("Update business requirement from v0.3.0 to v0.4.1")
+          end
+
+          context "switching from a SHA-1 version to a release" do
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "business",
+                version: "1.5.0",
+                previous_version: nil,
+                package_manager: "bundler",
+                requirements: [{
+                  file: "Gemfile",
+                  requirement: "~> 1.5.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "Gemfile",
+                  requirement: nil,
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/gocardless/business",
+                    ref: "2468a0",
+                    branch: nil
+                  }
+                }]
+              )
+            end
+
+            it "has the right title" do
+              expect(pr_name).
+                to eq("Update business requirement from 2468a0 to ~> 1.5.0")
+            end
           end
         end
 
