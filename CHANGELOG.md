@@ -1,3 +1,7 @@
+## v0.90.6, 14 January 2019
+
+- Handle git to registry PRs for libraries in PR message builder
+
 ## v0.90.5, 14 January 2019
 
 - Fix typo
