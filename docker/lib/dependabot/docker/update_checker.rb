@@ -170,26 +170,14 @@ module Dependabot
       end
 
       def updated_digest
-        @updated_digest ||=
-          begin
-            docker_registry_client.digest(docker_repo_name, latest_version)
-          rescue RestClient::Exceptions::Timeout
-            attempt ||= 1
-            attempt += 1
-            raise if attempt > 3
-
-            retry
-          end
-      rescue DockerRegistry2::RegistryAuthenticationException,
-             RestClient::Forbidden
-        raise PrivateSourceAuthenticationFailure, registry_hostname
+        @updated_digest ||= digest_of(latest_version)
       end
 
       def tags_from_registry
         @tags_from_registry ||=
           begin
             docker_registry_client.tags(docker_repo_name).fetch("tags")
-          rescue RestClient::Exceptions::Timeout
+          rescue RestClient::Exceptions::Timeout, DockerRegistry2::NotFound
             attempt ||= 1
             attempt += 1
             raise if attempt > 3
@@ -222,6 +210,9 @@ module Dependabot
 
             retry
           end
+      rescue DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden
+        raise PrivateSourceAuthenticationFailure, registry_hostname
       end
 
       def transient_docker_errors
