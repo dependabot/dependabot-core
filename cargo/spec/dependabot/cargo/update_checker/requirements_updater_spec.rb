@@ -223,6 +223,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
       let(:update_strategy) { :bump_versions_if_necessary }
       let(:library) { true }
 
+      context "when there is no latest version" do
+        let(:latest_version) { nil }
+        its([:requirement]) { is_expected.to eq(req_string) }
+      end
+
       context "when there is a latest version" do
         context "and a full version was previously specified" do
           let(:req_string) { "1.2.3" }

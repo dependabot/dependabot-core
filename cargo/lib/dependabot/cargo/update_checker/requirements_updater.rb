@@ -33,11 +33,13 @@ module Dependabot
             @latest_version = version_class.new(latest_version)
           end
 
-          return unless latest_resolvable_version
-          return unless version_class.correct?(latest_resolvable_version)
+          if latest_resolvable_version &&
+             version_class.correct?(latest_resolvable_version)
+            @latest_resolvable_version =
+              version_class.new(latest_resolvable_version)
+          end
 
-          @latest_resolvable_version =
-            version_class.new(latest_resolvable_version)
+          @latest_version ||= @latest_resolvable_version
         end
 
         def updated_requirements
@@ -46,7 +48,7 @@ module Dependabot
           # at the same index.
           requirements.map do |req|
             req = req.merge(source: updated_source)
-            next req unless latest_resolvable_version
+            next req unless target_version
             next req if req[:requirement].nil?
 
             # TODO: Add a widen_ranges options
@@ -60,21 +62,20 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :updated_source, :update_strategy,
-                    :latest_version, :latest_resolvable_version
+        attr_reader :requirements, :updated_source, :update_strategy
 
         def library?
           @library
+        end
+
+        def target_version
+          library? ? @latest_version : @latest_resolvable_version
         end
 
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)
 
           raise "Unknown update strategy: #{update_strategy}"
-        end
-
-        def target_version
-          library? ? latest_version : latest_resolvable_version
         end
 
         def update_version_requirement(req)
