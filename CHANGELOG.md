@@ -1,3 +1,7 @@
+## v0.90.1, 14 January 2019
+
+- NPM: Handle package name with invalid characters
+
 ## v0.90.0, 14 January 2019
 
 - Python: Bump poetry from 0.12.10 to 0.12.11 in /python/helpers
