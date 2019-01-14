@@ -21,6 +21,7 @@ GEMSPECS = %w(
   maven/dependabot-maven.gemspec
   hex/dependabot-hex.gemspec
   cargo/dependabot-cargo.gemspec
+  dep/dependabot-dep.gemspec
   go_modules/dependabot-go_modules.gemspec
   composer/dependabot-composer.gemspec
   omnibus/dependabot-omnibus.gemspec

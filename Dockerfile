@@ -138,16 +138,18 @@ RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 COPY terraform/helpers /opt/terraform/helpers
 COPY python/helpers /opt/python/helpers
+COPY dep/helpers /opt/dep/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY composer/helpers /opt/composer/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-    PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
+    PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
     MIX_HOME="/opt/hex/mix"
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
     bash /opt/python/helpers/build /opt/python && \
+    bash /opt/dep/helpers/build /opt/dep && \
     bash /opt/go_modules/helpers/build /opt/go_modules && \
     bash /opt/hex/helpers/build /opt/hex && \
     bash /opt/composer/helpers/build /opt/composer

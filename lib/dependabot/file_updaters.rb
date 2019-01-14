@@ -2,14 +2,12 @@
 
 require "dependabot/file_updaters/ruby/bundler"
 require "dependabot/file_updaters/java_script/npm_and_yarn"
-require "dependabot/file_updaters/go/dep"
 
 module Dependabot
   module FileUpdaters
     @file_updaters = {
       "bundler" => FileUpdaters::Ruby::Bundler,
-      "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn,
-      "dep" => FileUpdaters::Go::Dep
+      "npm_and_yarn" => FileUpdaters::JavaScript::NpmAndYarn
     }
 
     def self.for_package_manager(package_manager)

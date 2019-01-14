@@ -5,7 +5,6 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/utils/go/version"
 require "dependabot/go_modules/native_helpers"
 
 module Dependabot

@@ -43,6 +43,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./go_modules/lib"
+$LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./composer/lib"
 
 require "optparse"
@@ -61,6 +62,7 @@ require "dependabot/hex"
 require "dependabot/cargo"
 require "dependabot/elm"
 require "dependabot/go_modules"
+require "dependabot/dep"
 require "dependabot/composer"
 
 # GitHub credentials with write permission to the repo you want to update

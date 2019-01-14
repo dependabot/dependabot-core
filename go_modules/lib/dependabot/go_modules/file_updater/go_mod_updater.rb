@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/go/shared_helper"
+require "dependabot/shared_helpers"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
 

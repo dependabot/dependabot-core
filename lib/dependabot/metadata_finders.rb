@@ -2,14 +2,12 @@
 
 require "dependabot/metadata_finders/ruby/bundler"
 require "dependabot/metadata_finders/java_script/npm_and_yarn"
-require "dependabot/metadata_finders/go/dep"
 
 module Dependabot
   module MetadataFinders
     @metadata_finders = {
       "bundler" => MetadataFinders::Ruby::Bundler,
-      "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn,
-      "dep" => MetadataFinders::Go::Dep
+      "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn
     }
 
     def self.for_package_manager(package_manager)

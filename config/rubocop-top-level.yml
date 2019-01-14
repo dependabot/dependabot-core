@@ -18,4 +18,6 @@ AllCops:
     - 'hex/**/*'
     - 'cargo/**/*'
     - 'go_modules/**/*'
+    - 'dep/**/*'
     - 'composer/**/*'
+    - 'omnibus/**/*'
