@@ -1,3 +1,8 @@
+## v0.90.0, 14 January 2019
+
+- Python: Bump poetry from 0.12.10 to 0.12.11 in /python/helpers
+- Reorg dep
+
 ## v0.89.5, 13 January 2019
 
 - .NET: Handle wildcard requirements without any digits
