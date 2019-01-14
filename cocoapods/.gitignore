@@ -1,0 +1,4 @@
+/.bundle/
+/.env
+/tmp
+Gemfile.lock
