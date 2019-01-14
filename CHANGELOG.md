@@ -1,3 +1,7 @@
+## v0.90.3, 14 January 2019
+
+- PHP: Handle registries that 404 on /packages.json
+
 ## v0.90.2, 14 January 2019
 
 - Docker: Simplify updated_digest fetching, and retry DockerRegistry2::NotFound on tags
