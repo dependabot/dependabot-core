@@ -1,3 +1,8 @@
+## v0.90.2, 14 January 2019
+
+- Docker: Simplify updated_digest fetching, and retry DockerRegistry2::NotFound on tags
+- Rust: Handle no latest_version when updating a library
+
 ## v0.90.1, 14 January 2019
 
 - NPM: Handle package name with invalid characters
