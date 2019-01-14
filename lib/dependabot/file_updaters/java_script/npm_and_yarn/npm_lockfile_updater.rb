@@ -184,8 +184,10 @@ module Dependabot
               raise Dependabot::InconsistentRegistryResponse, error.message
             end
 
-            # When the package.json doesn't include a name or version
-            if error.message.match?(INVALID_PACKAGE)
+            # When the package.json doesn't include a name or version, or name
+            # has non url-friendly characters
+            if error.message.match?(INVALID_PACKAGE) ||
+               error.message.start_with?("Invalid package name")
               raise_resolvability_error(error, lockfile)
             end
 

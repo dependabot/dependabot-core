@@ -1,0 +1,14 @@
+{
+  "name": "test-invalid-package-name",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fetch-factory:": "^0.0.1"
+  }
+}
