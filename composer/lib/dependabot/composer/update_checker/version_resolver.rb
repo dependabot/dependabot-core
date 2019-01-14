@@ -136,7 +136,8 @@ module Dependabot
                   "The full error raised was:\n\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.include?("package requires php") ||
-                error.message.include?("cannot require itself")
+                error.message.include?("cannot require itself") ||
+                error.message.include?('packages.json" file could not be down')
             raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.include?("No driver found to handle VCS") &&
                 !error.message.include?("@") && !error.message.include?("://")

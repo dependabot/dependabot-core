@@ -118,6 +118,25 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a private registry that 404s" do
+      let(:manifest_fixture_name) { "private_registry_not_found" }
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { nil }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+
+      it "raises a Dependabot::PrivateSourceTimedOut error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to eq(
+              'The "https://dependabot.com/composer-not-found/packages.json"'\
+              " file could not be downloaded (HTTP/1.1 404 Not Found)"
+            )
+          end
+      end
+    end
+
     # This test is extremely slow, as it neds to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do
