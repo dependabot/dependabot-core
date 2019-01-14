@@ -1,3 +1,8 @@
+## v0.90.4, 14 January 2019
+
+- Rust: Handle old version of resolution failure error (for when toolchain specified)
+- Use Elixir 1.8.0
+
 ## v0.90.3, 14 January 2019
 
 - PHP: Handle registries that 404 on /packages.json
