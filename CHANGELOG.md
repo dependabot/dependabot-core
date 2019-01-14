@@ -1,3 +1,7 @@
+## v0.90.5, 14 January 2019
+
+- Fix typo
+
 ## v0.90.4, 14 January 2019
 
 - Rust: Handle old version of resolution failure error (for when toolchain specified)
