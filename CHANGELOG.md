@@ -1,3 +1,8 @@
+## v0.90.7, 15 January 2019
+
+- Dep: Ignore indirect dependencies more robustly
+- .NET: Even longer timeout
+
 ## v0.90.6, 14 January 2019
 
 - Handle git to registry PRs for libraries in PR message builder
