@@ -13,9 +13,7 @@ module Dependabot
       def self.updated_files_regex
         [
           /^Gopkg\.toml$/,
-          /^Gopkg\.lock$/,
-          /^go\.mod$/,
-          /^go\.sum$/
+          /^Gopkg\.lock$/
         ]
       end
 
@@ -44,9 +42,8 @@ module Dependabot
 
       def check_required_files
         return if get_original_file("Gopkg.toml")
-        return if get_original_file("go.mod")
 
-        raise "No Gopkg.toml or go.mod!"
+        raise "No Gopkg.toml!"
       end
 
       def manifest

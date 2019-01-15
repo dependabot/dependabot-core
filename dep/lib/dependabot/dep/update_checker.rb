@@ -23,6 +23,9 @@ module Dependabot
       end
 
       def latest_resolvable_version
+        # We don't yet support updating indirect dependencies for dep
+        return dependency.version unless dependency.top_level?
+
         @latest_resolvable_version ||=
           if modules_dependency?
             latest_version
@@ -78,7 +81,9 @@ module Dependabot
       # since not all dep git dependencies have a SHA version (sometimes their
       # version is the tag)
       def existing_version_is_sha?
-        git_dependency?
+        return git_dependency? if dependency.top_level?
+
+        super
       end
 
       def library?

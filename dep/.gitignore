@@ -3,4 +3,5 @@
 /tmp
 /dependabot-*.gem
 /helpers/go-helpers.*64
+/helpers/install-dir
 Gemfile.lock
