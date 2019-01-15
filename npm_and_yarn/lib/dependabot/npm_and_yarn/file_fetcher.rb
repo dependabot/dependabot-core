@@ -8,7 +8,7 @@ require "dependabot/npm_and_yarn/file_parser"
 module Dependabot
   module NpmAndYarn
     class FileFetcher < Dependabot::FileFetchers::Base
-      require_relative "npm_and_yarn/path_dependency_builder"
+      require_relative "file_fetcher/path_dependency_builder"
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
