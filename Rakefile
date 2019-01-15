@@ -24,6 +24,7 @@ GEMSPECS = %w(
   dep/dependabot-dep.gemspec
   go_modules/dependabot-go_modules.gemspec
   composer/dependabot-composer.gemspec
+  npm_and_yarn/dependabot-npm_and_yarn.gemspec
   omnibus/dependabot-omnibus.gemspec
 ).freeze
 
