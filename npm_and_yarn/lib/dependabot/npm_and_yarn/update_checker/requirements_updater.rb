@@ -26,10 +26,7 @@ module Dependabot
 
           check_update_strategy
 
-          if latest_version
-            @latest_version = version_class.new(latest_version)
-          end
-
+          @latest_version = version_class.new(latest_version) if latest_version
           return unless latest_resolvable_version
 
           @latest_resolvable_version =

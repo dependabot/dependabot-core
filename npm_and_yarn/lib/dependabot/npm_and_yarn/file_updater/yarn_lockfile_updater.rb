@@ -319,9 +319,7 @@ module Dependabot
         end
 
         def git_ssh_requirements_to_swap
-          if @git_ssh_requirements_to_swap
-            return @git_ssh_requirements_to_swap
-          end
+          return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
           git_dependencies =
             dependencies.
