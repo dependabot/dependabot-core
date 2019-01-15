@@ -117,24 +117,24 @@ jobs:
 
       # Install dependencies
       - run: bundle install --path ~/dependabot-core/vendor/bundle
-      - run: cd helpers/yarn && yarn install
-      - run: cd helpers/npm && yarn install
+      - run: cd npm_and_yarn/helpers/yarn && yarn install
+      - run: cd npm_and_yarn/helpers/npm && yarn install
 
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}
           paths:
             - ~/dependabot-core/vendor/bundle
-            - ~/dependabot-core/helpers/yarn/node_modules
-            - ~/dependabot-core/helpers/npm/node_modules
+            - ~/dependabot-core/npm_and_yarn/helpers/yarn/node_modules
+            - ~/dependabot-core/npm_and_yarn/helpers/npm/node_modules
 
       # Run code formatting linters
       - run: bundle exec rubocop
-      - run: cd helpers/yarn && node_modules/.bin/eslint lib test bin
-      - run: cd helpers/npm && node_modules/.bin/eslint lib test bin
+      - run: cd npm_and_yarn/helpers/yarn && node_modules/.bin/eslint lib test bin
+      - run: cd npm_and_yarn/helpers/npm && node_modules/.bin/eslint lib test bin
 
       # Run tests
-      - run: cd helpers/yarn && node_modules/.bin/jest
-      - run: cd helpers/npm && node_modules/.bin/jest
+      - run: cd npm_and_yarn/helpers/yarn && node_modules/.bin/jest
+      - run: cd npm_and_yarn/helpers/npm && node_modules/.bin/jest
       - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml --tag "~skip_ci"
       - store_test_results:
           path: ~/rspec
