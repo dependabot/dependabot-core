@@ -3,6 +3,7 @@
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -461,8 +462,7 @@ module Dependabot
         end
 
         def yarn_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/yarn/bin/run.js")
+          NativeHelpers.yarn_helper_path
         end
       end
     end

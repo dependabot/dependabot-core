@@ -20,28 +20,28 @@ RSpec.describe namespace::SubdependencyVersionResolver do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", manifest_fixture_name)
+      content: fixture("package_files", manifest_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "package.json" }
   let(:yarn_lock) do
     Dependabot::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+      content: fixture("yarn_lockfiles", yarn_lock_fixture_name)
     )
   end
   let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:npm_lock) do
     Dependabot::DependencyFile.new(
       name: "package-lock.json",
-      content: fixture("javascript", "npm_lockfiles", npm_lock_fixture_name)
+      content: fixture("npm_lockfiles", npm_lock_fixture_name)
     )
   end
   let(:npm_lock_fixture_name) { "package-lock.json" }
   let(:shrinkwrap) do
     Dependabot::DependencyFile.new(
       name: "npm-shrinkwrap.json",
-      content: fixture("javascript", "npm_lockfiles", shrinkwrap_fixture_name)
+      content: fixture("npm_lockfiles", shrinkwrap_fixture_name)
     )
   end
   let(:shrinkwrap_fixture_name) { "package-lock.json" }

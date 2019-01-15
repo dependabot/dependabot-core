@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/npm_and_yarn/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
@@ -11,7 +12,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
   let(:registry_response) do
-    fixture("javascript", "npm_responses", "etag.json")
+    fixture("npm_responses", "etag.json")
   end
   before do
     stub_request(:get, registry_listing_url).
@@ -35,7 +36,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", manifest_fixture_name)
+      content: fixture("package_files", manifest_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "package.json" }
@@ -134,7 +135,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           to_return(
             status: 200,
-            body: fixture("javascript", "npm_responses", "etag.json")
+            body: fixture("npm_responses", "etag.json")
           )
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
           to_return(status: 200)
@@ -199,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
       let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
       let(:registry_response) do
-        fixture("javascript", "npm_responses", "is_number.json")
+        fixture("npm_responses", "is_number.json")
       end
       let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
       before do
@@ -259,7 +260,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
           context "when the registry doesn't return a latest release" do
             let(:registry_response) do
-              fixture("javascript", "npm_responses", "no_latest.json")
+              fixture("npm_responses", "no_latest.json")
             end
 
             it "updates to the latest release" do
@@ -641,7 +642,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
       let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
       let(:registry_response) do
-        fixture("javascript", "npm_responses", "is_number.json")
+        fixture("npm_responses", "is_number.json")
       end
       let(:commit_compare_response) do
         fixture("github", "commit_compare_diverged.json")

@@ -9,7 +9,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
   let(:package_json_file) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", package_json_fixture_name)
+      content: fixture("package_files", package_json_fixture_name)
     )
   end
   let(:package_json_fixture_name) { "package.json" }
@@ -51,13 +51,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
         end
 
         context "with a description that matches" do
-          let(:body) { fixture("javascript", "npm_responses", "etag.json") }
+          let(:body) { fixture("npm_responses", "etag.json") }
           it { is_expected.to eq(true) }
         end
 
         context "with a description that doesn't match" do
           let(:body) do
-            fixture("javascript", "npm_responses", "is_number.json")
+            fixture("npm_responses", "is_number.json")
           end
           it { is_expected.to eq(false) }
         end

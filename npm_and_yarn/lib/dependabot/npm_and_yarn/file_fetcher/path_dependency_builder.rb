@@ -3,6 +3,7 @@
 require "json"
 require "dependabot/dependency_file"
 require "dependabot/errors"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/file_fetcher"
 
 module Dependabot
@@ -137,8 +138,7 @@ module Dependabot
         end
 
         def yarn_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/yarn/bin/run.js")
+          NativeHelpers.yarn_helper_path
         end
       end
     end

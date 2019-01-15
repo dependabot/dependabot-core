@@ -29,7 +29,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   let(:update_strategy) { :bump_versions }
   let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
-  let(:version_class) { Dependabot::Utils::JavaScript::Version }
+  let(:version_class) { Dependabot::NpmAndYarn::Version }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
             context "to a new pre-release version" do
               let(:latest_resolvable_version) do
-                Dependabot::Utils::JavaScript::Version.new("1.2.3-beta.2")
+                Dependabot::NpmAndYarn::Version.new("1.2.3-beta.2")
               end
               let(:package_json_req_string) { "1.2.3-beta" }
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
@@ -301,7 +301,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
             context "to a new pre-release version" do
               let(:latest_resolvable_version) do
-                Dependabot::Utils::JavaScript::Version.new("1.1.0-alpha.1")
+                Dependabot::NpmAndYarn::Version.new("1.1.0-alpha.1")
               end
 
               it "updates the non-prerelease requirement" do

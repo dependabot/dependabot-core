@@ -16,7 +16,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     )
   end
   let(:latest_version_finder) do
-    namespace::LatestVersionFinder.new(
+    Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
@@ -27,11 +27,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     "https://registry.npmjs.org/react-dom"
   end
   let(:react_dom_registry_response) do
-    fixture("javascript", "npm_responses", "react-dom.json")
+    fixture("npm_responses", "react-dom.json")
   end
   let(:react_registry_listing_url) { "https://registry.npmjs.org/react" }
   let(:react_registry_response) do
-    fixture("javascript", "npm_responses", "react.json")
+    fixture("npm_responses", "react.json")
   end
   before do
     stub_request(:get, react_dom_registry_listing_url).
@@ -48,28 +48,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", manifest_fixture_name)
+      content: fixture("package_files", manifest_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "package.json" }
   let(:yarn_lock) do
     Dependabot::DependencyFile.new(
       name: "yarn.lock",
-      content: fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+      content: fixture("yarn_lockfiles", yarn_lock_fixture_name)
     )
   end
   let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:npm_lock) do
     Dependabot::DependencyFile.new(
       name: "package-lock.json",
-      content: fixture("javascript", "npm_lockfiles", npm_lock_fixture_name)
+      content: fixture("npm_lockfiles", npm_lock_fixture_name)
     )
   end
   let(:npm_lock_fixture_name) { "package-lock.json" }
   let(:shrinkwrap) do
     Dependabot::DependencyFile.new(
       name: "npm-shrinkwrap.json",
-      content: fixture("javascript", "npm_lockfiles", shrinkwrap_fixture_name)
+      content: fixture("npm_lockfiles", shrinkwrap_fixture_name)
     )
   end
   let(:shrinkwrap_fixture_name) { "package-lock.json" }
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         context "and some badly written peer dependency requirements" do
           let(:react_dom_registry_response) do
-            fixture("javascript", "npm_responses", "react-dom-bad-reqs.json")
+            fixture("npm_responses", "react-dom-bad-reqs.json")
           end
 
           it { is_expected.to eq(Gem::Version.new("15.2.0")) }
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             "https://registry.npmjs.org/react-apollo"
           end
           let(:react_apollo_registry_response) do
-            fixture("javascript", "npm_responses", "react-apollo.json")
+            fixture("npm_responses", "react-apollo.json")
           end
           before do
             stub_request(:get, react_apollo_registry_listing_url).
@@ -226,7 +226,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             "https://registry.npmjs.org/react-burger-menu"
           end
           let(:react_burger_menu_registry_response) do
-            fixture("javascript", "npm_responses", "react-burger-menu.json")
+            fixture("npm_responses", "react-burger-menu.json")
           end
           before do
             stub_request(:get, react_burger_menu_registry_listing_url).
@@ -625,7 +625,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             "https://registry.npmjs.org/react-burger-menu"
           end
           let(:react_burger_menu_registry_response) do
-            fixture("javascript", "npm_responses", "react-burger-menu.json")
+            fixture("npm_responses", "react-burger-menu.json")
           end
           before do
             stub_request(:get, react_burger_menu_registry_listing_url).
@@ -707,11 +707,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         "https://registry.npmjs.org/vue-template-compiler"
       end
       let(:vue_template_compiler_registry_response) do
-        fixture("javascript", "npm_responses", "vue-template-compiler.json")
+        fixture("npm_responses", "vue-template-compiler.json")
       end
       let(:vue_registry_listing_url) { "https://registry.npmjs.org/vue" }
       let(:vue_registry_response) do
-        fixture("javascript", "npm_responses", "vue.json")
+        fixture("npm_responses", "vue.json")
       end
       before do
         stub_request(:get, vue_template_compiler_registry_listing_url).
@@ -775,7 +775,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           "https://registry.npmjs.org/react-modal"
         end
         let(:react_modal_registry_response) do
-          fixture("javascript", "npm_responses", "react-modal.json")
+          fixture("npm_responses", "react-modal.json")
         end
         before do
           stub_request(:get, react_modal_registry_listing_url).
@@ -838,11 +838,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         "https://registry.npmjs.org/vue-template-compiler"
       end
       let(:vue_template_compiler_registry_response) do
-        fixture("javascript", "npm_responses", "vue-template-compiler.json")
+        fixture("npm_responses", "vue-template-compiler.json")
       end
       let(:vue_registry_listing_url) { "https://registry.npmjs.org/vue" }
       let(:vue_registry_response) do
-        fixture("javascript", "npm_responses", "vue.json")
+        fixture("npm_responses", "vue.json")
       end
       before do
         stub_request(:get, vue_template_compiler_registry_listing_url).
@@ -875,7 +875,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                     source: nil
                   }]
                 ),
-                version: Dependabot::Utils::JavaScript::Version.new("2.5.21")
+                version: Dependabot::NpmAndYarn::Version.new("2.5.21")
               }, {
                 dependency: Dependabot::Dependency.new(
                   name: "vue-template-compiler",
@@ -888,7 +888,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                     source: nil
                   }]
                 ),
-                version: Dependabot::Utils::JavaScript::Version.new("2.5.21")
+                version: Dependabot::NpmAndYarn::Version.new("2.5.21")
               }]
             )
         end
@@ -929,7 +929,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::Utils::JavaScript::Version.new("16.3.1")
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -942,7 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::Utils::JavaScript::Version.new("16.6.0")
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
             }]
           )
       end

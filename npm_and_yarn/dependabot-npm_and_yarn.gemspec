@@ -27,9 +27,9 @@ Gem::Specification.new do |spec|
     spec.add_development_dependency dep.name, dep.requirement.to_s
   end
 
-  next unless File.exist?(".gitignore")
+  next unless File.exist?("../.gitignore")
 
-  ignores = File.readlines(".gitignore").grep(/\S+/).map(&:chomp)
+  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
 
   next unless File.directory?("lib") && File.directory?("helpers")
 

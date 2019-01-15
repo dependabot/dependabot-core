@@ -13,7 +13,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", package_json_fixture_name)
+      content: fixture("package_files", package_json_fixture_name)
     )
   end
   let(:package_json_fixture_name) { "package.json" }
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           )
         end
         let(:lockfile_body) do
-          fixture("javascript", "npm_lockfiles", npm_lock_fixture_name)
+          fixture("npm_lockfiles", npm_lock_fixture_name)
         end
         let(:npm_lock_fixture_name) { "package-lock.json" }
 
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:path_dep) do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
-              content: fixture("javascript", "package_files", "etag.json"),
+              content: fixture("package_files", "etag.json"),
               type: "path_dependency"
             )
           end
@@ -572,7 +572,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           )
         end
         let(:lockfile_body) do
-          fixture("javascript", "shrinkwraps", shrinkwrap_fixture_name)
+          fixture("shrinkwraps", shrinkwrap_fixture_name)
         end
         let(:shrinkwrap_fixture_name) { "npm-shrinkwrap.json" }
 
@@ -633,7 +633,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           )
         end
         let(:lockfile_body) do
-          fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+          fixture("yarn_lockfiles", yarn_lock_fixture_name)
         end
         let(:yarn_lock_fixture_name) { "yarn.lock" }
 
@@ -812,7 +812,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:path_dep) do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
-              content: fixture("javascript", "package_files", "etag.json"),
+              content: fixture("package_files", "etag.json"),
               type: "path_dependency"
             )
           end
@@ -997,17 +997,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package1) do
             Dependabot::DependencyFile.new(
               name: "packages/package1/package.json",
-              content: fixture("javascript", "package_files", "package1.json")
+              content: fixture("package_files", "package1.json")
             )
           end
           let(:other_package) do
             Dependabot::DependencyFile.new(
               name: "other_package/package.json",
-              content: fixture(
-                "javascript",
-                "package_files",
-                "other_package.json"
-              )
+              content: fixture("package_files", "other_package.json")
             )
           end
 
@@ -1080,33 +1076,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:lerna_json) do
             Dependabot::DependencyFile.new(
               name: "lerna.json",
-              content: fixture("javascript", "lerna", "lerna.json")
+              content: fixture("lerna", "lerna.json")
             )
           end
           let(:package1) do
             Dependabot::DependencyFile.new(
               name: "packages/package1/package.json",
-              content: fixture("javascript", "package_files", "package1.json")
+              content: fixture("package_files", "package1.json")
             )
           end
           let(:package1_lock) do
             Dependabot::DependencyFile.new(
               name: "packages/package1/yarn.lock",
-              content: fixture("javascript", "yarn_lockfiles", "package1.lock")
+              content: fixture("yarn_lockfiles", "package1.lock")
             )
           end
           let(:other_package_json) do
             Dependabot::DependencyFile.new(
               name: "packages/other_package/package.json",
               content:
-                fixture("javascript", "package_files", "other_package.json")
+                fixture("package_files", "other_package.json")
             )
           end
           let(:other_package_lock) do
             Dependabot::DependencyFile.new(
               name: "packages/other_package/yarn.lock",
               content:
-                fixture("javascript", "yarn_lockfiles", "other_package.lock")
+                fixture("yarn_lockfiles", "other_package.lock")
             )
           end
 
@@ -1167,7 +1163,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           )
         end
         let(:lockfile_body) do
-          fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+          fixture("yarn_lockfiles", yarn_lock_fixture_name)
         end
         let(:package_json_fixture_name) { "no_lockfile_change.json" }
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
@@ -1189,7 +1185,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           )
         end
         let(:lockfile_body) do
-          fixture("javascript", "npm_lockfiles", yarn_lock_fixture_name)
+          fixture("npm_lockfiles", yarn_lock_fixture_name)
         end
         let(:package_json_fixture_name) { "blank_requirement.json" }
         let(:yarn_lock_fixture_name) { "blank_requirement.json" }

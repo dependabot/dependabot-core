@@ -8,7 +8,7 @@ require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
   let(:registry_response) do
-    fixture("javascript", "npm_responses", "etag.json")
+    fixture("npm_responses", "etag.json")
   end
   before do
     stub_request(:get, registry_listing_url).
@@ -32,7 +32,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: fixture("javascript", "package_files", manifest_fixture_name)
+      content: fixture("package_files", manifest_fixture_name)
     )
   end
   let(:manifest_fixture_name) { "package.json" }
@@ -98,7 +98,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the latest version is a prerelease" do
       before do
-        body = fixture("javascript", "npm_responses", "prerelease.json")
+        body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/2.0.0-rc1").
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "for a private npm-hosted dependency" do
       before do
-        body = fixture("javascript", "npm_responses", "prerelease.json")
+        body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           }]
         end
         before do
-          body = fixture("javascript", "npm_responses", "prerelease.json")
+          body = fixture("npm_responses", "prerelease.json")
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "for a dependency hosted on another registry" do
       before do
-        body = fixture("javascript", "gemfury_response_etag.json")
+        body = fixture("gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           to_return(status: 404, body: "{\"error\":\"Not found\"}")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
@@ -417,7 +417,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         context "without https" do
           before do
-            body = fixture("javascript", "gemfury_response_etag.json")
+            body = fixture("gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
@@ -473,7 +473,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           let(:npmrc) do
             Dependabot::DependencyFile.new(
               name: ".npmrc",
-              content: fixture("javascript", "npmrc", "auth_token")
+              content: fixture("npmrc", "auth_token")
             )
           end
 
@@ -483,7 +483,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             let(:npmrc) do
               Dependabot::DependencyFile.new(
                 name: ".npmrc",
-                content: fixture("javascript", "npmrc", "env_auth_token")
+                content: fixture("npmrc", "env_auth_token")
               )
             end
 
@@ -508,7 +508,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         stub_request(:get, redirect_url).
           to_return(
             status: 200,
-            body: fixture("javascript", "npm_responses", "etag.json")
+            body: fixture("npm_responses", "etag.json")
           )
       end
 
@@ -526,7 +526,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the npm link fails at first" do
       before do
-        body = fixture("javascript", "npm_responses", "prerelease.json")
+        body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, registry_listing_url).
           to_raise(Excon::Error::Timeout).then.
           to_return(status: 200, body: body)
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the latest version has been yanked" do
       before do
-        body = fixture("javascript", "npm_responses", "old_latest.json")
+        body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/1.7.0").
@@ -630,7 +630,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "when the latest version is older than another, non-prerelease" do
       before do
-        body = fixture("javascript", "npm_responses", "old_latest.json")
+        body = fixture("npm_responses", "old_latest.json")
         stub_request(:get, registry_listing_url).
           to_return(status: 200, body: body)
         stub_request(:get, registry_listing_url + "/1.6.0").
@@ -750,18 +750,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     it "returns a list of versions" do
       expect(possible_versions).to eq(
         [
-          Dependabot::Utils::JavaScript::Version.new("1.7.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.6.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.5.1"),
-          Dependabot::Utils::JavaScript::Version.new("1.5.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.4.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.3.1"),
-          Dependabot::Utils::JavaScript::Version.new("1.3.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.2.1"),
-          Dependabot::Utils::JavaScript::Version.new("1.2.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.1.0"),
-          Dependabot::Utils::JavaScript::Version.new("1.0.1"),
-          Dependabot::Utils::JavaScript::Version.new("1.0.0")
+          Dependabot::NpmAndYarn::Version.new("1.7.0"),
+          Dependabot::NpmAndYarn::Version.new("1.6.0"),
+          Dependabot::NpmAndYarn::Version.new("1.5.1"),
+          Dependabot::NpmAndYarn::Version.new("1.5.0"),
+          Dependabot::NpmAndYarn::Version.new("1.4.0"),
+          Dependabot::NpmAndYarn::Version.new("1.3.1"),
+          Dependabot::NpmAndYarn::Version.new("1.3.0"),
+          Dependabot::NpmAndYarn::Version.new("1.2.1"),
+          Dependabot::NpmAndYarn::Version.new("1.2.0"),
+          Dependabot::NpmAndYarn::Version.new("1.1.0"),
+          Dependabot::NpmAndYarn::Version.new("1.0.1"),
+          Dependabot::NpmAndYarn::Version.new("1.0.0")
         ]
       )
     end
@@ -772,10 +772,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       it "excludes the ignored versions" do
         expect(possible_versions).to eq(
           [
-            Dependabot::Utils::JavaScript::Version.new("1.7.0"),
-            Dependabot::Utils::JavaScript::Version.new("1.6.0"),
-            Dependabot::Utils::JavaScript::Version.new("1.0.1"),
-            Dependabot::Utils::JavaScript::Version.new("1.0.0")
+            Dependabot::NpmAndYarn::Version.new("1.7.0"),
+            Dependabot::NpmAndYarn::Version.new("1.6.0"),
+            Dependabot::NpmAndYarn::Version.new("1.0.1"),
+            Dependabot::NpmAndYarn::Version.new("1.0.0")
           ]
         )
       end
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "with versions that would be considered equivalent" do
       let(:registry_response) do
-        fixture("javascript", "npm_responses", "react-test-renderer.json")
+        fixture("npm_responses", "react-test-renderer.json")
       end
 
       let(:dependency) do

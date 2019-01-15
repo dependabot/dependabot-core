@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/errors"
 
 # rubocop:disable Metrics/ClassLength
@@ -350,8 +351,7 @@ module Dependabot
       end
 
       def yarn_helper_path
-        project_root = File.join(File.dirname(__FILE__), "../../../..")
-        File.join(project_root, "helpers/yarn/bin/run.js")
+        NativeHelpers.yarn_helper_path
       end
 
       def package_files

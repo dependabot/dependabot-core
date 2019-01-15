@@ -233,9 +233,9 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       end
     end
 
-    context "with a Utils::JavaScript::Version" do
+    context "with a NpmAndYarn::Version" do
       let(:version) do
-        Dependabot::Utils::JavaScript::Version.new(version_string)
+        Dependabot::NpmAndYarn::Version.new(version_string)
       end
 
       context "for the current version" do

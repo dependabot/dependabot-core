@@ -15,7 +15,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
 
   let(:package_json) do
     Dependabot::DependencyFile.new(
-      content: fixture("javascript", "package_files", manifest_fixture_name),
+      content: fixture("package_files", manifest_fixture_name),
       name: "package.json"
     )
   end

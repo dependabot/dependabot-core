@@ -3,12 +3,11 @@
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-
-file_updater_path = "dependabot/npm_and_yarn/file_updater"
-require "#{file_updater_path}/npmrc_builder"
-require "#{file_updater_path}/package_json_preparer"
+require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
+require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 
 module Dependabot
   module NpmAndYarn
@@ -212,13 +211,11 @@ module Dependabot
         end
 
         def yarn_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/yarn/bin/run.js")
+          NativeHelpers.yarn_helper_path
         end
 
         def npm_helper_path
-          project_root = File.join(File.dirname(__FILE__), "../../../../..")
-          File.join(project_root, "helpers/npm/bin/run.js")
+          NativeHelpers.npm_helper_path
         end
       end
     end

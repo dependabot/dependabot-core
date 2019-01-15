@@ -22,7 +22,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
   let(:package_lock) do
     Dependabot::DependencyFile.new(
       name: "package-lock.json",
-      content: fixture("javascript", "npm_lockfiles", npm_lock_fixture_name)
+      content: fixture("npm_lockfiles", npm_lock_fixture_name)
     )
   end
   let(:yarn_lock) { nil }
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
       let(:package_lock) do
         Dependabot::DependencyFile.new(
           name: "package-lock.json",
-          content: fixture("javascript", "npm_lockfiles", npm_lock_fixture_name)
+          content: fixture("npm_lockfiles", npm_lock_fixture_name)
         )
       end
       let(:npm_lock_fixture_name) { "path_dependency.json" }
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
         Dependabot::DependencyFile.new(
           name: "yarn.lock",
           content:
-            fixture("javascript", "yarn_lockfiles", yarn_lock_fixture_name)
+            fixture("yarn_lockfiles", yarn_lock_fixture_name)
         )
       end
       let(:yarn_lock_fixture_name) { "path_dependency.json" }

@@ -63,7 +63,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which lists the dependency" do
         before do
-          body = fixture("javascript", "gemfury_response_etag.json")
+          body = fixture("gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/etag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: body)
@@ -87,13 +87,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) do
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: fixture("javascript", "npmrc", npmrc_fixture_name)
+          content: fixture("npmrc", npmrc_fixture_name)
         )
       end
       let(:npmrc_fixture_name) { "auth_token" }
 
       before do
-        body = fixture("javascript", "gemfury_response_etag.json")
+        body = fixture("gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/etag").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
@@ -111,14 +111,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:yarnrc_file) do
         Dependabot::DependencyFile.new(
           name: ".yarnrc",
-          content: fixture("javascript", "yarnrc", yarnrc_fixture_name)
+          content: fixture("yarnrc", yarnrc_fixture_name)
         )
       end
       let(:yarnrc_fixture_name) { "global_registry" }
 
       before do
         url = "https://npm-proxy.fury.io/password/dependabot/etag"
-        body = fixture("javascript", "gemfury_response_etag.json")
+        body = fixture("gemfury_response_etag.json")
 
         stub_request(:get, url).to_return(status: 200, body: body)
       end
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       context "which lists the dependency" do
         before do
-          body = fixture("javascript", "gemfury_response_etag.json")
+          body = fixture("gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/etag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: body)
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
         context "with a username/password style token" do
           before do
             credentials.last["token"] = "secret:token"
-            body = fixture("javascript", "gemfury_response_etag.json")
+            body = fixture("gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/etag").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
         context "with a token that is in encoded username:password format" do
           before do
             credentials.last["token"] = Base64.encode64("secret:token")
-            body = fixture("javascript", "gemfury_response_etag.json")
+            body = fixture("gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/etag").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
