@@ -3,11 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_fetchers/java_script/npm_and_yarn/"\
-        "path_dependency_builder"
+require "dependabot/npm_and_yarn/file_fetcher/path_dependency_builder"
 
-namespace = Dependabot::FileFetchers::JavaScript::NpmAndYarn
-RSpec.describe namespace::PathDependencyBuilder do
+RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
   let(:builder) do
     described_class.new(
       dependency_name: dependency_name,

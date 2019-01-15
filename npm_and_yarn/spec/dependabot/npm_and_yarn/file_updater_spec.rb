@@ -3,11 +3,11 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java_script/npm_and_yarn"
-require "dependabot/utils/java_script/version"
-require_relative "../shared_examples_for_file_updaters"
+require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/version"
+require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
-RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn do
+RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   let(:updater) do

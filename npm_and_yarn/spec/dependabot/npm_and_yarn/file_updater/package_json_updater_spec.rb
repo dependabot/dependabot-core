@@ -3,10 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java_script/npm_and_yarn/package_json_updater"
+require "dependabot/npm_and_yarn/file_updater/package_json_updater"
 
-namespace = Dependabot::FileUpdaters::JavaScript::NpmAndYarn
-RSpec.describe namespace::PackageJsonUpdater do
+RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
   let(:package_json_updater) do
     described_class.new(
       package_json: package_json,

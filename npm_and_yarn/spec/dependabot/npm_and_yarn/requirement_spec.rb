@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/java_script/requirement"
-require "dependabot/utils/java_script/version"
+require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/version"
 
-RSpec.describe Dependabot::Utils::JavaScript::Requirement do
+RSpec.describe Dependabot::NpmAndYarn::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
   let(:requirement_string) { ">=1.0.0" }
 

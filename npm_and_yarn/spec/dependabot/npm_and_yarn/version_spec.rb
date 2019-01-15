@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/utils/java_script/version"
+require "dependabot/npm_and_yarn/version"
 
-RSpec.describe Dependabot::Utils::JavaScript::Version do
+RSpec.describe Dependabot::NpmAndYarn::Version do
   subject(:version) { described_class.new(version_string) }
   let(:version_string) { "1.0.0" }
 

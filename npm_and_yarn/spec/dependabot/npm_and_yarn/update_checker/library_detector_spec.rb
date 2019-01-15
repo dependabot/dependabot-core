@@ -2,10 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java_script/npm_and_yarn/library_detector"
+require "dependabot/npm_and_yarn/update_checker/library_detector"
 
-tested_module = Dependabot::UpdateCheckers::JavaScript::NpmAndYarn
-RSpec.describe tested_module::LibraryDetector do
+RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
   subject(:finder) { described_class.new(package_json_file: package_json_file) }
   let(:package_json_file) do
     Dependabot::DependencyFile.new(

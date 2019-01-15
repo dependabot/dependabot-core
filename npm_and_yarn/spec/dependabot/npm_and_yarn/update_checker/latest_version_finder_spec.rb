@@ -3,12 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 
-path_namespace = "dependabot/update_checkers/java_script/npm_and_yarn/"
-require path_namespace + "latest_version_finder"
-
-namespace = Dependabot::UpdateCheckers::JavaScript::NpmAndYarn
-RSpec.describe namespace::LatestVersionFinder do
+RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
   let(:registry_response) do
     fixture("javascript", "npm_responses", "etag.json")

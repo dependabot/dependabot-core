@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 require "dependabot/file_parsers/ruby/bundler"
-require "dependabot/file_parsers/java_script/npm_and_yarn"
 
 module Dependabot
   module FileParsers
     @file_parsers = {
-      "bundler" => FileParsers::Ruby::Bundler,
-      "npm_and_yarn" => FileParsers::JavaScript::NpmAndYarn
+      "bundler" => FileParsers::Ruby::Bundler
     }
 
     def self.for_package_manager(package_manager)

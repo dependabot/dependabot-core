@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/java_script/npm_and_yarn/npmrc_builder"
+require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
-RSpec.describe Dependabot::FileUpdaters::JavaScript::NpmAndYarn::NpmrcBuilder do
+RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
   let(:npmrc_builder) do
     described_class.new(
       dependency_files: dependency_files,

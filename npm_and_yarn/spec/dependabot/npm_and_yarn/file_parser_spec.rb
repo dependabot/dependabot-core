@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
-require "dependabot/file_parsers/java_script/npm_and_yarn"
-require_relative "../shared_examples_for_file_parsers"
+require "dependabot/npm_and_yarn/file_parser"
+require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
-RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
+RSpec.describe Dependabot::NpmAndYarn::FileParser do
   it_behaves_like "a dependency file parser"
 
   let(:files) { [package_json, lockfile] }

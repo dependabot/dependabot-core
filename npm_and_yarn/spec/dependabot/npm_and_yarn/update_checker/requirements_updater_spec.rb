@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/java_script/npm_and_yarn/"\
-        "requirements_updater"
+require "dependabot/npm_and_yarn/update_checker/requirements_updater"
 
-module_to_test = Dependabot::UpdateCheckers::JavaScript
-RSpec.describe module_to_test::NpmAndYarn::RequirementsUpdater do
+RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java_script/npm_and_yarn/version_resolver"
+require "dependabot/npm_and_yarn/update_checker/version_resolver"
 
-namespace = Dependabot::UpdateCheckers::JavaScript::NpmAndYarn
+namespace = Dependabot::NpmAndYarn::UpdateChecker
 RSpec.describe namespace::SubdependencyVersionResolver do
   let(:resolver) do
     described_class.new(

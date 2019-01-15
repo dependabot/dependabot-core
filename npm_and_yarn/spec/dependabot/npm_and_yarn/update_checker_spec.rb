@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/java_script/npm_and_yarn"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/npm_and_yarn/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::JavaScript::NpmAndYarn do
+RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }

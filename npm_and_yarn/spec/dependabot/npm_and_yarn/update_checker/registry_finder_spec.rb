@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/java_script/npm_and_yarn/registry_finder"
+require "dependabot/npm_and_yarn/update_checker/registry_finder"
 
-tested_module = Dependabot::UpdateCheckers::JavaScript::NpmAndYarn
-RSpec.describe tested_module::RegistryFinder do
+RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
   subject(:finder) do
     described_class.new(
       dependency: dependency,
