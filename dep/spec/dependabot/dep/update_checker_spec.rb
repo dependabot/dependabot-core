@@ -238,6 +238,11 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
       expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.0"))
     end
 
+    context "with an indirect dependency" do
+      let(:requirements) { [] }
+      it { is_expected.to eq(dependency.version) }
+    end
+
     context "with a manifest file that needs unlocking" do
       let(:manifest_fixture_name) { "bare_version.toml" }
       let(:lockfile_fixture_name) { "bare_version.lock" }
@@ -381,6 +386,11 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
 
       expect(checker.latest_resolvable_version_with_no_unlock).
         to eq(Gem::Version.new("3.2.0"))
+    end
+
+    context "with an indirect dependency" do
+      let(:requirements) { [] }
+      it { is_expected.to eq(dependency.version) }
     end
 
     context "with a manifest file that needs unlocking" do

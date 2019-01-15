@@ -37,6 +37,9 @@ module Dependabot
       end
 
       def latest_resolvable_version_with_no_unlock
+        # We don't yet support updating indirect dependencies for dep
+        return dependency.version unless dependency.top_level?
+
         @latest_resolvable_version_with_no_unlock ||=
           if git_dependency?
             latest_resolvable_commit_with_unchanged_git_source
