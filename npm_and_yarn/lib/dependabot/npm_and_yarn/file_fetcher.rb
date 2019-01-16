@@ -118,7 +118,7 @@ module Dependabot
           next if fetched_files.map(&:name).include?(cleaned_name)
 
           begin
-            file = fetch_file_from_host(filename, type: "path_dependency")
+            file = fetch_file_from_host(filename)
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
             unfetchable_deps << [name, path]

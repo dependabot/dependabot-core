@@ -26,7 +26,7 @@ module Dependabot
             name: Pathname.new(filename).cleanpath.to_path,
             content: build_path_dep_content(dependency_name),
             directory: directory,
-            type: "path_dependency"
+            support_file: true
           )
         end
 
