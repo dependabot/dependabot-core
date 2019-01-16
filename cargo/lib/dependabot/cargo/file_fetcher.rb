@@ -113,7 +113,7 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
-          fetched_file = fetch_file_from_host(path, type: "path_dependency").
+          fetched_file = fetch_file_from_host(path).
                          tap { |f| f.support_file = true }
           previously_fetched_files << fetched_file
           grandchild_requirement_files =

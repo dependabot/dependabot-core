@@ -332,7 +332,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files.
                     find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.type).to eq("path_dependency")
+        expect(path_file.support_file?).to eq(true)
       end
     end
 
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
           to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files.
                     find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.type).to eq("path_dependency")
+        expect(path_file.support_file?).to eq(true)
       end
     end
 
@@ -399,7 +399,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files.
                       find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.type).to eq("path_dependency")
+          expect(path_file.support_file?).to eq(true)
           expect(path_file.content).
             to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
         end
@@ -436,7 +436,7 @@ RSpec.describe Dependabot::FileFetchers::JavaScript::NpmAndYarn do
             to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files.
                       find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.type).to eq("path_dependency")
+          expect(path_file.support_file?).to eq(true)
         end
       end
     end

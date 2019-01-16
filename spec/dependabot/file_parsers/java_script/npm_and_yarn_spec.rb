@@ -323,7 +323,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
               content: fixture("javascript", "package_files", "etag.json"),
-              type: "path_dependency"
+              support_file: true
             )
           end
 
@@ -813,7 +813,7 @@ RSpec.describe Dependabot::FileParsers::JavaScript::NpmAndYarn do
             Dependabot::DependencyFile.new(
               name: "deps/etag/package.json",
               content: fixture("javascript", "package_files", "etag.json"),
-              type: "path_dependency"
+              support_file: true
             )
           end
 
