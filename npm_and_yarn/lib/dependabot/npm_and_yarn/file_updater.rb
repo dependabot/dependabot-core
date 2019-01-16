@@ -10,6 +10,17 @@ module Dependabot
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
 
+      class NoChangeError < StandardError
+        def initialize(message:, error_context:)
+          super(message)
+          @error_context = error_context
+        end
+
+        def raven_context
+          { extra: @error_context }
+        end
+      end
+
       def self.updated_files_regex
         [
           /^package\.json$/,

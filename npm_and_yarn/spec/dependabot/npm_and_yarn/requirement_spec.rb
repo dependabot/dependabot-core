@@ -150,22 +150,22 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
       context "with only major version" do
         let(:requirement_string) { "1.x" }
-        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
       end
 
       context "with major.minor version" do
         let(:requirement_string) { "1.2.x" }
-        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
       end
 
       context "with only major version (minor * inferred)" do
         let(:requirement_string) { "1" }
-        it { is_expected.to eq(Gem::Requirement.new("~> 1.0")) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
       end
 
       context "with major.minor version (patch * inferred)" do
         let(:requirement_string) { "1.2" }
-        it { is_expected.to eq(Gem::Requirement.new("~> 1.2.0")) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
       end
     end
 
