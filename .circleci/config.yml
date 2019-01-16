@@ -117,11 +117,15 @@ jobs:
 
       # Install dependencies
       - run: bundle install --path ~/dependabot-core/vendor/bundle
+      - run: cd npm_and_yarn/helpers/yarn && yarn install
+      - run: cd npm_and_yarn/helpers/npm && yarn install
 
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}
           paths:
             - ~/dependabot-core/vendor/bundle
+            - ~/dependabot-core/npm_and_yarn/helpers/yarn/node_modules
+            - ~/dependabot-core/npm_and_yarn/helpers/npm/node_modules
 
       # Run code formatting linters
       - run: bundle exec rubocop
