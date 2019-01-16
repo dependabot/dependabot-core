@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
           Dependabot::DependencyFile.new(
             name: "src/s3/Cargo.toml",
             content: fixture("manifests", "cargo-registry-s3"),
-            type: "path_dependency"
+            support_file: true
           )
         end
 

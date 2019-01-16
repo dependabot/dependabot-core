@@ -11,8 +11,14 @@ module Dependabot
       @name = name
       @content = content
       @directory = clean_directory(directory)
-      @type = type
       @support_file = support_file
+
+      # Type is used *very* sparingly. It lets the git_modules updater know that
+      # a "file" is actually a submodule, and lets our Go updaters know which
+      # file represents the main.go.
+      # New use cases should be avoided if at all possible (and use the
+      # support_file flag instead)
+      @type = type
     end
 
     def to_h

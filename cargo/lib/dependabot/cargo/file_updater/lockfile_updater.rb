@@ -236,13 +236,14 @@ module Dependabot
           @manifest_files ||=
             dependency_files.
             select { |f| f.name.end_with?("Cargo.toml") }.
-            reject { |f| f.type == "path_dependency" }
+            reject(&:support_file?)
         end
 
         def path_dependency_files
           @path_dependency_files ||=
             dependency_files.
-            select { |f| f.type == "path_dependency" }
+            select { |f| f.name.end_with?("Cargo.toml") }.
+            select(&:support_file?)
         end
 
         def lockfile
