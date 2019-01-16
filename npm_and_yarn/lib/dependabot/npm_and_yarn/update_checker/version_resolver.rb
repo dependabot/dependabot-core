@@ -320,12 +320,10 @@ module Dependabot
         def lockfiles_for_path(lockfiles:, path:)
           lockfiles.select do |lockfile|
             File.dirname(lockfile.name) == File.dirname(path)
-           end
+          end
         end
 
         def run_checker(path:, version:)
-          if [*package_locks, *shrinkwraps].any?
-            run_npm_checker(path: path, version: version)
           # If there are both yarn lockfiles and npm lockfiles only run the
           # yarn updater, yarn is also used when only a package.json exists
           if lockfiles_for_path(lockfiles: yarn_locks, path: path).any? ||
@@ -333,8 +331,6 @@ module Dependabot
             return run_yarn_checker(path: path, version: version)
           end
 
-          run_yarn_checker(path: path, version: version) if yarn_locks.any?
-          run_yarn_checker(path: path, version: version) if lockfiles.none?
           run_npm_checker(path: path, version: version)
         end
 

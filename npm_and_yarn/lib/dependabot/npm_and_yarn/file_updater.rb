@@ -157,7 +157,9 @@ module Dependabot
       end
 
       def updated_yarn_lock_content(yarn_lock)
-        yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
+        @updated_yarn_lock_content ||= {}
+        @updated_yarn_lock_content[yarn_lock.name] ||=
+          yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
       end
 
       def yarn_lockfile_updater
@@ -170,11 +172,15 @@ module Dependabot
       end
 
       def updated_package_lock_content(package_lock)
-        npm_lockfile_updater.updated_lockfile_content(package_lock)
+        @updated_package_lock_content ||= {}
+        @updated_package_lock_content[package_lock.name] ||=
+          npm_lockfile_updater.updated_lockfile_content(package_lock)
       end
 
       def updated_shrinkwrap_content(shrinkwrap)
-        npm_lockfile_updater.updated_lockfile_content(shrinkwrap)
+        @updated_shrinkwrap_content ||= {}
+        @updated_shrinkwrap_content[shrinkwrap.name] ||=
+          npm_lockfile_updater.updated_lockfile_content(shrinkwrap)
       end
 
       def npm_lockfile_updater
