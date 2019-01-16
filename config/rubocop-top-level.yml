@@ -21,4 +21,5 @@ AllCops:
     - 'dep/**/*'
     - 'composer/**/*'
     - 'npm_and_yarn/**/*'
+    - 'bundler/**/*'
     - 'omnibus/**/*'
