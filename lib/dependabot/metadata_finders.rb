@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders/ruby/bundler"
-require "dependabot/metadata_finders/java_script/npm_and_yarn"
 
 module Dependabot
   module MetadataFinders
     @metadata_finders = {
-      "bundler" => MetadataFinders::Ruby::Bundler,
-      "npm_and_yarn" => MetadataFinders::JavaScript::NpmAndYarn
+      "bundler" => MetadataFinders::Ruby::Bundler
     }
 
     def self.for_package_manager(package_manager)

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/java_script/version"
-
-require "dependabot/utils/java_script/requirement"
 require "dependabot/utils/ruby/requirement"
 
 # TODO: in due course, these "registries" should live in a wrapper gem, not
@@ -12,8 +9,7 @@ module Dependabot
     @version_classes = {
       "bundler" => Gem::Version,
       "submodules" => Gem::Version,
-      "docker" => Gem::Version,
-      "npm_and_yarn" => Utils::JavaScript::Version
+      "docker" => Gem::Version
     }
 
     def self.version_class_for_package_manager(package_manager)
@@ -30,8 +26,7 @@ module Dependabot
     @requirement_classes = {
       "bundler" => Utils::Ruby::Requirement,
       "submodules" => Utils::Ruby::Requirement,
-      "docker" => Utils::Ruby::Requirement,
-      "npm_and_yarn" => Utils::JavaScript::Requirement
+      "docker" => Utils::Ruby::Requirement
     }
 
     def self.requirement_class_for_package_manager(package_manager)

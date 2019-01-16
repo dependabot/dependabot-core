@@ -94,4 +94,10 @@ COPY go_modules/Gemfile \
      /home/dependabot/dependabot-core/go_modules/
 RUN cd go_modules && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/npm_and_yarn
+COPY npm_and_yarn/Gemfile \
+     npm_and_yarn/dependabot-npm_and_yarn.gemspec \
+     /home/dependabot/dependabot-core/npm_and_yarn/
+RUN cd npm_and_yarn && bundle install
+
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

@@ -20,4 +20,5 @@ AllCops:
     - 'go_modules/**/*'
     - 'dep/**/*'
     - 'composer/**/*'
+    - 'npm_and_yarn/**/*'
     - 'omnibus/**/*'
