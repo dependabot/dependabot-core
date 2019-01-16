@@ -36,11 +36,10 @@ module Dependabot
 
         fetched_files += path_dependency_files(fetched_files)
         fetched_files += fetched_files.flat_map { |f| workspace_files(f) }
-        fetched_files.uniq!
 
-        updated_files = fetched_files.reject(&:support_file?)
+        updated_files = fetched_files.reject(&:support_file?).uniq
         updated_files +=
-          fetched_files.
+          fetched_files.uniq.
           reject { |f| updated_files.map(&:name).include?(f.name) }
 
         return updated_files if updated_files == files
@@ -113,7 +112,7 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
-          fetched_file = fetch_file_from_host(path, type: "path_dependency").
+          fetched_file = fetch_file_from_host(path).
                          tap { |f| f.support_file = true }
           previously_fetched_files << fetched_file
           grandchild_requirement_files =

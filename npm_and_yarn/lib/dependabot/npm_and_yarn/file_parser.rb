@@ -359,7 +359,7 @@ module Dependabot
           dependency_files.
           select { |f| f.name.end_with?("package.json") }.
           reject { |f| f.name == "package.json" }.
-          reject { |f| f.type == "path_dependency" }
+          reject(&:support_file?)
 
         [
           dependency_files.find { |f| f.name == "package.json" },
