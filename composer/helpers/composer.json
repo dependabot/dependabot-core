@@ -1,7 +1,8 @@
 {
     "require": {
-        "composer/composer": "1.8.0",
-        "php": "^7.1"
+        "composer/composer": "^1.8",
+        "php": "^7.1",
+        "ext-json": "*"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.9"
