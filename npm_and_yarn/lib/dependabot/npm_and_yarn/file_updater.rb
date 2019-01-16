@@ -59,6 +59,14 @@ module Dependabot
         raise "No package.json!" unless get_original_file("package.json")
       end
 
+      def error_context(updated_files:)
+        {
+          dependencies: dependencies.map(&:to_h),
+          updated_files: updated_files.map(&:name),
+          dependency_files: dependency_files.map(&:name)
+        }
+      end
+
       def package_locks
         @package_locks ||=
           dependency_files.
