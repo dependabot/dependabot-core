@@ -25,15 +25,32 @@ module Dependabot
           updated_files += updated_manifest_files
           updated_files += updated_lockfiles
 
-          if updated_files.none? ||
-             updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
-            raise "No files have changed!"
+          if updated_files.none?
+            raise NoChangeError.new(
+              message: "No files where updated!",
+              error_context: error_context(updated_files: updated_files)
+            )
+          end
+
+          if updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+            raise NoChangeError.new(
+              message: "Updated files are unchanged!",
+              error_context: error_context(updated_files: updated_files)
+            )
           end
 
           updated_files
         end
 
         private
+
+        def error_context(updated_files:)
+          {
+            dependencies: dependencies.map(&:to_h),
+            updated_files: updated_files.map(&:name),
+            dependency_files: dependency_files.map(&:name)
+          }
+        end
 
         def check_required_files
           raise "No package.json!" unless get_original_file("package.json")
@@ -152,6 +169,17 @@ module Dependabot
               package_json: file,
               dependencies: dependencies
             ).updated_package_json.content
+        end
+      end
+
+      class NoChangeError < StandardError
+        def initialize(message:, error_context:)
+          super(message)
+          @error_context = error_context
+        end
+
+        def raven_context
+          { extra: @error_context }
         end
       end
     end
