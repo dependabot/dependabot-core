@@ -10,5 +10,10 @@
         "psr-4": {
             "Dependabot\\PHP\\": "src/"
         }
+    },
+    "scripts": {
+        "lint": [
+            "php-cs-fixer fix"
+        ]
     }
 }

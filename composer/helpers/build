@@ -11,4 +11,4 @@ fi
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cd "$helpers_dir"
 composer install
-vendor/bin/php-cs-fixer fix --dry-run
+composer run lint -- --dry-run
