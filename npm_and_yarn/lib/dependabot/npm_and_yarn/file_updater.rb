@@ -25,9 +25,18 @@ module Dependabot
         updated_files += updated_manifest_files
         updated_files += updated_lockfiles
 
-        if updated_files.none? ||
-           updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
-          raise "No files have changed!"
+        if updated_files.none?
+          raise NoChangeError.new(
+            message: "No files where updated!",
+            error_context: error_context(updated_files: updated_files)
+          )
+        end
+
+        if updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+          raise NoChangeError.new(
+            message: "Updated files are unchanged!",
+            error_context: error_context(updated_files: updated_files)
+          )
         end
 
         updated_files
