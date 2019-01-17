@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "toml-rb"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
