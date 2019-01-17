@@ -8,7 +8,7 @@ update_configs:
     - greysteil
 
   - package_manager: "php:composer"
-    directory: "composer/helpers"
+    directory: "/composer/helpers"
     update_schedule: "live"
 
   - package_manager: "elixir:hex"
@@ -16,11 +16,11 @@ update_configs:
     update_schedule: "live"
 
   - package_manager: "javascript"
-    directory: "/helpers/yarn"
+    directory: "/npm_and_yarn/helpers/yarn"
     update_schedule: "live"
 
   - package_manager: "javascript"
-    directory: "/helpers/npm"
+    directory: "/npm_and_yarn/helpers/npm"
     update_schedule: "live"
 
   - package_manager: "python"
