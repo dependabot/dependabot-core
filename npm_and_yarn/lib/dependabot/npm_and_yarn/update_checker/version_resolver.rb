@@ -17,6 +17,7 @@ module Dependabot
     class UpdateChecker
       class VersionResolver
         require_relative "latest_version_finder"
+        require_relative "dependency_files_filterer"
 
         TIGHTLY_COUPLED_MONOREPOS = {
           "vue" => %w(vue vue-template-compiler)
@@ -181,7 +182,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
-            package_files.flat_map do |file|
+            filtered_package_files.flat_map do |file|
               path = Pathname.new(file.name).dirname
               run_checker(path: path, version: version)
             rescue SharedHelpers::HelperSubprocessFailed => error
@@ -316,13 +317,21 @@ module Dependabot
             select { |dep| dep[:requiring_dep_name] == dependency.name }
         end
 
+        def lockfiles_for_path(lockfiles:, path:)
+          lockfiles.select do |lockfile|
+            File.dirname(lockfile.name) == File.dirname(path)
+          end
+        end
+
         def run_checker(path:, version:)
-          if [*package_locks, *shrinkwraps].any?
-            run_npm_checker(path: path, version: version)
+          # If there are both yarn lockfiles and npm lockfiles only run the
+          # yarn updater, yarn is also used when only a package.json exists
+          if lockfiles_for_path(lockfiles: yarn_locks, path: path).any? ||
+             lockfiles_for_path(lockfiles: lockfiles, path: path).none?
+            return run_yarn_checker(path: path, version: version)
           end
 
-          run_yarn_checker(path: path, version: version) if yarn_locks.any?
-          run_yarn_checker(path: path, version: version) if lockfiles.none?
+          run_npm_checker(path: path, version: version)
         end
 
         def run_yarn_checker(path:, version:)
@@ -453,6 +462,14 @@ module Dependabot
           @package_files ||=
             dependency_files.
             select { |f| f.name.end_with?("package.json") }
+        end
+
+        def filtered_package_files
+          @filtered_package_files ||=
+            DependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              dependencies: [dependency]
+            ).filtered_package_files
         end
 
         def yarn_helper_path

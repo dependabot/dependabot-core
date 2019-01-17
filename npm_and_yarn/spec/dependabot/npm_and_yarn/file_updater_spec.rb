@@ -869,7 +869,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:path_dep) do
         Dependabot::DependencyFile.new(
           name: "deps/etag/package.json",
-          content: fixture("package_files", "etag.json")
+          content: fixture("package_files", "etag.json"),
+          support_file: true
         )
       end
       let(:dependency_name) { "lodash" }

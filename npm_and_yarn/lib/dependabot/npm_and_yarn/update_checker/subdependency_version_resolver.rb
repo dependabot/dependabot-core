@@ -24,15 +24,18 @@ module Dependabot
         def latest_resolvable_version
           raise "Not a subdependency!" if dependency.requirements.any?
 
-          lockfiles = [*package_locks, *shrinkwraps, *yarn_locks]
-          updated_lockfiles = lockfiles.map do |lockfile|
-            updated_content = update_subdependency_in_lockfile(lockfile)
-            updated_lockfile = lockfile.dup
-            updated_lockfile.content = updated_content
-            updated_lockfile
-          end
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files
 
-          version_from_updated_lockfiles(updated_lockfiles)
+            updated_lockfiles = lockfiles.map do |lockfile|
+              updated_content = update_subdependency_in_lockfile(lockfile)
+              updated_lockfile = lockfile.dup
+              updated_lockfile.content = updated_content
+              updated_lockfile
+            end
+
+            version_from_updated_lockfiles(updated_lockfiles)
+          end
         rescue SharedHelpers::HelperSubprocessFailed
           # TODO: Move error handling logic from the FileUpdater to this class
 
@@ -46,19 +49,16 @@ module Dependabot
                     :ignored_versions
 
         def update_subdependency_in_lockfile(lockfile)
-          SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
-            lockfile_name = Pathname.new(lockfile.name).basename.to_s
-            path = Pathname.new(lockfile.name).dirname.to_s
+          lockfile_name = Pathname.new(lockfile.name).basename.to_s
+          path = Pathname.new(lockfile.name).dirname.to_s
 
-            updated_files = if lockfile.name.end_with?("yarn.lock")
-                              run_yarn_updater(path, lockfile_name)
-                            else
-                              run_npm_updater(path, lockfile_name)
-                            end
+          updated_files = if lockfile.name.end_with?("yarn.lock")
+                            run_yarn_updater(path, lockfile_name)
+                          else
+                            run_npm_updater(path, lockfile_name)
+                          end
 
-            updated_files.fetch(lockfile_name)
-          end
+          updated_files.fetch(lockfile_name)
         end
 
         def version_from_updated_lockfiles(updated_lockfiles)
@@ -202,6 +202,10 @@ module Dependabot
           @shrinkwraps ||=
             dependency_files.
             select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+        end
+
+        def lockfiles
+          [*package_locks, *shrinkwraps, *yarn_locks]
         end
 
         def package_files
