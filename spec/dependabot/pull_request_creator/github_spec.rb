@@ -284,6 +284,20 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "when the PR doesn't have history in common with the base branch" do
+      before do
+        stub_request(:post, "#{repo_api_url}/pulls").
+          to_return(status: 422,
+                    body: { message: "has no history in common" }.to_json,
+                    headers: json_header)
+      end
+
+      it "raises a helpful error" do
+        expect { creator.create }.
+          to raise_error(Dependabot::PullRequestCreator::NoHistoryInCommon)
+      end
+    end
+
     context "when a branch with a name that is a superstring exists" do
       before do
         stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").

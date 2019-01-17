@@ -243,11 +243,15 @@ module Dependabot
         when Octokit::Forbidden
           raise error unless error.message.include?("Repository was archived")
 
-          raise RepoArchived
+          raise RepoArchived, error.message
         when Octokit::NotFound
           raise error if repo_exists?
 
-          raise RepoNotFound
+          raise RepoNotFound, error.message
+        when Octokit::UnprocessableEntity
+          raise error unless error.message.include?("no history in common")
+
+          raise NoHistoryInCommon, error.message
         else
           raise error
         end
