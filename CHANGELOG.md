@@ -1,3 +1,7 @@
+## v0.91.2, 17 January 2019
+
+- JS: Stop registering the wrong version class
+
 ## v0.91.1, 17 January 2019
 
 - JS: Memoize lockfile updates
