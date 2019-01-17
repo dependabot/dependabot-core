@@ -1,3 +1,8 @@
+## v0.91.1, 17 January 2019
+
+- JS: Memoize lockfile updates
+- JS: Only include relevant dependency files when updating files
+
 ## v0.91.0, 17 January 2019
 
 - JS: Reorganise into npm_and_yarn directory
