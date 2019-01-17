@@ -1,3 +1,7 @@
+## v0.91.4, 17 January 2019
+
+- Docker: Handle AWS auth errors
+
 ## v0.91.3, 17 January 2019
 
 - Raise NoHistoryInCommon error if it blocks PR creation
