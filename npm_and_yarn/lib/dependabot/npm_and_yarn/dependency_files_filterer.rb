@@ -73,8 +73,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::Utils.register_version_class(
-  "npm_and_yarn",
-  Dependabot::NpmAndYarn::DependencyFilesFilterer
-)
