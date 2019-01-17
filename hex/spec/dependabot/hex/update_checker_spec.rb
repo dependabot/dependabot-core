@@ -72,11 +72,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         and_return(Gem::Version.new("1.3.5"))
     end
 
-    it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+    it { is_expected.to eq(Gem::Version.new("1.7.1")) }
 
     context "without a lockfile" do
       let(:files) { [mixfile] }
-      it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.1")) }
 
       context "with a requirement specified to 2dp" do
         let(:dependency_requirements) do
@@ -84,18 +84,18 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
         let(:mixfile_body) { fixture("mixfiles", "major_version") }
 
-        it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.1")) }
       end
     end
 
     context "when the user wants pre-releases" do
       let(:version) { "1.4.0-rc.0" }
-      it { is_expected.to eq(Gem::Version.new("1.5.0-rc.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.8.0-rc.0")) }
     end
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
-      it { is_expected.to eq(Gem::Version.new("1.2.5")) }
+      it { is_expected.to eq(Gem::Version.new("1.2.6")) }
     end
 
     context "when the dependency doesn't have a requirement" do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: nil, groups: [], source: nil }]
       end
-      it { is_expected.to eq(Gem::Version.new("1.4.3")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.1")) }
     end
 
     context "when the registry 404s" do
@@ -155,7 +155,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "without a lockfile" do
       let(:files) { [mixfile] }
-      pending { is_expected.to eq(Gem::Version.new("1.3.6")) }
+
+      it "gets a sensible resolved version" do
+        expect(latest_resolvable_version).to be >= Gem::Version.new("1.3.6")
+        expect(latest_resolvable_version).to be <= Gem::Version.new("1.4.5")
+      end
     end
 
     context "when the user is ignoring the latest version" do
