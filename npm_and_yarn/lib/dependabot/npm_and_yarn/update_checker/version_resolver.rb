@@ -6,6 +6,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
@@ -17,7 +18,6 @@ module Dependabot
     class UpdateChecker
       class VersionResolver
         require_relative "latest_version_finder"
-        require_relative "dependency_files_filterer"
 
         TIGHTLY_COUPLED_MONOREPOS = {
           "vue" => %w(vue vue-template-compiler)

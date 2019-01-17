@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
 
 module Dependabot
   module NpmAndYarn
@@ -9,7 +10,6 @@ module Dependabot
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
-      require_relative "dependency_files_filterer"
 
       class NoChangeError < StandardError
         def initialize(message:, error_context:)
