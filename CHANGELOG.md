@@ -1,3 +1,7 @@
+## v0.91.3, 17 January 2019
+
+- Raise NoHistoryInCommon error if it blocks PR creation
+
 ## v0.91.2, 17 January 2019
 
 - JS: Stop registering the wrong version class
