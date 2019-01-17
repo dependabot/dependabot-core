@@ -82,6 +82,29 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
+        context "and an invalid secret key as the password (another type)" do
+          before do
+            stub_request(:post, "https://ecr.eu-west-2.amazonaws.com/").
+              and_return(
+                status: 403,
+                body: fixture(
+                  "docker",
+                  "ecr_responses",
+                  "invalid_signature_exception"
+                )
+              )
+          end
+
+          it "raises a PrivateSourceAuthenticationFailure error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { finder.credentials_for_registry(registry) }.
+              to raise_error(error_class) do |error|
+                expect(error.source).
+                  to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+              end
+          end
+        end
+
         context "and a valid secret key as the password" do
           before do
             stub_request(:post, "https://ecr.eu-west-2.amazonaws.com/").

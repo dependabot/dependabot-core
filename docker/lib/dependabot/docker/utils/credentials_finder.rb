@@ -56,7 +56,8 @@ module Dependabot
 
           registry_details.merge("username" => username, "password" => password)
         rescue Aws::Errors::MissingCredentialsError,
-               Aws::ECR::Errors::UnrecognizedClientException
+               Aws::ECR::Errors::UnrecognizedClientException,
+               Aws::ECR::Errors::InvalidSignatureException
           raise PrivateSourceAuthenticationFailure, registry_hostname
         end
       end
