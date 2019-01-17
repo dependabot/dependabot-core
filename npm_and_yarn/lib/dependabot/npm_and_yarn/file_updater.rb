@@ -9,6 +9,7 @@ module Dependabot
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
+      require_relative "dependency_files_filterer"
 
       class NoChangeError < StandardError
         def initialize(message:, error_context:)
@@ -43,7 +44,8 @@ module Dependabot
           )
         end
 
-        if updated_files.sort_by(&:name) == dependency_files.sort_by(&:name)
+        sorted_updated_files = updated_files.sort_by(&:name)
+        if sorted_updated_files == filtered_dependency_files.sort_by(&:name)
           raise NoChangeError.new(
             message: "Updated files are unchanged!",
             error_context: error_context(updated_files: updated_files)
@@ -54,6 +56,14 @@ module Dependabot
       end
 
       private
+
+      def filtered_dependency_files
+        @filtered_dependency_files ||=
+          DependencyFilesFilterer.new(
+            dependency_files: dependency_files,
+            dependencies: dependencies
+          ).filtered_files
+      end
 
       def check_required_files
         raise "No package.json!" unless get_original_file("package.json")
@@ -69,24 +79,27 @@ module Dependabot
 
       def package_locks
         @package_locks ||=
-          dependency_files.
+          filtered_dependency_files.
           select { |f| f.name.end_with?("package-lock.json") }
       end
 
       def yarn_locks
         @yarn_locks ||=
-          dependency_files.
+          filtered_dependency_files.
           select { |f| f.name.end_with?("yarn.lock") }
       end
 
       def shrinkwraps
         @shrinkwraps ||=
-          dependency_files.
+          filtered_dependency_files.
           select { |f| f.name.end_with?("npm-shrinkwrap.json") }
       end
 
       def package_files
-        dependency_files.select { |f| f.name.end_with?("package.json") }
+        @package_files ||=
+          filtered_dependency_files.select do |f|
+            f.name.end_with?("package.json")
+          end
       end
 
       def yarn_lock_changed?(yarn_lock)
