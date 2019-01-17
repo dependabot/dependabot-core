@@ -155,11 +155,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "without a lockfile" do
       let(:files) { [mixfile] }
-
-      it "gets a sensible resolved version" do
-        expect(latest_resolvable_version).to be >= Gem::Version.new("1.3.6")
-        expect(latest_resolvable_version).to be <= Gem::Version.new("1.4.5")
+      let(:dependency_name) { "phoenix" }
+      let(:version) { "1.2.5" }
+      let(:dependency_requirements) do
+        [{ file: "mix.exs", requirement: "~> 1.2.1", groups: [], source: nil }]
       end
+
+      it { is_expected.to eq(Gem::Version.new("1.3.4")) }
     end
 
     context "when the user is ignoring the latest version" do
