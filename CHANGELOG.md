@@ -1,3 +1,36 @@
+## v0.91.0, 17 January 2019
+
+- Relax Elixir spec
+- Update paths for JS helpers in config file
+- Another JS fix
+- Add back JS installers so linters can be run
+- Install hex helpers after npm_and_yarn helpers
+- Fix JS specs
+- Remove unnecessary install step
+- Disable problematic spec
+- Elixir: require fully released version of jason
+- Merge pull request #911 from dependabot/old-master
+- Remove possibly redundant check that npm lockfile has changed
+- Better uniqing of Rust files
+- More reduction of `type` use
+- Use DependencyFile#type more sparingly
+- JS: Add error context when no files where updated
+- Merge pull request #906 from dependabot/reorg-js
+- Update and fix the license
+- Fix MessageBuilder test
+- Add build script
+- Merge pull request #908 from bai/typo-fix
+- Fix README typo
+- Update CircleCI config
+- Move fixture files and get specs passing (pending helpers work)
+- Fix gitignore
+- Fix require lines
+- Fix rubocops
+- Namespace change
+- Initial move
+- Initial setup
+- Dep: Ignore indirect dependencies in latest_resolvable_version_with_no_unlock
+
 ## v0.90.7, 15 January 2019
 
 - Dep: Ignore indirect dependencies more robustly
