@@ -39,7 +39,7 @@ module Dependabot
 
         if updated_files.none?
           raise NoChangeError.new(
-            message: "No files where updated!",
+            message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
           )
         end
