@@ -70,7 +70,10 @@ module Dependabot
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
         return subject unless subject.length > 72
 
-        subject.split(" from ").first
+        subject = subject.gsub(/ from [^\s]*? to [^\s]*/, "")
+        return subject unless subject.length > 72
+
+        subject.split(" in ").first
       end
 
       def commit_message_intro

@@ -1403,13 +1403,32 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         allow(builder).to receive(:pr_name).
           and_return(
             "build(deps-dev): update postcss-import requirement from "\
-            "^11.1.0 to ^12.0.0"
+            "^11.1.0 to ^12.0.0 in /electron"
           )
       end
 
       it "truncates the subject line sensibly" do
         expect(commit_message).
-          to start_with("build(deps-dev): update postcss-import requirement\n")
+          to start_with(
+            "build(deps-dev): update postcss-import requirement in /electron\n"
+          )
+      end
+
+      context "and the directory needs to be truncated, too" do
+        before do
+          allow(builder).to receive(:pr_name).
+            and_return(
+              "build(deps-dev): update postcss-import requirement from "\
+              "^11.1.0 to ^12.0.0 in /electron-really-long-name"
+            )
+        end
+
+        it "truncates the subject line sensibly" do
+          expect(commit_message).
+            to start_with(
+              "build(deps-dev): update postcss-import requirement\n"
+            )
+        end
       end
     end
 
