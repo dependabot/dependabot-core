@@ -10,7 +10,7 @@ require "dependabot/errors"
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.txt)/.freeze
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/.freeze
       CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/.freeze
 
       def self.required_files_in?(filenames)
@@ -51,7 +51,13 @@ module Dependabot
         fetched_files << python_version if python_version
 
         check_required_files_present
-        fetched_files.uniq
+        uniq_files(fetched_files)
+      end
+
+      def uniq_files(fetched_files)
+        uniq_files = fetched_files.reject(&:support_file?).uniq
+        uniq_files += fetched_files.
+                      reject { |f| uniq_files.map(&:name).include?(f.name) }
       end
 
       def pipenv_files
@@ -65,7 +71,7 @@ module Dependabot
       def requirement_files
         [
           *requirements_txt_files,
-          *child_requirement_files,
+          *child_requirement_txt_files,
           *constraints_files
         ]
       end
@@ -123,7 +129,8 @@ module Dependabot
       end
 
       def requirements_in_files
-        req_txt_and_in_files.select { |f| f.name.end_with?(".in") }
+        req_txt_and_in_files.select { |f| f.name.end_with?(".in") } +
+          child_requirement_in_files
       end
 
       def parsed_pipfile
@@ -165,11 +172,19 @@ module Dependabot
           select { |f| requirements_file?(f) }
       end
 
+      def child_requirement_txt_files
+        child_requirement_files.select { |f| f.name.end_with?(".txt") }
+      end
+
+      def child_requirement_in_files
+        child_requirement_files.select { |f| f.name.end_with?(".in") }
+      end
+
       def child_requirement_files
         @child_requirement_files ||=
           begin
-            fetched_files = requirements_txt_files.dup
-            requirements_txt_files.flat_map do |requirement_file|
+            fetched_files = req_txt_and_in_files.dup
+            req_txt_and_in_files.flat_map do |requirement_file|
               child_files = fetch_child_requirement_files(
                 file: requirement_file,
                 previously_fetched_files: fetched_files
@@ -203,7 +218,7 @@ module Dependabot
 
       def constraints_files
         all_requirement_files = requirements_txt_files +
-                                child_requirement_files
+                                child_requirement_txt_files
 
         constraints_paths = all_requirement_files.map do |req_file|
           req_file.content.scan(CONSTRAINT_REGEX).flatten
@@ -264,7 +279,7 @@ module Dependabot
       end
 
       def requirement_txt_path_setup_file_paths
-        (requirements_txt_files + child_requirement_files).map do |req_file|
+        (requirements_txt_files + child_requirement_txt_files).map do |req_file|
           uneditable_reqs =
             req_file.content.
             scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).

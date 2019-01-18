@@ -487,6 +487,31 @@ RSpec.describe Dependabot::Python::FileFetcher do
           end
         end
 
+        context "and is for a .in file" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "requirements_with_in_child.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "some/nested/req.in?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "requirements_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "fetches the .in file" do
+            expect(file_fetcher_instance.files.count).to eq(2)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to include("some/nested/req.in")
+          end
+        end
+
         context "and cascades more than once" do
           before do
             stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha").
