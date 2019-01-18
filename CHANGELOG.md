@@ -1,3 +1,8 @@
+## v0.91.5, 18 January 2019
+
+- Python: Fetch cascading requirement.in files
+- Better commit subject truncation
+
 ## v0.91.4, 17 January 2019
 
 - Docker: Handle AWS auth errors
