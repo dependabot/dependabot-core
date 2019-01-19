@@ -23,5 +23,3 @@ vendor
 .vscode/
 /terraform/helpers/install-dir
 /go_modules/helpers/install-dir
-/npm_and_yarn/helpers/npm/node_modules
-/npm_and_yarn/helpers/yarn/node_modules

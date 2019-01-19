@@ -1,5 +1,5 @@
 {
-  "name": "dependabot-core",
+  "name": "@dependabot/yarn",
   "version": "0.0.0",
   "private": true,
   "dependencies": {

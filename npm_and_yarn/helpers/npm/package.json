@@ -1,5 +1,5 @@
 {
-  "name": "dependabot-core",
+  "name": "@dependabot/npm",
   "version": "0.0.0",
   "private": true,
   "dependencies": {
