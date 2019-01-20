@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 declare(strict_types=1);
@@ -74,7 +75,7 @@ try {
             error_clear_last();
             break;
         default:
-            fwrite(STDOUT, '{"error": "Invalid function ' . $request['function'] . '" }');
+            fwrite(STDOUT, json_encode(['error' => "Invalid function {$request['function']}"]));
             exit(1);
     }
 } catch (\Exception $e) {

@@ -4,7 +4,7 @@ module Dependabot
   module Composer
     module NativeHelpers
       def self.composer_helper_path
-        File.join(composer_helpers_dir, "bin/run.php")
+        File.join(composer_helpers_dir, "bin/run")
       end
 
       def self.composer_helpers_dir
