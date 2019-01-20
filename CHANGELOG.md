@@ -1,3 +1,7 @@
+## v0.91.6, 20 January 2019
+
+- Add php7.2-apcu to Dockerfile
+
 ## v0.91.5, 18 January 2019
 
 - Python: Fetch cascading requirement.in files
