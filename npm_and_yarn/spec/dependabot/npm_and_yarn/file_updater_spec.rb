@@ -646,20 +646,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a requirement" do
-        # This is npm specific because Yarn doesn't yet support semver
-        # requirements in a package.json
-        let(:files) { [package_json, package_lock] }
         let(:req) { "^4.0.0" }
         let(:ref) { "master" }
         let(:old_req) { "^2.0.0" }
         let(:old_ref) { "master" }
 
         let(:manifest_fixture_name) { "github_dependency_semver.json" }
+        let(:yarn_lock_fixture_name) { "github_dependency_semver.lock" }
         let(:npm_lock_fixture_name) { "github_dependency_semver.json" }
 
-        it "updates the package.json and the lockfile" do
+        it "updates the package.json and the lockfiles" do
           expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
+            to match_array(%w(package.json package-lock.json yarn.lock))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
           expect(parsed_package_json["devDependencies"]["is-number"]).
@@ -669,6 +667,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
             to eq("github:jonschlinkert/is-number#"\
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+          expect(updated_yarn_lock.content).
+            to include("\"is-number@jonschlinkert/is-number#semver:^4.0.0\":")
+          expect(updated_yarn_lock.content).
+            to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        end
+
+        context "using Yarn semver format" do
+          # npm doesn't support Yarn semver format yet
+          let(:files) { [package_json, yarn_lock] }
+          let(:manifest_fixture_name) { "github_dependency_yarn_semver.json" }
+          let(:yarn_lock_fixture_name) { "github_dependency_yarn_semver.lock" }
+
+          it "updates the package.json and the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json yarn.lock))
+
+            parsed_package_json = JSON.parse(updated_package_json.content)
+            expect(parsed_package_json["devDependencies"]["is-number"]).
+              to eq("jonschlinkert/is-number#^4.0.0")
+
+            expect(updated_yarn_lock.content).
+              to include("is-number@jonschlinkert/is-number#^4.0.0:")
+            expect(updated_yarn_lock.content).
+              to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
         end
       end
 

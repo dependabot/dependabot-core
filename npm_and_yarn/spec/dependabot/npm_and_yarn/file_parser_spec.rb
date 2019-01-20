@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/source"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileParser do
@@ -752,6 +754,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   source: nil
                 }]
               )
+            end
+          end
+        end
+
+        context "that specifies a semver requirement" do
+          let(:package_json_fixture_name) do
+            "github_dependency_yarn_semver.json"
+          end
+          let(:yarn_lock_fixture_name) { "github_dependency_yarn_semver.lock" }
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the github dependency" do
+            subject { top_level_dependencies.last }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("is-number") }
+            its(:version) do
+              is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+            end
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.0",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/jonschlinkert/is-number",
+                    branch: nil,
+                    ref: "master"
+                  }
+                }]
+              )
+            end
+          end
+
+          context "with #semver:" do
+            let(:package_json_fixture_name) { "github_dependency_semver.json" }
+            let(:yarn_lock_fixture_name) { "github_dependency_semver.lock" }
+
+            its(:length) { is_expected.to eq(1) }
+
+            describe "the github dependency" do
+              subject { top_level_dependencies.last }
+
+              it { is_expected.to be_a(Dependabot::Dependency) }
+              its(:name) { is_expected.to eq("is-number") }
+              its(:version) do
+                is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+              end
+              its(:requirements) do
+                is_expected.to eq(
+                  [{
+                    requirement: "^2.0.0",
+                    file: "package.json",
+                    groups: ["devDependencies"],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/jonschlinkert/is-number",
+                      branch: nil,
+                      ref: "master"
+                    }
+                  }]
+                )
+              end
             end
           end
         end

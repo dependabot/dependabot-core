@@ -157,34 +157,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           name: "fetch-factory",
           version: "0.2.1",
           package_manager: "npm_and_yarn",
-          requirements: [
-            {
-              requirement: "0.2.x",
-              file: "package.json",
-              groups: ["dependencies"],
-              source: nil
-            },
-            {
-              requirement: "^0.2.0",
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              requirement: "0.1.x",
-              file: "package.json",
-              groups: ["dependencies"],
-              source: nil
-            },
-            {
-              requirement: "^0.1.0",
-              file: "package.json",
-              groups: ["devDependencies"],
-              source: nil
-            }
-          ]
+          requirements: [{
+            requirement: "0.2.x",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "^0.2.0",
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.1.x",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "^0.1.0",
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }]
         )
       end
       let(:manifest_fixture_name) { "duplicate.json" }
@@ -205,34 +199,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
             name: "fetch-factory",
             version: "0.2.1",
             package_manager: "npm_and_yarn",
-            requirements: [
-              {
-                requirement: "^0.2.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                requirement: "^0.2.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: nil
-              }
-            ],
-            previous_requirements: [
-              {
-                requirement: "^0.1.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                requirement: "^0.1.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: nil
-              }
-            ]
+            requirements: [{
+              requirement: "^0.2.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }, {
+              requirement: "^0.2.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              requirement: "^0.1.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }, {
+              requirement: "^0.1.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: nil
+            }]
           )
         end
 
@@ -274,6 +262,86 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           to eq("^2.0.0")
         expect(parsed_file.dig("peerDependencies", "etag")).
           to eq("^2.0.0")
+      end
+    end
+
+    context "with a git dependency" do
+      let(:manifest_fixture_name) { "github_dependency.json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "is-number",
+          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: "4.0.0"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: "2.0.0"
+            }
+          }]
+        )
+      end
+
+      its(:content) { is_expected.to include("jonschlinkert/is-number#4.0.0") }
+
+      context "that specifies a semver requirement" do
+        let(:manifest_fixture_name) { "github_dependency_semver.json" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "is-number",
+            version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              requirement: "^4.0.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "master"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "^2.0.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "master"
+              }
+            }]
+          )
+        end
+
+        its(:content) do
+          is_expected.to include("\"jonschlinkert/is-number#semver:^4.0.0\"")
+        end
+
+        context "without the `semver:` marker" do
+          let(:manifest_fixture_name) { "github_dependency_yarn_semver.json" }
+
+          its(:content) do
+            is_expected.to include("\"jonschlinkert/is-number#^4.0.0\"")
+          end
+        end
       end
     end
 
