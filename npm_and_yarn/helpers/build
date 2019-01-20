@@ -10,5 +10,6 @@ fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cd "$helpers_dir"
-cd npm && yarn install && cd -
-cd yarn && yarn install && cd -
+yarn install
+yarn run lint
+yarn run test
