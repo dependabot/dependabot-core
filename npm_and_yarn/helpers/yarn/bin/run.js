@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const lockfileParser = require("../lib/lockfile-parser");
 const updater = require("../lib/updater");
 const subdependencyUpdater = require("../lib/subdependency-updater");

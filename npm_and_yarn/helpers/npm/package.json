@@ -5,5 +5,8 @@
   "dependencies": {
     "npm": "^6.5.0",
     "semver": "^5.6.0"
+  },
+  "bin": {
+    "dependabot-npm": "./bin/run.js"
   }
 }

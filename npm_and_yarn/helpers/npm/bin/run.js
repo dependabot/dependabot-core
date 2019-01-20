@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const updater = require("../lib/updater");
 const peerDependencyChecker = require("../lib/peer-dependency-checker");
 const subdependencyUpdater = require("../lib/subdependency-updater");
