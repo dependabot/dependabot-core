@@ -1,3 +1,7 @@
+## v0.91.7, 20 January 2019
+
+- .NET: Handle build versions
+
 ## v0.91.6, 20 January 2019
 
 - Add php7.2-apcu to Dockerfile
