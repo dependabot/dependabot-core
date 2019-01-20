@@ -16,11 +16,7 @@ update_configs:
     update_schedule: "live"
 
   - package_manager: "javascript"
-    directory: "/npm_and_yarn/helpers/yarn"
-    update_schedule: "live"
-
-  - package_manager: "javascript"
-    directory: "/npm_and_yarn/helpers/npm"
+    directory: "/npm_and_yarn/helpers"
     update_schedule: "live"
 
   - package_manager: "python"
