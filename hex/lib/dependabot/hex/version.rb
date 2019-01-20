@@ -12,8 +12,7 @@ module Dependabot
     class Version < Gem::Version
       attr_reader :build_info
 
-      VERSION_PATTERN = Gem::Version::VERSION_PATTERN +
-                        '(\+[0-9a-zA-Z\-.]+)?'
+      VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
 
       def self.correct?(version)
         return false if version.nil?
