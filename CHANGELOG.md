@@ -1,3 +1,9 @@
+## v0.91.8, 20 January 2019
+
+- JS: Add support for Yarn git semver
+- PHP: Always pass to json_encode for secure output
+- PHP: Switch to a real helper bin file
+
 ## v0.91.7, 20 January 2019
 
 - .NET: Handle build versions
