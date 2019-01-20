@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/source"
 require "dependabot/pull_request_creator/labeler"
 
 RSpec.describe Dependabot::PullRequestCreator::Labeler do
