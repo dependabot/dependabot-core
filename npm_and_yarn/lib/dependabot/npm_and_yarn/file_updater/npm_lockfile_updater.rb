@@ -48,8 +48,8 @@ module Dependabot
         UNREACHABLE_GIT =
           /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/.freeze
         FORBIDDEN_PACKAGE =
-          /(403 Forbidden|401 Unauthorized): (?<package_req>.*)/.freeze
-        MISSING_PACKAGE = /404 Not Found: (?<package_req>.*)/.freeze
+          %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
 
         def top_level_dependencies
@@ -174,8 +174,7 @@ module Dependabot
             package_name =
               error.message.match(MISSING_PACKAGE).
               named_captures["package_req"].
-              split(/(?<=\w)\@/).first
-
+              gsub("%2f", "/")
             handle_missing_package(package_name, error, lockfile)
           end
 
@@ -219,8 +218,7 @@ module Dependabot
             package_name =
               error.message.match(FORBIDDEN_PACKAGE).
               named_captures["package_req"].
-              split(/(?<=\w)\@/).first
-
+              gsub("%2f", "/")
             handle_missing_package(package_name, error, lockfile)
           end
 
@@ -262,11 +260,8 @@ module Dependabot
         end
 
         def handle_missing_package(package_name, error, lockfile)
-          missing_dep = NpmAndYarn::FileParser.new(
-            dependency_files: dependency_files,
-            source: nil,
-            credentials: credentials
-          ).parse.find { |dep| dep.name == package_name }
+          missing_dep = lockfile_dependencies(lockfile).
+                        find { |dep| dep.name == package_name }
 
           raise_resolvability_error(error, lockfile) unless missing_dep
 

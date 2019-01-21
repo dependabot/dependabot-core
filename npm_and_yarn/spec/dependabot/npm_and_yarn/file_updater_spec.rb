@@ -1369,6 +1369,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with an npm lockfile" do
           let(:files) { [package_json, package_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
@@ -1377,6 +1378,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with a yarn lockfile" do
           let(:files) { [package_json, yarn_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
@@ -1391,6 +1393,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with an npm lockfile" do
           let(:files) { [package_json, package_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
@@ -1399,6 +1402,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with a yarn lockfile" do
           let(:files) { [package_json, yarn_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::DependencyFileNotResolvable)
@@ -1528,6 +1532,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with an npm lockfile" do
           let(:files) { [package_json, package_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
               to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
@@ -1536,9 +1541,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with a yarn lockfile" do
           let(:files) { [package_json, yarn_lock] }
+
           it "raises a helpful error" do
             expect { updated_files }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+              to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
           end
         end
       end
