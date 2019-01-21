@@ -11,5 +11,3 @@ fi
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cd "$helpers_dir"
 yarn install
-yarn lint
-# yarn test
