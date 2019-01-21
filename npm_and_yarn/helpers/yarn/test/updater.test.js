@@ -23,10 +23,16 @@ describe("updater", () => {
   afterEach(() => fs.removeSync(tempDir));
 
   async function copyDependencies(sourceDir, destDir) {
-    const srcPackageJson = `test/fixtures/updater/${sourceDir}/package.json`;
+    const srcPackageJson = path.join(
+      __dirname,
+      `fixtures/updater/${sourceDir}/package.json`
+    );
     await fs.copy(srcPackageJson, `${destDir}/package.json`);
 
-    const srcYarnLock = `test/fixtures/updater/${sourceDir}/yarn.lock`;
+    const srcYarnLock = path.join(
+      __dirname,
+      `fixtures/updater/${sourceDir}/yarn.lock`
+    );
     await fs.copy(srcYarnLock, `${destDir}/yarn.lock`);
   }
 

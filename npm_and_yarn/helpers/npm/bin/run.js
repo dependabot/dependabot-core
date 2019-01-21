@@ -1,12 +1,6 @@
-const updater = require("../lib/updater");
-const peerDependencyChecker = require("../lib/peer-dependency-checker");
-const subdependencyUpdater = require("../lib/subdependency-updater");
+#!/usr/bin/env node
 
-const functionMap = {
-  update: updater.updateDependencyFiles,
-  updateSubdependency: subdependencyUpdater.updateDependencyFile,
-  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
-};
+const functionMap = require("../lib");
 
 function output(obj) {
   process.stdout.write(JSON.stringify(obj));
