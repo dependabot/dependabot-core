@@ -1,3 +1,7 @@
+## v0.92.2, 21 January 2019
+
+- Update .gitignore
+
 ## v0.92.1, 21 January 2019
 
 - Update gitignore for npm_and_yarn helpers move
