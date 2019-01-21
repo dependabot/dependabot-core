@@ -1,3 +1,12 @@
+## v0.92.0, 21 January 2019
+
+- .NET, Elixir and Pythnon: Better handling of version with build/local part
+- JS: Simplify npm_and_yarn helpers to yarn workspaces
+- JS: Bump npm from 6.5.0 to 6.6.0 in /npm_and_yarn/helpers/npm
+- JS: Handle sub-dep version resolution errors
+- Python: Bump cython from 0.29.2 to 0.29.3 in /python/helpers
+- Python: Bump hashin from 0.14.1 to 0.14.2 in /python/helpers
+
 ## v0.91.8, 20 January 2019
 
 - JS: Add support for Yarn git semver
