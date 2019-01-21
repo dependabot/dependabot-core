@@ -1,3 +1,7 @@
+## v0.92.1, 21 January 2019
+
+- Update gitignore for npm_and_yarn helpers move
+
 ## v0.92.0, 21 January 2019
 
 - .NET, Elixir and Pythnon: Better handling of version with build/local part
