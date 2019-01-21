@@ -1,16 +1,6 @@
 #!/usr/bin/env node
 
-const lockfileParser = require("../lib/lockfile-parser");
-const updater = require("../lib/updater");
-const subdependencyUpdater = require("../lib/subdependency-updater");
-const peerDependencyChecker = require("../lib/peer-dependency-checker");
-
-const functionMap = {
-  parseLockfile: lockfileParser.parse,
-  update: updater.updateDependencyFiles,
-  updateSubdependency: subdependencyUpdater.updateDependencyFile,
-  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
-};
+const functionMap = require("../lib");
 
 function output(obj) {
   process.stdout.write(JSON.stringify(obj));
