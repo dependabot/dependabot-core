@@ -2,5 +2,7 @@
 /.env
 /tmp
 /dependabot-*.gem
-node_modules/
+/helpers/node_modules/
+/helpers/npm/node_modules/
+/helpers/yarn/node_modules/
 Gemfile.lock
