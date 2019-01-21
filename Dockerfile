@@ -49,6 +49,7 @@ RUN apt-get update \
 ### RUBY
 
 # Install Ruby 2.5, update RubyGems, and install Bundler
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
@@ -93,6 +94,7 @@ RUN npm install elm@0.18.0 \
 ### PHP
 
 # Install PHP 7.2 and Composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
