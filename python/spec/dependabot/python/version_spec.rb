@@ -33,6 +33,11 @@ RSpec.describe Dependabot::Python::Version do
     context "with an invalid version" do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
+
+      context "that includes an invalid local version" do
+        let(:version_string) { "1.0.0+abc 123" }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 

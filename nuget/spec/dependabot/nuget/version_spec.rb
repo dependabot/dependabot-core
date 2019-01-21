@@ -38,6 +38,11 @@ RSpec.describe Dependabot::Nuget::Version do
     context "with an invalid version" do
       let(:version_string) { "bad" }
       it { is_expected.to eq(false) }
+
+      context "that includes build information" do
+        let(:version_string) { "1.0.0+abc 123" }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 

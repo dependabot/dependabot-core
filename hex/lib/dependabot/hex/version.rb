@@ -18,8 +18,7 @@ module Dependabot
       def self.correct?(version)
         return false if version.nil?
 
-        version = version.to_s.split("+").first if version.to_s.include?("+")
-        super
+        version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
       def initialize(version)
