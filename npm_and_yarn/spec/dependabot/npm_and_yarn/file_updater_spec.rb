@@ -1592,6 +1592,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when scoped sub dependency version is missing" do
+        let(:manifest_fixture_name) do
+          "github_scoped_sub_dependency_version_missing.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "github_scoped_sub_dependency_version_missing.json"
+        end
+        let(:yarn_lock_fixture_name) do
+          "github_scoped_sub_dependency_version_missing.lock"
+        end
+
+        let(:dependency_name) do
+          "@dependabot/test-missing-scoped-dep-version-npm-package"
+        end
+        let(:requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-scoped-dep-version-npm-package",
+              branch: nil,
+              ref: ref
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+                   "test-missing-scoped-dep-version-npm-package",
+              branch: nil,
+              ref: old_ref
+            }
+          }]
+        end
+        let(:previous_version) { "fe5138f33735fb07891d348cd1e985fe3134211c" }
+        let(:version) { "7abd161c8eba336f06173f0a97bc8decc3cd9c2c" }
+        let(:ref) { "v1.0.4" }
+        let(:old_ref) { "v1.0.3" }
+
+        context "npm only" do
+          let(:files) { [package_json, package_lock] }
+
+          it "raises an error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::InconsistentRegistryResponse)
+          end
+        end
+
+        context "yarn only" do
+          let(:files) { [package_json, yarn_lock] }
+
+          it "raises an error" do
+            expect { updated_files }.
+              to raise_error(Dependabot::InconsistentRegistryResponse)
+          end
+        end
+      end
+
       context "when sub dependency version is missing" do
         let(:manifest_fixture_name) do
           "github_sub_dependency_version_missing.json"
@@ -1640,7 +1706,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         context "npm only" do
           let(:files) { [package_json, package_lock] }
 
-          it "raises a HelperSubprocessFailed error" do
+          it "raises an error" do
             expect { updated_files }.
               to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
           end
@@ -1649,7 +1715,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         context "yarn only" do
           let(:files) { [package_json, yarn_lock] }
 
-          it "raises a HelperSubprocessFailed error" do
+          it "raises an error" do
             expect { updated_files }.
               to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
           end
