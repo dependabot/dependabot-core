@@ -177,14 +177,16 @@ module Dependabot
             package_name =
               error.message.match(/package "(?<package_req>.*)?"/).
               named_captures["package_req"].
-              split(/(?<=\w)\@/).first
+              split(/(?<=\w)\@/).first.
+              gsub("%2f", "/")
             handle_missing_package(package_name, error, yarn_lock)
           end
 
           if error.message.match?(%r{/[^/]+: Not found})
             package_name =
               error.message.match(%r{/(?<package_name>[^/]+): Not found}).
-              named_captures["package_name"]
+              named_captures["package_name"].
+              gsub("%2f", "/")
             handle_missing_package(package_name, error, yarn_lock)
           end
 
