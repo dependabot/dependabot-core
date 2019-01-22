@@ -261,9 +261,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           to_return(status: 404, headers: json_header)
       end
 
-      it "raises a DependencyFileNotFound error" do
+      it "raises a PathDependenciesNotReachable error" do
         expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependencyFileNotFound)
+          to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+            expect(error.dependencies).to eq(["src/s3/Cargo.toml"])
+          end
       end
 
       context "for a replacement source" do
@@ -271,9 +273,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           fixture("github", "contents_cargo_manifest_replacement_path.json")
         end
 
-        it "raises a DependencyFileNotFound error" do
+        it "raises a PathDependenciesNotReachable error" do
           expect { file_fetcher_instance.files }.
-            to raise_error(Dependabot::DependencyFileNotFound)
+            to raise_error(Dependabot::PathDependenciesNotReachable) do |error|
+              expect(error.dependencies).to eq(["src/s3/Cargo.toml"])
+            end
         end
       end
 

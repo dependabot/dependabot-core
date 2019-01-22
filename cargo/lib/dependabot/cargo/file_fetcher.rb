@@ -98,33 +98,43 @@ module Dependabot
         files
       end
 
-      def fetch_path_dependency_files(
-        file:,
-        previously_fetched_files:
-      )
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
+      def fetch_path_dependency_files(file:, previously_fetched_files:)
         current_dir = file.name.split("/")[0..-2].join("/")
         current_dir = nil if current_dir == ""
+        unfetchable_required_path_deps = []
 
-        path_dependency_paths_from_file(file).flat_map do |path|
-          path = File.join(current_dir, path) unless current_dir.nil?
-          path = Pathname.new(path).cleanpath.to_path
+        path_dependency_files ||=
+          path_dependency_paths_from_file(file).flat_map do |path|
+            path = File.join(current_dir, path) unless current_dir.nil?
+            path = Pathname.new(path).cleanpath.to_path
 
-          next if previously_fetched_files.map(&:name).include?(path)
-          next if file.name == path
+            next if previously_fetched_files.map(&:name).include?(path)
+            next if file.name == path
 
-          fetched_file = fetch_file_from_host(path).
-                         tap { |f| f.support_file = true }
-          previously_fetched_files << fetched_file
-          grandchild_requirement_files =
-            fetch_path_dependency_files(
-              file: fetched_file,
-              previously_fetched_files: previously_fetched_files
-            )
-          [fetched_file, *grandchild_requirement_files]
-        rescue Dependabot::DependencyFileNotFound
-          raise if required_path?(file, path)
-        end.compact
+            fetched_file = fetch_file_from_host(path).
+                           tap { |f| f.support_file = true }
+            previously_fetched_files << fetched_file
+            grandchild_requirement_files =
+              fetch_path_dependency_files(
+                file: fetched_file,
+                previously_fetched_files: previously_fetched_files
+              )
+            [fetched_file, *grandchild_requirement_files]
+          rescue Dependabot::DependencyFileNotFound
+            next unless required_path?(file, path)
+
+            unfetchable_required_path_deps << path
+          end.compact
+
+        return path_dependency_files if unfetchable_required_path_deps.none?
+
+        raise Dependabot::PathDependenciesNotReachable,
+              unfetchable_required_path_deps
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_paths_from_file(file)
         paths = []
