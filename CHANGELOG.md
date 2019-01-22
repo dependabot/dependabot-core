@@ -1,3 +1,8 @@
+## v0.92.5, 22 January 2019
+
+- Ruby: CGI escape credentials before passing to Bundler
+- PHP: Clean Composer programmatically install
+
 ## v0.92.4, 22 January 2019
 
 - Rust: Raise PathDependenciesNotReachable errors, rather than
