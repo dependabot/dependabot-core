@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/bundler/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 

@@ -1,0 +1,18 @@
+{
+    "name": "Gemfile.lock",
+    "path": "Gemfile.lock",
+    "sha": "edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "size": 1538,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile.lock?token=ABF4KbxDYCwHdSJNkLzB_suWgDZl4os7ks5WD9kmwA%3D%3D",
+    "type": "file",
+    "content": "R0lUCiAgcmVtb3RlOiBodHRwczovL2dpdGh1Yi5jb20vZ29jYXJkbGVzcy9z\ndGF0ZXNtYW4uZ2l0CiAgcmV2aXNpb246IGFmMGU2ZmE2MGQxYTQ3OTEwNTcx\nYmEwZGIwN2Q3ZGE2ZmExOWZjZjQKICBzcGVjczoKICAgIHN0YXRlc21hbiAo\nMy4wLjApCgpQQVRICiAgcmVtb3RlOiBwbHVnaW5zL2J1bXAtY29yZQogIHNw\nZWNzOgogICAgYnVtcC1jb3JlICgwLjYuNikKICAgICAgYnVuZGxlciAoPj0g\nMS4xMi4wKQogICAgICBleGNvbiAofj4gMC41NSkKICAgICAgZ2VtbmFzaXVt\nLXBhcnNlciAofj4gMC4xKQogICAgICBnZW1zICh+PiAxLjApCiAgICAgIG9j\ndG9raXQgKH4+IDQuNikKCkdFTQogIHJlbW90ZTogaHR0cHM6Ly9ydWJ5Z2Vt\ncy5vcmcvCiAgc3BlY3M6CiAgICBhZGRyZXNzYWJsZSAoMi41LjEpCiAgICAg\nIHB1YmxpY19zdWZmaXggKH4+IDIuMCwgPj0gMi4wLjIpCiAgICBleGNvbiAo\nMC41Ny4xKQogICAgZmFyYWRheSAoMC4xMi4xKQogICAgICBtdWx0aXBhcnQt\ncG9zdCAoPj0gMS4yLCA8IDMpCiAgICBnZW1uYXNpdW0tcGFyc2VyICgwLjEu\nOSkKICAgIGdlbXMgKDEuMC4wKQogICAgICBqc29uCjw8PDw8PDwKICAgIGpz\nb24gKDIuMS4wKQo9PT09PT09CiAgICBqc29uICgyLjAuMCkKPj4+Pj4+Pgog\nICAgbXVsdGlwYXJ0LXBvc3QgKDIuMC4wKQogICAgb2N0b2tpdCAoNC43LjAp\nCiAgICAgIHNhd3llciAofj4gMC44LjAsID49IDAuNS4zKQogICAgcHVibGlj\nX3N1ZmZpeCAoMi4wLjUpCiAgICBzYXd5ZXIgKDAuOC4xKQogICAgICBhZGRy\nZXNzYWJsZSAoPj0gMi4zLjUsIDwgMi42KQogICAgICBmYXJhZGF5ICh+PiAw\nLjgsIDwgMS4wKQoKUExBVEZPUk1TCiAgcnVieQoKREVQRU5ERU5DSUVTCiAg\nYnVtcC1jb3JlIQogIHN0YXRlc21hbiEKCkJVTkRMRUQgV0lUSAogICAxLjE1\nLjE=\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+        "html": "https://github.com/gocardless/bump/blob/master/Gemfile.lock"
+    }
+}

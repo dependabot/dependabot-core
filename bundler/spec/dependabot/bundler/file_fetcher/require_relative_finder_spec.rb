@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_fetchers/ruby/bundler/require_relative_finder"
+require "dependabot/bundler/file_fetcher/require_relative_finder"
 
-RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::RequireRelativeFinder do
+RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
   let(:finder) { described_class.new(file: file) }
 
   let(:file) do

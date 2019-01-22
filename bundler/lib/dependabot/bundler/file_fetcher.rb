@@ -189,7 +189,7 @@ module Dependabot
       end
 
       def sanitized_lockfile_content
-        regex = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+        regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")
       end
 
