@@ -5,7 +5,7 @@ require "dependabot/bundler/file_parser"
 
 module Dependabot
   module Bundler
-    class FileParsers
+    class FileParser
       # Checks whether a dependency is declared in a Gemfile
       class GemfileChecker
         def initialize(dependency:, gemfile:)

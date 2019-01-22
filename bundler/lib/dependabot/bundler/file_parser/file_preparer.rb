@@ -74,7 +74,7 @@ module Dependabot
         def sanitize_gemspec_content(gemspec_content)
           # No need to set the version correctly - this is just an update
           # check so we're not going to persist any changes to the lockfile.
-          FileUpdaters::Ruby::Bundler::GemspecSanitizer.
+          FileUpdater::GemspecSanitizer.
             new(replacement_version: "0.0.1").
             rewrite(gemspec_content)
         end
