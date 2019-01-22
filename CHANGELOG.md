@@ -1,3 +1,8 @@
+## v0.92.4, 22 January 2019
+
+- Rust: Raise PathDependenciesNotReachable errors, rather than
+  DependencyFileNotFound errors
+
 ## v0.92.3, 22 January 2019
 
 - JS (npm): Fix invalid from for git sub-dependencies
