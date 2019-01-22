@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers/base"
-require "dependabot/bundler/file_fetcher/lockfile_updater"
+require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/errors"
 
 module Dependabot

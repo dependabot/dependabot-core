@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_fetchers/ruby/bundler/child_gemfile_finder"
+require "dependabot/bundler/file_fetcher/child_gemfile_finder"
 
-RSpec.describe Dependabot::FileFetchers::Ruby::Bundler::ChildGemfileFinder do
+RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
   let(:finder) { described_class.new(gemfile: gemfile) }
 
   let(:gemfile) do
