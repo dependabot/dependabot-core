@@ -1,3 +1,8 @@
+## v0.92.3, 22 January 2019
+
+- JS (npm): Fix invalid from for git sub-dependencies
+- Reduce "running as root" warnings with Docker image
+
 ## v0.92.2, 21 January 2019
 
 - Update .gitignore
