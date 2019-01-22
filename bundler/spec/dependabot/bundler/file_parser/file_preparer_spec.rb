@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_parsers/ruby/bundler/file_preparer"
+require "dependabot/bundler/file_parser/file_preparer"
 
-RSpec.describe Dependabot::FileParsers::Ruby::Bundler::FilePreparer do
+RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
   let(:preparer) { described_class.new(dependency_files: dependency_files) }
 
   let(:dependency_files) { [gemfile, lockfile] }

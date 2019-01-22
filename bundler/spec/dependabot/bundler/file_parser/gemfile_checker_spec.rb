@@ -3,9 +3,9 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
+require "dependabot/bundler/file_parser/gemfile_checker"
 
-RSpec.describe Dependabot::FileParsers::Ruby::Bundler::GemfileChecker do
+RSpec.describe Dependabot::Bundler::FileParser::GemfileChecker do
   let(:checker) do
     described_class.new(dependency: dependency, gemfile: gemfile)
   end

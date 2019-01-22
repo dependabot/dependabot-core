@@ -10,8 +10,8 @@ module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
-      require "dependabot/file_parsers/ruby/bundler/file_preparer"
-      require "dependabot/file_parsers/ruby/bundler/gemfile_checker"
+      require "dependabot/bundler/file_parser/file_preparer"
+      require "dependabot/bundler/file_parser/gemfile_checker"
 
       def parse
         dependency_set = DependencySet.new
