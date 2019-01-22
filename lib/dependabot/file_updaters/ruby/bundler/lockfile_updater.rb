@@ -77,9 +77,12 @@ module Dependabot
 
                   # Set auth details
                   relevant_credentials.each do |cred|
+                    token = cred["token"] ||
+                            "#{cred['username']}:#{cred['password']}"
+
                     ::Bundler.settings.set_command_option(
                       cred.fetch("host"),
-                      cred["token"] || "#{cred['username']}:#{cred['password']}"
+                      token.gsub("@", "%40F").gsub("?", "%3F")
                     )
                   end
 
