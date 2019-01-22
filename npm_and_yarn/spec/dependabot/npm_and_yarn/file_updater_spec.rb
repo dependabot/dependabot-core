@@ -1799,6 +1799,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
       end
+
+      context "git sub-dependency with invalid from" do
+        let(:manifest_fixture_name) { "git_sub_dep_invalid_from.json" }
+        let(:npm_lock_fixture_name) { "git_sub_dep_invalid_from.json" }
+
+        context "with a npm lockfile" do
+          let(:files) { [package_json, package_lock] }
+
+          it "cleans up from field and successfully updates" do
+            expect(updated_files.count).to eq(2)
+          end
+        end
+      end
     end
 
     ######################
