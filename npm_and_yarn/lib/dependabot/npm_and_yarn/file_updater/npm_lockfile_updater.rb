@@ -358,11 +358,7 @@ module Dependabot
 
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
 
-            if top_level_dependencies.any?
-              File.write(f.name, f.content)
-            else
-              File.write(f.name, prepared_npm_lockfile_content(f.content))
-            end
+            File.write(f.name, prepared_npm_lockfile_content(f.content))
           end
         end
 
@@ -407,6 +403,30 @@ module Dependabot
           @git_dependencies_to_lock
         end
 
+        # Note: NPM 6.6.0 started failing when a sub-dependency has a "from"
+        # field that includes the dependency name
+        #
+        # Example invalid from: "from": "bignumber.js@git+https://gi...
+        def remove_invalid_from_lines(npm_lockfile)
+          return npm_lockfile unless npm_lockfile.key?("dependencies")
+
+          dependencies =
+            npm_lockfile["dependencies"].
+            map do |k, v|
+              value =
+                if v["from"].to_s.start_with?("#{k}@")
+                  v.dup.tap do |hash|
+                    hash["from"] = hash["from"].gsub(/^#{Regexp.quote(k)}@/, "")
+                  end
+                else v
+                end
+
+              [k, remove_invalid_from_lines(value)]
+            end.to_h
+
+          npm_lockfile.merge("dependencies" => dependencies)
+        end
+
         def replace_ssh_sources(content)
           updated_content = content
 
@@ -438,9 +458,11 @@ module Dependabot
         end
 
         def prepared_npm_lockfile_content(content)
-          JSON.dump(
-            remove_dependency_from_npm_lockfile(JSON.parse(content))
-          )
+          updated_content =
+            JSON.dump(remove_dependency_from_npm_lockfile(JSON.parse(content)))
+          updated_content =
+            JSON.dump(remove_invalid_from_lines(JSON.parse(updated_content)))
+          updated_content
         end
 
         # Duplicated in SubdependencyVersionResolver
