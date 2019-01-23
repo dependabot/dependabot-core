@@ -9,8 +9,12 @@ if [ -z "$install_dir" ]; then
 fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cd "$helpers_dir"
+cp -r \
+  "$helpers_dir/npm" \
+  "$helpers_dir/yarn" \
+  "$helpers_dir/package.json" \
+  "$helpers_dir/yarn.lock" \
+  "$install_dir"
 
-cp -r npm yarn .eslintrc package.json yarn.lock "$install_dir"
 cd "$install_dir"
 yarn install
