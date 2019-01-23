@@ -156,7 +156,9 @@ module Dependabot
                                  NativeHelpers.python_requirements_path)
             end
 
-            run_poetry_command("pyenv exec poetry lock")
+            run_poetry_command(
+              "pyenv exec poetry update #{dependency.name} --lock"
+            )
 
             return File.read("poetry.lock") if File.exist?("poetry.lock")
 

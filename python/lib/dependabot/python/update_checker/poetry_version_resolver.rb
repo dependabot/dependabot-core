@@ -60,8 +60,10 @@ module Dependabot
               end
 
               # Shell out to Poetry, which handles everything for us.
-              # Calling `lock` avoids doing an install.
-              run_poetry_command("pyenv exec poetry lock")
+              # Using `--lock` avoids doing an install.
+              run_poetry_command(
+                "pyenv exec poetry update #{dependency.name} --lock"
+              )
 
               updated_lockfile =
                 if File.exist?("poetry.lock") then File.read("poetry.lock")
