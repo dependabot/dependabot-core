@@ -1,3 +1,7 @@
+## v0.92.6, 23 January 2019
+
+- Python: Use poetry update [dep-name] --lock when updating Poetry files
+
 ## v0.92.5, 22 January 2019
 
 - Ruby: CGI escape credentials before passing to Bundler
