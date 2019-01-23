@@ -10,4 +10,7 @@ fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cd "$helpers_dir"
+
+cp -r npm yarn .eslintrc package.json yarn.lock "$install_dir"
+cd "$install_dir"
 yarn install
