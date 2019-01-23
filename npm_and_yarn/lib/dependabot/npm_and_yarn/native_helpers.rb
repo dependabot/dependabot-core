@@ -8,7 +8,7 @@ module Dependabot
       end
 
       def self.npm_helpers_dir
-        File.join(native_helpers_root, "npm_and_yarn/helpers/npm")
+        File.join(native_helpers_root, "npm")
       end
 
       def self.yarn_helper_path
@@ -16,11 +16,11 @@ module Dependabot
       end
 
       def self.yarn_helpers_dir
-        File.join(native_helpers_root, "npm_and_yarn/helpers/yarn")
+        File.join(native_helpers_root, "yarn")
       end
 
       def self.native_helpers_root
-        default_path = File.join(__dir__, "../../../..")
+        default_path = File.join(__dir__, "../../../helpers")
         ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
       end
     end
