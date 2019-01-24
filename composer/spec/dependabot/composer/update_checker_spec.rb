@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:lockfile_fixture_name) { "exact_version" }
 
   before do
-    sanitized_name = dependency_name.downcase.tr("/", ":")
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture = fixture("packagist_responses", "#{sanitized_name}.json")
     url = "https://packagist.org/p/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: fixture)
