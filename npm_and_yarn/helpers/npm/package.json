@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "npm": "^6.6.0",
+    "npm": "^6.7.0",
     "semver": "^5.6.0"
   },
   "bin": {
