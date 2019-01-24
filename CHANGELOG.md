@@ -1,3 +1,8 @@
+## v0.92.7, 24 January 2019
+
+- Make python helpers obey install_dir
+- Make npm_and_yarn build script obey install_dir
+
 ## v0.92.6, 23 January 2019
 
 - Python: Use poetry update [dep-name] --lock when updating Poetry files
