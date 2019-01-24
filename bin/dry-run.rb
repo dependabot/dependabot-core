@@ -26,6 +26,7 @@
 # - hex
 # - composer
 # - nuget
+# - cake
 # - dep
 # - go_modules
 # - elm
@@ -37,6 +38,7 @@ $LOAD_PATH << "./terraform/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./cake/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./maven/lib"
@@ -57,6 +59,7 @@ require "dependabot/terraform"
 require "dependabot/docker"
 require "dependabot/git_submodules"
 require "dependabot/nuget"
+require "dependabot/cake"
 require "dependabot/gradle"
 require "dependabot/maven"
 require "dependabot/hex"

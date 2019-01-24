@@ -12,6 +12,7 @@ AllCops:
     - 'docker/**/*'
     - 'git_submodules/**/*'
     - 'nuget/**/*'
+    - 'cake/**/*'
     - 'gradle/**/*'
     - 'maven/**/*'
     - 'python/**/*'

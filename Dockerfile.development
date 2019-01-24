@@ -44,6 +44,10 @@ RUN mkdir -p /home/dependabot/dependabot-core/nuget
 COPY nuget/Gemfile nuget/dependabot-nuget.gemspec /home/dependabot/dependabot-core/nuget/
 RUN cd nuget && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/cake
+COPY cake/Gemfile cake/dependabot-cake.gemspec /home/dependabot/dependabot-core/cake/
+RUN cd cake && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/maven
 COPY maven/Gemfile maven/dependabot-maven.gemspec /home/dependabot/dependabot-core/maven/
 RUN cd maven && bundle install

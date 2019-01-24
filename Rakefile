@@ -15,6 +15,7 @@ GEMSPECS = %w(
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   nuget/dependabot-nuget.gemspec
+  cake/dependabot-cake.gemspec
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
   npm_and_yarn/dependabot-npm_and_yarn.gemspec

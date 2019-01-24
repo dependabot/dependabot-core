@@ -15,6 +15,7 @@ module Dependabot
         "docker" => { name: "docker", colour: "21ceff" },
         "terraform" => { name: "terraform", colour: "5C4EE5" },
         "nuget" => { name: ".NET", colour: "7121c6" },
+        "cake" => { name: ".NET", colour: "7121c6" },
         "maven" => { name: "java", colour: "ffa221" },
         "gradle" => { name: "java", colour: "ffa221" },
         "npm_and_yarn" => { name: "javascript", colour: "168700" },
