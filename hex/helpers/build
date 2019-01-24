@@ -8,14 +8,12 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
+if [ ! -d "$install_dir/bin" ]; then
+  mkdir -p "$install_dir/bin"
+fi
+
 mix local.hex --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cp -r \
-  "$helpers_dir/lib" \
-  "$helpers_dir/mix.exs" \
-  "$helpers_dir/mix.lock" \
-  "$install_dir"
-
-cd "$install_dir"
+cd "$helpers_dir"
 mix deps.get
