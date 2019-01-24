@@ -201,6 +201,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "with editable dependencies (that are misordered in the .txt)" do
+      let(:manifest_fixture_name) { "editable.in" }
+      let(:generated_fixture_name) { "pip_compile_editable.txt" }
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).
+          to include("-e git+https://github.com/testing-cabal/mock.git@2.0.0")
+        expect(updated_files.first.content).
+          to include("-e git+https://github.com/box/flaky.git@v3.5.3#egg=flaky")
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.3.0" }

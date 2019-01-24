@@ -259,6 +259,7 @@ module Dependabot
           update_count = 0
           original_content.lines.each do |original_line|
             next unless original_line.start_with?("-e")
+            next update_count += 1 if updated_content.include?(original_line)
 
             line_to_update =
               updated_content.lines.
