@@ -1,3 +1,8 @@
+## v0.92.8, 24 January 2019
+
+- Python: Fix for post-processing compiled files with reordered indices
+- JS: Bump npm from 6.6.0 to 6.7.0 in /npm_and_yarn/helpers
+
 ## v0.92.7, 24 January 2019
 
 - Make python helpers obey install_dir
