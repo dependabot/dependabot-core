@@ -1,3 +1,13 @@
+## v0.93.1, 25 January 2019
+
+- Merge branch 'fix-js-helper-location'
+- Log when CIRCLE_COMPARE_URL isn't set
+- Rubocop
+- Fix JS helper location
+- Merge branch 'hex-build-script-fix'
+- Fix hex build script
+- Revert "Revert "Make hex helpers obey install_dir""
+
 ## v0.93.0, 25 January 2019
 
 - Python: Bump pip from 18.1 to 19.0.1 in /python/helpers
