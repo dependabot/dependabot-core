@@ -59,6 +59,11 @@ module Dependabot
                   cmd = "pyenv exec pip-compile --allow-unsafe "\
                         "-P #{dependency.name} #{filename}"
                   run_command(cmd)
+                  # Run pip-compile a second time, without an update argument,
+                  # to ensure it handles markers correctly
+                  run_command(
+                    "pyenv exec pip-compile --allow-unsafe #{filename}"
+                  )
                 end
 
                 # Remove any .python-version file before parsing the reqs

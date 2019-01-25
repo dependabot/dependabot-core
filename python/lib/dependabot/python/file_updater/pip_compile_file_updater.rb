@@ -63,7 +63,13 @@ module Dependabot
               # This is slow, as pip-compile needs to do installs.
               run_command(
                 "pyenv exec pip-compile #{pip_compile_options(filename)} "\
-                "-P #{dependency.name} #{filename}"
+                "-P #{dependency.name}==#{dependency.version} #{filename}"
+              )
+              # Run pip-compile a second time, without an update argument, to
+              # ensure it resets the right comments.
+              run_command(
+                "pyenv exec pip-compile #{pip_compile_options(filename)} "\
+                "#{filename}"
               )
             end
 
