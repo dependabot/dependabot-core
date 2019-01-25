@@ -4,12 +4,10 @@ module Dependabot
   module Hex
     module NativeHelpers
       def self.hex_helpers_dir
-        File.join(native_helpers_root, "hex/helpers")
-      end
+        helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+        return File.join(helpers_root, "hex") unless helpers_root.nil?
 
-      def self.native_helpers_root
-        default_path = File.join(__dir__, "../../../..")
-        ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
+        File.join(__dir__, "../../../../hex/helpers")
       end
 
       def self.clean_path(path)
