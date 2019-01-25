@@ -7,7 +7,7 @@ module Dependabot
         File.join(npm_helpers_dir, "bin/run.js")
       end
 
-      def self.yarn_helpers_dir
+      def self.npm_helpers_dir
         helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
         unless helpers_root.nil?
           return File.join(helpers_root, "npm_and_yarn/npm")
@@ -15,7 +15,6 @@ module Dependabot
 
         File.join(default_helpers_dir, "npm")
       end
-
 
       def self.yarn_helper_path
         File.join(yarn_helpers_dir, "bin/run.js")
