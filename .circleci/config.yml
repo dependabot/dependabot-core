@@ -72,11 +72,19 @@ jobs:
 
       - run:
           name: Rubocop
-          command: docker run -ti dependabot/dependabot-core-ci bash -c "rake ci:rubocop"
+          command: |
+            docker run \
+              -ti dependabot/dependabot-core-ci \
+              --env "CIRCLE_COMPARE_URL=$CIRCLE_COMPARE_URL" \
+              bash -c "rake ci:rubocop"
 
       - run:
           name: RSpec
-          command: docker run -ti dependabot/dependabot-core-ci bash -c "rake ci:rspec"
+          command: |
+            docker run \
+              -ti dependabot/dependabot-core-ci \
+              --env "CIRCLE_COMPARE_URL=$CIRCLE_COMPARE_URL" \
+              bash -c "rake ci:rspec"
 
       - run:
           name: Push dependabot-core image to Docker hub, if on master

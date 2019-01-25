@@ -117,7 +117,7 @@ def changed_packages
 
   range = ENV["CIRCLE_COMPARE_URL"].split("/").last
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
-                  config helpers lib spec)
+                  config helpers lib spec .circleci)
   core_changed = commit_range_changes_paths?(range, core_paths)
 
   packages = all_packages.select do |package|
