@@ -331,11 +331,13 @@ RSpec.describe Dependabot::Docker::FileParser do
 
               context "that are invalid" do
                 before do
-                  stub_request(:post, "https://ecr.eu-west-2.amazonaws.com/").
-                    and_return(
-                      status: 403,
-                      body: fixture("docker", "ecr_responses", "invalid_token")
-                    )
+                  stub_request(
+                    :post,
+                    "https://api.ecr.eu-west-2.amazonaws.com/"
+                  ).and_return(
+                    status: 403,
+                    body: fixture("docker", "ecr_responses", "invalid_token")
+                  )
                 end
 
                 it "raises a PrivateSourceAuthenticationFailure error" do
@@ -350,11 +352,13 @@ RSpec.describe Dependabot::Docker::FileParser do
 
               context "that are valid" do
                 before do
-                  stub_request(:post, "https://ecr.eu-west-2.amazonaws.com/").
-                    and_return(
-                      status: 200,
-                      body: fixture("docker", "ecr_responses", "auth_data")
-                    )
+                  stub_request(
+                    :post,
+                    "https://api.ecr.eu-west-2.amazonaws.com/"
+                  ).and_return(
+                    status: 200,
+                    body: fixture("docker", "ecr_responses", "auth_data")
+                  )
                 end
 
                 its(:length) { is_expected.to eq(1) }
