@@ -74,16 +74,16 @@ jobs:
           name: Rubocop
           command: |
             docker run \
-              -ti dependabot/dependabot-core-ci \
               --env "CIRCLE_COMPARE_URL=$CIRCLE_COMPARE_URL" \
+              -ti dependabot/dependabot-core-ci \
               bash -c "rake ci:rubocop"
 
       - run:
           name: RSpec
           command: |
             docker run \
-              -ti dependabot/dependabot-core-ci \
               --env "CIRCLE_COMPARE_URL=$CIRCLE_COMPARE_URL" \
+              -ti dependabot/dependabot-core-ci \
               bash -c "rake ci:rspec"
 
       - run:
