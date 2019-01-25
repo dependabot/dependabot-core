@@ -1,3 +1,8 @@
+## v0.93.0, 25 January 2019
+
+- Python: Bump pip from 18.1 to 19.0.1 in /python/helpers
+- Python: Bump pip-tools from 3.1.0 to 3.3.1 in /python/helpers
+
 ## v0.92.8, 24 January 2019
 
 - Python: Fix for post-processing compiled files with reordered indices
