@@ -110,7 +110,10 @@ def changed_packages
   all_packages = GEMSPECS.
                  select { |gs| gs.include?("/") }.
                  map { |gs| "./" + gs.split("/").first }
-  return all_packages if ENV["CIRCLE_COMPARE_URL"].nil?
+  if ENV["CIRCLE_COMPARE_URL"].nil?
+    warn "CIRCLE_COMPARE_URL not set, so changed packages can't be calculated"
+    return all_packages
+  end
 
   range = ENV["CIRCLE_COMPARE_URL"].split("/").last
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
