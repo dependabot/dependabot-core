@@ -126,7 +126,8 @@ def changed_packages
     commit_range_changes_paths?(range, [package])
   end
 
-  packages.insert(0, "./") if core_changed
+  # TODO: uncomment or remove this once core is split out into its own package
+  # packages.insert(0, "./") if core_changed
   packages
 end
 
