@@ -43,6 +43,7 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true
   });
+
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
   const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
@@ -58,6 +59,16 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   const unmute = muteStderr();
   try {
     await runAsync(initialInstaller, initialInstaller.run, []);
+
+    const intermediaryLockfile = JSON.parse(readFile(lockfileName));
+    const updatedIntermediaryLockfile = removeInvalidGitUrls(
+      intermediaryLockfile
+    );
+    fs.writeFileSync(
+      path.join(directory, lockfileName),
+      JSON.stringify(updatedIntermediaryLockfile, null, 2)
+    );
+
     await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
@@ -96,6 +107,52 @@ function installArgs(depName, desiredVersion, requirements, oldPackage) {
   } else {
     return `${depName}@${desiredVersion}`;
   }
+}
+
+// Note: Fixes bugs introduced in npm 6.6.0 for the following cases:
+//
+// - Fails when a sub-dependency has a "from" field that includes the dependency
+//   name for git dependencies (e.g. "bignumber.js@git+https://gi...)
+// - Fails when updating a npm@5 lockfile with git sub-dependencies, resulting
+//   in invalid "requires" that include the dependency name for git dependencies
+//   (e.g. "bignumber.js": "bignumber.js@git+https://gi...)
+function removeInvalidGitUrls(lockfile) {
+  if (!lockfile.dependencies) return lockfile;
+
+  const dependencies = Object.keys(lockfile.dependencies).reduce((acc, key) => {
+    let value = removeInvalidGitUrlsInFrom(lockfile.dependencies[key], key);
+    value = removeInvalidGitUrlsInRequires(value);
+    acc[key] = removeInvalidGitUrls(value);
+    return acc;
+  }, {});
+
+  return Object.assign({}, lockfile, { dependencies });
+}
+
+function removeInvalidGitUrlsInFrom(value, dependencyName) {
+  const matchKey = new RegExp(`^${dependencyName}@`);
+  let from = value.from;
+  if (value.from && value.from.match(matchKey)) {
+    from = value.from.replace(matchKey, "");
+  }
+
+  return Object.assign({}, value, { from });
+}
+
+function removeInvalidGitUrlsInRequires(value) {
+  if (!value.requires) return value;
+
+  const requires = Object.keys(value.requires).reduce((acc, reqKey) => {
+    let reqValue = value.requires[reqKey];
+    const requiresMatchKey = new RegExp(`^${reqKey}@`);
+    if (reqValue && reqValue.match(requiresMatchKey)) {
+      reqValue = reqValue.replace(requiresMatchKey, "");
+    }
+    acc[reqKey] = reqValue;
+    return acc;
+  }, {});
+
+  return Object.assign({}, value, { requires });
 }
 
 module.exports = { updateDependencyFiles };
