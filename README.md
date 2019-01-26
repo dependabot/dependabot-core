@@ -47,11 +47,10 @@ Before running Dependabot Core, install dependencies for the core library and
 the helpers:
 
 1. `bundle install`
-2. `cd helpers/yarn && yarn install --production && cd -`
-3. `cd helpers/npm && npm install --production && cd -`
-4. `cd composer/helpers && composer install --no-dev && cd -`
-5. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
-6. `cd elixir/helpers && mix deps.get && cd -`
+2. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+3. `cd composer/helpers && composer install --no-dev && cd -`
+4. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
+5. `cd elixir/helpers && mix deps.get && cd -`
 
 ## Architecture
 
