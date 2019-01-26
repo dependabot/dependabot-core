@@ -1809,6 +1809,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "cleans up from field and successfully updates" do
             expect(updated_files.count).to eq(2)
+
+            parsed_lockfile = JSON.parse(updated_npm_lock.content)
+            expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+              to eq("0.0.2")
+          end
+        end
+
+        context "that is updating from an npm5 lockfile (extra problems!)" do
+          let(:manifest_fixture_name) { "git_sub_dep_invalid_npm5.json" }
+          let(:npm_lock_fixture_name) { "git_sub_dep_invalid_npm5.json" }
+
+          context "with a npm lockfile" do
+            let(:files) { [package_json, package_lock] }
+
+            it "cleans up from field and successfully updates" do
+              expect(updated_files.count).to eq(2)
+
+              updated_fetch_factory_version =
+                JSON.parse(updated_npm_lock.content).
+                fetch("dependencies")["fetch-factory"]["version"]
+              expect(updated_fetch_factory_version).to eq("0.0.2")
+            end
           end
         end
       end
