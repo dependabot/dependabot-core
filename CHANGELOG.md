@@ -1,3 +1,8 @@
+## v0.93.2, 26 January 2019
+
+- Python: Handle Poetry sub-deps that should be removed from the lockfile
+- JS: Fix bug when updating npm@5 lockfile w/ npm@6.6.0
+
 ## v0.93.1, 25 January 2019
 
 - Merge branch 'fix-js-helper-location'
