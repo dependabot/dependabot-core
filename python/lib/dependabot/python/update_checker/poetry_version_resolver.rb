@@ -79,9 +79,14 @@ module Dependabot
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
-          updated_lockfile.fetch("package", []).
-            find { |d| d["name"] == dependency.name }.
+          version =
+            updated_lockfile.fetch("package", []).
+            find { |d| d["name"] == dependency.name }&.
             fetch("version")
+
+          return version unless version.nil? && dependency.top_level?
+
+          raise "No version in lockfile!"
         end
 
         def write_temporary_dependency_files(update_pyproject: true)

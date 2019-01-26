@@ -1,0 +1,72 @@
+[[package]]
+category = "main"
+description = "Python package for providing Mozilla's CA Bundle."
+name = "certifi"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "2018.4.16"
+
+[[package]]
+category = "dev"
+description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
+marker = "python_version < \"3\" and extra == \"secure\""
+name = "cryptography"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
+version = "2.4.2"
+
+[[package]]
+category = "main"
+description = "Universal encoding detector for Python 2 and 3"
+name = "chardet"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "3.0.4"
+
+[[package]]
+category = "main"
+description = "Internationalized Domain Names in Applications (IDNA)"
+name = "idna"
+optional = false
+platform = "UNKNOWN"
+python-versions = "*"
+version = "2.5"
+
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "2.18.0"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+chardet = ">=3.0.2,<3.1.0"
+idna = ">=2.5,<2.6"
+urllib3 = ">=1.21.1,<1.22"
+
+[[package]]
+category = "main"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "urllib3"
+optional = false
+platform = "*"
+python-versions = "*"
+version = "1.21.1"
+
+[metadata]
+content-hash = "a8d5762e953227a34625a209e9cc67a1c6fb2d7a971845829cf2f9cf61a5bd7c"
+platform = "*"
+python-versions = "^3.6"
+
+[metadata.hashes]
+certifi = ["13e698f54293db9f89122b0581843a782ad0934a4fe0172d2a980ba77fc61bb7", "9fa520c1bacfb634fa7af20a76bcbd3d5fb390481724c597da32c719a7dca4b0"]
+chardet = ["84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae", "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"]
+cryptography = ["05a6052c6a9f17ff78ba78f8e6eb1d777d25db3b763343a1ae89a7a8670386dd", "0eb83a24c650a36f68e31a6d0a70f7ad9c358fa2506dc7b683398b92e354a038", "0ff4a3d6ea86aa0c9e06e92a9f986de7ee8231f36c4da1b31c61a7e692ef3378", "1699f3e916981df32afdd014fb3164db28cdb61c757029f502cb0a8c29b2fdb3", "1b1f136d74f411f587b07c076149c4436a169dc19532e587460d9ced24adcc13", "21e63dd20f5e5455e8b34179ac43d95b3fb1ffa54d071fd2ed5d67da82cfe6dc", "2454ada8209bbde97065453a6ca488884bbb263e623d35ba183821317a58b46f", "3cdc5f7ca057b2214ce4569e01b0f368b3de9d8ee01887557755ccd1c15d9427", "418e7a5ec02a7056d3a4f0c0e7ea81df374205f25f4720bb0e84189aa5fd2515", "471a097076a7c4ab85561d7fa9a1239bd2ae1f9fd0047520f13d8b340bf3210b", "5ecaf9e7db3ca582c6de6229525d35db8a4e59dc3e8a40a331674ed90e658cbf", "63b064a074f8dc61be81449796e2c3f4e308b6eba04a241a5c9f2d05e882c681", "6afe324dfe6074822ccd56d80420df750e19ac30a4e56c925746c735cf22ae8b", "70596e90398574b77929cd87e1ac6e43edd0e29ba01e1365fed9c26bde295aa5", "70c2b04e905d3f72e2ba12c58a590817128dfca08949173faa19a42c824efa0b", "8908f1db90be48b060888e9c96a0dee9d842765ce9594ff6a23da61086116bb6", "af12dfc9874ac27ebe57fc28c8df0e8afa11f2a1025566476b0d50cdb8884f70", "b4fc04326b2d259ddd59ed8ea20405d2e695486ab4c5e1e49b025c484845206e", "da5b5dda4aa0d5e2b758cc8dfc67f8d4212e88ea9caad5f61ba132f948bab859"]
+idna = ["3cb5ce08046c4e3a560fc02f138d0ac63e00f8ce5901a56b32ec8b7994082aab", "cc19709fd6d0cbfed39ea875d29ba6d4e22c0cebc510a76d6302a28385e8bb70"]
+requests = ["5e88d64aa56ac0fda54e77fb9762ebc65879e171b746d5479a33c4082519d6c6", "cd0189f962787284bff715fddaad478eb4d9c15aa167bd64e52ea0f661e7ea5c"]
+urllib3 = ["8ed6d5c1ff9d6ba84677310060d6a3a78ca3072ce0684cb3c645023009c114b1", "b14486978518ca0901a76ba973d7821047409d7f726f22156b24e83fd71382a5"]

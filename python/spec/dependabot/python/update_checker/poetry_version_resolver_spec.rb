@@ -113,6 +113,16 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       # Resolution blocked by requests
       it { is_expected.to eq(Gem::Version.new("2.5")) }
+
+      context "that shouldn't be in the lockfile at all" do
+        let(:dependency_name) { "cryptography" }
+        let(:dependency_version) { "2.4.2" }
+        let(:dependency_requirements) { [] }
+        let(:latest_version) { Gem::Version.new("2.5") }
+        let(:lockfile_fixture_name) { "extra_dependency.lock" }
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a legacy Python" do
