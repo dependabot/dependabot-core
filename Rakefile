@@ -116,6 +116,8 @@ def changed_packages
   end
 
   range = ENV["CIRCLE_COMPARE_URL"].split("/").last
+  puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
+
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
                   config helpers lib spec .circleci)
   core_changed = commit_range_changes_paths?(range, core_paths)
@@ -123,7 +125,13 @@ def changed_packages
   packages = all_packages.select do |package|
     next true if core_changed
 
-    commit_range_changes_paths?(range, [package])
+    if commit_range_changes_paths?(range, [package])
+      puts "Commit range changes #{package}"
+      true
+    else
+      puts "Commit range doesn't change #{package}"
+      false
+    end
   end
 
   # TODO: uncomment or remove this once core is split out into its own package
