@@ -1,3 +1,7 @@
+## v0.93.4, 27 January 2019
+
+- Maven: Substitute properties in the URL when fetching a parent POM file
+
 ## v0.93.3, 27 January 2019
 
 - Python: Handle fetching gzipped path dependencies
