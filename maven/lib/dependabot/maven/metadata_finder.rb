@@ -55,12 +55,12 @@ module Dependabot
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         source_url ||= source_from_anywhere_in_pom(pom)
-        source_url = substitute_property_in_source_url(source_url, pom)
+        source_url = substitute_properties_in_source_url(source_url, pom)
 
         Source.from_url(source_url)
       end
 
-      def substitute_property_in_source_url(source_url, pom)
+      def substitute_properties_in_source_url(source_url, pom)
         return unless source_url
         return source_url unless source_url.include?("${")
 
@@ -81,7 +81,8 @@ module Dependabot
             nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
           end
 
-        source_url.gsub(source_url.match(regex).to_s, property_value)
+        url = source_url.gsub(source_url.match(regex).to_s, property_value)
+        substitute_properties_in_source_url(url, pom)
       end
 
       def source_from_anywhere_in_pom(pom)
@@ -124,10 +125,12 @@ module Dependabot
 
         return unless artifact_id && group_id && version
 
+        url = "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"\
+              "#{version}/"\
+              "#{artifact_id}-#{version}.pom"
+
         response = Excon.get(
-          "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"\
-          "#{version}/"\
-          "#{artifact_id}-#{version}.pom",
+          substitute_properties_in_source_url(url, pom),
           headers: auth_details,
           idempotent: true,
           **SharedHelpers.excon_defaults
