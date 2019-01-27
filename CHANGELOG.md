@@ -1,3 +1,7 @@
+## v0.93.5, 27 January 2019
+
+- Maven: Handle case where property value can't be found in MetadataFinder
+
 ## v0.93.4, 27 January 2019
 
 - Maven: Substitute properties in the URL when fetching a parent POM file
