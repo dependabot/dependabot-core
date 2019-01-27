@@ -1,3 +1,7 @@
+## v0.93.3, 27 January 2019
+
+- Python: Handle fetching gzipped path dependencies
+
 ## v0.93.2, 26 January 2019
 
 - Python: Handle Poetry sub-deps that should be removed from the lockfile
