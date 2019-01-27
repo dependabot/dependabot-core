@@ -81,7 +81,7 @@ module Dependabot
             nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
           end
 
-        url = source_url.gsub(source_url.match(regex).to_s, property_value)
+        url = source_url.gsub(source_url.match(regex).to_s, property_value.to_s)
         substitute_properties_in_source_url(url, pom)
       end
 

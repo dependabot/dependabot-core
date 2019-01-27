@@ -151,6 +151,26 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           expect(WebMock).to have_requested(:get, maven_url).once
         end
       end
+
+      context "and the parent details include a variable" do
+        let(:maven_response) do
+          fixture("poms", "okhttp-3.10.0-bad-variable.xml")
+        end
+        let(:parent_url) do
+          "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
+          "parent//parent-.pom"
+        end
+        before do
+          stub_request(:get, parent_url).to_return(status: 404, body: "")
+        end
+
+        it { is_expected.to be_nil }
+
+        it "caches the call to maven" do
+          2.times { source_url }
+          expect(WebMock).to have_requested(:get, maven_url).once
+        end
+      end
     end
 
     context "when the github link includes a property" do
