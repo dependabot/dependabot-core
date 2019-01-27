@@ -685,13 +685,20 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "some/zip-file.tar.gz?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
           end
 
           it "fetches the path dependencies" do
             expect(file_fetcher_instance.files.map(&:name)).
               to match_array(
                 %w(requirements.txt setup.py my/setup.py my-single/setup.py
-                   my-other/setup.py my-other/setup.cfg)
+                   my-other/setup.py my-other/setup.cfg some/zip-file.tar.gz)
               )
           end
         end

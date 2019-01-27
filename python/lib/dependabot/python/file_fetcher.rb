@@ -232,28 +232,38 @@ module Dependabot
         unfetchable_files = []
 
         path_setup_file_paths.each do |path|
-          path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
-          next if path == "setup.py" && setup_file
-
-          begin
-            path_setup_files << fetch_file_from_host(path).
-                                tap { |f| f.support_file = true }
-          rescue Dependabot::DependencyFileNotFound
-            unfetchable_files << path
-          end
-
-          begin
-            cfg_path = path.gsub(/\.py$/, ".cfg")
-            path_setup_files << fetch_file_from_host(cfg_path).
-                                tap { |f| f.support_file = true }
-          rescue Dependabot::DependencyFileNotFound
-            # Ignore lack of a setup.cfg
-            nil
-          end
+          path_setup_files += fetch_path_setup_file(path)
+        rescue Dependabot::DependencyFileNotFound => error
+          unfetchable_files << error.file_path.gsub(%r{^/}, "")
         end
 
         if unfetchable_files.any?
           raise Dependabot::PathDependenciesNotReachable, unfetchable_files
+        end
+
+        path_setup_files
+      end
+
+      def fetch_path_setup_file(path)
+        path_setup_files = []
+
+        unless path.end_with?(".tar.gz")
+          path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
+        end
+        return [] if path == "setup.py" && setup_file
+
+        path_setup_files << fetch_file_from_host(path).
+                            tap { |f| f.support_file = true }
+
+        return path_setup_files unless path.end_with?(".py")
+
+        begin
+          cfg_path = path.gsub(/\.py$/, ".cfg")
+          path_setup_files << fetch_file_from_host(cfg_path).
+                              tap { |f| f.support_file = true }
+        rescue Dependabot::DependencyFileNotFound
+          # Ignore lack of a setup.cfg
+          nil
         end
 
         path_setup_files
@@ -275,27 +285,39 @@ module Dependabot
       end
 
       def path_setup_file_paths
-        requirement_txt_path_setup_file_paths + pipfile_path_setup_file_paths
+        requirement_txt_path_setup_file_paths +
+          requirement_in_path_setup_file_paths +
+          pipfile_path_setup_file_paths
       end
 
       def requirement_txt_path_setup_file_paths
-        (requirements_txt_files + child_requirement_txt_files).map do |req_file|
-          uneditable_reqs =
-            req_file.content.
-            scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
-            flatten.
-            map(&:strip).
-            reject { |p| p.include?("://") }
+        (requirements_txt_files + child_requirement_txt_files).
+          map { |req_file| parse_path_setup_paths(req_file) }.
+          flatten.uniq
+      end
 
-          editable_reqs =
-            req_file.content.
-            scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
-            flatten.
-            map(&:strip).
-            reject { |p| p.include?("://") }
+      def requirement_in_path_setup_file_paths
+        requirements_in_files.
+          map { |req_file| parse_path_setup_paths(req_file) }.
+          flatten.uniq
+      end
 
-          uneditable_reqs + editable_reqs
-        end.flatten.uniq
+      def parse_path_setup_paths(req_file)
+        uneditable_reqs =
+          req_file.content.
+          scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
+          flatten.
+          map(&:strip).
+          reject { |p| p.include?("://") }
+
+        editable_reqs =
+          req_file.content.
+          scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
+          flatten.
+          map(&:strip).
+          reject { |p| p.include?("://") }
+
+        uneditable_reqs + editable_reqs
       end
 
       def pipfile_path_setup_file_paths
