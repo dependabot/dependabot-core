@@ -99,10 +99,10 @@ module Dependabot
 
         def prepared_pyproject
           content = updated_pyproject_content
+          content = sanitize(content)
           content = freeze_other_dependencies(content)
           content = freeze_dependencies_being_updated(content)
           content = add_private_sources(content)
-          content = sanitize(content)
           content
         end
 

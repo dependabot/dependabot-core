@@ -25,7 +25,9 @@ module Dependabot
 
         def sanitize
           # {{ name }} syntax not allowed
-          pyproject_content.gsub(/\{\{.*?\}\}/, "something")
+          pyproject_content.
+            gsub(/\{\{.*?\}\}/, "something").
+            delete("#")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

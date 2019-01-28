@@ -47,6 +47,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it "replaces the {{ name }} variable" do
         expect(sanitized_content).to include('name = "something"')
       end
+
+      it "replaces the # symbol" do
+        expect(sanitized_content).to include("Various {small} python projects.")
+      end
     end
   end
 

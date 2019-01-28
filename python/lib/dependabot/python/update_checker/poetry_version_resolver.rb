@@ -133,8 +133,14 @@ module Dependabot
 
         def updated_pyproject_content
           content = pyproject.content
+          puts "====="
+          puts content
           content = sanitize_pyproject_content(content)
+          puts "====="
+          puts content
           content = freeze_other_dependencies(content)
+          puts "====="
+          puts content
           content = unlock_target_dependency(content) if unlock_requirement?
           content
         end
