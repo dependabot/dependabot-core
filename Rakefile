@@ -110,12 +110,15 @@ def changed_packages
   all_packages = GEMSPECS.
                  select { |gs| gs.include?("/") }.
                  map { |gs| "./" + gs.split("/").first }
-  if ENV["CIRCLE_COMPARE_URL"].nil?
+
+  compare_url = ENV["CIRCLE_COMPARE_URL"]
+  if compare_url.nil?
     warn "CIRCLE_COMPARE_URL not set, so changed packages can't be calculated"
     return all_packages
   end
+  puts "CIRCLE_COMPARE_URL: #{compare_url}"
 
-  range = ENV["CIRCLE_COMPARE_URL"].split("/").last
+  range = compare_url.split("/").last
   puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
 
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
