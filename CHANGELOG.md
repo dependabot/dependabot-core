@@ -1,3 +1,7 @@
+## v0.93.7, 28 January 2019
+
+- Python: Fix sanitization and remove puts calls
+
 ## v0.93.6, 28 January 2019
 
 - Python: Sanitize # symbols in pyproject.toml files
