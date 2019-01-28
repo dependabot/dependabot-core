@@ -27,7 +27,7 @@ module Dependabot
           # {{ name }} syntax not allowed
           pyproject_content.
             gsub(/\{\{.*?\}\}/, "something").
-            delete("#")
+            gsub('#{', "{")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
