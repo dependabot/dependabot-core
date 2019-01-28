@@ -1,3 +1,8 @@
+## v0.93.6, 28 January 2019
+
+- Python: Sanitize # symbols in pyproject.toml files
+- Python: Bump pip-tools from 3.3.1 to 3.3.2 in /python/helpers
+
 ## v0.93.5, 27 January 2019
 
 - Maven: Handle case where property value can't be found in MetadataFinder
