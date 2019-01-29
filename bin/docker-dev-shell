@@ -114,5 +114,9 @@ docker run --rm -ti \
   -v "$(pwd)/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
   -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
   -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
+  -v "$(pwd)/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
+  -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
+  -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
+  -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

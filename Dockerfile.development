@@ -75,3 +75,7 @@ RUN cd npm_and_yarn && bundle install
 RUN mkdir -p /home/dependabot/dependabot-core/composer
 COPY composer/Gemfile composer/dependabot-composer.gemspec /home/dependabot/dependabot-core/composer/
 RUN cd composer && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/bundler
+COPY bundler/Gemfile bundler/dependabot-bundler.gemspec /home/dependabot/dependabot-core/bundler/
+RUN cd bundler && bundle install
