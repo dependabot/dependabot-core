@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/ruby/bundler"
-
 module Dependabot
   module UpdateCheckers
-    @update_checkers = {
-      "bundler" => UpdateCheckers::Ruby::Bundler
-    }
+    @update_checkers = {}
 
     def self.for_package_manager(package_manager)
       update_checker = @update_checkers[package_manager]

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/errors"
@@ -211,3 +212,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileFetchers.register("bundler", Dependabot::Bundler::FileFetcher)

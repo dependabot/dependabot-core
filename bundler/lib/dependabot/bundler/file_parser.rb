@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/shared_helpers"
@@ -290,3 +291,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.
+  register("bundler", Dependabot::Bundler::FileParser)

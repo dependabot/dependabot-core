@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/git_commit_checker"
@@ -327,3 +328,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.
+  register("bundler", Dependabot::Bundler::UpdateChecker)

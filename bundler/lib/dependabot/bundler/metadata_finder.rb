@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
@@ -198,3 +199,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::MetadataFinders.
+  register("bundler", Dependabot::Bundler::MetadataFinder)
