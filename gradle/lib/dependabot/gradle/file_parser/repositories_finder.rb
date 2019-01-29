@@ -84,15 +84,15 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            if block.include?(" google(")
+            if block.match?(/\sgoogle\(/)
               repository_urls << "https://maven.google.com/"
             end
 
-            if block.include?(" mavenCentral(")
+            if block.match?(/\smavenCentral\(/)
               repository_urls << "https://repo.maven.apache.org/maven2/"
             end
 
-            if block.include?(" jcenter(")
+            if block.match?(/\sjcenter\(/)
               repository_urls << "https://jcenter.bintray.com/"
             end
 
