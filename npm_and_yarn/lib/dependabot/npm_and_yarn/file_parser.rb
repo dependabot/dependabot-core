@@ -197,29 +197,49 @@ module Dependabot
         requirement.match?(GIT_URL_REGEX)
       end
 
+      def git_url_with_semver?(requirement)
+        return false unless git_url?(requirement)
+
+        !requirement.match(GIT_URL_REGEX).named_captures.fetch("semver").nil?
+      end
+
       def workspace_package_names
         @workspace_package_names ||=
           package_files.map { |f| JSON.parse(f.content)["name"] }.compact
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
       def version_for(name, requirement)
+        if git_url_with_semver?(requirement)
+          semver_version_for(name, requirement) ||
+            git_revision_for(name, requirement)
+        elsif git_url?(requirement)
+          git_revision_for(name, requirement)
+        else
+          semver_version_for(name, requirement)
+        end
+      end
+
+      def git_revision_for(name, requirement)
+        return unless git_url?(requirement)
+
         lock_version = lockfile_details(name, requirement)&.
                        fetch("version", nil)
         lock_res     = lockfile_details(name, requirement)&.
                        fetch("resolved", nil)
 
-        if git_url?(requirement)
-          return lock_version.split("#").last if lock_version&.include?("#")
-          return lock_res.split("#").last if lock_res&.include?("#")
+        return lock_version.split("#").last if lock_version&.include?("#")
+        return lock_res.split("#").last if lock_res&.include?("#")
 
-          if lock_res && lock_res.split("/").last.match?(/^[0-9a-f]{40}$/)
-            return lock_res.split("/").last
-          end
-
-          return nil
+        if lock_res && lock_res.split("/").last.match?(/^[0-9a-f]{40}$/)
+          return lock_res.split("/").last
         end
+
+        nil
+      end
+
+      def semver_version_for(name, requirement)
+        lock_version = lockfile_details(name, requirement)&.
+                       fetch("version", nil)
 
         return unless lock_version
         return if lock_version.include?("://")
@@ -229,8 +249,6 @@ module Dependabot
 
         lock_version
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def source_for(name, requirement)
         return git_source_for(requirement) if git_url?(requirement)

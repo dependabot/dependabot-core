@@ -650,6 +650,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:ref) { "master" }
         let(:old_req) { "^2.0.0" }
         let(:old_ref) { "master" }
+        let(:previous_version) { "2.0.2" }
+        let(:version) { "4.0.0" }
 
         let(:manifest_fixture_name) { "github_dependency_semver.json" }
         let(:yarn_lock_fixture_name) { "github_dependency_semver.lock" }

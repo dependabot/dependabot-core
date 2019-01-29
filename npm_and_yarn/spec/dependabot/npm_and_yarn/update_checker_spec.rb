@@ -331,10 +331,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       context "with a requirement" do
         let(:ref) { "master" }
         let(:req) { "^2.0.0" }
+        let(:current_version) { "2.0.2" }
 
-        it "fetches the latest SHA-1 hash of the latest version tag" do
-          expect(checker.latest_version).
-            to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+        it "fetches the latest version tag" do
+          expect(checker.latest_version).to eq("4.0.0")
         end
 
         context "but there are no tags" do
