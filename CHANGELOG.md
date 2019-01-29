@@ -1,3 +1,7 @@
+## v0.93.10, 29 January 2019
+
+- JS: Parse the semver version, rather than the git SHA, for git reqs with a semver specification
+
 ## v0.93.9, 29 January 2019
 
 - Python: Handle Apache Airflow 1.10.x installs with pip-compile
