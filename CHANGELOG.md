@@ -1,3 +1,7 @@
+## v0.93.8, 29 January 2019
+
+- Maven: Update dot separator regex
+
 ## v0.93.7, 28 January 2019
 
 - Python: Fix sanitization and remove puts calls
