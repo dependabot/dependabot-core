@@ -1,3 +1,7 @@
+## v0.93.9, 29 January 2019
+
+- Python: Handle Apache Airflow 1.10.x installs with pip-compile
+
 ## v0.93.8, 29 January 2019
 
 - Maven: Update dot separator regex
