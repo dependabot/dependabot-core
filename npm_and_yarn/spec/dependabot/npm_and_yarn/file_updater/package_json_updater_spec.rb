@@ -304,7 +304,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "is-number",
-            version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+            version: "4.0.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               requirement: "^4.0.0",

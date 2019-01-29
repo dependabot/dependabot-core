@@ -771,9 +771,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("is-number") }
-            its(:version) do
-              is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
-            end
+            its(:version) { is_expected.to eq("2.0.2") }
             its(:requirements) do
               is_expected.to eq(
                 [{
@@ -802,9 +800,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
-              its(:version) do
-                is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
-              end
+              its(:version) { is_expected.to eq("2.0.2") }
               its(:requirements) do
                 is_expected.to eq(
                   [{

@@ -137,6 +137,8 @@ module Dependabot
             # or that the current branch is behind, we switch to that release.
             if git_branch_or_ref_in_release?(latest_release&.fetch(:version))
               latest_release.fetch(:version)
+            elsif version_class.correct?(dependency.version)
+              latest_git_version_details[:version]
             else
               latest_git_version_details[:sha]
             end
