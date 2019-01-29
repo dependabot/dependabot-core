@@ -142,8 +142,9 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         def run_command(command)
           command = command.dup
+          env_cmd = [python_env, command].compact
           start = Time.now
-          stdout, process = Open3.capture2e(command)
+          stdout, process = Open3.capture2e(*env_cmd)
           time_taken = start - Time.now
 
           # Raise an error with the output from the shell session if
@@ -176,6 +177,21 @@ module Dependabot
           FileUtils.remove_entry(".python-version", true)
         end
         # rubocop:enable Metrics/MethodLength
+
+        def python_env
+          env = {}
+
+          # Handle Apache Airflow 1.10.x installs
+          if dependency_files.any? { |f| f.content.include?("apache-airflow") }
+            if dependency_files.any? { |f| f.content.include?("unidecode") }
+              env["AIRFLOW_GPL_UNIDECODE"] = "yes"
+            else
+              env["SLUGIFY_USES_TEXT_UNIDECODE"] = "yes"
+            end
+          end
+
+          env
+        end
 
         def error_suggests_bad_python_version?(message)
           return true if message.include?("not find a version that satisfies")
