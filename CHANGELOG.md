@@ -1,3 +1,7 @@
+## v0.93.11, 29 January 2019
+
+- Gradle: Handle tabs when looking for repositories
+
 ## v0.93.10, 29 January 2019
 
 - JS: Parse the semver version, rather than the git SHA, for git reqs with a semver specification
