@@ -120,6 +120,10 @@ def changed_packages
 
   range = compare_url.split("/").last
   puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
+  unless range.include?("..")
+    warn "Invalid commit range, so changed packages can't be calculated"
+    return all_packages
+  end
 
   core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
                   config helpers lib spec .circleci)
