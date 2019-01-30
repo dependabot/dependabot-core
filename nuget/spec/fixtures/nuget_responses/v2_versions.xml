@@ -91,7 +91,6 @@
             <d:PackageHash>FH4NIoVIkQgIFfiOHjFbb+s7qHQz/JoS830jGCHkaBmMJsJCG52a64wEp9bBN2RhfFRDWflIXb6N4b9B12nhXw==</d:PackageHash>
             <d:PackageHashAlgorithm>SHA512</d:PackageHashAlgorithm>
             <d:PackageSize m:type="Edm.Int64">424300</d:PackageSize>
-            <d:ProjectUrl>http://autofac.org/</d:ProjectUrl>
             <d:ReportAbuseUrl>https://www.nuget.org/packages/Autofac/2.4.5.724/ReportAbuse</d:ReportAbuseUrl>
             <d:ReleaseNotes m:null="true" />
             <d:RequireLicenseAcceptance m:type="Edm.Boolean">false</d:RequireLicenseAcceptance>

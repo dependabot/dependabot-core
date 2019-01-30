@@ -89,9 +89,9 @@ module Dependabot
           version = entry.at_xpath("./properties/Version").content.strip
           source_urls = []
           [
-            entry.at_xpath("./properties/ProjectUrl").content,
-            entry.at_xpath("./properties/ReleaseNotes").content
-          ].join(" ").scan(Source::SOURCE_REGEX) do
+            entry.at_xpath("./properties/ProjectUrl")&.content,
+            entry.at_xpath("./properties/ReleaseNotes")&.content
+          ].compact.join(" ").scan(Source::SOURCE_REGEX) do
             source_urls << Regexp.last_match.to_s
           end
 
