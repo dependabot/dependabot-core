@@ -1,3 +1,8 @@
+## v0.93.12, 30 January 2019
+
+- JS: Return a NpmAndYarn::Version, not a string, for git semver dependencies
+- PHP: Bump composer/composer from 1.8.0 to 1.8.2 in /composer/helpers
+
 ## v0.93.11, 29 January 2019
 
 - Gradle: Handle tabs when looking for repositories
