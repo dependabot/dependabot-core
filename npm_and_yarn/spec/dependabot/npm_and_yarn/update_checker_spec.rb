@@ -334,7 +334,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:current_version) { "2.0.2" }
 
         it "fetches the latest version tag" do
-          expect(checker.latest_version).to eq("4.0.0")
+          expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
         end
 
         context "but there are no tags" do
