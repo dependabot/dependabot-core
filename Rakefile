@@ -106,6 +106,7 @@ def rubygems_release_exists?(name, version)
   existing_versions.include?(version)
 end
 
+# rubocop:disable Metrics/MethodLength
 def changed_packages
   all_packages = GEMSPECS.
                  select { |gs| gs.include?("/") }.
@@ -145,6 +146,7 @@ def changed_packages
   # packages.insert(0, "./") if core_changed
   packages
 end
+# rubocop:enable Metrics/MethodLength
 
 def commit_range_changes_paths?(range, paths)
   cmd = %w(git diff --quiet) + [range, "--"] + paths
