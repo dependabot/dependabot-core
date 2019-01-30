@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_updaters/ruby/bundler/requirement_replacer"
+require "dependabot/bundler/file_updater/requirement_replacer"
 
-RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::RequirementReplacer do
+RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
   let(:replacer) do
     described_class.new(
       dependency: dependency,

@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_updaters/ruby/bundler/git_pin_replacer"
+require "dependabot/bundler/file_updater/git_pin_replacer"
 
-RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GitPinReplacer do
+RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
   let(:replacer) do
     described_class.new(dependency: dependency, new_pin: new_pin)
   end

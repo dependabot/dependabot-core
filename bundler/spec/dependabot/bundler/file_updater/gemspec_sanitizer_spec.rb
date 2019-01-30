@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_updaters/ruby/bundler/gemspec_sanitizer"
+require "dependabot/bundler/file_updater/gemspec_sanitizer"
 
-RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GemspecSanitizer do
+RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
   let(:sanitizer) do
     described_class.new(replacement_version: replacement_version)
   end

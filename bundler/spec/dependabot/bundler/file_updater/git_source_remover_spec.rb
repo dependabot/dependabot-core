@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/file_updaters/ruby/bundler/git_source_remover"
+require "dependabot/bundler/file_updater/git_source_remover"
 
-RSpec.describe Dependabot::FileUpdaters::Ruby::Bundler::GitSourceRemover do
+RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
   let(:remover) { described_class.new(dependency: dependency) }
 
   let(:dependency) do
