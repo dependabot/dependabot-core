@@ -74,31 +74,34 @@ module Dependabot
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
 
-          in_a_temporary_bundler_context do
-            dep = dependency_from_definition
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            in_a_temporary_bundler_context do
+            #byebug
+              dep = dependency_from_definition
 
-            # If the dependency wasn't found in the definition, but *is*
-            # included in a gemspec, it's because the Gemfile didn't import
-            # the gemspec. This is unusual, but the correct behaviour if/when
-            # it happens is to behave as if the repo was gemspec-only.
-            if dep.nil? && dependency.requirements.any?
-              next latest_version_details
+              # If the dependency wasn't found in the definition, but *is*
+              # included in a gemspec, it's because the Gemfile didn't import
+              # the gemspec. This is unusual, but the correct behaviour if/when
+              # it happens is to behave as if the repo was gemspec-only.
+              if dep.nil? && dependency.requirements.any?
+                next latest_version_details
+              end
+
+              # Otherwise, if the dependency wasn't found it's because it is a
+              # subdependency that was removed when attempting to update it.
+              next nil if dep.nil?
+
+              # If the old Gemfile index was used then it won't have checked
+              # Ruby compatibility. Fix that by doing the check manually (and
+              # saying no update is possible if the Ruby version is a mismatch)
+              next nil if ruby_version_incompatible?(dep)
+
+              details = { version: dep.version }
+              if dep.source.instance_of?(::Bundler::Source::Git)
+                details[:commit_sha] = dep.source.revision
+              end
+              details
             end
-
-            # Otherwise, if the dependency wasn't found it's because it is a
-            # subdependency that was removed when attempting to update it.
-            next nil if dep.nil?
-
-            # If the old Gemfile index was used then it won't have checked
-            # Ruby compatibility. Fix that by doing the check manually (and
-            # saying no update is possible if the Ruby version is a mismatch)
-            next nil if ruby_version_incompatible?(dep)
-
-            details = { version: dep.version }
-            if dep.source.instance_of?(::Bundler::Source::Git)
-              details[:commit_sha] = dep.source.revision
-            end
-            details
           end
         rescue Dependabot::DependencyFileNotResolvable => error
           return if ignored_versions.any? && !dependency.appears_in_lockfile?
