@@ -62,7 +62,7 @@ module Dependabot
             next true if requirement.satisfied_by?(Gem::Version.new("100000"))
 
             file = dependency_files.find { |f| f.name == req.fetch(:file) }
-            updated = FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
+            updated = FileUpdater::RequirementReplacer.new(
               dependency: dependency,
               file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
               updated_requirement: "whatever"

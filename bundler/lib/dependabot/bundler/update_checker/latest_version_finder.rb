@@ -6,7 +6,7 @@ require "bundler_git_source_patch"
 
 require "excon"
 
-require "dependabot/bundler/update_checkers"
+require "dependabot/bundler/update_checker"
 require "dependabot/utils/ruby/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"

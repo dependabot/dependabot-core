@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/update_checkers/ruby/bundler/file_preparer"
+require "dependabot/bundler/update_checker/file_preparer"
 
-RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::FilePreparer do
+RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
   let(:preparer) do
     described_class.new(
       dependency_files: dependency_files,

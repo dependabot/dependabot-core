@@ -261,7 +261,7 @@ module Dependabot
         end
 
         def sanitized_lockfile_body
-          re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")
         end
       end

@@ -168,7 +168,7 @@ module Dependabot
         end
 
         def replace_gemfile_constraint(content, filename)
-          FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
+          FileUpdater::RequirementReplacer.new(
             dependency: dependency,
             file_type: :gemfile,
             updated_requirement: updated_version_requirement_string(filename),
@@ -177,7 +177,7 @@ module Dependabot
         end
 
         def replace_gemspec_constraint(content, filename)
-          FileUpdaters::Ruby::Bundler::RequirementReplacer.new(
+          FileUpdater::RequirementReplacer.new(
             dependency: dependency,
             file_type: :gemspec,
             updated_requirement: updated_version_requirement_string(filename),
@@ -188,7 +188,7 @@ module Dependabot
         def sanitize_gemspec_content(gemspec_content)
           new_version = replacement_version_for_gemspec(gemspec_content)
 
-          FileUpdaters::Ruby::Bundler::GemspecSanitizer.
+          FileUpdater::GemspecSanitizer.
             new(replacement_version: new_version).
             rewrite(gemspec_content)
         end
@@ -226,13 +226,13 @@ module Dependabot
         end
 
         def remove_git_source(content)
-          FileUpdaters::Ruby::Bundler::GitSourceRemover.new(
+          FileUpdater::GitSourceRemover.new(
             dependency: dependency
           ).rewrite(content)
         end
 
         def replace_git_pin(content)
-          FileUpdaters::Ruby::Bundler::GitPinReplacer.new(
+          FileUpdater::GitPinReplacer.new(
             dependency: dependency,
             new_pin: replacement_git_pin
           ).rewrite(content)
@@ -259,7 +259,7 @@ module Dependabot
             select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
-            FileUpdaters::Ruby::Bundler::GemspecDependencyNameFinder.
+            FileUpdater::GemspecDependencyNameFinder.
             new(gemspec_content: gemspec_content).
             dependency_name
 
@@ -270,7 +270,7 @@ module Dependabot
         end
 
         def sanitized_lockfile_content
-          re = FileUpdaters::Ruby::Bundler::LockfileUpdater::LOCKFILE_ENDING
+          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")
         end
       end

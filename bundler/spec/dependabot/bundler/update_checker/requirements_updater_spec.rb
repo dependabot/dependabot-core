@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_checkers/ruby/bundler/requirements_updater"
+require "dependabot/bundler/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater do
+RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,

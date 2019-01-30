@@ -4,9 +4,9 @@ require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/ruby/bundler/version_resolver"
+require "dependabot/bundler/update_checker/version_resolver"
 
-RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler::VersionResolver do
+RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,

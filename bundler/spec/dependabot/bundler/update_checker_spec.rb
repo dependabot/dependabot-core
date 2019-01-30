@@ -4,10 +4,10 @@ require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/ruby/bundler"
-require_relative "../shared_examples_for_update_checkers"
+require "dependabot/bundler/update_checker"
+require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
-RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
+RSpec.describe Dependabot::Bundler::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -1362,7 +1362,7 @@ RSpec.describe Dependabot::UpdateCheckers::Ruby::Bundler do
     subject(:updated_requirements) { checker.updated_requirements }
 
     let(:requirements_updater) do
-      Dependabot::UpdateCheckers::Ruby::Bundler::RequirementsUpdater
+      Dependabot::Bundler::UpdateChecker::RequirementsUpdater
     end
 
     context "with a Gemfile and a Gemfile.lock" do
