@@ -165,5 +165,19 @@ RSpec.describe namespace::PoetryVersionResolver do
 
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
+
+    context "not resolvable" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "solver_problem.toml" }
+      let(:latest_version) { Gem::Version.new("18.9.beta.0") }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to include("depends on black (^18) which doesn't match any")
+          end
+      end
+    end
   end
 end

@@ -72,6 +72,8 @@ module Dependabot
               updated_lockfile = TomlRB.parse(updated_lockfile)
 
               fetch_version_from_parsed_lockfile(updated_lockfile)
+            rescue SharedHelpers::HelperSubprocessFailed => error
+              handle_poetry_errors(error)
             end
           return unless @latest_resolvable_version_string
 
@@ -87,6 +89,36 @@ module Dependabot
           return version unless version.nil? && dependency.top_level?
 
           raise "No version in lockfile!"
+        end
+
+        def handle_poetry_errors(error)
+          if error.message.include?("SolverProblemError")
+            check_original_requirements_resolvable
+          end
+
+          raise
+        end
+
+        def check_original_requirements_resolvable
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_dependency_files(update_pyproject: false)
+
+            run_poetry_command(
+              "pyenv exec poetry update #{dependency.name} --lock"
+            )
+
+            true
+          rescue SharedHelpers::HelperSubprocessFailed => error
+            raise unless error.message.include?("SolverProblemError")
+
+            msg = clean_error_message(error.message)
+            raise DependencyFileNotResolvable, msg
+          end
+        end
+
+        def clean_error_message(message)
+          # Redact any URLs, as they may include credentials
+          message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
         def write_temporary_dependency_files(update_pyproject: true)

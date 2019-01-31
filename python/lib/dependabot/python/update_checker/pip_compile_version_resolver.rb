@@ -91,7 +91,7 @@ module Dependabot
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
-            # incompatibility update after unlocking then it's likely to be
+            # incompatibility error after unlocking then it's likely to be
             # due to problems with pip-compile's cascading resolution
             return nil
           end
