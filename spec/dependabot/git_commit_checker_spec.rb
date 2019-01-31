@@ -18,7 +18,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       name: "business",
       version: version,
       requirements: requirements,
-      package_manager: "bundler"
+      package_manager: "dummy"
     )
   end
   let(:ignored_versions) { [] }
