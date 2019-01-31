@@ -5,6 +5,7 @@ require "docker_registry2"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
+require "dependabot/docker/version"
 require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot

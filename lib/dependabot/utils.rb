@@ -4,9 +4,7 @@
 #       dependabot-core.
 module Dependabot
   module Utils
-    @version_classes = {
-      "docker" => Gem::Version
-    }
+    @version_classes = {}
 
     def self.version_class_for_package_manager(package_manager)
       version_class = @version_classes[package_manager]
