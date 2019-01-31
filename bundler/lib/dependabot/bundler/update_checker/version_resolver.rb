@@ -76,7 +76,6 @@ module Dependabot
 
           SharedHelpers.with_git_configured(credentials: credentials) do
             in_a_temporary_bundler_context do
-            #byebug
               dep = dependency_from_definition
 
               # If the dependency wasn't found in the definition, but *is*

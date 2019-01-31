@@ -36,9 +36,7 @@ module Dependabot
                     :ignored_versions
 
         def fetch_latest_version_details
-          if dependency.name == "bundler"
-            return latest_rubygems_version_details
-          end
+          return latest_rubygems_version_details if dependency.name == "bundler"
 
           case dependency_source
           when NilClass then latest_rubygems_version_details
