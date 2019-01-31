@@ -1,3 +1,9 @@
+## v0.93.14, 31 January 2019
+
+- Add workaround for GitHub bug during PR creation
+- PHP: Bump composer/composer from 1.8.2 to 1.8.3 in /composer/helpers
+- Python: Bump hashin from 0.14.2 to 0.14.4 in /python/helpers
+
 ## v0.93.13, 30 January 2019
 
 - .NET: Handle Nuget sources that don't return a ProjectUrl
