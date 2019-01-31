@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
+require "dependabot/utils"
+
 module Dependabot
-  module Utils
-    # A standard requirement class that is used by multiple package managers.
-    # It was originally written for our Ruby support, but is used elsewhere too.
+  module Docker
+    # Lifted from the bundler package manager
     class Requirement < Gem::Requirement
       # For consistency with other langauges, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
@@ -24,3 +25,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::Utils.
+  register_requirement_class("docker", Dependabot::Docker::Requirement)
