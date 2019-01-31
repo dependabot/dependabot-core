@@ -1,3 +1,7 @@
+## v0.93.16, 31 January 2019
+
+- Go: Retry resolvability errors in parser
+
 ## v0.93.15, 31 January 2019
 
 - Python: Handle Poetry solver problems
