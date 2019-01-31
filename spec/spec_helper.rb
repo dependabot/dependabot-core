@@ -5,9 +5,9 @@ require "webmock/rspec"
 require "vcr"
 require "byebug"
 
-require "dummy_package_manager/metadata_finder"
-require "dummy_package_manager/version"
-require "dummy_package_manager/requirement"
+require_relative "dummy_package_manager/metadata_finder"
+require_relative "dummy_package_manager/version"
+require_relative "dummy_package_manager/requirement"
 
 RSpec.configure do |config|
   config.color = true
