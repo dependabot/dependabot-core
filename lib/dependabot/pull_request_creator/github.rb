@@ -79,6 +79,22 @@ module Dependabot
           head: "#{source.repo.split('/').first}:#{branch_name}",
           state: "all"
         ).any?
+      rescue Octokit::InternalServerError
+        # A GitHub bug sometimes means adding `state: all` causes problems.
+        # In that case, fall back to making two separate requests.
+        open_prs = github_client_for_source.pull_requests(
+          source.repo,
+          head: "#{source.repo.split('/').first}:#{branch_name}",
+          state: "open"
+        )
+
+        closed_prs = github_client_for_source.pull_requests(
+          source.repo,
+          head: "#{source.repo.split('/').first}:#{branch_name}",
+          state: "closed"
+        )
+
+        [*open_prs, *closed_prs].any?
       end
 
       def repo_exists?
