@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/utils/requirement"
-
 # TODO: in due course, these "registries" should live in a wrapper gem, not
 #       dependabot-core.
 module Dependabot
@@ -23,11 +21,7 @@ module Dependabot
       @version_classes[package_manager] = version_class
     end
 
-    @requirement_classes = {
-      "bundler" => Utils::Requirement,
-      "submodules" => Utils::Requirement,
-      "docker" => Utils::Requirement
-    }
+    @requirement_classes = {}
 
     def self.requirement_class_for_package_manager(package_manager)
       requirement_class = @requirement_classes[package_manager]
