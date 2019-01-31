@@ -4,6 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 

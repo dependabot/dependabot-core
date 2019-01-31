@@ -5,7 +5,6 @@
 module Dependabot
   module Utils
     @version_classes = {
-      "bundler" => Gem::Version,
       "submodules" => Gem::Version,
       "docker" => Gem::Version
     }
