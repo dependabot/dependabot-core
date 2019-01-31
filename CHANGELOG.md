@@ -1,3 +1,7 @@
+## v0.93.15, 31 January 2019
+
+- Python: Handle Poetry solver problems
+
 ## v0.93.14, 31 January 2019
 
 - Add workaround for GitHub bug during PR creation
