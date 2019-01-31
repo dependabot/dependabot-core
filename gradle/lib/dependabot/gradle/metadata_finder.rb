@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "nokogiri"
+require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/gradle/file_parser/repositories_finder"
