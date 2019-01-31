@@ -8,7 +8,7 @@ require "excon"
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/file_updater/lockfile_updater"
-require "dependabot/utils/ruby/requirement"
+require "dependabot/bundler/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -215,7 +215,7 @@ module Dependabot
           # required Ruby version.
           return false unless ruby_requirement
 
-          ruby_requirement = Utils::Ruby::Requirement.new(ruby_requirement)
+          ruby_requirement = Requirement.new(ruby_requirement)
 
           !ruby_requirement.satisfied_by?(ruby_version)
         rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
