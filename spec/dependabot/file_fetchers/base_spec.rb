@@ -3,7 +3,7 @@
 require "octokit"
 require "spec_helper"
 require "dependabot/source"
-require "dependabot/file_fetchers/ruby/bundler"
+require "dependabot/file_fetchers/base"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
