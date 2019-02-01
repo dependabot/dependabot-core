@@ -11,7 +11,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       name: "business",
       version: "1.3",
       requirements: [{ requirement: "1", file: "a", groups: nil, source: nil }],
-      package_manager: "bundler"
+      package_manager: "dummy"
     )
   end
 
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             version: "1.3",
             requirements:
               [{ requirement: "1", file: "a", groups: nil, source: nil }],
-            package_manager: "bundler"
+            package_manager: "dummy"
           )
         end
 
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             version: "1.3",
             requirements:
               [{ requirement: "1", file: "b", groups: nil, source: nil }],
-            package_manager: "bundler"
+            package_manager: "dummy"
           )
         end
 

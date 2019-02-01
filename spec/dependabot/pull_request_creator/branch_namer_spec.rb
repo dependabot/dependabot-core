@@ -21,14 +21,14 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       name: "business",
       version: "1.5.0",
       previous_version: "1.4.0",
-      package_manager: "bundler",
+      package_manager: "dummy",
       requirements:
         [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
       previous_requirements:
         [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
   end
-  let(:files) { [gemfile, gemfile_lock] }
+  let(:files) { [gemfile] }
   let(:target_branch) { nil }
 
   let(:gemfile) do
@@ -37,16 +37,10 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
-  let(:gemfile_lock) do
-    Dependabot::DependencyFile.new(
-      name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
-    )
-  end
 
   describe "#new_branch_name" do
     subject(:new_branch_name) { namer.new_branch_name }
-    it { is_expected.to eq("dependabot/bundler/business-1.5.0") }
+    it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
 
     context "with directory" do
       let(:gemfile) do
@@ -56,23 +50,16 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           directory: directory
         )
       end
-      let(:gemfile_lock) do
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: fixture("ruby", "lockfiles", "Gemfile.lock"),
-          directory: directory
-        )
-      end
       let(:directory) { "directory" }
 
-      it { is_expected.to eq("dependabot/bundler/directory/business-1.5.0") }
+      it { is_expected.to eq("dependabot/dummy/directory/business-1.5.0") }
 
       context "that starts with a dot" do
         let(:directory) { ".directory" }
 
         it "santizes the dot" do
           expect(new_branch_name).
-            to eq("dependabot/bundler/dot-directory/business-1.5.0")
+            to eq("dependabot/dummy/dot-directory/business-1.5.0")
         end
       end
     end
@@ -80,7 +67,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     context "with a target branch" do
       let(:target_branch) { "my-branch" }
 
-      it { is_expected.to eq("dependabot/bundler/my-branch/business-1.5.0") }
+      it { is_expected.to eq("dependabot/dummy/my-branch/business-1.5.0") }
     end
 
     context "with a custom branch name separator" do
@@ -93,7 +80,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot-bundler-business-1.5.0") }
+      it { is_expected.to eq("dependabot-dummy-business-1.5.0") }
     end
 
     context "with multiple dependencies" do
@@ -103,7 +90,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           name: "statesman",
           version: "1.5.0",
           previous_version: "1.4.0",
-          package_manager: "bundler",
+          package_manager: "dummy",
           requirements: [{
             file: "Gemfile",
             requirement: "~> 1.5.0",
@@ -119,7 +106,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/bundler/business-and-statesman") }
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman") }
 
       context "for a java property update" do
         let(:files) { [pom] }
@@ -271,7 +258,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           name: "business",
           version: new_version,
           previous_version: previous_version,
-          package_manager: "bundler",
+          package_manager: "dummy",
           requirements: [{
             file: "Gemfile",
             requirement: nil,
@@ -300,7 +287,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       let(:old_ref) { nil }
 
       it "truncates the version" do
-        expect(new_branch_name).to eq("dependabot/bundler/business-cff701b")
+        expect(new_branch_name).to eq("dependabot/dummy/business-cff701b")
       end
 
       context "due to a ref change" do
@@ -308,7 +295,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         let(:old_ref) { "v1.0.0" }
 
         it "includes the ref rather than the commit" do
-          expect(new_branch_name).to eq("dependabot/bundler/business-v1.1.0")
+          expect(new_branch_name).to eq("dependabot/dummy/business-v1.1.0")
         end
 
         context "for a library" do
@@ -316,7 +303,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           let(:previous_version) { nil }
 
           it "includes the ref rather than the commit" do
-            expect(new_branch_name).to eq("dependabot/bundler/business-v1.1.0")
+            expect(new_branch_name).to eq("dependabot/dummy/business-v1.1.0")
           end
         end
       end

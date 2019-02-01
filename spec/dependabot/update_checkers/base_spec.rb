@@ -22,7 +22,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       name: "business",
       version: "1.5.0",
       requirements: original_requirements,
-      package_manager: "bundler"
+      package_manager: "dummy"
     )
   end
   let(:latest_version) { Gem::Version.new("1.0.0") }
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           version: dependency_version,
           requirements:
             [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
-          package_manager: "bundler"
+          package_manager: "dummy"
         )
       end
       let(:dependency_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         Dependabot::Dependency.new(
           name: "business",
           requirements: requirements,
-          package_manager: "bundler"
+          package_manager: "dummy"
         )
       end
       let(:requirements) do
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             name: "business",
             version: nil,
             requirements: original_requirements,
-            package_manager: "bundler"
+            package_manager: "dummy"
           )
         end
         it { is_expected.to be_falsey }
@@ -327,7 +327,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           version: "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3",
           requirements:
             [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
-          package_manager: "bundler"
+          package_manager: "dummy"
         )
       end
 
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         Dependabot::Dependency.new(
           name: "business",
           requirements: requirements,
-          package_manager: "bundler"
+          package_manager: "dummy"
         )
       end
       let(:requirements) do

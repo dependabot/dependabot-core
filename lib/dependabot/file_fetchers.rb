@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/ruby/bundler"
-
 module Dependabot
   module FileFetchers
-    @file_fetchers = {
-      "bundler" => FileFetchers::Ruby::Bundler
-    }
+    @file_fetchers = {}
 
     def self.for_package_manager(package_manager)
       file_fetcher = @file_fetchers[package_manager]

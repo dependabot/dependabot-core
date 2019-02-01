@@ -72,7 +72,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:gemfile_lock) do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
+      content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
 

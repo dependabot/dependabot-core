@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "dependabot/file_parsers/ruby/bundler"
-
 module Dependabot
   module FileParsers
-    @file_parsers = {
-      "bundler" => FileParsers::Ruby::Bundler
-    }
+    @file_parsers = {}
 
     def self.for_package_manager(package_manager)
       file_parser = @file_parsers[package_manager]

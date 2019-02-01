@@ -9,23 +9,19 @@ module Dependabot
   class PullRequestCreator
     class Labeler
       DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i.freeze
-      LANGUAGE_LABEL_DETAILS = {
-        "bundler" => { name: "ruby", colour: "ce2d2d" },
-        "submodules" => { name: "submodules", colour: "000000" },
-        "docker" => { name: "docker", colour: "21ceff" },
-        "terraform" => { name: "terraform", colour: "5C4EE5" },
-        "nuget" => { name: ".NET", colour: "7121c6" },
-        "maven" => { name: "java", colour: "ffa221" },
-        "gradle" => { name: "java", colour: "ffa221" },
-        "npm_and_yarn" => { name: "javascript", colour: "168700" },
-        "pip" => { name: "python", colour: "2b67c6" },
-        "composer" => { name: "php", colour: "45229e" },
-        "hex" => { name: "elixir", colour: "9380dd" },
-        "cargo" => { name: "rust", colour: "000000" },
-        "dep" => { name: "go", colour: "16e2e2" },
-        "go_modules" => { name: "go", colour: "16e2e2" },
-        "elm" => { name: "elm", colour: "76d3f2" }
-      }.freeze
+
+      @label_details = {}
+
+      def self.label_details_for_package_manager(package_manager)
+        label_details = @label_details[package_manager]
+        return label_details if label_details
+
+        raise "Unsupported package_manager #{package_manager}"
+      end
+
+      def self.register_label_details(package_manager, label_details)
+        @label_details[package_manager] = label_details
+      end
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,
                      includes_security_fixes:, label_language:)
@@ -199,7 +195,9 @@ module Dependabot
       end
 
       def language_label
-        label_name = LANGUAGE_LABEL_DETAILS.fetch(package_manager).fetch(:name)
+        label_name =
+          self.class.label_details_for_package_manager(package_manager).
+          fetch(:name)
         labels.find { |l| l.casecmp(label_name).zero? }
       end
 
@@ -304,12 +302,14 @@ module Dependabot
       end
 
       def create_github_language_label
-        langauge_name = LANGUAGE_LABEL_DETAILS.fetch(package_manager).
-                        fetch(:name)
+        langauge_name =
+          self.class.label_details_for_package_manager(package_manager).
+          fetch(:name)
         github_client_for_source.add_label(
           source.repo,
           langauge_name,
-          LANGUAGE_LABEL_DETAILS.fetch(package_manager).fetch(:colour),
+          self.class.label_details_for_package_manager(package_manager).
+            fetch(:colour),
           description: "Pull requests that update #{langauge_name.capitalize} "\
                        "code",
           accept: "application/vnd.github.symmetra-preview+json"
@@ -322,12 +322,14 @@ module Dependabot
       end
 
       def create_gitlab_language_label
-        langauge_name = LANGUAGE_LABEL_DETAILS.fetch(package_manager).
-                        fetch(:name)
+        langauge_name =
+          self.class.label_details_for_package_manager(package_manager).
+          fetch(:name)
         gitlab_client_for_source.create_label(
           source.repo,
           langauge_name,
-          "#" + LANGUAGE_LABEL_DETAILS.fetch(package_manager).fetch(:colour)
+          "#" + self.class.label_details_for_package_manager(package_manager).
+                fetch(:colour)
         )
         @labels = [*@labels, langauge_name].uniq
       end

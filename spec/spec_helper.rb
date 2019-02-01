@@ -5,6 +5,8 @@ require "webmock/rspec"
 require "vcr"
 require "byebug"
 
+require_relative "dummy_package_manager/dummy"
+
 RSpec.configure do |config|
   config.color = true
   config.order = :rand

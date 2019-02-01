@@ -42,7 +42,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:author_details) { nil }
   let(:signature_key) { nil }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
-  let(:files) { [gemfile, gemfile_lock] }
+  let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
     [{
@@ -57,12 +57,6 @@ RSpec.describe Dependabot::PullRequestCreator do
     Dependabot::DependencyFile.new(
       name: "Gemfile",
       content: fixture("ruby", "gemfiles", "Gemfile")
-    )
-  end
-  let(:gemfile_lock) do
-    Dependabot::DependencyFile.new(
-      name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
     )
   end
 

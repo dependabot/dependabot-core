@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Dependency do
       {
         name: "dep",
         requirements: requirements,
-        package_manager: "bundler"
+        package_manager: "dummy"
       }
     end
     let(:requirements) do
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Dependency do
         name: "dep",
         requirements:
           [{ file: "a.rb", requirement: "1", groups: [], source: nil }],
-        package_manager: "bundler"
+        package_manager: "dummy"
       }
     end
 
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Dependency do
       }
     end
     let(:groups) { [] }
-    let(:package_manager) { "bundler" }
+    let(:package_manager) { "dummy" }
 
     context "for a requirement that isn't top-level" do
       let(:dependency_args) do
@@ -114,14 +114,6 @@ RSpec.describe Dependabot::Dependency do
       end
 
       it { is_expected.to eq(true) }
-    end
-
-    %w(submodules docker maven pip).each do |manager|
-      context "for a #{manager} dependency" do
-        let(:package_manager) { "manager" }
-
-        it { is_expected.to eq(true) }
-      end
     end
   end
 end

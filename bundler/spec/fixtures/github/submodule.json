@@ -1,0 +1,17 @@
+{
+    "name": "manifesto",
+    "path": "manifesto",
+    "sha": "d70e943e00a09a3c98c0e4ac9daab112b749cf62",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot/dependabot-test/contents/manifesto?ref=master",
+    "html_url": "https://github.com/dependabot/manifesto/tree/d70e943e00a09a3c98c0e4ac9daab112b749cf62",
+    "git_url": "https://api.github.com/repos/dependabot/manifesto/git/trees/d70e943e00a09a3c98c0e4ac9daab112b749cf62",
+    "download_url": null,
+    "type": "submodule",
+    "submodule_git_url": "https://github.com/dependabot/manifesto.git",
+    "_links": {
+        "self": "https://api.github.com/repos/dependabot/dependabot-test/contents/manifesto?ref=master",
+        "git": "https://api.github.com/repos/dependabot/manifesto/git/trees/d70e943e00a09a3c98c0e4ac9daab112b749cf62",
+        "html": "https://github.com/dependabot/manifesto/tree/d70e943e00a09a3c98c0e4ac9daab112b749cf62"
+    }
+}

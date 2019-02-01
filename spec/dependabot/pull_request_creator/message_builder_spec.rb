@@ -28,7 +28,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       name: "business",
       version: "1.5.0",
       previous_version: "1.4.0",
-      package_manager: "bundler",
+      package_manager: "dummy",
       requirements:
         [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
       previous_requirements:
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:gemfile_lock) do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
+      content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
 
@@ -231,7 +231,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "business",
               version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
               previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "Gemfile",
                 requirement: ">= 0",
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "business",
               version: "1.5.0",
               previous_version: "1.4.0",
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "Gemfile",
                 requirement: "~> 1.5.0",
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "business",
               version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
               previous_version: nil,
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "package.json",
                 requirement: nil,
@@ -472,7 +472,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 name: "business",
                 version: "1.5.0",
                 previous_version: nil,
-                package_manager: "bundler",
+                package_manager: "dummy",
                 requirements: [{
                   file: "Gemfile",
                   requirement: "~> 1.5.0",
@@ -679,7 +679,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             name: "business",
             version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
             previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
-            package_manager: "bundler",
+            package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
               requirement: ">= 0",
@@ -766,7 +766,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             name: "business",
             version: "1.5.0",
             previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
-            package_manager: "bundler",
+            package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
               requirement: ">= 0",
@@ -889,7 +889,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "business",
               version: "1.6.0",
               previous_version: "1.5.0",
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "Gemfile",
                 requirement: "~> 1.6.0",
@@ -985,7 +985,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             name: "business",
             version: "1.5.0",
             previous_version: "0.9.0",
-            package_manager: "bundler",
+            package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
               requirement: "~> 1.5.0",
@@ -1098,7 +1098,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             name: "statesman",
             version: "1.7.0",
             previous_version: "1.6.0",
-            package_manager: "bundler",
+            package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
               requirement: "~> 1.7",
@@ -1197,7 +1197,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "business",
               version: "1.5.0",
               previous_version: "1.4.0",
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "Gemfile",
                 requirement: "~> 1.5.0",
@@ -1219,7 +1219,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               name: "statesman",
               version: "1.5.0",
               previous_version: "1.4.0",
-              package_manager: "bundler",
+              package_manager: "dummy",
               requirements: [{
                 file: "Gemfile",
                 requirement: "~> 1.5.0",
@@ -1282,7 +1282,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             name: "statesman",
             version: "1.7.0",
             previous_version: "1.6.0",
-            package_manager: "bundler",
+            package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
               requirement: "~> 1.7",

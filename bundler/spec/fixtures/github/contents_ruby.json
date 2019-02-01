@@ -1,0 +1,450 @@
+[
+  {
+    "name": ".codeclimate.yml",
+    "path": ".codeclimate.yml",
+    "sha": "6393602fac96cfe31d64f89476014124b4a13b85",
+    "size": 416,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.codeclimate.yml?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.codeclimate.yml",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/6393602fac96cfe31d64f89476014124b4a13b85",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.codeclimate.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.codeclimate.yml?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/6393602fac96cfe31d64f89476014124b4a13b85",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.codeclimate.yml"
+    }
+  },
+  {
+    "name": ".coveragerc",
+    "path": ".coveragerc",
+    "sha": "be7fdc86067d0924f3e1e92c1a3ed92d9486fcbb",
+    "size": 646,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.coveragerc?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.coveragerc",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/be7fdc86067d0924f3e1e92c1a3ed92d9486fcbb",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.coveragerc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.coveragerc?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/be7fdc86067d0924f3e1e92c1a3ed92d9486fcbb",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.coveragerc"
+    }
+  },
+  {
+    "name": ".csslintrc",
+    "path": ".csslintrc",
+    "sha": "aacba956e5bbede1c195ce554fcad3e200b24ff8",
+    "size": 107,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.csslintrc?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.csslintrc",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/aacba956e5bbede1c195ce554fcad3e200b24ff8",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.csslintrc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.csslintrc?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/aacba956e5bbede1c195ce554fcad3e200b24ff8",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.csslintrc"
+    }
+  },
+  {
+    "name": ".env.example",
+    "path": ".env.example",
+    "sha": "d9f599b33ecd834ea88979dcc3daf4fcafacf4e7",
+    "size": 2617,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.env.example?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.env.example",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d9f599b33ecd834ea88979dcc3daf4fcafacf4e7",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.env.example",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.env.example?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d9f599b33ecd834ea88979dcc3daf4fcafacf4e7",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.env.example"
+    }
+  },
+  {
+    "name": ".eslintignore",
+    "path": ".eslintignore",
+    "sha": "96212a3593bac8c93f624b77185a8d11018efd96",
+    "size": 16,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.eslintignore?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.eslintignore",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/96212a3593bac8c93f624b77185a8d11018efd96",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.eslintignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.eslintignore?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/96212a3593bac8c93f624b77185a8d11018efd96",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.eslintignore"
+    }
+  },
+  {
+    "name": ".eslintrc.yml",
+    "path": ".eslintrc.yml",
+    "sha": "a6a0ce9c44238e06ff55ca335a66a4e16810da38",
+    "size": 6056,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.eslintrc.yml?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.eslintrc.yml",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/a6a0ce9c44238e06ff55ca335a66a4e16810da38",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.eslintrc.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.eslintrc.yml?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/a6a0ce9c44238e06ff55ca335a66a4e16810da38",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.eslintrc.yml"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "93923ac3a463bd17d0aefca2de9d2810f243d747",
+    "size": 1073,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.gitignore?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.gitignore",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/93923ac3a463bd17d0aefca2de9d2810f243d747",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.gitignore?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/93923ac3a463bd17d0aefca2de9d2810f243d747",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.gitignore"
+    }
+  },
+  {
+    "name": ".ruby-version",
+    "path": ".ruby-version",
+    "sha": "87ce492908ab2362771f27134bab4a075348a8f3",
+    "size": 6,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.ruby-version?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.ruby-version",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/87ce492908ab2362771f27134bab4a075348a8f3",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/.ruby-version",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.ruby-version?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/87ce492908ab2362771f27134bab4a075348a8f3",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/.ruby-version"
+    }
+  },
+  {
+    "name": "LICENSE.md",
+    "path": "LICENSE.md",
+    "sha": "8dada3edaf50dbc082c9a125058f25def75e625a",
+    "size": 11357,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/LICENSE.md?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/LICENSE.md",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/8dada3edaf50dbc082c9a125058f25def75e625a",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/LICENSE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/LICENSE.md?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/8dada3edaf50dbc082c9a125058f25def75e625a",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/LICENSE.md"
+    }
+  },
+  {
+    "name": "Procfile",
+    "path": "Procfile",
+    "sha": "72e4ef1be7c64eb0f874344bc8a6cf859bd39e00",
+    "size": 26,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Procfile?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Procfile",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/72e4ef1be7c64eb0f874344bc8a6cf859bd39e00",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/Procfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Procfile?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/72e4ef1be7c64eb0f874344bc8a6cf859bd39e00",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Procfile"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "01aae7d562fe164d2cee644e8ef5fba82d2b8e81",
+    "size": 1589,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/README.md?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/README.md",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/01aae7d562fe164d2cee644e8ef5fba82d2b8e81",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/README.md?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/01aae7d562fe164d2cee644e8ef5fba82d2b8e81",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/README.md"
+    }
+  },
+  {
+    "name": "Vagrantfile.example",
+    "path": "Vagrantfile.example",
+    "sha": "54be29ea9e1e2ecdbfa642656cded8b3cb85c910",
+    "size": 4329,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Vagrantfile.example?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Vagrantfile.example",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/54be29ea9e1e2ecdbfa642656cded8b3cb85c910",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/Vagrantfile.example",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Vagrantfile.example?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/54be29ea9e1e2ecdbfa642656cded8b3cb85c910",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Vagrantfile.example"
+    }
+  },
+  {
+    "name": "app",
+    "path": "app",
+    "sha": "f9e84e24364972f3aa4f92b869a622db1f260fa1",
+    "size": 0,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/f9e84e24364972f3aa4f92b869a622db1f260fa1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/app?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/f9e84e24364972f3aa4f92b869a622db1f260fa1",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/app"
+    }
+  },
+  {
+    "name": "build_scripts",
+    "path": "build_scripts",
+    "sha": "be8e80f054e47f0c9a6fc9cfe5061346c6f8b2d0",
+    "size": 0,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/build_scripts?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/build_scripts",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/be8e80f054e47f0c9a6fc9cfe5061346c6f8b2d0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/build_scripts?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/be8e80f054e47f0c9a6fc9cfe5061346c6f8b2d0",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/build_scripts"
+    }
+  },
+  {
+    "name": "celery_worker.py",
+    "path": "celery_worker.py",
+    "sha": "c84c73c1f1c1aa42550a08ae4f32dc955ced5f18",
+    "size": 279,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/celery_worker.py?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/celery_worker.py",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/c84c73c1f1c1aa42550a08ae4f32dc955ced5f18",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/celery_worker.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/celery_worker.py?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/c84c73c1f1c1aa42550a08ae4f32dc955ced5f18",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/celery_worker.py"
+    }
+  },
+  {
+    "name": "config.py",
+    "path": "config.py",
+    "sha": "2886556fc4844e708472a99a85b42b4f5b51d509",
+    "size": 8250,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/config.py?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/config.py",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/2886556fc4844e708472a99a85b42b4f5b51d509",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/config.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/config.py?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/2886556fc4844e708472a99a85b42b4f5b51d509",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/config.py"
+    }
+  },
+  {
+    "name": "crontab",
+    "path": "crontab",
+    "sha": "1e2c1da613e8272df6ece759565524c93bc76780",
+    "size": 300,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/crontab?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/crontab",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/1e2c1da613e8272df6ece759565524c93bc76780",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/crontab",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/crontab?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/1e2c1da613e8272df6ece759565524c93bc76780",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/crontab"
+    }
+  },
+  {
+    "name": "data",
+    "path": "data",
+    "sha": "7bceca86ff0e88cb53c8828d441f5e0725776395",
+    "size": 0,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/data?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/data",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/7bceca86ff0e88cb53c8828d441f5e0725776395",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/data?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/7bceca86ff0e88cb53c8828d441f5e0725776395",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/data"
+    }
+  },
+  {
+    "name": "gunicorn_config.py",
+    "path": "gunicorn_config.py",
+    "sha": "7b1a455133c2e78611550e45e8d2072d5c5c4ad7",
+    "size": 2504,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/gunicorn_config.py?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/gunicorn_config.py",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/7b1a455133c2e78611550e45e8d2072d5c5c4ad7",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/gunicorn_config.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/gunicorn_config.py?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/7b1a455133c2e78611550e45e8d2072d5c5c4ad7",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/gunicorn_config.py"
+    }
+  },
+  {
+    "name": "jobs.py",
+    "path": "jobs.py",
+    "sha": "79f2957e2c94e44786f6ca3dfc7384aaceb80c0a",
+    "size": 6213,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/jobs.py?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/jobs.py",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/79f2957e2c94e44786f6ca3dfc7384aaceb80c0a",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/jobs.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/jobs.py?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/79f2957e2c94e44786f6ca3dfc7384aaceb80c0a",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/jobs.py"
+    }
+  },
+  {
+    "name": "magic",
+    "path": "magic",
+    "sha": "6342094c1d4b1af948867ffba67cf0b866e5613c",
+    "size": 659195,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/magic?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/magic",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/6342094c1d4b1af948867ffba67cf0b866e5613c",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/magic",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/magic?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/6342094c1d4b1af948867ffba67cf0b866e5613c",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/magic"
+    }
+  },
+  {
+    "name": "manage.py",
+    "path": "manage.py",
+    "sha": "a0b80d4c7b5fd7e50d6dcb5bcbdcd995b8da27f0",
+    "size": 15323,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/manage.py?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/manage.py",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/a0b80d4c7b5fd7e50d6dcb5bcbdcd995b8da27f0",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/manage.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/manage.py?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/a0b80d4c7b5fd7e50d6dcb5bcbdcd995b8da27f0",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/manage.py"
+    }
+  },
+  {
+    "name": "migrations",
+    "path": "migrations",
+    "sha": "da206a9809330d01f4800718bca2a20c05038b44",
+    "size": 0,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/migrations?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/migrations",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/da206a9809330d01f4800718bca2a20c05038b44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/migrations?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/da206a9809330d01f4800718bca2a20c05038b44",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/migrations"
+    }
+  },
+  {
+    "name": "Gemfile",
+    "path": "Gemfile",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 2433,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Gemfile?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/Gemfile",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/Gemfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Gemfile?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/Gemfile"
+    }
+  },
+  {
+    "name": "Gemfile.lock",
+    "path": "Gemfile.lock",
+    "sha": "d429264c8c2f0f306a422900c2f41123e07c31b4",
+    "size": 2433,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Gemfile.lock?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Gemfile.lock",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/Gemfile.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/Gemfile.lock?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/Gemfile.lock"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "tests",
+    "sha": "88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "size": 0,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/tests?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/tests",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/tests?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/trees/88b4e0a1c8093fae2b4fa52534035f9f85ed0956",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/tree/develop/tests"
+    }
+  },
+  {
+    "name": "todo.txt",
+    "path": "todo.txt",
+    "sha": "3e369beef1c9e64f0c10735d35aa8ad755daddc6",
+    "size": 1147,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/todo.txt?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/todo.txt",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/3e369beef1c9e64f0c10735d35aa8ad755daddc6",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/todo.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/todo.txt?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/3e369beef1c9e64f0c10735d35aa8ad755daddc6",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/todo.txt"
+    }
+  },
+  {
+    "name": "update_definitions.sh",
+    "path": "update_definitions.sh",
+    "sha": "fbde266ea5ebd519b94d18f8f78ab825b02766df",
+    "size": 7877,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/update_definitions.sh?ref=develop",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/update_definitions.sh",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/fbde266ea5ebd519b94d18f8f78ab825b02766df",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/update_definitions.sh",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/update_definitions.sh?ref=develop",
+      "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/fbde266ea5ebd519b94d18f8f78ab825b02766df",
+      "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/update_definitions.sh"
+    }
+  }
+]

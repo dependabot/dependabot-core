@@ -44,7 +44,6 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        it { is_expected.to be_production }
         its(:name) { is_expected.to eq("requests") }
         its(:version) { is_expected.to eq("2.18.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
@@ -157,7 +156,6 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           end
 
           it { is_expected.to be_a(Dependabot::Dependency) }
-          it { is_expected.to_not be_production }
           its(:name) { is_expected.to eq("pytest") }
           its(:version) { is_expected.to eq("3.3.1") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
@@ -328,7 +326,6 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           end
 
           it { is_expected.to be_a(Dependabot::Dependency) }
-          it { is_expected.to be_production }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
@@ -359,7 +356,6 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           end
 
           it { is_expected.to be_a(Dependabot::Dependency) }
-          it { is_expected.to be_production }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to be_nil }
           its(:requirements) { is_expected.to eq(expected_requirements) }
