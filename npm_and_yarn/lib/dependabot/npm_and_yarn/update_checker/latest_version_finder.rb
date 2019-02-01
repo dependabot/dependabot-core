@@ -8,6 +8,7 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
+# rubocop:disable ClassLength
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
@@ -285,13 +286,21 @@ module Dependabot
         end
 
         def private_dependency_not_reachable?(npm_response)
+          return false unless [401, 402, 403, 404].include?(npm_response.status)
+
           # Check whether this dependency is (likely to be) private
-          if dependency_registry == "registry.npmjs.org" &&
-             !dependency.name.start_with?("@")
-            return false
+          if dependency_registry == "registry.npmjs.org"
+            return false unless dependency.name.start_with?("@")
+
+            web_response = Excon.get(
+              "https://www.npmjs.com/package/#{dependency.name}",
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            return web_response.status == 404
           end
 
-          [401, 402, 403, 404].include?(npm_response.status)
+          true
         end
 
         def dependency_url
@@ -338,3 +347,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable ClassLength
