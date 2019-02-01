@@ -64,7 +64,7 @@ module Dependabot
       # Proxying #
       ############
 
-      def initialize(max_retries: 1, **args)
+      def initialize(max_retries: 3, **args)
         args = DEFAULT_CLIENT_ARGS.merge(args)
 
         access_tokens = args.delete(:access_tokens) || []
@@ -72,7 +72,7 @@ module Dependabot
         access_tokens << nil if access_tokens.empty?
         access_tokens.uniq!
 
-        @max_retries = max_retries || 1
+        @max_retries = max_retries || 3
         @clients = access_tokens.map do |token|
           Octokit::Client.new(args.merge(access_token: token))
         end
