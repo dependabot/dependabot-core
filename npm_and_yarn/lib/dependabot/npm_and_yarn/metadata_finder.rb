@@ -196,22 +196,6 @@ module Dependabot
           fetch("token")
       end
 
-      def private_dependency_not_reachable?(npm_response)
-        # Check whether this dependency is (likely to be) private
-        if dependency_registry == "registry.npmjs.org"
-          return false unless dependency.name.start_with?("@")
-
-          web_response = Excon.get(
-            "https://www.npmjs.com/package/#{dependency.name}",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-          return web_response.status == 404
-        end
-
-        [401, 403, 404].include?(npm_response.status)
-      end
-
       def non_standard_registry?
         dependency_registry != "registry.npmjs.org"
       end
