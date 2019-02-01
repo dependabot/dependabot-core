@@ -262,6 +262,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           }]
         end
 
+        before do
+          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+            to_return(status: 404)
+        end
+
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_details_from_registry }.
@@ -603,6 +608,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         before do
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+            to_return(status: 404)
         end
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -624,6 +631,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.npmjs.org")
             end
+        end
+
+        context "that can be found on www.npmjs.com" do
+          before do
+            stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+              to_return(status: 200)
+          end
+
+          it "raises an error" do
+            expect { version_finder.latest_version_details_from_registry }.
+              to raise_error(described_class::RegistryError)
+          end
         end
       end
     end
