@@ -134,22 +134,16 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      let(:rubygems_url) { "https://rubygems.org/api/v1/gems/business.json" }
-      let(:rubygems_response_code) { 200 }
-      let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
-      before do
-        stub_request(:get, rubygems_url).
-          to_return(status: rubygems_response_code, body: rubygems_response)
-      end
+      context "when the source code can't be found" do
+        before do
+          allow_any_instance_of(DummyPackageManager::MetadataFinder).
+            to receive(:look_up_source).and_return(nil)
+        end
 
-      context "with no rubygems listing" do
-        let(:rubygems_response_code) { 404 }
-        let(:rubygems_response) { "This rubygem could not be found." }
         it { is_expected.to eq(false) }
       end
 
       context "with source code hosted on GitHub" do
-        let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
         let(:service_pack_url) do
           "https://github.com/gocardless/business.git/info/refs"\
@@ -256,9 +250,12 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "with source code not hosted on GitHub" do
-        let(:rubygems_response) do
-          fixture("ruby", "rubygems_response_bitbucket.json")
+        before do
+          allow_any_instance_of(DummyPackageManager::MetadataFinder).
+            to receive(:look_up_source).
+            and_return(Dependabot::Source.from_url(source_url))
         end
+        let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
           "https://bitbucket.org/gocardless/business.git/info/refs"\
           "?service=git-upload-pack"
