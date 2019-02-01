@@ -1,3 +1,7 @@
+## v0.94.0, 1 February 2019
+
+- Reorg bundler
+
 ## v0.93.17, 1 February 2019
 
 - JS: Better detection of whether an npm registry needs auth
