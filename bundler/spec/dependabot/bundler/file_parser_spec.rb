@@ -49,7 +49,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        it { is_expected.to be_production }
         its(:name) { is_expected.to eq("business") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) { is_expected.to eq("1.4.0") }
@@ -117,7 +116,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        it { is_expected.to_not be_production }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
@@ -151,7 +149,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        it { is_expected.to be_production }
         its(:name) { is_expected.to eq("business") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) { is_expected.to eq("1.4.0") }
@@ -523,7 +520,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
           end
 
           it { is_expected.to be_a(Dependabot::Dependency) }
-          it { is_expected.to be_production }
           its(:name) { is_expected.to eq("gitlab") }
           its(:version) { is_expected.to eq("4.2.0") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
