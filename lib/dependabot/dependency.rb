@@ -10,7 +10,7 @@ module Dependabot
       production_check = @production_checks[package_manager]
       return production_check if production_check
 
-      ->(_) { true }
+      raise "Unsupported package_manager #{package_manager}"
     end
 
     def self.register_production_check(package_manager, production_check)

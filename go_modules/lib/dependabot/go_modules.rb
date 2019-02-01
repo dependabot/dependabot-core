@@ -13,3 +13,7 @@ require "dependabot/go_modules/version"
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler.
   register_label_details("go_modules", name: "go", colour: "16e2e2")
+
+require "dependabot/dependency"
+Dependabot::Dependency.
+  register_production_check("go_modules", ->(groups) { true })
