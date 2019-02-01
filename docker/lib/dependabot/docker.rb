@@ -14,4 +14,4 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("docker", name: "docker", colour: "21ceff")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("docker", ->(groups) { true })
+Dependabot::Dependency.register_production_check("docker", ->(_) { true })

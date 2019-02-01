@@ -15,4 +15,4 @@ Dependabot::PullRequestCreator::Labeler.
 
 require "dependabot/dependency"
 Dependabot::Dependency.
-  register_production_check("submodules", ->(groups) { true })
+  register_production_check("submodules", ->(_) { true })

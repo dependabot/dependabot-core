@@ -15,4 +15,4 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("gradle", name: "java", colour: "ffa221")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("gradle", ->(groups) { true })
+Dependabot::Dependency.register_production_check("gradle", ->(_) { true })

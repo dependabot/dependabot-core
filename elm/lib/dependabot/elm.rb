@@ -15,4 +15,4 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("elm", name: "elm", colour: "76d3f2")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("elm", ->(groups) { true })
+Dependabot::Dependency.register_production_check("elm", ->(_) { true })

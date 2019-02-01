@@ -15,4 +15,4 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("maven", name: "java", colour: "ffa221")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("maven", ->(groups) { true })
+Dependabot::Dependency.register_production_check("maven", ->(_) { true })

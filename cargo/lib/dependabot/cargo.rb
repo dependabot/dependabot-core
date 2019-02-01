@@ -15,4 +15,4 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("cargo", name: "rust", colour: "000000")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("cargo", ->(groups) { true })
+Dependabot::Dependency.register_production_check("cargo", ->(_) { true })
