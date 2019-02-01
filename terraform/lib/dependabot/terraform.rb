@@ -9,3 +9,7 @@ require "dependabot/terraform/file_updater"
 require "dependabot/terraform/metadata_finder"
 require "dependabot/terraform/requirement"
 require "dependabot/terraform/version"
+
+require "dependabot/pull_request_creator/labeler"
+Dependabot::PullRequestCreator::Labeler.
+  register_label_details("terraform", name: "terraform", colour: "5C4EE5")

@@ -29,7 +29,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       package_manager: package_manager
     )
   end
-  let(:package_manager) { "bundler" }
+  let(:package_manager) { "dummy" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_requirements) do

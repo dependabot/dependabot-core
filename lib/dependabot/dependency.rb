@@ -4,6 +4,19 @@ require "rubygems_version_patch"
 
 module Dependabot
   class Dependency
+    @production_checks = {}
+
+    def self.production_check_for_package_manager(package_manager)
+      production_check = @production_checks[package_manager]
+      return production_check if production_check
+
+      ->(_) { true }
+    end
+
+    def self.register_production_check(package_manager, production_check)
+      @production_checks[package_manager] = production_check
+    end
+
     attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements
 
@@ -39,33 +52,15 @@ module Dependabot
       previous_version || (version && previous_requirements.nil?)
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity
-    # rubocop:disable Metrics/PerceivedComplexity
     def production?
       return true unless top_level?
 
       groups = requirements.flat_map { |r| r.fetch(:groups).map(&:to_s) }
 
-      case package_manager
-      when "hex" then groups.empty? || groups.any? { |g| g.include?("prod") }
-      when "npm_and_yarn"
-        groups.include?("optionalDependencies") ||
-          groups.include?("dependencies")
-      when "composer" then groups.include?("runtime")
-      when "pip"
-        groups.empty? ||
-          groups.include?("default") ||
-          groups.include?("dependencies")
-      when "bundler"
-        groups.empty? ||
-          groups.include?("runtime") ||
-          groups.include?("default") ||
-          groups.any? { |g| g.include?("prod") }
-      else true
-      end
+      self.class.
+        production_check_for_package_manager(package_manager).
+        call(groups)
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def display_name
       return name unless %w(maven gradle).include?(package_manager)

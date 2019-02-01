@@ -78,7 +78,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:gemfile_lock) do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
+      content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
 
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                    path: "Gemfile.lock",
                    mode: "100644",
                    type: "blob",
-                   content: fixture("ruby", "lockfiles", "Gemfile.lock")
+                   content: fixture("ruby", "gemfiles", "Gemfile")
                  }
                ]
              })

@@ -8,3 +8,7 @@ require "dependabot/git_submodules/update_checker"
 require "dependabot/git_submodules/file_updater"
 require "dependabot/git_submodules/metadata_finder"
 require "dependabot/git_submodules/requirement"
+
+require "dependabot/pull_request_creator/labeler"
+Dependabot::PullRequestCreator::Labeler.
+  register_label_details("submodules", name: "submodules", colour: "000000")

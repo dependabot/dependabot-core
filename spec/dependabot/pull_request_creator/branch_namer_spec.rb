@@ -28,19 +28,13 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
   end
-  let(:files) { [gemfile, gemfile_lock] }
+  let(:files) { [gemfile] }
   let(:target_branch) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
       name: "Gemfile",
       content: fixture("ruby", "gemfiles", "Gemfile")
-    )
-  end
-  let(:gemfile_lock) do
-    Dependabot::DependencyFile.new(
-      name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
     )
   end
 
@@ -53,13 +47,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         Dependabot::DependencyFile.new(
           name: "Gemfile",
           content: fixture("ruby", "gemfiles", "Gemfile"),
-          directory: directory
-        )
-      end
-      let(:gemfile_lock) do
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: fixture("ruby", "lockfiles", "Gemfile.lock"),
           directory: directory
         )
       end

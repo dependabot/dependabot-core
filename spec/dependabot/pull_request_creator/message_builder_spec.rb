@@ -57,7 +57,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:gemfile_lock) do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
-      content: fixture("ruby", "lockfiles", "Gemfile.lock")
+      content: fixture("ruby", "gemfiles", "Gemfile")
     )
   end
 

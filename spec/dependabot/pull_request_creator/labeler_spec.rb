@@ -37,7 +37,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       name: "business",
       version: version,
       previous_version: previous_version,
-      package_manager: "bundler",
+      package_manager: "dummy",
       requirements: requirements,
       previous_requirements: previous_requirements
     )

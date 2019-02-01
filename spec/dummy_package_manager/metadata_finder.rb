@@ -7,7 +7,11 @@ module DummyPackageManager
   class MetadataFinder < Dependabot::MetadataFinders::Base
     private
 
-    def look_up_source; end
+    def look_up_source
+      Dependabot::Source.from_url(
+        "https://github.com/gocardless/#{dependency.name}"
+      )
+    end
   end
 end
 
