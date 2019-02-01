@@ -1,3 +1,9 @@
+## v0.93.17, 1 February 2019
+
+- JS: Better detection of whether an npm registry needs auth
+- Increase max retries for GitHub client
+- Python: Bump hashin from 0.14.4 to 0.14.5 in /python/helpers
+
 ## v0.93.16, 31 January 2019
 
 - Go: Retry resolvability errors in parser
