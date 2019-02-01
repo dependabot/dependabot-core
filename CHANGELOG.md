@@ -1,3 +1,7 @@
+## v0.94.1, 1 February 2019
+
+- Add bundler to omnibus
+
 ## v0.94.0, 1 February 2019
 
 - Reorg bundler
