@@ -13,6 +13,12 @@ module Dependabot
     class Base
       attr_reader :source, :credentials
 
+      CLIENT_NOT_FOUND_ERRORS = [
+        Octokit::NotFound,
+        Gitlab::Error::NotFound,
+        Dependabot::Clients::Bitbucket::NotFound
+      ].freeze
+
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
       end
@@ -48,8 +54,7 @@ module Dependabot
         branch = target_branch || default_branch_for_repo
 
         @commit ||= client_for_provider.fetch_commit(repo, branch)
-      rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+      rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::BranchNotFound, branch
       rescue Octokit::Conflict => error
         raise unless error.message.include?("Repository is empty")
@@ -59,21 +64,17 @@ module Dependabot
 
       def client_for_provider
         case source.provider
-        when "github"
-          github_client_for_source
-        when "gitlab"
-          gitlab_client
-        when "bitbucket"
-          bitbucket_client
+        when "github" then github_client_for_source
+        when "gitlab" then gitlab_client
+        when "bitbucket" then bitbucket_client
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
 
       def default_branch_for_repo
-        @default_branch_for_repo ||=
-          client_for_provider.fetch_default_branch(repo)
-      rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+        @default_branch_for_repo ||= client_for_provider.
+                                     fetch_default_branch(repo)
+      rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::RepoNotFound, source
       end
 
@@ -83,8 +84,7 @@ module Dependabot
         return unless repo_contents(dir: dir).map(&:name).include?(basename)
 
         fetch_file_from_host(filename)
-      rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+      rescue *CLIENT_NOT_FOUND_ERRORS
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -98,8 +98,7 @@ module Dependabot
           directory: directory,
           type: type
         )
-      rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+      rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -121,7 +120,7 @@ module Dependabot
 
         # Don't fetch contents of repos nested in submodules
         submods = @submodule_directories
-        if submods.keys.any? { |k| path.match?(%r{#{Regexp.quote(k)}(/|$)}) }
+        if submods.keys.any? { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }
           return []
         end
 
@@ -133,8 +132,7 @@ module Dependabot
           when "bitbucket" then bitbucket_repo_contents(path)
           else raise "Unsupported provider '#{source.provider}'."
           end
-      rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+      rescue *CLIENT_NOT_FOUND_ERRORS
         raise if raise_errors
 
         []
