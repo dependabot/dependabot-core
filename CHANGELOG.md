@@ -1,3 +1,7 @@
+## v0.94.3, 2 February 2019
+
+- Better name for language label details
+
 ## v0.94.2, 2 February 2019
 
 - Add class attribute_reader to Labler
