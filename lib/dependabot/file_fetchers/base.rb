@@ -62,22 +62,6 @@ module Dependabot
 
       private
 
-      def client_for_provider
-        case source.provider
-        when "github" then github_client_for_source
-        when "gitlab" then gitlab_client
-        when "bitbucket" then bitbucket_client
-        else raise "Unsupported provider '#{source.provider}'."
-        end
-      end
-
-      def default_branch_for_repo
-        @default_branch_for_repo ||= client_for_provider.
-                                     fetch_default_branch(repo)
-      rescue *CLIENT_NOT_FOUND_ERRORS
-        raise Dependabot::RepoNotFound, source
-      end
-
       def fetch_file_if_present(filename)
         dir = File.dirname(filename)
         basename = File.basename(filename)
@@ -94,7 +78,7 @@ module Dependabot
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
-          content: fetch_file_content(path),
+          content: _fetch_file_content(path),
           directory: directory,
           type: type
         )
@@ -127,9 +111,9 @@ module Dependabot
         @repo_contents ||= {}
         @repo_contents[dir] ||=
           case source.provider
-          when "github" then github_repo_contents(path)
-          when "gitlab" then gitlab_repo_contents(path)
-          when "bitbucket" then bitbucket_repo_contents(path)
+          when "github" then _github_repo_contents(path)
+          when "gitlab" then _gitlab_repo_contents(path)
+          when "bitbucket" then _bitbucket_repo_contents(path)
           else raise "Unsupported provider '#{source.provider}'."
           end
       rescue *CLIENT_NOT_FOUND_ERRORS
@@ -138,9 +122,13 @@ module Dependabot
         []
       end
 
-      def github_repo_contents(path)
+      #################################################
+      # INTERNAL METHODS (not for use by sub-classes) #
+      #################################################
+
+      def _github_repo_contents(path)
         path = path.gsub(" ", "%20")
-        github_response = github_client_for_source.
+        github_response = github_client.
                           contents(repo, path: path, ref: commit)
 
         if github_response.respond_to?(:type) &&
@@ -148,7 +136,7 @@ module Dependabot
           @submodule_directories[path] = github_response
 
           sub_source = Source.from_url(github_response.submodule_git_url)
-          github_response = github_client_for_source.
+          github_response = github_client.
                             contents(sub_source.repo, ref: github_response.sha)
         elsif github_response.respond_to?(:type)
           raise Octokit::NotFound
@@ -165,7 +153,7 @@ module Dependabot
         end
       end
 
-      def gitlab_repo_contents(path)
+      def _gitlab_repo_contents(path)
         gitlab_client.
           repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
@@ -178,7 +166,7 @@ module Dependabot
           end
       end
 
-      def bitbucket_repo_contents(path)
+      def _bitbucket_repo_contents(path)
         response = bitbucket_client.fetch_repo_contents(
           repo,
           commit,
@@ -201,17 +189,17 @@ module Dependabot
         end
       end
 
-      def fetch_file_content(path)
+      def _fetch_file_content(path)
         path = path.gsub(%r{^/*}, "")
         dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
 
         if @submodule_directories.key?(dir)
-          return fetch_submodule_file_content(path)
+          return _fetch_submodule_file_content(path)
         end
 
         case source.provider
         when "github"
-          fetch_file_content_from_github(path, repo, commit)
+          _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
@@ -221,7 +209,7 @@ module Dependabot
         end
       end
 
-      def fetch_submodule_file_content(path)
+      def _fetch_submodule_file_content(path)
         path = path.gsub(%r{^/*}, "")
         dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
         submodule = @submodule_directories[dir]
@@ -233,7 +221,7 @@ module Dependabot
 
         case provider
         when "github"
-          fetch_file_content_from_github(path, repo, commit)
+          _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
@@ -244,11 +232,11 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      def fetch_file_content_from_github(path, repo, commit)
-        tmp = github_client_for_source.contents(repo, path: path, ref: commit)
+      def _fetch_file_content_from_github(path, repo, commit)
+        tmp = github_client.contents(repo, path: path, ref: commit)
 
         if tmp.type == "symlink"
-          tmp = github_client_for_source.contents(
+          tmp = github_client.contents(
             repo,
             path: tmp.target,
             ref: commit
@@ -266,15 +254,31 @@ module Dependabot
         file_details = repo_contents(dir: dir).find { |f| f.name == basename }
         raise unless file_details
 
-        tmp = github_client_for_source.blob(repo, file_details.sha)
+        tmp = github_client.blob(repo, file_details.sha)
         return tmp.content if tmp.encoding == "utf-8"
 
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
 
-      def github_client_for_source
-        @github_client_for_source ||=
+      def default_branch_for_repo
+        @default_branch_for_repo ||= client_for_provider.
+                                     fetch_default_branch(repo)
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::RepoNotFound, source
+      end
+
+      def client_for_provider
+        case source.provider
+        when "github" then github_client
+        when "gitlab" then gitlab_client
+        when "bitbucket" then bitbucket_client
+        else raise "Unsupported provider '#{source.provider}'."
+        end
+      end
+
+      def github_client
+        @github_client ||=
           Dependabot::Clients::GithubWithRetries.for_source(
             source: source,
             credentials: credentials
