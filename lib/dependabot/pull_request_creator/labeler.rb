@@ -10,20 +10,20 @@ module Dependabot
     class Labeler
       DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i.freeze
 
-      @label_details = {}
+      @package_manager_labels = {}
 
       class << self
-        attr_reader :label_details
+        attr_reader :package_manager_labels
 
         def label_details_for_package_manager(package_manager)
-          label_details = @label_details[package_manager]
+          label_details = @package_manager_labels[package_manager]
           return label_details if label_details
 
           raise "Unsupported package_manager #{package_manager}"
         end
 
         def register_label_details(package_manager, label_details)
-          @label_details[package_manager] = label_details
+          @package_manager_labels[package_manager] = label_details
         end
       end
 
