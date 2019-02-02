@@ -12,15 +12,19 @@ module Dependabot
 
       @label_details = {}
 
-      def self.label_details_for_package_manager(package_manager)
-        label_details = @label_details[package_manager]
-        return label_details if label_details
+      class << self
+        attr_reader :label_details
 
-        raise "Unsupported package_manager #{package_manager}"
-      end
+        def label_details_for_package_manager(package_manager)
+          label_details = @label_details[package_manager]
+          return label_details if label_details
 
-      def self.register_label_details(package_manager, label_details)
-        @label_details[package_manager] = label_details
+          raise "Unsupported package_manager #{package_manager}"
+        end
+
+        def register_label_details(package_manager, label_details)
+          @label_details[package_manager] = label_details
+        end
       end
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,

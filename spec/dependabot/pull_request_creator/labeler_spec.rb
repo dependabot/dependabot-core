@@ -55,6 +55,12 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
 
+  describe ".label_details" do
+    subject { described_class.label_details }
+
+    it { is_expected.to eq("dummy" => { colour: "ce2d2d", name: "ruby" }) }
+  end
+
   describe "#create_default_labels_if_required" do
     subject { labeler.create_default_labels_if_required }
 
