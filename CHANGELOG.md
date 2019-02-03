@@ -1,3 +1,7 @@
+## v0.94.7, 3 February 2019
+
+- Add php-mongodb to Dockerfile
+
 ## v0.94.6, 3 February 2019
 
 - Raise normal error when submodule source isn't supported
