@@ -212,7 +212,10 @@ module Dependabot
       end
 
       def _full_specification_for(path, fetch_submodules:)
-        if fetch_submodules && _submodule_for(path)
+        if fetch_submodules && _submodule_for(path) &&
+           Source.from_url(
+             @submodule_directories[_submodule_for(path)].submodule_git_url
+           )
           submodule_details = @submodule_directories[_submodule_for(path)]
           sub_source = Source.from_url(submodule_details.submodule_git_url)
           {
