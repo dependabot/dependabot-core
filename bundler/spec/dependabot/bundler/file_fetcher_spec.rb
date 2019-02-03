@@ -392,6 +392,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
               body: fixture("github", "gemspec_content.json"),
               headers: { "content-type" => "application/json" }
             )
+          stub_request(:get, sub_url + "bump-core?ref=sha2").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
         end
 
         it "fetches gemspec from path dependency" do
@@ -444,6 +451,9 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     context "that has an unfetchable directory path" do
       before do
         stub_request(:get, url + "plugins/bump-core?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, url + "plugins?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
       end

@@ -104,11 +104,11 @@ module Dependabot
           map { |f| path.gsub(/\*$/, f.name) }
       end
 
-      def fetch_file_with_root_fallback(filename, type: "file")
+      def fetch_file_with_root_fallback(filename)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
 
         begin
-          fetch_file_from_host(filename, type: type)
+          fetch_file_from_host(filename, fetch_submodules: true)
         rescue Dependabot::DependencyFileNotFound
           # If the file isn't found at the full path, try looking for it
           # without considering the directory (i.e., check if the path should
@@ -117,9 +117,9 @@ module Dependabot
 
           DependencyFile.new(
             name: cleaned_filename,
-            content: fetch_file_content(cleaned_filename),
+            content: _fetch_file_content(cleaned_filename),
             directory: directory,
-            type: type
+            type: "file"
           )
         end
       rescue Octokit::NotFound, Gitlab::Error::NotFound

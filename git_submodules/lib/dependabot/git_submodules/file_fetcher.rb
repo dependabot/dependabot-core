@@ -65,7 +65,7 @@ module Dependabot
       end
 
       def fetch_github_submodule_commit(path)
-        content = github_client_for_source.contents(
+        content = github_client.contents(
           repo,
           path: path,
           ref: commit
