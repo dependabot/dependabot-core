@@ -1,3 +1,8 @@
+## v0.94.4, 3 February 2019
+
+- Fetch files that are nested in submodules if asked
+- Clean up file fetcher base class
+
 ## v0.94.3, 2 February 2019
 
 - Better name for language label details
