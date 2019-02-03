@@ -7,9 +7,8 @@ require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:registry_listing_url) { "https://registry.npmjs.org/etag" }
-  let(:registry_response) do
-    fixture("npm_responses", "etag.json")
-  end
+  let(:registry_response) { fixture("npm_responses", "etag.json") }
+  let(:login_form) { fixture("npm_responses", "login_form.html") }
   before do
     stub_request(:get, registry_listing_url).
       to_return(status: 200, body: registry_response)
@@ -264,7 +263,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         before do
           stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
-            to_return(status: 404)
+            to_return(status: 200, body: login_form)
         end
 
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
@@ -609,7 +608,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             to_return(status: 404, body: "{\"error\":\"Not found\"}")
           stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
-            to_return(status: 404)
+            to_return(status: 200, body: login_form)
         end
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -636,7 +635,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         context "that can be found on www.npmjs.com" do
           before do
             stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
-              to_return(status: 200)
+              to_return(
+                status: 200,
+                body: fixture("npm_responses", "babel-core.html")
+              )
           end
 
           it "raises an error" do

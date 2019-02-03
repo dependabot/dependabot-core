@@ -297,7 +297,7 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
-            return web_response.status == 404
+            return web_response.body.include?("Forgot password?")
           end
 
           true
