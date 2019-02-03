@@ -661,6 +661,13 @@ RSpec.describe Dependabot::Python::FileFetcher do
             stub_request(:get, url + "my/setup.cfg?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
+            stub_request(:get, url + "my?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
             stub_request(:get, url + "my-single/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -671,6 +678,13 @@ RSpec.describe Dependabot::Python::FileFetcher do
             stub_request(:get, url + "my-single/setup.cfg?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
+            stub_request(:get, url + "my-single?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
             stub_request(:get, url + "my-other/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -813,6 +827,13 @@ RSpec.describe Dependabot::Python::FileFetcher do
             stub_request(:get, url + "flowmachine/setup.cfg?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
+            stub_request(:get, url + "flowmachine?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
             stub_request(:get, url + "flowclient/setup.py?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
@@ -823,6 +844,13 @@ RSpec.describe Dependabot::Python::FileFetcher do
             stub_request(:get, url + "flowclient/setup.cfg?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
+            stub_request(:get, url + "flowclient?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
           end
 
           it "fetches the setup.py" do

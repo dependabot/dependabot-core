@@ -8,6 +8,7 @@ require "dependabot/clients/bitbucket"
 require "dependabot/clients/gitlab"
 require "dependabot/shared_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileFetchers
     class Base
@@ -62,98 +63,119 @@ module Dependabot
 
       private
 
-      def fetch_file_if_present(filename)
+      def fetch_file_if_present(filename, fetch_submodules: false)
         dir = File.dirname(filename)
         basename = File.basename(filename)
-        return unless repo_contents(dir: dir).map(&:name).include?(basename)
 
-        fetch_file_from_host(filename)
+        repo_includes_basename =
+          repo_contents(dir: dir, fetch_submodules: fetch_submodules).
+          reject { |f| f.type == "dir" }.
+          map(&:name).include?(basename)
+        return unless repo_includes_basename
+
+        fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      def fetch_file_from_host(filename, type: "file")
+      def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
-          content: _fetch_file_content(path),
           directory: directory,
-          type: type
+          type: type,
+          content: _fetch_file_content(path, fetch_submodules: fetch_submodules)
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      def fetch_file_from_host_or_submodule(filename, type: "file")
-        fetch_file_from_host(filename, type: type)
-      rescue Dependabot::DependencyFileNotFound => error
-        begin
-          repo_contents(dir: File.dirname(filename))
-        rescue StandardError
-          raise error
-        end
-
-        fetch_file_from_host(filename, type: type)
-      end
-
-      def repo_contents(dir: ".", raise_errors: true)
-        path = Pathname.new(File.join(directory, dir)).
-               cleanpath.to_path.gsub(%r{^/*}, "")
-
-        # Don't fetch contents of repos nested in submodules
-        submods = @submodule_directories
-        if submods.keys.any? { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }
-          return []
-        end
+      def repo_contents(dir: ".", ignore_base_directory: false,
+                        raise_errors: true, fetch_submodules: false)
+        dir = File.join(directory, dir) unless ignore_base_directory
+        path = Pathname.new(File.join(dir)).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
-        @repo_contents[dir] ||=
-          case source.provider
-          when "github" then _github_repo_contents(path)
-          when "gitlab" then _gitlab_repo_contents(path)
-          when "bitbucket" then _bitbucket_repo_contents(path)
-          else raise "Unsupported provider '#{source.provider}'."
-          end
-      rescue *CLIENT_NOT_FOUND_ERRORS
-        raise if raise_errors
-
-        []
+        @repo_contents[dir] ||= _fetch_repo_contents(
+          path,
+          raise_errors: raise_errors,
+          fetch_submodules: fetch_submodules
+        )
       end
 
       #################################################
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
 
-      def _github_repo_contents(path)
+      def _fetch_repo_contents(path, fetch_submodules: false,
+                               raise_errors: true)
         path = path.gsub(" ", "%20")
-        github_response = github_client.
-                          contents(repo, path: path, ref: commit)
+        provider, repo, tmp_path, commit =
+          _full_specification_for(path, fetch_submodules: fetch_submodules).
+          values_at(:provider, :repo, :path, :commit)
+
+        _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        result = raise_errors ? -> { raise } : -> { [] }
+        retrying ||= false
+
+        # If the path changes after calling _fetch_repo_contents_fully_specified
+        # it's because we've found a sub-module (and are fetching them). Trigger
+        # a retry to get its contents.
+        updated_path =
+          _full_specification_for(path, fetch_submodules: fetch_submodules).
+          fetch(:path)
+        retry if updated_path != tmp_path
+
+        return result.call unless fetch_submodules && !retrying
+
+        _find_submodules(path)
+        return result.call unless _submodule_for(path)
+
+        retrying = true
+        retry
+      end
+
+      def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
+        case provider
+        when "github"
+          _github_repo_contents(repo, path, commit)
+        when "gitlab"
+          _gitlab_repo_contents(repo, path, commit)
+        when "bitbucket"
+          _bitbucket_repo_contents(repo, path, commit)
+        else raise "Unsupported provider '#{provider}'."
+        end
+      end
+
+      def _github_repo_contents(repo, path, commit)
+        path = path.gsub(" ", "%20")
+        github_response = github_client.contents(repo, path: path, ref: commit)
 
         if github_response.respond_to?(:type) &&
            github_response.type == "submodule"
           @submodule_directories[path] = github_response
-
-          sub_source = Source.from_url(github_response.submodule_git_url)
-          github_response = github_client.
-                            contents(sub_source.repo, ref: github_response.sha)
+          raise Octokit::NotFound
         elsif github_response.respond_to?(:type)
           raise Octokit::NotFound
         end
 
-        github_response.map do |f|
-          OpenStruct.new(
-            name: f.name,
-            path: f.path,
-            type: f.type,
-            sha: f.sha,
-            size: f.size
-          )
-        end
+        github_response.map { |f| _build_github_file_struct(f) }
       end
 
-      def _gitlab_repo_contents(path)
+      def _build_github_file_struct(file)
+        OpenStruct.new(
+          name: file.name,
+          path: file.path,
+          type: file.type,
+          sha: file.sha,
+          size: file.size
+        )
+      end
+
+      def _gitlab_repo_contents(repo, path, commit)
         gitlab_client.
           repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
@@ -166,7 +188,7 @@ module Dependabot
           end
       end
 
-      def _bitbucket_repo_contents(path)
+      def _bitbucket_repo_contents(repo, path, commit)
         response = bitbucket_client.fetch_repo_contents(
           repo,
           commit,
@@ -189,15 +211,48 @@ module Dependabot
         end
       end
 
-      def _fetch_file_content(path)
-        path = path.gsub(%r{^/*}, "")
-        dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
-
-        if @submodule_directories.key?(dir)
-          return _fetch_submodule_file_content(path)
+      def _full_specification_for(path, fetch_submodules:)
+        if fetch_submodules && _submodule_for(path)
+          submodule_details = @submodule_directories[_submodule_for(path)]
+          sub_source = Source.from_url(submodule_details.submodule_git_url)
+          {
+            repo: sub_source.repo,
+            commit: submodule_details.sha,
+            provider: sub_source.provider,
+            path: path.gsub(%r{^#{Regexp.quote(_submodule_for(path))}(/|$)}, "")
+          }
+        else
+          {
+            repo: source.repo,
+            path: path,
+            commit: commit,
+            provider: source.provider
+          }
         end
+      end
 
-        case source.provider
+      def _fetch_file_content(path, fetch_submodules: false)
+        path = path.gsub(%r{^/*}, "")
+
+        provider, repo, path, commit =
+          _full_specification_for(path, fetch_submodules: fetch_submodules).
+          values_at(:provider, :repo, :path, :commit)
+
+        _fetch_file_content_fully_specified(provider, repo, path, commit)
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        retrying ||= false
+
+        raise unless fetch_submodules && !retrying && !_submodule_for(path)
+
+        _find_submodules(path)
+        raise unless _submodule_for(path)
+
+        retrying = true
+        retry
+      end
+
+      def _fetch_file_content_fully_specified(provider, repo, path, commit)
+        case provider
         when "github"
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
@@ -209,31 +264,11 @@ module Dependabot
         end
       end
 
-      def _fetch_submodule_file_content(path)
-        path = path.gsub(%r{^/*}, "")
-        dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
-        submodule = @submodule_directories[dir]
-
-        provider = Source.from_url(submodule.submodule_git_url).provider
-        repo = Source.from_url(submodule.submodule_git_url).repo
-        commit = submodule.sha
-        path = path.gsub("#{dir}/", "")
-
-        case provider
-        when "github"
-          _fetch_file_content_from_github(path, repo, commit)
-        when "gitlab"
-          tmp = gitlab_client.get_file(repo, path, commit).content
-          Base64.decode64(tmp).force_encoding("UTF-8").encode
-        when "bitbucket"
-          bitbucket_client.fetch_file_contents(repo, commit, path)
-        else raise "Unsupported provider '#{provider}'."
-        end
-      end
-
       # rubocop:disable Metrics/AbcSize
       def _fetch_file_content_from_github(path, repo, commit)
         tmp = github_client.contents(repo, path: path, ref: commit)
+
+        raise Octokit::NotFound if tmp.is_a?(Array)
 
         if tmp.type == "symlink"
           tmp = github_client.contents(
@@ -266,6 +301,30 @@ module Dependabot
                                      fetch_default_branch(repo)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::RepoNotFound, source
+      end
+
+      # Update the @submodule_directories hash by exploiting a side-effect of
+      # recursively calling `repo_contents` for each directory up the tree
+      # until a submodule is found
+      def _find_submodules(path)
+        path = Pathname.new(path).cleanpath.to_path.gsub(%r{^/*}, "")
+        dir = File.dirname(path)
+
+        return if [directory, "."].include?(dir)
+
+        repo_contents(
+          dir: dir,
+          ignore_base_directory: true,
+          fetch_submodules: true,
+          raise_errors: false
+        )
+      end
+
+      def _submodule_for(path)
+        submodules = @submodule_directories.keys
+        submodules.
+          select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }.
+          max_by(&:length)
       end
 
       def client_for_provider
@@ -303,3 +362,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

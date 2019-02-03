@@ -252,15 +252,16 @@ module Dependabot
         end
         return [] if path == "setup.py" && setup_file
 
-        path_setup_files << fetch_file_from_host(path).
+        path_setup_files << fetch_file_from_host(path, fetch_submodules: true).
                             tap { |f| f.support_file = true }
 
         return path_setup_files unless path.end_with?(".py")
 
         begin
           cfg_path = path.gsub(/\.py$/, ".cfg")
-          path_setup_files << fetch_file_from_host(cfg_path).
-                              tap { |f| f.support_file = true }
+          path_setup_files <<
+            fetch_file_from_host(cfg_path, fetch_submodules: true).
+            tap { |f| f.support_file = true }
         rescue Dependabot::DependencyFileNotFound
           # Ignore lack of a setup.cfg
           nil

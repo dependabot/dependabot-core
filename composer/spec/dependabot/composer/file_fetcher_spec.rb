@@ -263,6 +263,15 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             to_return(status: 404)
           stub_request(
             :get,
+            url + "components/bump-core?ref=sha"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: "[]",
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(
+            :get,
             base_url + "components/bump-core/composer.json?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(

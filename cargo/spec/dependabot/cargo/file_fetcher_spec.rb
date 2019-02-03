@@ -259,6 +259,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         stub_request(:get, url + "src/s3/Cargo.toml?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404, headers: json_header)
+        stub_request(:get, url + "src/s3?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
       end
 
       it "raises a PathDependenciesNotReachable error" do
@@ -288,6 +294,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
         before do
           stub_request(:get, url + "gen/photoslibrary1/Cargo.toml?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404, headers: json_header)
+          stub_request(:get, url + "gen/photoslibrary1?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404, headers: json_header)
+          stub_request(:get, url + "gen?ref=sha").
             with(headers: { "Authorization" => "token token" }).
             to_return(status: 404, headers: json_header)
         end

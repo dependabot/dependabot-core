@@ -218,6 +218,25 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           its(:content) { is_expected.to eq("öäöä") }
         end
+
+        context "when the file is a directory" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "business_files.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                expect(error.file_path).to eq("/requirements.txt")
+              end
+          end
+        end
       end
 
       context "with a directory specified" do
@@ -265,7 +284,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises a custom error" do
           expect { file_fetcher_instance.files }.
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.file_name).to eq("requirements.txt")
+              expect(error.file_path).to eq("/requirements.txt")
             end
         end
       end
@@ -293,6 +312,171 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("octokit") }
+        end
+      end
+
+      context "when the file is in a directory" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def fetch_files
+              [fetch_file_from_host("some/dir/req.txt")]
+            end
+          end
+        end
+
+        before do
+          stub_request(:get, url + "some/dir/req.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "gemfile_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "some/dir/req.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("octokit") }
+        end
+
+        context "that is in a submodule (shallow)" do
+          before do
+            stub_request(:get, url + "some/dir/req.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            submodule_details =
+              fixture("github", "submodule.json").
+              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some/dir?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: submodule_details,
+                headers: { "content-type" => "application/json" }
+              )
+
+            sub_url = "https://api.github.com/repos/dependabot/"\
+                      "manifesto/contents/"
+            stub_request(:get, sub_url + "?ref=sha2").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "business_files.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, sub_url + "req.txt?ref=sha2").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "gemfile_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                expect(error.file_path).to eq("/some/dir/req.txt")
+              end
+          end
+
+          context "with fetching submodule files requested" do
+            let(:child_class) do
+              Class.new(described_class) do
+                def fetch_files
+                  [
+                    fetch_file_from_host(
+                      "some/dir/req.txt",
+                      fetch_submodules: true
+                    )
+                  ]
+                end
+              end
+            end
+
+            describe "the file" do
+              subject { files.find { |file| file.name == "some/dir/req.txt" } }
+
+              it { is_expected.to be_a(Dependabot::DependencyFile) }
+              its(:content) { is_expected.to include("octokit") }
+            end
+          end
+        end
+
+        context "that is in a submodule (deep)" do
+          before do
+            stub_request(:get, url + "some/dir/req.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            stub_request(:get, url + "some/dir?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            submodule_details =
+              fixture("github", "submodule.json").
+              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: submodule_details,
+                headers: { "content-type" => "application/json" }
+              )
+
+            sub_url = "https://api.github.com/repos/dependabot/"\
+                      "manifesto/contents/"
+            stub_request(:get, sub_url + "?ref=sha2").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, sub_url + "dir?ref=sha2").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "business_files.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, sub_url + "dir/req.txt?ref=sha2").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "gemfile_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                expect(error.file_path).to eq("/some/dir/req.txt")
+              end
+          end
+
+          context "with fetching submodule files requested" do
+            let(:child_class) do
+              Class.new(described_class) do
+                def fetch_files
+                  [
+                    fetch_file_from_host(
+                      "some/dir/req.txt",
+                      fetch_submodules: true
+                    )
+                  ]
+                end
+              end
+            end
+
+            describe "the file" do
+              subject { files.find { |file| file.name == "some/dir/req.txt" } }
+
+              it { is_expected.to be_a(Dependabot::DependencyFile) }
+              its(:content) { is_expected.to include("octokit") }
+            end
+          end
         end
       end
 
@@ -440,7 +624,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises a custom error" do
           expect { file_fetcher_instance.files }.
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.file_name).to eq("requirements.txt")
+              expect(error.file_path).to eq("/requirements.txt")
             end
         end
       end
@@ -517,7 +701,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises a custom error" do
           expect { file_fetcher_instance.files }.
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
-              expect(error.file_name).to eq("requirements.txt")
+              expect(error.file_path).to eq("/requirements.txt")
             end
         end
       end

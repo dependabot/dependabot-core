@@ -69,7 +69,7 @@ module Dependabot
             )
           ].flatten
         rescue Dependabot::DependencyFileNotFound
-          raise unless fetch_file_from_host_or_submodule(path)
+          raise unless fetch_file_from_host(path, fetch_submodules: true)
 
           [] # Ignore any child submodules (since we can't update them)
         end

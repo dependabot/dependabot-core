@@ -158,10 +158,10 @@ module Dependabot
       end
 
       def fetch_gemspecs_from_directory(dir_path)
-        repo_contents(dir: dir_path).
+        repo_contents(dir: dir_path, fetch_submodules: true).
           select { |f| f.name.end_with?(".gemspec") }.
           map { |f| File.join(dir_path, f.name) }.
-          map { |fp| fetch_file_from_host(fp) }
+          map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
       end
 
       def fetch_path_gemspec_paths

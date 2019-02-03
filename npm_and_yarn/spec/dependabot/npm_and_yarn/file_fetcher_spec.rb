@@ -138,6 +138,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
+          stub_request(:get, File.join(url, "deps/etag?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, File.join(url, "deps?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
         end
 
         it "fetches the package.json and ignores the missing path dep" do
@@ -368,6 +374,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     context "that has an unfetchable path" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, File.join(url, "deps/etag?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, File.join(url, "deps?ref=sha")).
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
       end
