@@ -1,3 +1,7 @@
+## v0.94.6, 3 February 2019
+
+- Raise normal error when submodule source isn't supported
+
 ## v0.94.5, 3 February 2019
 
 - JS: Look for login form redirects, not 404s, when checking packages on npmjs.com
