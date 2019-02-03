@@ -76,6 +76,7 @@ namespace :gems do
       else
         puts "> Releasing #{gem_path}"
         sh "gem push #{gem_path}"
+        sleep(1)
       end
     end
   end
