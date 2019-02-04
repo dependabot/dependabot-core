@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v3" alt="Dependabot" width="224">
+  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v4" alt="Dependabot" width="336">
 </p>
 
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
