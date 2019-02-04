@@ -60,17 +60,22 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def dependency_spec
           spec = dependency.name
 
-          if git_dependency?
+          if git_dependency? && git_source_url && git_previous_version
+            spec = "#{git_source_url}##{git_previous_version}"
+          elsif git_dependency?
             spec += ":#{git_previous_version}" if git_previous_version
           elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
+            spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def git_previous_version
           TomlRB.parse(lockfile.content).
@@ -78,6 +83,12 @@ module Dependabot
             select { |p| p["name"] == dependency.name }.
             find { |p| p["source"].end_with?(dependency.previous_version) }.
             fetch("version")
+        end
+
+        def git_source_url
+          dependency.previous_requirements.
+            find { |r| r.dig(:source, :type) == "git" }&.
+            dig(:source, :url)
         end
 
         def desired_lockfile_content

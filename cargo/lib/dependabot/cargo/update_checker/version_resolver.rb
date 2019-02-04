@@ -78,17 +78,22 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def dependency_spec
           spec = dependency.name
 
-          if git_dependency?
+          if git_dependency? && git_source_url && git_dependency_version
+            spec = "#{git_source_url}##{git_dependency_version}"
+          elsif git_dependency?
             spec += ":#{git_dependency_version}" if git_dependency_version
           elsif dependency.version
             spec += ":#{dependency.version}"
+            spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def run_cargo_command(command)
           start = Time.now
@@ -214,6 +219,12 @@ module Dependabot
             select { |p| p["name"] == dependency.name }.
             find { |p| p["source"].end_with?(dependency.version) }.
             fetch("version")
+        end
+
+        def git_source_url
+          dependency.requirements.
+            find { |r| r.dig(:source, :type) == "git" }&.
+            dig(:source, :url)
         end
 
         def dummy_app_content
