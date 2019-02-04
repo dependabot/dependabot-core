@@ -1,3 +1,7 @@
+## v0.94.8, 4 February 2019
+
+- Cargo: More specific details of dependency being updated
+
 ## v0.94.7, 3 February 2019
 
 - Add php-mongodb to Dockerfile
