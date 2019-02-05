@@ -40,6 +40,7 @@ module Dependabot
             raise "Failed to update #{dependency.name}!"
           end
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+          retry if better_specification_needed?(error)
           handle_cargo_error(error)
         end
 
@@ -60,13 +61,47 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
+        def better_specification_needed?(error)
+          return false if @custom_specification
+          return false unless error.message.match?(/specification .* is ambigu/)
+
+          spec_options = error.message.gsub(/.*following:\n/m, "").
+                         lines.map(&:strip)
+
+          ver = if git_dependency? && git_dependency_version
+                  git_dependency_version
+                else
+                  dependency.version
+                end
+
+          if spec_options.count { |s| s.end_with?(ver) } == 1
+            @custom_specification = spec_options.find { |s| s.end_with?(ver) }
+            return true
+          elsif spec_options.count { |s| s.end_with?(ver) } > 1
+            spec_options.select! { |s| s.end_with?(ver) }
+          end
+
+          if git_dependency? && git_source_url &&
+             spec_options.count { |s| s.include?(git_source_url) } >= 1
+            spec_options.select! { |s| s.include?(git_source_url) }
+          end
+
+          @custom_specification = spec_options.first
+          true
+        end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
+
         def dependency_spec
+          return @custom_specification if @custom_specification
+
           spec = dependency.name
 
-          if git_dependency? && git_source_url && git_previous_version
-            spec = "#{git_source_url}##{git_previous_version}"
-          elsif git_dependency?
+          if git_dependency?
             spec += ":#{git_previous_version}" if git_previous_version
           elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
@@ -75,7 +110,6 @@ module Dependabot
 
           spec
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def git_previous_version
           TomlRB.parse(lockfile.content).
