@@ -1,3 +1,7 @@
+## v0.94.9, 5 February 2019
+
+- Docker: Handle tags with both a prefix and a suffix
+
 ## v0.94.8, 4 February 2019
 
 - Cargo: More specific details of dependency being updated
