@@ -12,7 +12,7 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     PATH=".bundle/binstubs:$PATH"
 
 COPY Gemfile dependabot-core.gemspec /home/dependabot/dependabot-core/
-COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
+COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
 RUN bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/terraform

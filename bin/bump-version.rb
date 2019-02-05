@@ -8,7 +8,8 @@ end
 component = ARGV[0].to_sym
 
 # Update version file
-version_path = File.join(__dir__, "..", "lib", "dependabot", "version.rb")
+version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
+                         "version.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
@@ -24,7 +25,7 @@ new_version =
 new_version_contents = version_contents.gsub(version, new_version)
 File.open(version_path, "w") { |f| f.write(new_version_contents) }
 
-puts "✓ lib/dependabot/version.rb updated"
+puts "✓ common/lib/dependabot/version.rb updated"
 
 # Update CHANGELOG
 
