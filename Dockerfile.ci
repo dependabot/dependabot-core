@@ -13,7 +13,7 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
 
 COPY common/Gemfile common/dependabot-common.gemspec /home/dependabot/dependabot-core/common/
 COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
-RUN bundle install
+RUN cd common && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile \
