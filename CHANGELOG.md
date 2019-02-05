@@ -1,3 +1,7 @@
+## v0.94.10, 5 February 2019
+
+- Cargo: Better spec construction
+
 ## v0.94.9, 5 February 2019
 
 - Docker: Handle tags with both a prefix and a suffix
