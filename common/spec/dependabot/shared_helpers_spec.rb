@@ -58,8 +58,8 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stderr_to_stdout) { false }
 
     subject(:run_subprocess) do
-      project_root = File.join(File.dirname(__FILE__), "../..")
-      bin_path = File.join(project_root, "helpers/test/run.rb")
+      spec_root = File.join(File.dirname(__FILE__), "..")
+      bin_path = File.join(spec_root, "helpers/test/run.rb")
       command = "ruby #{bin_path}"
       Dependabot::SharedHelpers.run_helper_subprocess(
         command: command,
