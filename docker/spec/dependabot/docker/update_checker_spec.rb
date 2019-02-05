@@ -226,6 +226,51 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("2.4.2-slim") }
     end
 
+    context "when the dependency's version has a prefix and a suffix" do
+      let(:dependency_name) { "adoptopenjdk/openjdk11" }
+      let(:version) { "jdk-11.0.2.7-alpine-slim" }
+      let(:registry_tags) do
+        fixture("docker", "registry_tags", "openjdk11.json")
+      end
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/adoptopenjdk/openjdk11/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        # Stub the latest version to return a different digest
+        ["jdk-11.0.2.9", "latest"].each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+
+        # Stub an oddly-formatted version to come back as a pre-release
+        stub_request(:head, repo_url + "manifests/jdk-11.28").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response.gsub("3ea1ca1", "11171a2"))
+          )
+      end
+
+      it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
+    end
+
     context "when the dependency has a namespace" do
       let(:dependency_name) { "moj/ruby" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ruby.json") }

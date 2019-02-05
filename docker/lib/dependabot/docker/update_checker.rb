@@ -13,11 +13,18 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
       VERSION_WITH_SUFFIX =
-        /^#{VERSION_REGEX}(?<affix>-[a-z0-9.\-]+)?$/.freeze
+        /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
       VERSION_WITH_PREFIX =
-        /^(?<affix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
+        /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
+      VERSION_WITH_PREFIX_AND_SUFFIX =
+        /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/.
+        freeze
       NAME_WITH_VERSION =
-        /#{VERSION_WITH_PREFIX}|#{VERSION_WITH_SUFFIX}/.freeze
+        /
+          #{VERSION_WITH_PREFIX}|
+          #{VERSION_WITH_SUFFIX}|
+          #{VERSION_WITH_PREFIX_AND_SUFFIX}
+        /x.freeze
 
       def latest_version
         @latest_version ||= fetch_latest_version
@@ -121,11 +128,13 @@ module Dependabot
       end
 
       def comparable_tags_from_registry
-        original_affix = affix_of(dependency.version)
+        original_prefix = prefix_of(dependency.version)
+        original_suffix = suffix_of(dependency.version)
 
         tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
-          select { |tag| affix_of(tag) == original_affix }.
+          select { |tag| prefix_of(tag) == original_prefix }.
+          select { |tag| suffix_of(tag) == original_suffix }.
           reject { |tag| commit_sha_suffix?(tag) }
       end
 
@@ -165,9 +174,10 @@ module Dependabot
         return false unless numeric_version_from(tag)
         return true if tag == numeric_version_from(tag)
 
-        # .NET tags are suffixed with -sdk. There may be other cases we need
-        # to consider in future, too.
-        tag == numeric_version_from(tag) + "-sdk"
+        # .NET tags are suffixed with -sdk
+        return true if tag == numeric_version_from(tag) + "-sdk"
+
+        tag == "jdk-" + numeric_version_from(tag)
       end
 
       def updated_digest
@@ -220,8 +230,12 @@ module Dependabot
         [RestClient::Exceptions::Timeout, DockerRegistry2::NotFound]
       end
 
-      def affix_of(tag)
-        tag.match(NAME_WITH_VERSION).named_captures.fetch("affix")
+      def prefix_of(tag)
+        tag.match(NAME_WITH_VERSION).named_captures.fetch("prefix")
+      end
+
+      def suffix_of(tag)
+        tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
       def prerelease?(tag)
