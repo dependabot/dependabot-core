@@ -10,7 +10,7 @@ require "rubygems/package"
 require "./common/lib/dependabot/version"
 
 GEMSPECS = %w(
-  dependabot-core.gemspec
+  common/dependabot-common.gemspec
   terraform/dependabot-terraform.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
@@ -128,8 +128,8 @@ def changed_packages
     return all_packages
   end
 
-  core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
-                  config helpers lib spec .circleci)
+  core_paths = %w(Dockerfile Dockerfile.ci common/lib common/bin
+                  common/dependabot-common.gemspec)
   core_changed = commit_range_changes_paths?(range, core_paths)
 
   packages = all_packages.select do |package|
@@ -144,8 +144,6 @@ def changed_packages
     end
   end
 
-  # TODO: uncomment or remove this once core is split out into its own package
-  # packages.insert(0, "./") if core_changed
   packages
 end
 # rubocop:enable Metrics/MethodLength
