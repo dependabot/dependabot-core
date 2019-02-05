@@ -4,14 +4,14 @@ RUN useradd -m dependabot
 RUN chown -R dependabot:dependabot /usr/local/.pyenv /opt/go/gopath
 USER dependabot
 
-RUN mkdir -p /home/dependabot/dependabot-core
+RUN mkdir -p /home/dependabot/dependabot-core/common
 WORKDIR /home/dependabot/dependabot-core
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs" \
     PATH=".bundle/binstubs:$PATH"
 
-COPY Gemfile dependabot-core.gemspec /home/dependabot/dependabot-core/
+COPY common/Gemfile common/dependabot-common.gemspec /home/dependabot/dependabot-core/common/
 COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
 RUN bundle install
 
