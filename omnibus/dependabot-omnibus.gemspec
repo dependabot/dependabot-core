@@ -3,18 +3,19 @@
 require "find"
 
 Gem::Specification.new do |spec|
-  core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
+  common_gemspec =
+    Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-omnibus"
-  spec.summary      = "Meta-package that depends on all core dependabot-core " \
-                      "package managers"
-  spec.version      = core_gemspec.version
-  spec.description  = core_gemspec.description
+  spec.summary      = "Meta-package that depends on all dependabot package " \
+                      "managers"
+  spec.version      = common_gemspec.version
+  spec.description  = common_gemspec.description
 
-  spec.author       = core_gemspec.author
-  spec.email        = core_gemspec.email
-  spec.homepage     = core_gemspec.homepage
-  spec.license      = core_gemspec.license
+  spec.author       = common_gemspec.author
+  spec.email        = common_gemspec.email
+  spec.homepage     = common_gemspec.homepage
+  spec.license      = common_gemspec.license
 
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
@@ -22,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-bundler", Dependabot::VERSION
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
-  spec.add_dependency "dependabot-core", Dependabot::VERSION
+  spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-dep", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
