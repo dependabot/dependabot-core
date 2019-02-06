@@ -248,5 +248,28 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         end
       end
     end
+
+    context "when a approvers has been requested" do
+      let(:approvers) { { "approvers" => [1_394_555] } }
+      before do
+        stub_request(
+          :put,
+          "#{repo_api_url}/merge_requests/5/approvers"
+        ).to_return(
+          status: 200,
+          body: fixture("gitlab", "merge_request.json"),
+          headers: json_header
+        )
+      end
+
+      it "adds the approvers to the MR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(
+            :put, "#{repo_api_url}/merge_requests/5/approvers"
+          )
+      end
+    end
   end
 end
