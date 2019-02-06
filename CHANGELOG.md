@@ -1,3 +1,7 @@
+## v0.94.12, 6 February 2019
+
+- Python: Fetch vendored .zip files
+
 ## v0.94.11, 6 February 2019
 
 - Correct relative links from GitHub release notes
