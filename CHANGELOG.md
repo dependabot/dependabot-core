@@ -1,3 +1,7 @@
+## v0.94.11, 6 February 2019
+
+- Correct relative links from GitHub release notes
+
 ## v0.94.10, 5 February 2019
 
 - Cargo: Better spec construction
