@@ -406,7 +406,10 @@ module Dependabot
           end
         msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
-        msg = fix_relative_links(text: msg, base_url: releases_url(dep))
+        msg = fix_relative_links(
+          text: msg,
+          base_url: source_url(dep) + "/blob/HEAD/"
+        )
         sanitize_template_tags(msg)
       end
 
