@@ -87,7 +87,6 @@ COPY dep/Gemfile \
      /home/dependabot/dependabot-core/dep/
 RUN cd dep && bundle install
 
-
 RUN mkdir -p /home/dependabot/dependabot-core/go_modules
 COPY go_modules/Gemfile \
      go_modules/dependabot-go_modules.gemspec \
@@ -99,6 +98,12 @@ COPY npm_and_yarn/Gemfile \
      npm_and_yarn/dependabot-npm_and_yarn.gemspec \
      /home/dependabot/dependabot-core/npm_and_yarn/
 RUN cd npm_and_yarn && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/bundler
+COPY bundler/Gemfile \
+     bundler/dependabot-bundler.gemspec \
+     /home/dependabot/dependabot-core/bundler/
+RUN cd bundler && bundle install
 
 COPY Gemfile /home/dependabot/dependabot-core/
 RUN bundle install
