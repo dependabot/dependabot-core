@@ -4,7 +4,7 @@ RUN useradd -m dependabot
 RUN chown -R dependabot:dependabot /usr/local/.pyenv /opt/go/gopath
 USER dependabot
 
-RUN mkdir -p /home/dependabot/dependabot-core/common
+RUN mkdir -p /home/dependabot/dependabot-core/common/lib/dependabot
 WORKDIR /home/dependabot/dependabot-core
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
@@ -99,5 +99,8 @@ COPY npm_and_yarn/Gemfile \
      npm_and_yarn/dependabot-npm_and_yarn.gemspec \
      /home/dependabot/dependabot-core/npm_and_yarn/
 RUN cd npm_and_yarn && bundle install
+
+COPY Gemfile /home/dependabot/dependabot-core/
+RUN bundle install
 
 COPY --chown=dependabot . /home/dependabot/dependabot-core/
