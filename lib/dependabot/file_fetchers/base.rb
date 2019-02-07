@@ -5,6 +5,7 @@ require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_server"
 require "dependabot/clients/gitlab"
 require "dependabot/shared_helpers"
 
@@ -49,7 +50,8 @@ module Dependabot
 
         @commit ||= client_for_provider.fetch_commit(repo, branch)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+             Dependabot::Clients::Bitbucket::NotFound,
+             Dependabot::Clients::BitbucketServer::NotFound
         raise Dependabot::BranchNotFound, branch
       rescue Octokit::Conflict => error
         raise unless error.message.include?("Repository is empty")
@@ -65,6 +67,8 @@ module Dependabot
           gitlab_client
         when "bitbucket"
           bitbucket_client
+        when "bitbucket_server"
+          bitbucket_server_client
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -73,7 +77,8 @@ module Dependabot
         @default_branch_for_repo ||=
           client_for_provider.fetch_default_branch(repo)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+             Dependabot::Clients::Bitbucket::NotFound,
+             Dependabot::Clients::BitbucketServer::NotFound
         raise Dependabot::RepoNotFound, source
       end
 
@@ -84,7 +89,8 @@ module Dependabot
 
         fetch_file_from_host(filename)
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+             Dependabot::Clients::Bitbucket::NotFound,
+             Dependabot::Clients::BitbucketServer::NotFound
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -99,7 +105,8 @@ module Dependabot
           type: type
         )
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+             Dependabot::Clients::Bitbucket::NotFound,
+             Dependabot::Clients::BitbucketServer::NotFound
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -131,10 +138,12 @@ module Dependabot
           when "github" then github_repo_contents(path)
           when "gitlab" then gitlab_repo_contents(path)
           when "bitbucket" then bitbucket_repo_contents(path)
+          when "bitbucket_server" then bitbucket_server_repo_contents(path)
           else raise "Unsupported provider '#{source.provider}'."
           end
       rescue Octokit::NotFound, Gitlab::Error::NotFound,
-             Dependabot::Clients::Bitbucket::NotFound
+             Dependabot::Clients::Bitbucket::NotFound,
+             Dependabot::Clients::BitbucketServer::NotFound
         raise if raise_errors
 
         []
@@ -202,6 +211,22 @@ module Dependabot
         end
       end
 
+      def bitbucket_server_repo_contents(path)
+        response = bitbucket_server_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
+
+        response.map do |file|
+          OpenStruct.new(
+            name: File.basename(file),
+            path: file,
+            type: "file"
+          )
+        end
+      end
+
       def fetch_file_content(path)
         path = path.gsub(%r{^/*}, "")
         dir = Pathname.new(path).dirname.to_path.gsub(%r{^/*}, "")
@@ -218,6 +243,8 @@ module Dependabot
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         when "bitbucket"
           bitbucket_client.fetch_file_contents(repo, commit, path)
+        when "bitbucket_server"
+          bitbucket_server_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -296,6 +323,11 @@ module Dependabot
         @bitbucket_client ||=
           Dependabot::Clients::Bitbucket.
           for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def bitbucket_server_client
+        @bitbucket_server_client ||=
+          Dependabot::Clients::BitbucketServer.for_source(source: source, credentials: credentials)
       end
     end
   end
