@@ -160,7 +160,7 @@ module Dependabot
       # an wrapper binary that only allows non-mutative commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
       credential_helper_path =
-        File.join(__dir__, "../../helpers/utils/git-credential-store-immutable")
+        File.join(__dir__, "../../bin/git-credential-store-immutable")
       run_shell_command(
         "git config --global credential.helper "\
         "'#{credential_helper_path} --file=#{Dir.pwd}/git.store'"

@@ -7,10 +7,10 @@ require "uri"
 require "json"
 require "shellwords"
 require "rubygems/package"
-require "./lib/dependabot/version"
+require "./common/lib/dependabot/version"
 
 GEMSPECS = %w(
-  dependabot-core.gemspec
+  common/dependabot-common.gemspec
   terraform/dependabot-terraform.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
@@ -29,13 +29,17 @@ GEMSPECS = %w(
   omnibus/dependabot-omnibus.gemspec
 ).freeze
 
+def run_command(command)
+  puts "> #{command}"
+  exit 1 unless system(command)
+end
+
 namespace :ci do
   task :rubocop do
     packages = changed_packages
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
-      puts "> cd #{package} && bundle exec rubocop"
-      exit 1 unless system("cd #{package} && bundle exec rubocop")
+      run_command("cd #{package} && bundle exec rubocop")
     end
   end
 
@@ -43,8 +47,7 @@ namespace :ci do
     packages = changed_packages
     puts "Running rspec on: #{packages.join(', ')}"
     packages.each do |package|
-      puts "> cd #{package} && bundle exec rspec spec"
-      exit 1 unless system("cd #{package} && bundle exec rspec spec")
+      run_command("cd #{package} && bundle exec rspec spec")
     end
   end
 end
@@ -123,13 +126,13 @@ def changed_packages
 
   range = compare_url.split("/").last
   puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
-  unless range.include?("..")
+  unless range&.include?("..")
     warn "Invalid commit range, so changed packages can't be calculated"
     return all_packages
   end
 
-  core_paths = %w(Dockerfile Dockerfile.ci Gemfile dependabot-core.gemspec
-                  config helpers lib spec .circleci)
+  core_paths = %w(Dockerfile Dockerfile.ci common/lib common/bin
+                  common/dependabot-common.gemspec)
   core_changed = commit_range_changes_paths?(range, core_paths)
 
   packages = all_packages.select do |package|
@@ -144,8 +147,6 @@ def changed_packages
     end
   end
 
-  # TODO: uncomment or remove this once core is split out into its own package
-  # packages.insert(0, "./") if core_changed
   packages
 end
 # rubocop:enable Metrics/MethodLength

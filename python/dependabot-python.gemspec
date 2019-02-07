@@ -3,27 +3,28 @@
 require "find"
 
 Gem::Specification.new do |spec|
-  core_gemspec = Bundler.load_gemspec_uncached("../dependabot-core.gemspec")
+  common_gemspec =
+    Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-python"
-  spec.summary      = "Python support for dependabot-core"
-  spec.version      = core_gemspec.version
-  spec.description  = core_gemspec.description
+  spec.summary      = "Python support for dependabot"
+  spec.version      = common_gemspec.version
+  spec.description  = common_gemspec.description
 
-  spec.author       = core_gemspec.author
-  spec.email        = core_gemspec.email
-  spec.homepage     = core_gemspec.homepage
-  spec.license      = core_gemspec.license
+  spec.author       = common_gemspec.author
+  spec.email        = common_gemspec.email
+  spec.homepage     = common_gemspec.homepage
+  spec.license      = common_gemspec.license
 
   spec.require_path = "lib"
   spec.files        = []
 
-  spec.required_ruby_version = core_gemspec.required_ruby_version
-  spec.required_rubygems_version = core_gemspec.required_ruby_version
+  spec.required_ruby_version = common_gemspec.required_ruby_version
+  spec.required_rubygems_version = common_gemspec.required_ruby_version
 
-  spec.add_dependency "dependabot-core", Dependabot::VERSION
+  spec.add_dependency "dependabot-common", Dependabot::VERSION
 
-  core_gemspec.development_dependencies.each do |dep|
+  common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, dep.requirement.to_s
   end
 

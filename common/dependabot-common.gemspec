@@ -4,9 +4,9 @@ require "find"
 require "./lib/dependabot/version"
 
 Gem::Specification.new do |spec|
-  spec.name         = "dependabot-core"
+  spec.name         = "dependabot-common"
   spec.version      = Dependabot::VERSION
-  spec.summary      = "Automated dependency management"
+  spec.summary      = "Shared code used between Dependabot package managers"
   spec.description  = "Automated dependency management for Ruby, JavaScript, "\
                       "Python, PHP, Elixir, Rust, Java, .NET, Elm and Go"
 

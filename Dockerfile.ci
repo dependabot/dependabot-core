@@ -4,16 +4,18 @@ RUN useradd -m dependabot
 RUN chown -R dependabot:dependabot /usr/local/.pyenv /opt/go/gopath
 USER dependabot
 
-RUN mkdir -p /home/dependabot/dependabot-core
+RUN mkdir -p /home/dependabot/dependabot-core/common/lib/dependabot
 WORKDIR /home/dependabot/dependabot-core
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs" \
-    PATH=".bundle/binstubs:$PATH"
+    PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
 
-COPY Gemfile dependabot-core.gemspec /home/dependabot/dependabot-core/
-COPY lib/dependabot/version.rb /home/dependabot/dependabot-core/lib/dependabot/
-RUN bundle install
+RUN gem install --user rake
+
+COPY common/Gemfile common/dependabot-common.gemspec /home/dependabot/dependabot-core/common/
+COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
+RUN cd common && bundle install
 
 RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile \
@@ -87,7 +89,6 @@ COPY dep/Gemfile \
      /home/dependabot/dependabot-core/dep/
 RUN cd dep && bundle install
 
-
 RUN mkdir -p /home/dependabot/dependabot-core/go_modules
 COPY go_modules/Gemfile \
      go_modules/dependabot-go_modules.gemspec \
@@ -99,5 +100,17 @@ COPY npm_and_yarn/Gemfile \
      npm_and_yarn/dependabot-npm_and_yarn.gemspec \
      /home/dependabot/dependabot-core/npm_and_yarn/
 RUN cd npm_and_yarn && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/bundler
+COPY bundler/Gemfile \
+     bundler/dependabot-bundler.gemspec \
+     /home/dependabot/dependabot-core/bundler/
+RUN cd bundler && bundle install
+
+RUN mkdir -p /home/dependabot/dependabot-core/omnibus
+COPY omnibus/Gemfile \
+     omnibus/dependabot-omnibus.gemspec \
+     /home/dependabot/dependabot-core/omnibus/
+RUN cd omnibus && bundle install
 
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

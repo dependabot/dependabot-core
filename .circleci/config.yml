@@ -23,7 +23,7 @@ jobs:
             BRANCH_TAG="$(echo $CIRCLE_BRANCH | sed -E 's/[^A-Za-z0-9]+/-/g')"
             echo "export BRANCH_TAG='$BRANCH_TAG'" >> $BASH_ENV
 
-            VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" lib/dependabot/version.rb)"
+            VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
             echo "export VERSION='$VERSION'" >> $BASH_ENV
 
       - run:
@@ -124,22 +124,17 @@ jobs:
             - v1-dependencies-master
 
       # Install dependencies
-      - run: bundle install --path ~/dependabot-core/vendor/bundle
       - run: cd npm_and_yarn/helpers && yarn install
 
       - save_cache:
           key: v1-dependencies-{{ .Branch }}-{{ epoch }}
           paths:
-            - ~/dependabot-core/vendor/bundle
             - ~/dependabot-core/npm_and_yarn/helpers/node_modules
 
       # Run code formatting linters
-      - run: bundle exec rubocop
       - run: cd npm_and_yarn/helpers && yarn lint
 
       # Run tests
-      - run: cd npm_and_yarn/helpers && yarn test
-      - run: bundle exec rspec spec --format documentation --format RspecJunitFormatter -o ~/rspec/rspec.xml --tag "~skip_ci"
       - store_test_results:
           path: ~/rspec
       - store_artifacts:
