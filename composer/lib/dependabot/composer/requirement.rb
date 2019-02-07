@@ -35,7 +35,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def convert_php_constraint_to_ruby_constraint(req_string)
-        req_string = req_string.gsub(/v(?=\d)/, "")
+        req_string = req_string.strip.gsub(/v(?=\d)/, "").gsub(/\.$/, "")
 
         # Return an unlikely version if a dev requirement is specified. This
         # ensures that the dev-requirement doesn't match anything.

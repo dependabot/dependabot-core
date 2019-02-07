@@ -54,5 +54,10 @@ RSpec.describe Dependabot::Composer::Requirement do
       let(:requirement_string) { "1.*" }
       it { is_expected.to eq(described_class.new("~> 1.0")) }
     end
+
+    context "with a trailing ." do
+      let(:requirement_string) { "1." }
+      it { is_expected.to eq(described_class.new("1")) }
+    end
   end
 end
