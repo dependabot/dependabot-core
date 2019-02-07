@@ -62,7 +62,7 @@ logic for updating dependencies in a number of languages.
 The `common` package contains all general-purpose / shared functionality. For
 instance the code for creating pull requests via GitHub's API lives here, as
 does most of the logic for handling Git dependencies (as most languages support
-Git dependencies in one way or another). There also base classes defined for
+Git dependencies in one way or another). There are also base classes defined for
 each of the major concerns required to implement support for a language or
 package manager.
 
