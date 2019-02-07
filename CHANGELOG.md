@@ -1,3 +1,10 @@
+## v0.95.0, 7 February 2019
+
+- PHP: Handle version requirements with a trailing dot
+- Move shared code to a new `dependabot-common` gem
+- Bump gitlab from 4.8 to 4.9
+- Align GitLab PR creator with generic options
+
 ## v0.94.13, 7 February 2019
 
 - Handle target branches that are a substring
