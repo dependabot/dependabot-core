@@ -97,7 +97,9 @@ module Dependabot
         pr_name: message_builder.pr_name,
         author_details: author_details,
         labeler: labeler,
-        assignee: assignees&.first
+        approvers: reviewers,
+        assignee: assignees&.first,
+        milestone: milestone
       )
     end
 

@@ -18,7 +18,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       pr_name: pr_name,
       author_details: author_details,
       labeler: labeler,
-      assignee: assignee
+      approvers: approvers,
+      assignee: assignee,
+      milestone: milestone
     )
   end
 
@@ -40,7 +42,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
   let(:author_details) { nil }
+  let(:approvers) { nil }
   let(:assignee) { nil }
+  let(:milestone) { nil }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -242,6 +246,25 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           expect(WebMock).
             to_not have_requested(:post, "#{repo_api_url}/merge_requests")
         end
+      end
+    end
+
+    context "when a approvers has been requested" do
+      let(:approvers) { { "approvers" => [1_394_555] } }
+      before do
+        stub_request(:put, "#{repo_api_url}/merge_requests/5/approvers").
+          to_return(
+            status: 200,
+            body: fixture("gitlab", "merge_request.json"),
+            headers: json_header
+          )
+      end
+
+      it "adds the approvers to the MR correctly" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:put, "#{repo_api_url}/merge_requests/5/approvers")
       end
     end
   end
