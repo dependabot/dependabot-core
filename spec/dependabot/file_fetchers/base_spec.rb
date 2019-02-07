@@ -109,6 +109,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
               end
           end
         end
+
+        context "that returns an array (because it is a substring)" do
+          before do
+            stub_request(:get, url + "/git/refs/heads/my_branch").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 200,
+                        body: fixture("github", "ref_my_branch_many.json"),
+                        headers: { "content-type" => "application/json" })
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::BranchNotFound) do |error|
+                expect(error.branch_name).to eq("my_branch")
+              end
+          end
+        end
       end
     end
 

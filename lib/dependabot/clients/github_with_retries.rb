@@ -53,7 +53,11 @@ module Dependabot
       #################
 
       def fetch_commit(repo, branch)
-        ref(repo, "heads/#{branch}").object.sha
+        response = ref(repo, "heads/#{branch}")
+
+        raise Octokit::NotFound if response.is_a?(Array)
+
+        response.object.sha
       end
 
       def fetch_default_branch(repo)
