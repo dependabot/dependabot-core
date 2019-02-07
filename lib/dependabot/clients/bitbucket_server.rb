@@ -66,7 +66,7 @@ module Dependabot
       end
 
       def fetch_file_contents(repo, commit, path)
-        response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/raw/" + URI.encode(path))
+        response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/raw/" + URI.encode(path) + "?at=" + commit)
 
         response.body
       end
