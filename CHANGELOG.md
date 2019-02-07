@@ -1,3 +1,7 @@
+## v0.94.13, 7 February 2019
+
+- Handle target branches that are a substring
+
 ## v0.94.12, 6 February 2019
 
 - Python: Fetch vendored .zip files
