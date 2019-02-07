@@ -14,8 +14,8 @@ should give you the tools you need. A reference implementation is available
 
 ## What's in this repo?
 
-Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
+Dependabot Core is a collection of packages for automating dependency updating
+in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
 .NET. It can also update git submodules, Docker files and Terraform files.
 Highlights include:
 
@@ -54,18 +54,46 @@ the helpers:
 
 ## Architecture
 
-Dependabot Core has helper classes for seven concerns. Where relevant, each
-concern will have a language-specific class.
+Dependabot Core is a collection of Ruby packages (gems), which contain the
+logic for updating dependencies in a number of languages.
 
-| Service                          | Description                                                                                   |
-|----------------------------------|-----------------------------------------------------------------------------------------------|
-| `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [file fetchers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_fetchers) for more details. |
-| `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project. See the [file parsers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_parsers) for more details. |
-| `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date. See the [update checkers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/update_checkers) for more details. |
-| `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency. See the [file updaters](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_updaters) for more details. |
-| `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL. See the [metadata finders](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/metadata_finders) for more details. |
-| `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
-| `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
+### `dependabot-common`
+
+The `common` package contains all general-purpose / shared functionality. For
+instance the code for creating pull requests via GitHub's API lives here, as
+does most of the logic for handling Git dependencies (as most languages support
+Git dependencies in one way or another). There are also base classes defined for
+each of the major concerns required to implement support for a language or
+package manager.
+
+### `dependabot-{package-manager}`
+
+There is a gem for each package manager or language that Dependabot
+supports. At a minimum, each of these gems will implement the following
+classes:
+
+| Service          | Description                                                                                   |
+|------------------|-----------------------------------------------------------------------------------------------|
+| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_fetchers/README.md) for more details. |
+| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_parsers/README.md) for more details. |
+| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/update_checkers/README.md) for more details. |
+| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/file_updaters/README.md) for more details. |
+| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/metadata_finders/README.md) for more details. |
+| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/version.rb) for an example. |
+| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/requirement.rb) for an example. |
+
+The high level flow looks like this:
+
+<p align="center">
+  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/package-manager-architecture.svg" alt="Dependabot architecture">
+</p>
+
+### `dependabot-omnibus`
+
+This is a "meta" gem, that simply depends on all the others. If you want to
+automatically include support for all languages, you can just include this gem
+and you'll get all you need.
+
 
 ## Why is this public?
 
