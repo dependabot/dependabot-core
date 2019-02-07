@@ -9,7 +9,9 @@ WORKDIR /home/dependabot/dependabot-core
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs" \
-    PATH=".bundle/binstubs:$PATH"
+    PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
+
+RUN gem install --user rake
 
 COPY common/Gemfile common/dependabot-common.gemspec /home/dependabot/dependabot-core/common/
 COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
@@ -104,8 +106,5 @@ COPY bundler/Gemfile \
      bundler/dependabot-bundler.gemspec \
      /home/dependabot/dependabot-core/bundler/
 RUN cd bundler && bundle install
-
-COPY Gemfile /home/dependabot/dependabot-core/
-RUN bundle install
 
 COPY --chown=dependabot . /home/dependabot/dependabot-core/

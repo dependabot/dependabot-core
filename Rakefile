@@ -29,13 +29,17 @@ GEMSPECS = %w(
   omnibus/dependabot-omnibus.gemspec
 ).freeze
 
+def run_command(command)
+  puts "> #{command}"
+  exit 1 unless system(command)
+end
+
 namespace :ci do
   task :rubocop do
     packages = changed_packages
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
-      puts "> cd #{package} && bundle exec rubocop"
-      exit 1 unless system("cd #{package} && bundle exec rubocop")
+      run_command("cd #{package} && bundle exec rubocop")
     end
   end
 
@@ -43,8 +47,7 @@ namespace :ci do
     packages = changed_packages
     puts "Running rspec on: #{packages.join(', ')}"
     packages.each do |package|
-      puts "> cd #{package} && bundle exec rspec spec"
-      exit 1 unless system("cd #{package} && bundle exec rspec spec")
+      run_command("cd #{package} && bundle exec rspec spec")
     end
   end
 end
