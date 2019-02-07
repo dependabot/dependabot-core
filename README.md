@@ -68,7 +68,7 @@ package manager.
 
 ### `dependabot-{package-manager}`
 
-There is also a gem for each package manager or language that Dependabot
+There is a gem for each package manager or language that Dependabot
 supports. At a minimum, each of these gems will implement the following
 classes:
 
