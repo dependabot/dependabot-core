@@ -126,7 +126,7 @@ def changed_packages
 
   range = compare_url.split("/").last
   puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
-  unless range.include?("..")
+  unless range&.include?("..")
     warn "Invalid commit range, so changed packages can't be calculated"
     return all_packages
   end
