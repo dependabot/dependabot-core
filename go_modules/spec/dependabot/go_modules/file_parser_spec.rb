@@ -158,6 +158,23 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "a non-semver vanity URL that 404s but includes meta tags" do
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "gonum.org/v1/plot" }
+      end
+
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote v1.4.0",
+                   "gonum.org/v1/plot v0.0.0-20181116082555-59819fff2fb9")
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("gonum.org/v1/plot")
+      end
+    end
+
     describe "a v2+ dependency without the major version in the path" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)

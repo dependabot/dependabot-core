@@ -11,3 +11,5 @@ replace github.com/dependabot/dependabot-core/go_modules/helpers/importresolver 
 replace github.com/dependabot/dependabot-core/go_modules/helpers/updater => ./updater
 
 replace github.com/dependabot/dependabot-core/go_modules/helpers/updatechecker => ./updatechecker
+
+replace github.com/Masterminds/vcs => github.com/dependabot/vcs v1.12.1-0.20190208210831-56e31f59151a
