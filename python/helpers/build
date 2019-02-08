@@ -8,7 +8,7 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+helpers_dir="$(dirname "$0")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/run.py" \
