@@ -42,13 +42,13 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "vcr", "~> 4.0"
   spec.add_development_dependency "webmock", "~> 3.4"
 
-  next unless File.exist?(".gitignore")
+  next unless File.exist?("../.gitignore")
 
-  ignores = File.readlines(".gitignore").grep(/\S+/).map(&:chomp)
+  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
 
-  next unless File.directory?("lib") && File.directory?("helpers")
+  next unless File.directory?("lib")
 
-  Find.find("lib", "helpers") do |path|
+  Find.find("lib") do |path|
     if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
       Find.prune
     else
