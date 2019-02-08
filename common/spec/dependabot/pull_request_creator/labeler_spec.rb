@@ -420,7 +420,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         "https://gitlab.com/api/v4/projects/#{CGI.escape(source.repo)}"
       end
       before do
-        stub_request(:get, "#{repo_api_url}/labels").
+        stub_request(:get, "#{repo_api_url}/labels?per_page=100").
           to_return(status: 200,
                     body: fixture("gitlab", "labels_with_dependencies.json"),
                     headers: json_header)
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "when the 'dependencies' label doesn't yet exist" do
         before do
-          stub_request(:get, "#{repo_api_url}/labels").
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
             to_return(
               status: 200,
               body: fixture("gitlab", "labels_without_dependencies.json"),
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "when there is a custom dependencies label" do
         before do
-          stub_request(:get, "#{repo_api_url}/labels").
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
             to_return(status: 200,
                       body: fixture("gitlab", "labels_with_custom.json"),
                       headers: json_header)
@@ -517,7 +517,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         context "when a 'security' label already exist" do
           before do
-            stub_request(:get, "#{repo_api_url}/labels").
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
               to_return(status: 200,
                         body: fixture("gitlab", "labels_with_security.json"),
                         headers: json_header)
@@ -626,7 +626,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         "https://gitlab.com/api/v4/projects/#{CGI.escape(source.repo)}"
       end
       before do
-        stub_request(:get, "#{repo_api_url}/labels").
+        stub_request(:get, "#{repo_api_url}/labels?per_page=100").
           to_return(status: 200,
                     body: fixture("gitlab", "labels_with_dependencies.json"),
                     headers: json_header)
@@ -634,7 +634,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "when a 'dependencies' label exists" do
         before do
-          stub_request(:get, "#{repo_api_url}/labels").
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
             to_return(status: 200,
                       body: fixture("gitlab", "labels_with_dependencies.json"),
                       headers: json_header)
@@ -645,7 +645,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         context "for a security fix" do
           let(:includes_security_fixes) { true }
           before do
-            stub_request(:get, "#{repo_api_url}/labels").
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
               to_return(status: 200,
                         body: fixture("github", "labels_with_security.json"),
                         headers: json_header)
@@ -657,7 +657,32 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "when a custom dependencies label exists" do
         before do
-          stub_request(:get, "#{repo_api_url}/labels").
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+            to_return(status: 200,
+                      body: fixture("gitlab", "labels_with_custom.json"),
+                      headers: json_header)
+        end
+
+        it { is_expected.to eq(["Dependency: Gems"]) }
+      end
+
+      context "when pagination is required" do
+        let(:pagination_header) do
+          {
+            "Content-Type" => "application/json",
+            "Link" => "<#{repo_api_url}/labels?page=2&per_page=100>; "\
+                      "rel=\"next\""
+          }
+        end
+
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+            to_return(
+              status: 200,
+              body: fixture("gitlab", "labels_without_dependencies.json"),
+              headers: pagination_header
+            )
+          stub_request(:get, "#{repo_api_url}/labels?page=2&per_page=100").
             to_return(status: 200,
                       body: fixture("gitlab", "labels_with_custom.json"),
                       headers: json_header)

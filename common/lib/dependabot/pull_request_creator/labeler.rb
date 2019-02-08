@@ -235,7 +235,8 @@ module Dependabot
 
       def fetch_gitlab_labels
         gitlab_client_for_source.
-          labels(source.repo).
+          labels(source.repo, per_page: 100).
+          auto_paginate.
           map(&:name)
       end
 
