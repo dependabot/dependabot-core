@@ -1,3 +1,8 @@
+## v0.95.5, 8 February 2019
+
+- Paginate through GitLab labels
+- Python: Make post version comparison logic more explicit
+
 ## v0.95.4, 8 February 2019
 
 - Python: Fix bug in post release version comparison
