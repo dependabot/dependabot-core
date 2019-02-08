@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const functionMap = require("../lib");
+const functionMap = {
+  ...require("./lib/yarn"),
+  ...require("./lib/npm")
+};
 
 function output(obj) {
   process.stdout.write(JSON.stringify(obj));

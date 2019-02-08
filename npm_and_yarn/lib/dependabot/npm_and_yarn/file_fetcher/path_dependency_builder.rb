@@ -120,8 +120,8 @@ module Dependabot
               File.write("yarn.lock", yarn_lock.content)
 
               SharedHelpers.run_helper_subprocess(
-                command: "node #{yarn_helper_path}",
-                function: "parseLockfile",
+                command: NativeHelpers.helper_path,
+                function: "yarn:parseLockfile",
                 args: [Dir.pwd]
               )
             end
@@ -135,10 +135,6 @@ module Dependabot
 
             ".."
           end.join("/")
-        end
-
-        def yarn_helper_path
-          NativeHelpers.yarn_helper_path
         end
       end
     end

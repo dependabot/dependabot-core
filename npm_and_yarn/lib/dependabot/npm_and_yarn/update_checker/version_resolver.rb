@@ -339,8 +339,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
-                command: "node #{yarn_helper_path}",
-                function: "checkPeerDependencies",
+                command: NativeHelpers.helper_path,
+                function: "yarn:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,
@@ -356,8 +356,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
-                command: "node #{npm_helper_path}",
-                function: "checkPeerDependencies",
+                command: NativeHelpers.helper_path,
+                function: "npm:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,
@@ -467,14 +467,6 @@ module Dependabot
               dependency_files: dependency_files,
               updated_dependencies: [dependency]
             ).package_files_requiring_update
-        end
-
-        def yarn_helper_path
-          NativeHelpers.yarn_helper_path
-        end
-
-        def npm_helper_path
-          NativeHelpers.npm_helper_path
         end
 
         def version_for_dependency(dep)
