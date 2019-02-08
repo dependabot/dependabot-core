@@ -1,3 +1,7 @@
+## v0.95.3, 8 February 2019
+
+- Ruby: Handle assignment to hash attributes in sanitizer
+
 ## v0.95.2, 7 February 2019
 
 - Fix common gemspec
