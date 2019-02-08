@@ -107,7 +107,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       to_return(status: 200,
                 body: fixture("gitlab", "create_commit.json"),
                 headers: json_header)
-    stub_request(:get, "#{repo_api_url}/labels").
+    stub_request(:get, "#{repo_api_url}/labels?per_page=100").
       to_return(status: 200,
                 body: fixture("gitlab", "labels_with_dependencies.json"),
                 headers: json_header)
