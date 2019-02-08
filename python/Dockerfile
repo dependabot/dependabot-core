@@ -19,4 +19,4 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
     && pyenv global 3.8.0
 
 COPY helpers /opt/python/helpers
-RUN ash /opt/python/helpers/build /opt/python
+RUN /opt/python/helpers/build /opt/python

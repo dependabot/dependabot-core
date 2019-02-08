@@ -5,7 +5,7 @@ RUN apk add --no-cache \
         gcc
 
 COPY helpers /opt/go_modules/helpers
-RUN ash /opt/go_modules/helpers/build /opt/go_modules
+RUN /opt/go_modules/helpers/build /opt/go_modules
 
 FROM dependabot/dependabot-common
 

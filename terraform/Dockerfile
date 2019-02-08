@@ -1,7 +1,7 @@
 FROM alpine AS builder
 
 COPY helpers /opt/terraform/helpers
-RUN ash /opt/terraform/helpers/build /opt/terraform
+RUN /opt/terraform/helpers/build /opt/terraform
 
 FROM dependabot/dependabot-common
 
