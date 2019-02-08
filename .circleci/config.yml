@@ -151,7 +151,7 @@ jobs:
           echo "---" > ~/.gem/credentials
           echo ":rubygems_api_key: $RUBYGEMS_API_KEY" > ~/.gem/credentials
           chmod 0600 ~/.gem/credentials
-      - run: gem install rake --no-rdoc --no-ri && rake gems:release
+      - run: gem install rake && rake gems:release
 
 workflows:
   version: 2
