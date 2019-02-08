@@ -1,6 +1,6 @@
 ## v0.95.1, 7 February 2019
 
-- Empty release: testing CI release job
+- Python: Handle post-release versions properly
 
 ## v0.95.0, 7 February 2019
 
