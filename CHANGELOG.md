@@ -1,3 +1,7 @@
+## v0.95.4, 8 February 2019
+
+- Python: Fix bug in post release version comparison
+
 ## v0.95.3, 8 February 2019
 
 - Ruby: Handle assignment to hash attributes in sanitizer
