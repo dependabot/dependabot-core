@@ -2,7 +2,7 @@ version: 1
 
 update_configs:
   - package_manager: "ruby:bundler"
-    directory: "/"
+    directory: "/common"
     update_schedule: "live"
     default_reviewers:
     - greysteil
