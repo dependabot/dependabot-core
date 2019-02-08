@@ -59,6 +59,8 @@ module Dependabot
           return post_release_version.nil? ? 0 : 1
         end
 
+        return -1 if post_release_version.nil?
+
         # Post release versions should only ever be a single number, so we can
         # just string-comparison them.
         post_release_version <=> other.post_release_version

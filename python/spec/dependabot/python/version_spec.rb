@@ -131,6 +131,12 @@ RSpec.describe Dependabot::Python::Version do
             let(:version_string) { "1.0.0.post2" }
             it { is_expected.to eq(1) }
           end
+
+          context "when the other version has a post release" do
+            let(:other_version) { described_class.new("1.0.0.post1") }
+            let(:version_string) { "1.0.0" }
+            it { is_expected.to eq(-1) }
+          end
         end
 
         context "but the other version has a local version" do
