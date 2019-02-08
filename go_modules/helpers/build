@@ -2,14 +2,15 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
+if [ -z "$1" ]; then
   echo "usage: $0 INSTALL_DIR"
   exit 1
 fi
 
-if ! [[ "$install_dir" =~ ^/ ]]; then
-  echo "$install_dir must be an absolute path"
+install_dir="$(readlink -f "$1")"
+
+if [ -z "$install_dir" ]; then
+  echo "$1 must be a valid path"
   exit 1
 fi
 
@@ -17,10 +18,10 @@ if [ ! -d "$install_dir/bin" ]; then
   mkdir -p "$install_dir/bin"
 fi
 
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cd $helpers_dir
+helpers_dir="$(dirname "$0")"
+cd "$helpers_dir"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 echo "building $install_dir/bin/helper"
 
-GO111MODULE=on GOOS="$os" GOARCH=amd64 go build -o "$install_dir/bin/helper" .
+CGO_ENABLED=0 GO111MODULE=on GOOS="$os" GOARCH=amd64 go build -o "$install_dir/bin/helper" .
