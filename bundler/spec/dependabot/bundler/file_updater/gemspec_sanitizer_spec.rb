@@ -90,6 +90,18 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
       end
 
+      context "that assigns to the metadata hash" do
+        let(:content) do
+          "Spec.new { |s| s.version = '0.1.0'\n "\
+          "s.metadata['homepage'] = \"a\" }"
+        end
+        it "removes the assignment" do
+          expect(rewrite).to eq(
+            %(Spec.new { |s| s.version = '0.1.0'\n "sanitized" })
+          )
+        end
+      end
+
       context "that uses a heredoc" do
         let(:content) do
           %(Spec.new do |s|

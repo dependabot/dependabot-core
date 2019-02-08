@@ -212,9 +212,11 @@ module Dependabot
           def unnecessary_assignment?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
-            return false unless node.children.first&.type == :lvar
 
-            UNNECESSARY_ASSIGNMENTS.include?(node.children[1])
+            return true if node.children.first.type == :lvar &&
+                           UNNECESSARY_ASSIGNMENTS.include?(node.children[1])
+
+            node.children[1] == :[]= && node.children.first.children.last
           end
 
           def node_is_version_constant?(node)
