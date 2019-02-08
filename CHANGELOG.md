@@ -1,3 +1,7 @@
+## v0.95.2, 7 February 2019
+
+- Fix common gemspec
+
 ## v0.95.1, 7 February 2019
 
 - Python: Handle post-release versions properly
