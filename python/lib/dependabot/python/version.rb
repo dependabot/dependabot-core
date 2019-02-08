@@ -11,6 +11,7 @@ module Dependabot
   module Python
     class Version < Gem::Version
       attr_reader :local_version
+      attr_reader :post_release_version
 
       VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
@@ -28,6 +29,8 @@ module Dependabot
         version, @local_version = version.split("+")
         version ||= ""
         version = normalise_prerelease(version)
+        version, @post_release_version = version.split(/\.r(?=\d)/)
+        version ||= ""
         @local_version = normalise_prerelease(@local_version) if @local_version
         super
       end
@@ -44,6 +47,24 @@ module Dependabot
         version_comparison = super(other)
         return version_comparison unless version_comparison.zero?
 
+        unless post_version_comparison(other).zero?
+          return post_version_comparison(other)
+        end
+
+        local_version_comparison(other)
+      end
+
+      def post_version_comparison(other)
+        unless other.is_a?(Python::Version) && other.post_release_version
+          return post_release_version.nil? ? 0 : 1
+        end
+
+        # Post release versions should only ever be a single number, so we can
+        # just string-comparison them.
+        post_release_version <=> other.post_release_version
+      end
+
+      def local_version_comparison(other)
         unless other.is_a?(Python::Version)
           return local_version.nil? ? 0 : 1
         end
@@ -63,14 +84,6 @@ module Dependabot
         return local_comparison unless local_comparison.zero?
 
         lhsegments.count <=> rhsegments.count
-      end
-
-      def prerelease?
-        if @version_string.match?(/^([0-9]+[.\-])+(post|rev|r)?\d+$/)
-          return false
-        end
-
-        super
       end
 
       private

@@ -116,10 +116,21 @@ RSpec.describe Dependabot::Python::Version do
           end
         end
 
-        context "with a post-release specifier that needs normalising" do
-          let(:version_string) { "1.0.0rev1" }
-          let(:other_version) { described_class.new("1.0.0-post1") }
-          it { is_expected.to eq(0) }
+        context "with a post-release" do
+          let(:version_string) { "1.0.0-post1" }
+          it { is_expected.to eq(1) }
+
+          context "that needs normalising" do
+            let(:other_version) { described_class.new("1.0.0-post1") }
+            let(:version_string) { "1.0.0rev1" }
+            it { is_expected.to eq(0) }
+          end
+
+          context "that is being compared to another post release" do
+            let(:other_version) { described_class.new("1.0.0.post1") }
+            let(:version_string) { "1.0.0.post2" }
+            it { is_expected.to eq(1) }
+          end
         end
 
         context "but the other version has a local version" do
@@ -184,6 +195,11 @@ RSpec.describe Dependabot::Python::Version do
 
       context "that is implicit" do
         let(:version_string) { "1.0.0-1" }
+        it { is_expected.to eq(false) }
+      end
+
+      context "that uses a dot" do
+        let(:version_string) { "1.0.0.post1" }
         it { is_expected.to eq(false) }
       end
     end
