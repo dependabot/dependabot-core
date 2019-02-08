@@ -4,3 +4,5 @@ github.com/dependabot/dependabot-core v0.74.6 h1:SB2Oyie+Ex9ARXLHbFrnoQSWSixAG4O
 github.com/dependabot/dependabot-core v0.79.4 h1:d3/V6TTj+58ULw6824RK2zR+esZQw3bU/vRkCtCh4JU=
 github.com/dependabot/gomodules-extracted v0.0.0-20181020215834-1b2f850478a3 h1:Xj2leY0FVyZuo+p59vkIWG3dIqo+QtjskT5O1iTiywA=
 github.com/dependabot/gomodules-extracted v0.0.0-20181020215834-1b2f850478a3/go.mod h1:+dRXSrUymjpT4yzKtn1QmeknT1S/yAHRr35en18dHp8=
+github.com/dependabot/vcs v1.12.1-0.20190208210831-56e31f59151a h1:dMBRaMtCTAIDGAGHaRM2aWAZiX/XE/vYA22hMSeP2s0=
+github.com/dependabot/vcs v1.12.1-0.20190208210831-56e31f59151a/go.mod h1:VErcEjWcfFq7vHXBfBqbDzYX9kEterYg+1hcSpwFX6A=

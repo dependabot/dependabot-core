@@ -34,6 +34,11 @@ RSpec.describe Dependabot::GoModules::PathConverter do
       it { is_expected.to eq("https://github.com/cloudfoundry/bytefmt") }
     end
 
+    context "with a vanity URL that 404s, but is otherwise valid" do
+      let(:path) { "gonum.org/v1/gonum" }
+      it { is_expected.to eq("https://github.com/gonum/gonum") }
+    end
+
     context "with a path that already includes a scheme" do
       let(:path) { "https://github.com/drewolson/testflight" }
       it { is_expected.to eq("https://github.com/drewolson/testflight") }
