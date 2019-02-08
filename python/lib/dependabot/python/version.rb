@@ -63,7 +63,9 @@ module Dependabot
 
         # Post release versions should only ever be a single number, so we can
         # just string-comparison them.
-        post_release_version <=> other.post_release_version
+        return 0 if post_release_version.to_i == other.post_release_version.to_i
+
+        post_release_version.to_i > other.post_release_version.to_i ? 1 : -1
       end
 
       def local_version_comparison(other)
