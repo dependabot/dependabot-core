@@ -1,3 +1,8 @@
+## v0.95.6, 8 February 2019
+
+- Go (modules): handle vanity urls that return non-200 responses
+- Bundler: remove unnecessary helpers
+
 ## v0.95.5, 8 February 2019
 
 - Paginate through GitLab labels
