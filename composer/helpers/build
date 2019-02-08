@@ -8,10 +8,17 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+helpers_dir="$(dirname "$0")"
 cd "$helpers_dir"
 
-composer validate --no-check-publish
-composer install
-composer run lint -- --dry-run
-composer run stan
+case "$DEPENDABOT_ENV" in
+"production")
+  composer install --no-dev --prefer-dist --optimize-autoloader
+  ;;
+*)
+  composer validate --no-check-publish
+  composer install
+  composer run lint -- --dry-run
+  composer run stan
+  ;;
+esac
