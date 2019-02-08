@@ -43,14 +43,12 @@ The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
 Elixir, Go and Rust are required for dealing with updates for their respective
 languages.
 
-Before running Dependabot Core, install dependencies for the core library and
-the helpers:
+To install the helpers for each language:
 
-1. `bundle install`
-2. `cd npm_and_yarn/helpers && yarn install --production && cd -`
-3. `cd composer/helpers && composer install --no-dev && cd -`
-4. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
-5. `cd elixir/helpers && mix deps.get && cd -`
+1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+2. `cd composer/helpers && composer install --no-dev && cd -`
+3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
+4. `cd elixir/helpers && mix deps.get && cd -`
 
 ## Architecture
 
