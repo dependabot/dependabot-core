@@ -1,3 +1,7 @@
+## v0.95.7, 8 February 2019
+
+- Bundler: fix gemspec since 1ddf668
+
 ## v0.95.6, 8 February 2019
 
 - Go (modules): handle vanity urls that return non-200 responses
