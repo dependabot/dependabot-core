@@ -16,7 +16,8 @@ class ExceptionIO extends NullIO
             return;
         }
         if ($this->raise_next_error) {
-            throw new \RuntimeException('Your requirements could not be resolved to an installable set of packages.' . $messages);
+            throw new \RuntimeException('Your requirements could not be resolved to an installable set of packages.' .
+                                        $messages);
         }
         if (strpos($messages, 'Your requirements could not be resolved') !== false) {
             $this->raise_next_error = true;
