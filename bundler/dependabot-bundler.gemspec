@@ -32,10 +32,10 @@ Gem::Specification.new do |spec|
 
   ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
 
-  next unless File.directory?("lib") && File.directory?("helpers")
+  next unless File.directory?("lib")
 
   prefix = "/" + File.basename(File.expand_path(__dir__)) + "/"
-  Find.find("lib", "helpers") do |path|
+  Find.find("lib") do |path|
     if ignores.any? { |i| File.fnmatch(i, prefix + path, File::FNM_DOTMATCH) }
       Find.prune
     else
