@@ -98,7 +98,9 @@ module Dependabot
                                find { |m| m.include?(old_req) }
 
           if simple_declaration
-            content.gsub(simple_declaration) do |line|
+            simple_declaration_regex =
+              /(?:^|["'])#{Regexp.escape(simple_declaration)}/
+            content.gsub(simple_declaration_regex) do |line|
               line.gsub(old_req, new_req)
             end
           elsif content.match?(feature_declaration_version_regex(dep))
@@ -118,7 +120,9 @@ module Dependabot
                                find { |m| m.include?(old_pin) }
 
           if simple_declaration
-            content.gsub(simple_declaration) do |line|
+            simple_declaration_regex =
+              /(?:^|["'])#{Regexp.escape(simple_declaration)}/
+            content.gsub(simple_declaration_regex) do |line|
               line.gsub(old_pin, new_pin)
             end
           elsif content.match?(feature_declaration_pin_regex(dep))

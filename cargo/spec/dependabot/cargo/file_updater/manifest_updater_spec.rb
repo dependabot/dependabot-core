@@ -58,6 +58,13 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
       it { is_expected.to include(%(regex = "0.1.41")) }
       it { is_expected.to_not include(%("time" = "0.1.12")) }
 
+      context "with similarly named dependencies" do
+        let(:manifest_fixture_name) { "similar_names" }
+
+        it { is_expected.to include(%(time = "0.1.38")) }
+        it { is_expected.to include(%(business_time = "0.1.12")) }
+      end
+
       context "with an optional dependency" do
         let(:manifest_fixture_name) { "optional_dependency" }
         let(:dependency_name) { "utf8-ranges" }
