@@ -1,3 +1,8 @@
+## v0.95.8, 10 February 2019
+
+- Rust: Fix over-eager manifest file updating
+- JS: Better handling of multiple git requirements
+
 ## v0.95.7, 8 February 2019
 
 - Bundler: fix gemspec since 1ddf668
