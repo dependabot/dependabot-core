@@ -1,3 +1,7 @@
+## v0.95.9, 10 February 2019
+
+- Rust: Fix method name typo
+
 ## v0.95.8, 10 February 2019
 
 - Rust: Fix over-eager manifest file updating
