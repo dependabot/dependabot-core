@@ -71,8 +71,8 @@ module Dependabot
           spec_options = error.message.gsub(/.*following:\n/m, "").
                          lines.map(&:strip)
 
-          ver = if git_dependency? && git_dependency_version
-                  git_dependency_version
+          ver = if git_dependency? && git_previous_version
+                  git_previous_version
                 else
                   dependency.version
                 end
