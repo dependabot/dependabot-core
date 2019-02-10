@@ -44,8 +44,12 @@ module Dependabot
         # TODO: Currently, Dependabot can't handle dependencies that have both
         # a git source *and* a non-git source. Fix that!
         dependencies.reject do |dep|
-          dep.requirements.any? { |r| r.dig(:source, :type) == "git" } &&
-            dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
+          git_reqs =
+            dep.requirements.select { |r| r.dig(:source, :type) == "git" }
+          next false if git_reqs.none?
+          next true if git_reqs.map { |r| r.fetch(:source) }.uniq.count > 1
+
+          dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
         end
       end
 
