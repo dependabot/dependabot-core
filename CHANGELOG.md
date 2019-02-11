@@ -1,3 +1,8 @@
+## v0.95.10, 11 February 2019
+
+- Python: Bump pip from 19.0.1 to 19.0.2 in /python/helpers
+- Python: Bump cython from 0.29.4 to 0.29.5 in /python/helpers
+
 ## v0.95.9, 10 February 2019
 
 - Rust: Fix method name typo
