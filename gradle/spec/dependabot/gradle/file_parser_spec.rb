@@ -291,22 +291,58 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name).to eq("co.aikar:acf-paper")
           expect(dependency.version).to eq("0.5.0-SNAPSHOT")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "0.5.0-SNAPSHOT",
-                file: "build.gradle",
-                groups: [],
-                source: nil,
-                metadata: nil
-              },
-              {
-                requirement: "0.5.0-SNAPSHOT",
-                file: "app/build.gradle",
-                groups: [],
-                source: nil,
-                metadata: nil
-              }
-            ]
+            [{
+              requirement: "0.5.0-SNAPSHOT",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }, {
+              requirement: "0.5.0-SNAPSHOT",
+              file: "app/build.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a script plugin" do
+      let(:files) { [buildfile, script_plugin] }
+      let(:buildfile_fixture_name) { "with_dependency_script.gradle" }
+      let(:script_plugin) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/dependencies.gradle",
+          content: fixture("script_plugins", "dependencies.gradle")
+        )
+      end
+
+      its(:length) { is_expected.to eq(18) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+          expect(dependency.version).to eq("0.19.3")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.19.3",
+              file: "gradle/dependencies.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }, {
+              requirement: "0.26.1-eap13",
+              file: "gradle/dependencies.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
           )
         end
       end

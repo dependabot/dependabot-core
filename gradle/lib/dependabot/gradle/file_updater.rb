@@ -167,8 +167,7 @@ module Dependabot
       end
 
       def buildfiles
-        @buildfiles ||=
-          dependency_files.select { |f| f.name.end_with?("build.gradle") }
+        @buildfiles ||= dependency_files.reject(&:support_file?)
       end
     end
   end

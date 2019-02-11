@@ -90,4 +90,35 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
   end
+
+  context "with a script plugin" do
+    before do
+      stub_request(:get, File.join(url, "build.gradle?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture(
+            "github",
+            "contents_java_buildfile_with_script_plugins.json"
+          ),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "settings.gradle?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, File.join(url, "gradle/dependencies.gradle?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_simple_settings.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the buildfile and the dependencies script" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(build.gradle gradle/dependencies.gradle))
+    end
+  end
 end

@@ -35,6 +35,9 @@ module Dependabot
         buildfiles.each do |buildfile|
           dependency_set += buildfile_dependencies(buildfile)
         end
+        script_plugin_files.each do |plugin_file|
+          dependency_set += buildfile_dependencies(plugin_file)
+        end
         dependency_set.dependencies
       end
 
@@ -226,6 +229,15 @@ module Dependabot
       def buildfiles
         @buildfiles ||=
           dependency_files.select { |f| f.name.end_with?("build.gradle") }
+      end
+
+      def script_plugin_files
+        @script_plugin_files ||=
+          buildfiles.flat_map do |buildfile|
+            buildfile.content.
+              scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
+              map { |f| dependency_files.find { |bf| bf.name == f } }.compact
+          end
       end
 
       def check_required_files

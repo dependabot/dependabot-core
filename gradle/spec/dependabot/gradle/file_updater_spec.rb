@@ -92,38 +92,32 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             Dependabot::Dependency.new(
               name: "co.aikar:acf-paper",
               version: "0.5.0-SNAPSHOT",
-              requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "0.6.0-SNAPSHOT",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                },
-                {
-                  file: "app/build.gradle",
-                  requirement: "0.6.0-SNAPSHOT",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "build.gradle",
-                  requirement: "0.5.0-SNAPSHOT",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                },
-                {
-                  file: "app/build.gradle",
-                  requirement: "0.5.0-SNAPSHOT",
-                  groups: [],
-                  source: nil,
-                  metadata: nil
-                }
-              ],
+              requirements: [{
+                file: "build.gradle",
+                requirement: "0.6.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }, {
+                file: "app/build.gradle",
+                requirement: "0.6.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "0.5.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }, {
+                file: "app/build.gradle",
+                requirement: "0.5.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
               package_manager: "gradle"
             )
           end
@@ -322,6 +316,64 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             )
           expect(updated_files.first.content).
             to include("dependency 'org.apache.kafka:kafka-clients:3.6.1'")
+        end
+      end
+    end
+
+    context "when updating a script plugin" do
+      let(:dependency_files) { [buildfile, script_plugin] }
+      let(:buildfile_fixture_name) { "with_dependency_script.gradle" }
+      let(:script_plugin) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/dependencies.gradle",
+          content: fixture("script_plugins", "dependencies.gradle")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.jetbrains.kotlinx:kotlinx-coroutines-core",
+          version: "1.1.1",
+          previous_version: "0.19.3",
+          requirements: [{
+            requirement: "1.1.1",
+            file: "gradle/dependencies.gradle",
+            groups: [],
+            source: { type: "maven_repo", url: "https://jcenter.bintray.com" },
+            metadata: nil
+          }, {
+            requirement: "1.1.1",
+            file: "gradle/dependencies.gradle",
+            groups: [],
+            source: { type: "maven_repo", url: "https://jcenter.bintray.com" },
+            metadata: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.19.3",
+            file: "gradle/dependencies.gradle",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }, {
+            requirement: "0.26.1-eap13",
+            file: "gradle/dependencies.gradle",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated plugin script file" do
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/dependencies.gradle" }
+        end
+
+        its(:content) do
+          is_expected.
+            to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
         end
       end
     end
