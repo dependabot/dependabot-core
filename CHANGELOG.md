@@ -1,3 +1,8 @@
+## v0.95.11, 11 February 2019
+
+- Gradle: Fetch plugin script files, and update them
+- PHP: Handle another error
+
 ## v0.95.10, 11 February 2019
 
 - Python: Bump pip from 19.0.1 to 19.0.2 in /python/helpers
