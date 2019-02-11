@@ -175,14 +175,26 @@ module Dependabot
 
           @yanked[version] =
             begin
-              version_not_found =
-                Excon.get(
-                  dependency_url + "/#{version}",
+              status = Excon.get(
+                dependency_url + "/#{version}",
+                SharedHelpers.excon_defaults.merge(
+                  headers: registry_auth_headers,
+                  idempotent: true
+                )
+              ).status
+
+              if status == 404 && dependency_registry != "registry.npmjs.org"
+                # Some registries don't handle escaped package names properly
+                status = Excon.get(
+                  dependency_url.gsub("%2F", "/") + "/#{version}",
                   SharedHelpers.excon_defaults.merge(
                     headers: registry_auth_headers,
                     idempotent: true
                   )
-                ).status == 404
+                ).status
+              end
+
+              version_not_found = status == 404
               version_not_found && version_endpoint_working?
             rescue Excon::Error::Timeout
               # Give the benefit of the doubt if the registry is playing up

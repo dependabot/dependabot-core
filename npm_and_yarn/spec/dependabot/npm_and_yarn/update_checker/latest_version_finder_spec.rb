@@ -375,6 +375,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             ).to_return(status: 404)
             stub_request(
               :get,
+              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+            ).to_return(status: 404)
+            stub_request(
+              :get,
               "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
             ).to_return(status: 200)
             stub_request(
@@ -394,8 +398,32 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             ).to_return(status: 404)
             stub_request(
               :get,
+              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+            ).to_return(status: 404)
+            stub_request(
+              :get,
               "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
             ).to_return(status: 404)
+          end
+
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+        end
+
+        context "when the registry doesn't escape dependency URLs properly" do
+          # Looking at you JFrog...
+          before do
+            stub_request(
+              :get,
+              "https://npm.fury.io/dependabot/@blep%2Fblep/1.8.1"
+            ).to_return(status: 404)
+            stub_request(
+              :get,
+              "https://npm.fury.io/dependabot/@blep/blep/1.8.1"
+            ).to_return(status: 200)
+            stub_request(
+              :get,
+              "https://npm.fury.io/dependabot/@blep%2Fblep/latest"
+            ).to_return(status: 200)
           end
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
