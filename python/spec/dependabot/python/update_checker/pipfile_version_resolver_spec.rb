@@ -243,7 +243,7 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
         let(:latest_version) { Gem::Version.new("2.1.4") }
 
-        it { is_expected.to eq(Gem::Version.new("1.11.18")) }
+        it { is_expected.to eq(Gem::Version.new("1.11.19")) }
       end
 
       context "for a resolution that has caused trouble in the past" do
