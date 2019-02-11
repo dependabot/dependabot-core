@@ -106,7 +106,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman") }
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman-1.5.0") }
 
       context "for a java property update" do
         let(:files) { [pom] }
@@ -162,7 +162,9 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           ]
         end
 
-        it { is_expected.to eq("dependabot/maven/springframework.version") }
+        it do
+          is_expected.to eq("dependabot/maven/springframework.version-23.6-jre")
+        end
       end
 
       context "for a dependency set update" do
@@ -220,7 +222,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           )
         end
 
-        it { is_expected.to eq("dependabot/gradle/my.group") }
+        it { is_expected.to eq("dependabot/gradle/my.group-1.5.0") }
       end
     end
 

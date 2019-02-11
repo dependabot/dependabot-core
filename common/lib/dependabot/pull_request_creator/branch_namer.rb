@@ -20,21 +20,25 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       def new_branch_name
         @name ||=
-          if dependencies.count > 1 && updating_a_property?
-            property_name
-          elsif dependencies.count > 1 && updating_a_dependency_set?
-            dependency_set.fetch(:group)
-          elsif dependencies.count > 1
-            dependencies.map(&:name).join("-and-").tr(":", "-")
-          elsif library? && ref_changed?(dependencies.first)
+          begin
+            dependency_name_part =
+              if dependencies.count > 1 && updating_a_property?
+                property_name
+              elsif dependencies.count > 1 && updating_a_dependency_set?
+                dependency_set.fetch(:group)
+              else
+                dependencies.map(&:name).join("-and-").tr(":", "-")
+              end
+
             dep = dependencies.first
-            "#{dep.name.tr(':', '-')}-#{new_ref(dep)}"
-          elsif library?
-            dep = dependencies.first
-            "#{dep.name.tr(':', '-')}-#{sanitized_requirement(dep)}"
-          else
-            dep = dependencies.first
-            "#{dep.name.tr(':', '-')}-#{new_version(dep)}"
+
+            if library? && ref_changed?(dependencies.first)
+              "#{dependency_name_part}-#{new_ref(dep)}"
+            elsif library?
+              "#{dependency_name_part}-#{sanitized_requirement(dep)}"
+            else
+              "#{dependency_name_part}-#{new_version(dep)}"
+            end
           end
 
         branch_name = File.join(prefixes, @name).gsub(%r{/\.}, "/dot-")
