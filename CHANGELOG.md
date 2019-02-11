@@ -1,3 +1,7 @@
+## v0.95.13, 11 February 2019
+
+- Better branch naming when updating multiple deps
+
 ## v0.95.12, 11 February 2019
 
 - JS: Handle registries that don't escape slashes in dependency names except at /latest
