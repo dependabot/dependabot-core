@@ -1,3 +1,7 @@
+## v0.95.12, 11 February 2019
+
+- JS: Handle registries that don't escape slashes in dependency names except at /latest
+
 ## v0.95.11, 11 February 2019
 
 - Gradle: Fetch plugin script files, and update them
