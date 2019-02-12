@@ -40,7 +40,7 @@ module Dependabot
       end
 
       def directory
-        source.directory || "/"
+        Pathname.new(source.directory || "/").cleanpath.to_path
       end
 
       def target_branch
