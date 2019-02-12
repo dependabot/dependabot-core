@@ -46,6 +46,7 @@ $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./composer/lib"
+$LOAD_PATH << "./common/lib"
 
 require "optparse"
 require "dependabot/file_fetchers"
