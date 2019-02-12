@@ -132,6 +132,11 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       end
 
       context "for a different dependency" do
+        before do
+          stub_request(:get, "https://github.com/benjaminp/six").
+            to_return(status: 404, body: "")
+        end
+
         it { is_expected.to be_nil }
 
         it "caches the call to pypi" do
@@ -140,7 +145,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         end
       end
 
-      context "for a different dependency" do
+      context "for this dependency" do
         let(:dependency_name) { "six" }
 
         it { is_expected.to eq("https://github.com/benjaminp/six") }
@@ -148,6 +153,16 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it "caches the call to pypi" do
           2.times { source_url }
           expect(WebMock).to have_requested(:get, pypi_url).once
+        end
+
+        context "with an unexpected name" do
+          let(:dependency_name) { "python-six" }
+          before do
+            stub_request(:get, "https://github.com/benjaminp/six").
+              to_return(status: 200, body: "python-six")
+          end
+
+          it { is_expected.to eq("https://github.com/benjaminp/six") }
         end
       end
     end
@@ -185,10 +200,25 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         context "for this dependency" do
           let(:dependency_name) { "psycopg2" }
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
+
+          context "with an unexpected name" do
+            let(:dependency_name) { "python-psycopg2" }
+            before do
+              stub_request(:get, "https://github.com/psycopg/psycopg2").
+                to_return(status: 200, body: "python-psycopg2")
+            end
+
+            it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
+          end
         end
 
         context "for another dependency" do
           let(:dependency_name) { "luigi" }
+          before do
+            stub_request(:get, "https://github.com/psycopg/psycopg2").
+              to_return(status: 200, body: "python-psycopg2")
+          end
+
           it { is_expected.to be_nil }
         end
       end

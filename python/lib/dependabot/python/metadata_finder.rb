@@ -33,32 +33,66 @@ module Dependabot
       end
 
       def source_from_description
-        github_urls = []
+        potential_source_urls = []
         desc = pypi_listing.dig("info", "description")
         return unless desc
 
         desc.scan(Source::SOURCE_REGEX) do
-          github_urls << Regexp.last_match.to_s
+          potential_source_urls << Regexp.last_match.to_s
         end
 
-        github_urls.find do |url|
+        # Looking for a source where the repo name exactly matches the
+        # dependency name
+        match_url = potential_source_urls.find do |url|
           repo = Source.from_url(url).repo
           repo.downcase.end_with?(dependency.name)
         end
+
+        return match_url if match_url
+
+        # Failing that, look for a source where the full dependency name is
+        # mentioned when the link is followed
+        @source_from_description ||=
+          potential_source_urls.find do |url|
+            full_url = Source.from_url(url).url
+            response = Excon.get(
+              full_url,
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            next unless response.status == 200
+
+            response.body.include?(dependency.name)
+          end
       end
 
       def source_from_homepage
         return unless homepage_body
 
-        github_urls = []
+        potential_source_urls = []
         homepage_body.scan(Source::SOURCE_REGEX) do
-          github_urls << Regexp.last_match.to_s
+          potential_source_urls << Regexp.last_match.to_s
         end
 
-        github_urls.find do |url|
+        match_url = potential_source_urls.find do |url|
           repo = Source.from_url(url).repo
           repo.downcase.end_with?(dependency.name)
         end
+
+        return match_url if match_url
+
+        @source_from_homepage ||=
+          potential_source_urls.find do |url|
+            full_url = Source.from_url(url).url
+            response = Excon.get(
+              full_url,
+              idempotent: true,
+              **SharedHelpers.excon_defaults
+            )
+            next unless response.status == 200
+
+            response.body.include?(dependency.name)
+          end
       end
 
       def homepage_body
