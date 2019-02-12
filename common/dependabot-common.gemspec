@@ -48,7 +48,7 @@ Gem::Specification.new do |spec|
 
   next unless File.directory?("lib")
 
-  Find.find("lib") do |path|
+  Find.find("lib", "bin") do |path|
     if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
       Find.prune
     else
