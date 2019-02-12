@@ -1,3 +1,7 @@
+## v0.95.15, 12 February 2019
+
+- Sanitize @-mentions that are prefixed with a dash
+
 ## v0.95.14, 12 February 2019
 
 - Python: Don't try to update 'empty' requirements.txt files as part of a Pipfile update
