@@ -1,3 +1,8 @@
+## v0.95.16, 12 February 2019
+
+- Common: include bin files in dependabot-common packaged gem
+- Require common in dry run script
+
 ## v0.95.15, 12 February 2019
 
 - Sanitize @-mentions that are prefixed with a dash
