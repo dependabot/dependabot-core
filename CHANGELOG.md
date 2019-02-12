@@ -1,3 +1,8 @@
+## v0.95.17, 12 February 2019
+
+- Python: Dig into source URL looking for reference to dependency name
+- Gradle: Handle $rootDir variable in dependency script plugins
+
 ## v0.95.16, 12 February 2019
 
 - Common: include bin files in dependabot-common packaged gem
