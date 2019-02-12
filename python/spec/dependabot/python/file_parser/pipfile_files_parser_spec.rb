@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:pipfile_fixture_name) { "only_dev" }
       let(:lockfile_fixture_name) { "only_dev.lock" }
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(2) }
 
       describe "top level dependencies" do
         subject(:dependencies) do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("pytest") }
-          its(:version) { is_expected.to eq("3.3.1") }
+          its(:version) { is_expected.to eq("3.2.3") }
           its(:requirements) { is_expected.to eq(expected_requirements) }
         end
       end
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("pytest") }
-        its(:version) { is_expected.to eq("3.3.1") }
+        its(:version) { is_expected.to eq("3.2.3") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end

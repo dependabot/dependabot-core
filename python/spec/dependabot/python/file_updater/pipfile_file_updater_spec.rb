@@ -444,6 +444,42 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
             expect(updated_txt.content).to include("#{nm}#{hash['version']}")
           end
         end
+
+        context "because there are no runtime dependencies" do
+          let(:pipfile_fixture_name) { "only_dev" }
+          let(:lockfile_fixture_name) { "only_dev.lock" }
+          let(:requirements_file) do
+            Dependabot::DependencyFile.new(
+              name: "runtime.txt",
+              content: "python-3.7.1"
+            )
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "pytest",
+              version: "3.3.1",
+              previous_version: "3.2.3",
+              package_manager: "pip",
+              requirements: [{
+                requirement: "*",
+                file: "Pipfile",
+                source: nil,
+                groups: ["develop"]
+              }],
+              previous_requirements: [{
+                requirement: "*",
+                file: "Pipfile",
+                source: nil,
+                groups: ["develop"]
+              }]
+            )
+          end
+
+          it "does not update the requirements.txt" do
+            expect(updated_files.map(&:name)).to eq(["Pipfile.lock"])
+          end
+        end
       end
 
       context "that looks like the output of `pipenv lock -r -d`" do
