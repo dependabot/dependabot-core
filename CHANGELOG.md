@@ -1,3 +1,9 @@
+## v0.95.14, 12 February 2019
+
+- Python: Don't try to update 'empty' requirements.txt files as part of a Pipfile update
+- PHP: Bump composer/composer from 1.8.3 to 1.8.4 in /composer/helpers
+- Python: Check source project_url for a GitHub link in MetadataFinder
+
 ## v0.95.13, 11 February 2019
 
 - Better branch naming when updating multiple deps
