@@ -1,3 +1,7 @@
+## v0.95.20, 13 February 2019
+
+- Update issue tag regex
+
 ## v0.95.19, 13 February 2019
 
 - Add optional dependency on Pandoc that allows us to convert rst files
