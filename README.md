@@ -92,6 +92,20 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
+It also includes a "dry-run" script that can be used to run a dependency update
+job, printing the diff that would be generated to the terminal. It takes two
+positional arguments: the package manager and the GitHub repo name (including
+the account):
+
+```bash
+$ cd omnibus
+$ bundle exec ruby bin/dry-run.rb go_modules rsc/quote
+=> fetching dependency files
+=> parsing dependency files
+=> updating 2 dependencies
+...
+```
+
 
 ## Why is this public?
 
