@@ -1,3 +1,7 @@
+## v0.95.19, 13 February 2019
+
+- Add optional dependency on Pandoc that allows us to convert rst files
+
 ## v0.95.18, 13 February 2019
 
 - PHP: Handle integer versions in composer.lock
