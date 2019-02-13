@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "pandoc-ruby"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab"
@@ -33,10 +34,26 @@ module Dependabot
         def changelog_text
           return unless full_changelog_text
 
-          ChangelogPruner.new(
+          pruned_text = ChangelogPruner.new(
             dependency: dependency,
             changelog_text: full_changelog_text
           ).pruned_text
+
+          return pruned_text unless changelog.name.end_with?(".rst")
+
+          begin
+            PandocRuby.convert(
+              pruned_text,
+              from: :rst,
+              to: :markdown,
+              wrap: :none
+            )
+          rescue Errno::ENOENT => error
+            raise unless error.message == "No such file or directory - pandoc"
+
+            # If pandoc isn't installed just return the rst
+            pruned_text
+          end
         end
 
         def upgrade_guide_url

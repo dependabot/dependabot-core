@@ -639,6 +639,43 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             it { is_expected.to eq(expected_pruned_changelog) }
           end
         end
+
+        context "that uses restructured text format" do
+          let(:github_contents_response) do
+            fixture("github", "scrapy_docs_files.json")
+          end
+          let(:github_changelog_url) do
+            "https://api.github.com/repos/scrapy/scrapy/contents/docs/"\
+            "news.rst?ref=master"
+          end
+          let(:changelog_body) do
+            fixture("github", "changelog_contents_rst.json")
+          end
+          let(:dependency_version) { "1.16.0" }
+          let(:dependency_previous_version) { "1.15.1" }
+
+          let(:unconverted_text) do
+            "1.16.0 (2019-02-12)\n"\
+            "-------------------\n"\
+            "\n"\
+            "* ``pytest-selenium`` now requires pytest 3.6 or later.\n"\
+            "* Fixed `issue <https://github.com/pytest-dev/"\
+            "pytest-selenium/issues/216>`_ with TestingBot local tunnel."
+          end
+          let(:converted_text) do
+            "1.16.0 (2019-02-12)\n"\
+            "===================\n"\
+            "\n"\
+            "-   `pytest-selenium` now requires pytest 3.6 or later.\n"\
+            "-   Fixed [issue](https://github.com/pytest-dev/"\
+            "pytest-selenium/issues/216) with TestingBot local tunnel.\n"
+          end
+
+          it "converts the rst properly (or falls back)" do
+            expect([converted_text, unconverted_text]).
+              to include(changelog_text)
+          end
+        end
       end
 
       context "without a changelog" do
