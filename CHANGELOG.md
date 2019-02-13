@@ -1,3 +1,9 @@
+## v0.95.18, 13 February 2019
+
+- PHP: Handle integer versions in composer.lock
+- Add .gitignore
+- Base: Convert directory to proper path before using it in file fetchers
+
 ## v0.95.17, 12 February 2019
 
 - Python: Dig into source URL looking for reference to dependency name
