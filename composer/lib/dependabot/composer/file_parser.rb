@@ -85,7 +85,7 @@ module Dependabot
             name = details["name"]
             next unless package?(name)
 
-            version = details["version"]&.sub(/^v?/, "")
+            version = details["version"]&.to_s&.sub(/^v?/, "")
             next if version.nil?
             next unless version.match?(/^\d/)
 
@@ -110,7 +110,7 @@ module Dependabot
         parsed_lockfile.
           fetch(key, []).
           find { |d| d["name"] == name }&.
-          fetch("version")&.sub(/^v?/, "")
+          fetch("version")&.to_s&.sub(/^v?/, "")
       end
 
       def dependency_source(name:, type:)

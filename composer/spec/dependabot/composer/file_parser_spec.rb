@@ -65,6 +65,21 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with an integer version" do
+      let(:composer_json_fixture_name) { "integer_version" }
+      let(:lockfile_fixture_name) { "integer_version" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) do
+          is_expected.to eq("wpackagist-plugin/ga-google-analytics")
+        end
+        its(:version) { is_expected.to eq("20180828") }
+      end
+    end
+
     context "for development dependencies" do
       let(:composer_json_fixture_name) { "development_dependencies" }
       let(:lockfile_fixture_name) { "development_dependencies" }
