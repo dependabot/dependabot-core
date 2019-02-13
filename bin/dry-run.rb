@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 # This script is does a full update run for a given repo (optionally for a
@@ -47,6 +48,10 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./common/lib"
+
+require "bundler"
+ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "../omnibus/Gemfile")
+Bundler.setup
 
 require "optparse"
 require "dependabot/file_fetchers"

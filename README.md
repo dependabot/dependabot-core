@@ -50,7 +50,13 @@ To install the helpers for each language:
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd elixir/helpers && mix deps.get && cd -`
 
-## Local development with Docker
+## Local development
+
+Run the tests by running `rspec spec` inside each of the packages. Style is
+enforced by RuboCop. To check for style violations, simply run `rubocop` in
+each of the packages.
+
+### Running with Docker
 
 While you can run Dependabot Core without Docker, we also provide a development
 Dockerfile. In most cases, you'll be better off running Dependabot in the
@@ -77,6 +83,25 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+```
+
+### Dry run script
+
+*Note: you must have run `bundle install` in the `omnibus` directory before
+running this script.*
+
+You can use the "dry-run" script to simulate a dependency update job, printing
+the diff that would be generated to the terminal. It takes two positional
+arguments: the package manager and the GitHub repo name (including the
+account):
+
+```bash
+$ cd omnibus && bundle install && cd -
+$ bin/dry-run.rb go_modules rsc/quote
+=> fetching dependency files
+=> parsing dependency files
+=> updating 2 dependencies
+...
 ```
 
 ## Architecture
@@ -120,21 +145,6 @@ The high level flow looks like this:
 This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
-
-It also includes a "dry-run" script that can be used to run a dependency update
-job, printing the diff that would be generated to the terminal. It takes two
-positional arguments: the package manager and the GitHub repo name (including
-the account):
-
-```bash
-$ cd omnibus
-$ bundle exec ruby bin/dry-run.rb go_modules rsc/quote
-=> fetching dependency files
-=> parsing dependency files
-=> updating 2 dependencies
-...
-```
-
 
 ## Why is this public?
 
