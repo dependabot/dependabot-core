@@ -47,6 +47,7 @@ $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./composer/lib"
+$LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./common/lib"
 
 require "bundler"
@@ -72,6 +73,7 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/dep"
 require "dependabot/composer"
+require "dependabot/bundler"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
