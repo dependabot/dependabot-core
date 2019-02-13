@@ -50,6 +50,35 @@ To install the helpers for each language:
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd elixir/helpers && mix deps.get && cd -`
 
+## Local development with Docker
+
+While you can run Dependabot Core without Docker, we also provide a development
+Dockerfile. In most cases, you'll be better off running Dependabot in the
+development Docker container as it bakes in all required dependencies.
+
+Start by building the initial Dependabot Core image, or pull it from the
+Docker registry.
+
+```shell
+$ docker pull dependabot/dependabot-core # OR
+$ docker build -t dependabot/dependabot-core . # this may take a while
+```
+
+Once you have the base Docker image, you can build and run the development
+container using the `docker-dev-shell` script. The script will automatically
+build the container if it's not present, and can be forced to rebuild with the
+`--rebuild` flag. The image includes all dependencies, and the script runs the
+image, mounting the local copy of Dependabot Core so changes made locally will
+be reflected inside the container. This means you can continue to use your
+editor of choice, while running the tests inside the container.
+
+```shell
+$ bin/docker-dev-shell
+=> building image from Dockerfile.development
+=> running docker development shell
+[dependabot-core-dev] ~/dependabot-core $
+```
+
 ## Architecture
 
 Dependabot Core is a collection of Ruby packages (gems), which contain the
