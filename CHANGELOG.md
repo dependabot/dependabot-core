@@ -1,3 +1,7 @@
+## v0.95.22, 14 February 2019
+
+- Cleaner mention sanitizing (use a zero width character)
+
 ## v0.95.21, 14 February 2019
 
 - Better sanitization of @mentions when wrapped in a link
