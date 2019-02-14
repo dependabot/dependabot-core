@@ -685,7 +685,7 @@ module Dependabot
       end
 
       def sanitize_links_and_mentions(text)
-        text = text.gsub(%r{(?<![A-Za-z0-9])@[\w.-/]+}) do |mention|
+        text = text.gsub(%r{(?<![A-Za-z0-9])@[\w][\w.-/]*}) do |mention|
           next mention if mention.include?("/")
 
           last_match = Regexp.last_match
