@@ -1,3 +1,8 @@
+## v0.95.26, 14 February 2019
+
+- Go (modules): detect and handle missing/invalid dependency specified with
+  pseudo version
+
 ## v0.95.25, 14 February 2019
 
 - Cargo: Include all unreachable git dependencies when raising GitDependenciesNotReachable
