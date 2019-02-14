@@ -171,11 +171,19 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
+        # rubocop:disable Metrics/AbcSize
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
             # for the specified features
             return nil
+          end
+
+          if error.message.include?("authenticate when downloading repository")
+            dependency_url =
+              error.message.match(/Unable to update (?<url>.*)$/).
+              named_captures.fetch("url").strip
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
           if error.message.match?(BRANCH_NOT_FOUND_REGEX)
@@ -198,6 +206,7 @@ module Dependabot
 
           raise error
         end
+        # rubocop:enable Metrics/AbcSize
 
         def resolvability_error?(message)
           return true if message.include?("failed to parse lock")

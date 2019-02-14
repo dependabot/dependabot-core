@@ -206,6 +206,19 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         it { is_expected.to eq(dependency_version) }
       end
 
+      context "that is unreachable" do
+        let(:manifest_fixture_name) { "git_dependency_unreachable" }
+        let(:lockfile_fixture_name) { "git_dependency_unreachable" }
+
+        it "raises a GitDependenciesNotReachable error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).
+                to eq(["https://github.com/greysteil/utf8-ranges"])
+            end
+        end
+      end
+
       context "with an unfetchable locked ref for an unrelated git dep" do
         let(:manifest_fixture_name) { "git_dependency" }
         let(:lockfile_fixture_name) { "git_dependency_unfetchable_ref" }
