@@ -5,22 +5,17 @@
 # specific dependency only), and shows the proposed changes to any dependency
 # files without actually creating a pull request.
 #
-# It's used regularly by the Dependabot team to manually debug issues, so should
-# always be up-to-date.
+# It's used regularly by the Dependabot team to manually debug issues, so
+# should always be up-to-date.
 #
-# Note: `bundle install` in the omnibus directory before running this script
-#   $ cd omnibus && bundle install && cd -
+# Usage:
+#   ruby bin/dry-run.rb PACKAGE_MANAGER GITHUB_REPO [DEPENDENCY]
 #
-# Usage: $ bin/dry-run.rb PACKAGE_MANAGER GITHUB_REPO [DEPENDENCY]
-#   => fetching dependency files
-#   => parsing dependency files
-#   => updating 2 dependencies
-#   ...
+# ! You'll need to have a GitHub access token (a personal access token is
+# ! fine) available as the environment variable LOCAL_GITHUB_ACCESS_TOKEN.
 #
-# ! You'll need to have a GitHub access token (a personal access token is !
-# fine) available as the environment variable LOCAL_GITHUB_ACCESS_TOKEN.
-#
-# Example: $ bin/dry-run.rb go_modules zonedb/zonedb
+# Example:
+#   ruby bin/dry-run.rb go_modules zonedb/zonedb
 #
 # Package managers:
 # - bundler
@@ -121,33 +116,27 @@ if ARGV.length < 2
 end
 package_manager, repo_name = ARGV
 
-# source = Dependabot::Source.new(
-#   provider: "github",
-#   repo: repo_name,
-#   directory: directory,
-#   branch: nil
-# )
+source = Dependabot::Source.new(
+  provider: "github",
+  repo: repo_name,
+  directory: directory,
+  branch: nil
+)
 
 # Fetch the dependency files
-# puts "=> fetching dependency files"
-# fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).
-#           new(source: source, credentials: credentials)
-# files = fetcher.files
-# File.write("test-files.rbm", Marshal.dump(files))
-
-files = Marshal.load(File.read("test-files.rbm"))
+puts "=> fetching dependency files"
+fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).
+          new(source: source, credentials: credentials)
+files = fetcher.files
 
 # Parse the dependency files
-# puts "=> parsing dependency files"
-# parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
-#   dependency_files: files,
-#   source: source,
-#   credentials: credentials
-# )
-# dependencies = parser.parse
-# File.write("test-dependencies.rbm", Marshal.dump(dependencies))
-
-dependencies = Marshal.load(File.read("test-dependencies.rbm"))
+puts "=> parsing dependency files"
+parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
+  dependency_files: files,
+  source: source,
+  credentials: credentials
+)
+dependencies = parser.parse
 
 if dependency_name.nil?
   dependencies.select!(&:top_level?)
@@ -181,7 +170,6 @@ end
 
 dependencies.each do |dep|
   puts "\n=== #{dep.name} (#{dep.version})"
-  start = Time.now
   checker = Dependabot::UpdateCheckers.for_package_manager(package_manager).new(
     dependency: dep,
     dependency_files: files,
@@ -197,26 +185,22 @@ dependencies.each do |dep|
 
   if updated_deps.empty?
     puts "    (no update available)"
-    time_taken = Time.now - start
-    puts "Time taken for checker: #{time_taken}s"
     next
   end
 
   new_version = updated_deps.find { |d| d.name == dep.name }.version
   puts " => updating to #{new_version}"
-  time_taken = Time.now - start
-  puts "Time taken for checker: #{time_taken}s"
 
   # Generate updated dependency files
-  # updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
-  #   dependencies: updated_deps,
-  #   dependency_files: files,
-  #   credentials: credentials
-  # )
+  updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
+    dependencies: updated_deps,
+    dependency_files: files,
+    credentials: credentials
+  )
 
-  # updated_files = updater.updated_dependency_files
-  # updated_files.each do |updated_file|
-  #   original_file = files.find { |f| f.name == updated_file.name }
-  #   show_diff(original_file, updated_file)
-  # end
+  updated_files = updater.updated_dependency_files
+  updated_files.each do |updated_file|
+    original_file = files.find { |f| f.name == updated_file.name }
+    show_diff(original_file, updated_file)
+  end
 end
