@@ -1,3 +1,7 @@
+## v0.95.24, 14 February 2019
+
+- Cargo: Handle unreachable git dependencies
+
 ## v0.95.23, 14 February 2019
 
 - Another @-mention sanitization improvement (better regex)
