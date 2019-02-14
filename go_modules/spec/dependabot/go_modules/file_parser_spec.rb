@@ -158,6 +158,21 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "a non-existent dependency with a pseudo-version" do
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote v1.4.0",
+                   "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159")
+      end
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("hmarr/404")
+          end
+      end
+    end
+
     describe "a non-semver vanity URL that 404s but includes meta tags" do
       subject(:dependency) do
         dependencies.find { |d| d.name == "gonum.org/v1/plot" }
