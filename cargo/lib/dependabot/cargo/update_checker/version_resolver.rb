@@ -214,13 +214,13 @@ module Dependabot
         def unreachable_git_urls
           @unreachable_git_urls ||=
             begin
-              parser = FileParser.new(
+              dependencies = FileParser.new(
                 dependency_files: original_dependency_files,
                 source: nil
-              )
+              ).parse
 
               unreachable_git_dependencies =
-                parser.parse.
+                dependencies.
                 select do |dep|
                   checker = GitCommitChecker.new(
                     dependency: dep,
