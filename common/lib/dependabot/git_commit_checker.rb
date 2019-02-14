@@ -91,6 +91,13 @@ module Dependabot
       }
     end
 
+    def git_repo_reachable?
+      local_upload_pack
+      true
+    rescue Dependabot::GitDependenciesNotReachable
+      false
+    end
+
     private
 
     attr_reader :dependency, :credentials, :ignored_versions

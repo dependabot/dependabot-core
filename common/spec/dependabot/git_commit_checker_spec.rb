@@ -798,4 +798,50 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
     end
   end
+
+  describe "#git_repo_reachable?" do
+    subject { checker.git_repo_reachable? }
+
+    let(:source) do
+      {
+        type: "git",
+        url: "https://github.com/gocardless/business",
+        branch: "master",
+        ref: "master"
+      }
+    end
+    let(:git_header) do
+      { "content-type" => "application/x-git-upload-pack-advertisement" }
+    end
+    let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
+
+    let(:git_url) do
+      "https://github.com/gocardless/business.git" \
+      "/info/refs?service=git-upload-pack"
+    end
+
+    context "that can be reached just fine" do
+      before do
+        stub_request(:get, git_url).
+          with(headers: { "Authorization" => auth_header }).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "business"),
+            headers: git_header
+          )
+      end
+
+      it { is_expected.to eq(true) }
+    end
+
+    context "that results in a 403" do
+      before do
+        stub_request(:get, git_url).
+          with(headers: { "Authorization" => auth_header }).
+          to_return(status: 403)
+      end
+
+      it { is_expected.to eq(false) }
+    end
+  end
 end
