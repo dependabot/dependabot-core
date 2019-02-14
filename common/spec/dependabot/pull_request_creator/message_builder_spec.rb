@@ -936,7 +936,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "gocardless/business/releases).*\n\n"\
                 "> ## v1.6.0\n"\
                 "> Mad props to [**greysteil**](https://github.com/greysteil) "\
-                "for the @angular/scope work - see [changelog]"\
+                "and [**hmarr**](https://github.com/hmarr) for the "\
+                "@angular/scope work - see [changelog]"\
                 "(https://github.com/gocardless/business/blob/HEAD/"\
                 "CHANGELOG.md).\n"\
                 "</details>\n"\
