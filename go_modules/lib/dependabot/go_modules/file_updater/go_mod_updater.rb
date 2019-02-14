@@ -65,13 +65,13 @@ module Dependabot
 
         private
 
+        GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
+
         def handle_subprocess_error(path, stderr)
           case stderr
-          when /go: finding .*/
-            msg = stderr.lines.grep(/go: finding/).first.strip
-            match = /go: finding (?<require>\S+)/.match(msg)
-            msg = "could not resolve dependency #{match[:require]}" if match
-            raise Dependabot::DependencyFileNotResolvable.new, msg
+          when GIT_ERROR_REGEX
+            lines = stderr.lines.drop_while { |l| GIT_ERROR_REGEX !~ l }
+            raise Dependabot::DependencyFileNotResolvable.new, lines.join
           else
             msg = stderr.gsub(path.to_s, "").strip
             raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
