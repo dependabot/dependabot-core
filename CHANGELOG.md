@@ -1,3 +1,8 @@
+## v0.95.23, 14 February 2019
+
+- Another @-mention sanitization improvement (better regex)
+- JS: Bump npm from 6.7.0 to 6.8.0 in /npm_and_yarn/helpers
+
 ## v0.95.22, 14 February 2019
 
 - Cleaner mention sanitizing (use a zero width character)
