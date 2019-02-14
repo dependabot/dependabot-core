@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dependabot\Composer;
 
 use Composer\Package\PackageInterface;
-use Composer\Plugin\PluginManager;
+use Composer\Plugin\PluginManager as Base;
 
-class DependabotPluginManager extends PluginManager
+class PluginManager extends Base
 {
     public function registerPackage(PackageInterface $package, $failOnMissingClasses = false): void
     {

@@ -7,11 +7,11 @@ namespace Dependabot\Composer;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
-use Composer\Installer\InstallationManager;
+use Composer\Installer\InstallationManager as Base;
 use Composer\Package\PackageInterface;
 use Composer\Repository\RepositoryInterface;
 
-class DependabotInstallationManager extends InstallationManager
+class InstallationManager extends Base
 {
     private $installed = [];
     private $updated = [];
