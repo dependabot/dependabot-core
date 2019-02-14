@@ -1,3 +1,8 @@
+## v0.95.28, 14 February 2019
+
+- Go (modules): more detailed error messages for unresolvable dependencies due
+  to git errors, and for go.sum checksum mismatches.
+
 ## v0.95.27, 14 February 2019
 
 - NPM: Prefer offline cache and turn off audits
