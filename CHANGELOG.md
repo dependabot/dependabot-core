@@ -1,3 +1,7 @@
+## v0.95.27, 14 February 2019
+
+- NPM: Prefer offline cache and turn off audits
+
 ## v0.95.26, 14 February 2019
 
 - Go (modules): detect and handle missing/invalid dependency specified with
