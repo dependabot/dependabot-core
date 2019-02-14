@@ -13,7 +13,17 @@ async function updateDependencyFile(directory, lockfileName) {
   // in npm/lib/install/validate-args.js
   // Platform is checked and raised from (EBADPLATFORM):
   // https://github.com/npm/npm-install-checks
-  await runAsync(npm, npm.load, [{ loglevel: "silent", force: true }]);
+  //
+  // `'prefer-offline': true` sets fetch() cache key to `force-cache`
+  // https://github.com/npm/npm-registry-fetch
+  await runAsync(npm, npm.load, [
+    {
+      loglevel: "silent",
+      force: true,
+      audit: false,
+      "prefer-offline": true
+    }
+  ]);
 
   const dryRun = true;
   const initialInstaller = new installer.Installer(directory, dryRun, [], {
