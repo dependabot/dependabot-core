@@ -1,3 +1,9 @@
+## v0.95.25, 14 February 2019
+
+- Cargo: Include all unreachable git dependencies when raising GitDependenciesNotReachable
+- Fix time taken measurement for shell cmds
+- Add git_repo_reachable? method to GitCommitChecker
+
 ## v0.95.24, 14 February 2019
 
 - Cargo: Handle unreachable git dependencies
