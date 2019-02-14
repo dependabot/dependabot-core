@@ -134,7 +134,7 @@ module Dependabot
         def run_shell_command(command)
           start = Time.now
           stdout, process = Open3.capture2e(command)
-          time_taken = start - Time.now
+          time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo
           # returns a non-zero status

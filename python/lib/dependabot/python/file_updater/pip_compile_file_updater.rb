@@ -130,7 +130,7 @@ module Dependabot
           env_cmd = [python_env, command].compact
           start = Time.now
           stdout, process = Open3.capture2e(*env_cmd)
-          time_taken = start - Time.now
+          time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if
           # pip-compile returns a non-zero status

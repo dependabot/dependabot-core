@@ -225,7 +225,7 @@ module Dependabot
             command = "#{terraform_parser_path} -reverse < tmp.tf"
             start = Time.now
             stdout, process = Open3.capture2(command)
-            time_taken = start - Time.now
+            time_taken = Time.now - start
 
             unless process.success?
               raise SharedHelpers::HelperSubprocessFailed.new(
