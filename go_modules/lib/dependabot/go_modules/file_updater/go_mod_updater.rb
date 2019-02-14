@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
 
@@ -51,9 +52,10 @@ module Dependabot
                 File.write("go.sum", go_sum.content)
                 File.write("main.go", dummy_main_go)
 
-                `GO111MODULE=on go get -d`
-                unless $CHILD_STATUS.success?
-                  raise Dependabot::DependencyFileNotParseable, go_sum.path
+                command = "GO111MODULE=on go get -d"
+                _, stderr, status = Open3.capture3(command)
+                unless status.success?
+                  handle_subprocess_error(go_sum.path, stderr)
                 end
 
                 File.read("go.sum")
@@ -62,6 +64,19 @@ module Dependabot
         end
 
         private
+
+        def handle_subprocess_error(path, stderr)
+          case stderr
+          when /go: finding .*/
+            msg = stderr.lines.grep(/go: finding/).first.strip
+            match = /go: finding (?<require>\S+)/.match(msg)
+            msg = "could not resolve dependency #{match[:require]}" if match
+            raise Dependabot::DependencyFileNotResolvable.new, msg
+          else
+            msg = stderr.gsub(path.to_s, "").strip
+            raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
+          end
+        end
 
         def dummy_main_go
           lines = ["package main", "import ("]

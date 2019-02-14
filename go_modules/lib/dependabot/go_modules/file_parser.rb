@@ -88,6 +88,7 @@ module Dependabot
           end
       end
 
+      # rubocop:disable Metrics/AbcSize
       def handle_parser_error(path, stderr)
         case stderr
         when /go: .*: unknown revision/
@@ -99,11 +100,17 @@ module Dependabot
         when /go: errors parsing go.mod/
           msg = stderr.gsub(path.to_s, "").strip
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
+        when /go: finding .*/
+          msg = stderr.lines.grep(/go: finding/).first.strip
+          match = /go: finding (?<require>\S+)/.match(msg)
+          msg = "could not resolve dependency #{match[:require]}" if match
+          raise Dependabot::DependencyFileNotResolvable.new, msg
         else
           msg = stderr.gsub(path.to_s, "").strip
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
         end
       end
+      # rubocop:enable Metrics/AbcSize
 
       def rev_identifier?(dep)
         dep["Version"]&.match?(GIT_VERSION_REGEX)
