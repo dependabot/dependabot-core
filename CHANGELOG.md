@@ -1,3 +1,7 @@
+## v0.95.21, 14 February 2019
+
+- Better sanitization of @mentions when wrapped in a link
+
 ## v0.95.20, 13 February 2019
 
 - Update issue tag regex
