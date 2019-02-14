@@ -104,8 +104,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           describe "a non-existent dependency with a pseudo-version" do
             let(:go_mod_body) do
-              go_mod = fixture("go_mods", go_mod_fixture_name)
-              go_mod.sub(
+              fixture("go_mods", go_mod_fixture_name).sub(
                 "rsc.io/quote v1.4.0",
                 "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159"
               )
@@ -116,6 +115,23 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               expect { updater.updated_go_sum_content }.
                 to raise_error(error_class) do |error|
                   expect(error.message).to include("hmarr/404")
+                end
+            end
+          end
+
+          describe "a dependency with a checksum mismatch" do
+            let(:go_sum_body) do
+              fixture("go_mods", go_sum_fixture_name).sub(
+                "h1:sh3dZUZxJqMHuwt2YwWXqUUIe6N9gJlzZZH0eFduGkw=",
+                "h1:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
+              )
+            end
+
+            it "raises the correct error" do
+              error_class = Dependabot::DependencyFileNotResolvable
+              expect { updater.updated_go_sum_content }.
+                to raise_error(error_class) do |error|
+                  expect(error.message).to include("fatih/Color")
                 end
             end
           end

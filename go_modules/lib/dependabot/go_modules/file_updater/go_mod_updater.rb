@@ -66,11 +66,15 @@ module Dependabot
         private
 
         GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
+        CHECKSUM_REGEX = /go: verifying .*: checksum mismatch/.freeze
 
         def handle_subprocess_error(path, stderr)
           case stderr
           when GIT_ERROR_REGEX
             lines = stderr.lines.drop_while { |l| GIT_ERROR_REGEX !~ l }
+            raise Dependabot::DependencyFileNotResolvable.new, lines.join
+          when CHECKSUM_REGEX
+            lines = stderr.lines.drop_while { |l| CHECKSUM_REGEX !~ l }
             raise Dependabot::DependencyFileNotResolvable.new, lines.join
           else
             msg = stderr.gsub(path.to_s, "").strip
