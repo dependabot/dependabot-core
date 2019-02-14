@@ -4,9 +4,11 @@ require "toml-rb"
 require "open3"
 require "dependabot/shared_helpers"
 require "dependabot/cargo/update_checker"
+require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class UpdateChecker
@@ -180,10 +182,11 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repository")
-            dependency_url =
-              error.message.match(/Unable to update (?<url>.*)$/).
-              named_captures.fetch("url").strip
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise if unreachable_git_urls.none?
+
+            # Check all dependencies for reachability (so that we raise a
+            # consistent error)
+            raise Dependabot::GitDependenciesNotReachable, unreachable_git_urls
           end
 
           if error.message.match?(BRANCH_NOT_FOUND_REGEX)
@@ -207,6 +210,33 @@ module Dependabot
           raise error
         end
         # rubocop:enable Metrics/AbcSize
+
+        def unreachable_git_urls
+          @unreachable_git_urls ||=
+            begin
+              parser = FileParser.new(
+                dependency_files: original_dependency_files,
+                source: nil
+              )
+
+              unreachable_git_dependencies =
+                parser.parse.
+                select do |dep|
+                  checker = GitCommitChecker.new(
+                    dependency: dep,
+                    credentials: credentials
+                  )
+
+                  checker.git_dependency? && !checker.git_repo_reachable?
+                end
+
+              unreachable_git_dependencies.map do |dep|
+                dep.requirements.
+                  find { |r| r.dig(:source, :type) == "git" }.
+                  fetch(:source).fetch(:url)
+              end
+            end
+        end
 
         def resolvability_error?(message)
           return true if message.include?("failed to parse lock")
@@ -326,3 +356,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -209,6 +209,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       context "that is unreachable" do
         let(:manifest_fixture_name) { "git_dependency_unreachable" }
         let(:lockfile_fixture_name) { "git_dependency_unreachable" }
+        let(:git_url) do
+          "https://github.com/greysteil/utf8-ranges.git/info/"\
+          "refs?service=git-upload-pack"
+        end
+        let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
+
+        before do
+          stub_request(:get, git_url).
+            with(headers: { "Authorization" => auth_header }).
+            to_return(status: 403)
+        end
 
         it "raises a GitDependenciesNotReachable error" do
           expect { subject }.
