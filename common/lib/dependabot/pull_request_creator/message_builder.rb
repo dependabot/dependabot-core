@@ -690,12 +690,12 @@ module Dependabot
 
           last_match = Regexp.last_match
 
+          sanitized_mention = mention.gsub("@", "@&#8203;")
           if last_match.pre_match.chars.last == "[" &&
              last_match.post_match.chars.first == "]"
-            "**#{mention.tr('@', '')}**"
+            sanitized_mention
           else
-            "[**#{mention.tr('@', '')}**]"\
-            "(https://github.com/#{mention.tr('@', '')})"
+            "[#{sanitized_mention}](https://github.com/#{mention.tr('@', '')})"
           end
         end
 
