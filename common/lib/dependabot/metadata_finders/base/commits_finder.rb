@@ -66,11 +66,30 @@ module Dependabot
 
           if git_source?(dependency.previous_requirements)
             previous_version || previous_ref
-          else
+          elsif previous_version
             tags = dependency_tags.
                    select { |t| t =~ version_regex(previous_version) }
             tags.find { |t| t.include?(dependency.name) } || tags.first
+          else
+            lowest_tag_satisfying_previous_requirements
           end
+        end
+
+        def lowest_tag_satisfying_previous_requirements
+          tags = dependency_tags.
+                 select { |t| version_class.correct?(t.gsub(/^v/, "")) }.
+                 select do |t|
+                   version = version_class.new(t.gsub(/^v/, ""))
+                   dependency.previous_requirements.all? do |req|
+                     next true unless req.fetch(:requirement)
+
+                     requirement_class.
+                       requirements_array(req.fetch(:requirement)).
+                       all? { |r| r.satisfied_by?(version) }
+                   end
+                 end
+
+          tags.min_by { |t| version_class.new(t.gsub(/^v/, "")) }
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
@@ -214,6 +233,16 @@ module Dependabot
         def bitbucket_client
           @bitbucket_client ||= Dependabot::Clients::Bitbucket.
                                 for_bitbucket_dot_org(credentials: credentials)
+        end
+
+        def version_class
+          Utils.version_class_for_package_manager(dependency.package_manager)
+        end
+
+        def requirement_class
+          Utils.requirement_class_for_package_manager(
+            dependency.package_manager
+          )
         end
       end
     end

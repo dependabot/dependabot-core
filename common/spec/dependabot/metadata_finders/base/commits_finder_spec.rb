@@ -24,7 +24,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       package_manager: package_manager
     )
   end
-  let(:package_manager) { "bundler" }
+  let(:package_manager) { "dummy" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_requirements) do
@@ -70,6 +70,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       it do
         is_expected.to eq("https://github.com/gocardless/business/"\
                           "compare/v1.3.0...v1.4.0")
+      end
+
+      context "without a previous version" do
+        let(:dependency_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.3.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_version) { nil }
+
+        it do
+          is_expected.to eq("https://github.com/gocardless/business/"\
+                            "compare/v1.3.0...v1.4.0")
+        end
       end
     end
 
