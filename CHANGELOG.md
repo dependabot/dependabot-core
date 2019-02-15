@@ -1,3 +1,7 @@
+## v0.95.31, 15 February 2019
+
+- JS: Parse full nexus private repository URLs from lockfile entries for scoped dependencies
+
 ## v0.95.30, 15 February 2019
 
 - JS: Better handling of incorrect credentials for a private registry
