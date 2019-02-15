@@ -1466,9 +1466,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "username" => "x-access-token",
                   "password" => "token"
                 }, {
-                  "type"=>"npm_registry",
-                  "registry"=>"npm-proxy.fury.io",
-                  "token"=>"bad_token"
+                  "type" => "npm_registry",
+                  "registry" => "npm-proxy.fury.io",
+                  "token" => "bad_token"
                 }]
               end
 
