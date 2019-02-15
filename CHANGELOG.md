@@ -1,3 +1,8 @@
+## v0.95.30, 15 February 2019
+
+- JS: Better handling of incorrect credentials for a private registry
+- Better commit comparison links for dependencies without a previous version
+
 ## v0.95.29, 15 February 2019
 
 - Fetch files from symlinked directories if fetching submodules
