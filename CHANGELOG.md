@@ -1,3 +1,7 @@
+## v0.95.29, 15 February 2019
+
+- Fetch files from symlinked directories if fetching submodules
+
 ## v0.95.28, 14 February 2019
 
 - Go (modules): more detailed error messages for unresolvable dependencies due
