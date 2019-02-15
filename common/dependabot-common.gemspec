@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parser", "~> 2.5"
   spec.add_dependency "toml-rb", "~> 1.1", ">= 1.1.2"
 
-  spec.add_development_dependency "byebug", "~> 10.0"
+  spec.add_development_dependency "byebug", "~> 11.0"
   spec.add_development_dependency "rake", "~> 12"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
