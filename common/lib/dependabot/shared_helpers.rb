@@ -163,7 +163,7 @@ module Dependabot
         File.join(__dir__, "../../bin/git-credential-store-immutable")
       run_shell_command(
         "git config --global credential.helper "\
-        "'#{credential_helper_path} --file=#{Dir.pwd}/git.store'"
+        "'!#{credential_helper_path} --file=#{Dir.pwd}/git.store'"
       )
 
       # Build the content for our credentials file
