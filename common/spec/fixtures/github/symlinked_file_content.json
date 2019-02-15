@@ -1,18 +1,18 @@
 {
+    "_links": {
+        "git": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
+        "html": "https://github.com/hiki/hikidoc/blob/master/requirements.txt",
+        "self": "https://api.github.com/repos/hiki/hikidoc/contents/requirements.txt?ref=master"
+    },
+    "download_url": "https://raw.githubusercontent.com/hiki/hikidoc/master/requirements.txt",
+    "encoding": "base64",
+    "git_url": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
+    "html_url": "https://github.com/hiki/hikidoc/blob/master/requirements.txt",
     "name": "requirements.txt",
     "path": "requirements.txt",
     "sha": "573fcc3b5952e689528763484bac0b461e844c3b",
     "size": 926,
-    "url": "https://api.github.com/repos/hiki/hikidoc/contents/requirements.txt?ref=master",
-    "html_url": "https://github.com/hiki/hikidoc/blob/master/requirements.txt",
-    "git_url": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
-    "download_url": "https://raw.githubusercontent.com/hiki/hikidoc/master/requirements.txt",
-    "type": "symlink",
     "target": "symlinked/requirements.txt",
-    "encoding": "base64",
-    "_links": {
-        "self": "https://api.github.com/repos/hiki/hikidoc/contents/requirements.txt?ref=master",
-        "git": "https://api.github.com/repos/hiki/hikidoc/git/blobs/573fcc3b5952e689528763484bac0b461e844c3b",
-        "html": "https://github.com/hiki/hikidoc/blob/master/requirements.txt"
-    }
+    "type": "symlink",
+    "url": "https://api.github.com/repos/hiki/hikidoc/contents/requirements.txt?ref=master"
 }

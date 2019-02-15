@@ -32,7 +32,7 @@ module Dependabot
         @source = source
         @credentials = credentials
 
-        @submodule_directories = {}
+        @linked_paths = {}
       end
 
       def repo
@@ -131,8 +131,8 @@ module Dependabot
 
         return result.call unless fetch_submodules && !retrying
 
-        _find_submodules(path)
-        return result.call unless _submodule_for(path)
+        _find_linked_dirs(path)
+        return result.call unless _linked_dir_for(path)
 
         retrying = true
         retry
@@ -154,15 +154,35 @@ module Dependabot
         path = path.gsub(" ", "%20")
         github_response = github_client.contents(repo, path: path, ref: commit)
 
-        if github_response.respond_to?(:type) &&
-           github_response.type == "submodule"
-          @submodule_directories[path] = github_response
-          raise Octokit::NotFound
-        elsif github_response.respond_to?(:type)
+        if github_response.respond_to?(:type)
+          update_linked_paths(repo, path, commit, github_response)
           raise Octokit::NotFound
         end
 
         github_response.map { |f| _build_github_file_struct(f) }
+      end
+
+      def update_linked_paths(repo, path, commit, github_response)
+        case github_response.type
+        when "submodule"
+          sub_source = Source.from_url(github_response.submodule_git_url)
+          return unless sub_source
+
+          @linked_paths[path] = {
+            repo: sub_source.repo,
+            provider: sub_source.provider,
+            commit: github_response.sha,
+            path: "/"
+          }
+        when "symlink"
+          updated_path = File.join(File.dirname(path), github_response.target)
+          @linked_paths[path] = {
+            repo: repo,
+            provider: "github",
+            commit: commit,
+            path: Pathname.new(updated_path).cleanpath.to_path
+          }
+        end
       end
 
       def _build_github_file_struct(file)
@@ -212,17 +232,19 @@ module Dependabot
       end
 
       def _full_specification_for(path, fetch_submodules:)
-        if fetch_submodules && _submodule_for(path) &&
-           Source.from_url(
-             @submodule_directories[_submodule_for(path)].submodule_git_url
-           )
-          submodule_details = @submodule_directories[_submodule_for(path)]
-          sub_source = Source.from_url(submodule_details.submodule_git_url)
+        if fetch_submodules && _linked_dir_for(path)
+          linked_dir_details = @linked_paths[_linked_dir_for(path)]
+          sub_path =
+            path.gsub(%r{^#{Regexp.quote(_linked_dir_for(path))}(/|$)}, "")
+          new_path =
+            Pathname.new(File.join(linked_dir_details.fetch(:path), sub_path)).
+            cleanpath.to_path.
+            gsub(%r{^/}, "")
           {
-            repo: sub_source.repo,
-            commit: submodule_details.sha,
-            provider: sub_source.provider,
-            path: path.gsub(%r{^#{Regexp.quote(_submodule_for(path))}(/|$)}, "")
+            repo: linked_dir_details.fetch(:repo),
+            commit: linked_dir_details.fetch(:commit),
+            provider: linked_dir_details.fetch(:provider),
+            path: new_path
           }
         else
           {
@@ -245,10 +267,10 @@ module Dependabot
       rescue *CLIENT_NOT_FOUND_ERRORS
         retrying ||= false
 
-        raise unless fetch_submodules && !retrying && !_submodule_for(path)
+        raise unless fetch_submodules && !retrying && !_linked_dir_for(path)
 
-        _find_submodules(path)
-        raise unless _submodule_for(path)
+        _find_linked_dirs(path)
+        raise unless _linked_dir_for(path)
 
         retrying = true
         retry
@@ -306,10 +328,10 @@ module Dependabot
         raise Dependabot::RepoNotFound, source
       end
 
-      # Update the @submodule_directories hash by exploiting a side-effect of
+      # Update the @linked_paths hash by exploiting a side-effect of
       # recursively calling `repo_contents` for each directory up the tree
-      # until a submodule is found
-      def _find_submodules(path)
+      # until a submodule or symlink is found
+      def _find_linked_dirs(path)
         path = Pathname.new(path).cleanpath.to_path.gsub(%r{^/*}, "")
         dir = File.dirname(path)
 
@@ -323,9 +345,9 @@ module Dependabot
         )
       end
 
-      def _submodule_for(path)
-        submodules = @submodule_directories.keys
-        submodules.
+      def _linked_dir_for(path)
+        linked_dirs = @linked_paths.keys
+        linked_dirs.
           select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }.
           max_by(&:length)
       end
