@@ -32,10 +32,8 @@ module Dependabot
         return current_ver if git_dependency? && git_commit_checker.pinned?
 
         @latest_resolvable_version_detail_with_no_unlock ||=
-          version_resolver(
-            remove_git_source: false,
-            unlock_requirement: false
-          ).latest_resolvable_version_details
+          version_resolver(remove_git_source: false, unlock_requirement: false).
+          latest_resolvable_version_details
 
         if git_dependency?
           @latest_resolvable_version_detail_with_no_unlock&.fetch(:commit_sha)
@@ -45,14 +43,29 @@ module Dependabot
       end
 
       def updated_requirements
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          update_strategy: requirements_update_strategy,
-          updated_source: updated_source,
-          latest_version: latest_version_details&.fetch(:version)&.to_s,
-          latest_resolvable_version:
-            latest_resolvable_version_details&.fetch(:version)&.to_s
-        ).updated_requirements
+        if updated_source&.fetch(:ref, nil) &&
+           updated_source.fetch(:ref) != dependency_source_details.fetch(:ref)
+          updated_version =
+            latest_resolvable_version_details_with_updated_git_source&.
+            fetch(:version)&.
+            to_s
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            update_strategy: requirements_update_strategy,
+            updated_source: updated_source,
+            latest_version: updated_version,
+            latest_resolvable_version: updated_version
+          ).updated_requirements
+        else
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            update_strategy: requirements_update_strategy,
+            updated_source: updated_source,
+            latest_version: latest_version_details&.fetch(:version)&.to_s,
+            latest_resolvable_version:
+              latest_resolvable_version_details&.fetch(:version)&.to_s
+          ).updated_requirements
+        end
       end
 
       def requirements_unlocked_or_can_be?
@@ -207,15 +220,7 @@ module Dependabot
 
         return false if git_commit_checker.local_tag_for_latest_version.nil?
 
-        replacement_tag = git_commit_checker.local_tag_for_latest_version
-
-        VersionResolver.new(
-          dependency: dependency,
-          unprepared_dependency_files: dependency_files,
-          credentials: credentials,
-          ignored_versions: ignored_versions,
-          replacement_git_pin: replacement_tag.fetch(:tag)
-        ).latest_resolvable_version_details
+        latest_resolvable_version_details_with_updated_git_source
 
         @git_tag_resolvable = true
       rescue Dependabot::DependencyFileNotResolvable
@@ -279,6 +284,21 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           )
+      end
+
+      def latest_resolvable_version_details_with_updated_git_source
+        @latest_resolvable_version_details_with_updated_git_source ||=
+          begin
+            replacement_tag = git_commit_checker.local_tag_for_latest_version
+
+            VersionResolver.new(
+              dependency: dependency,
+              unprepared_dependency_files: dependency_files,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              replacement_git_pin: replacement_tag.fetch(:tag)
+            ).latest_resolvable_version_details
+          end
       end
 
       def version_resolver(remove_git_source:, unlock_requirement: true)

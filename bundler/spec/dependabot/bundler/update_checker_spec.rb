@@ -1540,7 +1540,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: ">= 0",
+                requirement: "~> 1.0.0",
                 groups: [],
                 source: {
                   type: "git",
@@ -1553,14 +1553,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
             it "delegates to Bundler::RequirementsUpdater" do
               # Note: the v1.13.0 for the source is because we stub the lookup
-              # for the updated source, but can't stub the lookup for the latest
-              # version (in the LatestVersionFinder).
+              # for the updated source
               expect(requirements_updater).
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.0",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: "1.13.0",
+                  latest_resolvable_version: "1.13.0",
                   updated_source: {
                     type: "git",
                     url: "https://github.com/gocardless/business",
@@ -1570,7 +1569,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 ).and_call_original
 
               expect(updated_requirements.count).to eq(1)
-              expect(updated_requirements.first[:requirement]).to eq(">= 0")
+              expect(updated_requirements.first[:requirement]).
+                to eq("~> 1.13.0")
               expect(updated_requirements.first[:source]).to_not be_nil
             end
           end
