@@ -1,0 +1,17 @@
+{
+    "_links": {
+        "git": "https://api.github.com/repos/minimum2scp/dependabot-example-02/git/blobs/e7ed2cce4eda76280b4a1b1edc97c3b5b6f52c2b",
+        "html": "https://github.com/minimum2scp/dependabot-example-02/blob/master/app/gems/sample_private_lib1",
+        "self": "https://api.github.com/repos/minimum2scp/dependabot-example-02/contents/app/gems/sample_private_lib1?ref=master"
+    },
+    "download_url": "https://raw.githubusercontent.com/minimum2scp/dependabot-example-02/master/app/gems/sample_private_lib1",
+    "git_url": "https://api.github.com/repos/minimum2scp/dependabot-example-02/git/blobs/e7ed2cce4eda76280b4a1b1edc97c3b5b6f52c2b",
+    "html_url": "https://github.com/minimum2scp/dependabot-example-02/blob/master/app/gems/sample_private_lib1",
+    "name": "sample_private_lib1",
+    "path": "app/gems/sample_private_lib1",
+    "sha": "e7ed2cce4eda76280b4a1b1edc97c3b5b6f52c2b",
+    "size": 25,
+    "target": "symlinked/repo",
+    "type": "symlink",
+    "url": "https://api.github.com/repos/minimum2scp/dependabot-example-02/contents/app/gems/sample_private_lib1?ref=master"
+}

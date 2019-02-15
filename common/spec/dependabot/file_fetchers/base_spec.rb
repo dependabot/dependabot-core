@@ -495,6 +495,78 @@ RSpec.describe Dependabot::FileFetchers::Base do
             end
           end
         end
+
+        context "that is in a symlinked directory" do
+          before do
+            stub_request(:get, url + "some/dir/req.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            stub_request(:get, url + "some/dir?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
+            symlink_details =
+              fixture("github", "symlinked_repo.json").
+              gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+            stub_request(:get, url + "some?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: symlink_details,
+                headers: { "content-type" => "application/json" }
+              )
+
+            stub_request(:get, url + "symlinked/repo?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: "[]",
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "symlinked/repo/dir?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "business_files.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "symlinked/repo/dir/req.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "gemfile_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "raises a custom error" do
+            expect { file_fetcher_instance.files }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                expect(error.file_path).to eq("/some/dir/req.txt")
+              end
+          end
+
+          context "with fetching submodule files requested" do
+            let(:child_class) do
+              Class.new(described_class) do
+                def fetch_files
+                  [
+                    fetch_file_from_host(
+                      "some/dir/req.txt",
+                      fetch_submodules: true
+                    )
+                  ]
+                end
+              end
+            end
+
+            describe "the file" do
+              subject { files.find { |file| file.name == "some/dir/req.txt" } }
+
+              it { is_expected.to be_a(Dependabot::DependencyFile) }
+              its(:content) { is_expected.to include("octokit") }
+            end
+          end
+        end
       end
 
       context "when a dependency file is too big to download" do
