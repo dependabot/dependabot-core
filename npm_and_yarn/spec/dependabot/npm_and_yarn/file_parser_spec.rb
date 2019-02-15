@@ -220,7 +220,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          describe "the second private dependency" do
+          describe "the gemfury dependency" do
             subject { top_level_dependencies[2] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
@@ -241,7 +241,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          describe "the third dependency" do
+          describe "the scoped artifactory dependency" do
+            subject { top_level_dependencies[3] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("@dependabot/pack-core") }
+            its(:version) { is_expected.to eq("2.0.14") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://artifactory01.mydomain.com/artifactory/api/"\
+                         "npm/my-repo"
+                  }
+                }]
+              )
+            end
+          end
+
+          describe "the unscoped artifactory dependency" do
             subject { top_level_dependencies[0] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }

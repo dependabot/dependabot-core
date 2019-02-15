@@ -290,9 +290,9 @@ module Dependabot
           if resolved_url.include?("/~/")
             # Gemfury format
             resolved_url.split("/~/").first
-          elsif resolved_url.include?("/#{name}/-/#{name}")
+          elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
-            resolved_url.split("/#{name}/-/#{name}").first
+            resolved_url.split("/#{name}/-/#{name.split('/').last}").first
           elsif (cred_url = credential_url(resolved_url)) then cred_url
           else resolved_url.split("/")[0..2].join("/")
           end

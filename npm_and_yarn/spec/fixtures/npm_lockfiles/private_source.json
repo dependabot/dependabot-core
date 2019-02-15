@@ -32,6 +32,11 @@
             "resolved": "https://npm.fury.io/dependabot/~/d/%40dependabot%2Fetag/%40dependabot%2Fetag-1.8.1",
             "integrity": "sha1-/HizFb1hVT38sBYgsMHMF2qMbC8="
         },
+        "@dependabot/pack-core": {
+            "version": "2.0.14",
+            "resolved": "https://artifactory01.mydomain.com/artifactory/api/npm/my-repo/@dependabot/pack-core/-/pack-core-2.0.14.tgz",
+            "integrity": "sha1-/HizFb1hVT38sBYgsMHMF2qMbC8="
+        },
         "fetch-factory": {
             "version": "0.0.1",
             "resolved": "https://artifactory01.mydomain.com/artifactory/api/npm/my-repo/fetch-factory/-/fetch-factory-0.0.1.tgz",
