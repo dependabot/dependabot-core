@@ -175,7 +175,7 @@ module Dependabot
 
           if error.message.include?("Couldn't find package")
             package_name =
-              error.message.match(/package "(?<package_req>.*)?"/).
+              error.message.match(/package "(?<package_req>.*?)"/).
               named_captures["package_req"].
               split(/(?<=\w)\@/).first.
               gsub("%2f", "/")

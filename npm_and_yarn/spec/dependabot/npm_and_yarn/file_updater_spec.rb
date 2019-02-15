@@ -1457,6 +1457,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   expect(error.source).to eq("npm-proxy.fury.io")
                 end
             end
+
+            context "with bad credentials" do
+              let(:credentials) do
+                [{
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }, {
+                  "type"=>"npm_registry",
+                  "registry"=>"npm-proxy.fury.io",
+                  "token"=>"bad_token"
+                }]
+              end
+
+              before do
+                stub_request(:get, "https://npm-proxy.fury.io/fetch-factory").
+                  with(headers: { "Authorization" => "Bearer bad_token" }).
+                  to_return(status: 404)
+              end
+
+              it "raises a helpful error" do
+                expect { updater.updated_dependency_files }.
+                  to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+              end
+            end
           end
         end
       end
