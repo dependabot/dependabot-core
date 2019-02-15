@@ -1472,12 +1472,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 }]
               end
 
-              before do
-                stub_request(:get, "https://npm-proxy.fury.io/fetch-factory").
-                  with(headers: { "Authorization" => "Bearer bad_token" }).
-                  to_return(status: 404)
-              end
-
               it "raises a helpful error" do
                 expect { updater.updated_dependency_files }.
                   to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
