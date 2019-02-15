@@ -1,3 +1,7 @@
+## v0.95.32, 15 February 2019
+
+- Ruby: Update version requirement at the same time as updating git tag
+
 ## v0.95.31, 15 February 2019
 
 - JS: Parse full nexus private repository URLs from lockfile entries for scoped dependencies
