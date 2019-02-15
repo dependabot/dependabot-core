@@ -1085,6 +1085,156 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    context "when updating a sub dependency with both yarn and npm lockfiles" do
+      let(:files) do
+        [
+          package_json,
+          package_lock,
+          yarn_lock,
+          npm_package_update,
+          npm_lock_update,
+          npm_package_up_to_date,
+          npm_lock_up_to_date,
+          yarn_package_update,
+          yarn_lock_update
+        ]
+      end
+
+      let(:npm_package_update) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package.json",
+          content: fixture("package_files", "lerna_sub_dependency_update.json")
+        )
+      end
+      let(:npm_lock_update) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package-lock.json",
+          content: fixture("npm_lockfiles", "lerna_sub_dependency_update.json")
+        )
+      end
+
+      let(:npm_package_up_to_date) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/package.json",
+          content: fixture("package_files",
+                           "lerna_sub_dependency_up_to_date.json")
+        )
+      end
+      let(:npm_lock_up_to_date) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/package-lock.json",
+          content: fixture("npm_lockfiles",
+                           "lerna_sub_dependency_up_to_date.json")
+        )
+      end
+
+      let(:yarn_package_update) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package3/package.json",
+          content: fixture("package_files", "lerna_sub_dependency_update.json")
+        )
+      end
+      let(:yarn_lock_update) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package3/yarn.lock",
+          content: fixture("yarn_lockfiles", "lerna_sub_dependency_update.lock")
+        )
+      end
+
+      let(:npm_package_update_out_of_range) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package4/package.json",
+          content: fixture("package_files",
+                           "lerna_sub_dependency_update_out_of_range.json")
+        )
+      end
+      let(:npm_lock_update_out_of_range) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package4/package-lock.json",
+          content: fixture("npm_lockfiles",
+                           "lerna_sub_dependency_update_out_of_range.json")
+        )
+      end
+
+      let(:dependency_name) { "mime" }
+      let(:version) { "2.4.0" }
+      let(:previous_version) { "2.3.0" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { nil }
+
+      it "upates only relevant lockfiles" do
+        expect(updated_files.map(&:name)).
+          to match_array(
+            [
+              "packages/package1/package-lock.json",
+              "packages/package3/yarn.lock"
+            ]
+          )
+
+        package1_npm_lock =
+          updated_files.
+          find { |f| f.name == "packages/package1/package-lock.json" }
+        package3_yarn_lock =
+          updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
+        parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+
+        expect(package3_yarn_lock.content).
+          to include("mime@^2.0.3:\n  version \"2.4.0\"")
+
+        expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
+          to eq("2.4.0")
+      end
+
+      context "when one lockfile version is out of range" do
+        let(:files) do
+          [
+            package_json,
+            package_lock,
+            yarn_lock,
+            npm_package_update,
+            npm_lock_update,
+            npm_package_up_to_date,
+            npm_lock_up_to_date,
+            yarn_package_update,
+            yarn_lock_update,
+            npm_package_update_out_of_range,
+            npm_lock_update_out_of_range
+          ]
+        end
+
+        it "updates out of range to latest resolvable version" do
+          expect(updated_files.map(&:name)).
+            to match_array(
+              [
+                "packages/package1/package-lock.json",
+                "packages/package3/yarn.lock",
+                "packages/package4/package-lock.json"
+              ]
+            )
+
+          package1_npm_lock =
+            updated_files.
+            find { |f| f.name == "packages/package1/package-lock.json" }
+          package3_yarn_lock =
+            updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
+          parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+          package4_npm_lock =
+            updated_files.
+            find { |f| f.name == "packages/package4/package-lock.json" }
+          parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
+
+          expect(package3_yarn_lock.content).
+            to include("mime@^2.0.3:\n  version \"2.4.0\"")
+
+          expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
+            to eq("2.4.0")
+
+          expect(parsed_package4_npm_lock["dependencies"]["mime"]["version"]).
+            to eq("1.6.0")
+        end
+      end
+    end
+
     context "with a .npmrc" do
       let(:files) { [package_json, package_lock, npmrc] }
 

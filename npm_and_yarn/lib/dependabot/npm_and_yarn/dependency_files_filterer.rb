@@ -2,15 +2,18 @@
 
 require "dependabot/utils"
 
+# Used in the version resolver and file updater to only run yarn/npm helpers on
+# dependency files that require updates. This is useful for large monorepos with
+# lots of sub-projects that don't all have the same dependencies.
 module Dependabot
   module NpmAndYarn
     class DependencyFilesFilterer
-      def initialize(dependency_files:, dependencies:)
-        @dependencies = dependencies
+      def initialize(dependency_files:, updated_dependencies:)
         @dependency_files = dependency_files
+        @updated_dependencies = updated_dependencies
       end
 
-      def filtered_files
+      def files_requiring_update
         dependency_files.select do |file|
           if manifest?(file)
             package_manifests.include?(file)
@@ -26,21 +29,17 @@ module Dependabot
         end
       end
 
-      def filtered_package_files
-        filtered_files.select { |f| manifest?(f) }
-      end
-
-      def filtered_lockfiles
-        filtered_files.select { |f| lockfile?(f) }
+      def package_files_requiring_update
+        files_requiring_update.select { |file| manifest?(file) }
       end
 
       private
 
-      attr_reader :dependency_files, :dependencies
+      attr_reader :dependency_files, :updated_dependencies
 
       def dependency_manifest_requirements
         @dependency_manifest_requirements ||=
-          dependencies.flat_map do |dep|
+          updated_dependencies.flat_map do |dep|
             dep.requirements.map { |requirement| requirement[:file] }
           end
       end

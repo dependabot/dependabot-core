@@ -468,8 +468,8 @@ module Dependabot
           @filtered_package_files ||=
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
-              dependencies: [dependency]
-            ).filtered_package_files
+              updated_dependencies: [dependency]
+            ).package_files_requiring_update
         end
 
         def yarn_helper_path
