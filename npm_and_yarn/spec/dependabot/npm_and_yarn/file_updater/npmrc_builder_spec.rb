@@ -186,12 +186,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "type" => "npm_registry",
                 "registry" => "npm.fury.io/dependabot",
                 "token" => "my_token"
+              }, {
+                "type" => "npm_registry",
+                "registry" => "npm.fury.io/dep",
+                "token" => "my_other_token"
               }]
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
-                      "//npm.fury.io/dependabot/:_authToken=my_token")
+                      "//npm.fury.io/dependabot/:_authToken=my_token\n"\
+                      "//npm.fury.io/dep/:_authToken=my_other_token")
             end
           end
         end

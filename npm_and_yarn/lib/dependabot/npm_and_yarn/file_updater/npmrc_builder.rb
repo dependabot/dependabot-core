@@ -142,8 +142,16 @@ module Dependabot
 
           return unless dependency_urls
 
-          affected_urls = dependency_urls.
-                          select { |url| url.include?(registry) }
+          other_regs =
+            registry_credentials.map { |c| c.fetch("registry") } -
+            [registry]
+          affected_urls =
+            dependency_urls.
+            select do |url|
+              next false unless url.include?(registry)
+
+              other_regs.none? { |r| r.include?(registry) && url.include?(r) }
+            end
 
           scopes = affected_urls.map do |url|
             url.split(/\%40|@/)[1]&.split(%r{\%2F|/})&.first
