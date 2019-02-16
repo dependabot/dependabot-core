@@ -1,3 +1,7 @@
+## v0.95.33, 16 February 2019
+
+- JS: Only assign a single credential to a scope in npmrc builder
+
 ## v0.95.32, 15 February 2019
 
 - Ruby: Update version requirement at the same time as updating git tag
