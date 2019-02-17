@@ -71,27 +71,25 @@ module Dependabot
       def find_source_from_registry
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
-        potential_source_urls =
+        potential_sources =
           [
-            get_url(latest_version_listing["repository"]),
-            get_url(latest_version_listing["homepage"]),
-            get_url(latest_version_listing["bugs"])
+            get_source(latest_version_listing["repository"]),
+            get_source(latest_version_listing["homepage"]),
+            get_source(latest_version_listing["bugs"])
           ].compact
 
-        source_url = potential_source_urls.find { |url| Source.from_url(url) }
-        return Source.from_url(source_url) if Source.from_url(source_url)
+        return potential_sources.first if potential_sources.any?
 
-        potential_source_urls =
+        potential_sources =
           all_version_listings.flat_map do |_, listing|
             [
-              get_url(listing["repository"]),
-              get_url(listing["homepage"]),
-              get_url(listing["bugs"])
+              get_source(listing["repository"]),
+              get_source(listing["homepage"]),
+              get_source(listing["bugs"])
             ]
           end.compact
 
-        source_url = potential_source_urls.find { |url| Source.from_url(url) }
-        Source.from_url(source_url)
+        potential_sources.first
       end
 
       def new_source
@@ -103,11 +101,29 @@ module Dependabot
         sources.first
       end
 
+      def get_source(details)
+        potential_url = get_url(details)
+        return unless potential_url
+
+        potential_source = Source.from_url(potential_url)
+        return unless potential_source
+
+        potential_source.directory = get_directory(details)
+        potential_source
+      end
+
       def get_url(details)
         case details
         when String then details
         when Hash then details.fetch("url", nil)
         end
+      end
+
+      def get_directory(details)
+        # Only return a directory if it is explicitly specified
+        return unless details.is_a?(Hash)
+
+        details.fetch("directory", nil)
       end
 
       def find_source_from_git_url

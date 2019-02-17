@@ -90,6 +90,21 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         expect(WebMock).
           to_not have_requested(:get, npm_url)
       end
+
+      context "with a monorepo that specifies a directory" do
+        let(:npm_latest_version_response) do
+          fixture("npm_responses", "react-dom-with-dir.json")
+        end
+        let(:npm_all_versions_response) do
+          fixture("npm_responses", "react-dom.json")
+        end
+
+        it "includes details of the directory" do
+          expect(source_url).to eq(
+            "https://github.com/facebook/react/tree/HEAD/packages/react-dom"
+          )
+        end
+      end
     end
 
     context "when there is a bitbucket link in the npm response" do
