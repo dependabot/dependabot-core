@@ -50,7 +50,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   end
 
   describe "#commits_url" do
-    subject { builder.commits_url }
+    subject(:commits_url) { builder.commits_url }
 
     context "with a github repo and old/new tags" do
       let(:dependency_previous_version) { "1.3.0" }
@@ -114,6 +114,43 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       it do
         is_expected.
           to eq("https://github.com/gocardless/business/commits/v1.4.0")
+      end
+
+      context "and a directory" do
+        before { source.directory = "my/directory" }
+
+        it "doesn't include the directory (since it is unreliable)" do
+          expect(commits_url).
+            to eq("https://github.com/gocardless/business/commits/v1.4.0")
+        end
+
+        context "for a package manager with reliable source directories" do
+          before do
+            allow(builder).
+              to receive(:reliable_source_directory?).
+              and_return(true)
+          end
+
+          it "includes the directory" do
+            expect(commits_url).
+              to eq(
+                "https://github.com/gocardless/business/commits/"\
+                "v1.4.0/my/directory"
+              )
+          end
+
+          context "when the directory starts with ./" do
+            before { source.directory = "./my/directory" }
+
+            it "joins the directory correctly" do
+              expect(commits_url).
+                to eq(
+                  "https://github.com/gocardless/business/commits/"\
+                  "v1.4.0/my/directory"
+                )
+            end
+          end
+        end
       end
     end
 

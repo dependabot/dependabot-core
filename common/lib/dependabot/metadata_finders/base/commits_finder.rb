@@ -10,6 +10,10 @@ module Dependabot
   module MetadataFinders
     class Base
       class CommitsFinder
+        PACKAGE_MANAGERS_WITH_RELIABLE_DIRS = %w(
+          npm_and_yarn
+        ).freeze
+
         attr_reader :source, :dependency, :credentials
 
         def initialize(source:, dependency:, credentials:)
@@ -145,12 +149,17 @@ module Dependabot
 
         def github_compare_path(new_tag, previous_tag)
           if new_tag && previous_tag
-            "compare/#{previous_tag}...#{new_tag}"
-          elsif new_tag
-            "commits/#{new_tag}"
-          else
-            "commits"
+            return "compare/#{previous_tag}...#{new_tag}"
           end
+
+          unless reliable_source_directory? &&
+                 ![nil, ".", "/"].include?(source.directory)
+            return new_tag ? "commits/#{new_tag}" : "commits"
+          end
+
+          Pathname.
+            new(File.join("commits/#{new_tag || 'HEAD'}", source.directory)).
+            cleanpath.to_path
         end
 
         def bitbucket_compare_path(new_tag, previous_tag)
@@ -243,6 +252,11 @@ module Dependabot
           Utils.requirement_class_for_package_manager(
             dependency.package_manager
           )
+        end
+
+        def reliable_source_directory?
+          PACKAGE_MANAGERS_WITH_RELIABLE_DIRS.
+            include?(dependency.package_manager)
         end
       end
     end
