@@ -10,10 +10,6 @@ module Dependabot
   module MetadataFinders
     class Base
       class CommitsFinder
-        PACKAGE_MANAGERS_WITH_RELIABLE_DIRS = %w(
-          npm_and_yarn
-        ).freeze
-
         attr_reader :source, :dependency, :credentials
 
         def initialize(source:, dependency:, credentials:)
@@ -255,7 +251,7 @@ module Dependabot
         end
 
         def reliable_source_directory?
-          PACKAGE_MANAGERS_WITH_RELIABLE_DIRS.
+          MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
             include?(dependency.package_manager)
         end
       end

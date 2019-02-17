@@ -9,6 +9,8 @@ module Dependabot
       require "dependabot/metadata_finders/base/release_finder"
       require "dependabot/metadata_finders/base/commits_finder"
 
+      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(npm_and_yarn).freeze
+
       attr_reader :dependency, :credentials
 
       def initialize(dependency:, credentials:)
@@ -17,7 +19,11 @@ module Dependabot
       end
 
       def source_url
-        source&.url
+        if reliable_source_directory?
+          source&.url_with_directory
+        else
+          source&.url
+        end
       end
 
       def homepage_url
@@ -111,6 +117,11 @@ module Dependabot
 
       def look_up_source
         raise NotImplementedError
+      end
+
+      def reliable_source_directory?
+        MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
+          include?(dependency.package_manager)
       end
     end
   end

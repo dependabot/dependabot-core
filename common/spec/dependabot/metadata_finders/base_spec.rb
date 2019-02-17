@@ -42,7 +42,7 @@ RSpec.describe Dependabot::MetadataFinders::Base do
   end
 
   describe "#source_url" do
-    subject { finder.source_url }
+    subject(:source_url) { finder.source_url }
 
     it { is_expected.to eq("https://github.com/gocardless/business") }
 
@@ -60,6 +60,41 @@ RSpec.describe Dependabot::MetadataFinders::Base do
     context "without a source" do
       let(:source) { nil }
       it { is_expected.to be_nil }
+    end
+
+    context "and a directory" do
+      before { source.directory = "my/directory" }
+
+      it "doesn't include the directory (since it is unreliable)" do
+        expect(source_url).
+          to eq("https://github.com/gocardless/business")
+      end
+
+      context "for a package manager with reliable source directories" do
+        before do
+          allow(finder).
+            to receive(:reliable_source_directory?).
+            and_return(true)
+        end
+
+        it "includes the directory" do
+          expect(source_url).
+            to eq(
+              "https://github.com/gocardless/business/tree/HEAD/my/directory"
+            )
+        end
+
+        context "when the directory starts with ./" do
+          before { source.directory = "./my/directory" }
+
+          it "joins the directory correctly" do
+            expect(source_url).
+              to eq(
+                "https://github.com/gocardless/business/tree/HEAD/my/directory"
+              )
+          end
+        end
+      end
     end
   end
 
