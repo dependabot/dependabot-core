@@ -36,7 +36,8 @@ module Dependabot
       (?:#{AZURE_SOURCE})
     /x.freeze
 
-    attr_reader :provider, :repo, :directory, :branch, :hostname, :api_endpoint
+    attr_accessor :provider, :repo, :directory, :branch, :hostname,
+                  :api_endpoint
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -74,6 +75,24 @@ module Dependabot
       when "bitbucket" then "https://bitbucket.org/" + repo
       when "gitlab" then "https://gitlab.com/" + repo
       when "azure" then "https://dev.azure.com/" + repo
+      else raise "Unexpected repo provider '#{provider}'"
+      end
+    end
+
+    def url_with_directory
+      return url if [nil, ".", "/"].include?(directory)
+
+      case provider
+      when "github", "gitlab"
+        path = Pathname.new(File.join("tree/#{branch || 'HEAD'}", directory)).
+               cleanpath.to_path
+        url + "/" + path
+      when "bitbucket"
+        path = Pathname.new(File.join("src/#{branch || 'default'}", directory)).
+               cleanpath.to_path
+        url + "/" + path
+      when "azure"
+        url + "?path=#{directory}"
       else raise "Unexpected repo provider '#{provider}'"
       end
     end

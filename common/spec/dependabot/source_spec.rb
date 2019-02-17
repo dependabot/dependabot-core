@@ -169,4 +169,47 @@ RSpec.describe Dependabot::Source do
       end
     end
   end
+
+  describe "#url_with_directory" do
+    let(:source) { described_class.new(attrs) }
+    subject { source.url_with_directory }
+
+    let(:attrs) do
+      {
+        provider: provider,
+        repo: "my/repo",
+        directory: directory,
+        branch: branch
+      }
+    end
+
+    let(:provider) { "github" }
+    let(:directory) { nil }
+    let(:branch) { nil }
+
+    context "without a directory" do
+      let(:directory) { nil }
+      it { is_expected.to eq("https://github.com/my/repo") }
+    end
+
+    context "with a directory" do
+      let(:directory) { "lib/a" }
+      it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
+
+      context "that is prefixed with ./" do
+        let(:directory) { "./lib/a" }
+        it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
+      end
+
+      context "that is prefixed with /" do
+        let(:directory) { "/lib/a" }
+        it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
+      end
+
+      context "that is the root" do
+        let(:directory) { "/" }
+        it { is_expected.to eq("https://github.com/my/repo") }
+      end
+    end
+  end
 end
