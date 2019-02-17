@@ -1,3 +1,10 @@
+## v0.95.34, 17 February 2019
+
+- JS: Include details of directory in source if included in repository object
+- Append directory to source URL when reliable
+- Include directory details in commits URL if reliable
+- Make source attributes editable, and add Source#url_with_directory method
+
 ## v0.95.33, 16 February 2019
 
 - JS: Only assign a single credential to a scope in npmrc builder
