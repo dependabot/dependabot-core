@@ -1,3 +1,8 @@
+## v0.95.37, 18 February 2019
+
+- Fetch git tags from git upload pack, rather than APIs, in CommitsFinder
+- Speed up GitCommitChecker tag processor
+
 ## v0.95.36, 18 February 2019
 
 - JS: Add special cases for Gatsby and DefinitelyTyped repos
