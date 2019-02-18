@@ -1,3 +1,7 @@
+## v0.95.36, 18 February 2019
+
+- JS: Add special cases for Gatsby and DefinitelyTyped repos
+
 ## v0.95.35, 18 February 2019
 
 - NPM: Speed up sub-dependency updates for big lerna projects using npm
