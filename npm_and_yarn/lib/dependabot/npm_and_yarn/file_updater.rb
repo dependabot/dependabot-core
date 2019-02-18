@@ -3,6 +3,7 @@
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
+require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
 module Dependabot
   module NpmAndYarn
@@ -59,10 +60,19 @@ module Dependabot
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          DependencyFilesFilterer.new(
-            dependency_files: dependency_files,
-            dependencies: dependencies
-          ).filtered_files
+          begin
+            if dependencies.select(&:top_level?).any?
+              DependencyFilesFilterer.new(
+                dependency_files: dependency_files,
+                updated_dependencies: dependencies
+              ).files_requiring_update
+            else
+              SubDependencyFilesFilterer.new(
+                dependency_files: dependency_files,
+                updated_dependencies: dependencies
+              ).files_requiring_update
+            end
+          end
       end
 
       def check_required_files

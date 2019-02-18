@@ -1,24 +1,27 @@
 # frozen_string_literal: true
 
+require "dependabot/dependency"
+require "dependabot/shared_helpers"
+require "dependabot/errors"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class SubdependencyVersionResolver
         def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:)
-          @dependency       = dependency
-          @credentials      = credentials
+                       ignored_versions:, latest_allowable_version:)
+          @dependency = dependency
+          @credentials = credentials
           @dependency_files = dependency_files
           @ignored_versions = ignored_versions
+          @latest_allowable_version = latest_allowable_version
         end
 
         def latest_resolvable_version
@@ -27,7 +30,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
-            updated_lockfiles = lockfiles.map do |lockfile|
+            updated_lockfiles = filtered_lockfiles.map do |lockfile|
               updated_content = update_subdependency_in_lockfile(lockfile)
               updated_lockfile = lockfile.dup
               updated_lockfile.content = updated_content
@@ -46,7 +49,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions
+                    :ignored_versions, :latest_allowable_version
 
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
@@ -206,6 +209,24 @@ module Dependabot
 
         def lockfiles
           [*package_locks, *shrinkwraps, *yarn_locks]
+        end
+
+        def filtered_lockfiles
+          @filtered_lockfiles ||=
+            SubDependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: [updated_dependency]
+            ).files_requiring_update
+        end
+
+        def updated_dependency
+          Dependabot::Dependency.new(
+            name: dependency.name,
+            version: latest_allowable_version,
+            previous_version: dependency.version,
+            requirements: [],
+            package_manager: dependency.package_manager
+          )
         end
 
         def package_files

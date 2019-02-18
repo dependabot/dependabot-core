@@ -6,11 +6,11 @@ require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 
 RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
-  subject(:filtered_files) do
+  subject(:files_requiring_update) do
     described_class.new(
       dependency_files: dependency_files,
-      dependencies: dependencies
-    ).filtered_files
+      updated_dependencies: updated_dependencies
+    ).files_requiring_update
   end
 
   let(:dependency_files) do
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     ]
   end
 
-  let(:dependencies) { [dependency] }
+  let(:updated_dependencies) { [dependency] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     )
   end
 
-  describe ".filtered_files" do
+  describe ".files_requiring_update" do
     it do
       is_expected.to contain_exactly(package_json, yarn_lock, npm_lock)
     end
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     end
 
     context "with a nested dependency requirement" do
-      let(:dependencies) { [nested_dependency] }
+      let(:updated_dependencies) { [nested_dependency] }
 
       let(:nested_dependency) do
         Dependabot::Dependency.new(
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
             nested_shrinkwrap
           ]
         end
-        let(:dependencies) { [dependency, other_dependency] }
+        let(:updated_dependencies) { [dependency, other_dependency] }
 
         let(:other_package_json) do
           Dependabot::DependencyFile.new(
@@ -167,29 +167,16 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     end
   end
 
-  describe ".filtered_package_files" do
-    subject(:filtered_package_files) do
+  describe ".package_files_requiring_update" do
+    subject(:package_files_requiring_update) do
       described_class.new(
         dependency_files: dependency_files,
-        dependencies: dependencies
-      ).filtered_package_files
+        updated_dependencies: updated_dependencies
+      ).package_files_requiring_update
     end
 
     it do
       is_expected.to contain_exactly(package_json)
-    end
-  end
-
-  describe ".filtered_lockfiles" do
-    subject(:filtered_lockfiles) do
-      described_class.new(
-        dependency_files: dependency_files,
-        dependencies: dependencies
-      ).filtered_lockfiles
-    end
-
-    it do
-      is_expected.to contain_exactly(yarn_lock, npm_lock)
     end
   end
 end
