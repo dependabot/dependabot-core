@@ -145,7 +145,9 @@ module Dependabot
       tags = local_repo_git_metadata_fetcher.tags
 
       if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
-        tags = tags.map { |tag| tag.tap { |t| t.name = "tags/#{tag.name}" } }
+        tags = tags.map do |tag|
+          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+        end
       end
 
       tags
@@ -287,7 +289,9 @@ module Dependabot
       tags = listing_repo_git_metadata_fetcher.tags
 
       if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
-        tags = tags.map { |tag| tag.tap { |t| t.name = "tags/#{tag.name}" } }
+        tags = tags.map do |tag|
+          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+        end
       end
 
       tags
