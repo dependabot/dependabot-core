@@ -1,3 +1,8 @@
+## v0.95.35, 18 February 2019
+
+- NPM: Speed up sub-dependency updates for big lerna projects using npm
+- Composer: Bump friendsofphp/php-cs-fixer from 2.14.1 to 2.14.2 in /composer/helpers
+
 ## v0.95.34, 17 February 2019
 
 - JS: Include details of directory in source if included in repository object
