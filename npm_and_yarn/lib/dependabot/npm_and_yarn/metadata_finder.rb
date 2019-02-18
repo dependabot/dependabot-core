@@ -120,6 +120,21 @@ module Dependabot
       end
 
       def get_directory(details)
+        source_from_url = Source.from_url(get_url(details))
+        # Special case Gatsby, which specifies directories in URLs.
+        # This can be removed once this PR is merged:
+        # https://github.com/gatsbyjs/gatsby/pull/11145
+        if source_from_url.repo == "gatsbyjs/gatsby"
+          return source_from_url.directory
+        end
+
+        # Special case DefinitelyTyped, which has predictable URLs.
+        # This can be removed once this PR is merged:
+        # https://github.com/Microsoft/types-publisher/pull/578
+        if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
+          dependency.name.gsub(/^@/, "")
+        end
+
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
 
