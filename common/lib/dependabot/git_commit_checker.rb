@@ -149,32 +149,33 @@ module Dependabot
 
     def tags_for_upload_pack(upload_pack)
       peeled_lines = []
-      unpeeled_lines = []
 
-      upload_pack.lines.each do |line|
+      result = upload_pack.lines.each_with_object({}) do |line, res|
         next unless line.split(" ").last.start_with?("refs/tags")
 
-        if line.strip.end_with?("^{}") then peeled_lines << line
-        else unpeeled_lines << line
-        end
-      end
+        peeled_lines << line && next if line.strip.end_with?("^{}")
 
-      unpeeled_lines.map do |line|
-        tag_name    = line.split(" refs/tags/").last.strip
-        tag_sha     = sha_for_update_pack_line(line)
-        peeled_line = peeled_lines.find do |pl|
-          pl.split(" refs/tags/").last.strip == "#{tag_name}^{}"
-        end
-
-        commit_sha =
-          peeled_line ? sha_for_update_pack_line(peeled_line) : tag_sha
+        tag_name = line.split(" refs/tags/").last.strip
+        sha = sha_for_update_pack_line(line)
 
         if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
           tag_name = "tags/#{tag_name}"
         end
 
-        OpenStruct.new(name: tag_name, tag_sha: tag_sha, commit_sha: commit_sha)
+        res[tag_name] =
+          OpenStruct.new(name: tag_name, tag_sha: sha, commit_sha: sha)
       end
+
+      # Loop through the peeled lines, updating the commit_sha for any matching
+      # tags in our results hash
+      peeled_lines.each do |line|
+        tag_name = line.split(" refs/tags/").last.strip.gsub(/\^{}$/, "")
+        next unless result[tag_name]
+
+        result[tag_name].commit_sha = sha_for_update_pack_line(line)
+      end
+
+      result.values
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity
