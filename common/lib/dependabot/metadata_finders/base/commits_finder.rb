@@ -4,6 +4,7 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab"
 require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
+require "dependabot/git_metadata_fetcher"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
@@ -125,21 +126,11 @@ module Dependabot
         def fetch_dependency_tags
           return [] unless source
 
-          case source.provider
-          when "github"
-            github_client.tags(source.repo, per_page: 100).map(&:name)
-          when "bitbucket"
-            bitbucket_client.tags(source.repo).map { |tag| tag["name"] }
-          when "gitlab"
-            gitlab_client.tags(source.repo).map(&:name)
-          when "azure"
-            [] # TODO: Fetch Azure tags
-          else raise "Unexpected source provider '#{source.provider}'"
-          end
-        rescue Octokit::NotFound, Gitlab::Error::NotFound,
-               Dependabot::Clients::Bitbucket::NotFound,
-               Dependabot::Clients::Bitbucket::Unauthorized,
-               Dependabot::Clients::Bitbucket::Forbidden
+          GitMetadataFetcher.
+            new(url: source.url, credentials: credentials).
+            tags.
+            map(&:name)
+        rescue Dependabot::GitDependenciesNotReachable
           []
         end
 

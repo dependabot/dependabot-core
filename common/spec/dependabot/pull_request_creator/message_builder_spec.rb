@@ -601,10 +601,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200,
                   body: fixture("github", "business_files.json"),
                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/tags?per_page=100").
-        to_return(status: 200,
-                  body: fixture("github", "business_tags.json"),
-                  headers: json_header)
       stub_request(:get, "#{business_repo_url}/releases?per_page=100").
         to_return(status: 200,
                   body: fixture("github", "business_releases.json"),
@@ -620,6 +616,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                   headers: json_header)
       stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
         to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
+
+      service_pack_url =
+        "https://github.com/gocardless/business.git/info/refs"\
+        "?service=git-upload-pack"
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", "business"),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
     end
 
     context "for an application" do
@@ -1127,10 +1135,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "statesman_files.json"),
                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/tags?per_page=100").
-            to_return(status: 200,
-                      body: fixture("github", "business_tags.json"),
-                      headers: json_header)
           stub_request(:get, "#{statesman_repo_url}/releases?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
@@ -1144,6 +1148,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(
               status: 200,
               body: fixture("ruby", "rubygems_response_statesman.json")
+            )
+
+          service_pack_url =
+            "https://github.com/gocardless/statesman.git/info/refs"\
+            "?service=git-upload-pack"
+          stub_request(:get, service_pack_url).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "no_tags"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
             )
         end
 
@@ -1311,10 +1327,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "statesman_files.json"),
                       headers: json_header)
-          stub_request(:get, "#{statesman_repo_url}/tags?per_page=100").
-            to_return(status: 200,
-                      body: fixture("github", "business_tags.json"),
-                      headers: json_header)
           stub_request(:get, "#{statesman_repo_url}/releases?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
@@ -1328,6 +1340,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(
               status: 200,
               body: fixture("ruby", "rubygems_response_statesman.json")
+            )
+
+          service_pack_url =
+            "https://github.com/gocardless/statesman.git/info/refs"\
+            "?service=git-upload-pack"
+          stub_request(:get, service_pack_url).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "no_tags"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
             )
         end
 

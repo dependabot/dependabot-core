@@ -48,24 +48,28 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       repo: "gocardless/#{dependency_name}"
     )
   end
+  before do
+    stub_request(:get, service_pack_url).
+      to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", upload_pack_fixture),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
+  let(:service_pack_url) do
+    "https://github.com/gocardless/business.git/info/refs"\
+    "?service=git-upload-pack"
+  end
+  let(:upload_pack_fixture) { "business" }
 
   describe "#commits_url" do
     subject(:commits_url) { builder.commits_url }
 
     context "with a github repo and old/new tags" do
       let(:dependency_previous_version) { "1.3.0" }
-
-      before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "business_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-      end
+      let(:upload_pack_fixture) { "business" }
 
       it do
         is_expected.to eq("https://github.com/gocardless/business/"\
@@ -99,17 +103,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with a github repo and only a new tag" do
-      before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "business_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-      end
+      let(:dependency_previous_version) { "0.1.0" }
+      let(:upload_pack_fixture) { "business" }
 
       it do
         is_expected.
@@ -156,14 +151,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a github repo and tags with surprising names" do
       before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "prefixed_tags.json"),
-            headers: { "Content-Type" => "application/json" }
+        allow(builder).
+          to receive(:fetch_dependency_tags).
+          and_return(
+            %w(
+              business-1.4.0.beta
+              business-21.4.0
+              business-2.1.4.0
+              business-1.4.0
+              business-1.3.0
+            )
           )
       end
 
@@ -179,15 +176,37 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           Dependabot::Source.new(provider: "github", repo: "netflix/pollyjs")
         end
         before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/netflix/pollyjs/"\
-            "tags?per_page=100"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "tags_monorepo.json"),
-              headers: { "Content-Type" => "application/json" }
+          allow(builder).
+            to receive(:fetch_dependency_tags).
+            and_return(
+              %w(
+                @pollyjs/utils@0.1.0
+                @pollyjs/persister@0.2.0
+                @pollyjs/persister@0.1.0
+                @pollyjs/node-server@0.2.0
+                @pollyjs/node-server@0.1.0
+                @pollyjs/node-server@0.0.2
+                @pollyjs/node-server@0.0.1
+                @pollyjs/ember@0.2.1
+                @pollyjs/ember@0.2.0
+                @pollyjs/ember@0.1.0
+                @pollyjs/ember@0.0.2
+                @pollyjs/ember@0.0.1
+                @pollyjs/core@0.3.0
+                @pollyjs/core@0.2.0
+                @pollyjs/core@0.1.0
+                @pollyjs/core@0.0.2
+                @pollyjs/core@0.0.1
+                @pollyjs/cli@0.1.1
+                @pollyjs/cli@0.1.0
+                @pollyjs/cli@0.0.2
+                @pollyjs/cli@0.0.1
+                @pollyjs/adapter@0.3.0
+                @pollyjs/adapter@0.2.0
+                @pollyjs/adapter@0.1.0
+                @pollyjs/adapter@0.0.2
+                @pollyjs/adapter@0.0.1
+              )
             )
         end
 
@@ -200,15 +219,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a github repo and tags with no prefix" do
       before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "unprefixed_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
+        allow(builder).
+          to receive(:fetch_dependency_tags).
+          and_return(%w(1.5.0 1.4.0 1.3.0))
       end
 
       it do
@@ -218,17 +231,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with a github repo and no tags found" do
-      before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: "[]",
-            headers: { "Content-Type" => "application/json" }
-          )
-      end
+      let(:upload_pack_fixture) { "no_tags" }
 
       it do
         is_expected.to eq("https://github.com/gocardless/business/commits")
@@ -267,18 +270,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
         let(:dependency_version) { "1.4.0" }
         let(:dependency_previous_version) { "1.3.0" }
-
-        before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "business_tags.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
+        let(:upload_pack_fixture) { "business" }
 
         it do
           is_expected.to eq("https://github.com/gocardless/business/"\
@@ -301,18 +293,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
         let(:dependency_version) { "1.4.0" }
-
-        before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "business_tags.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
-        end
+        let(:upload_pack_fixture) { "business" }
 
         it do
           is_expected.
@@ -332,11 +313,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           context "when authentication fails" do
             before do
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/business/tags"\
-                "?per_page=100"
-              ).to_return(status: 404)
+              stub_request(:get, service_pack_url).to_return(status: 404)
             end
 
             it do
@@ -346,17 +323,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           context "when authentication succeeds" do
-            before do
-              stub_request(
-                :get,
-                "https://api.github.com/repos/gocardless/business/tags"\
-                "?per_page=100"
-              ).to_return(
-                status: 200,
-                body: fixture("github", "business_tags.json"),
-                headers: { "Content-Type" => "application/json" }
-              )
-            end
+            let(:upload_pack_fixture) { "business" }
 
             it do
               is_expected.
@@ -399,23 +366,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with a gitlab repo" do
-      let(:gitlab_url) do
-        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+      let(:service_pack_url) do
+        "https://gitlab.com/org/business.git/info/refs"\
+        "?service=git-upload-pack"
       end
 
-      let(:gitlab_status) { 200 }
-      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
       let(:source) do
         Dependabot::Source.new(
           provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
-      end
-      before do
-        stub_request(:get, gitlab_url).
-          to_return(status: gitlab_status,
-                    body: gitlab_response,
-                    headers: { "Content-Type" => "application/json" })
       end
 
       context "with old and new tags" do
@@ -446,13 +406,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with a bitbucket repo" do
-      let(:bitbucket_url) do
-        "https://api.bitbucket.org/2.0/repositories/org/business/refs/tags"\
-        "?pagelen=100"
+      let(:service_pack_url) do
+        "https://bitbucket.org/org/business.git/info/refs"\
+        "?service=git-upload-pack"
       end
 
-      let(:bitbucket_status) { 200 }
-      let(:bitbucket_response) { fixture("bitbucket", "business_tags.json") }
       let(:source) do
         Dependabot::Source.new(
           provider: "bitbucket",
@@ -460,35 +418,25 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         )
       end
 
-      before do
-        stub_request(:get, bitbucket_url).
-          to_return(status: bitbucket_status,
-                    body: bitbucket_response,
-                    headers: { "Content-Type" => "application/json" })
-      end
-
       context "with credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "git_source",
-              "host" => "bitbucket.org",
-              "username" => "greysteil",
-              "password" => "secret_token"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "git_source",
+            "host" => "bitbucket.org",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
         end
 
         it "uses the credentials" do
           builder.commits_url
           expect(WebMock).
-            to have_requested(:get, bitbucket_url).
+            to have_requested(:get, service_pack_url).
             with(basic_auth: %w(greysteil secret_token))
         end
       end
@@ -544,15 +492,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
       context "with a github repo" do
         before do
-          stub_request(
-            :get,
-            "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "business_tags.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/business/compare/"\
@@ -633,16 +572,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       context "with a bitbucket repo" do
-        let(:bitbucket_tags_url) do
-          "https://api.bitbucket.org/2.0/repositories/org/business/refs/tags"\
-          "?pagelen=100"
-        end
         let(:bitbucket_compare_url) do
           "https://api.bitbucket.org/2.0/repositories/org/business/commits/"\
           "?exclude=v1.3.0&include=v1.4.0"
         end
 
-        let(:bitbucket_tags) { fixture("bitbucket", "business_tags.json") }
         let(:bitbucket_compare) do
           fixture("bitbucket", "business_compare_commits.json")
         end
@@ -653,12 +587,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             repo: "org/#{dependency_name}"
           )
         end
+        let(:service_pack_url) do
+          "https://bitbucket.org/org/business.git/info/refs"\
+          "?service=git-upload-pack"
+        end
 
         before do
-          stub_request(:get, bitbucket_tags_url).
-            to_return(status: 200,
-                      body: bitbucket_tags,
-                      headers: { "Content-Type" => "application/json" })
           stub_request(:get, bitbucket_compare_url).
             to_return(status: 200,
                       body: bitbucket_compare,
@@ -687,15 +621,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       context "with a gitlab repo" do
-        let(:gitlab_tags_url) do
-          "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
-        end
         let(:gitlab_compare_url) do
           "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/"\
           "compare?from=v1.3.0&to=v1.4.0"
         end
+        let(:service_pack_url) do
+          "https://gitlab.com/org/business.git/info/refs"\
+          "?service=git-upload-pack"
+        end
 
-        let(:gitlab_tags) { fixture("gitlab", "business_tags.json") }
         let(:gitlab_compare) do
           fixture("gitlab", "business_compare_commits.json")
         end
@@ -706,10 +640,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
         end
         before do
-          stub_request(:get, gitlab_tags_url).
-            to_return(status: 200,
-                      body: gitlab_tags,
-                      headers: { "Content-Type" => "application/json" })
           stub_request(:get, gitlab_compare_url).
             to_return(status: 200,
                       body: gitlab_compare,
@@ -790,33 +720,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with only a new tag" do
-      before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "business_tags.json"),
-            headers: { "Content-Type" => "application/json" }
-          )
-      end
+      let(:dependency_previous_version) { "0.1.0" }
+      let(:upload_pack_fixture) { "business" }
 
       it { is_expected.to eq([]) }
     end
 
     context "with no tags found" do
-      before do
-        stub_request(
-          :get,
-          "https://api.github.com/repos/gocardless/business/tags?per_page=100"
-        ).with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: "[]",
-            headers: { "Content-Type" => "application/json" }
-          )
-      end
+      let(:upload_pack_fixture) { "no_tags" }
 
       it { is_expected.to eq([]) }
     end
