@@ -2146,6 +2146,86 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to eq("1.2.4")
         end
       end
+
+      context "when there are git tag dependencies not being updated" do
+        let(:manifest_fixture_name) { "git_tag_dependencies.json" }
+        let(:npm_lock_fixture_name) { "git_tag_dependencies.json" }
+        let(:dependency_name) { "etag" }
+        let(:requirements) do
+          [{
+            requirement: "^1.8.1",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^1.8.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_version) { "1.8.0" }
+        let(:version) { "1.8.1" }
+
+        it "doesn't update git dependencies" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+
+          parsed_package_json = JSON.parse(updated_package_json.content)
+          expect(parsed_package_json["dependencies"]["Select2"]).
+            to eq("git+https://github.com/select2/select2.git#3.4.8")
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
+            to eq("git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
+            to eq("git+https://github.com/select2/select2.git#"\
+                  "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
+        end
+      end
+
+      context "when there are git ref dependencies not being updated" do
+        let(:manifest_fixture_name) { "git_ref_dependencies.json" }
+        let(:npm_lock_fixture_name) { "git_ref_dependencies.json" }
+        let(:dependency_name) { "etag" }
+        let(:requirements) do
+          [{
+            requirement: "^1.8.1",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^1.8.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_version) { "1.8.0" }
+        let(:version) { "1.8.1" }
+
+        it "doesn't update git dependencies" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+
+          parsed_package_json = JSON.parse(updated_package_json.content)
+          expect(parsed_package_json["dependencies"]["Select2"]).
+            to eq("git+https://github.com/select2/select2.git#3.x")
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
+            to eq("git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
+            to eq("git+https://github.com/select2/select2.git#"\
+                  "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
+        end
+      end
     end
 
     #######################

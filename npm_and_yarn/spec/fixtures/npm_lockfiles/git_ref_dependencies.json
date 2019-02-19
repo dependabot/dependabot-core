@@ -1,0 +1,17 @@
+{
+  "name": "git-ref",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "Select2": {
+      "version": "git+https://github.com/select2/select2.git#170c88460ac69639b57dfa03cfea0dadbf3c2bad",
+      "from": "git+https://github.com/select2/select2.git#3.x"
+    },
+    "etag": {
+      "version": "1.8.0",
+      "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.0.tgz",
+      "integrity": "sha1-b2Ma7zNtbEY2K1F2QETOIWvjwFE="
+    }
+  }
+}

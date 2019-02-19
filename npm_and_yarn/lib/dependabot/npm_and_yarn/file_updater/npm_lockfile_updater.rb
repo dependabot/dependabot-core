@@ -465,11 +465,15 @@ module Dependabot
           # Switch from details back for git dependencies (they will have
           # changed because we locked them)
           git_dependencies_to_lock.each do |_, details|
-            next unless details[:from]
+            next unless details[:version] && details[:from]
 
-            new_r = /"from": "#{Regexp.quote(details[:from])}#[^\"]+"/
-            old_r = %("from": "#{details[:from]}")
-            updated_content = updated_content.gsub(new_r, old_r)
+            # When locking git dependencies in package.json we set the version
+            # to be the git commit from the lockfile "version" field which
+            # updates the lockfile "from" field to the new git commit when we
+            # run npm install
+            locked_from = %("from": "#{details[:version]}")
+            original_from = %("from": "#{details[:from]}")
+            updated_content = updated_content.gsub(locked_from, original_from)
           end
 
           # Switch back the protocol of tarball resolutions if they've changed
