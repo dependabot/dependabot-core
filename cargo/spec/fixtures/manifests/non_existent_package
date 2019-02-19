@@ -5,3 +5,4 @@ authors = ["support@dependabot.com"]
 
 [dependencies]
 no_exist_bad_time = "0.1.12"
+regex = "0.1.41"

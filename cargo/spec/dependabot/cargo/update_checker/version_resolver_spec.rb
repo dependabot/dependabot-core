@@ -172,6 +172,21 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
               to include("no matching package named `no_exist_bad_time` found")
           end
       end
+
+      context "which isn't the package being updated" do
+        let(:dependency_name) { "regex" }
+        let(:string_req) { "0.1.41" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the temporary path isn't included in the error message
+              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).
+                to include("no matching package named `no_exist_bad_time`")
+            end
+        end
+      end
     end
 
     context "with a blank requirement string" do
