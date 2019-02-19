@@ -78,19 +78,32 @@ module Dependabot
 
         def lowest_tag_satisfying_previous_requirements
           tags = dependency_tags.
-                 select { |t| version_class.correct?(t.gsub(/^v/, "")) }.
-                 select do |t|
-                   version = version_class.new(t.gsub(/^v/, ""))
-                   dependency.previous_requirements.all? do |req|
-                     next true unless req.fetch(:requirement)
+                 select { |t| version_from_tag(t) }.
+                 select { |t| satisfies_previous_reqs?(version_from_tag(t)) }.
+                 sort_by { |t| version_from_tag(t) }
 
-                     requirement_class.
-                       requirements_array(req.fetch(:requirement)).
-                       all? { |r| r.satisfied_by?(version) }
-                   end
-                 end
+          tags.find { |t| t.include?(dependency.name) } || tags.first
+        end
 
-          tags.min_by { |t| version_class.new(t.gsub(/^v/, "")) }
+        def version_from_tag(tag)
+          if version_class.correct?(tag.gsub(/^v/, ""))
+            version_class.new(tag.gsub(/^v/, ""))
+          end
+
+          return unless tag.gsub(/^[^\d]*/, "").length > 1
+          return unless version_class.correct?(tag.gsub(/^[^\d]*/, ""))
+
+          version_class.new(tag.gsub(/^[^\d]*/, ""))
+        end
+
+        def satisfies_previous_reqs?(version)
+          dependency.previous_requirements.all? do |req|
+            next true unless req.fetch(:requirement)
+
+            requirement_class.
+              requirements_array(req.fetch(:requirement)).
+              all? { |r| r.satisfied_by?(version) }
+          end
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
