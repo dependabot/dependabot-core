@@ -124,8 +124,9 @@ module Dependabot
         # Special case Gatsby, which specifies directories in URLs.
         # This can be removed once this PR is merged:
         # https://github.com/gatsbyjs/gatsby/pull/11145
-        if source_from_url.repo == "gatsbyjs/gatsby"
-          return source_from_url.directory
+        if source_from_url.repo == "gatsbyjs/gatsby" &&
+           get_url(details).match?(%r{tree\/master\/.})
+          return get_url(details).split("tree/master/").last.split("#").first
         end
 
         # Special case DefinitelyTyped, which has predictable URLs.
