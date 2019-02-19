@@ -1,3 +1,9 @@
+## v0.95.43, 19 February 2019
+
+- JS: Better special casing for gatsby
+- Python: Look in project_urls for homepage
+- PHP: Use the global variable $memory when freeing it
+
 ## v0.95.42, 19 February 2019
 
 - Rust: Handle non-existent packages
