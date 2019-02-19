@@ -189,7 +189,22 @@ module Dependabot
 
         def fetch_github_commits
           commits =
-            github_client.compare(source.repo, previous_tag, new_tag).commits
+            if part_of_monorepo?
+              # If part of a monorepo we make two requests in order to get only
+              # the commits relevant to the given path
+              path = source.directory.gsub(%r{^[./]+}, "")
+              repo = source.repo
+
+              previous_commit_shas =
+                github_client.commits(repo, sha: previous_tag, path: path).
+                map(&:sha)
+
+              github_client.
+                commits(repo, sha: new_tag, path: path).
+                reject { |c| previous_commit_shas.include?(c.sha) }
+            else
+              github_client.compare(source.repo, previous_tag, new_tag).commits
+            end
           return [] unless commits
 
           commits.map do |commit|

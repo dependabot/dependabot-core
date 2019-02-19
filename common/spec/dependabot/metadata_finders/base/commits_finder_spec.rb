@@ -594,6 +594,100 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           it { is_expected.to eq([]) }
         end
+
+        context "for a monorepo" do
+          let(:dependency_name) { "@pollyjs/ember" }
+          let(:dependency_version) { "0.2.0" }
+          let(:dependency_previous_version) { "0.1.0" }
+          let(:source) do
+            Dependabot::Source.new(
+              provider: "github",
+              repo: "netflix/pollyjs",
+              directory: "packages/@pollyjs/ember"
+            )
+          end
+          before do
+            allow(builder).
+              to receive(:fetch_dependency_tags).
+              and_return(
+                %w(
+                  @pollyjs/ember-cli@0.2.1
+                  @pollyjs/ember-cli@0.2.0
+                  @pollyjs/ember-cli@0.1.0
+                  @pollyjs/ember-cli@0.0.2
+                  @pollyjs/ember-cli@0.0.1
+                  @pollyjs/ember@0.2.1
+                  @pollyjs/ember@0.2.0
+                  @pollyjs/ember@0.1.0
+                  @pollyjs/ember@0.0.2
+                  @pollyjs/ember@0.0.1
+                )
+              )
+          end
+
+          before do
+            allow(builder).
+              to receive(:reliable_source_directory?).
+              and_return(true)
+          end
+
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/netflix/pollyjs/commits?"\
+              "path=packages/@pollyjs/ember&sha=@pollyjs/ember@0.2.0"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "commits-pollyjs-ember-0.2.0.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+
+            stub_request(
+              :get,
+              "https://api.github.com/repos/netflix/pollyjs/commits?"\
+              "path=packages/@pollyjs/ember&sha=@pollyjs/ember@0.1.0"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "commits-pollyjs-ember-0.1.0.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "returns an array of commits relevant to the given path" do
+            is_expected.to match_array(
+              [
+                {
+                  message: "chore: Publish\n\n"\
+                           " - @pollyjs/adapter@0.2.0\n"\
+                           " - @pollyjs/core@0.2.0\n"\
+                           " - @pollyjs/ember@0.2.0\n"\
+                           " - @pollyjs/persister@0.1.0\n"\
+                           " - @pollyjs/utils@0.1.0",
+                  sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
+                  html_url: "https://github.com/Netflix/pollyjs/commit/"\
+                            "ebf6474d0008e9e76249a78473263894dd0668dc"
+                },
+                {
+                  message: "feat: Custom persister support\n\n"\
+                           "* feat: Custom persister support\r\n\r\n"\
+                           "* Create a @pollyjs/persister package\r\n"\
+                           "* Move out shared utils into their own "\
+                           "@pollyjs/utils package\r\n"\
+                           "* Add support to register a custom persister "\
+                           "(same way as an adapter)\r\n"\
+                           "* Add more tests\r\n\r\n"\
+                           "* docs: Custom adapter & persister docs\r\n\r\n"\
+                           "* test: Add custom persister test",
+                  sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
+                  html_url: "https://github.com/Netflix/pollyjs/commit/"\
+                            "8bb313cc08716b80076c6f68d056396ce4b4d282"
+                }
+              ]
+            )
+          end
+        end
       end
 
       context "with a bitbucket repo" do
