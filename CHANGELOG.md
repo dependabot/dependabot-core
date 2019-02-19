@@ -1,3 +1,7 @@
+## v0.95.41, 19 February 2019
+
+- Simpler tag sorting for finding most appropriately named tag
+
 ## v0.95.40, 19 February 2019
 
 - Better commit fetching for monorepos
