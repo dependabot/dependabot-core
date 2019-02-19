@@ -240,7 +240,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         it { is_expected.to eq(dependency_version) }
       end
 
-      context "that is unreachable" do
+      # TODO: make non-pending once we're using a Cargo release that includes
+      #       this PR: https://github.com/rust-lang/cargo/pull/6681
+      #       Without that change to Cargo, this test hangs indefinitely.
+      pending "that is unreachable" do
         let(:manifest_fixture_name) { "git_dependency_unreachable" }
         let(:lockfile_fixture_name) { "git_dependency_unreachable" }
         let(:git_url) do
