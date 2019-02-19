@@ -51,6 +51,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
         end
       end
       # rubocop:enable Lint/InterpolationCheck
+
+      context "for a file that is already nested" do
+        let(:file_name) { "deeply/nested/Gemfile" }
+        it { is_expected.to eq(["deeply/some_other_file.rb"]) }
+      end
     end
   end
 end
