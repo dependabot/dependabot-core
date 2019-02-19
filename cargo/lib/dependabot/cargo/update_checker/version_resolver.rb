@@ -207,6 +207,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
+          puts "hi"
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
@@ -262,7 +264,8 @@ module Dependabot
           true
         rescue SharedHelpers::HelperSubprocessFailed => error
           raise unless error.message.include?("no matching version") ||
-                       error.message.include?("failed to select a version")
+                       error.message.include?("failed to select a version") ||
+                       error.message.include?("no matching package named")
 
           false
         end

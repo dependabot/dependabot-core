@@ -155,6 +155,25 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a dependency that doesn't exist" do
+      let(:unprepared_dependency_files) { [manifest] }
+      let(:manifest_fixture_name) { "non_existent_package" }
+
+      let(:dependency_name) { "no_exist_bad_time" }
+      let(:dependency_version) { nil }
+      let(:string_req) { "0.1.12" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            # Test that the temporary path isn't included in the error message
+            expect(error.message).to_not include("dependabot_20")
+            expect(error.message).
+              to include("no matching package named `no_exist_bad_time` found")
+          end
+      end
+    end
+
     context "with a blank requirement string" do
       let(:manifest_fixture_name) { "blank_version" }
       let(:lockfile_fixture_name) { "blank_version" }
