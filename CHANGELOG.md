@@ -1,3 +1,7 @@
+## v0.95.45, 19 February 2019
+
+- .NET, Ruby and Rust: Fix directory handling for deeply nested file fetching
+
 ## v0.95.44, 19 February 2019
 
 - Reverse commits when building a monorepo compare URL
