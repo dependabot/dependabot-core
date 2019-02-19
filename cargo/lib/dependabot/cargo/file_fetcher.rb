@@ -74,7 +74,7 @@ module Dependabot
       end
 
       def fetch_workspace_files(file:, previously_fetched_files:)
-        current_dir = file.name.split("/")[0..-2].join("/")
+        current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
 
         files = workspace_dependency_paths_from_file(file).flat_map do |path|
@@ -101,7 +101,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def fetch_path_dependency_files(file:, previously_fetched_files:)
-        current_dir = file.name.split("/")[0..-2].join("/")
+        current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
         unfetchable_required_path_deps = []
 

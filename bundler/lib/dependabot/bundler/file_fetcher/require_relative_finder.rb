@@ -51,7 +51,9 @@ module Dependabot
         # rubocop:enable Security/Eval
 
         def current_dir
-          @current_dir ||= file.name.split("/")[0..-2].last
+          @current_dir ||= file.name.rpartition("/").first
+          @current_dir = nil if @current_dir == ""
+          @current_dir
         end
 
         def declares_require_relative?(node)

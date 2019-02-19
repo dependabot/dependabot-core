@@ -42,10 +42,9 @@ module Dependabot
         attr_reader :sln_file
 
         def current_dir
-          parts = sln_file.name.split("/")[0..-2]
-          return if parts.empty?
-
-          parts.join("/")
+          current_dir = sln_file.name.rpartition("/").first
+          current_dir = nil if current_dir == ""
+          current_dir
         end
       end
     end

@@ -38,10 +38,9 @@ module Dependabot
         attr_reader :project_file
 
         def current_dir
-          parts = project_file.name.split("/")[0..-2]
-          return if parts.empty?
-
-          parts.join("/")
+          current_dir = project_file.name.rpartition("/").first
+          current_dir = nil if current_dir == ""
+          current_dir
         end
       end
     end
