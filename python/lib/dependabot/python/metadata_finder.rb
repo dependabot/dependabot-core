@@ -11,7 +11,10 @@ module Dependabot
       MAIN_PYPI_URL = "https://pypi.org/pypi"
 
       def homepage_url
-        pypi_listing.dig("info", "home_page") || super
+        pypi_listing.dig("info", "home_page") ||
+          pypi_listing.dig("info", "project_urls", "Homepage") ||
+          pypi_listing.dig("info", "project_urls", "homepage") ||
+          super
       end
 
       private
@@ -24,6 +27,9 @@ module Dependabot
           pypi_listing.dig("info", "download_url"),
           pypi_listing.dig("info", "docs_url")
         ].compact
+
+        potential_source_urls +=
+          (pypi_listing.dig("info", "project_urls") || {}).values
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         source_url ||= source_from_description
