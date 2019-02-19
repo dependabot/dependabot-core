@@ -55,11 +55,10 @@ module Dependabot
           return new_version if git_source?(dependency.requirements)
 
           tags = dependency_tags.
-                 select { |t| t =~ version_regex(new_version) }
+                 select { |t| t =~ version_regex(new_version) }.
+                 sort_by(&:length)
 
-          tags.find { |t| t.include?("#{dependency.name}@") } ||
-            tags.find { |t| t.include?(dependency.name) } ||
-            tags.first
+          tags.find { |t| t.include?(dependency.name) } || tags.first
         end
 
         private
@@ -71,10 +70,10 @@ module Dependabot
             previous_version || previous_ref
           elsif previous_version
             tags = dependency_tags.
-                   select { |t| t =~ version_regex(previous_version) }
-            tags.find { |t| t.include?("#{dependency.name}@") } ||
-              tags.find { |t| t.include?(dependency.name) } ||
-              tags.first
+                   select { |t| t =~ version_regex(previous_version) }.
+                   sort_by(&:length)
+
+            tags.find { |t| t.include?(dependency.name) } || tags.first
           else
             lowest_tag_satisfying_previous_requirements
           end
@@ -84,11 +83,9 @@ module Dependabot
           tags = dependency_tags.
                  select { |t| version_from_tag(t) }.
                  select { |t| satisfies_previous_reqs?(version_from_tag(t)) }.
-                 sort_by { |t| version_from_tag(t) }
+                 sort_by { |t| [version_from_tag(t), t.length] }
 
-          tags.find { |t| t.include?("#{dependency.name}@") } ||
-            tags.find { |t| t.include?(dependency.name) } ||
-            tags.first
+          tags.find { |t| t.include?(dependency.name) } || tags.first
         end
 
         def version_from_tag(tag)
