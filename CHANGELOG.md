@@ -1,3 +1,7 @@
+## v0.95.39, 19 February 2019
+
+- NPM: Fix lockfile for git dependencies using tags
+
 ## v0.95.38, 19 February 2019
 
 - Better lowest_tag_satisfying_previous_requirements lookup
