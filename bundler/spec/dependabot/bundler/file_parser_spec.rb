@@ -462,6 +462,33 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
+      context "with an unparseable git dep that also appears in the gemspec" do
+        let(:gemfile_fixture_name) { "git_source_unparseable" }
+        let(:lockfile_fixture_name) { "git_source_unparseable.lock" }
+        let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+
+        it "includes source details on the gemspec requirement" do
+          expect(dependencies.map(&:name)).to match_array(%w(business))
+          expect(dependencies.first.name).to eq("business")
+          expect(dependencies.first.version).
+            to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
+          expect(dependencies.first.requirements).
+            to match_array(
+              [{
+                file: "example.gemspec",
+                requirement: "~> 1.0",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "git@github.com:gocardless/business",
+                  branch: "master",
+                  ref: "master"
+                }
+              }]
+            )
+        end
+      end
+
       context "with two gemspecs" do
         let(:gemfile_fixture_name) { "imports_two_gemspecs" }
         let(:lockfile_fixture_name) { "imports_two_gemspecs.lock" }

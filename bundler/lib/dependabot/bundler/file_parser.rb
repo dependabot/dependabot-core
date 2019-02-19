@@ -77,7 +77,7 @@ module Dependabot
                 requirements: [{
                   requirement: dependency.requirement.to_s,
                   groups: dependency.runtime? ? ["runtime"] : ["development"],
-                  source: nil,
+                  source: source_for(dependency),
                   file: gemspec.name
                 }],
                 package_manager: "bundler"
