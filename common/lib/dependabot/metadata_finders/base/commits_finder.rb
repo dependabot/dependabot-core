@@ -52,12 +52,14 @@ module Dependabot
         def new_tag
           new_version = dependency.version
 
-          if git_source?(dependency.requirements) then new_version
-          else
-            tags = dependency_tags.
-                   select { |t| t =~ version_regex(new_version) }
-            tags.find { |t| t.include?(dependency.name) } || tags.first
-          end
+          return new_version if git_source?(dependency.requirements)
+
+          tags = dependency_tags.
+                 select { |t| t =~ version_regex(new_version) }
+
+          tags.find { |t| t.include?("#{dependency.name}@") } ||
+            tags.find { |t| t.include?(dependency.name) } ||
+            tags.first
         end
 
         private
@@ -70,7 +72,9 @@ module Dependabot
           elsif previous_version
             tags = dependency_tags.
                    select { |t| t =~ version_regex(previous_version) }
-            tags.find { |t| t.include?(dependency.name) } || tags.first
+            tags.find { |t| t.include?("#{dependency.name}@") } ||
+              tags.find { |t| t.include?(dependency.name) } ||
+              tags.first
           else
             lowest_tag_satisfying_previous_requirements
           end
@@ -82,7 +86,9 @@ module Dependabot
                  select { |t| satisfies_previous_reqs?(version_from_tag(t)) }.
                  sort_by { |t| version_from_tag(t) }
 
-          tags.find { |t| t.include?(dependency.name) } || tags.first
+          tags.find { |t| t.include?("#{dependency.name}@") } ||
+            tags.find { |t| t.include?(dependency.name) } ||
+            tags.first
         end
 
         def version_from_tag(tag)
@@ -148,18 +154,17 @@ module Dependabot
         end
 
         def github_compare_path(new_tag, previous_tag)
-          if new_tag && previous_tag
-            return "compare/#{previous_tag}...#{new_tag}"
+          if part_of_monorepo?
+            # If part of a monorepo then we're better off linking to the commits
+            # for that directory than trying to put together a compare URL
+            Pathname.
+              new(File.join("commits/#{new_tag || 'HEAD'}", source.directory)).
+              cleanpath.to_path
+          elsif new_tag && previous_tag
+            "compare/#{previous_tag}...#{new_tag}"
+          else
+            new_tag ? "commits/#{new_tag}" : "commits"
           end
-
-          unless reliable_source_directory? &&
-                 ![nil, ".", "/"].include?(source.directory)
-            return new_tag ? "commits/#{new_tag}" : "commits"
-          end
-
-          Pathname.
-            new(File.join("commits/#{new_tag || 'HEAD'}", source.directory)).
-            cleanpath.to_path
         end
 
         def bitbucket_compare_path(new_tag, previous_tag)
@@ -242,6 +247,12 @@ module Dependabot
         def bitbucket_client
           @bitbucket_client ||= Dependabot::Clients::Bitbucket.
                                 for_bitbucket_dot_org(credentials: credentials)
+        end
+
+        def part_of_monorepo?
+          return false unless reliable_source_directory?
+
+          ![nil, ".", "/"].include?(source.directory)
         end
 
         def version_class

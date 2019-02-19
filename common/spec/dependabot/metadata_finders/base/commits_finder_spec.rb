@@ -172,8 +172,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       context "for a monorepo" do
         let(:dependency_name) { "@pollyjs/ember" }
         let(:dependency_version) { "0.2.0" }
+        let(:dependency_previous_version) { "0.0.1" }
         let(:source) do
-          Dependabot::Source.new(provider: "github", repo: "netflix/pollyjs")
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "netflix/pollyjs",
+            directory: "packages/ember"
+          )
         end
         before do
           allow(builder).
@@ -187,6 +192,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                 @pollyjs/node-server@0.1.0
                 @pollyjs/node-server@0.0.2
                 @pollyjs/node-server@0.0.1
+                @pollyjs/ember-cli@0.2.1
+                @pollyjs/ember-cli@0.2.0
+                @pollyjs/ember-cli@0.1.0
+                @pollyjs/ember-cli@0.0.2
+                @pollyjs/ember-cli@0.0.1
                 @pollyjs/ember@0.2.1
                 @pollyjs/ember@0.2.0
                 @pollyjs/ember@0.1.0
@@ -210,9 +220,24 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             )
         end
 
+        before do
+          allow(builder).
+            to receive(:reliable_source_directory?).
+            and_return(true)
+        end
+
         it do
           is_expected.to eq("https://github.com/netflix/pollyjs/"\
-                            "commits/@pollyjs/ember@0.2.0")
+                            "commits/@pollyjs/ember@0.2.0/packages/ember")
+        end
+
+        context "without a previous version" do
+          let(:dependency_previous_version) { "0.0.3" }
+
+          it do
+            is_expected.to eq("https://github.com/netflix/pollyjs/"\
+                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+          end
         end
       end
     end
