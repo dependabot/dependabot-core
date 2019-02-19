@@ -1,3 +1,7 @@
+## v0.95.44, 19 February 2019
+
+- Reverse commits when building a monorepo compare URL
+
 ## v0.95.43, 19 February 2019
 
 - JS: Better special casing for gatsby
