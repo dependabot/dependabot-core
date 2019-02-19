@@ -1,3 +1,7 @@
+## v0.95.42, 19 February 2019
+
+- Rust: Handle non-existent packages
+
 ## v0.95.41, 19 February 2019
 
 - Simpler tag sorting for finding most appropriately named tag
