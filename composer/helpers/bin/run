@@ -50,6 +50,7 @@ date_default_timezone_set('Europe/London');
 $memory = str_repeat('*', 1024 * 1024);
 
 register_shutdown_function(function (): void {
+    global $memory;
     $memory = null;
     $error = error_get_last();
     if (null !== $error) {
