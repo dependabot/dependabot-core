@@ -1,3 +1,7 @@
+## v0.95.38, 19 February 2019
+
+- Better lowest_tag_satisfying_previous_requirements lookup
+
 ## v0.95.37, 18 February 2019
 
 - Fetch git tags from git upload pack, rather than APIs, in CommitsFinder
