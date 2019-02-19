@@ -659,17 +659,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             is_expected.to match_array(
               [
                 {
-                  message: "chore: Publish\n\n"\
-                           " - @pollyjs/adapter@0.2.0\n"\
-                           " - @pollyjs/core@0.2.0\n"\
-                           " - @pollyjs/ember@0.2.0\n"\
-                           " - @pollyjs/persister@0.1.0\n"\
-                           " - @pollyjs/utils@0.1.0",
-                  sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
-                  html_url: "https://github.com/Netflix/pollyjs/commit/"\
-                            "ebf6474d0008e9e76249a78473263894dd0668dc"
-                },
-                {
                   message: "feat: Custom persister support\n\n"\
                            "* feat: Custom persister support\r\n\r\n"\
                            "* Create a @pollyjs/persister package\r\n"\
@@ -683,6 +672,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                   sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
                   html_url: "https://github.com/Netflix/pollyjs/commit/"\
                             "8bb313cc08716b80076c6f68d056396ce4b4d282"
+                },
+                {
+                  message: "chore: Publish\n\n"\
+                           " - @pollyjs/adapter@0.2.0\n"\
+                           " - @pollyjs/core@0.2.0\n"\
+                           " - @pollyjs/ember@0.2.0\n"\
+                           " - @pollyjs/persister@0.1.0\n"\
+                           " - @pollyjs/utils@0.1.0",
+                  sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
+                  html_url: "https://github.com/Netflix/pollyjs/commit/"\
+                            "ebf6474d0008e9e76249a78473263894dd0668dc"
                 }
               ]
             )

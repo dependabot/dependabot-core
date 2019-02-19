@@ -196,9 +196,11 @@ module Dependabot
                 github_client.commits(repo, sha: previous_tag, path: path).
                 map(&:sha)
 
+              # Note: We reverse this so it's consistent with the array we get
+              # from `github_client.compare(...)`
               github_client.
                 commits(repo, sha: new_tag, path: path).
-                reject { |c| previous_commit_shas.include?(c.sha) }
+                reject { |c| previous_commit_shas.include?(c.sha) }.reverse
             else
               github_client.compare(source.repo, previous_tag, new_tag).commits
             end
