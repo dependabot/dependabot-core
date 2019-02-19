@@ -1,3 +1,8 @@
+## v0.95.40, 19 February 2019
+
+- Better commit fetching for monorepos
+- Always prefer commits URL with path for monorepos
+
 ## v0.95.39, 19 February 2019
 
 - NPM: Fix lockfile for git dependencies using tags
