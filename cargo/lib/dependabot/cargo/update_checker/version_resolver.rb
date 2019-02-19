@@ -207,8 +207,6 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
-          puts "hi"
-
           raise error
         end
         # rubocop:enable Metrics/AbcSize
