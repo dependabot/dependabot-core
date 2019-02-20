@@ -47,7 +47,8 @@ puts
 puts "Double check the changes (editing CHANGELOG.md where necessary), then"
 puts "commit, tag, and push the release:"
 puts
-puts "git commit -a -m 'v#{new_version}'"
+puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
+puts "git commit -m 'v#{new_version}'"
 puts "git tag 'v#{new_version}'"
 puts "git push --tags origin master"
 puts
