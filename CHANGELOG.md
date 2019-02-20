@@ -1,3 +1,10 @@
+## v0.95.47, 20 February 2019
+
+- JS: Don't update source from git to registry just because version isn't a SHA
+- JS: Include a leading `*` as a semver indicator
+- Python: Bump pip-tools from 3.3.2 to 3.4.0 in /python/helpers
+- Ruby: Allow gemspec dependencies to have a source (in case it's git)
+
 ## v0.95.46, 19 February 2019
 
 - Cargo: fix git credential helper issue
