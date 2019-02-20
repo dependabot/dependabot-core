@@ -133,7 +133,7 @@ module Dependabot
         # This can be removed once this PR is merged:
         # https://github.com/Microsoft/types-publisher/pull/578
         if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-          dependency.name.gsub(/^@/, "")
+          return dependency.name.gsub(/^@/, "")
         end
 
         # Only return a directory if it is explicitly specified
