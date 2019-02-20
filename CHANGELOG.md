@@ -1,3 +1,7 @@
+## v0.95.48, 20 February 2019
+
+- JS: Actually special case DefinitelyTyped
+
 ## v0.95.47, 20 February 2019
 
 - JS: Don't update source from git to registry just because version isn't a SHA
