@@ -175,6 +175,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           end
           it { is_expected.to eq("//registry.npmjs.org/:_authToken=my_token") }
 
+          context "where the registry has a trailing slash" do
+            let(:credentials) do
+              [{
+                "type" => "git_source",
+                "host" => "github.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              }, {
+                "type" => "npm_registry",
+                "registry" => "artifactory.jfrog.com"\
+                              "/artifactory/api/npm/dependabot/",
+                "token" => "my_token"
+              }]
+            end
+
+            it "only adds a single trailing slash" do
+              expect(npmrc_content).
+                to eq("//artifactory.jfrog.com/"\
+                      "artifactory/api/npm/dependabot/:_authToken=my_token")
+            end
+          end
+
           context "that match a scoped package" do
             let(:credentials) do
               [{

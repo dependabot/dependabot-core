@@ -114,19 +114,19 @@ module Dependabot
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
-            registry = cred.fetch("registry")
+            registry = cred.fetch("registry").sub(%r{\/?$}, "/")
 
             lines << registry_scope(registry) if registry_scope(registry)
 
             token = cred.fetch("token")
             if token.include?(":")
               encoded_token = Base64.encode64(token).delete("\n")
-              lines << "//#{registry}/:_auth=#{encoded_token}"
+              lines << "//#{registry}:_auth=#{encoded_token}"
             elsif Base64.decode64(token).ascii_only? &&
                   Base64.decode64(token).include?(":")
-              lines << %(//#{registry}/:_auth=#{token.delete("\n")})
+              lines << %(//#{registry}:_auth=#{token.delete("\n")})
             else
-              lines << "//#{registry}/:_authToken=#{token}"
+              lines << "//#{registry}:_authToken=#{token}"
             end
           end
 
@@ -163,7 +163,7 @@ module Dependabot
           # This just seems unlikely
           return unless scopes.uniq.count == 1
 
-          "@#{scopes.first}:registry=https://#{registry}/"
+          "@#{scopes.first}:registry=https://#{registry}"
         end
 
         def registry_credentials
