@@ -98,18 +98,21 @@ module Dependabot
         end
 
         def prepared_pyproject
-          content = updated_pyproject_content
-          content = sanitize(content)
-          content = freeze_other_dependencies(content)
-          content = freeze_dependencies_being_updated(content)
-          content = add_private_sources(content)
-          content
+          @prepared_pyproject ||=
+            begin
+              content = updated_pyproject_content
+              content = sanitize(content)
+              content = freeze_other_dependencies(content)
+              content = freeze_dependencies_being_updated(content)
+              content = add_private_sources(content)
+              content
+            end
         end
 
         def freeze_other_dependencies(pyproject_content)
           PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            freeze_top_level_dependencies_except(dependencies, lockfile)
+            new(pyproject_content: pyproject_content, lockfile: lockfile).
+            freeze_top_level_dependencies_except(dependencies)
         end
 
         def freeze_dependencies_being_updated(pyproject_content)

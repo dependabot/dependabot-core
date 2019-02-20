@@ -6,7 +6,13 @@ require "dependabot/dependency_file"
 require "dependabot/python/file_updater/pyproject_preparer"
 
 RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
-  let(:preparer) { described_class.new(pyproject_content: pyproject_content) }
+  let(:preparer) do
+    described_class.new(
+      pyproject_content: pyproject_content,
+      lockfile: lockfile
+    )
+  end
+  let(:lockfile) { nil }
   let(:pyproject_content) do
     fixture("pyproject_files", "pyproject.toml")
   end
@@ -56,7 +62,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
   describe "#freeze_top_level_dependencies_except" do
     subject(:freeze_top_level_dependencies_except) do
-      preparer.freeze_top_level_dependencies_except(dependencies, lockfile)
+      preparer.freeze_top_level_dependencies_except(dependencies)
     end
 
     let(:lockfile) do

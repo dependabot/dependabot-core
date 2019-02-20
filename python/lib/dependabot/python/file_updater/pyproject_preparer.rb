@@ -9,8 +9,9 @@ module Dependabot
   module Python
     class FileUpdater
       class PyprojectPreparer
-        def initialize(pyproject_content:)
+        def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
+          @lockfile = lockfile
         end
 
         def replace_sources(credentials)
@@ -31,7 +32,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        def freeze_top_level_dependencies_except(dependencies, lockfile)
+        def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
 
           pyproject_object = TomlRB.parse(pyproject_content)
@@ -44,7 +45,7 @@ module Dependabot
             poetry_object.fetch(key).each do |dep_name, _|
               next if excluded_names.include?(normalise(dep_name))
 
-              locked_details = locked_details(dep_name, lockfile)
+              locked_details = locked_details(dep_name)
 
               next unless (locked_version = locked_details&.fetch("version"))
 
@@ -67,11 +68,9 @@ module Dependabot
 
         private
 
-        attr_reader :pyproject_content
+        attr_reader :pyproject_content, :lockfile
 
-        def locked_details(dep_name, lockfile)
-          parsed_lockfile = TomlRB.parse(lockfile.content)
-
+        def locked_details(dep_name)
           parsed_lockfile.fetch("package").
             find { |d| d["name"] == normalise(dep_name) }
         end
@@ -98,6 +97,10 @@ module Dependabot
             credentials.
             select { |cred| cred["type"] == "python_index" }.
             map { |cred| { "url" => cred["index-url"] } }
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= TomlRB.parse(lockfile.content)
         end
       end
     end

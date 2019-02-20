@@ -164,11 +164,14 @@ module Dependabot
         end
 
         def updated_pyproject_content
-          content = pyproject.content
-          content = sanitize_pyproject_content(content)
-          content = freeze_other_dependencies(content)
-          content = unlock_target_dependency(content) if unlock_requirement?
-          content
+          @updated_pyproject_content ||=
+            begin
+              content = pyproject.content
+              content = sanitize_pyproject_content(content)
+              content = freeze_other_dependencies(content)
+              content = unlock_target_dependency(content) if unlock_requirement?
+              content
+            end
         end
 
         def sanitized_pyproject_content
@@ -185,8 +188,8 @@ module Dependabot
 
         def freeze_other_dependencies(pyproject_content)
           Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            freeze_top_level_dependencies_except([dependency], lockfile)
+            new(pyproject_content: pyproject_content, lockfile: lockfile).
+            freeze_top_level_dependencies_except([dependency])
         end
 
         def unlock_target_dependency(pyproject_content)
