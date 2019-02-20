@@ -75,7 +75,7 @@ module Dependabot
               doc.at_xpath("/project/#{nm}") ||
               doc.at_xpath("/project/properties/#{nm}") ||
               doc.at_xpath("/project/profiles/profile/properties/#{nm}")
-            break candidate_node.content if candidate_node
+            break(candidate_node.content) if candidate_node
             break unless nm.match?(DOT_SEPARATOR_REGEX)
 
             nm = nm.sub(DOT_SEPARATOR_REGEX, "/")
