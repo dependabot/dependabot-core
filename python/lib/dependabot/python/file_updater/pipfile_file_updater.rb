@@ -151,8 +151,8 @@ module Dependabot
 
         def freeze_other_dependencies(pipfile_content)
           PipfilePreparer.
-            new(pipfile_content: pipfile_content).
-            freeze_top_level_dependencies_except(dependencies, lockfile)
+            new(pipfile_content: pipfile_content, lockfile: lockfile).
+            freeze_top_level_dependencies_except(dependencies)
         end
 
         def freeze_dependencies_being_updated(pipfile_content)

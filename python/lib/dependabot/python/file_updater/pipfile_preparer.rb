@@ -9,8 +9,9 @@ module Dependabot
   module Python
     class FileUpdater
       class PipfilePreparer
-        def initialize(pipfile_content:)
+        def initialize(pipfile_content:, lockfile: nil)
           @pipfile_content = pipfile_content
+          @lockfile = lockfile
         end
 
         def replace_sources(credentials)
@@ -23,7 +24,7 @@ module Dependabot
           TomlRB.dump(pipfile_object)
         end
 
-        def freeze_top_level_dependencies_except(dependencies, lockfile)
+        def freeze_top_level_dependencies_except(dependencies)
           return pipfile_content unless lockfile
 
           pipfile_object = TomlRB.parse(pipfile_content)
@@ -35,7 +36,7 @@ module Dependabot
             pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
               next if excluded_names.include?(normalise(dep_name))
 
-              freeze_dependency(dep_name, pipfile_object, lockfile, keys)
+              freeze_dependency(dep_name, pipfile_object, keys)
             end
           end
 
@@ -43,14 +44,12 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        def freeze_dependency(dep_name, pipfile_object, lockfile, keys)
+        def freeze_dependency(dep_name, pipfile_object, keys)
           locked_version = version_from_lockfile(
-            lockfile,
             keys[:lockfile],
             normalise(dep_name)
           )
           locked_ref = ref_from_lockfile(
-            lockfile,
             keys[:lockfile],
             normalise(dep_name)
           )
@@ -79,11 +78,10 @@ module Dependabot
 
         private
 
-        attr_reader :pipfile_content
+        attr_reader :pipfile_content, :lockfile
 
-        def version_from_lockfile(lockfile, dep_type, dep_name)
-          details = JSON.parse(lockfile.content).
-                    dig(dep_type, normalise(dep_name))
+        def version_from_lockfile(dep_type, dep_name)
+          details = parsed_lockfile.dig(dep_type, normalise(dep_name))
 
           case details
           when String then details.gsub(/^==/, "")
@@ -91,13 +89,16 @@ module Dependabot
           end
         end
 
-        def ref_from_lockfile(lockfile, dep_type, dep_name)
-          details = JSON.parse(lockfile.content).
-                    dig(dep_type, normalise(dep_name))
+        def ref_from_lockfile(dep_type, dep_name)
+          details = parsed_lockfile.dig(dep_type, normalise(dep_name))
 
           case details
           when Hash then details["ref"]
           end
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

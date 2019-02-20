@@ -6,7 +6,9 @@ require "dependabot/dependency_file"
 require "dependabot/python/file_updater/pipfile_preparer"
 
 RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
-  let(:preparer) { described_class.new(pipfile_content: pipfile_content) }
+  let(:preparer) do
+    described_class.new(pipfile_content: pipfile_content, lockfile: lockfile)
+  end
 
   let(:pipfile_content) do
     fixture("pipfiles", pipfile_fixture_name)
@@ -15,7 +17,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
 
   describe "#freeze_top_level_dependencies_except" do
     subject(:updated_content) do
-      preparer.freeze_top_level_dependencies_except(dependencies, lockfile)
+      preparer.freeze_top_level_dependencies_except(dependencies)
     end
 
     let(:dependencies) do
