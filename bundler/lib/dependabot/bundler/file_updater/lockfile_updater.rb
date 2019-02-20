@@ -26,7 +26,11 @@ module Dependabot
         GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m.freeze
         GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m.freeze
         GEM_NOT_FOUND_ERROR_REGEX =
-          /locked to (?<name>[^\s]+) \(|not find (?<name>[^\s]+)-\d/.freeze
+          /
+            locked\sto\s(?<name>[^\s]+)\s\(|
+            not\sfind\s(?<name>[^\s]+)-\d|
+            has\s(?<name>[^\s]+)\slocked\sat
+          /x.freeze
         RETRYABLE_ERRORS = [::Bundler::HTTPError].freeze
 
         # Can't be a constant because some of these don't exist in bundler
