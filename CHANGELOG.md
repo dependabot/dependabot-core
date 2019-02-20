@@ -1,3 +1,7 @@
+## v0.95.46, 19 February 2019
+
+- Cargo: fix git credential helper issue
+
 ## v0.95.45, 19 February 2019
 
 - .NET, Ruby and Rust: Fix directory handling for deeply nested file fetching
