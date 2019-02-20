@@ -1,3 +1,8 @@
+## v0.95.50, 20 February 2019
+
+- Python: Fetch poetry path dependencies
+- Python: Only parse large lockfiles once
+
 ## v0.95.49, 20 February 2019
 
 - Ruby: Handle another gem not found error case
