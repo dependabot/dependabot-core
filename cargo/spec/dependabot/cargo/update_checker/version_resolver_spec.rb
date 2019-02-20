@@ -255,7 +255,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to_return(status: 403)
         end
 
-        it "raises a GitDependenciesNotReachable error" do
+        # TODO: make non-pending once we're using a Cargo release that includes
+        #       this PR: https://github.com/rust-lang/cargo/pull/6681
+        #       Without that change to Cargo, this test hangs indefinitely.
+        skip "raises a GitDependenciesNotReachable error" do
           expect { subject }.
             to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls).
