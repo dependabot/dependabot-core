@@ -28,7 +28,7 @@ module Dependabot
         (?<repo>[a-z0-9_.-]+)
         (
           (?:\#semver:(?<semver>.+))|
-          (?:\#(?=[\^~=<>])(?<semver>.+))|
+          (?:\#(?=[\^~=<>*])(?<semver>.+))|
           (?:\#(?<ref>.+))
         )?$
       }ix.freeze
