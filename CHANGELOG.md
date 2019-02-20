@@ -1,3 +1,7 @@
+## v0.95.49, 20 February 2019
+
+- Ruby: Handle another gem not found error case
+
 ## v0.95.48, 20 February 2019
 
 - JS: Actually special case DefinitelyTyped
