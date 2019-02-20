@@ -130,12 +130,9 @@ module Dependabot
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
           begin
-            latest_release = latest_version_finder.
-                             latest_version_details_from_registry
-
             # If there's been a release that includes the current pinned ref
             # or that the current branch is behind, we switch to that release.
-            if git_branch_or_ref_in_release?(latest_release&.fetch(:version))
+            if git_branch_or_ref_in_latest_release?
               latest_release.fetch(:version)
             elsif version_class.correct?(dependency.version)
               latest_git_version_details[:version] &&
@@ -146,17 +143,30 @@ module Dependabot
           end
       end
 
+      def latest_release
+        @latest_release ||=
+          latest_version_finder.latest_version_details_from_registry
+      end
+
       def should_switch_source_from_git_to_registry?
         return false unless git_dependency?
+        return false unless git_branch_or_ref_in_latest_release?
         return false if latest_version_for_git_dependency.nil?
 
         version_class.correct?(latest_version_for_git_dependency)
       end
 
-      def git_branch_or_ref_in_release?(release)
-        return false unless release
+      def git_branch_or_ref_in_latest_release?
+        return false unless latest_release
 
-        git_commit_checker.branch_or_ref_in_release?(release)
+        if defined?(@git_branch_or_ref_in_latest_release)
+          return @git_branch_or_ref_in_latest_release
+        end
+
+        @git_branch_or_ref_in_latest_release ||=
+          git_commit_checker.branch_or_ref_in_release?(
+            latest_release.fetch(:version)
+          )
       end
 
       def latest_version_details

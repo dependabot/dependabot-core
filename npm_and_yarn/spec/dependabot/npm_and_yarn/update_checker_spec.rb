@@ -624,11 +624,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "is-number",
-          version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+          version: dependency_version,
           requirements: dependency_requirements,
           package_manager: "npm_and_yarn"
         )
       end
+      let(:dependency_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
       let(:dependency_requirements) do
         [{
           requirement: "^2.0.0",
@@ -703,6 +704,42 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               }
             }]
           )
+      end
+
+      context "with a version that looks like a number" do
+        let(:dependency_version) { "0.0.0" }
+
+        it "delegates to the RequirementsUpdater" do
+          expect(described_class::RequirementsUpdater).
+            to receive(:new).
+            with(
+              requirements: dependency_requirements,
+              updated_source: {
+                type: "git",
+                url: "https://github.com/jonschlinkert/is-number",
+                branch: nil,
+                ref: "master"
+              },
+              latest_version: "4.0.0",
+              latest_resolvable_version: "4.0.0",
+              update_strategy: :bump_versions
+            ).
+            and_call_original
+          expect(checker.updated_requirements).
+            to eq(
+              [{
+                file: "package.json",
+                requirement: "^4.0.0",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "master"
+                }
+              }]
+            )
+        end
       end
 
       context "that should switch to a registry source" do
