@@ -1,3 +1,8 @@
+## v0.95.51, 20 February 2019
+
+- NPM: Sanitise extra trailing slash from private registries
+- Python: Don't repeatedly parse Pipfile.lock
+
 ## v0.95.50, 20 February 2019
 
 - Python: Fetch poetry path dependencies
