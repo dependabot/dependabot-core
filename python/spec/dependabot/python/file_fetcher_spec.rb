@@ -200,7 +200,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "setup_content.json"),
+            body: fixture("github", "contents_python_pyproject.json"),
             headers: { "content-type" => "application/json" }
           )
       end
@@ -209,6 +209,44 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(pyproject.toml))
+      end
+
+      context "that imports a path dependency" do
+        before do
+          stub_request(:get, url + "pyproject.toml?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_pyproject_with_path.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "path_dep/setup.py?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, url + "path_dep/setup.cfg?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, url + "path_dep?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_python_only_pyproject.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "path_dep/pyproject.toml?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_python_pyproject.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the path dependency" do
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(pyproject.toml path_dep/pyproject.toml))
+        end
       end
     end
 

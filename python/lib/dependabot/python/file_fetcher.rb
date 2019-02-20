@@ -7,6 +7,7 @@ require "dependabot/file_fetchers/base"
 require "dependabot/python/file_parser"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -141,6 +142,14 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, pipfile.path
       end
 
+      def parsed_pyproject
+        raise "No pyproject.toml" unless pyproject
+
+        @parsed_pyproject ||= TomlRB.parse(pyproject.content)
+      rescue TomlRB::ParseError
+        raise Dependabot::DependencyFileNotParseable, pyproject.path
+      end
+
       def req_txt_and_in_files
         return @req_txt_and_in_files if @req_txt_and_in_files
 
@@ -237,6 +246,12 @@ module Dependabot
           unfetchable_files << error.file_path.gsub(%r{^/}, "")
         end
 
+        poetry_path_setup_file_paths.each do |path|
+          path_setup_files += fetch_path_setup_file(path, allow_pyproject: true)
+        rescue Dependabot::DependencyFileNotFound => error
+          unfetchable_files << error.file_path.gsub(%r{^/}, "")
+        end
+
         if unfetchable_files.any?
           raise Dependabot::PathDependenciesNotReachable, unfetchable_files
         end
@@ -244,7 +259,7 @@ module Dependabot
         path_setup_files
       end
 
-      def fetch_path_setup_file(path)
+      def fetch_path_setup_file(path, allow_pyproject: false)
         path_setup_files = []
 
         unless path.end_with?(".tar.gz", ".zip")
@@ -252,22 +267,38 @@ module Dependabot
         end
         return [] if path == "setup.py" && setup_file
 
-        path_setup_files << fetch_file_from_host(path, fetch_submodules: true).
-                            tap { |f| f.support_file = true }
+        path_setup_files <<
+          begin
+            fetch_file_from_host(
+              path,
+              fetch_submodules: true
+            ).tap { |f| f.support_file = true }
+          rescue Dependabot::DependencyFileNotFound
+            raise unless allow_pyproject
+
+            fetch_file_from_host(
+              path.gsub("setup.py", "pyproject.toml"),
+              fetch_submodules: true
+            ).tap { |f| f.support_file = true }
+          end
 
         return path_setup_files unless path.end_with?(".py")
 
+        path_setup_files + cfg_files_for_setup_py(path)
+      end
+
+      def cfg_files_for_setup_py(path)
+        cfg_path = path.gsub(/\.py$/, ".cfg")
+
         begin
-          cfg_path = path.gsub(/\.py$/, ".cfg")
-          path_setup_files <<
+          [
             fetch_file_from_host(cfg_path, fetch_submodules: true).
-            tap { |f| f.support_file = true }
+              tap { |f| f.support_file = true }
+          ]
         rescue Dependabot::DependencyFileNotFound
           # Ignore lack of a setup.cfg
-          nil
+          []
         end
-
-        path_setup_files
       end
 
       def requirements_file?(file)
@@ -337,9 +368,26 @@ module Dependabot
 
         paths
       end
+
+      def poetry_path_setup_file_paths
+        return [] unless pyproject
+
+        paths = []
+        %w(dependencies dev-dependencies).each do |dep_type|
+          next unless parsed_pyproject.dig("tool", "poetry", dep_type)
+
+          parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|
+            next unless req.is_a?(Hash) && req["path"]
+
+            paths << req["path"]
+          end
+        end
+
+        paths
+      end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
 
-Dependabot::FileFetchers.
-  register("pip", Dependabot::Python::FileFetcher)
+Dependabot::FileFetchers.register("pip", Dependabot::Python::FileFetcher)
