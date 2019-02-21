@@ -65,19 +65,19 @@ module Dependabot
 
         private
 
-        GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
-        CHECKSUM_REGEX = /go: verifying .*: checksum mismatch/.freeze
+        RESOLVABILITY_ERROR_REGEXES = [
+          /go: .*: git fetch .*: exit status 128/.freeze,
+          /go: verifying .*: checksum mismatch/.freeze,
+          /build .*: cannot find module for path/.freeze
+        ].freeze
 
         def handle_subprocess_error(path, stderr)
-          case stderr
-          when GIT_ERROR_REGEX
-            lines = stderr.lines.drop_while { |l| GIT_ERROR_REGEX !~ l }
-            raise Dependabot::DependencyFileNotResolvable.new, lines.join
-          when CHECKSUM_REGEX
-            lines = stderr.lines.drop_while { |l| CHECKSUM_REGEX !~ l }
+          error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
+          if error_regex
+            lines = stderr.lines.drop_while { |l| error_regex !~ l }
             raise Dependabot::DependencyFileNotResolvable.new, lines.join
           else
-            msg = stderr.gsub(path.to_s, "").strip
+            msg = stderr.gsub(path.to_s, "").lines.last(10).join.strip
             raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
           end
         end
