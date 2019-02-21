@@ -119,6 +119,29 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
+          describe "a non-existent dependency in a sub-directory" do
+            let(:dependency_name) do
+              "github.com/dependabot-fixtures" \
+              "/test-go_modules-non-existent-sub-dep"
+            end
+            let(:dependency_version) { "v1.0.0" }
+            let(:dependency_previous_version) { "v0.1.0" }
+            let(:go_mod_body) do
+              fixture("go_mods", go_mod_fixture_name).sub(
+                "rsc.io/quote v1.4.0",
+                "#{dependency_name} #{dependency_previous_version}"
+              )
+            end
+
+            it "raises the correct error" do
+              error_class = Dependabot::DependencyFileNotResolvable
+              expect { puts updater.updated_go_sum_content }.
+                to raise_error(error_class) do |error|
+                  expect(error.message).to include("hmarr/404")
+                end
+            end
+          end
+
           describe "a dependency with a checksum mismatch" do
             let(:go_sum_body) do
               fixture("go_mods", go_sum_fixture_name).sub(
