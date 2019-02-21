@@ -1,3 +1,10 @@
+## v0.95.52, 21 February 2019
+
+- Ruby: Implement suggested_changelog_url, based on changelog_uri in gemspec
+- Add suggested_changelog_url method to MetadataFinder::Base, that is passed to
+  ChangelogFinder
+- Python: Bump pip from 19.0.2 to 19.0.3 in /python/helpers
+
 ## v0.95.51, 20 February 2019
 
 - NPM: Sanitise extra trailing slash from private registries
