@@ -101,7 +101,7 @@ end
 
 if ENV["LOCAL_CONFIG_VARIABLES"]
   # For example:
-  # LOCAL_CONFIG_VARIABLES="[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
+  # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
   $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
 end
 
