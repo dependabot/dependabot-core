@@ -34,7 +34,8 @@ module Dependabot
         @changelog_finder ||= ChangelogFinder.new(
           dependency: dependency,
           source: source,
-          credentials: credentials
+          credentials: credentials,
+          suggested_changelog_url: suggested_changelog_url
         )
         @changelog_finder.changelog_url
       end
@@ -43,7 +44,8 @@ module Dependabot
         @changelog_finder ||= ChangelogFinder.new(
           dependency: dependency,
           source: source,
-          credentials: credentials
+          credentials: credentials,
+          suggested_changelog_url: suggested_changelog_url
         )
         @changelog_finder.changelog_text
       end
@@ -52,7 +54,8 @@ module Dependabot
         @changelog_finder ||= ChangelogFinder.new(
           dependency: dependency,
           source: source,
-          credentials: credentials
+          credentials: credentials,
+          suggested_changelog_url: suggested_changelog_url
         )
         @changelog_finder.upgrade_guide_url
       end
@@ -61,7 +64,8 @@ module Dependabot
         @changelog_finder ||= ChangelogFinder.new(
           dependency: dependency,
           source: source,
-          credentials: credentials
+          credentials: credentials,
+          suggested_changelog_url: suggested_changelog_url
         )
         @changelog_finder.upgrade_guide_text
       end
@@ -107,6 +111,10 @@ module Dependabot
       end
 
       private
+
+      def suggested_changelog_url
+        nil
+      end
 
       def source
         return @source if @source_lookup_attempted

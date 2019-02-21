@@ -9,6 +9,7 @@ require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
@@ -19,12 +20,14 @@ module Dependabot
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(changelog history news changes release).freeze
 
-        attr_reader :source, :dependency, :credentials
+        attr_reader :source, :dependency, :credentials, :suggested_changelog_url
 
-        def initialize(source:, dependency:, credentials:)
+        def initialize(source:, dependency:, credentials:,
+                       suggested_changelog_url: nil)
           @source = source
           @dependency = dependency
           @credentials = credentials
+          @suggested_changelog_url = suggested_changelog_url
         end
 
         def changelog_url
@@ -71,6 +74,7 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog
+          return changelog_from_suggested_url if changelog_from_suggested_url
           return unless source
 
           # Changelog won't be relevant for a git commit bump
@@ -93,6 +97,26 @@ module Dependabot
         end
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def changelog_from_suggested_url
+          if defined?(@changelog_from_suggested_url)
+            return @changelog_from_suggested_url
+          end
+          return unless suggested_changelog_url
+
+          # TODO: Support other providers
+          source = Source.from_url(suggested_changelog_url)
+          return unless source&.provider == "github"
+
+          opts = { path: source.directory, ref: source.branch }.compact
+          tmp_files = github_client.contents(source.repo, opts)
+
+          filename = suggested_changelog_url.split("/").last.split("#").first
+          @changelog_from_suggested_url =
+            tmp_files.find { |f| f.name == filename }
+        rescue Octokit::NotFound
+          @changelog_from_suggested_url = nil
+        end
 
         def default_branch_changelog
           return unless source
@@ -336,3 +360,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

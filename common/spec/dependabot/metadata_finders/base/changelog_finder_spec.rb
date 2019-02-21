@@ -98,6 +98,57 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           finder.changelog_url
           expect(WebMock).to have_requested(:get, github_url).once
         end
+
+        context "when given a suggested_changelog_url" do
+          let(:finder) do
+            described_class.new(
+              source: source,
+              credentials: credentials,
+              dependency: dependency,
+              suggested_changelog_url: suggested_changelog_url
+            )
+          end
+          let(:suggested_changelog_url) do
+            "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+          end
+
+          before do
+            suggested_github_response =
+              fixture("github", "contents_sidekiq.json")
+            suggested_github_url =
+              "https://api.github.com/repos/mperham/sidekiq/contents/"
+            stub_request(:get, suggested_github_url).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 200,
+                        body: suggested_github_response,
+                        headers: { "Content-Type" => "application/json" })
+          end
+
+          it "gets the right URL" do
+            expect(subject).
+              to eq(
+                "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+              )
+          end
+
+          context "that can't be found" do
+            before do
+              suggested_github_url =
+                "https://api.github.com/repos/mperham/sidekiq/contents/"
+              stub_request(:get, suggested_github_url).
+                with(headers: { "Authorization" => "token token" }).
+                to_return(status: 404)
+            end
+
+            it "falls back to looking for the changelog as usual" do
+              expect(subject).
+                to eq(
+                  "https://github.com/gocardless/business/"\
+                  "blob/master/CHANGELOG.md"
+                )
+            end
+          end
+        end
       end
 
       context "without a changelog" do

@@ -154,7 +154,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         with(
           credentials: credentials,
           source: source,
-          dependency: dependency
+          dependency: dependency,
+          suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
         to receive(:changelog_url).twice.
@@ -176,7 +177,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         with(
           credentials: credentials,
           source: source,
-          dependency: dependency
+          dependency: dependency,
+          suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
         to receive(:changelog_text).twice.
@@ -198,7 +200,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         with(
           credentials: credentials,
           source: source,
-          dependency: dependency
+          dependency: dependency,
+          suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
         to receive(:upgrade_guide_url).twice.
@@ -220,7 +223,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
         with(
           credentials: credentials,
           source: source,
-          dependency: dependency
+          dependency: dependency,
+          suggested_changelog_url: nil
         ).once.and_return(dummy_changelog_finder)
       expect(dummy_changelog_finder).
         to receive(:upgrade_guide_text).twice.
