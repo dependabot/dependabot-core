@@ -375,7 +375,8 @@ module Dependabot
             reject { |f| f.name.end_with?(".ruby-version") }.
             reject { |f| f.name == "Gemfile" }.
             reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }
+            reject { |f| f.name == "gems.locked" }.
+            reject(&:support_file?)
         end
 
         def git_dependency?(dep)
