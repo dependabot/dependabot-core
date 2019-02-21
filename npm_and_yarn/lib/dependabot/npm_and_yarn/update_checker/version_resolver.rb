@@ -96,7 +96,6 @@ module Dependabot
 
             updates << { dependency: dep, version: updated_version }
           end
-
           updates
         end
 
@@ -238,12 +237,21 @@ module Dependabot
           return [] if relevant_unmet_peer_dependencies.empty?
 
           # Prune out any pre-existing warnings
-          relevant_unmet_peer_dependencies.reject do |issue|
+          issues = relevant_unmet_peer_dependencies.reject do |issue|
             old_unmet_peer_dependencies.any? do |old_issue|
               old_issue.slice(:requirement_name, :requiring_dep_name) ==
                 issue.slice(:requirement_name, :requiring_dep_name)
             end
           end
+
+          # If we find duplicate errors it probably means we have double run the
+          # checker on the same files and want to hear about it
+          if issues.length != issues.uniq.length
+            duplicate = issues.find { |i| issues.count(i) > 1 }
+            raise "Duplicate peer dep error: #{duplicate[:requiring_dep_name]}"
+          end
+
+          issues
         end
 
         def satisfying_versions
@@ -394,7 +402,7 @@ module Dependabot
         def write_lock_files
           yarn_locks.each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, prepared_yarn_lockfile_content(f.content))
+            File.write(f.name, f.content)
           end
 
           package_locks.each do |f|
@@ -406,10 +414,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, f.content)
           end
-        end
-
-        def prepared_yarn_lockfile_content(content)
-          content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
         end
 
         def prepared_package_json_content(file)

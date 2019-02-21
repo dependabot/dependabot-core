@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 # Used in the version resolver and file updater to only run yarn/npm helpers on
 # dependency files that require updates. This is useful for large monorepos with
@@ -14,23 +15,21 @@ module Dependabot
       end
 
       def files_requiring_update
-        dependency_files.select do |file|
-          if manifest?(file)
-            package_manifests.include?(file)
-          elsif lockfile?(file)
-            package_manifests.any? do |package_file|
-              File.dirname(package_file.name) == File.dirname(file.name)
+        @files_requiring_update ||=
+          begin
+            dependency_files.select do |file|
+              package_files_requiring_update.include?(file) ||
+                package_required_lockfile?(file) ||
+                yarn_workspaces_lockfile?(file)
             end
-          else
-            # Include all non-manifest/lockfiles
-            # e.g. .npmrc, lerna.json
-            true
           end
-        end
       end
 
       def package_files_requiring_update
-        files_requiring_update.select { |file| manifest?(file) }
+        @package_files_requiring_update ||=
+          dependency_files.select do |file|
+            dependency_manifest_requirements.include?(file.name)
+          end
       end
 
       private
@@ -44,18 +43,43 @@ module Dependabot
           end
       end
 
-      def package_manifests
-        @package_manifests ||=
-          dependency_files.select do |file|
-            next unless manifest?(file)
+      def package_required_lockfile?(lockfile)
+        return false unless lockfile?(lockfile)
 
-            root_manifest?(file) ||
-              dependency_manifest_requirements.include?(file.name)
+        package_files_requiring_update.any? do |package_file|
+          File.dirname(package_file.name) == File.dirname(lockfile.name)
+        end
+      end
+
+      def yarn_workspaces_lockfile?(lockfile)
+        return false unless lockfile.name == "yarn.lock"
+        return false unless parsed_root_package_json["workspaces"]
+
+        updated_dependencies_in_lockfile?(lockfile)
+      end
+
+      def parsed_root_package_json
+        @parsed_root_package_json ||=
+          begin
+            package = dependency_files.find { |f| f.name == "package.json" }
+            JSON.parse(package.content)
           end
       end
 
-      def root_manifest?(file)
-        file.name == "package.json"
+      def updated_dependencies_in_lockfile?(lockfile)
+        lockfile_dependencies(lockfile).any? do |sub_dep|
+          updated_dependencies.any? do |updated_dep|
+            sub_dep.name == updated_dep.name
+          end
+        end
+      end
+
+      def lockfile_dependencies(lockfile)
+        @lockfile_dependencies ||= {}
+        @lockfile_dependencies[lockfile.name] ||=
+          NpmAndYarn::FileParser::LockfileParser.new(
+            dependency_files: [lockfile]
+          ).parse
       end
 
       def manifest?(file)
