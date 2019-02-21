@@ -1,3 +1,7 @@
+## v0.95.53, 21 February 2019
+
+- Go (modules): handle missing sub-dependency error
+
 ## v0.95.52, 21 February 2019
 
 - Ruby: Implement suggested_changelog_url, based on changelog_uri in gemspec
