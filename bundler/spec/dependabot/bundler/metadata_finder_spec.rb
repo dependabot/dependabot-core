@@ -361,4 +361,96 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
       end
     end
   end
+
+  describe "#suggested_changelog_url" do
+    subject(:suggested_changelog_url) { finder.send(:suggested_changelog_url) }
+
+    context "for a default source" do
+      let(:rubygems_api_url) do
+        "https://rubygems.org/api/v1/gems/business.json"
+      end
+      let(:rubygems_response_code) { 200 }
+      before do
+        stub_request(:get, rubygems_api_url).
+          to_return(status: rubygems_response_code, body: rubygems_response)
+      end
+
+      context "when there is a changelog link in the rubygems response" do
+        let(:rubygems_response) do
+          fixture("ruby", "rubygems_responses", "api_changelog_uri.json")
+        end
+
+        it "gets the URL from the changelog_uri" do
+          expect(suggested_changelog_url).to eq(
+            "https://github.com/rails/rails/blob/v5.2.2/"\
+            "activerecord/CHANGELOG.md"
+          )
+        end
+      end
+
+      context "when there is no changelog link in the rubygems response" do
+        let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "for a custom source" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0",
+          requirements: requirements,
+          package_manager: "bundler"
+        )
+      end
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: ">= 0",
+          groups: [],
+          source: source
+        }]
+      end
+      let(:source) do
+        { type: "rubygems", url: "https://SECRET_CODES@repo.fury.io/grey/" }
+      end
+      let(:rubygems_api_url) do
+        "https://repo.fury.io/grey/api/v1/gems/business.json"
+      end
+      let(:rubygems_gemspec_url) do
+        "https://repo.fury.io/grey/quick/Marshal.4.8/business-1.0.gemspec.rz"
+      end
+      let(:gemspec_response) do
+        fixture("ruby", "rubygems_responses", "business-1.0.0.gemspec.rz")
+      end
+
+      context "but the response is a 400" do
+        before do
+          stub_request(:get, rubygems_api_url).
+            to_return(status: 400, body: "bad request")
+          stub_request(:get, rubygems_gemspec_url).
+            to_return(status: 200, body: gemspec_response)
+        end
+
+        it "falls back to getting them gemspec" do
+          expect(suggested_changelog_url).to be_nil
+          expect(WebMock).to have_requested(:get, rubygems_gemspec_url)
+        end
+
+        context "and there is a changelog URL in the gemspec" do
+          let(:gemspec_response) do
+            fixture(
+              "ruby", "rubygems_responses", "activerecord-5.2.1.gemspec.rz"
+            )
+          end
+
+          it "gets the right URL" do
+            expect(suggested_changelog_url).to eq(
+              "github.com/rails/rails/blob/v5.2.1/activerecord/CHANGELOG.md"
+            )
+          end
+        end
+      end
+    end
+  end
 end

@@ -35,6 +35,19 @@ module Dependabot
         end
       end
 
+      def suggested_changelog_url
+        case new_source_type
+        when "default"
+          rubygems_api_response["changelog_uri"]
+        when "rubygems"
+          if rubygems_api_response == {}
+            changelog_url_from_gemspec_download
+          else
+            rubygems_api_response["changelog_uri"]
+          end
+        end
+      end
+
       def new_source_type
         sources =
           dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
@@ -72,9 +85,10 @@ module Dependabot
         github_urls = []
         return unless rubygems_marshalled_gemspec_response
 
-        rubygems_marshalled_gemspec_response.scan(Source::SOURCE_REGEX) do
-          github_urls << Regexp.last_match.to_s
-        end
+        rubygems_marshalled_gemspec_response.gsub("\x06;", "\n").
+          scan(Source::SOURCE_REGEX) do
+            github_urls << Regexp.last_match.to_s
+          end
 
         source_url = github_urls.find do |url|
           repo = Source.from_url(url).repo
@@ -83,6 +97,24 @@ module Dependabot
         return unless source_url
 
         Source.from_url(source_url)
+      end
+
+      def changelog_url_from_gemspec_download
+        github_urls = []
+        return unless rubygems_marshalled_gemspec_response
+
+        rubygems_marshalled_gemspec_response.gsub("\x06;", "\n").
+          scan(Dependabot::Source::SOURCE_REGEX) do
+            github_urls << Regexp.last_match.to_s +
+                           Regexp.last_match.post_match.split("\n").first
+          end
+
+        github_urls.find do |url|
+          names = MetadataFinders::Base::ChangelogFinder::CHANGELOG_NAMES
+          names.any? do |changelog_name|
+            url.split("/").last.downcase.include?(changelog_name.downcase)
+          end
+        end
       end
 
       # Note: This response MUST NOT be unmarshalled
