@@ -1,6 +1,6 @@
 ## `dependabot-npm_and_yarn`
 
-PHP support for [`dependabot-core`][core-repo].
+npm and Yarn support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
