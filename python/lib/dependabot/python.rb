@@ -20,6 +20,7 @@ Dependabot::Dependency.register_production_check(
   lambda do |groups|
     return true if groups.empty?
     return true if groups.include?("default")
+    return true if groups.include?("install_requires")
 
     groups.include?("dependencies")
   end
