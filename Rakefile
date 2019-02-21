@@ -79,8 +79,18 @@ namespace :gems do
         puts "- Skipping #{gem_path} as it already exists on rubygems"
       else
         puts "> Releasing #{gem_path}"
-        sh "gem push #{gem_path}"
-        sleep(2)
+        attempts = 0
+        loop do
+          attempts += 1
+          sleep(2)
+          begin
+            sh "gem push #{gem_path}"
+            break
+          rescue => err
+            puts "! `gem push` failed with error: #{err}"
+            raise if attempts >= 3
+          end
+        end
       end
     end
   end
