@@ -1,3 +1,8 @@
+## v0.95.54, 21 February 2019
+
+- Python: Treat install_requires dependencies as production dependencies
+- Ruby: Don't mistake support files for evaled gemfiles
+
 ## v0.95.53, 21 February 2019
 
 - Go (modules): handle missing sub-dependency error
