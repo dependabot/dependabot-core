@@ -1,3 +1,8 @@
+## v0.95.55, 22 February 2019
+
+- Python: Use user's defined Python version when compiling pip-compile files
+- Retry GitHub races when creating a commit from a new tree
+
 ## v0.95.54, 21 February 2019
 
 - Python: Treat install_requires dependencies as production dependencies
