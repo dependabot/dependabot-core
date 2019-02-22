@@ -127,9 +127,9 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
       let(:dependency_requirements) { [] }
-      let(:latest_version) { Gem::Version.new("1.7.0") }
+      let(:latest_version) { Gem::Version.new("1.8.0") }
 
-      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
 
       context "that no longer appears in the lockfile after updating" do
         let(:lockfile_fixture_name) { "unnecessary_subdependency.lock" }
