@@ -1,3 +1,7 @@
+## v0.95.58, 22 February 2019
+
+- Go (modules): tighten up error regex
+
 ## v0.95.57, 22 February 2019
 
 - Go (modules): Handle module path mismatch errors
