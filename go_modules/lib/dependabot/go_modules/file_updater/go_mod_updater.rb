@@ -70,16 +70,24 @@ module Dependabot
           /go: verifying .*: checksum mismatch/.freeze,
           /build .*: cannot find module for path/.freeze
         ].freeze
+        MODULE_PATH_MISMATCH_REGEX =
+          /go: ([^@]+)(?:@.*)?: .* has non-.* module path "(.*)" at/.freeze
 
         def handle_subprocess_error(path, stderr)
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
             lines = stderr.lines.drop_while { |l| error_regex !~ l }
             raise Dependabot::DependencyFileNotResolvable.new, lines.join
-          else
-            msg = stderr.gsub(path.to_s, "").lines.last(10).join.strip
-            raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
           end
+
+          match = MODULE_PATH_MISMATCH_REGEX.match(stderr)
+          if match
+            raise Dependabot::GoModulePathMismatch.
+              new(go_mod.path, match[1], match[2])
+          end
+
+          msg = stderr.gsub(path.to_s, "").lines.last(10).join.strip
+          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
         end
 
         def dummy_main_go

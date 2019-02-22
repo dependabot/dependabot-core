@@ -135,9 +135,26 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
             it "raises the correct error" do
               error_class = Dependabot::DependencyFileNotResolvable
-              expect { puts updater.updated_go_sum_content }.
+              expect { updater.updated_go_sum_content }.
                 to raise_error(error_class) do |error|
                   expect(error.message).to include("hmarr/404")
+                end
+            end
+          end
+
+          describe "a dependency who's module path has changed" do
+            let(:go_mod_body) do
+              fixture("go_mods", go_mod_fixture_name).sub(
+                "rsc.io/quote v1.4.0",
+                "gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.2"
+              )
+            end
+
+            it "raises the correct error" do
+              error_class = Dependabot::GoModulePathMismatch
+              expect { updater.updated_go_sum_content }.
+                to raise_error(error_class) do |error|
+                  expect(error.message).to include("github.com/DATA-DOG")
                 end
             end
           end

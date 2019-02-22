@@ -176,4 +176,19 @@ module Dependabot
       super(msg)
     end
   end
+
+  class GoModulePathMismatch < DependabotError
+    attr_reader :go_mod, :declared_path, :discovered_path
+
+    def initialize(go_mod, declared_path, discovered_path)
+      @go_mod = go_mod
+      @declared_path = declared_path
+      @discovered_path = discovered_path
+
+      msg = "The module path '#{declared_path}' found in #{go_mod} doesn't "\
+            "match the actual path '#{discovered_path}' in the dependency's "\
+            "go.mod"
+      super(msg)
+    end
+  end
 end
