@@ -71,7 +71,8 @@ module Dependabot
           /build .*: cannot find module for path/.freeze
         ].freeze
         MODULE_PATH_MISMATCH_REGEX =
-          /go: ([^@]+)(?:@.*)?: .* has non-.* module path "(.*)" at/.freeze
+          /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/.
+          freeze
 
         def handle_subprocess_error(path, stderr)
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
