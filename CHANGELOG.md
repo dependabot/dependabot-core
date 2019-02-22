@@ -1,3 +1,7 @@
+## v0.95.57, 22 February 2019
+
+- Go (modules): Handle module path mismatch errors
+
 ## v0.95.56, 22 February 2019
 
 - NPM: Fix missed lerna peer dependency update
