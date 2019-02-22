@@ -1,3 +1,8 @@
+## v0.95.56, 22 February 2019
+
+- NPM: Fix missed lerna peer dependency update
+- Reduce robocop config spread and cover root files
+
 ## v0.95.55, 22 February 2019
 
 - Python: Use user's defined Python version when compiling pip-compile files
