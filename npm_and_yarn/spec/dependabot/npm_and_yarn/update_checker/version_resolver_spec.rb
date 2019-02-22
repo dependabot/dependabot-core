@@ -947,5 +947,72 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
       end
     end
+
+    context "updating a nested dependency that is a peer requirement" do
+      let(:dependency_files) do
+        [package_json, yarn_lock, nested_package_json, nested_yarn_lock]
+      end
+      let(:manifest_fixture_name) { "package.json" }
+      let(:yarn_lock_fixture_name) { "yarn.lock" }
+      let(:nested_package_json) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package.json",
+          content: fixture("package_files", "nested_peer_dependency.json")
+        )
+      end
+      let(:nested_yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/yarn.lock",
+          content: fixture("yarn_lockfiles", "nested_peer_dependency.lock")
+        )
+      end
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.6.2",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "packages/package1/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "gets the right list of dependencies to update" do
+        expect(resolver.dependency_updates_from_full_unlock).
+          to match_array(
+            [{
+              dependency: Dependabot::Dependency.new(
+                name: "react",
+                version: "15.6.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "15.6.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
+            }]
+          )
+      end
+    end
   end
 end

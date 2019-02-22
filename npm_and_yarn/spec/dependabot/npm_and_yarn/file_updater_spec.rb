@@ -2495,8 +2495,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the right file" do
+            root_lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(updated_files.map(&:name)).
               to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(root_lockfile.content).to include("etag@^1.8.1:")
           end
 
           it "updates the existing development declaration" do

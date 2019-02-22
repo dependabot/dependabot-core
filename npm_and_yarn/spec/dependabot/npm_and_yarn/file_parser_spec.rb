@@ -5,7 +5,6 @@ require "dependabot/source"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileParser do
@@ -95,17 +94,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 }]
               )
             end
-          end
-        end
-
-        context "that contains bad JSON" do
-          let(:lockfile_body) { '{ "bad": "json" "no": "comma" }' }
-
-          it "raises a DependencyFileNotParseable error" do
-            expect { parser.parse }.
-              to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-                expect(error.file_name).to eq("package-lock.json")
-              end
           end
         end
 
@@ -1253,12 +1241,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
 
         its(:length) { is_expected.to eq(389) }
-
-        describe "a repeated sub-dependency" do
-          subject { subdependencies.find { |d| d.name == "acorn" } }
-
-          its(:version) { is_expected.to eq("5.1.1") }
-        end
       end
 
       context "with a package-lock.json" do
@@ -1275,12 +1257,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         let(:yarn_lock_fixture_name) { "blank_requirement.json" }
 
         its(:length) { is_expected.to eq(22) }
-
-        describe "a repeated sub-dependency" do
-          subject { subdependencies.find { |d| d.name == "lodash" } }
-
-          its(:version) { is_expected.to eq("2.4.1") }
-        end
       end
     end
   end

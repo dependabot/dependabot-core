@@ -38,35 +38,48 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       package_manager: "npm_and_yarn"
     )
   end
+  let(:nested_dependency) do
+    Dependabot::Dependency.new(
+      name: "chalk",
+      version: "3.10.1",
+      requirements: [{
+        file: "packages/package1/package.json",
+        requirement: "^3.10.1",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "npm_and_yarn"
+    )
+  end
 
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
-      content: "{}"
+      content: fixture("package_files", "package.json")
     )
   end
   let(:yarn_lock) do
     Dependabot::DependencyFile.new(
       name: "yarn.lock",
-      content: "{}"
+      content: fixture("yarn_lockfiles", "yarn.lock")
     )
   end
   let(:npm_lock) do
     Dependabot::DependencyFile.new(
       name: "package-lock.json",
-      content: "{}"
+      content: fixture("npm_lockfiles", "package-lock.json")
     )
   end
   let(:nested_package_json) do
     Dependabot::DependencyFile.new(
-      name: "helpers/package.json",
-      content: "{}"
+      name: "packages/package1/package.json",
+      content: fixture("package_files", "package1.json")
     )
   end
   let(:nested_shrinkwrap) do
     Dependabot::DependencyFile.new(
-      name: "helpers/npm-shrinkwrap.json",
-      content: "{}"
+      name: "packages/package1/npm-shrinkwrap.json",
+      content: fixture("shrinkwraps", "npm-shrinkwrap.json")
     )
   end
 
@@ -75,47 +88,11 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       is_expected.to contain_exactly(package_json, yarn_lock, npm_lock)
     end
 
-    context "with no requirements" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "etag",
-          version: "1.0.0",
-          requirements: [],
-          package_manager: "npm_and_yarn"
-        )
-      end
-
-      it do
-        is_expected.to contain_exactly(
-          package_json,
-          yarn_lock,
-          npm_lock
-        )
-      end
-    end
-
     context "with a nested dependency requirement" do
       let(:updated_dependencies) { [nested_dependency] }
 
-      let(:nested_dependency) do
-        Dependabot::Dependency.new(
-          name: "react",
-          version: "16.7.0",
-          requirements: [{
-            file: "helpers/package.json",
-            requirement: "^16.7.0",
-            groups: ["dependencies"],
-            source: nil
-          }],
-          package_manager: "npm_and_yarn"
-        )
-      end
-
       it do
         is_expected.to contain_exactly(
-          package_json,
-          yarn_lock,
-          npm_lock,
           nested_package_json,
           nested_shrinkwrap
         )
@@ -164,6 +141,29 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
           )
         end
       end
+
+      context "when using yarn workspaces" do
+        let(:package_json) do
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: fixture("package_files", "workspaces.json")
+          )
+        end
+        let(:yarn_lock) do
+          Dependabot::DependencyFile.new(
+            name: "yarn.lock",
+            content: fixture("yarn_lockfiles", "workspaces.lock")
+          )
+        end
+
+        it do
+          is_expected.to contain_exactly(
+            yarn_lock,
+            nested_package_json,
+            nested_shrinkwrap
+          )
+        end
+      end
     end
   end
 
@@ -177,6 +177,16 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
 
     it do
       is_expected.to contain_exactly(package_json)
+    end
+
+    context "with a nested dependency requirement" do
+      let(:updated_dependencies) { [nested_dependency] }
+
+      it do
+        is_expected.to contain_exactly(
+          nested_package_json
+        )
+      end
     end
   end
 end
