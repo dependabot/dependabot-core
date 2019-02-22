@@ -490,5 +490,45 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         end
       end
     end
+
+    context "when the upgrade would resolve differently on Python 3" do
+      let(:dependency_files) { [manifest_file, generated_file, python_file] }
+      let(:manifest_fixture_name) { "resolves_differently_by_python.in" }
+      let(:generated_fixture_name) do
+        "pip_compile_resolves_differently_by_python.txt"
+      end
+      let(:python_file) do
+        Dependabot::DependencyFile.new(
+          name: ".python-version",
+          content: "2.7.15"
+        )
+      end
+
+      let(:dependency_name) { "tornado" }
+      let(:dependency_version) { "5.1.1" }
+      let(:dependency_previous_version) { "5.1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==5.1.1",
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==5.1.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "updates the requirements.txt using Python 2.7" do
+        expect(updated_files.count).to eq(2)
+        expect(updated_files.last.content).to include("tornado==5.1.1")
+        expect(updated_files.last.content).to include("futures")
+      end
+    end
   end
 end

@@ -6,6 +6,7 @@ require "dependabot/python/file_fetcher"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
+require "dependabot/python/python_versions"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -57,21 +58,25 @@ module Dependabot
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
+            install_required_python
 
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
-              run_command(
+              run_pip_compile_command(
                 "pyenv exec pip-compile #{pip_compile_options(filename)} "\
                 "-P #{dependency.name}==#{dependency.version} #{filename}"
               )
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
-              run_command(
+              run_pip_compile_command(
                 "pyenv exec pip-compile #{pip_compile_options(filename)} "\
                 "#{filename}"
               )
             end
+
+            # Remove any .python-version file before parsing the reqs
+            FileUtils.remove_entry(".python-version", true)
 
             dependency_files.map do |file|
               next unless file.name.end_with?(".txt")
@@ -124,7 +129,6 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        # rubocop:disable Metrics/MethodLength
         def run_command(command)
           command = command.dup
           env_cmd = [python_env, command].compact
@@ -132,9 +136,7 @@ module Dependabot
           stdout, process = Open3.capture2e(*env_cmd)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if
-          # pip-compile returns a non-zero status
-          return if process.success?
+          return stdout if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
@@ -144,6 +146,11 @@ module Dependabot
               process_exit_value: process.to_s
             }
           )
+        end
+
+        def run_pip_compile_command(command)
+          local_command = "pyenv local #{python_version} && " + command
+          run_command(local_command)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -154,14 +161,15 @@ module Dependabot
             end
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)
-          raise relevant_error if File.exist?(".python-version")
+          raise relevant_error if user_specified_python_version
+          raise relevant_error if python_version == "2.7.15"
 
-          command = "pyenv local 2.7.15 && " + command
+          @python_version = "2.7.15"
           retry
         ensure
+          @python_version = nil
           FileUtils.remove_entry(".python-version", true)
         end
-        # rubocop:enable Metrics/MethodLength
 
         def python_env
           env = {}
@@ -186,12 +194,13 @@ module Dependabot
 
         def write_updated_dependency_files
           dependency_files.each do |file|
-            next if file.name == ".python-version"
-
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, freeze_dependency_requirement(file))
           end
+
+          # Overwrite the .python-version with updated content
+          File.write(".python-version", python_version) if python_version
 
           setup_files.each do |file|
             path = file.name
@@ -203,6 +212,15 @@ module Dependabot
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, "[metadata]\nname = sanitized-package\n")
+          end
+        end
+
+        def install_required_python
+          if python_version &&
+             !run_command("pyenv versions").include?(python_version)
+            run_command("pyenv install -s")
+            run_command("pyenv exec pip install -r " + \
+                        NativeHelpers.python_requirements_path)
           end
         end
 
@@ -475,6 +493,22 @@ module Dependabot
             end
         end
 
+        def python_version
+          # TODO: Add better Python version detection using dependency versions
+          # (e.g., Django 2.x implies Python 3)
+          @python_version ||=
+            user_specified_python_version ||
+            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+        end
+
+        def user_specified_python_version
+          python_version_file&.content&.strip
+        end
+
+        def pre_installed_python?(version)
+          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
+        end
+
         def setup_files
           dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
@@ -485,6 +519,10 @@ module Dependabot
 
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
+        end
+
+        def python_version_file
+          dependency_files.find { |f| f.name == ".python-version" }
         end
       end
     end
