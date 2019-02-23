@@ -366,23 +366,33 @@ module Dependabot
         end
 
         def python_version
-          requirement =
-            if @using_python_two
-              "2.7.*"
+          requirement_string =
+            if @using_python_two then "2.7.*"
             elsif pipfile_python_requirement&.match?(/^\d/)
               parts = pipfile_python_requirement.split(".")
               parts.fill("*", (parts.length)..2).join(".")
-            elsif python_version_file
-              python_version_file.content
-            else
-              PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+            elsif python_version_file then python_version_file.content
+            else PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
-          requirement = Python::Requirement.new(requirement)
+          requirement = Python::Requirement.new(requirement_string)
+          version =
+            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
+            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
+          return version if version
 
-          PythonVersions::PYTHON_VERSIONS.find do |version|
-            requirement.satisfied_by?(Python::Version.new(version))
-          end
+          requirement =
+            Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
+          version =
+            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
+            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
+          return version if version
+
+          msg = "Dependabot detected the following Python requirement "\
+                "for your project: '#{requirement_string}'.\n\nCurrently, the "\
+                "following Python versions are supported in Dependabot: "\
+                "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
+          raise DependencyFileNotResolvable, msg
         end
 
         def pre_installed_python?(version)

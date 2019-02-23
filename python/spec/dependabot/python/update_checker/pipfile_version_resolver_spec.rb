@@ -205,6 +205,21 @@ RSpec.describe namespace::PipfileVersionResolver do
         end
       end
 
+      context "that is unsupported" do
+        let(:pipfile_fixture_name) { "required_python_unsupported" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to start_with("Dependabot detected the following Python")
+              expect(error.message).to include("3.4.*")
+              expect(error.message).
+                to include("supported in Dependabot: 3.7.2, 3.7.1")
+            end
+        end
+      end
+
       context "that is implicit" do
         let(:pipfile_fixture_name) { "required_python_implicit" }
         let(:dependency_name) { "pytest" }

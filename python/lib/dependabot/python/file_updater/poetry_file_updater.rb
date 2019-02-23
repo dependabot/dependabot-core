@@ -214,7 +214,7 @@ module Dependabot
 
           requirements = Python::Requirement.requirements_array(requirement)
 
-          PythonVersions::PYTHON_VERSIONS.find do |version|
+          PythonVersions::SUPPORTED_VERSIONS.find do |version|
             requirements.any? do |r|
               r.satisfied_by?(Python::Version.new(version))
             end

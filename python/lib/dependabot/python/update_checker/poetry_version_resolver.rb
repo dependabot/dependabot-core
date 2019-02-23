@@ -152,11 +152,16 @@ module Dependabot
           requirements =
             Python::Requirement.requirements_array(requirement)
 
-          PythonVersions::PYTHON_VERSIONS.find do |version|
-            requirements.any? do |req|
-              req.satisfied_by?(Python::Version.new(version))
-            end
+          version = PythonVersions::SUPPORTED_VERSIONS.find do |v|
+            requirements.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
           end
+          return version if version
+
+          msg = "Dependabot detected the following Python requirement "\
+                "for your project: '#{requirement}'.\n\nCurrently, the "\
+                "following Python versions are supported in Dependabot: "\
+                "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
+          raise DependencyFileNotResolvable, msg
         end
 
         def pre_installed_python?(version)
