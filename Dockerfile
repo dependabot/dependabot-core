@@ -64,7 +64,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout f07184b3 && cd - \
+    && cd /usr/local/.pyenv && git checkout v1.2.9 && cd - \
     && pyenv install 3.6.8 \
     && pyenv install 2.7.15 \
     && pyenv global 3.6.8
@@ -107,7 +107,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz | tar -xz -C /opt \
+RUN curl https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | tar -xz -C /opt \
     && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
     && chmod +x /opt/go/bin/dep \
     && mkdir /opt/go/gopath
@@ -122,7 +122,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.0/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.1/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
