@@ -33,7 +33,7 @@ module Dependabot
         GIT_REFERENCE_NOT_FOUND_REGEX =
           %r{"git checkout -q (?<tag>[^"]+)" .*/(?<name>.*?)(\\n'\]|$)}.
           freeze
-        UNSUPPORTED_DEPS = %w(pyobjc).freeze
+        UNSUPPORTED_DEPS = %w(pyobjc appnope).freeze
         UNSUPPORTED_DEP_REGEX =
           /"python setup\.py egg_info".*(?:#{UNSUPPORTED_DEPS.join("|")})/.
           freeze

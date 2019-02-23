@@ -5,4 +5,4 @@ name = "pypi"
 
 [packages]
 requests = "==2.18.0"
-pyobjc = "*"
+appnope = "*"
