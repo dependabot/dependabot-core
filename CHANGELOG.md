@@ -1,3 +1,8 @@
+## v0.95.61, 23 February 2019
+
+- Python: Fix python version installed check
+- Use Ruby 2.6.1
+
 ## v0.95.60, 23 February 2019
 
 - Python: Be explicit about the python version being installed
