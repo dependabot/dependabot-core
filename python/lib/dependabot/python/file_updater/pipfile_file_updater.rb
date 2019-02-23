@@ -323,7 +323,9 @@ module Dependabot
             nil
           end
 
-          return if run_command("pyenv versions").include?(python_version)
+          if run_command("pyenv versions").include?("#{python_version}\n")
+            return
+          end
 
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")
