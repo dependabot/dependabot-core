@@ -200,7 +200,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version) if python_version
+          File.write(".python-version", python_version)
 
           setup_files.each do |file|
             path = file.name
@@ -216,12 +216,11 @@ module Dependabot
         end
 
         def install_required_python
-          if python_version &&
-             !run_command("pyenv versions").include?(python_version)
-            run_command("pyenv install -s")
-            run_command("pyenv exec pip install -r " + \
-                        NativeHelpers.python_requirements_path)
-          end
+          return if run_command("pyenv versions").include?(python_version)
+
+          run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install -r " + \
+                      NativeHelpers.python_requirements_path)
         end
 
         def sanitized_setup_file_content(file)

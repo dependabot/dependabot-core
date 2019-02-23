@@ -153,7 +153,7 @@ module Dependabot
             write_temporary_dependency_files(pyproject_content)
 
             if python_version && !pre_installed_python?(python_version)
-              run_poetry_command("pyenv install -s")
+              run_poetry_command("pyenv install -s  #{python_version}")
               run_poetry_command("pyenv exec pip install --upgrade pip")
               run_poetry_command("pyenv exec pip install -r " + \
                                  NativeHelpers.python_requirements_path)
