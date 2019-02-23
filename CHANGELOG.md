@@ -1,3 +1,7 @@
+## v0.95.60, 23 February 2019
+
+- Python: Be explicit about the python version being installed
+
 ## v0.95.59, 23 February 2019
 
 - Python: Better Python version handling for Pipenv
