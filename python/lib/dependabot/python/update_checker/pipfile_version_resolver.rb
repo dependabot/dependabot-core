@@ -71,6 +71,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files
+                install_required_python
 
                 # Shell out to Pipenv, which handles everything for us.
                 # Whilst calling `lock` avoids doing an install as part of the
@@ -158,7 +159,7 @@ module Dependabot
 
           if error.message.include?("UnsupportedPythonVersion") &&
              error.message.include?(dependency.name) &&
-             python_requirement_specified?
+             user_specified_python_requirement
             # The latest version of the dependency we're updating to needs a
             # different Python version. Skip the update.
             check_original_requirements_resolvable
@@ -240,12 +241,13 @@ module Dependabot
 
         def write_temporary_dependency_files(update_pipfile: true)
           dependency_files.each do |file|
-            next if file.name == ".python-version"
-
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, file.content)
           end
+
+          # Overwrite the .python-version with updated content
+          File.write(".python-version", python_version)
 
           setup_files.each do |file|
             path = file.name
@@ -264,6 +266,21 @@ module Dependabot
             "Pipfile",
             pipfile_content(update_pipfile: update_pipfile)
           )
+        end
+
+        def install_required_python
+          # Initialize a git repo to appease pip-tools
+          begin
+            run_command("git init") if setup_files.any?
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+            nil
+          end
+
+          return if run_command("pyenv versions").include?(python_version)
+
+          requirements_path = NativeHelpers.python_requirements_path
+          run_command("pyenv install -s")
+          run_command("pyenv exec pip install -r #{requirements_path}")
         end
 
         def sanitized_setup_file_content(file)
@@ -321,66 +338,28 @@ module Dependabot
             replace_sources(credentials)
         end
 
-        def add_python_two_requirement_to_pipfile
-          content = File.read("Pipfile")
-
-          updated_content =
-            Python::FileUpdater::PipfilePreparer.
-            new(pipfile_content: content).
-            update_python_requirement("2.7.15")
-
-          File.write("Pipfile", updated_content)
-        end
-
-        def pipfile_python_requirement
-          parsed_pipfile = TomlRB.parse(pipfile.content)
-
-          parsed_pipfile.dig("requires", "python_full_version") ||
-            parsed_pipfile.dig("requires", "python_version")
-        end
-
-        def python_requirement_specified?
-          return true if pipfile_python_requirement
-
-          !python_version_file.nil?
-        end
-
-        def set_up_python_environment
-          # Initialize a git repo to appease pip-tools
-          begin
-            SharedHelpers.run_shell_command("git init") if setup_files.any?
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
-            nil
-          end
-
-          SharedHelpers.run_shell_command(
-            "pyenv install -s #{python_version}"
-          )
-          SharedHelpers.run_shell_command("pyenv local #{python_version}")
-          return if pre_installed_python?(python_version)
-
-          SharedHelpers.run_shell_command(
-            "pyenv exec pip install -r " + \
-            NativeHelpers.python_requirements_path
-          )
-        end
-
         def python_version
+          @python_version ||= python_version_from_supported_versions
+        end
+
+        def python_version_from_supported_versions
           requirement_string =
             if @using_python_two then "2.7.*"
-            elsif pipfile_python_requirement&.match?(/^\d/)
-              parts = pipfile_python_requirement.split(".")
+            elsif user_specified_python_requirement
+              parts = user_specified_python_requirement.split(".")
               parts.fill("*", (parts.length)..2).join(".")
-            elsif python_version_file then python_version_file.content
             else PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
+          # Ideally, the requirement is satisfied by a Python version we support
           requirement = Python::Requirement.new(requirement_string)
           version =
             PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
             find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
           return version if version
 
+          # If not, and changing the patch version would fix things, we do that
+          # as the patch version is unlikely to affect resolution
           requirement =
             Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
           version =
@@ -388,6 +367,8 @@ module Dependabot
             find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
           return version if version
 
+          # Otherwise we have to raise, giving details of the Python versions
+          # that Dependabot supports
           msg = "Dependabot detected the following Python requirement "\
                 "for your project: '#{requirement_string}'.\n\nCurrently, the "\
                 "following Python versions are supported in Dependabot: "\
@@ -395,8 +376,19 @@ module Dependabot
           raise DependencyFileNotResolvable, msg
         end
 
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
+        def user_specified_python_requirement
+          if pipfile_python_requirement&.match?(/^\d/)
+            return pipfile_python_requirement
+          end
+
+          python_version_file&.content&.strip
+        end
+
+        def pipfile_python_requirement
+          parsed_pipfile = TomlRB.parse(pipfile.content)
+
+          parsed_pipfile.dig("requires", "python_full_version") ||
+            parsed_pipfile.dig("requires", "python_version")
         end
 
         def check_private_sources_are_reachable
@@ -462,17 +454,13 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/MethodLength
-        def run_pipenv_command(command)
-          set_up_python_environment
-
+        def run_command(command)
+          command = command.dup
           start = Time.now
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Pipenv
-          # returns a non-zero status
-          return if process.success?
+          return stdout if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
@@ -482,6 +470,11 @@ module Dependabot
               process_exit_value: process.to_s
             }
           )
+        end
+
+        def run_pipenv_command(command)
+          local_command = "pyenv local #{python_version} && " + command
+          run_command(local_command)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -492,19 +485,20 @@ module Dependabot
             end
 
           raise relevant_error unless may_be_using_wrong_python_version?(msg)
-          raise relevant_error if @using_python_two
+          raise relevant_error if python_version.start_with?("2")
 
-          @using_python_two = true
-          add_python_two_requirement_to_pipfile
-          command = command.gsub("pipenv ", "pipenv --two ")
+          # Clear the existing virtualenv, so that we use the new Python version
+          run_command("pyenv local #{python_version} && pyenv exec pipenv --rm")
+
+          @python_version = "2.7.15"
           retry
         ensure
-          @using_python_two = nil
+          @python_version = nil
+          FileUtils.remove_entry(".python-version", true)
         end
-        # rubocop:enable Metrics/MethodLength
 
         def may_be_using_wrong_python_version?(error_message)
-          return false if python_requirement_specified?
+          return false if user_specified_python_requirement
           return true if error_message.include?("UnsupportedPythonVersion")
 
           error_message.include?('Command "python setup.py egg_info" failed')

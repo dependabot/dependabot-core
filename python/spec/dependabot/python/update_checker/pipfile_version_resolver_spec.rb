@@ -222,6 +222,7 @@ RSpec.describe namespace::PipfileVersionResolver do
 
       context "that is implicit" do
         let(:pipfile_fixture_name) { "required_python_implicit" }
+        let(:lockfile_fixture_name) { "required_python_implicit.lock" }
         let(:dependency_name) { "pytest" }
         let(:dependency_version) { "3.4.0" }
         let(:dependency_requirements) do
