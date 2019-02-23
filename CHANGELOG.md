@@ -1,3 +1,9 @@
+## v0.95.59, 23 February 2019
+
+- Python: Better Python version handling for Pipenv
+- Python: List supported versions, and error if using an unsupported one
+- Bump pyenv, Go and Elixir versions in Dockerfile
+
 ## v0.95.58, 22 February 2019
 
 - Go (modules): tighten up error regex
