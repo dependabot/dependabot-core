@@ -53,6 +53,29 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:requirements) { is_expected.to eq(expected_requirements) }
         its(:version) { is_expected.to eq("1.4.0") }
       end
+
+      context "that is a pre-release with a dash" do
+        let(:gemfile_fixture_name) { "prerelease_with_dash" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: "~> 1.4.0-rc1",
+              file: "Gemfile",
+              source: nil,
+              groups: [:default]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("business") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+          its(:version) { is_expected.to eq("1.4.0") }
+        end
+      end
     end
 
     context "with no version specified" do

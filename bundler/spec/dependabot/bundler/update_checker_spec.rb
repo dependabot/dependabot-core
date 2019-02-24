@@ -416,7 +416,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:target_version) { "3.6.0" }
         let(:dependency_name) { "rspec-mocks" }
         let(:requirements) do
-          [{ file: "Gemfile", requirement: "= 3.5.0", groups: [], source: nil }]
+          [{ file: "Gemfile", requirement: "3.5.0", groups: [], source: nil }]
         end
 
         it { is_expected.to be_truthy }
@@ -443,7 +443,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:requirements) do
           [{
             file: "Gemfile",
-            requirement: "= 3.5.0",
+            requirement: "3.5.0",
             groups: [:default],
             source: nil
           }]
@@ -499,7 +499,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           let(:requirements) do
             [{
               file: "gems.rb",
-              requirement: "= 3.5.0",
+              requirement: "3.5.0",
               groups: [:default],
               source: nil
             }]

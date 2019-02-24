@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:requirements) do
         [{
           file: "Gemfile",
-          requirement: "= 3.5.0",
+          requirement: "3.5.0",
           groups: [:default],
           source: nil
         }]
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       let(:requirements) do
         [{
           file: "Gemfile",
-          requirement: "= 3.5.0",
+          requirement: "3.5.0",
           groups: [:default],
           source: nil
         }]

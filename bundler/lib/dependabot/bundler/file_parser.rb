@@ -13,7 +13,7 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
-      require "dependabot/bundler/file_parser/gemfile_checker"
+      require "dependabot/bundler/file_parser/gemfile_declaration_finder"
 
       def parse
         dependency_set = DependencySet.new
@@ -45,14 +45,16 @@ module Dependabot
 
         [gemfile, *evaled_gemfiles].each do |file|
           parsed_gemfile.each do |dep|
-            next unless dependency_in_gemfile?(gemfile: file, dependency: dep)
+            gemfile_declaration_finder =
+              GemfileDeclarationFinder.new(dependency: dep, gemfile: file)
+            next unless gemfile_declaration_finder.gemfile_includes_dependency?
 
             dependencies <<
               Dependency.new(
                 name: dep.name,
                 version: dependency_version(dep.name)&.to_s,
                 requirements: [{
-                  requirement: dep.requirement.to_s,
+                  requirement: gemfile_declaration_finder.enhanced_req_string,
                   groups: dep.groups,
                   source: source_for(dep),
                   file: file.name
@@ -238,13 +240,6 @@ module Dependabot
 
       def source_from_lockfile(dependency_name)
         parsed_lockfile.specs.find { |s| s.name == dependency_name }&.source
-      end
-
-      def dependency_in_gemfile?(gemfile:, dependency:)
-        GemfileChecker.new(
-          dependency: dependency,
-          gemfile: gemfile
-        ).includes_dependency?
       end
 
       def gemfile
