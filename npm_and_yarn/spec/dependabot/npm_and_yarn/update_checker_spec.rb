@@ -514,6 +514,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           expect(checker.latest_resolvable_version_with_no_unlock).
             to eq(current_version)
         end
+
+        context "and a numeric version" do
+          let(:current_version) { "2.0.2" }
+
+          it "return a numeric version" do
+            expect(checker.latest_resolvable_version_with_no_unlock).
+              to eq(Gem::Version.new("2.0.2"))
+          end
+        end
       end
     end
   end

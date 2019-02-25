@@ -119,10 +119,18 @@ module Dependabot
           requirement_class.requirements_array(r.fetch(:requirement))
         end.compact
 
-        return dependency.version if git_commit_checker.pinned?
+        current_version =
+          if existing_version_is_sha? ||
+             !version_class.correct?(dependency.version)
+            dependency.version
+          else
+            version_class.new(dependency.version)
+          end
+
+        return current_version if git_commit_checker.pinned?
 
         # TODO: Really we should get a tag that satisfies the semver req
-        return dependency.version if reqs.any?
+        return current_version if reqs.any?
 
         git_commit_checker.head_commit_for_current_branch
       end
