@@ -236,6 +236,8 @@ module Dependabot
               JSON.parse(npm_response.body)
             rescue JSON::ParserError, Excon::Error::Timeout,
                    RegistryError => error
+              return if git_dependency?
+
               retry_count ||= 0
               retry_count += 1
               raise_npm_details_error(error) if retry_count > 2

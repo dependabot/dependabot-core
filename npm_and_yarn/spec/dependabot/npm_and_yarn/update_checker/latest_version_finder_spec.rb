@@ -349,6 +349,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
         end
+
+        context "for a git dependency" do
+          before do
+            allow(version_finder).
+              to receive(:dependency_url).
+              and_return("https://npm.fury.io/dependabot/@blep%2Fblep")
+          end
+
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "@blep/blep",
+              version: "1.0.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.0.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/unused/repo",
+                  branch: nil,
+                  ref: nil
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          end
+
+          it { is_expected.to be_nil }
+        end
       end
 
       context "with credentials" do
