@@ -736,6 +736,43 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it { is_expected.to be_nil }
       end
+
+      context "when given a suggested_changelog_url" do
+        let(:finder) do
+          described_class.new(
+            source: nil,
+            credentials: credentials,
+            dependency: dependency,
+            suggested_changelog_url: suggested_changelog_url
+          )
+        end
+        let(:suggested_changelog_url) do
+          "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+        end
+
+        before do
+          suggested_github_response =
+            fixture("github", "contents_sidekiq.json")
+          suggested_github_url =
+            "https://api.github.com/repos/mperham/sidekiq/contents/"
+          stub_request(:get, suggested_github_url).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 200,
+                      body: suggested_github_response,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        let(:github_contents_response) do
+          fixture("github", "business_files.json")
+        end
+
+        let(:github_changelog_url) do
+          "https://api.github.com/repos/mperham/sidekiq/contents/"\
+          "Pro-Changes.md?ref=master"
+        end
+
+        it { is_expected.to eq(expected_pruned_changelog) }
+      end
     end
 
     context "with a gitlab source" do

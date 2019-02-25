@@ -175,12 +175,13 @@ module Dependabot
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
+            provider = Source.from_url(file.html_url).provider
             @file_text[file.download_url] =
-              case source.provider
+              case provider
               when "github" then fetch_github_file(file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
-              else raise "Unsupported provider '#{source.provider}"
+              else raise "Unsupported provider '#{provider}'"
               end
           end
 
