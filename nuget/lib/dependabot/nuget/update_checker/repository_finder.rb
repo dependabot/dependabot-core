@@ -210,6 +210,9 @@ module Dependabot
             next source_details[:token] = nil unless username && password
 
             source_details[:token] = "#{username}:#{password}"
+          rescue Nokogiri::XML::XPath::SyntaxError
+            # Any non-ascii characters in the tag with cause a syntax error
+            next source_details[:token] = nil
           end
 
           sources

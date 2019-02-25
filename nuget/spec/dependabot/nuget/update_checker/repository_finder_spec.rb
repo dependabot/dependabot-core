@@ -238,6 +238,41 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
       end
 
+      context "that has a non-ascii key" do
+        let(:config_file) do
+          Dependabot::DependencyFile.new(
+            name: "NuGet.Config",
+            content: fixture("configs", "non_ascii_key.config")
+          )
+        end
+
+        before do
+          repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
+          stub_request(:get, repo_url).
+            to_return(
+              status: 200,
+              body: fixture("nuget_responses", "myget_base.json")
+            )
+        end
+
+        it "gets the right URLs" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "flatcontainer/microsoft.extensions."\
+                              "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "query?q=microsoft.extensions.dependencymodel"\
+                              "&prerelease=true",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that uses the v2 API alongside the v3 API" do
         let(:config_file) do
           Dependabot::DependencyFile.new(
