@@ -74,11 +74,9 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog
-          # Changelog won't be relevant for a git commit bump
+          return unless changelog_from_suggested_url || source
           return if git_source? && !ref_changed?
-
           return changelog_from_suggested_url if changelog_from_suggested_url
-          return unless source
 
           # If there is a changelog, and it includes the new version, return it
           if new_version && default_branch_changelog &&

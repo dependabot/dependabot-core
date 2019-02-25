@@ -567,6 +567,27 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     context "without a source" do
       let(:source) { nil }
       it { is_expected.to be_nil }
+
+      context "for a docker dependency" do
+        let(:dependency_requirements) do
+          [{
+            file: "Dockerfile",
+            requirement: nil,
+            groups: [],
+            source: { tag: "my_tag" }
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Dockerfile",
+            requirement: nil,
+            groups: [],
+            source: { tag: "my_tag" }
+          }]
+        end
+
+        it { is_expected.to be_nil }
+      end
     end
   end
 
