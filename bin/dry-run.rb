@@ -233,11 +233,15 @@ dependencies.each do |dep|
       else :update_not_possible
       end
 
-    return [] if requirements_to_unlock == :update_not_possible
+    puts " => requirements to unlock #{requirements_to_unlock}"
 
-    checker.updated_dependencies(
-      requirements_to_unlock: requirements_to_unlock
-    )
+    if requirements_to_unlock == :update_not_possible
+      []
+    else
+      checker.updated_dependencies(
+        requirements_to_unlock: requirements_to_unlock
+      )
+    end
   end
 
   updated_deps.select! do |d|
