@@ -1,3 +1,9 @@
+## v0.95.62, 25 February 2019
+
+- Fix changelog fetching with a suggested changelog URL and no source
+- PHP: Automatically retry transitory errors in lockfile updater
+- Ruby: Better requirement string parsing
+
 ## v0.95.61, 23 February 2019
 
 - Python: Fix python version installed check
