@@ -47,6 +47,25 @@ RSpec.describe Dependabot::Maven::FileParser do
           )
         end
       end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.version).to eq("4.5.3")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.5.3",
+              file: "pom.xml",
+              groups: ["test"],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
     end
 
     context "with rogue whitespace" do

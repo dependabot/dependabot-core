@@ -5,6 +5,7 @@ require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/maven/version"
 require "dependabot/errors"
 
 # The best Maven documentation is at:
@@ -90,7 +91,7 @@ module Dependabot
           requirements: [{
             requirement: dependency_requirement(pom, dependency_node),
             file: pom.name,
-            groups: [],
+            groups: dependency_groups(pom, dependency_node),
             source: nil,
             metadata: {
               packaging_type: packaging_type(pom, dependency_node)
@@ -155,6 +156,19 @@ module Dependabot
         version_content = evaluated_value(version_content, pom)
 
         version_content.empty? ? nil : version_content
+      end
+
+      def dependency_groups(pom, dependency_node)
+        dependency_scope(pom, dependency_node) == "test" ? ["test"] : []
+      end
+
+      def dependency_scope(pom, dependency_node)
+        return "compile" unless dependency_node.at_xpath("./scope")
+
+        scope_content = dependency_node.at_xpath("./scope").content.strip
+        scope_content = evaluated_value(scope_content, pom)
+
+        scope_content.empty? ? "compile" : scope_content
       end
 
       def packaging_type(pom, dependency_node)
