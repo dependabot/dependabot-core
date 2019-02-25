@@ -1,3 +1,7 @@
+## v0.95.69, 25 February 2019
+
+- Ruby: Handle pre-releases with numeric parts in the pre-release specifier
+
 ## v0.95.68, 25 February 2019
 
 - Fix handling of docker dependencies in ChangelogFinder
