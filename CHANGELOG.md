@@ -1,3 +1,7 @@
+## v0.95.65, 25 February 2019
+
+- JS: Fix peer dependency updates for libraries
+
 ## v0.95.64, 25 February 2019
 
 - JS: Return a version instance from UpdateChecker#latest_resolvable_version_with_no_unlock when version is numberic
