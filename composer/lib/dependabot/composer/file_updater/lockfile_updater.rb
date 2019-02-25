@@ -34,6 +34,9 @@ module Dependabot
               updated_content
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
+          retry_count ||= 0
+          retry_count += 1
+          retry if transitory_failure?(error) && retry_count <= 1
           handle_composer_errors(error)
         end
 
@@ -68,6 +71,10 @@ module Dependabot
             dependencies: dependencies,
             manifest: composer_json
           ).updated_manifest_content
+        end
+
+        def transitory_failure?(error)
+          error.message.include?("Content-Length mismatch")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
