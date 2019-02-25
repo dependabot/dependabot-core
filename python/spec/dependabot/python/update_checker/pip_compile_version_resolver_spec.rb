@@ -348,6 +348,17 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("0.1.2")) }
+
+        context "that has a bad version in it" do
+          let(:python_version_file) do
+            Dependabot::DependencyFile.new(
+              name: ".python-version",
+              content: "rubbish\n"
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("0.1.2")) }
+        end
       end
     end
   end

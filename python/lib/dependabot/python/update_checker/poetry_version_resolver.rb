@@ -13,6 +13,7 @@ require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -147,7 +148,7 @@ module Dependabot
             poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
 
-          return python_version_file&.content unless requirement
+          return python_version_file_version unless requirement
 
           requirements =
             Python::Requirement.requirements_array(requirement)
@@ -162,6 +163,19 @@ module Dependabot
                 "following Python versions are supported in Dependabot: "\
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
+        end
+
+        def python_version_file_version
+          file_version = python_version_file&.content&.strip
+
+          return unless file_version
+          return unless pyenv_versions.include?("#{file_version}\n")
+
+          file_version
+        end
+
+        def pyenv_versions
+          @pyenv_versions ||= run_poetry_command("pyenv install --list")
         end
 
         def pre_installed_python?(version)
@@ -345,3 +359,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

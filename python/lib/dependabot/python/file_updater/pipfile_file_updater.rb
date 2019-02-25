@@ -387,7 +387,20 @@ module Dependabot
             return pipfile_python_requirement
           end
 
-          python_version_file&.content&.strip
+          python_version_file_version
+        end
+
+        def python_version_file_version
+          file_version = python_version_file&.content&.strip
+
+          return unless file_version
+          return unless pyenv_versions.include?("#{file_version}\n")
+
+          file_version
+        end
+
+        def pyenv_versions
+          @pyenv_versions ||= run_command("pyenv install --list")
         end
 
         def pipfile_python_requirement

@@ -210,7 +210,7 @@ module Dependabot
             poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
 
-          return python_version_file&.content unless requirement
+          return python_version_file_version unless requirement
 
           requirements = Python::Requirement.requirements_array(requirement)
 
@@ -219,6 +219,19 @@ module Dependabot
               r.satisfied_by?(Python::Version.new(version))
             end
           end
+        end
+
+        def python_version_file_version
+          file_version = python_version_file&.content&.strip
+
+          return unless file_version
+          return unless pyenv_versions.include?("#{file_version}\n")
+
+          file_version
+        end
+
+        def pyenv_versions
+          @pyenv_versions ||= run_poetry_command("pyenv install --list")
         end
 
         def pre_installed_python?(version)
