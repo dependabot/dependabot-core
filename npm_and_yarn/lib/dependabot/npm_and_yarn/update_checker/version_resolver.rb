@@ -96,7 +96,7 @@ module Dependabot
 
             updates << { dependency: dep, version: updated_version }
           end
-          updates
+          updates.uniq
         end
 
         private
@@ -170,8 +170,10 @@ module Dependabot
 
           @old_peer_dependency_errors_checked = true
 
+          version = version_for_dependency(dependency)
+
           @old_peer_dependency_errors =
-            fetch_peer_dependency_errors(version: dependency.version)
+            fetch_peer_dependency_errors(version: version)
         end
 
         def fetch_peer_dependency_errors(version:)
@@ -217,17 +219,13 @@ module Dependabot
         end
 
         def error_details_from_captures(captures)
-          # Note "requiring_dep_version" is used to create a unique list of
-          # issues when the requirement name/version is the same
           {
             requirement_name:
               captures.fetch("required_dep").sub(/@[^@]+$/, ""),
             requirement_version:
               captures.fetch("required_dep").split("@").last,
             requiring_dep_name:
-              captures.fetch("requiring_dep").sub(/@[^@]+$/, ""),
-            requiring_dep_version:
-              captures.fetch("requiring_dep").split("@").last
+              captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
           }
         end
 
@@ -241,21 +239,12 @@ module Dependabot
           return [] if relevant_unmet_peer_dependencies.empty?
 
           # Prune out any pre-existing warnings
-          issues = relevant_unmet_peer_dependencies.reject do |issue|
+          relevant_unmet_peer_dependencies.reject do |issue|
             old_unmet_peer_dependencies.any? do |old_issue|
               old_issue.slice(:requirement_name, :requiring_dep_name) ==
                 issue.slice(:requirement_name, :requiring_dep_name)
             end
           end
-
-          # If we find duplicate errors it probably means we have double run the
-          # checker on the same files and want to hear about it
-          if issues.length != issues.uniq.length
-            duplicate = issues.find { |i| issues.count(i) > 1 }
-            raise "Duplicate peer dep error: #{duplicate[:requiring_dep_name]}"
-          end
-
-          issues
         end
 
         def satisfying_versions
@@ -297,7 +286,7 @@ module Dependabot
           latest_version_finder(dep).
             possible_versions_with_details.
             find do |version, details|
-              next false unless version > version_class.new(dep.version)
+              next false unless version > version_for_dependency(dep)
               next true unless details["peerDependencies"]
 
               details["peerDependencies"].all? do |peer_dep_name, req|

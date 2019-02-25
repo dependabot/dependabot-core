@@ -457,12 +457,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
-
-        context "to an acceptable version" do
-          let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
-          it { is_expected.to eq(Gem::Version.new("15.6.2")) }
-        end
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
 
       context "when there are already peer requirement issues" do
@@ -1004,6 +999,87 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 package_manager: "npm_and_yarn",
                 requirements: [{
                   file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
+            }]
+          )
+      end
+    end
+
+    context "updating duplicate nested dependencies with peer requirements" do
+      let(:dependency_files) do
+        [package_json, nested_package_json, nested_package_json_2]
+      end
+      let(:manifest_fixture_name) { "package.json" }
+      let(:nested_package_json) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package1/package.json",
+          content: fixture("package_files", "nested_peer_dependency.json")
+        )
+      end
+      let(:nested_package_json_2) do
+        Dependabot::DependencyFile.new(
+          name: "packages/package2/package.json",
+          content: fixture("package_files", "nested_peer_dependency.json")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "packages/package1/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package2/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+
+      it "gets the right list of dependencies to update" do
+        expect(resolver.dependency_updates_from_full_unlock).
+          to match_array(
+            [{
+              dependency: Dependabot::Dependency.new(
+                name: "react",
+                version: nil,
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }, {
+                  file: "packages/package2/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "react-dom",
+                version: nil,
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: nil
+                }, {
+                  file: "packages/package2/package.json",
                   requirement: "15.6.2",
                   groups: ["dependencies"],
                   source: nil
