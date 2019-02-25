@@ -217,13 +217,17 @@ module Dependabot
         end
 
         def error_details_from_captures(captures)
+          # Note "requiring_dep_version" is used to create a unique list of
+          # issues when the requirement name/version is the same
           {
             requirement_name:
               captures.fetch("required_dep").sub(/@[^@]+$/, ""),
             requirement_version:
               captures.fetch("required_dep").split("@").last,
             requiring_dep_name:
-              captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
+              captures.fetch("requiring_dep").sub(/@[^@]+$/, ""),
+            requiring_dep_version:
+              captures.fetch("requiring_dep").split("@").last
           }
         end
 
