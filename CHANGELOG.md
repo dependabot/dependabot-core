@@ -1,3 +1,8 @@
+## v0.95.63, 25 February 2019
+
+- JS: Handle non-JSON responses from private registries when checking git deps
+- JS: Handle duplicate peer dependency error
+
 ## v0.95.62, 25 February 2019
 
 - Fix changelog fetching with a suggested changelog URL and no source
