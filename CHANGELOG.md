@@ -1,3 +1,7 @@
+## v0.95.67, 25 February 2019
+
+- Maven: Treat dependencies that specify their scope as `test` as development dependencies
+
 ## v0.95.66, 25 February 2019
 
 
