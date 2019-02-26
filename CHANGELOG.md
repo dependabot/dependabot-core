@@ -1,3 +1,7 @@
+## v0.95.72, 26 February 2019
+
+- Handle TomlRB::ValueOverwriteError everywhere we handle TomlRB::ParseError
+
 ## v0.95.71, 26 February 2019
 
 - Rust: Handle TomlRB::ValueOverwriteError errors in FileParser
