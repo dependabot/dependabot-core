@@ -25,7 +25,6 @@ const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const fixDuplicates = require("./fix-duplicates");
 const replaceDeclaration = require("./replace-lockfile-declaration");
-const urlParse = require("url").parse;
 
 // Add is a subclass of the Install CLI command, which is responsible for
 // adding packages to a package.json and yarn.lock. Upgrading a package is
@@ -66,8 +65,7 @@ class LightweightInstall extends Install {
   }
 }
 
-async function flattenAllDependencies(config) {
-  const manifest = await config.readRootManifest();
+function flattenAllDependencies(manifest) {
   return Object.assign(
     {},
     manifest.optionalDependencies,
@@ -104,57 +102,36 @@ function optionalRequirement(requirements) {
   );
 }
 
-const GIT_HOSTS = [
-  "github.com",
-  "gitlab.com",
-  "bitbucket.com",
-  "bitbucket.org"
-];
-
-function getGitShorthand(depName, url, lockfileJson) {
-  const { hostname, path } = urlParse(url);
-  const isSupportedHost = hostname && path && GIT_HOSTS.indexOf(hostname) >= 0;
-  if (!isSupportedHost) return;
-
-  const hostShorthand = hostname.replace(/\.[a-z]{3}$/, "");
-  const repoShorthand = path.replace(/^\//, "");
-
-  return [repoShorthand, `${hostShorthand}:${repoShorthand}`].find(
-    shorthand => {
-      return Object.keys(lockfileJson).some(name => {
-        return name.startsWith(`${depName}@${shorthand}`);
-      });
-    }
-  );
-}
-
 function installArgsWithVersion(
   depName,
   desiredVersion,
   requirements,
-  lockfileJson
+  existingVersionRequirement
 ) {
   const source = requirements.source;
 
-  // TODO: Use logic from npm updater to find original version instead of doing
-  // all this mad git shorthand logic
-  // e.g. const originalVersion = flattenAllDependencies(oldPackage)[depName];
   if (source && source.type === "git") {
-    // Handle packages added using the github shorthand, e.g.
-    // - yarn add discord.js@discordjs/discord.js
-    //
-    // To keep the correct resolved url in the lockfile we need to explicitly
-    // tell yarn to install using the shorthand and not using the git url
-    //
-    // The resolved url from the shorthand case comes from
-    // https://codeload.github.com/org/repo.. whereas it comes from
-    // https://github.com/org/repo.. in the usual git install case:
-    // yarn add https://github.com/org/repo..
-    const repoShortHand = getGitShorthand(depName, source.url, lockfileJson);
-    if (repoShortHand) {
-      return [`${depName}@${repoShortHand}#${desiredVersion}`];
+    if (!existingVersionRequirement) {
+      existingVersionRequirement = source.url;
+    }
+
+    // Git is configured to auth over https while updating
+    existingVersionRequirement = existingVersionRequirement.replace(
+      /git\+ssh:\/\/git@(.*?)[:/]/,
+      "git+https://$1/"
+    );
+
+    // Keep any semver range that has already been updated in the package
+    // requirement when installing the new version
+    if (existingVersionRequirement.match(desiredVersion)) {
+      return [`${depName}@${existingVersionRequirement}`];
     } else {
-      return [`${depName}@${source.url}#${desiredVersion}`];
+      return [
+        `${depName}@${existingVersionRequirement.replace(
+          /#.*/,
+          ""
+        )}#${desiredVersion}`
+      ];
     }
   } else {
     return [`${depName}@${desiredVersion}`];
@@ -209,12 +186,14 @@ async function updateDependencyFile(
 
   // Just as if we'd run `yarn add package@version`, but using our lightweight
   // implementation of Add that doesn't actually download and install packages
-  const lockfileJson = parse(originalYarnLock).object;
+  const manifest = await config.readRootManifest();
+  const existingVersionRequirement = flattenAllDependencies(manifest)[depName];
+
   const args = installArgsWithVersion(
     depName,
     desiredVersion,
     requirements,
-    lockfileJson
+    existingVersionRequirement
   );
 
   const add = new LightweightAdd(args, flags, config, reporter, lockfile);
@@ -225,9 +204,6 @@ async function updateDependencyFile(
   const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"), depName);
 
   const newVersionRequirement = requirements.requirement;
-
-  const flattenedDependencies = await flattenAllDependencies(config);
-  const existingVersionRequirement = flattenedDependencies[depName];
 
   // Replace the version requirement in the lockfile (which will currently be an
   // exact version, not a requirement range)

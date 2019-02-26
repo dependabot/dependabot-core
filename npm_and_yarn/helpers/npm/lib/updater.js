@@ -39,15 +39,17 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
       "prefer-offline": true
     }
   ]);
-  const oldPackage = JSON.parse(readFile("package.json"));
+  const manifest = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
+  const flattenedDependencies = flattenAllDependencies(manifest);
   const args = dependencies.map(dependency => {
+    const existingVersionRequirement = flattenedDependencies[dependency.name];
     return installArgs(
       dependency.name,
       dependency.version,
       dependency.requirements,
-      oldPackage
+      existingVersionRequirement
     );
   });
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
@@ -89,31 +91,45 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   return { [lockfileName]: updatedLockfile };
 }
 
-function flattenAllDependencies(packageJson) {
+function flattenAllDependencies(manifest) {
   return Object.assign(
     {},
-    packageJson.optionalDependencies,
-    packageJson.peerDependencies,
-    packageJson.devDependencies,
-    packageJson.dependencies
+    manifest.optionalDependencies,
+    manifest.peerDependencies,
+    manifest.devDependencies,
+    manifest.dependencies
   );
 }
 
-function installArgs(depName, desiredVersion, requirements, oldPackage) {
+function installArgs(
+  depName,
+  desiredVersion,
+  requirements,
+  existingVersionRequirement
+) {
   const source = (requirements.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
-    let originalVersion = flattenAllDependencies(oldPackage)[depName];
-
-    if (!originalVersion) {
-      originalVersion = source.url;
+    if (!existingVersionRequirement) {
+      existingVersionRequirement = source.url;
     }
 
-    originalVersion = originalVersion.replace(
+    // Git is configured to auth over https while updating
+    existingVersionRequirement = existingVersionRequirement.replace(
       /git\+ssh:\/\/git@(.*?)[:/]/,
       "git+https://$1/"
     );
-    return `${originalVersion.replace(/#.*/, "")}#${desiredVersion}`;
+
+    // Keep any semver range that has already been updated in the package
+    // requirement when installing the new version
+    if (existingVersionRequirement.match(desiredVersion)) {
+      return `${depName}@${existingVersionRequirement}`;
+    } else {
+      return `${depName}@${existingVersionRequirement.replace(
+        /#.*/,
+        ""
+      )}#${desiredVersion}`;
+    }
   } else {
     return `${depName}@${desiredVersion}`;
   }
