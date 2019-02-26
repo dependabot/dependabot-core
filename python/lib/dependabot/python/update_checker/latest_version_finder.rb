@@ -185,7 +185,7 @@ module Dependabot
           urls[:extra] = urls[:extra].uniq
 
           urls
-        rescue TomlRB::ParseError
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           urls
         end
 

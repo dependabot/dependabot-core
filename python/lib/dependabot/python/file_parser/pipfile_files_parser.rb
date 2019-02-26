@@ -126,7 +126,7 @@ module Dependabot
 
         def parsed_pipfile
           @parsed_pipfile ||= TomlRB.parse(pipfile.content)
-        rescue TomlRB::ParseError
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, pipfile.path
         end
 

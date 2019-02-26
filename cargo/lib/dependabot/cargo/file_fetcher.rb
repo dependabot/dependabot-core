@@ -247,7 +247,7 @@ module Dependabot
 
       def parsed_file(file)
         TomlRB.parse(file.content)
-      rescue TomlRB::ParseError
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 

@@ -189,7 +189,7 @@ module Dependabot
         return true if poetry_lock || pyproject_lock
 
         !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
-      rescue TomlRB::ParseError
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, pyproject.path
       end
 
