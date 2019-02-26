@@ -2,7 +2,7 @@
 
 require "pathname"
 require "dependabot/clients/github_with_retries"
-require "dependabot/clients/gitlab"
+require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 
@@ -899,10 +899,11 @@ module Dependabot
       end
 
       def gitlab_client_for_source
-        @gitlab_client_for_source ||= Dependabot::Clients::Gitlab.for_source(
-          source: source,
-          credentials: credentials
-        )
+        @gitlab_client_for_source ||=
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
       end
 
       def package_manager

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/clients/gitlab"
+require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
 require "gitlab"
 
@@ -53,10 +53,11 @@ module Dependabot
       private
 
       def gitlab_client_for_source
-        @gitlab_client_for_source ||= Dependabot::Clients::Gitlab.for_source(
-          source: source,
-          credentials: credentials
-        )
+        @gitlab_client_for_source ||=
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
       end
 
       def branch_exists?

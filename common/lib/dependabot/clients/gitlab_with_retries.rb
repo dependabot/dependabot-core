@@ -4,7 +4,11 @@ require "gitlab"
 
 module Dependabot
   module Clients
-    class Gitlab
+    class GitlabWithRetries
+      RETRYABLE_ERRORS = [
+        Gitlab::Error::BadGateway
+      ].freeze
+
       #######################
       # Constructor methods #
       #######################
@@ -51,21 +55,35 @@ module Dependabot
       # Proxying #
       ############
 
-      def initialize(**args)
+      def initialize(max_retries: 3, **args)
+        @max_retries = max_retries || 3
         @client = ::Gitlab::Client.new(args)
       end
 
       def method_missing(method_name, *args, &block)
-        if @client.respond_to?(method_name)
-          mutatable_args = args.map(&:dup)
-          @client.public_send(method_name, *mutatable_args, &block)
-        else
-          super
+        retry_connection_failures do
+          if @client.respond_to?(method_name)
+            mutatable_args = args.map(&:dup)
+            @client.public_send(method_name, *mutatable_args, &block)
+          else
+            super
+          end
         end
       end
 
       def respond_to_missing?(method_name, include_private = false)
         @client.respond_to?(method_name) || super
+      end
+
+      def retry_connection_failures
+        retry_attempt = 0
+
+        begin
+          yield
+        rescue *RETRYABLE_ERRORS
+          retry_attempt += 1
+          retry_attempt <= @max_retries ? retry : raise
+        end
       end
     end
   end

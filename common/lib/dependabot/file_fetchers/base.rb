@@ -5,7 +5,7 @@ require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket"
-require "dependabot/clients/gitlab"
+require "dependabot/clients/gitlab_with_retries"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
@@ -371,7 +371,7 @@ module Dependabot
 
       def gitlab_client
         @gitlab_client ||=
-          Dependabot::Clients::Gitlab.for_source(
+          Dependabot::Clients::GitlabWithRetries.for_source(
             source: source,
             credentials: credentials
           )

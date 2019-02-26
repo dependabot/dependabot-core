@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/clients/github_with_retries"
-require "dependabot/clients/gitlab"
+require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
@@ -249,7 +249,7 @@ module Dependabot
         end
 
         def gitlab_client
-          @gitlab_client ||= Dependabot::Clients::Gitlab.
+          @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
                              for_gitlab_dot_com(credentials: credentials)
         end
 
