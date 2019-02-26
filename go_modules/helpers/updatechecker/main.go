@@ -3,11 +3,16 @@ package updatechecker
 import (
 	"errors"
 	"io/ioutil"
+	"regexp"
 
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfetch"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modload"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/semver"
+)
+
+var (
+	pseudoVersionRegexp = regexp.MustCompile(`\b\d{14}-[0-9a-f]{12}$`)
 )
 
 type Dependency struct {
@@ -52,6 +57,10 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 	currentMajor := semver.Major(currentVersion)
 	currentPrerelease := semver.Prerelease(currentVersion)
 	latestVersion := args.Dependency.Version
+
+	if pseudoVersionRegexp.MatchString(currentPrerelease) {
+		return latestVersion, nil
+	}
 
 Outer:
 	for _, v := range versions {
