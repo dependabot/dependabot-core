@@ -1,3 +1,8 @@
+## v0.95.74, 26 February 2019
+
+- Go (modules): prevent all pseudo version updates
+- Dockerfile: Add bzr to the Dockerfile
+
 ## v0.95.73, 26 February 2019
 
 - NPM: Fix lockfile for git deps with semver version
