@@ -189,6 +189,26 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Pipfile Pipfile.lock))
       end
+
+      context "when the Pipfile isn't parseable" do
+        before do
+          stub_request(:get, url + "Pipfile?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "contents_python_pipfile_unparseable.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a Dependabot::DependencyFileNotParseable error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("Pipfile")
+            end
+        end
+      end
     end
 
     context "with only a pyproject.toml" do

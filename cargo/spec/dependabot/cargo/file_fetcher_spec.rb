@@ -435,6 +435,30 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a Cargo.toml that is unparseable" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_manifest_unparseable.json"),
+          headers: json_header
+        )
+    end
+
+    it "raises a DependencyFileNotFound error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotParseable)
+    end
+  end
+
   context "without a Cargo.toml" do
     before do
       stub_request(:get, url + "?ref=sha").
