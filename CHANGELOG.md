@@ -1,3 +1,8 @@
+## v0.95.71, 26 February 2019
+
+- Rust: Handle TomlRB::ValueOverwriteError errors in FileParser
+- Rust: Handle parse errors in unprepared files in VersionResolver
+
 ## v0.95.70, 26 February 2019
 
 - Retry GitLab 502s everywhere
