@@ -187,6 +187,21 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             end
         end
       end
+
+      context "with some TOML that Cargo can't parse" do
+        let(:manifest_fixture_name) { "bad_name" }
+        let(:lockfile_fixture_name) { "bad_name" }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              # Test that the temporary path isn't included in the error message
+              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).
+                to include("Invalid character `;` in package name")
+            end
+        end
+      end
     end
 
     context "with a blank requirement string" do
