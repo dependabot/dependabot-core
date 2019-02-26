@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	pseudoVersionRegexp = regexp.MustCompile(`-\d{14}-[0-9a-f]{12}$`)
+	pseudoVersionRegexp = regexp.MustCompile(`\b\d{14}-[0-9a-f]{12}$`)
 )
 
 type Dependency struct {
