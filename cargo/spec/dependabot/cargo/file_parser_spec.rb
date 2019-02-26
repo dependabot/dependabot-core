@@ -478,6 +478,17 @@ RSpec.describe Dependabot::Cargo::FileParser do
             end
         end
       end
+
+      context "that have value overwrite issues" do
+        let(:manifest_fixture_name) { "unparseable_value_overwrite" }
+
+        it "raises a DependencyFileNotParseable error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+              expect(error.file_name).to eq("Cargo.toml")
+            end
+        end
+      end
     end
 
     context "with a lockfile" do
