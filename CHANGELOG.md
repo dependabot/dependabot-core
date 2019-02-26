@@ -1,3 +1,7 @@
+## v0.95.73, 26 February 2019
+
+- NPM: Fix lockfile for git deps with semver version
+
 ## v0.95.72, 26 February 2019
 
 - Handle TomlRB::ValueOverwriteError everywhere we handle TomlRB::ParseError
