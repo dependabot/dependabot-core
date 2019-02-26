@@ -1,3 +1,7 @@
+## v0.95.70, 26 February 2019
+
+- Retry GitLab 502s everywhere
+
 ## v0.95.69, 25 February 2019
 
 - Ruby: Handle pre-releases with numeric parts in the pre-release specifier
