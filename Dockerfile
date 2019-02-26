@@ -16,6 +16,7 @@ RUN apt-get update \
       build-essential \
       dirmngr \
       git \
+      bzr \
       gnupg2 \
       curl \
       wget \
