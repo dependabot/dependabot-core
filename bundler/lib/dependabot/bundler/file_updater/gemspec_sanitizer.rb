@@ -40,7 +40,7 @@ module Dependabot
           # Remove any constants from strings
           updated_content.gsub(
             /#\{[A-Z][^.}]*::[A-Z][^.}]*\}/,
-            '#{"' + replacement_version + '"}'
+            '#{"' + replacement_version.to_s + '"}'
           )
         end
 

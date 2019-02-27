@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
     described_class.new(replacement_version: replacement_version)
   end
 
-  let(:replacement_version) { "1.5.0" }
+  let(:replacement_version) { Gem::Version.new("1.5.0") }
 
   describe "#rewrite" do
     subject(:rewrite) { sanitizer.rewrite(content) }
