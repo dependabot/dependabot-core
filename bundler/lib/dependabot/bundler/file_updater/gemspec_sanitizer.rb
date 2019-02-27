@@ -72,7 +72,7 @@ module Dependabot
             remove_unnecessary_assignments(node)
           end
 
-          def on_const(node)
+          def on_dstr(node)
             # Remove any uses of a VERSION constant (or similar), as
             # that constant probably comes from a required file
             replace_version_constant_references(node)
