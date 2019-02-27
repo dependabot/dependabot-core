@@ -1,3 +1,8 @@
+## v0.95.76, 27 February 2019
+
+- Ruby: Handle more gemspec sanitization
+- Update changelog
+
 ## v0.95.75, 27 February 2019
 
 - Ruby: More gemspec sanitization
