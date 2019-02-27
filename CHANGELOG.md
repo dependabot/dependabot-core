@@ -1,3 +1,7 @@
+## v0.95.78, 27 February 2019
+
+- JS: Treat projects with invalid names as non-library
+
 ## v0.95.77, 27 February 2019
 
 - Python: handle fetching whl files dependencies
