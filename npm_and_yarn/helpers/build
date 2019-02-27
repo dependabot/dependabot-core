@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -8,7 +8,11 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+if [ ! -d "$install_dir" ]; then
+  mkdir -p "$install_dir"
+fi
+
+helpers_dir="$(dirname "$0")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/test" \
@@ -18,4 +22,12 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-yarn install
+
+case "$DEPENDABOT_ENV" in
+"production")
+  yarn install --production
+  ;;
+*)
+  yarn install
+  ;;
+esac
