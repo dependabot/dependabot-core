@@ -6,6 +6,8 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Composer
     class FileFetcher < Dependabot::FileFetchers::Base
+      require_relative "file_fetcher/path_dependency_builder"
+
       def self.required_files_in?(filenames)
         filenames.include?("composer.json")
       end
@@ -57,11 +59,12 @@ module Dependabot
                 begin
                   composer_json_files << fetch_file_with_root_fallback(file)
                 rescue Dependabot::DependencyFileNotFound
-                  # Collected, but currently ignored
-                  unfetchable_deps << file
+                  unfetchable_deps << path
                 end
               end
             end
+
+            composer_json_files += build_unfetchable_deps(unfetchable_deps)
 
             # Mark the path dependencies as support files - we don't currently
             # parse or update them.
@@ -79,6 +82,16 @@ module Dependabot
           map { |details| details["url"] }
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, composer_json.path
+      end
+
+      def build_unfetchable_deps(unfetchable_deps)
+        unfetchable_deps.map do |path|
+          PathDependencyBuilder.new(
+            path: path,
+            directory: directory,
+            lockfile: composer_lock
+          ).dependency_file
+        end.compact
       end
 
       def expand_path(path)
