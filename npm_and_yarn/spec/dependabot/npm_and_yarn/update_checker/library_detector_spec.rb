@@ -32,6 +32,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
       it { is_expected.to eq(false) }
     end
 
+    context "with space in the name" do
+      let(:package_json_fixture_name) { "package_with_space_in_name.json" }
+      it { is_expected.to eq(false) }
+    end
+
     context "with a library package.json" do
       let(:package_json_fixture_name) { "etag.json" }
 

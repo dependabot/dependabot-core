@@ -46,7 +46,7 @@ module Dependabot
 
           @project_npm_response.body.force_encoding("UTF-8").encode.
             include?(project_description)
-        rescue Excon::Error::Socket, Excon::Error::Timeout
+        rescue Excon::Error::Socket, Excon::Error::Timeout, URI::InvalidURIError
           false
         end
 
