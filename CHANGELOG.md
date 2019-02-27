@@ -1,3 +1,7 @@
+## v0.95.80, 27 February 2019
+
+- Ruby: Fix gemspec sanitizer, and update test to have a Gem::Version
+
 ## v0.95.79, 27 February 2019
 
 - Ruby: Alternative approach to sanitizing version constants in gemspecs
