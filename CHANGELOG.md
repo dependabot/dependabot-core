@@ -1,3 +1,8 @@
+## v0.95.79, 27 February 2019
+
+- Ruby: Alternative approach to sanitizing version constants in gemspecs
+- Ruby: Only sanitize versions when they appear in strings
+
 ## v0.95.78, 27 February 2019
 
 - JS: Treat projects with invalid names as non-library
