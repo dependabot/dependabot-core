@@ -154,11 +154,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
       end
 
-      context "with an assignment to an int" do
-        let(:content) { "v = 'a'\n\nSpec.new { |s| s.version = 1 }" }
-        it do
-          is_expected.to eq(%(v = 'a'\n\nSpec.new { |s| s.version = 1 }))
+      context "with an assignment to an if statement" do
+        let(:content) do
+          "Spec.new { |s| s.version = if true\n1\nelse\n2\nend }"
         end
+        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+      end
+
+      context "with an assignment to an int" do
+        let(:content) { "Spec.new { |s| s.version = 1 }" }
+        it { is_expected.to eq(%(Spec.new { |s| s.version = 1 })) }
       end
 
       context "with an assignment to a File.read" do
@@ -183,6 +188,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       context "with an assignment to a string-interpolated constant" do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
         it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
+      end
+      # rubocop:enable Lint/InterpolationCheck
+
+      # rubocop:disable Lint/InterpolationCheck
+      context "with a version constant used elsewhere in the file" do
+        let(:content) { 'Spec.new { |s| something = "v#{Example::Version}" }' }
+        it { is_expected.to eq('Spec.new { |s| something = "v#{"1.5.0"}" }') }
       end
       # rubocop:enable Lint/InterpolationCheck
 

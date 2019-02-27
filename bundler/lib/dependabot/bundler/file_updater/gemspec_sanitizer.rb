@@ -68,6 +68,12 @@ module Dependabot
             remove_unnecessary_assignments(node)
           end
 
+          def on_const(node)
+            # Remove any uses of a VERSION constant (or similar), as
+            # that constant probably comes from a required file
+            replace_version_constant_references(node)
+          end
+
           private
 
           attr_reader :replacement_version
@@ -94,6 +100,18 @@ module Dependabot
             end
 
             node.children.each { |child| replace_version_assignments(child) }
+          end
+
+          def replace_version_constant_references(node)
+            return unless node.is_a?(Parser::AST::Node)
+
+            if node_is_version_constant?(node)
+              return replace(node.loc.expression, %("#{replacement_version}"))
+            end
+
+            node.children.each do |child|
+              replace_version_constant_references(child)
+            end
           end
 
           def replace_file_assignments(node)
@@ -246,7 +264,7 @@ module Dependabot
           def replace_constant(node)
             case node.children.last&.type
             when :str, :int then nil # no-op
-            when :const, :send, :lvar
+            when :const, :send, :lvar, :if
               replace(
                 node.children.last.loc.expression,
                 %("#{replacement_version}")
