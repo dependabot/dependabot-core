@@ -189,10 +189,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
         it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
       end
-      # rubocop:enable Lint/InterpolationCheck
 
-      # rubocop:disable Lint/InterpolationCheck
       context "with a version constant used elsewhere in the file" do
+        let(:content) { 'Spec.new { |s| something == "v#{Example::Version}" }' }
+        it { is_expected.to eq('Spec.new { |s| something == "v#{"1.5.0"}" }') }
+      end
+
+      context "with a version constant used in assignment in the file" do
         let(:content) { 'Spec.new { |s| something = "v#{Example::Version}" }' }
         it { is_expected.to eq('Spec.new { |s| something = "v#{"1.5.0"}" }') }
       end

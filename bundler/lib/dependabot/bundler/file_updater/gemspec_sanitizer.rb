@@ -51,6 +51,10 @@ module Dependabot
             # that constant probably comes from a required file
             replace_version_assignments(node)
 
+            # Remove any uses of a VERSION constant (or similar), as
+            # that constant probably comes from a required file
+            replace_version_constant_references(node)
+
             # Replace the `s.files= ...` assignment with a blank array, as
             # occassionally a File.open(..).readlines pattern is used
             replace_file_assignments(node)
