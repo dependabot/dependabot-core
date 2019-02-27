@@ -1,3 +1,7 @@
+## v0.95.77, 27 February 2019
+
+- Python: handle fetching whl files dependencies
+
 ## v0.95.76, 27 February 2019
 
 - Ruby: Handle more gemspec sanitization
