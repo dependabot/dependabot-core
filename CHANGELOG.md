@@ -1,5 +1,7 @@
 ## v0.95.75, 27 February 2019
 
+- Ruby: More gemspec sanitization
+- PHP: Build path dependencies from lockfile if not fetchable
 
 ## v0.95.74, 26 February 2019
 
