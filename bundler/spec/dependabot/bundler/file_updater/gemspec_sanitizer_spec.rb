@@ -201,6 +201,11 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       end
       # rubocop:enable Lint/InterpolationCheck
 
+      context "with a version constant used outside of a string" do
+        let(:content) { 'Spec.new { |s| Gem::Version.new("1.0.0") }' }
+        it { is_expected.to eq(content) }
+      end
+
       context "with a block" do
         let(:content) { fixture("ruby", "gemspecs", "with_nested_block") }
         specify { expect { sanitizer.rewrite(content) }.to_not raise_error }

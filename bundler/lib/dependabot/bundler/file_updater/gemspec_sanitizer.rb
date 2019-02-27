@@ -32,9 +32,16 @@ module Dependabot
           buffer.source = content
           ast = Parser::CurrentRuby.new.parse(buffer)
 
-          Rewriter.
+          updated_content =
+            Rewriter.
             new(replacement_version: replacement_version).
             rewrite(buffer, ast)
+
+          # Remove any constants from strings
+          updated_content.gsub(
+            /#\{[A-Z][^.}]*::[A-Z][^.}]*\}/,
+            '#{"' + replacement_version + '"}'
+          )
         end
 
         class Rewriter < Parser::TreeRewriter
@@ -51,10 +58,6 @@ module Dependabot
             # that constant probably comes from a required file
             replace_version_assignments(node)
 
-            # Remove any uses of a VERSION constant (or similar), as
-            # that constant probably comes from a required file
-            replace_version_constant_references(node)
-
             # Replace the `s.files= ...` assignment with a blank array, as
             # occassionally a File.open(..).readlines pattern is used
             replace_file_assignments(node)
@@ -70,12 +73,6 @@ module Dependabot
             remove_find_dot_find_args(node)
 
             remove_unnecessary_assignments(node)
-          end
-
-          def on_dstr(node)
-            # Remove any uses of a VERSION constant (or similar), as
-            # that constant probably comes from a required file
-            replace_version_constant_references(node)
           end
 
           private
