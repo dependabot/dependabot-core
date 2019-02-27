@@ -1,3 +1,8 @@
+## v0.95.81, 27 February 2019
+
+- Python: Raise a resolvability error for Python version conflicts when Python version is user-defined
+- Go (modules): switch back to mastermind/vsc now 1.13 is out
+
 ## v0.95.80, 27 February 2019
 
 - Ruby: Fix gemspec sanitizer, and update test to have a Gem::Version
