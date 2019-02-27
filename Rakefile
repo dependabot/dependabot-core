@@ -12,21 +12,21 @@ require "./common/lib/dependabot/version"
 
 GEMSPECS = %w(
   common/dependabot-common.gemspec
+  go_modules/dependabot-go_modules.gemspec
   terraform/dependabot-terraform.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   nuget/dependabot-nuget.gemspec
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
-  npm_and_yarn/dependabot-npm_and_yarn.gemspec
+  bundler/dependabot-bundler.gemspec
   elm/dependabot-elm.gemspec
-  python/dependabot-python.gemspec
-  hex/dependabot-hex.gemspec
   cargo/dependabot-cargo.gemspec
   dep/dependabot-dep.gemspec
-  go_modules/dependabot-go_modules.gemspec
+  npm_and_yarn/dependabot-npm_and_yarn.gemspec
   composer/dependabot-composer.gemspec
-  bundler/dependabot-bundler.gemspec
+  hex/dependabot-hex.gemspec
+  python/dependabot-python.gemspec
   omnibus/dependabot-omnibus.gemspec
 ).freeze
 
