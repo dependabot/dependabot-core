@@ -123,6 +123,33 @@ RSpec.describe namespace::PipfileVersionResolver do
       end
     end
 
+    context "when the Python version conflicts with another dependency" do
+      let(:pipfile_fixture_name) { "unresolvable_python_version" }
+      let(:dependency_files) { [pipfile] }
+
+      let(:dependency_name) { "pytest" }
+      let(:dependency_version) { "3.4.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==3.4.0",
+          groups: ["develop"],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to eq(
+              "pipenv.patched.notpip._internal.exceptions."\
+              "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
+              "but the running Python is 3.6.8"
+            )
+          end
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }

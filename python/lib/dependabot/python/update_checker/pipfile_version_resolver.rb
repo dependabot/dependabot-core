@@ -158,12 +158,12 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
-             error.message.include?(dependency.name) &&
              user_specified_python_requirement
+            check_original_requirements_resolvable
+
             # The latest version of the dependency we're updating to needs a
             # different Python version. Skip the update.
-            check_original_requirements_resolvable
-            return
+            return if error.message.include?(dependency.name)
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
@@ -200,24 +200,39 @@ module Dependabot
 
               true
             rescue SharedHelpers::HelperSubprocessFailed => error
-              if error.message.include?("Could not find a version")
-                msg = clean_error_message(error.message)
-                msg.gsub!(/\s+\(from .*$/, "")
-                raise if msg.empty?
-
-                raise DependencyFileNotResolvable, msg
-              end
-
-              if error.message.include?("is not a python version")
-                msg = "Pipenv does not support specifying Python ranges "\
-                  "(see https://github.com/pypa/pipenv/issues/1050 for more "\
-                  "details)."
-                raise DependencyFileNotResolvable, msg
-              end
-
-              raise
+              handle_pipenv_errors_resolving_original_reqs(error)
             end
           end
+        end
+
+        def handle_pipenv_errors_resolving_original_reqs(error)
+          if error.message.include?("Could not find a version")
+            msg = clean_error_message(error.message)
+            msg.gsub!(/\s+\(from .*$/, "")
+            raise if msg.empty?
+
+            raise DependencyFileNotResolvable, msg
+          end
+
+          if error.message.include?("is not a python version")
+            msg = "Pipenv does not support specifying Python ranges "\
+              "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+              "details)."
+            raise DependencyFileNotResolvable, msg
+          end
+
+          if error.message.include?("UnsupportedPythonVersion") &&
+             user_specified_python_requirement
+            msg = clean_error_message(error.message).
+                  lines.take_while { |l| !l.start_with?("File") }.join.strip
+            raise if msg.empty?
+
+            raise DependencyFileNotResolvable, msg
+          end
+
+          # Raise an unhandled error, as this could be a problem with
+          # Dependabot's infrastructure, rather than the Pipfile
+          raise
         end
 
         def clean_error_message(message)
@@ -230,6 +245,7 @@ module Dependabot
                   next false if l.start_with?("CRITICAL:")
                   next false if l.start_with?("ERROR:")
                   next false if l.start_with?("packaging.specifiers")
+                  next false if l.start_with?("pipenv.patched.notpip._internal")
                   next false if l.include?("Max retries exceeded")
 
                   true
