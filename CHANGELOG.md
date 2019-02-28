@@ -1,3 +1,7 @@
+## v0.95.82, 28 February 2019
+
+- Prefer refs to versions when generating compare URLs for git updates
+
 ## v0.95.81, 27 February 2019
 
 - Python: Raise a resolvability error for Python version conflicts when Python version is user-defined
