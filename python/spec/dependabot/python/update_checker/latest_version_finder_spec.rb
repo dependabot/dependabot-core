@@ -101,6 +101,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to be_nil }
     end
 
+    context "when the PyPI response includes zipped files" do
+      let(:pypi_response) do
+        fixture("pypi_simple_response_zip.html")
+      end
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "when the dependency name isn't normalised" do
       let(:dependency_name) { "Luigi_ext" }
       let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext/" }
