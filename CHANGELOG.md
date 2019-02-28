@@ -1,3 +1,9 @@
+## v0.95.83, 28 February 2019
+
+- JS: Fetch numeric version for git dependencies with a semver requirement
+- Python: Handle .zip or .whl suffices in LatestVersionFinder
+- Python: Bump cython from 0.29.5 to 0.29.6 in /python/helpers
+
 ## v0.95.82, 28 February 2019
 
 - Prefer refs to versions when generating compare URLs for git updates
