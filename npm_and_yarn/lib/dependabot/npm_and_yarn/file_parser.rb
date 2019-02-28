@@ -8,6 +8,8 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/git_metadata_fetcher"
+require "dependabot/git_commit_checker"
 require "dependabot/errors"
 
 module Dependabot
@@ -151,8 +153,11 @@ module Dependabot
 
       def version_for(name, requirement)
         if git_url_with_semver?(requirement)
-          semver_version_for(name, requirement) ||
-            git_revision_for(name, requirement)
+          semver_version = semver_version_for(name, requirement)
+          return semver_version if semver_version
+
+          git_revision = git_revision_for(name, requirement)
+          version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
           git_revision_for(name, requirement)
         else
@@ -177,6 +182,29 @@ module Dependabot
           return lock_res.split("/").last
         end
 
+        nil
+      end
+
+      def version_from_git_revision(requirement, git_revision)
+        tags =
+          Dependabot::GitMetadataFetcher.new(
+            url: git_source_for(requirement).fetch(:url),
+            credentials: credentials
+          ).tags.
+          select { |t| [t.commit_sha, t.tag_sha].include?(git_revision) }
+
+        tags.each do |t|
+          next unless t.name.match?(Dependabot::GitCommitChecker::VERSION_REGEX)
+
+          version = t.name.match(Dependabot::GitCommitChecker::VERSION_REGEX).
+                    named_captures.fetch("version")
+          next unless NpmAndYarn::Version.correct?(version)
+
+          return version
+        end
+
+        nil
+      rescue Dependabot::GitDependenciesNotReachable
         nil
       end
 

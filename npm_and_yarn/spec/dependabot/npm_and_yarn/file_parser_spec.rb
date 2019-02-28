@@ -32,7 +32,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       directory: "/"
     )
   end
-  let(:credentials) { [] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -413,6 +420,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             let(:package_json_fixture_name) { "github_dependency_semver.json" }
             let(:npm_lock_fixture_name) { "github_dependency_semver.json" }
 
+            before do
+              git_url = "https://github.com/jonschlinkert/is-number.git"
+              git_header = {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+              pack_url = git_url + "/info/refs?service=git-upload-pack"
+              stub_request(:get, pack_url).
+                with(basic_auth: ["x-access-token", "token"]).
+                to_return(
+                  status: 200,
+                  body: fixture("git", "upload_packs", git_pack_fixture_name),
+                  headers: git_header
+                )
+            end
+            let(:git_pack_fixture_name) { "is-number" }
+
             its(:length) { is_expected.to eq(1) }
 
             describe "the github dependency" do
@@ -420,9 +443,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
-              its(:version) do
-                is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
-              end
+              its(:version) { is_expected.to eq("2.0.2") }
               its(:requirements) do
                 is_expected.to eq(
                   [{
@@ -437,6 +458,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     }
                   }]
                 )
+              end
+
+              context "when a tag can't be found" do
+                let(:git_pack_fixture_name) { "manifesto" }
+                its(:version) do
+                  is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+                end
+              end
+
+              context "when the git repo can't be found" do
+                before do
+                  git_url = "https://github.com/jonschlinkert/is-number.git"
+                  pack_url = git_url + "/info/refs?service=git-upload-pack"
+                  stub_request(:get, pack_url).
+                    with(basic_auth: ["x-access-token", "token"]).
+                    to_return(status: 404)
+                end
+
+                its(:version) do
+                  is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
+                end
               end
             end
           end
