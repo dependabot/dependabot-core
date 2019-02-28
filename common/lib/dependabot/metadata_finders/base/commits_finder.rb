@@ -52,7 +52,11 @@ module Dependabot
         def new_tag
           new_version = dependency.version
 
-          return new_version if git_source?(dependency.requirements)
+          if git_source?(dependency.requirements) && git_sha?(new_version)
+            return new_version
+          end
+
+          return new_ref if git_source?(dependency.requirements) && ref_changed?
 
           tags = dependency_tags.
                  select { |t| t =~ version_regex(new_version) }.
@@ -63,21 +67,28 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def previous_tag
           previous_version = dependency.previous_version
 
-          if git_source?(dependency.previous_requirements)
-            previous_version || previous_ref
+          if git_source?(dependency.previous_requirements) &&
+             git_sha?(previous_version)
+            previous_version
+          elsif git_source?(dependency.previous_requirements) && ref_changed?
+            previous_ref
           elsif previous_version
             tags = dependency_tags.
                    select { |t| t =~ version_regex(previous_version) }.
                    sort_by(&:length)
 
             tags.find { |t| t.include?(dependency.name) } || tags.first
-          else
+          elsif !git_source?(dependency.previous_requirements)
             lowest_tag_satisfying_previous_requirements
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def lowest_tag_satisfying_previous_requirements
           tags = dependency_tags.
@@ -123,10 +134,24 @@ module Dependabot
           source_type == "git"
         end
 
+        def ref_changed?
+          return false unless previous_ref && new_ref
+
+          previous_ref != new_ref
+        end
+
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
 
           dependency.previous_requirements.map do |r|
+            r.dig(:source, "ref") || r.dig(:source, :ref)
+          end.compact.first
+        end
+
+        def new_ref
+          return unless git_source?(dependency.previous_requirements)
+
+          dependency.requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
           end.compact.first
         end
@@ -277,6 +302,12 @@ module Dependabot
           Utils.requirement_class_for_package_manager(
             dependency.package_manager
           )
+        end
+
+        def git_sha?(version)
+          return false unless version
+
+          version.match?(/^[0-9a-f]{40}$/)
         end
 
         def reliable_source_directory?

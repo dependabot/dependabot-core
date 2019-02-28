@@ -290,6 +290,42 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
       end
 
+      context "with refs and numeric versions" do
+        let(:dependency_version) { "1.4.0" }
+        let(:dependency_previous_version) { "1.3.0" }
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: "v1.3.0"
+            }
+          }]
+        end
+        let(:dependency_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: "v1.4.0"
+            }
+          }]
+        end
+
+        it "uses the refs to build the compare URL" do
+          expect(builder.commits_url).
+            to eq(
+              "https://github.com/gocardless/business/compare/v1.3.0...v1.4.0"
+            )
+        end
+      end
+
       context "when the package manager is composer" do
         let(:package_manager) { "composer" }
 
@@ -381,9 +417,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             end
 
             it "uses the reference specified" do
+              # It would be nice to pick up the previously specified reference,
+              # but we'd have to do a `pinned?` check to do so reliably
               expect(builder.commits_url).
-                to eq("https://github.com/gocardless/business/compare/"\
-                      "7638417...v1.4.0")
+                to eq("https://github.com/gocardless/business/commits/v1.4.0")
             end
           end
         end

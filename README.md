@@ -49,6 +49,7 @@ To install the helpers for each language:
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd elixir/helpers && mix deps.get && cd -`
+5. `cd terraform && helpers/build helpers/install-dir/terraform && cd -`
 
 ## Local development
 
