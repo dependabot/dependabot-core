@@ -657,6 +657,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:yarn_lock_fixture_name) { "github_dependency_semver.lock" }
         let(:npm_lock_fixture_name) { "github_dependency_semver.json" }
 
+        before do
+          git_url = "https://github.com/jonschlinkert/is-number.git"
+          git_header = {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+          pack_url = git_url + "/info/refs?service=git-upload-pack"
+          stub_request(:get, pack_url).
+            with(basic_auth: ["x-access-token", "token"]).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", git_pack_fixture_name),
+              headers: git_header
+            )
+        end
+        let(:git_pack_fixture_name) { "is-number" }
+
         it "updates the package.json and the lockfiles" do
           expect(updated_files.map(&:name)).
             to match_array(%w(package.json package-lock.json yarn.lock))
