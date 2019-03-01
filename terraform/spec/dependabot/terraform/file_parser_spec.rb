@@ -142,7 +142,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with git sources" do
       let(:terraform_fixture_name) { "git_tags.tf" }
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       describe "the first dependency (which uses git:: with a tag)" do
         subject(:dependency) { dependencies.first }
@@ -236,6 +236,30 @@ RSpec.describe Dependabot::Terraform::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("dns")
           expect(dependency.version).to eq("0.2.5")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the sixth dependency (which uses git@github.com SSH prefix)" do
+        subject(:dependency) { dependencies[5] }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "git",
+              url: "git@github.com:cloudposse/terraform-null-label.git",
+              branch: nil,
+              ref: "tags/0.3.7"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("github_ssh_without_protocol")
+          expect(dependency.version).to eq("0.3.7")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
