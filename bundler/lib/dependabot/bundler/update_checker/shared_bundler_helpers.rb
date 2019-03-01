@@ -124,7 +124,7 @@ module Dependabot
             # We don't have access to one of repos required
             raise Dependabot::GitDependenciesNotReachable, bad_uris
           when "Bundler::GemNotFound", "Gem::InvalidSpecificationException",
-               "Bundler::VersionConflict"
+               "Bundler::VersionConflict", "Bundler::CyclicDependencyError"
             # Bundler threw an error during resolution. Any of:
             # - the gem doesn't exist in any of the specified sources
             # - the gem wasn't specified properly

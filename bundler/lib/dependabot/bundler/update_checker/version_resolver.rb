@@ -104,6 +104,7 @@ module Dependabot
           end
         rescue Dependabot::DependencyFileNotResolvable => error
           return if ignored_versions.any? && !dependency.appears_in_lockfile?
+          return if circular_dependency_at_new_version?(error)
           raise unless ruby_lock_error?(error)
 
           @gemspec_ruby_unlocked = true
@@ -111,6 +112,12 @@ module Dependabot
         end
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def circular_dependency_at_new_version?(error)
+          return false unless error.message.include?("CyclicDependencyError")
+
+          error.message.include?("'#{dependency.name}'")
+        end
 
         def ruby_lock_error?(error)
           return false unless error.message.include?(" for gem \"ruby\0\"")

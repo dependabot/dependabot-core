@@ -261,6 +261,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.3.1")) }
         end
       end
+
+      context "when unlocking a git dependency would cause errors" do
+        let(:current_version) { "1.4.0" }
+        let(:gemfile_fixture_name) { "git_source_circular" }
+        let(:lockfile_fixture_name) { "git_source_circular.lock" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      end
     end
 
     context "with a private gemserver source" do
@@ -321,6 +329,27 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           expect { subject }.
             to raise_error(Dependabot::PathDependenciesNotReachable)
         end
+      end
+    end
+
+    context "given a git source" do
+      context "where updating would cause a circular dependency" do
+        let(:gemfile_fixture_name) { "git_source_circular" }
+        let(:lockfile_fixture_name) { "git_source_circular.lock" }
+
+        let(:dependency_name) { "rubygems-circular-dependency" }
+        let(:current_version) { "3c85f0bd8d6977b4dfda6a12acf93a282c4f5bf1" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/dependabot-fixtures/"\
+                 "rubygems-circular-dependency",
+            branch: "master",
+            ref: "master"
+          }
+        end
+
+        it { is_expected.to be_nil }
       end
     end
 
