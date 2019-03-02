@@ -1,3 +1,9 @@
+## v0.95.84, 2 March 2019
+
+- Better tag comparison in CommitsFinders
+- Ruby: Handle circular dependencies at the latest version
+- Terraform: Parse `git@github.com:` module sources
+
 ## v0.95.83, 28 February 2019
 
 - JS: Fetch numeric version for git dependencies with a semver requirement
