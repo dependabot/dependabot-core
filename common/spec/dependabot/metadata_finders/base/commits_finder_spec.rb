@@ -158,7 +158,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               business-1.4.0.beta
               business-21.4.0
               business-2.1.4.0
-              business-1.4.0
+              business-1.4
               business-1.3.0
             )
           )
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
       it do
         is_expected.to eq("https://github.com/gocardless/business/"\
-                          "commits/business-1.4.0")
+                          "commits/business-1.4")
       end
 
       context "for a monorepo" do
@@ -323,19 +323,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             to eq(
               "https://github.com/gocardless/business/compare/v1.3.0...v1.4.0"
             )
-        end
-      end
-
-      context "when the package manager is composer" do
-        let(:package_manager) { "composer" }
-
-        let(:dependency_version) { "1.4.0" }
-        let(:dependency_previous_version) { "1.3.0" }
-        let(:upload_pack_fixture) { "business" }
-
-        it do
-          is_expected.to eq("https://github.com/gocardless/business/"\
-                            "compare/v1.3.0...v1.4.0")
         end
       end
 

@@ -5,6 +5,7 @@ require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket"
 require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
@@ -59,7 +60,7 @@ module Dependabot
           return new_ref if git_source?(dependency.requirements) && ref_changed?
 
           tags = dependency_tags.
-                 select { |t| t =~ version_regex(new_version) }.
+                 select { |tag| tag_matches_version?(tag, new_version) }.
                  sort_by(&:length)
 
           tags.find { |t| t.include?(dependency.name) } || tags.first
@@ -79,7 +80,7 @@ module Dependabot
             previous_ref
           elsif previous_version
             tags = dependency_tags.
-                   select { |t| t =~ version_regex(previous_version) }.
+                   select { |tag| tag_matches_version?(tag, previous_version) }.
                    sort_by(&:length)
 
             tags.find { |t| t.include?(dependency.name) } || tags.first
@@ -156,8 +157,19 @@ module Dependabot
           end.compact.first
         end
 
-        def version_regex(version)
-          /(?:[^0-9\.]|\A)#{Regexp.escape(version || "unknown")}\z/
+        def tag_matches_version?(tag, version)
+          return false unless version
+
+          unless version_class.correct?(version)
+            tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/)
+          end
+
+          version_regex = GitCommitChecker::VERSION_REGEX
+          return false unless tag.match?(version_regex)
+
+          tag_version = tag.match(version_regex).named_captures.fetch("version")
+
+          version_class.new(tag_version) == version_class.new(version)
         end
 
         def dependency_tags
