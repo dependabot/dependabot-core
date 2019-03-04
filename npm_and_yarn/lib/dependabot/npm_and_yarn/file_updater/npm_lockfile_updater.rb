@@ -147,8 +147,8 @@ module Dependabot
         def run_npm_top_level_updater(lockfile_name:,
                                       top_level_dependency_updates:)
           SharedHelpers.run_helper_subprocess(
-            command: "node #{npm_helper_path}",
-            function: "update",
+            command: NativeHelpers.helper_path,
+            function: "npm:update",
             args: [
               Dir.pwd,
               top_level_dependency_updates,
@@ -159,8 +159,8 @@ module Dependabot
 
         def run_npm_subdependency_updater(lockfile_name:)
           SharedHelpers.run_helper_subprocess(
-            command: "node #{npm_helper_path}",
-            function: "updateSubdependency",
+            command: NativeHelpers.helper_path,
+            function: "npm:updateSubdependency",
             args: [Dir.pwd, lockfile_name]
           )
         end
@@ -535,10 +535,6 @@ module Dependabot
             gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
-        end
-
-        def npm_helper_path
-          NativeHelpers.npm_helper_path
         end
 
         def package_locks

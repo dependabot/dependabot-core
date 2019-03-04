@@ -1,6 +1,6 @@
-const updater = require("../lib/updater");
-const peerDependencyChecker = require("../lib/peer-dependency-checker");
-const subdependencyUpdater = require("../lib/subdependency-updater");
+const updater = require("./updater");
+const peerDependencyChecker = require("./peer-dependency-checker");
+const subdependencyUpdater = require("./subdependency-updater");
 
 module.exports = {
   update: updater.updateDependencyFiles,

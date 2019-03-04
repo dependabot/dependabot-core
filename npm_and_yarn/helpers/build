@@ -10,8 +10,9 @@ fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
-  "$helpers_dir/npm" \
-  "$helpers_dir/yarn" \
+  "$helpers_dir/lib" \
+  "$helpers_dir/test" \
+  "$helpers_dir/run.js" \
   "$helpers_dir/package.json" \
   "$helpers_dir/yarn.lock" \
   "$install_dir"

@@ -1,12 +1,17 @@
 {
+  "name": "@dependabot/helper",
   "private": true,
-  "workspaces": [
-    "npm",
-    "yarn"
-  ],
+  "bin": {
+    "helper": "run.js"
+  },
   "scripts": {
     "lint": "eslint .",
     "test": "jest"
+  },
+  "dependencies": {
+    "@dependabot/yarn-lib": "^1.13.0",
+    "npm": "^6.7.0",
+    "semver": "^5.6.0"
   },
   "devDependencies": {
     "eslint": "^5.15.0",

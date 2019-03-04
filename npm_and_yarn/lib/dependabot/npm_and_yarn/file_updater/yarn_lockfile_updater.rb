@@ -136,8 +136,8 @@ module Dependabot
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
           SharedHelpers.run_helper_subprocess(
-            command: "node #{yarn_helper_path}",
-            function: "update",
+            command: NativeHelpers.helper_path,
+            function: "yarn:update",
             args: [
               Dir.pwd,
               top_level_dependency_updates
@@ -147,8 +147,8 @@ module Dependabot
 
         def run_yarn_subdependency_updater(lockfile_name:)
           SharedHelpers.run_helper_subprocess(
-            command: "node #{yarn_helper_path}",
-            function: "updateSubdependency",
+            command: NativeHelpers.helper_path,
+            function: "yarn:updateSubdependency",
             args: [Dir.pwd, lockfile_name]
           )
         end
@@ -505,10 +505,6 @@ module Dependabot
 
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
-        end
-
-        def yarn_helper_path
-          NativeHelpers.yarn_helper_path
         end
       end
     end

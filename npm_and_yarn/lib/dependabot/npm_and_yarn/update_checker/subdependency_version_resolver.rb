@@ -87,8 +87,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
-                command: "node #{yarn_helper_path}",
-                function: "updateSubdependency",
+                command: NativeHelpers.helper_path,
+                function: "yarn:updateSubdependency",
                 args: [Dir.pwd, lockfile_name]
               )
             end
@@ -113,8 +113,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
-                command: "node #{npm_helper_path}",
-                function: "updateSubdependency",
+                command: NativeHelpers.helper_path,
+                function: "npm:updateSubdependency",
                 args: [Dir.pwd, lockfile_name]
               )
             end
@@ -233,14 +233,6 @@ module Dependabot
           @package_files ||=
             dependency_files.
             select { |f| f.name.end_with?("package.json") }
-        end
-
-        def yarn_helper_path
-          NativeHelpers.yarn_helper_path
-        end
-
-        def npm_helper_path
-          NativeHelpers.npm_helper_path
         end
       end
     end
