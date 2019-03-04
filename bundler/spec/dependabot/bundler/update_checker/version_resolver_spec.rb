@@ -269,6 +269,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
       end
+
+      context "with a ruby exec command that fails" do
+        let(:gemfile_fixture_name) { "exec_error" }
+        let(:dependency_files) { [gemfile] }
+
+        it "raises a DependencyFileNotEvaluatable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotEvaluatable)
+        end
+      end
     end
 
     context "with a private gemserver source" do
