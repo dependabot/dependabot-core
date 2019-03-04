@@ -108,6 +108,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         its(:length) { is_expected.to eq(9) }
       end
 
+      context "that has URL versions (i.e., is from a bad version of npm)" do
+        let(:npm_lockfile_fixture_name) { "url_versions.json" }
+        # All but 1 dependency in the lockfile has a URL version
+        its(:length) { is_expected.to eq(1) }
+      end
+
       context "that contain bad json" do
         let(:npm_lockfile_content) do
           '{ "bad": "json" "no": "comma" }'

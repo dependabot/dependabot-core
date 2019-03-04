@@ -61,7 +61,7 @@ module Dependabot
 
           yarn_locks.each do |yarn_lock|
             parse_yarn_lock(yarn_lock).each do |req, details|
-              next unless details["version"] && details["version"] != ""
+              next unless semver_version_for(details["version"])
 
               # Note: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
@@ -69,7 +69,7 @@ module Dependabot
               # comparably to other flat-resolution strategies
               dependency_set << Dependency.new(
                 name: req.split(/(?<=\w)\@/).first,
-                version: details["version"],
+                version: semver_version_for(details["version"]),
                 package_manager: "npm_and_yarn",
                 requirements: []
               )
@@ -116,11 +116,11 @@ module Dependabot
 
           object_with_dependencies.
             fetch("dependencies", {}).each do |name, details|
-              next unless details["version"] && details["version"] != ""
+              next unless semver_version_for(details["version"])
 
               dependency_set << Dependency.new(
                 name: name,
-                version: details["version"],
+                version: semver_version_for(details["version"]),
                 package_manager: "npm_and_yarn",
                 requirements: []
               )
@@ -129,6 +129,17 @@ module Dependabot
             end
 
           dependency_set
+        end
+
+        def semver_version_for(version_string)
+          return unless version_string
+          return if version_string == ""
+          return if version_string.include?("://")
+          return if version_string.include?("file:")
+          return if version_string.include?("link:")
+          return if version_string.include?("#")
+
+          version_string
         end
 
         def parse_package_lock(package_lock)
