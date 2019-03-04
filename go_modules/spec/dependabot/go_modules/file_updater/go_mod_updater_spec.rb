@@ -146,6 +146,24 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:go_mod_body) do
               fixture("go_mods", go_mod_fixture_name).sub(
                 "rsc.io/quote v1.4.0",
+                "github.com/Sirupsen/logrus v1.3.0"
+              )
+            end
+
+            it "raises the correct error" do
+              error_class = Dependabot::GoModulePathMismatch
+              expect { updater.updated_go_sum_content }.
+                to raise_error(error_class) do |error|
+                  expect(error.message).to include("github.com/Sirupsen")
+                  expect(error.message).to include("github.com/sirupsen")
+                end
+            end
+          end
+
+          describe "a dependency who's module path has changed (inc version)" do
+            let(:go_mod_body) do
+              fixture("go_mods", go_mod_fixture_name).sub(
+                "rsc.io/quote v1.4.0",
                 "gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.2"
               )
             end
