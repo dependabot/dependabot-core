@@ -1,3 +1,9 @@
+## v0.96.0, 4 March 2019
+
+- Minor version bump to signify that JS refactor (included in v0.95.85) is a
+  breaking change, as it requires an update to the Dockerfile as well as the
+  gem
+
 ## v0.95.85, 4 March 2019
 
 - Fix gitignore for npm and yarn helpers
