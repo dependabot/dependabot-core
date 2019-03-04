@@ -50,9 +50,16 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => error
           retry_count ||= 0
           retry_count += 1
-          retry if retry_count < 2 && error.message.include?("404 Not Found")
-          retry if retry_count < 2 && error.message.include?("timed out")
+          retry if transitory_failure?(error) && retry_count < 2
           handle_composer_errors(error)
+        end
+
+        def transitory_failure?(error)
+          return true if error.message.include?("404 Not Found")
+          return true if error.message.include?("timed out")
+          return true if error.message.include?("Temporary failure")
+
+          error.message.include?("Content-Length mismatch")
         end
 
         def run_update_checker
