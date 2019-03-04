@@ -3,7 +3,7 @@ const peerDependencyChecker = require("./peer-dependency-checker");
 const subdependencyUpdater = require("./subdependency-updater");
 
 module.exports = {
-  "npm:update": updater.updateDependencyFiles,
-  "npm:updateSubdependency": subdependencyUpdater.updateDependencyFile,
-  "npm:checkPeerDependencies": peerDependencyChecker.checkPeerDependencies
+  update: updater.updateDependencyFiles,
+  updateSubdependency: subdependencyUpdater.updateDependencyFile,
+  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
 };

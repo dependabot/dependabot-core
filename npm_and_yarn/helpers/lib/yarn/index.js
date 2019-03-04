@@ -4,8 +4,8 @@ const subdependencyUpdater = require("./subdependency-updater");
 const peerDependencyChecker = require("./peer-dependency-checker");
 
 module.exports = {
-  "yarn:parseLockfile": lockfileParser.parse,
-  "yarn:update": updater.updateDependencyFiles,
-  "yarn:updateSubdependency": subdependencyUpdater.updateDependencyFile,
-  "yarn:checkPeerDependencies": peerDependencyChecker.checkPeerDependencies
+  parseLockfile: lockfileParser.parse,
+  update: updater.updateDependencyFiles,
+  updateSubdependency: subdependencyUpdater.updateDependencyFile,
+  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
 };
