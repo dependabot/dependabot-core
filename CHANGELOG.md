@@ -1,3 +1,12 @@
+## v0.95.85, 4 March 2019
+
+- Fix gitignore for npm and yarn helpers
+- JS: Ignore URL-style versions in npm lockfiles in NpmAndYarn::FileParser::LockfileParser
+- Ruby: Handle marshal dump errors more gracefully
+- Composer: Automatically retry transitory errors in VersionResolver
+- Add php-zmq to Dockerfile
+- JS: Simplify helper usage to only one script (#988)
+
 ## v0.95.84, 2 March 2019
 
 - Better tag comparison in CommitsFinders
