@@ -158,6 +158,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               business-1.4.0.beta
               business-21.4.0
               business-2.1.4.0
+              business-1.4.-1
               business-1.4
               business-1.3.0
             )

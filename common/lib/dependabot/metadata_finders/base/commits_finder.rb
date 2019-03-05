@@ -168,6 +168,7 @@ module Dependabot
           return false unless tag.match?(version_regex)
 
           tag_version = tag.match(version_regex).named_captures.fetch("version")
+          return false unless version_class.correct?(tag_version)
 
           version_class.new(tag_version) == version_class.new(version)
         end
