@@ -1,3 +1,9 @@
+## v0.97.0, 5 March 2019
+
+- Composer: Install php7.2-gmp
+- Bundler: Bump rubygems from 3.0.2 to 3.0.3
+- JS: Bump eslint from 5.14.1 to 5.15.1 in /npm_and_yarn/helpers
+
 ## v0.96.1, 4 March 2019
 
 - Go (modules): handle another case of module path mismatches
@@ -99,7 +105,6 @@
 - Maven: Treat dependencies that specify their scope as `test` as development dependencies
 
 ## v0.95.66, 25 February 2019
-
 
 ## v0.95.65, 25 February 2019
 
