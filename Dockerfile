@@ -55,7 +55,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
     && apt-get install -y ruby2.6 ruby2.6-dev \
-    && gem update --system 3.0.2 \
+    && gem update --system 3.0.3 \
     && gem install bundler -v 1.17.3 --no-document
 
 
