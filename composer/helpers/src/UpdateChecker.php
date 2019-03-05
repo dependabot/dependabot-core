@@ -70,11 +70,63 @@ class UpdateChecker
 
         /*
          * If a platform is set we assume people know what they are doing and we respect the setting.
-         * If no platform is set we ignore it so that the php we run as doesn't interfere
+         * If no platform is set we assume platform compatibility.
          */
-        if ($config->get('platform') === []) {
-            $install->setIgnorePlatformRequirements(true);
-        }
+        $platform = array_merge([
+            'php' => '*',
+            'ext-apcu' => '*',
+            'ext-bcmath' => '*',
+            'ext-bz2' => '*',
+            'ext-curl' => '*',
+            'ext-fileinfo' => '*',
+            'ext-gd' => '*',
+            'ext-gd2' => '*',
+            'ext-gettext' => '*',
+            'ext-gmp' => '*',
+            'ext-intl' => '*',
+            'ext-imagick' => '*',
+            'ext-imap' => '*',
+            'ext-interbase' => '*',
+            'ext-json' => '*',
+            'ext-ldap' => '*',
+            'ext-mbstring' => '*',
+            'ext-memcached' => '*',
+            'ext-mongodb' => '*',
+            'ext-exif' => '*',
+            'ext-mysqli' => '*',
+            'ext-oci8_12c' => '*',
+            'ext-odbc' => '*',
+            'ext-openssl' => '*',
+            'ext-pdo_firebird' => '*',
+            'ext-pdo_mysql' => '*',
+            'ext-pdo_oci' => '*',
+            'ext-pdo_odbc' => '*',
+            'ext-pdo_pgsql' => '*',
+            'ext-pdo_sqlite' => '*',
+            'ext-pgsql' => '*',
+            'ext-redis' => '*',
+            'ext-shmop' => '*',
+            'ext-snmp' => '*',
+            'ext-soap' => '*',
+            'ext-sockets' => '*',
+            'ext-sodium' => '*',
+            'ext-sqlite3' => '*',
+            'ext-tidy' => '*',
+            'ext-xdebug' => '*',
+            'ext-xml' => '*',
+            'ext-xmlrpc' => '*',
+            'ext-xsl' => '*',
+            'ext-zip' => '*',
+            'ext-zmq' => '*',
+        ], $config->get('platform'));
+
+        $config->merge(
+            [
+                'config' => [
+                    'platform' => $platform,
+                ],
+            ]
+        );
 
         $install->run();
 
