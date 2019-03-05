@@ -130,9 +130,18 @@ module Dependabot
                 reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
             end
           end
-      rescue SharedHelpers::ChildProcessFailed => error
-        msg = error.error_class + " with message: " +
-              error.error_message.force_encoding("UTF-8").encode
+      rescue SharedHelpers::ChildProcessFailed, ArgumentError => err
+        handle_marshall_error(err) if err.is_a?(ArgumentError)
+
+        msg = err.error_class + " with message: " +
+              err.error_message.force_encoding("UTF-8").encode
+        raise Dependabot::DependencyFileNotEvaluatable, msg
+      end
+
+      def handle_marshall_error(err)
+        raise err unless err.message == "marshal data too short"
+
+        msg = "Error evaluating your dependency files: #{err.message}"
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 

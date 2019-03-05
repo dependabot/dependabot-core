@@ -35,7 +35,6 @@ module Dependabot
         # Bundler context setup #
         #########################
 
-        # rubocop:disable Metrics/MethodLength
         def in_a_temporary_bundler_context(error_handling: true)
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do |tmp_dir|
@@ -73,20 +72,11 @@ module Dependabot
 
           # Raise more descriptive errors
           handle_bundler_errors(error)
-        rescue ArgumentError => error
-          handle_marshal_data_too_short_error(error)
-        end
-        # rubocop:enable Metrics/MethodLength
-
-        def handle_marshal_data_too_short_error(error)
-          raise unless error.message == "marshal data too short"
-
-          msg = "Error evaluating your dependency files: #{error.message}"
-          raise Dependabot::DependencyFileNotEvaluatable, msg
         end
 
         def retryable_error?(error)
           return true if error.message == "marshal data too short"
+          return false if error.is_a?(ArgumentError)
           return true if RETRYABLE_ERRORS.include?(error.error_class)
 
           unless RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class)
@@ -105,6 +95,7 @@ module Dependabot
             msg = "Error evaluating your dependency files: #{error.message}"
             raise Dependabot::DependencyFileNotEvaluatable, msg
           end
+          raise if error.is_a?(ArgumentError)
 
           msg = error.error_class + " with message: " + error.error_message
 

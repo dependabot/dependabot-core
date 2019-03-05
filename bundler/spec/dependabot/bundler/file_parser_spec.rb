@@ -398,6 +398,19 @@ RSpec.describe Dependabot::Bundler::FileParser do
             expect(error.message.encoding.to_s).to eq("UTF-8")
           end
       end
+
+      context "because it contains an exec command" do
+        let(:gemfile_fixture_name) { "exec_error" }
+        let(:lockfile_fixture_name) { "Gemfile.lock" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error do |error|
+              expect(error.class).
+                to eq(Dependabot::DependencyFileNotEvaluatable)
+            end
+        end
+      end
     end
 
     context "with a Gemfile that uses eval_gemfile" do
