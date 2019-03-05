@@ -1,3 +1,8 @@
+## v0.97.1, 5 March 2019
+
+- Handle tags that match our version regex but don't have valid versions
+- Bundler: Handle marshall errors
+
 ## v0.97.0, 5 March 2019
 
 - Composer: Install php7.2-gmp
