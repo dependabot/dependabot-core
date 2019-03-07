@@ -1,3 +1,8 @@
+## v0.97.2, 7 March 2019
+
+- Ignore 404s when attempting to set assignees
+- JS: Bump npm from 6.8.0 to 6.9.0 in /npm_and_yarn/helpers
+
 ## v0.97.1, 5 March 2019
 
 - Handle tags that match our version regex but don't have valid versions
