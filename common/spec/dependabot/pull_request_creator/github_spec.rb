@@ -564,10 +564,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock).
-            to_not have_requested(
-              :post,
-              "#{repo_api_url}/issues/1347/labels"
-            )
+            to_not have_requested(:post, "#{repo_api_url}/issues/1347/labels")
         end
       end
 
@@ -607,9 +604,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     context "when an assignee has been requested" do
       let(:assignees) { ["greysteil"] }
       before do
-        stub_request(
-          :post, "#{repo_api_url}/issues/1347/assignees"
-        ).to_return(status: 201,
+        stub_request(:post, "#{repo_api_url}/issues/1347/assignees").
+          to_return(status: 201,
                     body: fixture("github", "create_pr.json"),
                     headers: json_header)
       end
@@ -618,9 +614,23 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock).
-          to have_requested(
-            :post, "#{repo_api_url}/issues/1347/assignees"
-          ).with(body: { assignees: ["greysteil"] }.to_json)
+          to have_requested(:post, "#{repo_api_url}/issues/1347/assignees").
+          with(body: { assignees: ["greysteil"] }.to_json)
+      end
+
+      context "and GitHub 404s" do
+        before do
+          stub_request(:post, "#{repo_api_url}/issues/1347/assignees").
+            to_return(status: 404)
+        end
+
+        it "quietly ignores the 404" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{repo_api_url}/issues/1347/assignees").
+            with(body: { assignees: ["greysteil"] }.to_json)
+        end
       end
     end
 

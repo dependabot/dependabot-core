@@ -228,6 +228,9 @@ module Dependabot
           pull_request.number,
           assignees
         )
+      rescue Octokit::NotFound
+        # This can happen if a passed assignee login is now an org account
+        nil
       end
 
       def add_milestone_to_pull_request(pull_request)
