@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/elm/file_parser"
@@ -103,7 +104,8 @@ module Dependabot
               # Elm package install outputs a preview of the actions to be
               # performed. We can use this preview to calculate whether it
               # would do anything funny
-              command = "yes n | elm19 install #{dependency.name}"
+              dependency_name = Shellwords.escape(dependency.name)
+              command = "yes n | elm19 install #{dependency_name}"
               response = run_shell_command(command)
 
               CliParser.decode_install_preview(response)
