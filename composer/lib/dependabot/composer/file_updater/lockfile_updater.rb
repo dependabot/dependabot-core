@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/composer/file_updater"
@@ -52,7 +53,7 @@ module Dependabot
         def run_update_helper
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
-              command: "php #{php_helper_path}",
+              command: Shellwords.join(["php", php_helper_path]),
               function: "update",
               env: credentials_env,
               args: [
@@ -223,7 +224,7 @@ module Dependabot
 
             content_hash =
               SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
+                command: Shellwords.join(["php", php_helper_path]),
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
