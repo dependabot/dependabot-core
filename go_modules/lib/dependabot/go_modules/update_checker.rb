@@ -41,7 +41,8 @@ module Dependabot
             File.write("go.mod", go_mod.content)
 
             SharedHelpers.run_helper_subprocess(
-              command: "GO111MODULE=on #{NativeHelpers.helper_path}",
+              command: NativeHelpers.helper_path,
+              env: { "GO111MODULE" => "on" },
               function: "getUpdatedVersion",
               args: {
                 dependency: {
