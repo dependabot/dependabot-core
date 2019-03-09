@@ -651,6 +651,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             :patch, "#{repo_api_url}/issues/1347"
           ).with(body: { milestone: 5 }.to_json)
       end
+
+      context "but can't be specified for some reason" do
+        before do
+          stub_request(:patch, "#{repo_api_url}/issues/1347").
+            to_return(status: 422,
+                      body: fixture("github", "milestone_invalid.json"),
+                      headers: json_header)
+        end
+
+        it "quietly ignores the error" do
+          expect(creator.create.title).to eq("new-feature")
+        end
+      end
     end
   end
 end

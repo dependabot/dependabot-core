@@ -239,6 +239,8 @@ module Dependabot
           pull_request.number,
           milestone: milestone
         )
+      rescue Octokit::UnprocessableEntity => error
+        raise unless error.message.include?("code: invalid")
       end
 
       def create_pull_request
