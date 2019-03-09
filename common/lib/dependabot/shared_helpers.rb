@@ -166,9 +166,23 @@ module Dependabot
         "'!#{credential_helper_path} --file=#{Dir.pwd}/git.store'"
       )
 
+      github_credentials = credentials.
+                           select { |c| c["type"] == "git_source" }.
+                           select { |c| c["host"] == "github.com" }
+
+      # If multiple credentials are specified for github.com, pick the one that
+      # *isn't* just an app token (since it must have been added deliberately)
+      github_credential =
+        github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
+        github_credentials.first
+
+      deduped_credentials = credentials -
+                            github_credentials +
+                            [github_credential].compact
+
       # Build the content for our credentials file
       git_store_content = ""
-      credentials.each do |cred|
+      deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
 
         authenticated_url =
