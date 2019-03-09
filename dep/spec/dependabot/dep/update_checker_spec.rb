@@ -361,7 +361,7 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
       let(:dependency_version) { "1.6.0" }
 
       it "unlocks the manifest and gets the correct version" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("1.7.0"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("1.8.0"))
       end
     end
   end
