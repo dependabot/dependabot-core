@@ -1,3 +1,8 @@
+## v0.97.3, 10 March 2019
+
+- Prefer non-app github.com token in SharedHelpers.configure_git_credentials
+- Handle invalid milestones quietly
+
 ## v0.97.2, 7 March 2019
 
 - Ignore 404s when attempting to set assignees
