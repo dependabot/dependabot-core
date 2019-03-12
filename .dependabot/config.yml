@@ -19,6 +19,7 @@ update_configs:
     directory: "/npm_and_yarn/helpers"
     update_schedule: "live"
 
-  - package_manager: "python"
+  - package_manager: "Ruby"
     directory: "/python/helpers"
     update_schedule: "live"
+.dependabot/config.yml
