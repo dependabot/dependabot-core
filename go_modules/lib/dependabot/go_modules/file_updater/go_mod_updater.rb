@@ -31,7 +31,8 @@ module Dependabot
                 end
 
                 SharedHelpers.run_helper_subprocess(
-                  command: "GO111MODULE=on #{NativeHelpers.helper_path}",
+                  command: NativeHelpers.helper_path,
+                  env: { "GO111MODULE" => "on" },
                   function: "updateDependencyFile",
                   args: { dependencies: deps }
                 )
@@ -52,8 +53,8 @@ module Dependabot
                 File.write("go.sum", go_sum.content)
                 File.write("main.go", dummy_main_go)
 
-                command = "GO111MODULE=on go get -d"
-                _, stderr, status = Open3.capture3(command)
+                env = { "GO111MODULE" => "on" }
+                _, stderr, status = Open3.capture3(env, "go get -d")
                 unless status.success?
                   handle_subprocess_error(go_sum.path, stderr)
                 end

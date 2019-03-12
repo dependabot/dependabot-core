@@ -71,9 +71,10 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               File.write("go.mod", go_mod.content)
 
-              command = "GO111MODULE=on go mod edit -print > /dev/null"
-              command += " && GO111MODULE=on go list -m -json all"
-              stdout, stderr, status = Open3.capture3(command)
+              command = "go mod edit -print > /dev/null"
+              command += " && go list -m -json all"
+              env = { "GO111MODULE" => "on" }
+              stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
               stdout
             rescue Dependabot::DependencyFileNotResolvable
