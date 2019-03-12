@@ -1,3 +1,10 @@
+## v0.97.4, 11 March 2019
+
+- Dep: clean up subprocess invocation
+- Composer: clean up subprocess invocation
+- Cargo: clean up subprocess invocation
+- Go (modules): clean up subprocess invocations
+
 ## v0.97.3, 10 March 2019
 
 - Prefer non-app github.com token in SharedHelpers.configure_git_credentials
