@@ -2,6 +2,7 @@
 
 require "toml-rb"
 require "open3"
+require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
@@ -45,8 +46,9 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              command = "cargo update -p #{dependency_spec} --verbose"
-              run_cargo_command(command)
+              command_parts = ["cargo", "update", "-p", dependency_spec,
+                               "--verbose"]
+              run_cargo_command(Shellwords.join(command_parts))
             end
 
             updated_version = fetch_version_from_new_lockfile
@@ -254,8 +256,9 @@ module Dependabot
             write_temporary_dependency_files(prepared: false)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              command = "cargo update -p #{dependency_spec} --verbose"
-              run_cargo_command(command)
+              command_parts = ["cargo", "update", "-p", dependency_spec,
+                               "--verbose"]
+              run_cargo_command(Shellwords.join(command_parts))
             end
           end
 
