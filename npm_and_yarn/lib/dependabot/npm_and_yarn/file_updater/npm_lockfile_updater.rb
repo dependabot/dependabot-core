@@ -230,19 +230,24 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("No matching vers", "404 Not Found") ||
+          # This error happens when the lockfile has been messed up and some
+          # entries are missing a version, source:
+          # https://npm.community/t/cannot-read-property-match-of-undefined/203/3
+          #
+          # In this case we want to raise a more helpful error message asking
+          # people to re-generate their lockfiles (Future feature idea: add a
+          # way to click-to-fix the lockfile from the issue)
+          if error.message.include?("Cannot read property 'match' of ") &&
+             !resolvable_before_update?(lockfile)
+            raise_missing_lockfile_version_resolvability_error(error, lockfile)
+          end
+
+          if (error.message.start_with?("No matching vers", "404 Not Found") ||
              error.message.include?("not match any file(s) known to git") ||
              error.message.include?("Non-registry package missing package") ||
-             error.message.include?("Cannot read property 'match' of ") ||
-             error.message.include?("Invalid tag name")
-
-            unless resolvable_before_update?(lockfile)
-              raise_resolvability_error(error, lockfile)
-            end
-
-            # Dependabot has probably messed something up with the update and we
-            # want to hear about it
-            raise error
+             error.message.include?("Invalid tag name")) &&
+             !resolvable_before_update?(lockfile)
+            raise_resolvability_error(error, lockfile)
           end
 
           raise error
@@ -256,6 +261,19 @@ module Dependabot
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in "\
                 "#{lockfile.path}:\n#{error.message}"
+          raise Dependabot::DependencyFileNotResolvable, msg
+        end
+
+        def raise_missing_lockfile_version_resolvability_error(error, lockfile)
+          dependency_names = dependencies.map(&:name).join(", ")
+          lockfile_dir = Pathname.new(lockfile.name).dirname
+          modules_path = lockfile_dir.join("node_modules")
+          msg = "Error whilst updating #{dependency_names} in "\
+                "#{lockfile.path}:\n#{error.message}\n\n"\
+                "It looks like your lockfile has some corrupt entries with "\
+                "missing versions and needs to be re-generated.\n"\
+                "You'll need to remove #{lockfile.name} and #{modules_path} "\
+                "before you run npm install."
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
