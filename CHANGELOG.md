@@ -1,3 +1,9 @@
+## v0.97.6, 13 March 2019
+
+- NPM: Raise helpful error when lockfile is corrupt
+- Bump pip-tools from 3.4.0 to 3.5.0 in /python/helpers
+- Bump jest from 24.4.0 to 24.5.0 in /npm_and_yarn/helpers
+
 ## v0.97.5, 11 March 2019
 
 - Elm: clean up subprocess invocation
