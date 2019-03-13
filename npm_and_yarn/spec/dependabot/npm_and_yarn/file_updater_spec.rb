@@ -1802,7 +1802,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { [package_json, package_lock] }
           it "raises a helpful error" do
             expect { updated_files }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message).
+                  to include(
+                    "lockfile has some corrupt entries with missing versions"
+                  )
+              end
           end
         end
       end
