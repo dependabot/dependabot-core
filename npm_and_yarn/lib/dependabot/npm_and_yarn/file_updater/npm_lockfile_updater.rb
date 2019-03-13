@@ -265,11 +265,15 @@ module Dependabot
         end
 
         def raise_missing_lockfile_version_resolvability_error(error, lockfile)
-          dependency_names = dependencies.map(&:name).join(", ")
           lockfile_dir = Pathname.new(lockfile.name).dirname
           modules_path = lockfile_dir.join("node_modules")
-          msg = "Error whilst updating #{dependency_names} in "\
-                "#{lockfile.path}:\n#{error.message}\n\n"\
+          # Note: don't include the dependency names to prevent opening
+          # multiple issues for each dependency that fails because we unique
+          # issues on the error message (issue detail) on the backend
+          #
+          # ToDo: add an error ID to issues to make it easier to unique them
+          msg = "Error whilst updating dependencies in #{lockfile.name}:\n"\
+                "#{error.message}\n\n"\
                 "It looks like your lockfile has some corrupt entries with "\
                 "missing versions and needs to be re-generated.\n"\
                 "You'll need to remove #{lockfile.name} and #{modules_path} "\
