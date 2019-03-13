@@ -137,7 +137,7 @@ module Dependabot
         def run_yarn_top_level_updater(top_level_dependency_updates:)
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
-            function: "yarn:update",
+            function: "yarn/updater",
             args: [
               Dir.pwd,
               top_level_dependency_updates
@@ -148,7 +148,7 @@ module Dependabot
         def run_yarn_subdependency_updater(lockfile_name:)
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
-            function: "yarn:updateSubdependency",
+            function: "yarn/subdependency-updater",
             args: [Dir.pwd, lockfile_name]
           )
         end

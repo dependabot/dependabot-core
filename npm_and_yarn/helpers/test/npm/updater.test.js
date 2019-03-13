@@ -5,7 +5,7 @@ const nock = require("nock");
 const {
   updateDependencyFiles,
   updateVersionPattern
-} = require("../../lib/npm/updater");
+} = require("../../npm/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {

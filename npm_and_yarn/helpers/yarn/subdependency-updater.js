@@ -35,7 +35,7 @@ function recoverVersionComments(oldLockfile, newLockfile) {
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-async function updateDependencyFile(directory, lockfileName) {
+module.exports = async function updateDependencyFile(directory, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile(lockfileName);
@@ -64,6 +64,4 @@ async function updateDependencyFile(directory, lockfileName) {
   return {
     [lockfileName]: updatedYarnLock
   };
-}
-
-module.exports = { updateDependencyFile };
+};
