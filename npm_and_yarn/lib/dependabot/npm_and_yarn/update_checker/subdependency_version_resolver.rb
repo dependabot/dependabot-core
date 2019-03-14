@@ -88,7 +88,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "yarn/subdependency-updater",
+                function: "yarn:updateSubdependency",
                 args: [Dir.pwd, lockfile_name]
               )
             end
@@ -114,7 +114,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm/subdependency-updater",
+                function: "npm:updateSubdependency",
                 args: [Dir.pwd, lockfile_name]
               )
             end

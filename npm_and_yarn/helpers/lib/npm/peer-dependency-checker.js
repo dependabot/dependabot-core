@@ -24,7 +24,7 @@ function installArgsWithVersion(depName, desiredVersion, requirements) {
   }
 }
 
-module.exports = async function checkPeerDependencies(
+async function checkPeerDependencies(
   directory,
   depName,
   desiredVersion,
@@ -100,4 +100,6 @@ module.exports = async function checkPeerDependencies(
   if (peerDependencyWarnings.length) {
     throw new Error(peerDependencyWarnings.join("\n"));
   }
-};
+}
+
+module.exports = { checkPeerDependencies };

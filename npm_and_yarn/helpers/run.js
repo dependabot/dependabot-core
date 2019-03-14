@@ -8,8 +8,9 @@ const input = [];
 process.stdin.on("data", data => input.push(data));
 process.stdin.on("end", () => {
   const request = JSON.parse(input.join(""));
-  const func = require(`./${request.function}`);
-
+  const [manager, functionName] = request.function.split(":");
+  const helpers = require(`./lib/${manager}`);
+  const func = helpers[functionName];
   if (!func) {
     output({ error: `Invalid function ${request.function}` });
     process.exit(1);

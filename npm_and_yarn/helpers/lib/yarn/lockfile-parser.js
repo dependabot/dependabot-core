@@ -11,9 +11,11 @@ const path = require("path");
 const parseLockfile = require("@dependabot/yarn-lib/lib/lockfile/parse")
   .default;
 
-module.exports = async function parse(directory) {
+async function parse(directory) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const data = readFile("yarn.lock");
   return parseLockfile(data).object;
-};
+}
+
+module.exports = { parse };

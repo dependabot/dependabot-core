@@ -20,11 +20,7 @@ const npm = require("npm");
 const installer = require("npm/lib/install");
 const { muteStderr, runAsync } = require("./helpers.js");
 
-module.exports = async function updateDependencyFiles(
-  directory,
-  dependencies,
-  lockfileName
-) {
+async function updateDependencyFiles(directory, dependencies, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -93,7 +89,7 @@ module.exports = async function updateDependencyFiles(
   const updatedLockfile = readFile(lockfileName);
 
   return { [lockfileName]: updatedLockfile };
-};
+}
 
 function flattenAllDependencies(manifest) {
   return Object.assign(
@@ -184,3 +180,5 @@ function removeInvalidGitUrlsInRequires(value) {
 
   return Object.assign({}, value, { requires });
 }
+
+module.exports = { updateDependencyFiles };

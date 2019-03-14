@@ -138,7 +138,7 @@ function installArgsWithVersion(
   }
 }
 
-module.exports = async function updateDependencyFiles(directory, dependencies) {
+async function updateDependencyFiles(directory, dependencies) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
@@ -153,7 +153,7 @@ module.exports = async function updateDependencyFiles(directory, dependencies) {
   }
 
   return updateRunResults;
-};
+}
 
 async function updateDependencyFile(
   directory,
@@ -238,3 +238,5 @@ async function updateDependencyFile(
     "yarn.lock": updatedYarnLock
   };
 }
+
+module.exports = { updateDependencyFiles };

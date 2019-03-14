@@ -340,7 +340,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "yarn/peer-dependency-checker",
+                function: "yarn:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,
@@ -357,7 +357,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm/peer-dependency-checker",
+                function: "npm:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,

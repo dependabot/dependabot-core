@@ -166,7 +166,7 @@ module Dependabot
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "yarn/lockfile-parser",
+                function: "yarn:parseLockfile",
                 args: [Dir.pwd]
               )
             rescue SharedHelpers::HelperSubprocessFailed
