@@ -26,20 +26,13 @@ module Dependabot
 
         attr_reader :file
 
-        # rubocop:disable Security/Eval
         def find_require_relative_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
           if declares_require_relative?(node)
-            # We use eval here, but we know what we're doing. The FileFetchers
-            # helper method should only ever be run in an isolated environment
-            source = node.children[2].loc.expression.source
-            begin
-              path = eval(source)
-            rescue StandardError
-              return []
-            end
+            return [] unless node.children[2].type == :str
 
+            path = node.children[2].loc.expression.source.gsub(/['"]/, "")
             path = File.join(current_dir, path) unless current_dir.nil?
             return [Pathname.new(path + ".rb").cleanpath.to_path]
           end
@@ -48,7 +41,6 @@ module Dependabot
             find_require_relative_paths(child_node)
           end
         end
-        # rubocop:enable Security/Eval
 
         def current_dir
           @current_dir ||= file.name.rpartition("/").first

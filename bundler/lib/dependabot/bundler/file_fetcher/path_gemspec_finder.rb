@@ -26,29 +26,28 @@ module Dependabot
 
         attr_reader :gemfile
 
-        # rubocop:disable Security/Eval
         def find_path_gemspec_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
           if declares_path_dependency?(node)
             path_node = path_node_for_gem_declaration(node)
 
-            begin
-              # We use eval here, but we know what we're doing. The
-              # FileFetchers helper method should only ever be run in an
-              # isolated environment
-              path = eval(path_node.loc.expression.source)
-            rescue StandardError
-              return []
+            unless path_node.type == :str
+              path = gemfile.path
+              msg = "Dependabot only supports uninterpolated string arguments "\
+                    "for path dependencies. Got "\
+                    "`#{path_node.loc.expression.source}`"
+              raise Dependabot::DependencyFileNotParseable.new(path, msg)
             end
+
+            path = path_node.loc.expression.source.gsub(/['"]/, "")
             return [clean_path(path)]
           end
 
-          relevant_child_nodes(node).flat_map do |child_node|
+          node.children.flat_map do |child_node|
             find_path_gemspec_paths(child_node)
           end
         end
-        # rubocop:enable Security/Eval
 
         def current_dir
           @current_dir ||= gemfile.name.rpartition("/").first
@@ -71,23 +70,6 @@ module Dependabot
           path = File.join(current_dir, path) unless current_dir.nil?
           Pathname.new(path).cleanpath
         end
-
-        # rubocop:disable Security/Eval
-        def relevant_child_nodes(node)
-          return [] unless node.is_a?(Parser::AST::Node)
-          return node.children unless node.type == :if
-
-          begin
-            if eval(node.children.first.loc.expression.source)
-              [node.children[1]]
-            else
-              [node.children[2]]
-            end
-          rescue StandardError
-            return node.children
-          end
-        end
-        # rubocop:enable Security/Eval
 
         def path_node_for_gem_declaration(node)
           return unless node.children.last.type == :hash
