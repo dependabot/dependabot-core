@@ -106,6 +106,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
+        context "that 409s when asked for commits" do
+          before do
+            stub_request(:get, watched_repo_url + "/commits").
+              to_return(status: 409, headers: json_header)
+          end
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
+
         context "from GitLab" do
           let(:source) do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")

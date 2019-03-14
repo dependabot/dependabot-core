@@ -836,10 +836,7 @@ module Dependabot
       end
 
       def recent_github_commit_messages
-        @recent_github_commit_messages ||=
-          github_client_for_source.commits(source.repo)
-
-        @recent_github_commit_messages.
+        recent_github_commits.
           reject { |c| c.author&.type == "Bot" }.
           reject { |c| c.commit&.message&.start_with?("Merge") }.
           map(&:commit).
@@ -869,15 +866,18 @@ module Dependabot
       end
 
       def last_github_dependabot_commit_message
-        @recent_github_commit_messages ||=
-          github_client_for_source.commits(source.repo)
-
-        @recent_github_commit_messages.
+        recent_github_commits.
           reject { |c| c.commit&.message&.start_with?("Merge") }.
           find { |c| c.commit.author&.name == "dependabot[bot]" }&.
           commit&.
           message&.
           strip
+      end
+
+      def recent_github_commits
+        @recent_github_commits ||= github_client_for_source.commits(source.repo)
+      rescue Octokit::Conflict
+        @recent_github_commits ||= []
       end
 
       def last_gitlab_dependabot_commit_message
