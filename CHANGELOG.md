@@ -1,3 +1,8 @@
+## v0.97.8, 14 March 2019
+
+- Handle 409s from GitHub when constructing commit message
+- JS: Use un-built helpers in development and test env
+
 ## v0.97.7, 13 March 2019
 
 - Short circuit update checking for dependencies being ignored
