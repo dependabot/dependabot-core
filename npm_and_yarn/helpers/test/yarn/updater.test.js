@@ -5,7 +5,7 @@ const nock = require("nock");
 const {
   updateDependencyFiles,
   updateVersionPattern
-} = require("../../lib/yarn/updater");
+} = require("../../yarn/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {

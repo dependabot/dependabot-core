@@ -5,7 +5,7 @@ const installer = require("npm/lib/install");
 
 const { muteStderr, runAsync } = require("./helpers.js");
 
-async function updateDependencyFile(directory, lockfileName) {
+module.exports = async function updateDependencyFile(directory, lockfileName) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -53,6 +53,4 @@ async function updateDependencyFile(directory, lockfileName) {
   const updatedLockfile = readFile(lockfileName);
 
   return { [lockfileName]: updatedLockfile };
-}
-
-module.exports = { updateDependencyFile };
+};
