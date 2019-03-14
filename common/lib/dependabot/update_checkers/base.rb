@@ -27,6 +27,9 @@ module Dependabot
       end
 
       def can_update?(requirements_to_unlock:)
+        # Can't update if all versions are being ignored
+        return false if ignore_reqs.include?(requirement_class.new(">= 0"))
+
         if dependency.appears_in_lockfile?
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else

@@ -246,6 +246,24 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           end
 
           it { is_expected.to be_truthy }
+
+          context "but all versions are being ignored" do
+            let(:updater_instance) do
+              described_class.new(
+                dependency: dependency,
+                dependency_files: [],
+                ignored_versions: [">= 0"],
+                credentials: [{
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }]
+              )
+            end
+
+            it { is_expected.to be_falsey }
+          end
         end
       end
     end
