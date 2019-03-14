@@ -1,3 +1,7 @@
+## v0.97.7, 13 March 2019
+
+- Short circuit update checking for dependencies being ignored
+
 ## v0.97.6, 13 March 2019
 
 - NPM: Raise helpful error when lockfile is corrupt
