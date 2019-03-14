@@ -4,7 +4,7 @@ require "toml-rb"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require "dependabot/python/file_parser"
+require "dependabot/python/requirement_parser"
 require "dependabot/errors"
 
 # rubocop:disable Metrics/ClassLength
@@ -308,12 +308,12 @@ module Dependabot
                   gsub(CONSTRAINT_REGEX, "").
                   gsub(CHILD_REQUIREMENT_REGEX, "")
 
-        tmp_file = DependencyFile.new(name: file.name, content: content)
-        Dependabot::Python::FileParser.
-          new(dependency_files: [tmp_file], source: source).
-          parse.any?
-      rescue Dependabot::DependencyFileNotEvaluatable
-        false
+        matches = []
+
+        regex = RequirementParser::VALID_REQ_TXT_REQUIREMENT
+        content.scan(regex) { matches << Regexp.last_match }
+
+        matches.any?
       end
 
       def path_setup_file_paths

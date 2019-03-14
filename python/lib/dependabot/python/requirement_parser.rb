@@ -29,6 +29,14 @@ module Dependabot
           \s*#*\s*(?<comment>.+)?$
         /x.freeze
 
+      VALID_REQ_TXT_REQUIREMENT =
+        /^\s*\\?\s*(?<name>#{NAME})
+          \s*\\?\s*(\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
+          \s*\\?\s*(?<requirements>#{REQUIREMENTS})?
+          \s*\\?\s*(?<hashes>#{HASHES})?
+          \s*(\#+\s*(?<comment>.*))?$
+        /x.freeze
+
       NAME_WITH_EXTRAS =
         /\s*\\?\s*(?<name>#{NAME})
           (\s*\\?\s*\[\s*(?<extras>#{EXTRA}(\s*,\s*#{EXTRA})*)\s*\])?
