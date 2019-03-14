@@ -1,3 +1,7 @@
+## v0.97.9, 14 March 2019
+
+- Revert changes to JS helpers in dev and test env
+
 ## v0.97.8, 14 March 2019
 
 - Handle 409s from GitHub when constructing commit message
