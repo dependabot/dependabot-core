@@ -3,7 +3,6 @@
 require "json"
 require "dependabot/dependency_file"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/file_fetcher"
 
 module Dependabot
@@ -115,16 +114,20 @@ module Dependabot
         def parsed_yarn_lock
           return {} unless yarn_lock
 
+          # This is *extremely* crude, but saves us from having to shell out
+          # to Yarn, which may not be safe
           @parsed_yarn_lock ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write("yarn.lock", yarn_lock.content)
+            begin
+              content = yarn_lock.content.
+                        lines.
+                        map { |l| l.match?(/^[\w"]/) ? l.split(", ").last : l }.
+                        join.
+                        gsub(/(?<=\w|")\s(?=\w|")/, ": ")
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:parseLockfile",
-                args: [Dir.pwd]
-              )
+              YAML.safe_load(content)
             end
+        rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
+          @parsed_yarn_lock ||= {}
         end
 
         # The path back to the root lockfile

@@ -95,6 +95,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
         end
       end
 
+      context "that can't be parsed" do
+        let(:yarn_lock) do
+          Dependabot::DependencyFile.new(
+            name: "package-lock.json",
+            content: fixture("npm_lockfiles", "path_dependency.json")
+          )
+        end
+
+        it "raises a PathDependenciesNotReachable error with details" do
+          expect { dependency_file }.
+            to raise_error(
+              Dependabot::PathDependenciesNotReachable,
+              "The following path based dependencies could not be retrieved: " \
+              "etag"
+            )
+        end
+      end
+
       context "for a path dependency with sub-deps" do
         let(:yarn_lock_fixture_name) { "path_dependency_subdeps.lock" }
         let(:dependency_name) { "other_package" }
