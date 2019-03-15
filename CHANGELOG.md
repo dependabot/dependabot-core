@@ -1,3 +1,7 @@
+## v0.97.11, 15 March 2019
+
+- JS: Fix native helper path in development and test
+
 ## v0.97.10, 14 March 2019
 
 - Cargo: Remove lockfile duplicates
