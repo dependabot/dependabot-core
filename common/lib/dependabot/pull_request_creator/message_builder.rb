@@ -61,7 +61,7 @@ module Dependabot
         message = commit_subject + "\n\n"
         message += commit_message_intro
         message += metadata_links
-        message += "\n\n" + signoff_message if signoff_message
+        message += "\n\n" + message_trailers if message_trailers
         message
       end
 
@@ -89,11 +89,25 @@ module Dependabot
         "\n\n#{pr_message_footer}"
       end
 
+      def message_trailers
+        return unless on_behalf_of_message || signoff_message
+
+        [on_behalf_of_message, signoff_message].compact.join("\n")
+      end
+
       def signoff_message
         return unless author_details.is_a?(Hash)
         return unless author_details[:name] && author_details[:email]
 
         "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
+      end
+
+      def on_behalf_of_message
+        return unless author_details.is_a?(Hash)
+        return unless author_details[:org_name] && author_details[:org_email]
+
+        "On-behalf-of: @#{author_details[:org_name]} "\
+        "<#{author_details[:org_email]}>"
       end
 
       def library_pr_name
