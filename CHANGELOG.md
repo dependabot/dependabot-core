@@ -1,3 +1,7 @@
+## v0.97.10, 14 March 2019
+
+- Cargo: Remove lockfile duplicates
+
 ## v0.97.9, 14 March 2019
 
 - Revert changes to JS helpers in dev and test env
