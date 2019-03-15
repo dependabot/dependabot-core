@@ -26,7 +26,8 @@ module Dependabot
         "name" => name,
         "content" => content,
         "directory" => directory,
-        "type" => type
+        "type" => type,
+        "support_file" => support_file
       }
     end
 
@@ -35,7 +36,11 @@ module Dependabot
     end
 
     def ==(other)
-      other.instance_of?(self.class) && to_h == other.to_h
+      return false unless other.instance_of?(self.class)
+
+      my_hash = to_h.reject { |k| k == "support_file" }
+      their_hash = other.to_h.reject { |k| k == "support_file" }
+      my_hash == their_hash
     end
 
     def hash
