@@ -1,3 +1,8 @@
+## v0.98.1, 15 March 2019
+
+- Sign commits on behalf of an org
+- Add support_file to DependencyFile#to_h
+
 ## v0.98.0, 15 March 2019
 
 - Python: Avoid shelling out to Python during file fetching
