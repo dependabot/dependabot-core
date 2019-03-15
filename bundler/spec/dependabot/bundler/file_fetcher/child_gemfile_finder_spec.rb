@@ -23,16 +23,33 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
     end
 
     context "when the file does include a child Gemfile" do
+      let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
+      it { is_expected.to eq(["backend/Gemfile"]) }
+
       context "whose path must be eval-ed" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "eval_gemfile") }
-        it { is_expected.to eq(["backend/Gemfile"]) }
+        let(:gemfile_body) do
+          fixture("ruby", "gemfiles", "eval_gemfile_absolute")
+        end
+
+        it "raises a helpful error" do
+          expect { finder.child_gemfile_paths }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("Gemfile")
+          end
+        end
       end
 
-      context "that can't be eval-ed" do
+      context "that includes a variable" do
         let(:gemfile_body) do
           fixture("ruby", "gemfiles", "eval_gemfile_variable")
         end
-        it { is_expected.to eq([]) }
+
+        it "raises a helpful error" do
+          expect { finder.child_gemfile_paths }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("Gemfile")
+          end
+        end
       end
 
       context "within a group block" do
@@ -58,14 +75,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
         let(:gemfile_name) { "nested/Gemfile" }
 
         it { is_expected.to eq(["nested/backend/Gemfile"]) }
-      end
-
-      context "when the path is absolute" do
-        let(:gemfile_body) do
-          fixture("ruby", "gemfiles", "eval_gemfile_absolute")
-        end
-
-        it { is_expected.to eq(["backend/Gemfile"]) }
       end
     end
   end

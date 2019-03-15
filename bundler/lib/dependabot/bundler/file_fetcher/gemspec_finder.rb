@@ -26,7 +26,6 @@ module Dependabot
 
         attr_reader :gemfile
 
-        # rubocop:disable Security/Eval
         def find_gemspec_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
@@ -34,14 +33,15 @@ module Dependabot
             path_node = path_node_for_gem_declaration(node)
             return [clean_path(".")] unless path_node
 
-            begin
-              # We use eval here, but we know what we're doing. The
-              # FileFetchers helper method should only ever be run in an
-              # isolated environment
-              path = eval(path_node.loc.expression.source)
-            rescue StandardError
-              return []
+            unless path_node.type == :str
+              path = gemfile.path
+              msg = "Dependabot only supports uninterpolated string arguments "\
+                    "to gemspec. Got "\
+                    "`#{path_node.loc.expression.source}`"
+              raise Dependabot::DependencyFileNotParseable.new(path, msg)
             end
+
+            path = path_node.loc.expression.source.gsub(/['"]/, "")
             return [clean_path(path)]
           end
 
@@ -49,7 +49,6 @@ module Dependabot
             find_gemspec_paths(child_node)
           end
         end
-        # rubocop:enable Security/Eval
 
         def current_dir
           @current_dir ||= gemfile.name.rpartition("/").first

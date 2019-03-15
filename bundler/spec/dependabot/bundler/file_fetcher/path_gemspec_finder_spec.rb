@@ -39,7 +39,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
 
       context "whose path must be eval-ed" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_eval") }
-        it { is_expected.to eq([Pathname.new("plugins/example")]) }
+
+        it "raises a helpful error" do
+          expect { finder.path_gemspec_paths }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+            expect(error.file_name).to eq("Gemfile")
+          end
+        end
       end
 
       context "when this Gemfile is already in a nested directory" do
@@ -50,7 +56,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
 
       context "that is behind a conditional that is false" do
         let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_if") }
-        it { is_expected.to eq([]) }
+        it { is_expected.to eq([Pathname.new("plugins/example")]) }
       end
     end
   end

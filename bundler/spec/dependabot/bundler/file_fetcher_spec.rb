@@ -523,10 +523,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       end
 
       # TODO: ideally we'd be able to handle cases like this
-      it "doesn't fetch the child Gemfile, but doesn't error" do
-        expect(file_fetcher_instance.files.count).to eq(1)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to eq(["Gemfile"])
+      it "raises a DependencyFileNotParseable error with details" do
+        expect { file_fetcher_instance.files }.to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+          expect(error.file_path).to eq("/Gemfile")
+        end
       end
     end
 

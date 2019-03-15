@@ -42,8 +42,8 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
 
       # rubocop:disable Lint/InterpolationCheck
       context "that needs to be evaled" do
-        let(:file_body) { 'require_relative "./my_file_#{1+1}"' }
-        it { is_expected.to eq(["my_file_2.rb"]) }
+        let(:file_body) { 'require_relative "./my_file_#{raise %(hell)}"' }
+        it { is_expected.to eq([]) }
 
         context "but can't be" do
           let(:file_body) { 'require_relative "./my_file_#{unknown_var}"' }
