@@ -1479,6 +1479,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         expect(commit_message).
           to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>")
       end
+
+      context "that includes org details" do
+        let(:author_details) do
+          {
+            email: "support@dependabot.com",
+            name: "dependabot",
+            org_email: "support@tutum.com",
+            org_name: "tutum"
+          }
+        end
+
+        it "includes an on-behalf-of line" do
+          expect(commit_message).to end_with(
+            "\n\nOn-behalf-of: @tutum <support@tutum.com>\n"\
+            "Signed-off-by: dependabot <support@dependabot.com>"
+          )
+        end
+      end
     end
 
     context "for a repo that uses gitmoji commits" do
