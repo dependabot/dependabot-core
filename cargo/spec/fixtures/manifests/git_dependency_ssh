@@ -5,3 +5,4 @@ authors = ["support@dependabot.com"]
 
 [dependencies]
 utf8-ranges = { git = "ssh://git@github.com/BurntSushi/utf8-ranges" }
+utf8-ranges-parent = { git = "ssh://git@github.com/dependabot-fixtures/utf8-ranges" }

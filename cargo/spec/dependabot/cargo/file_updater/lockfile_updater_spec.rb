@@ -203,6 +203,17 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
                          "74dc0260efd2c5e17c35643a2b47dc508ec823fd")
             expect(updated_lockfile_content).to_not include("git+https://")
+
+            expect(updated_lockfile_content).to include(
+              "[metadata]\n"\
+              '"checksum utf8-ranges 1.0.2 (git+ssh://git@github.com/'\
+              "BurntSushi/utf8-ranges)\" = \"<none>\"\n"\
+              '"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/'\
+              "dependabot-fixtures/utf8-ranges)\" = \"<none>\""
+            )
+
+            content = updated_lockfile_content
+            expect(content.scan(/name = "utf8-ranges"/).count).to eq(1)
           end
         end
 
