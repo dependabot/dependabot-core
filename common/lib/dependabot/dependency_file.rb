@@ -38,8 +38,8 @@ module Dependabot
     def ==(other)
       return false unless other.instance_of?(self.class)
 
-      my_hash = to_h.tap { |h| h.delete("support_file") }
-      their_hash = other.to_h.tap { |h| h.delete("support_file") }
+      my_hash = to_h.reject { |k| k == "support_file" }
+      their_hash = other.to_h.reject { |k| k == "support_file" }
       my_hash == their_hash
     end
 
