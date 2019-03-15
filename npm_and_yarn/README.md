@@ -5,11 +5,13 @@ npm and Yarn support for [`dependabot-core`][core-repo].
 ### Running locally
 
 1. Install native helpers
+
    ```
-   $ helpers/build helpers/install-dir/npm_and_yarn
+   $ cd helpers && yarn install && cd -
    ```
 
 2. Install Ruby dependencies
+
    ```
    $ bundle install
    ```
