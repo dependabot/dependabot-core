@@ -1,3 +1,9 @@
+## v0.98.0, 15 March 2019
+
+- Python: Avoid shelling out to Python during file fetching
+- JS: Don't shell out to JavaScript during file fetching
+- Ruby: Remove all calls to eval from file fetching
+
 ## v0.97.11, 15 March 2019
 
 - JS: Fix native helper path in development and test
