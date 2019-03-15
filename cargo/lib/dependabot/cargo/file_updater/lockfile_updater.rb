@@ -13,6 +13,13 @@ module Dependabot
   module Cargo
     class FileUpdater
       class LockfileUpdater
+        LOCKFILE_ENTRY_REGEX = /
+          \[\[package\]\]\n
+          (?:(?!^\[(\[package|metadata)).)+
+        /mx.freeze
+
+        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/.freeze
+
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
@@ -240,6 +247,7 @@ module Dependabot
         def post_process_lockfile(content)
           git_ssh_requirements_to_swap.each do |ssh_url, https_url|
             content = content.gsub(https_url, ssh_url)
+            content = remove_duplicate_lockfile_entries(content)
           end
 
           content
@@ -265,6 +273,36 @@ module Dependabot
           end
 
           @git_ssh_requirements_to_swap
+        end
+
+        def remove_duplicate_lockfile_entries(lockfile_content)
+          # Loop through the lockfile entries looking for duplicates. Replace
+          # any that are found
+          lockfile_entries = []
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            lockfile_entries << Regexp.last_match.to_s
+          end
+          lockfile_entries.
+            select { |e| lockfile_entries.count(e) > 1 }.uniq.
+            each do |entry|
+              (lockfile_entries.count(entry) - 1).
+                times { lockfile_content = lockfile_content.sub(entry, "") }
+            end
+
+          # Loop through the lockfile checksums looking for duplicates. Replace
+          # any that are found
+          lockfile_checksums = []
+          lockfile_content.scan(LOCKFILE_CHECKSUM_REGEX) do
+            lockfile_checksums << Regexp.last_match.to_s
+          end
+          lockfile_checksums.
+            select { |e| lockfile_checksums.count(e) > 1 }.uniq.
+            each do |cs|
+              (lockfile_checksums.count(cs) - 1).
+                times { lockfile_content = lockfile_content.sub("\n#{cs}", "") }
+            end
+
+          lockfile_content
         end
 
         def dummy_app_content

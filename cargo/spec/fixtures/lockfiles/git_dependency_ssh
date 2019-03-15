@@ -3,6 +3,7 @@ name = "dependabot"
 version = "0.1.0"
 dependencies = [
  "utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)",
+ "utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/dependabot-fixtures/utf8-ranges)",
 ]
 
 [[package]]
@@ -10,5 +11,14 @@ name = "utf8-ranges"
 version = "1.0.0"
 source = "git+ssh://git@github.com/BurntSushi/utf8-ranges#83141b376b93484341c68fbca3ca110ae5cd2708"
 
+[[package]]
+name = "utf8-ranges-parent"
+version = "1.0.2"
+source = "git+ssh://git@github.com/dependabot-fixtures/utf8-ranges#9996043f61e9bd18eead9051a238271478089bd2"
+dependencies = [
+ "utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)",
+]
+
 [metadata]
 "checksum utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)" = "<none>"
+"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/dependabot-fixtures/utf8-ranges)" = "<none>"
