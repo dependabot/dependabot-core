@@ -74,6 +74,15 @@ RSpec.describe Dependabot::DependencyFile do
       specify { expect(file1).to eq(file2) }
     end
 
+    context "when two dependency files are equal, but one is a support file" do
+      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file2) do
+        described_class.new(name: "Gemfile", content: "a", support_file: true)
+      end
+
+      specify { expect(file1).to eq(file2) }
+    end
+
     context "when two dependency files are not equal" do
       let(:file1) { described_class.new(name: "Gemfile", content: "a") }
       let(:file2) { described_class.new(name: "Gemfile", content: "b") }
