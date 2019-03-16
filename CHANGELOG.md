@@ -1,3 +1,7 @@
+## v0.98.2, 15 March 2019
+
+- Docker: Raise custom error when private registries time out fetching tags
+
 ## v0.98.1, 15 March 2019
 
 - Sign commits on behalf of an org
