@@ -31,6 +31,7 @@ module Dependabot
 
         fetched_files += packages_config_files
         fetched_files << nuget_config if nuget_config
+        fetched_files << global_json if global_json
 
         fetched_files = fetched_files.uniq
 
@@ -179,6 +180,10 @@ module Dependabot
             file = fetch_file_from_host(file.name) if file
             file&.tap { |f| f.support_file = true }
           end
+      end
+
+      def global_json
+        @global_json ||= fetch_file_if_present("global.json")
       end
 
       def imported_property_files
