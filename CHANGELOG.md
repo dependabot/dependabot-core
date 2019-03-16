@@ -1,3 +1,7 @@
+## v0.98.3, 16 March 2019
+
+- .NET: Update NuGet packages in global.json
+
 ## v0.98.2, 15 March 2019
 
 - Docker: Raise custom error when private registries time out fetching tags
