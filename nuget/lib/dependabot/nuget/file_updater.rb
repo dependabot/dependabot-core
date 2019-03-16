@@ -13,7 +13,8 @@ module Dependabot
       def self.updated_files_regex
         [
           %r{^[^/]*\.[a-z]{2}proj$},
-          /^packages\.config$/i
+          /^packages\.config$/i,
+          /^global\.json$/i
         ]
       end
 
@@ -48,6 +49,10 @@ module Dependabot
         dependency_files.select do |f|
           f.name.split("/").last.casecmp("packages.config").zero?
         end
+      end
+
+      def global_json
+        dependency_files.find { |f| f.name.casecmp("global.json").zero? }
       end
 
       def check_required_files
@@ -113,7 +118,16 @@ module Dependabot
       end
 
       def original_declarations(dependency, requirement)
-        declaration_finder(dependency, requirement).declaration_strings
+        if requirement.fetch(:file).casecmp("global.json").zero?
+          [
+            global_json.content.match(
+              /"#{Regexp.escape(dependency.name)}"\s*:\s*
+               "#{Regexp.escape(dependency.previous_version)}"/x
+            ).to_s
+          ]
+        else
+          declaration_finder(dependency, requirement).declaration_strings
+        end
       end
 
       def declaration_finder(dependency, requirement)

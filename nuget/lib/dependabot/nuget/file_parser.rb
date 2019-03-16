@@ -14,6 +14,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/project_file_parser"
       require_relative "file_parser/packages_config_parser"
+      require_relative "file_parser/global_json_parser"
 
       PACKAGE_CONF_DEPENDENCY_SELECTOR = "packages > packages"
 
@@ -21,6 +22,7 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += project_file_dependencies
         dependency_set += packages_config_dependencies
+        dependency_set += global_json_dependencies if global_json
         dependency_set.dependencies
       end
 
@@ -48,6 +50,12 @@ module Dependabot
         dependency_set
       end
 
+      def global_json_dependencies
+        return DependencySet.new unless global_json
+
+        GlobalJsonParser.new(global_json: global_json).dependency_set
+      end
+
       def project_file_parser
         @project_file_parser ||=
           ProjectFileParser.new(dependency_files: dependency_files)
@@ -67,11 +75,15 @@ module Dependabot
         dependency_files -
           project_files -
           packages_config_files -
-          [nuget_config]
+          [nuget_config, global_json]
       end
 
       def nuget_config
         dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+      end
+
+      def global_json
+        dependency_files.find { |f| f.name.casecmp("global.json").zero? }
       end
 
       def check_required_files

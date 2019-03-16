@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/file_updater"
@@ -233,34 +234,28 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           name: "Microsoft.Extensions.DependencyModel",
           version: "1.1.2",
           previous_version: "1.1.1",
-          requirements: [
-            {
-              file: "my.csproj",
-              requirement: "1.1.2",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "my.vbproj",
-              requirement: "1.1.*",
-              groups: [],
-              source: nil
-            }
-          ],
-          previous_requirements: [
-            {
-              file: "my.csproj",
-              requirement: "1.1.1",
-              groups: [],
-              source: nil
-            },
-            {
-              file: "my.vbproj",
-              requirement: "1.0.1",
-              groups: [],
-              source: nil
-            }
-          ],
+          requirements: [{
+            file: "my.csproj",
+            requirement: "1.1.2",
+            groups: [],
+            source: nil
+          }, {
+            file: "my.vbproj",
+            requirement: "1.1.*",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "my.csproj",
+            requirement: "1.1.1",
+            groups: [],
+            source: nil
+          }, {
+            file: "my.vbproj",
+            requirement: "1.0.1",
+            groups: [],
+            source: nil
+          }],
           package_manager: "nuget"
         )
       end
@@ -280,6 +275,46 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
 
         its(:content) { is_expected.to include 'Version="1.1.*" />' }
+      end
+    end
+
+    context "with a global.json" do
+      let(:dependency_files) { [csproj_file, global_json] }
+      let(:global_json) do
+        Dependabot::DependencyFile.new(
+          content: fixture("global_jsons", "global.json"),
+          name: "global.json"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Microsoft.Build.Traversal",
+          version: "1.0.52",
+          previous_version: "1.0.45",
+          requirements: [{
+            file: "global.json",
+            requirement: "1.0.52",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "global.json",
+            requirement: "1.0.45",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated global.json file" do
+        subject(:updated_global_json_file) do
+          updated_files.find { |f| f.name == "global.json" }
+        end
+
+        its(:content) do
+          is_expected.to include '"Microsoft.Build.Traversal": "1.0.52"'
+        end
       end
     end
   end

@@ -179,6 +179,42 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
+    context "with a global.json" do
+      let(:files) { [packages_config, global_json] }
+      let(:packages_config) do
+        Dependabot::DependencyFile.new(
+          name: "packages.config",
+          content: fixture("packages_configs", "packages.config")
+        )
+      end
+      let(:global_json) do
+        Dependabot::DependencyFile.new(
+          name: "global.json",
+          content: fixture("global_jsons", "global.json")
+        )
+      end
+
+      its(:length) { is_expected.to eq(10) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("Microsoft.Build.Traversal")
+          expect(dependency.version).to eq("1.0.45")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.45",
+              file: "global.json",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "with an imported properties file" do
       let(:files) { [csproj_file, imported_file] }
       let(:imported_file) do
