@@ -210,6 +210,32 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect { checker.latest_version }.
             to raise_error(RestClient::Exceptions::OpenTimeout)
         end
+
+        context "for a private registry" do
+          let(:dependency_name) { "ubuntu" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: version,
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { registry: "registry-host.io:5000" }
+              }],
+              package_manager: "docker"
+            )
+          end
+          let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
+          let(:registry_tags) do
+            fixture("docker", "registry_tags", "ubuntu_no_latest.json")
+          end
+
+          it "raises" do
+            expect { checker.latest_version }.
+              to raise_error(Dependabot::PrivateSourceTimedOut)
+          end
+        end
       end
     end
 
