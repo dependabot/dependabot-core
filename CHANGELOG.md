@@ -1,3 +1,7 @@
+## v0.98.5, 17 March 2019
+
+- PHP: Remove overzealous use of shellwords
+
 ## v0.98.4, 16 March 2019
 
 - Gradle: Handle property declarations in namespaces
