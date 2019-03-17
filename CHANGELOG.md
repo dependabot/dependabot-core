@@ -1,3 +1,8 @@
+## v0.98.4, 16 March 2019
+
+- Gradle: Handle property declarations in namespaces
+- Gradle: Minor cleanup (uniq files)
+
 ## v0.98.3, 16 March 2019
 
 - .NET: Update NuGet packages in global.json
