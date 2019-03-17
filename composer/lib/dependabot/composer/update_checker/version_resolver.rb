@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
