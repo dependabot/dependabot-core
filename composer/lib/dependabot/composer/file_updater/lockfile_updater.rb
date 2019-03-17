@@ -53,7 +53,7 @@ module Dependabot
         def run_update_helper
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
-              command: Shellwords.join(["php", php_helper_path]),
+              command: "php -d memory_limit=-1 #{php_helper_path}",
               function: "update",
               env: credentials_env,
               args: [
