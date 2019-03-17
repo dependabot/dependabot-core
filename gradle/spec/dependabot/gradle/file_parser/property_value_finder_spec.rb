@@ -81,6 +81,16 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             let(:property_name) { "commentedVersion" }
             it { is_expected.to be_nil }
           end
+
+          context "and the property is declared within a namespace" do
+            let(:buildfile_fixture_name) { "properties_namespaced.gradle" }
+            let(:property_name) { "versions.okhttp" }
+
+            its([:value]) { is_expected.to eq("3.12.1") }
+            its([:declaration_string]) do
+              is_expected.to eq("okhttp                 : '3.12.1'")
+            end
+          end
         end
       end
     end

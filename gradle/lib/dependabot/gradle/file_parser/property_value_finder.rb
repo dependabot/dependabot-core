@@ -6,9 +6,16 @@ module Dependabot
   module Gradle
     class FileParser
       class PropertyValueFinder
-        PROPERTY_DECLARATION_REGEX =
+        SINGLE_PROPERTY_DECLARATION_REGEX =
           /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/.
           freeze
+
+        MULTI_PROPERTY_DECLARATION_REGEX =
+          /(?:^|\s+|ext.)(?<namespace>[^\s=]+)\s*=\s*\[(?<values>[^\]]+)\]/m.
+          freeze
+
+        NAMESPACED_DECLARATION_REGEX =
+          /(?:^|\s+)(?<name>[^\s:]+)\s*:\s*['"](?<value>[^\s]+)['"]\s*/.freeze
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files
@@ -57,18 +64,55 @@ module Dependabot
           return @properties[buildfile.name] if @properties[buildfile.name]
 
           @properties[buildfile.name] = {}
-          prepared_content(buildfile).scan(PROPERTY_DECLARATION_REGEX) do
+
+          @properties[buildfile.name].
+            merge!(fetch_single_property_declarations(buildfile))
+
+          @properties[buildfile.name].
+            merge!(fetch_multi_property_declarations(buildfile))
+
+          @properties[buildfile.name]
+        end
+
+        def fetch_single_property_declarations(buildfile)
+          properties = {}
+
+          prepared_content(buildfile).scan(SINGLE_PROPERTY_DECLARATION_REGEX) do
             declaration_string = Regexp.last_match.to_s.strip
             captures = Regexp.last_match.named_captures
             name = captures.fetch("name").sub(/^ext\./, "")
-            @properties[buildfile.name][name] = {
+            properties[name] = {
               value: captures.fetch("value"),
               declaration_string: declaration_string,
               file: buildfile.name
             }
           end
 
-          @properties[buildfile.name]
+          properties
+        end
+
+        def fetch_multi_property_declarations(buildfile)
+          properties = {}
+
+          prepared_content(buildfile).scan(MULTI_PROPERTY_DECLARATION_REGEX) do
+            captures = Regexp.last_match.named_captures
+            namespace = captures.fetch("namespace").sub(/^ext\./, "")
+
+            captures.fetch("values").scan(NAMESPACED_DECLARATION_REGEX) do
+              declaration_string = Regexp.last_match.to_s.strip
+              sub_captures = Regexp.last_match.named_captures
+              name = sub_captures.fetch("name")
+              full_name = [namespace, name].join(".")
+
+              properties[full_name] = {
+                value: sub_captures.fetch("value"),
+                declaration_string: declaration_string,
+                file: buildfile.name
+              }
+            end
+          end
+
+          properties
         end
 
         def prepared_content(buildfile)
