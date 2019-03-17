@@ -53,7 +53,8 @@ module Dependabot
           reject { |path| path.include?("://") }.
           reject { |path| !path.include?("/") && path.split(".").count > 2 }.
           select { |filename| filename.include?("dependencies") }.
-          map { |path| path.gsub("$rootDir", ".") }
+          map { |path| path.gsub("$rootDir", ".") }.
+          uniq
 
         dependency_plugin_paths.map do |path|
           fetch_file_from_host(path)

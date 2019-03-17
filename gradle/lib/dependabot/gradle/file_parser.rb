@@ -236,8 +236,10 @@ module Dependabot
           buildfiles.flat_map do |buildfile|
             buildfile.content.
               scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
-              map { |f| dependency_files.find { |bf| bf.name == f } }.compact
-          end
+              map { |f| dependency_files.find { |bf| bf.name == f } }.
+              compact
+          end.
+          uniq
       end
 
       def check_required_files
