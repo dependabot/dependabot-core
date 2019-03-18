@@ -1,3 +1,8 @@
+## v0.98.9, 18 March 2019
+
+- Gradle: Handle multiple updates to a superstring
+- .NET: Raise parser error for unparseable JSON
+
 ## v0.98.8, 18 March 2019
 
 - Python: escape child process commands
