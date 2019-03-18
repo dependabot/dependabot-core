@@ -20,8 +20,7 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          project_sdks = JSON.parse(global_json.content).
-                         fetch("msbuild-sdks", {})
+          project_sdks = parsed_global_json.fetch("msbuild-sdks", {})
 
           unless project_sdks.is_a?(Hash)
             raise Dependabot::DependencyFileNotParseable, global_json.path
@@ -48,6 +47,12 @@ module Dependabot
         private
 
         attr_reader :global_json
+
+        def parsed_global_json
+          @parsed_global_json ||= JSON.parse(global_json.content)
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, global_json.path
+        end
       end
     end
   end
