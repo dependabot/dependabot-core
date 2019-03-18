@@ -25,7 +25,10 @@ module Dependabot
           file_to_update = dependency_files.find { |f| f.name == filename }
           updated_content = file_to_update.content.sub(
             declaration_string,
-            declaration_string.sub(previous_value, updated_value)
+            declaration_string.sub(
+              previous_value_regex(previous_value),
+              updated_value
+            )
           )
 
           updated_files = dependency_files.dup
@@ -49,6 +52,10 @@ module Dependabot
           updated_file = file.dup
           updated_file.content = content
           updated_file
+        end
+
+        def previous_value_regex(previous_value)
+          /(?<=['"])#{Regexp.quote(previous_value)}(?=['"])/
         end
       end
     end
