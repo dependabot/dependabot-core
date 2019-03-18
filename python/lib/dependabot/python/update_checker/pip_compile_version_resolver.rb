@@ -82,14 +82,6 @@ module Dependabot
           Python::Version.new(@latest_resolvable_version_string)
         end
 
-        def parse_requirements_from_cwd_files
-          SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
-            function: "parse_requirements",
-            args: [Dir.pwd]
-          )
-        end
-
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable

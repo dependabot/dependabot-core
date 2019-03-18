@@ -304,16 +304,12 @@ module Dependabot
       def requirements_file?(file)
         return true if file.name.match?(/requirements/x)
 
-        content = file.content.
-                  gsub(CONSTRAINT_REGEX, "").
-                  gsub(CHILD_REQUIREMENT_REGEX, "")
+        file.content.lines.all? do |line|
+          next true if line.strip.empty?
+          next true if line.start_with?("-r ", "-c ", "-e ")
 
-        matches = []
-
-        regex = RequirementParser::VALID_REQ_TXT_REQUIREMENT
-        content.scan(regex) { matches << Regexp.last_match }
-
-        matches.any?
+          line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
+        end
       end
 
       def path_setup_file_paths
