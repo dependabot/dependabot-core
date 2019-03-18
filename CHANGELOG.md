@@ -1,3 +1,7 @@
+## v0.98.8, 18 March 2019
+
+- Python: escape child process commands
+
 ## v0.98.7, 18 March 2019
 
 - Stricter regex for Python file correctness
