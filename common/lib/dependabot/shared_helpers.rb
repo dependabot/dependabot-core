@@ -6,6 +6,7 @@ require "excon"
 require "English"
 require "digest"
 require "open3"
+require "shellwords"
 
 module Dependabot
   module SharedHelpers
@@ -74,11 +75,20 @@ module Dependabot
       end
     end
 
+    # Escapes all special characters, e.g. = & | <>
+    def self.escape_command(command)
+      command_parts = command.split(" ").map(&:strip).reject(&:empty?)
+      Shellwords.join(command_parts)
+    end
+
+    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
-                                   stderr_to_stdout: false)
+                                   stderr_to_stdout: false,
+                                   escape_command_str: true)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
-      env_cmd = [env, command].compact
+      cmd = escape_command_str ? escape_command(command) : command
+      env_cmd = [env, cmd].compact
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
@@ -109,6 +119,7 @@ module Dependabot
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
       Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]

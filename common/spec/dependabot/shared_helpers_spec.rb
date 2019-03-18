@@ -117,4 +117,22 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
   end
+
+  describe ".escape_command" do
+    let(:command) { "yes | foo=1 &  'na=1'  name  > file" }
+
+    subject(:escape_command) do
+      Dependabot::SharedHelpers.escape_command(command)
+    end
+
+    it do
+      is_expected.to eq("yes \\| foo\\=1 \\& \\'na\\=1\\' name \\> file")
+    end
+
+    context "when empty" do
+      let(:command) { "" }
+
+      it { is_expected.to eq("") }
+    end
+  end
 end
