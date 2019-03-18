@@ -3,7 +3,7 @@
 module Dependabot
   module Python
     class RequirementParser
-      NAME = /[a-zA-Z0-9\-_\.]+/.freeze
+      NAME = /[a-zA-Z0-9](?:[a-zA-Z0-9\-_\.]*[a-zA-Z0-9])?/.freeze
       EXTRA = /[a-zA-Z0-9\-_\.]+/.freeze
       COMPARISON = /===|==|>=|<=|<|>|~=|!=/.freeze
       VERSION = /[0-9]+[a-zA-Z0-9\-_\.*]*(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?/.
