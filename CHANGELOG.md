@@ -1,3 +1,7 @@
+## v0.98.7, 18 March 2019
+
+- Stricter regex for Python file correctness
+
 ## v0.98.6, 18 March 2019
 
 - Python: Better regex for dependency names
