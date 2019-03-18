@@ -1,3 +1,8 @@
+## v0.98.6, 18 March 2019
+
+- Python: Better regex for dependency names
+- Remove redundant require
+
 ## v0.98.5, 17 March 2019
 
 - PHP: Remove overzealous use of shellwords
