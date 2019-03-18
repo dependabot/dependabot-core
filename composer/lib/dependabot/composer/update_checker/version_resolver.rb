@@ -66,6 +66,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
+              escape_command_str: false,
               function: "get_latest_resolvable_version",
               args: [
                 Dir.pwd,
