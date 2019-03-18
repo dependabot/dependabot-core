@@ -1,3 +1,7 @@
+## v0.98.10, 18 March 2019
+
+- Python: Don't escape spaces in pip-compile options
+
 ## v0.98.9, 18 March 2019
 
 - Gradle: Handle multiple updates to a superstring
