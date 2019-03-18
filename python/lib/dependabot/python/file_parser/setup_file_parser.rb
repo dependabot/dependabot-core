@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "shellwords"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/file_parsers/base/dependency_set"
@@ -57,8 +58,10 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
 
+            command_parts = ["pyenv", "exec", "python",
+                             NativeHelpers.python_helper_path]
             requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: Shellwords.join(command_parts),
               function: "parse_setup",
               args: [Dir.pwd]
             )
@@ -78,8 +81,10 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             write_sanitized_setup_file
 
+            command_parts = ["pyenv", "exec", "python",
+                             NativeHelpers.python_helper_path]
             requirements = SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              command: Shellwords.join(command_parts),
               function: "parse_setup",
               args: [Dir.pwd]
             )

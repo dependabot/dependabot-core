@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "shellwords"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
@@ -55,15 +56,15 @@ module Dependabot
               write_temporary_dependency_files
 
               if python_version && !pre_installed_python?(python_version)
-                run_poetry_command("pyenv install -s #{python_version}")
-                run_poetry_command("pyenv exec pip install -r " + \
-                                   NativeHelpers.python_requirements_path)
+                run_poetry_command(["pyenv", "install", "-s", python_version])
+                run_poetry_command(["pyenv", "exec", "pip", "install", "-r",
+                                    NativeHelpers.python_requirements_path])
               end
 
               # Shell out to Poetry, which handles everything for us.
               # Using `--lock` avoids doing an install.
               run_poetry_command(
-                "pyenv exec poetry update #{dependency.name} --lock"
+                ["pyenv", "exec", "poetry", "update", dependency.name, "--lock"]
               )
 
               updated_lockfile =
@@ -105,7 +106,7 @@ module Dependabot
             write_temporary_dependency_files(update_pyproject: false)
 
             run_poetry_command(
-              "pyenv exec poetry update #{dependency.name} --lock"
+              ["pyenv", "exec", "poetry", "update", dependency.name, "--lock"]
             )
 
             true
@@ -175,7 +176,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_poetry_command("pyenv install --list")
+          @pyenv_versions ||= run_poetry_command(["pyenv", "install", "--list"])
         end
 
         def pre_installed_python?(version)
@@ -311,8 +312,9 @@ module Dependabot
           dependency_files.find { |f| f.name == ".python-version" }
         end
 
-        def run_poetry_command(command)
+        def run_poetry_command(command_parts)
           start = Time.now
+          command = Shellwords.join(command_parts)
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
