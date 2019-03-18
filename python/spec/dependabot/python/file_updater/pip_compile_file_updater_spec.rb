@@ -115,7 +115,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).to include("4b90b09eeeb9b88c35bc64")
-        expect(updated_files.first.content).to include("# This file is autogen")
+        expect(updated_files.first.content).
+          to_not include("# This file is autogen")
       end
 
       context "that need to be augmented with hashin" do
@@ -127,6 +128,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
 
         it "updates the requirements.txt, keeping all the hashes" do
           expect(updated_files.count).to eq(1)
+          expect(updated_files.first.content).
+            to include("# This file is autogen")
           expect(updated_files.first.content).
             to include("pyasn1-modules==0.1.5 \\\n    --hash=sha256:01")
           expect(updated_files.first.content).
