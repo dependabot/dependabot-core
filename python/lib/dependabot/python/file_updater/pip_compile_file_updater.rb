@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "shellwords"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_updater"
@@ -55,6 +56,8 @@ module Dependabot
           ]
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
@@ -63,15 +66,20 @@ module Dependabot
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
-              run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} "\
-                "-P #{dependency.name}==#{dependency.version} #{filename}"
-              )
+              cmd_dep_name = Shellwords.join([
+                "pyenv", "exec", "pip-compile",
+                pip_compile_options(filename),
+                "-P", dependency.name
+              ].reject(&:empty?))
+              cmd_dep_version = Shellwords.join([dependency.version, filename])
+              # Don't escape pyenv `dep-name==version` syntax
+              run_pip_compile_command(["#{cmd_dep_name}==#{cmd_dep_version}"],
+                                      escape: false)
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
               run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} "\
-                "#{filename}"
+                ["pyenv", "exec", "pip-compile", pip_compile_options(filename),
+                 filename].reject(&:empty?)
               )
             end
 
@@ -91,6 +99,8 @@ module Dependabot
             end.compact
           end
         end
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/AbcSize
 
         def update_manifest_files
           dependency_files.map do |file|
@@ -129,11 +139,10 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        def run_command(command)
-          command = command.dup
-          env_cmd = [python_env, command].compact
+        def run_command(cmd_parts, env: python_env, escape: true)
           start = Time.now
-          stdout, process = Open3.capture2e(*env_cmd)
+          command = escape ? Shellwords.join(cmd_parts) : cmd_parts.join(" ")
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           return stdout if process.success?
@@ -148,9 +157,9 @@ module Dependabot
           )
         end
 
-        def run_pip_compile_command(command)
-          local_command = "pyenv local #{python_version} && " + command
-          run_command(local_command)
+        def run_pip_compile_command(command_parts, escape: true)
+          run_command(["pyenv", "local", python_version])
+          run_command(command_parts, escape: escape)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -216,13 +225,13 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command("pyenv versions").include?("#{python_version}\n")
+          if run_command(%w(pyenv versions)).include?("#{python_version}\n")
             return
           end
 
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install -r " + \
-                      NativeHelpers.python_requirements_path)
+          run_command(["pyenv", "install", "-s", python_version])
+          run_command(["pyenv", "exec", "pip", "install", "-r",
+                       NativeHelpers.python_requirements_path])
         end
 
         def sanitized_setup_file_content(file)
@@ -366,8 +375,10 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
+          command_parts = ["pyenv", "exec", "python",
+                           NativeHelpers.python_helper_path]
           SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            command: Shellwords.join(command_parts),
             function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
@@ -512,7 +523,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
+          @pyenv_versions ||= run_command(["pyenv", "install", "--list"])
         end
 
         def pre_installed_python?(version)

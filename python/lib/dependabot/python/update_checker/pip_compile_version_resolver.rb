@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "shellwords"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
@@ -11,14 +12,13 @@ require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
+      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
 
@@ -59,13 +59,13 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
-                    "-P #{dependency.name} #{filename}"
+                    ["pyenv", "exec", "pip-compile", "--allow-unsafe",
+                     "-P", dependency.name, filename]
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe #{filename}"
+                    ["pyenv", "exec", "pip-compile", "--allow-unsafe", filename]
                   )
                 end
 
@@ -118,8 +118,8 @@ module Dependabot
               write_temporary_dependency_files(unlock_requirement: false)
 
               filenames_to_compile.each do |filename|
-                cmd = "pyenv exec pip-compile --allow-unsafe #{filename}"
-                run_command(cmd)
+                run_command(["pyenv", "exec", "pip-compile", "--allow-unsafe",
+                             filename])
               end
 
               true
@@ -134,11 +134,10 @@ module Dependabot
           end
         end
 
-        def run_command(command)
-          command = command.dup
-          env_cmd = [python_env, command].compact
+        def run_command(command_parts, env: python_env)
           start = Time.now
-          stdout, process = Open3.capture2e(*env_cmd)
+          command = Shellwords.join(command_parts)
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           return stdout if process.success?
@@ -153,9 +152,9 @@ module Dependabot
           )
         end
 
-        def run_pip_compile_command(command)
-          local_command = "pyenv local #{python_version} && " + command
-          run_command(local_command)
+        def run_pip_compile_command(command_parts)
+          run_command(["pyenv", "local", python_version])
+          run_command(command_parts)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -225,13 +224,13 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command("pyenv versions").include?("#{python_version}\n")
+          if run_command(%w(pyenv versions)).include?("#{python_version}\n")
             return
           end
 
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install -r " + \
-                      NativeHelpers.python_requirements_path)
+          run_command(["pyenv", "install", "-s", python_version])
+          run_command(["pyenv", "exec", "pip", "install", "-r",
+                       NativeHelpers.python_requirements_path])
         end
 
         def sanitized_setup_file_content(file)
@@ -411,7 +410,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
+          @pyenv_versions ||= run_command(["pyenv", "install", "--list"])
         end
 
         def pre_installed_python?(version)
@@ -434,7 +433,7 @@ module Dependabot
           dependency_files.find { |f| f.name == ".python-version" }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

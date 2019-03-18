@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "shellwords"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
@@ -78,7 +79,7 @@ module Dependabot
                 # pipenv flow, an install is still done by pip-tools in order
                 # to resolve the dependencies. That means this is slow.
                 run_pipenv_command(
-                  pipenv_environment_variables + "pyenv exec pipenv lock"
+                  %w(pyenv exec pipenv lock)
                 )
 
                 updated_lockfile = JSON.parse(File.read("Pipfile.lock"))
@@ -195,7 +196,7 @@ module Dependabot
               write_temporary_dependency_files(update_pipfile: false)
 
               run_pipenv_command(
-                pipenv_environment_variables + "pyenv exec pipenv lock"
+                %w(pyenv exec pipenv lock)
               )
 
               true
@@ -287,18 +288,19 @@ module Dependabot
         def install_required_python
           # Initialize a git repo to appease pip-tools
           begin
-            run_command("git init") if setup_files.any?
+            run_command(%w(git init)) if setup_files.any?
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed
             nil
           end
 
-          if run_command("pyenv versions").include?("#{python_version}\n")
+          if run_command(%w(pyenv versions)).include?("#{python_version}\n")
             return
           end
 
           requirements_path = NativeHelpers.python_requirements_path
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install -r #{requirements_path}")
+          run_command(["pyenv", "install", "-s", python_version])
+          run_command(["pyenv", "exec", "pip", "install", "-r",
+                       requirements_path])
         end
 
         def sanitized_setup_file_content(file)
@@ -412,7 +414,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
+          @pyenv_versions ||= run_command(["pyenv", "install", "--list"])
         end
 
         def pipfile_python_requirement
@@ -485,10 +487,10 @@ module Dependabot
           end
         end
 
-        def run_command(command)
-          command = command.dup
+        def run_command(command_parts, env: {})
           start = Time.now
-          stdout, process = Open3.capture2e(command)
+          command = Shellwords.join(command_parts)
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           return stdout if process.success?
@@ -503,9 +505,9 @@ module Dependabot
           )
         end
 
-        def run_pipenv_command(command)
-          local_command = "pyenv local #{python_version} && " + command
-          run_command(local_command)
+        def run_pipenv_command(command_parts, env: pipenv_env_variables)
+          run_command(["pyenv", "local", python_version])
+          run_command(command_parts, env: env)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -519,7 +521,8 @@ module Dependabot
           raise relevant_error if python_version.start_with?("2")
 
           # Clear the existing virtualenv, so that we use the new Python version
-          run_command("pyenv local #{python_version} && pyenv exec pipenv --rm")
+          run_command(["pyenv", "local", python_version])
+          run_command(["pyenv", "exec", "pipenv", "--rm"])
 
           @python_version = "2.7.15"
           retry
@@ -566,16 +569,14 @@ module Dependabot
             map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
         end
 
-        def pipenv_environment_variables
-          environment_variables = [
-            "PIPENV_YES=true",       # Install new Python versions if needed
-            "PIPENV_MAX_RETRIES=3",  # Retry timeouts
-            "PIPENV_NOSPIN=1",       # Don't pollute logs with spinner
-            "PIPENV_TIMEOUT=600",    # Set install timeout to 10 minutes
-            "PIP_DEFAULT_TIMEOUT=60" # Set pip timeout to 1 minute
-          ]
-
-          environment_variables.join(" ") + " "
+        def pipenv_env_variables
+          {
+            "PIPENV_YES" => "true",       # Install new Python ver if needed
+            "PIPENV_MAX_RETRIES" => "3",  # Retry timeouts
+            "PIPENV_NOSPIN" => "1",       # Don't pollute logs with spinner
+            "PIPENV_TIMEOUT" => "600",    # Set install timeout to 10 minutes
+            "PIP_DEFAULT_TIMEOUT" => "60" # Set pip timeout to 1 minute
+          }
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
-
+require "shellwords"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -125,8 +125,10 @@ module Dependabot
         SharedHelpers.in_a_temporary_directory do
           write_temporary_dependency_files
 
+          command_parts = ["pyenv", "exec", "python",
+                           NativeHelpers.python_helper_path]
           requirements = SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            command: Shellwords.join(command_parts),
             function: "parse_requirements",
             args: [Dir.pwd]
           )
