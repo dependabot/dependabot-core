@@ -2,7 +2,6 @@
 
 require "toml-rb"
 require "open3"
-require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/dependency_file"
 require "dependabot/dep/file_updater"
@@ -34,8 +33,7 @@ module Dependabot
                 # Note: We are currently doing a full install here (we're not
                 # passing no-vendor) because dep needs to generate the digests
                 # for each project.
-                cmd_parts = ["dep", "ensure", "-update"] + deps.map(&:name)
-                command = Shellwords.join(cmd_parts)
+                command = "dep ensure -update #{deps.map(&:name).join(' ')}"
                 dir_parts = dir.realpath.to_s.split("/")
                 gopath = File.join(dir_parts[0..-(base_parts + 1)])
                 run_shell_command(command, "GOPATH" => gopath)
@@ -53,6 +51,7 @@ module Dependabot
 
         def run_shell_command(command, env = {})
           start = Time.now
+          command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 

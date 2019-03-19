@@ -2,7 +2,6 @@
 
 require "toml-rb"
 require "open3"
-require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/dep/update_checker"
 require "dependabot/errors"
@@ -45,10 +44,7 @@ module Dependabot
               SharedHelpers.with_git_configured(credentials: credentials) do
                 # Shell out to dep, which handles everything for us, and does
                 # so without doing an install (so it's fast).
-                cmd_parts = ["dep", "ensure", "-update", "--no-vendor",
-                             dependency.name]
-                command = Shellwords.join(cmd_parts)
-
+                command = "dep ensure -update --no-vendor #{dependency.name}"
                 dir_parts = dir.realpath.to_s.split("/")
                 gopath = File.join(dir_parts[0..-(base_parts + 1)])
                 run_shell_command(command, "GOPATH" => gopath)
@@ -99,6 +95,7 @@ module Dependabot
 
         def run_shell_command(command, env = {})
           start = Time.now
+          command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
