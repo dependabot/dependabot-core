@@ -228,6 +228,8 @@ module Dependabot
             closes_required -= 1 if char == "}"
             return index if closes_required.zero?
           end
+
+          0
         end
       end
     end
