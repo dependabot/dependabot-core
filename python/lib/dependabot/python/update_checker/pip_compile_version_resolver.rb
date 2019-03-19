@@ -60,12 +60,13 @@ module Dependabot
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
                     ["pyenv", "exec", "pip-compile", "--allow-unsafe",
-                     "-P", dependency.name, filename]
+                     "--build-isolation", "-P", dependency.name, filename]
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   run_pip_compile_command(
-                    ["pyenv", "exec", "pip-compile", "--allow-unsafe", filename]
+                    ["pyenv", "exec", "pip-compile", "--allow-unsafe",
+                     "--build-isolation", filename]
                   )
                 end
 
