@@ -11,20 +11,17 @@ require __DIR__ . '/../vendor/autoload.php';
 // and an `args` method, as passed in by UpdateCheckers::Php
 $request = json_decode(file_get_contents('php://stdin'), true);
 
-// Increase the default memory limit the same way Composer does
+// Increase the default memory limit the same way Composer does (but clearer)
 if (function_exists('ini_set')) {
     $memoryInBytes = function ($value) {
         $unit = strtolower(substr($value, -1, 1));
         $value = (int) $value;
-        switch ($unit) {
-            case 'g':
-                $value *= 1024;
-                // no break (cumulative multiplier)
-            case 'm':
-                $value *= 1024;
-                // no break (cumulative multiplier)
-            case 'k':
-                $value *= 1024;
+        if ($unit == 'g') {
+            $value *= (1024 * 1024 * 1024);
+        } elseif ($unit == 'm') {
+            $value *= (1024 * 1024);
+        } elseif ($unit == 'k') {
+            $value *= 1024;
         }
 
         return $value;
