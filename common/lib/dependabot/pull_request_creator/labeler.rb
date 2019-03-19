@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "gitlab"
 require "octokit"
 require "dependabot/pull_request_creator"
 
@@ -348,16 +347,10 @@ module Dependabot
       end
 
       def gitlab_client_for_source
-        access_token =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }&.
-          fetch("password")
-
         @gitlab_client_for_source ||=
-          ::Gitlab.client(
-            endpoint: source.api_endpoint,
-            private_token: access_token || ""
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
           )
       end
 
