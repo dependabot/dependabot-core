@@ -1,3 +1,7 @@
+## v0.98.12, 19 March 2019
+
+- Use php7.2-zmq instead of php-zmq
+
 ## v0.98.11, 19 March 2019
 
 - .NET: Only update pre-release versions to pre-s for the same version
