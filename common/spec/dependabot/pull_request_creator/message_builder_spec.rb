@@ -409,11 +409,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                       headers: json_header)
         end
 
-        it { is_expected.to eq("⬆️ Bump business from 1.4.0 to 1.5.0") }
+        it { is_expected.to start_with("⬆️ Bump business") }
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("⬆️ 🔒 Bump") }
+          it { is_expected.to start_with("⬆️ 🔒 Bump business") }
         end
       end
     end
