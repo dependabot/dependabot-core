@@ -1,3 +1,7 @@
+## v0.98.15, 19 March 2019
+
+- Python: Raise a DependencyFileNotResolvable error for unsupported pip-compile constraints
+
 ## v0.98.14, 19 March 2019
 
 - Python: Use build isolation in FileUpdater
