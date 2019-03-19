@@ -76,6 +76,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) do
         is_expected.to eq(version_class.new("2.2.0-preview2-26406-04"))
       end
+
+      context "for a previous version" do
+        let(:dependency_version) { "2.1.0-preview1-26216-03" }
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.0"))
+        end
+      end
     end
 
     context "when the user is using an unfound property" do

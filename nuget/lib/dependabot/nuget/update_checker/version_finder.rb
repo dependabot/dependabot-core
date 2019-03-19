@@ -26,8 +26,9 @@ module Dependabot
           @latest_version_details ||=
             begin
               tmp_versions = versions
-              unless wants_prerelease?
-                tmp_versions.reject! { |d| d.fetch(:version).prerelease? }
+              tmp_versions.reject! do |d|
+                version = d.fetch(:version)
+                version.prerelease? && !related_to_current_pre?(version)
               end
               tmp_versions.reject! do |hash|
                 ignore_reqs.any? { |r| r.satisfied_by?(hash.fetch(:version)) }
@@ -105,18 +106,32 @@ module Dependabot
           }
         end
 
-        def wants_prerelease?
-          if dependency.version &&
-             version_class.correct?(dependency.version) &&
-             version_class.new(dependency.version).prerelease?
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        def related_to_current_pre?(version)
+          current_version = dependency.version
+          if current_version &&
+             version_class.correct?(current_version) &&
+             version_class.new(current_version).prerelease? &&
+             version_class.new(current_version).release == version.release
             return true
           end
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
-            reqs.any? { |r| r.include?("-") }
+            next unless reqs.any? { |r| r.include?("-") }
+
+            requirement_class.
+              requirements_array(req.fetch(:requirement)).
+              any? do |r|
+                r.requirements.any? { |a| a.last.release == version.release }
+              end
+          rescue Gem::Requirement::BadRequirementError
+            false
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def v3_nuget_listings
           return @v3_nuget_listings unless @v3_nuget_listings.nil?
