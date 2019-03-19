@@ -409,7 +409,7 @@ module Dependabot
 
           return unless requirements_file
 
-          options = []
+          options = ["--build-isolation"]
 
           if requirements_file.content.include?("--hash=sha")
             options << "--generate-hashes"
