@@ -172,11 +172,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
     end
 
     context "with an import of the setup.py" do
-      let(:dependency_files) { [manifest_file, generated_file, setup_file] }
+      let(:dependency_files) do
+        [manifest_file, generated_file, setup_file, pyproject]
+      end
       let(:setup_file) do
         Dependabot::DependencyFile.new(
           name: "setup.py",
           content: fixture("setup_files", setup_fixture_name)
+        )
+      end
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "black_configuration.toml")
         )
       end
       let(:manifest_fixture_name) { "imports_setup.in" }
