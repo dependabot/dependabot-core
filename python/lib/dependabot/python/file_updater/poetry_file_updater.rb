@@ -2,7 +2,6 @@
 
 require "toml-rb"
 require "open3"
-require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
@@ -154,13 +153,13 @@ module Dependabot
             write_temporary_dependency_files(pyproject_content)
 
             if python_version && !pre_installed_python?(python_version)
-              run_poetry_command(["pyenv", "install", "-s", python_version])
-              run_poetry_command(["pyenv", "exec", "pip", "install", "-r",
-                                  NativeHelpers.python_requirements_path])
+              run_poetry_command("pyenv install -s #{python_version}")
+              run_poetry_command("pyenv exec pip install -r"\
+                                 "#{NativeHelpers.python_requirements_path}")
             end
 
             run_poetry_command(
-              ["pyenv", "exec", "poetry", "update", dependency.name, "--lock"]
+              "pyenv exec poetry update #{dependency.name} --lock"
             )
 
             return File.read("poetry.lock") if File.exist?("poetry.lock")
@@ -169,9 +168,9 @@ module Dependabot
           end
         end
 
-        def run_poetry_command(command_parts)
+        def run_poetry_command(command)
           start = Time.now
-          command = Shellwords.join(command_parts)
+          command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
@@ -232,7 +231,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_poetry_command(["pyenv", "install", "--list"])
+          @pyenv_versions ||= run_poetry_command("pyenv install --list")
         end
 
         def pre_installed_python?(version)
@@ -242,10 +241,8 @@ module Dependabot
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "pyproject.toml"), pyproject_content)
-            command_parts = ["pyenv", "exec", "python",
-                             NativeHelpers.python_helper_path]
             SharedHelpers.run_helper_subprocess(
-              command: Shellwords.join(command_parts),
+              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
               function: "get_pyproject_hash",
               args: [dir]
             )

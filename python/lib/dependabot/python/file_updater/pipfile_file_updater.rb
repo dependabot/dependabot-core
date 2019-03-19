@@ -2,16 +2,14 @@
 
 require "toml-rb"
 require "open3"
-require "shellwords"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class PipfileFileUpdater
         require_relative "pipfile_preparer"
         require_relative "setup_file_sanitizer"
@@ -191,11 +189,11 @@ module Dependabot
                 install_required_python
 
                 # Initialize a git repo to appease pip-tools
-                command = Shellwords.join(%w(git init))
+                command = SharedHelpers.escape_command("git init")
                 IO.popen(command, err: %i(child out)) if setup_files.any?
 
                 run_pipenv_command(
-                  %w(pyenv exec pipenv lock)
+                  "pyenv exec pipenv lock"
                 )
 
                 result = { lockfile: File.read("Pipfile.lock") }
@@ -232,19 +230,19 @@ module Dependabot
 
         def generate_updated_requirements_files
           req_content = run_pipenv_command(
-            ["pyenv", "exec", "pipenv", "lock", "-r"]
+            "pyenv exec pipenv lock -r"
           )
           File.write("req.txt", req_content)
 
           dev_req_content = run_pipenv_command(
-            ["pyenv", "exec", "pipenv", "lock", "-r", "-d"]
+            "pyenv exec pipenv lock -r -d"
           )
           File.write("dev-req.txt", dev_req_content)
         end
 
-        def run_command(command_parts, env: {})
+        def run_command(command, env: {})
           start = Time.now
-          command = Shellwords.join(command_parts)
+          command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -262,9 +260,9 @@ module Dependabot
           )
         end
 
-        def run_pipenv_command(command_parts, env: pipenv_env_variables)
-          run_command(["pyenv", "local", python_version])
-          run_command(command_parts, env: env)
+        def run_pipenv_command(command, env: pipenv_env_variables)
+          run_command("pyenv local #{python_version}")
+          run_command(command, env: env)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -278,8 +276,8 @@ module Dependabot
           raise relevant_error if python_version.start_with?("2")
 
           # Clear the existing virtualenv, so that we use the new Python version
-          run_command(["pyenv", "local", python_version])
-          run_command(["pyenv", "exec", "pipenv", "--rm"])
+          run_command("pyenv local #{python_version}")
+          run_command("pyenv exec pipenv --rm")
 
           @python_version = "2.7.16"
           retry
@@ -323,19 +321,18 @@ module Dependabot
         def install_required_python
           # Initialize a git repo to appease pip-tools
           begin
-            run_command(%w(git init)) if setup_files.any?
+            run_command("git init") if setup_files.any?
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed
             nil
           end
 
-          if run_command(%w(pyenv versions)).include?("#{python_version}\n")
+          if run_command("pyenv versions").include?("#{python_version}\n")
             return
           end
 
           requirements_path = NativeHelpers.python_requirements_path
-          run_command(["pyenv", "install", "-s", python_version])
-          run_command(["pyenv", "exec", "pip", "install", "-r",
-                       requirements_path])
+          run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install -r #{requirements_path}")
         end
 
         def sanitized_setup_file_content(file)
@@ -406,7 +403,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_command(["pyenv", "install", "--list"])
+          @pyenv_versions ||= run_command("pyenv install --list")
         end
 
         def pipfile_python_requirement
@@ -425,10 +422,8 @@ module Dependabot
         def pipfile_hash_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
-            command_parts = ["pyenv", "exec", "python",
-                             NativeHelpers.python_helper_path]
             SharedHelpers.run_helper_subprocess(
-              command: Shellwords.join(command_parts),
+              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
               function: "get_pipfile_hash",
               args: [dir]
             )
@@ -500,7 +495,7 @@ module Dependabot
           }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

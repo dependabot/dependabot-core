@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
@@ -140,10 +139,8 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          command_parts = ["pyenv", "exec", "python",
-                           NativeHelpers.python_helper_path]
           SharedHelpers.run_helper_subprocess(
-            command: Shellwords.join(command_parts),
+            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
             function: "get_dependency_hash",
             args: [name, version, algorithm]
           ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
