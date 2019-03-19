@@ -14,19 +14,19 @@ module Dependabot
                             test).freeze
       ESLINT_PREFIXES  = %w(Breaking Build Chore Docs Fix New Update
                             Upgrade).freeze
-      GITMOJI_PREFIXES = %w(art zap fire bug ambulance sparkles memo rocket
-                            lipstick tada white_check_mark lock apple penguin
-                            checkered_flag robot green_apple bookmark
-                            rotating_light construction green_heart arrow_down
-                            arrow_up pushpin construction_worker
-                            chart_with_upwards_trend recycle heavy_minus_sign
-                            whale heavy_plus_sign wrench globe_with_meridians
-                            pencil2 hankey rewind twisted_rightwards_arrows
-                            package alien truck page_facing_up boom bento
-                            ok_hand wheelchair bulb beers speech_balloon
-                            card_file_box loud_sound mute busts_in_silhouette
-                            children_crossing building_construction iphone
-                            clown_face egg see_no_evil camera_flash).freeze
+      GITMOJI_PREFIXES = %w(alien ambulance apple arrow_down arrow_up art beers
+                            bento bookmark boom bug building_construction bulb
+                            busts_in_silhouette camera_flash card_file_box
+                            chart_with_upwards_trend checkered_flag
+                            children_crossing clown_face construction
+                            construction_worker egg fire globe_with_meridians
+                            green_apple green_heart hankey heavy_minus_sign
+                            heavy_plus_sign iphone lipstick lock loud_sound memo
+                            mute ok_hand package page_facing_up pencil2 penguin
+                            pushpin recycle rewind robot rocket rotating_light
+                            see_no_evil sparkles speech_balloon tada truck
+                            twisted_rightwards_arrows whale wheelchair
+                            white_check_mark wrench zap).freeze
       ISSUE_TAG_REGEX =
         /(?<=[^A-Za-z0-9\[\\]|^)\\*(?<tag>(?:\#|GH-)\d+)(?=[^A-Za-z0-9\-]|$)/.
         freeze
@@ -832,13 +832,13 @@ module Dependabot
       end
 
       def using_gitmoji_commit_messages?
-        return false if recent_commit_messages.none?
+        return false unless recent_commit_messages.any?
 
-        gitmoji_messages = recent_commit_messages.select do |message|
-          GITMOJI_PREFIXES.any? { |pre| message.match?(/:#{pre}:/i) }
-        end
+        gitmoji_messages =
+          recent_commit_messages.
+          select { |m| GITMOJI_PREFIXES.any? { |pre| m.match?(/:#{pre}:/i) } }
 
-        gitmoji_messages.count.to_f / recent_commit_messages.count > 0.3
+        gitmoji_messages.count / recent_commit_messages.count.to_f > 0.3
       end
 
       def recent_commit_messages
