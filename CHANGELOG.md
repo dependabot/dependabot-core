@@ -1,3 +1,17 @@
+## v0.98.16, 19 March 2019
+
+- Refactor Python parser
+- Clearer Composer memory setting
+- Refactor PHP memory setting
+- Alphabetize suffices
+- Update setIgnorePlatformRequirements setup to be more explicit
+- Simpler github detection
+- Use Dependabot::Clients::GitlabWithRetries.for_source in labeler
+- Alphabetize gitmoji prefixes
+- Variable rename
+- Python: Use 2.7.16
+- Python: Use latest pyenv commit to get Python 2.7.16
+
 ## v0.98.15, 19 March 2019
 
 - Python: Raise a DependencyFileNotResolvable error for unsupported pip-compile constraints
