@@ -14,8 +14,8 @@ const npm = require("npm");
 const installer = require("npm/lib/install");
 const { muteStderr, runAsync } = require("./helpers.js");
 
-function installArgsWithVersion(depName, desiredVersion, requirements) {
-  const source = (requirements.find(req => req.source) || {}).source;
+function installArgsWithVersion(depName, desiredVersion, reqs) {
+  const source = (reqs.find(req => req.source) || {}).source;
 
   if (source && source.type === "git") {
     return [`${depName}@${source.url}#${desiredVersion}`];
