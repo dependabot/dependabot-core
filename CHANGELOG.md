@@ -1,3 +1,7 @@
+## v0.98.13, 19 March 2019
+
+- Python: Build in isolation when using pip-tools (to prevent errors when using a pyproject.toml)
+
 ## v0.98.12, 19 March 2019
 
 - Use php7.2-zmq instead of php-zmq
