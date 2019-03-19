@@ -1,3 +1,9 @@
+## v0.98.14, 19 March 2019
+
+- Python: Use build isolation in FileUpdater
+- Assume closing index of 0 if one can't be found
+- Add test to ensure build-isolation not required in Python file updater
+
 ## v0.98.13, 19 March 2019
 
 - Python: Build in isolation when using pip-tools (to prevent errors when using a pyproject.toml)
