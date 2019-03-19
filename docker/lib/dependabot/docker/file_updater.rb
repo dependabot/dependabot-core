@@ -80,7 +80,8 @@ module Dependabot
         old_declaration += "#{dependency.name}:#{old_tag(file)}"
         escaped_declaration = Regexp.escape(old_declaration)
 
-        old_declaration_regex = /^#{FROM_REGEX}\s+#{escaped_declaration}/
+        old_declaration_regex =
+          /^#{FROM_REGEX}\s+#{escaped_declaration}(?=\s|$)/
 
         file.content.gsub(old_declaration_regex) do |old_dec|
           old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
