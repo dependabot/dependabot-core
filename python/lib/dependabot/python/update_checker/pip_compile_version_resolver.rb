@@ -92,6 +92,12 @@ module Dependabot
             return nil
           end
 
+          if error.message.include?("UnsupportedConstraint")
+            # If there's an unsupported constraint, check if it existed
+            # previously (and raise if it did)
+            check_original_requirements_resolvable
+          end
+
           if error.message.include?('Command "python setup.py egg_info') &&
              error.message.include?(dependency.name)
             # The latest version of the dependency we're updating is borked
@@ -125,7 +131,10 @@ module Dependabot
 
               true
             rescue SharedHelpers::HelperSubprocessFailed => error
-              raise unless error.message.include?("Could not find a version")
+              unless error.message.include?("Could not find a version") ||
+                     error.message.include?("UnsupportedConstraint")
+                raise
+              end
 
               msg = clean_error_message(error.message)
               raise if msg.empty?
@@ -308,8 +317,14 @@ module Dependabot
         end
 
         def clean_error_message(message)
+          msg_lines = message.lines
+          msg = msg_lines.
+                take_while { |l| !l.start_with?("During handling of") }.
+                drop_while { |l| l.start_with?("Traceback", "  ") }.
+                join.strip
+
           # Redact any URLs, as they may include credentials
-          message.gsub(/http.*?(?=\s)/, "<redacted>")
+          msg.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
         def filenames_to_compile

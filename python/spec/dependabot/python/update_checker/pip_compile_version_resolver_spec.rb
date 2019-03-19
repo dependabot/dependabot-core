@@ -236,6 +236,32 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
+    context "with an unsupported requirement" do
+      let(:manifest_fixture_name) { "unsupported.in" }
+      let(:dependency_files) { [manifest_file] }
+      let(:dependency_name) { "boto3" }
+      let(:dependency_version) { nil }
+      let(:latest_version) { Gem::Version.new("1.9.28") }
+      let(:dependency_requirements) do
+        [{
+          file: "requirements/test.in",
+          requirement: "==1.9.27",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to start_with("piptools.exceptions.UnsupportedConstraint")
+            expect(error.message).to include("requests from git+<redacted>")
+            expect(error.message).to_not include("github.com/requests/requests")
+          end
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.0.2" }
