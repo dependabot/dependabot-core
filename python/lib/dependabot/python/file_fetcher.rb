@@ -262,7 +262,7 @@ module Dependabot
       def fetch_path_setup_file(path, allow_pyproject: false)
         path_setup_files = []
 
-        unless path.end_with?(".tar.gz", ".zip", ".whl")
+        unless path.end_with?(".tar.gz", ".whl", ".zip")
           path = Pathname.new(File.join(path, "setup.py")).cleanpath.to_path
         end
         return [] if path == "setup.py" && setup_file
