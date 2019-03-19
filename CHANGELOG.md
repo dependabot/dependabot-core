@@ -1,3 +1,8 @@
+## v0.98.11, 19 March 2019
+
+- .NET: Only update pre-release versions to pre-s for the same version
+- Docker: Tighter regex for updating version
+
 ## v0.98.10, 18 March 2019
 
 - Python: Don't escape spaces in pip-compile options
