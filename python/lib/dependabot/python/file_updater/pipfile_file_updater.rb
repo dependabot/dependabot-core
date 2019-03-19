@@ -281,7 +281,7 @@ module Dependabot
           run_command(["pyenv", "local", python_version])
           run_command(["pyenv", "exec", "pipenv", "--rm"])
 
-          @python_version = "2.7.15"
+          @python_version = "2.7.16"
           retry
         ensure
           @python_version = nil

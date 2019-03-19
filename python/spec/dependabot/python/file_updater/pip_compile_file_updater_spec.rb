@@ -511,7 +511,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:python_file) do
         Dependabot::DependencyFile.new(
           name: ".python-version",
-          content: "2.7.15"
+          content: "2.7.16"
         )
       end
 

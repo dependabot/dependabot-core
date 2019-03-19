@@ -169,9 +169,9 @@ module Dependabot
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)
           raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.15"
+          raise relevant_error if python_version == "2.7.16"
 
-          @python_version = "2.7.15"
+          @python_version = "2.7.16"
           retry
         ensure
           @python_version = nil

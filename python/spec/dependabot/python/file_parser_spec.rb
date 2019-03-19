@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:python_version_file) do
         Dependabot::DependencyFile.new(
           name: ".python-version",
-          content: "2.7.15\n"
+          content: "2.7.16\n"
         )
       end
 

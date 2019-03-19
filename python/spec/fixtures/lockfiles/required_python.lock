@@ -5,7 +5,7 @@
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_full_version": "2.7.15",
+            "python_full_version": "2.7.16",
             "python_version": "2.7"
         },
         "sources": [
