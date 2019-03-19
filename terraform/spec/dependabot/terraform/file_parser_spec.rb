@@ -240,7 +240,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      describe "the sixth dependency (which uses git@github.com SSH prefix)" do
+      describe "the sixth dependency (which uses git@github.com)" do
         subject(:dependency) { dependencies[5] }
         let(:expected_requirements) do
           [{
@@ -249,9 +249,9 @@ RSpec.describe Dependabot::Terraform::FileParser do
             file: "main.tf",
             source: {
               type: "git",
-              url: "git@github.com:cloudposse/terraform-null-label.git",
-              branch: nil,
-              ref: "tags/0.3.7"
+              url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
+              ref: "tags/0.4.0",
+              branch: nil
             }
           }]
         end
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("github_ssh_without_protocol")
-          expect(dependency.version).to eq("0.3.7")
+          expect(dependency.version).to eq("0.4.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

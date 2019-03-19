@@ -133,7 +133,7 @@ module "duplicate_label" {
 }
 
 module "github_ssh_without_protocol" {
-  source     = "git@github.com:cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+  source     = "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=tags/0.4.0"
   namespace  = "${var.namespace}"
   stage      = "${var.stage}"
   name       = "${var.name}"
