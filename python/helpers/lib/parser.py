@@ -20,6 +20,10 @@ def parse_requirements(directory):
     pip_compile_files = glob.glob(os.path.join(directory, '*.in')) \
                         + glob.glob(os.path.join(directory, '**', '*.in'))
 
+    def version_from_install_req(install_req):
+        if install_req.is_pinned:
+            return next(iter(install_req.specifier)).version
+
     for reqs_file in requirement_files + pip_compile_files:
         try:
             requirements = pip._internal.req.req_file.parse_requirements(
@@ -29,10 +33,6 @@ def parse_requirements(directory):
             for install_req in requirements:
                 if install_req.original_link:
                     continue
-                if install_req.is_pinned:
-                    version = next(iter(install_req.specifier)).version
-                else:
-                    version = None
 
                 pattern = r"-[cr] (.*) \(line \d+\)"
                 abs_path = re.search(pattern, install_req.comes_from).group(1)
@@ -40,7 +40,7 @@ def parse_requirements(directory):
 
                 requirement_packages.append({
                     "name": install_req.req.name,
-                    "version": version,
+                    "version": version_from_install_req(install_req),
                     "markers": str(install_req.markers) or None,
                     "file": rel_path,
                     "requirement": str(install_req.specifier) or None
@@ -55,17 +55,18 @@ def parse_setup(directory):
     # Parse the setup.py
     setup_packages = []
     if os.path.isfile(directory + '/setup.py'):
+        def version_from_install_req(install_req):
+            if install_req.is_pinned:
+                return next(iter(install_req.specifier)).version
+
         def parse_requirement(req, req_type):
             install_req = install_req_from_line(req)
             if install_req.original_link:
                 return
-            if install_req.is_pinned:
-                version = next(iter(install_req.specifier)).version
-            else:
-                version = None
+
             setup_packages.append({
                 "name": install_req.req.name,
-                "version": version,
+                "version": version_from_install_req(install_req),
                 "markers": str(install_req.markers) or None,
                 "file": "setup.py",
                 "requirement": str(install_req.specifier) or None,
