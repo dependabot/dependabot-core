@@ -1,3 +1,11 @@
+## v0.98.21, 20 March 2019
+
+- Python: refactor escaped command string
+- Dep: escape command
+- Cargo: escape command
+- Fix escaped command for composer
+- Escape shared helpers run subprocess cmd by default
+
 ## v0.98.20, 20 March 2019
 
 - Python: Use original manifest instead of original compiled file when unredacting creds if required
