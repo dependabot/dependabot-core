@@ -54,6 +54,17 @@ module Dependabot
             )
           end
         end
+      rescue SharedHelpers::HelperSubprocessFailed => error
+        retry_count ||= 0
+        retry_count += 1
+        retry if transitory_failure?(error) && retry_count < 2
+        raise
+      end
+
+      def transitory_failure?(error)
+        return true if error.message.include?("EOF")
+
+        error.message.include?("Internal Server Error")
       end
 
       def latest_version_resolvable_with_full_unlock?
