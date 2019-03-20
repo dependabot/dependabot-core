@@ -1,3 +1,9 @@
+## v0.98.19, 20 March 2019
+
+- Python: Handle git credentials getting redacted as part of pip-compile install process
+- Go: Retry transitory Go resolution issues
+- Python: Remove unnecessary install
+
 ## v0.98.18, 20 March 2019
 
 - Rust: Fetch patched path dependencies
