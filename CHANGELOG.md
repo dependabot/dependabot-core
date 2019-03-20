@@ -1,3 +1,7 @@
+## v0.98.20, 20 March 2019
+
+- Python: Use original manifest instead of original compiled file when unredacting creds if required
+
 ## v0.98.19, 20 March 2019
 
 - Python: Handle git credentials getting redacted as part of pip-compile install process
