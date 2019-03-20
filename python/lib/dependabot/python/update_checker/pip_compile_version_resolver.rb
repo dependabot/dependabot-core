@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "open3"
-require "shellwords"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
@@ -12,6 +11,7 @@ require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
+
 module Dependabot
   module Python
     class UpdateChecker
@@ -59,14 +59,14 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    ["pyenv", "exec", "pip-compile", "--allow-unsafe",
-                     "--build-isolation", "-P", dependency.name, filename]
+                    "pyenv exec pip-compile --allow-unsafe "\
+                     "--build-isolation -P #{dependency.name} #{filename}"
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   run_pip_compile_command(
-                    ["pyenv", "exec", "pip-compile", "--allow-unsafe",
-                     "--build-isolation", filename]
+                    "pyenv exec pip-compile --allow-unsafe "\
+                     "--build-isolation #{filename}"
                   )
 
                   unredact_git_credentials_in_compiled_file(filename)
@@ -162,8 +162,7 @@ module Dependabot
               write_temporary_dependency_files(unlock_requirement: false)
 
               filenames_to_compile.each do |filename|
-                run_command(["pyenv", "exec", "pip-compile", "--allow-unsafe",
-                             filename])
+                run_command("pyenv exec pip-compile --allow-unsafe #{filename}")
               end
 
               true
@@ -181,9 +180,9 @@ module Dependabot
           end
         end
 
-        def run_command(command_parts, env: python_env)
+        def run_command(command, env: python_env)
           start = Time.now
-          command = Shellwords.join(command_parts)
+          command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -199,9 +198,9 @@ module Dependabot
           )
         end
 
-        def run_pip_compile_command(command_parts)
-          run_command(["pyenv", "local", python_version])
-          run_command(command_parts)
+        def run_pip_compile_command(command)
+          run_command("pyenv local #{python_version}")
+          run_command(command)
         rescue SharedHelpers::HelperSubprocessFailed => error
           original_error ||= error
           msg = error.message
@@ -271,13 +270,13 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command(%w(pyenv versions)).include?("#{python_version}\n")
+          if run_command("pyenv versions").include?("#{python_version}\n")
             return
           end
 
-          run_command(["pyenv", "install", "-s", python_version])
-          run_command(["pyenv", "exec", "pip", "install", "-r",
-                       NativeHelpers.python_requirements_path])
+          run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install -r"\
+                      "#{NativeHelpers.python_requirements_path}")
         end
 
         def sanitized_setup_file_content(file)
@@ -463,7 +462,7 @@ module Dependabot
         end
 
         def pyenv_versions
-          @pyenv_versions ||= run_command(["pyenv", "install", "--list"])
+          @pyenv_versions ||= run_command("pyenv install --list")
         end
 
         def pre_installed_python?(version)

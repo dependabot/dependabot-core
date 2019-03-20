@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "shellwords"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/composer/file_updater"
@@ -54,6 +53,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
+              escape_command_str: false,
               function: "update",
               env: credentials_env,
               args: [
@@ -78,10 +78,10 @@ module Dependabot
           error.message.include?("Content-Length mismatch")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
           if error.message.start_with?("Failed to execute git checkout")
             raise git_dependency_reference_error(error)
@@ -130,10 +130,10 @@ module Dependabot
 
           raise error
         end
-        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def write_temporary_dependency_files
           path_dependencies.each do |file|
@@ -224,7 +224,7 @@ module Dependabot
 
             content_hash =
               SharedHelpers.run_helper_subprocess(
-                command: Shellwords.join(["php", php_helper_path]),
+                command: "php #{php_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
