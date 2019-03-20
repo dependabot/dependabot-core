@@ -334,8 +334,9 @@ module Dependabot
         def unredact_git_credentials_in_compiled_file(filename)
           compiled_name = filename.gsub(/\.in$/, ".txt")
           original_content = dependency_files.
-                             find { |f| f.name == compiled_name }.
-                             content
+                             find { |f| f.name == compiled_name }&.content ||
+                             dependency_files.
+                             find { |f| f.name == filename }.conten
 
           updated_content = File.read(compiled_name)
           new_content = updated_content
