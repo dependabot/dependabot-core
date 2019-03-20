@@ -57,7 +57,6 @@ module Dependabot
 
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/BlockLength
-        # rubocop:disable Metrics/AbcSize
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
@@ -104,7 +103,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/BlockLength
-        # rubocop:enable Metrics/AbcSize
 
         def update_manifest_files
           dependency_files.map do |file|
