@@ -1,3 +1,7 @@
+## v0.98.18, 20 March 2019
+
+- Rust: Fetch patched path dependencies
+
 ## v0.98.17, 19 March 2019
 
 - Use updated (clearer) style in other PHP helper
