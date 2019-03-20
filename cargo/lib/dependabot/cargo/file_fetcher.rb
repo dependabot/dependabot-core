@@ -161,12 +161,31 @@ module Dependabot
           end
         end
 
+        paths += replacement_path_dependency_paths_from_file(file)
+        paths
+      end
+
+      def replacement_path_dependency_paths_from_file(file)
+        paths = []
+
         # Paths specified as replacements
         parsed_file(file).fetch("replace", {}).each do |_, details|
           next unless details.is_a?(Hash)
           next unless details["path"]
 
           paths << File.join(details["path"], "Cargo.toml")
+        end
+
+        # Paths specified as patches
+        parsed_file(file).fetch("patch", {}).each do |_, details|
+          next unless details.is_a?(Hash)
+
+          details.each do |_, dep_details|
+            next unless dep_details.is_a?(Hash)
+            next unless dep_details["path"]
+
+            paths << File.join(dep_details["path"], "Cargo.toml")
+          end
         end
 
         paths

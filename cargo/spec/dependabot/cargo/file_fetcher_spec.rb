@@ -182,6 +182,17 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         end
       end
 
+      context "for a patched source" do
+        let(:parent_fixture) do
+          fixture("github", "contents_cargo_manifest_patched_path.json")
+        end
+
+        it "fetches the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml src/s3/Cargo.toml))
+        end
+      end
+
       context "when a git source is also specified" do
         let(:parent_fixture) do
           fixture("github", "contents_cargo_manifest_path_deps_alt_source.json")
