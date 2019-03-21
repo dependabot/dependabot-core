@@ -69,8 +69,8 @@
       }
     },
     "mime": {
-      "version": "2.3.1",
-      "resolved": "https://registry.npmjs.org/mime/-/mime-2.3.1.tgz"
+      "version": "2.3.0",
+      "resolved": "https://registry.npmjs.org/mime/-/mime-2.3.0.tgz"
     },
     "minimist": {
       "version": "1.2.0",

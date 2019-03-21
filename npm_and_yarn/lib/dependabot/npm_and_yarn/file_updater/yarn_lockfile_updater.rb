@@ -149,7 +149,7 @@ module Dependabot
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             function: "yarn:updateSubdependency",
-            args: [Dir.pwd, lockfile_name]
+            args: [Dir.pwd, lockfile_name, sub_dependencies.first.to_h]
           )
         end
 
@@ -314,21 +314,7 @@ module Dependabot
         def write_lockfiles
           yarn_locks.each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-
-            if top_level_dependencies.any?
-              File.write(f.name, f.content)
-            else
-              File.write(f.name, prepared_yarn_lockfile_content(f.content))
-            end
-          end
-        end
-
-        # Duplicated in SubdependencyVersionResolver
-        # Remove the dependency we want to update from the lockfile and let
-        # yarn find the latest resolvable version and fix the lockfile
-        def prepared_yarn_lockfile_content(content)
-          sub_dependencies.map(&:name).reduce(content) do |result, name|
-            result.gsub(/^#{Regexp.quote(name)}\@.*?\n\n/m, "")
+            File.write(f.name, f.content)
           end
         end
 
