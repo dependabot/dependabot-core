@@ -6,12 +6,14 @@ require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
+
 module Dependabot
   module Python
     class FileUpdater
       # rubocop:disable Metrics/ClassLength
       class PipfileFileUpdater
         require_relative "pipfile_preparer"
+        require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"
 
         attr_reader :dependencies, :dependency_files, :credentials
@@ -39,7 +41,7 @@ module Dependabot
         def fetch_updated_dependency_files
           updated_files = []
 
-          if file_changed?(pipfile)
+          if pipfile.content != updated_pipfile_content
             updated_files <<
               updated_file(file: pipfile, content: updated_pipfile_content)
           end
@@ -58,27 +60,11 @@ module Dependabot
         end
 
         def updated_pipfile_content
-          dependencies.
-            select { |dep| requirement_changed?(pipfile, dep) }.
-            reduce(pipfile.content.dup) do |content, dep|
-              updated_requirement =
-                dep.requirements.find { |r| r[:file] == pipfile.name }.
-                fetch(:requirement)
-
-              old_req =
-                dep.previous_requirements.
-                find { |r| r[:file] == pipfile.name }.
-                fetch(:requirement)
-
-              updated_content =
-                content.gsub(declaration_regex(dep)) do |line|
-                  line.gsub(old_req, updated_requirement)
-                end
-
-              raise "Content did not change!" if content == updated_content
-
-              updated_content
-            end
+          @updated_pipfile_content ||=
+            PipfileManifestUpdater.new(
+              dependencies: dependencies,
+              manifest: pipfile
+            ).updated_manifest_content
         end
 
         def updated_lockfile_content
@@ -428,22 +414,6 @@ module Dependabot
               args: [dir]
             )
           end
-        end
-
-        def declaration_regex(dep)
-          escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
-          /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
-        end
-
-        def file_changed?(file)
-          dependencies.any? { |dep| requirement_changed?(file, dep) }
-        end
-
-        def requirement_changed?(file, dependency)
-          changed_requirements =
-            dependency.requirements - dependency.previous_requirements
-
-          changed_requirements.any? { |f| f[:file] == file.name }
         end
 
         def updated_file(file:, content:)
