@@ -207,5 +207,79 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileManifestUpdater do
 
       it { is_expected.to include('Requests = "==2.18.4"') }
     end
+
+    context "with multiple requirements" do
+      let(:pipfile_fixture_name) { "prod_and_dev" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "3.4.1",
+          previous_version: "3.4.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==3.4.1",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }, {
+            requirement: "==3.4.1",
+            file: "Pipfile",
+            source: nil,
+            groups: ["develop"]
+          }],
+          previous_requirements: [{
+            requirement: "==3.4.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }, {
+            requirement: "==3.4.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["develop"]
+          }]
+        )
+      end
+
+      it { is_expected.to include('Pytest = "==3.4.1"') }
+      it { is_expected.to_not include('Pytest = "==3.4.0"') }
+
+      context "that are different" do
+        let(:pipfile_fixture_name) { "prod_and_dev_different" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "pytest",
+            version: "3.4.1",
+            previous_version: "3.4.0",
+            package_manager: "pip",
+            requirements: [{
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }, {
+              requirement: "==3.4.1",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }],
+            previous_requirements: [{
+              requirement: "*",
+              file: "Pipfile",
+              source: nil,
+              groups: ["develop"]
+            }, {
+              requirement: "==3.4.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          )
+        end
+
+        it { is_expected.to include('Pytest = "==3.4.1"') }
+        it { is_expected.to include('Pytest = "*"') }
+      end
+    end
   end
 end
