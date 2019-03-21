@@ -1,6 +1,6 @@
 ## `dependabot-npm_and_yarn`
 
-npm and Yarn support for [`dependabot-core`][core-repo].
+Yarn and npm support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
