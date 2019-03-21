@@ -12,18 +12,16 @@ module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
-      VERSION_WITH_SUFFIX =
-        /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
-      VERSION_WITH_PREFIX =
-        /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
-      VERSION_WITH_PREFIX_AND_SUFFIX =
+      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
+      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
+      VERSION_WITH_PFX_AND_SFX =
         /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/.
         freeze
       NAME_WITH_VERSION =
         /
-          #{VERSION_WITH_PREFIX}|
-          #{VERSION_WITH_SUFFIX}|
-          #{VERSION_WITH_PREFIX_AND_SUFFIX}
+          #{VERSION_WITH_PFX}|
+          #{VERSION_WITH_SFX}|
+          #{VERSION_WITH_PFX_AND_SFX}
         /x.freeze
 
       def latest_version
