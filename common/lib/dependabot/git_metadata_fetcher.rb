@@ -45,7 +45,7 @@ module Dependabot
       retry_count ||= 0
       retry_count += 1
 
-      sleep(rand(0.9)) && retry if retry_count < 2 && uri.match?(KNOWN_HOSTS)
+      sleep(rand(0.9)) && retry if retry_count <= 2 && uri.match?(KNOWN_HOSTS)
       raise if uri.match?(KNOWN_HOSTS)
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
