@@ -1,3 +1,7 @@
+## v0.98.22, 21 March 2019
+
+- PHP: Update memory limit setting again
+
 ## v0.98.21, 20 March 2019
 
 - Python: refactor escaped command string
