@@ -1,3 +1,10 @@
+## v0.98.24, 21 March 2019
+
+- Ruby: Update list of latest rubies
+- Python: Narmalise dependency names when looking for them in poetry lockfile
+- Do two retries when attempting to fetch git metadata
+- Maven: Handle case where declaration_pom_name isn't found
+
 ## v0.98.23, 21 March 2019
 
 - Python: Handle v-prefixes in versions and requirements
