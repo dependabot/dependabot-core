@@ -59,6 +59,7 @@ module Dependabot
 
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
+            next false unless scope_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -102,6 +103,13 @@ module Dependabot
           type == packaging_type(node)
         end
 
+        def scope_matches?(node)
+          dependency_type = declaring_requirement.fetch(:groups)
+          node_type = dependency_scope(node) == "test" ? ["test"] : []
+
+          dependency_type == node_type
+        end
+
         def packaging_type(dependency_node)
           return "pom" if dependency_node.child.node_name == "parent"
           return "jar" unless dependency_node.at_xpath("./*/type")
@@ -110,6 +118,15 @@ module Dependabot
                                    content.strip
 
           evaluated_value(packaging_type_content)
+        end
+
+        def dependency_scope(dependency_node)
+          return "compile" unless dependency_node.at_xpath("./*/scope")
+
+          scope_content = dependency_node.at_xpath("./*/scope").content.strip
+          scope_content = evaluated_value(scope_content)
+
+          scope_content.empty? ? "compile" : scope_content
         end
 
         def evaluated_value(value)

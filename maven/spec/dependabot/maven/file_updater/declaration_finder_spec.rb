@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
     {
       requirement: dependency_version,
       file: "pom.xml",
-      groups: [],
+      groups: groups,
       source: nil,
       metadata: dependency_metadata
     }
@@ -42,12 +42,14 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
     )
   end
   let(:pom_fixture_name) { "basic_pom.xml" }
+  let(:groups) { [] }
 
   describe "#declaration_nodes" do
     subject(:declaration_nodes) { finder.declaration_nodes }
 
     context "with a dependency in the dependencies node" do
       let(:pom_fixture_name) { "basic_pom.xml" }
+      let(:groups) { ["test"] }
 
       it "finds the declaration" do
         expect(declaration_nodes.count).to eq(1)
@@ -59,6 +61,12 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           to eq("httpclient")
         expect(declaration_node.at_css("groupId").content).
           to eq("org.apache.httpcomponents")
+      end
+
+      context "that doesn't match this dependency's groups" do
+        let(:groups) { [] }
+
+        it { is_expected.to be_empty }
       end
     end
 

@@ -34,20 +34,21 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       requirements: [{
         file: "pom.xml",
         requirement: "4.6.1",
-        groups: [],
+        groups: dependency_groups,
         source: nil,
         metadata: { packaging_type: "jar" }
       }],
       previous_requirements: [{
         file: "pom.xml",
         requirement: "4.5.3",
-        groups: [],
+        groups: dependency_groups,
         source: nil,
         metadata: { packaging_type: "jar" }
       }],
       package_manager: "maven"
     )
   end
+  let(:dependency_groups) { ["test"] }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -73,6 +74,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
+        let(:dependency_groups) { [] }
         its(:content) { is_expected.to include "<version>4.6.1</version>" }
       end
 
@@ -218,9 +220,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
 
         context "when both versions are hard-coded, and are identical" do
-          let(:pom_body) do
-            fixture("poms", "repeated_pom_identical.xml")
-          end
+          let(:pom_body) { fixture("poms", "repeated_pom_identical.xml") }
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "org.apache.maven.plugins:maven-javadoc-plugin",
@@ -245,6 +245,46 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
           its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
+
+          context "but have different scopes" do
+            let(:pom_body) { fixture("poms", "repeated_dev_and_prod.xml") }
+            let(:dependency) do
+              Dependabot::Dependency.new(
+                name: "org.apache.maven.plugins:maven-javadoc-plugin",
+                version: "3.0.0-M2",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "3.0.0-M2",
+                  groups: ["test"],
+                  source: { type: "maven_repo", url: "https://some.repo.com" },
+                  metadata: { packaging_type: "jar" }
+                }, {
+                  file: "pom.xml",
+                  requirement: "3.0.0-M2",
+                  groups: [],
+                  source: { type: "maven_repo", url: "https://some.repo.com" },
+                  metadata: { packaging_type: "jar" }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "2.10.4",
+                  groups: ["test"],
+                  source: nil,
+                  metadata: { packaging_type: "jar" }
+                }, {
+                  file: "pom.xml",
+                  requirement: "2.10.4",
+                  groups: [],
+                  source: nil,
+                  metadata: { packaging_type: "jar" }
+                }],
+                package_manager: "maven"
+              )
+            end
+
+            its(:content) { is_expected.to include "<version>3.0.0-M2</versio" }
+            its(:content) { is_expected.to_not include "<version>2.10.4</vers" }
+          end
         end
       end
 
@@ -257,14 +297,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
               requirements: [{
                 file: "pom.xml",
                 requirement: "4.6.1",
-                groups: [],
+                groups: ["test"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }],
               previous_requirements: [{
                 file: "pom.xml",
                 requirement: "4.5.3",
-                groups: [],
+                groups: ["test"],
                 source: nil,
                 metadata: { packaging_type: "jar" }
               }],
@@ -619,7 +659,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           [{
             requirement: "4.11",
             file: "business-app/pom.xml",
-            groups: [],
+            groups: ["test"],
             source: nil,
             metadata: { packaging_type: "jar" }
           }]
@@ -628,7 +668,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           [{
             requirement: "4.10",
             file: "business-app/pom.xml",
-            groups: [],
+            groups: ["test"],
             source: nil,
             metadata: { packaging_type: "jar" }
           }]
