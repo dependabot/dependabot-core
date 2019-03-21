@@ -225,6 +225,36 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
     end
 
+    context "with the version specified in a declaration table" do
+      let(:pipfile_fixture_name) { "version_table" }
+      let(:lockfile_fixture_name) { "version_hash.lock" }
+
+      describe "top level dependencies" do
+        subject(:dependencies) do
+          parser.dependency_set.dependencies.select(&:top_level?)
+        end
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: "==2.18.0",
+              file: "Pipfile",
+              source: nil,
+              groups: ["default"]
+            }]
+          end
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("requests") }
+          its(:version) { is_expected.to eq("2.18.0") }
+          its(:requirements) { is_expected.to eq(expected_requirements) }
+        end
+      end
+    end
+
     context "with a Pipfile that isn't parseable" do
       let(:pipfile_fixture_name) { "unparseable" }
 
