@@ -1,3 +1,7 @@
+## v0.98.26, 21 March 2019
+
+- Python: Handle updating Pipfiles which declare a version in a table
+
 ## v0.98.25, 21 March 2019
 
 - Python: Split Pipfile manifest updater into separate class
