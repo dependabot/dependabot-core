@@ -23,6 +23,11 @@ RSpec.describe Dependabot::Python::Version do
         let(:version_string) { "2013b0" }
         it { is_expected.to eq(true) }
       end
+
+      context "with a v-prefix" do
+        let(:version_string) { "v2013" }
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "with nil" do
@@ -80,6 +85,11 @@ RSpec.describe Dependabot::Python::Version do
         context "but our version has a local version" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(1) }
+        end
+
+        context "but our version has a v-prefix" do
+          let(:version_string) { "v1.0.0" }
+          it { is_expected.to eq(0) }
         end
       end
 

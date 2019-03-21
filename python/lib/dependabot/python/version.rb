@@ -13,7 +13,7 @@ module Dependabot
       attr_reader :local_version
       attr_reader :post_release_version
 
-      VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+      VERSION_PATTERN = 'v?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
@@ -28,6 +28,7 @@ module Dependabot
         @version_string = version.to_s
         version, @local_version = version.split("+")
         version ||= ""
+        version = version.gsub(/^v/, "")
         version = normalise_prerelease(version)
         version, @post_release_version = version.split(/\.r(?=\d)/)
         version ||= ""
