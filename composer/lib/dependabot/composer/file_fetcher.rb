@@ -110,7 +110,7 @@ module Dependabot
         # If the directory isn't found at the full path, try looking for it
         # at the root of the repository.
         depth = directory.gsub(%r{^/}, "").gsub(%r{/$}, "").split("/").count
-        dir = "../" * depth + path.gsub(/\*$/, "")
+        dir = "../" * depth + path.gsub(/\*$/, "").gsub(/^\.*/, "")
 
         repo_contents(dir: dir).
           select { |file| file.type == "dir" }.
@@ -126,7 +126,8 @@ module Dependabot
           # If the file isn't found at the full path, try looking for it
           # without considering the directory (i.e., check if the path should
           # have been relevative to the root of the repository).
-          cleaned_filename = Pathname.new(filename).cleanpath.to_path
+          cleaned_filename = filename.gsub(/^\./, "")
+          cleaned_filename = Pathname.new(cleaned_filename).cleanpath.to_path
 
           DependencyFile.new(
             name: cleaned_filename,
