@@ -37,12 +37,12 @@ module Dependabot
             deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
 
             deps_hash.each do |name, req|
-              next if normalised_name(name) == "python"
+              next if normalise(name) == "python"
               next if req.is_a?(Hash) && req.key?("git")
 
               dependencies <<
                 Dependency.new(
-                  name: normalised_name(name),
+                  name: normalise(name),
                   version: version_from_lockfile(name),
                   requirements: [{
                     requirement: req.is_a?(String) ? req : req["version"],
@@ -69,7 +69,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: details.fetch("name"),
+                name: normalise(details.fetch("name")),
                 version: details.fetch("version"),
                 requirements: [],
                 package_manager: "pip"
@@ -83,12 +83,12 @@ module Dependabot
           return unless parsed_lockfile
 
           parsed_lockfile.fetch("package", []).
-            find { |p| p.fetch("name") == normalised_name(dep_name) }&.
+            find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
             fetch("verison", nil)
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
-        def normalised_name(name)
+        def normalise(name)
           name.downcase.gsub(/[-_.]+/, "-")
         end
 

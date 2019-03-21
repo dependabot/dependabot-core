@@ -84,7 +84,7 @@ module Dependabot
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
             updated_lockfile.fetch("package", []).
-            find { |d| d["name"] == dependency.name }&.
+            find { |d| d["name"] && normalise(d["name"]) == dependency.name }&.
             fetch("version")
 
           return version unless version.nil? && dependency.top_level?
