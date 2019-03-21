@@ -1,3 +1,7 @@
+## v0.98.23, 21 March 2019
+
+- Python: Handle v-prefixes in versions and requirements
+
 ## v0.98.22, 21 March 2019
 
 - PHP: Update memory limit setting again
