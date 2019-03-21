@@ -12,21 +12,21 @@ module Dependabot
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x.freeze
 
     BITBUCKET_SOURCE = %r{
       (?<provider>bitbucket)
       (?:\.org)[/:]
-      (?<repo>[^/\s]+/(?:(?!\.git|\.\s)[^/\s#"',])+)
+      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
     }x.freeze
 
     AZURE_SOURCE = %r{
       (?<provider>azure)
       (?:\.com)[/:]
-      (?<repo>[^/\s]+/([^/\s]+/)?(?:_git/)(?:(?!\.git|\.\s)[^/\s#?"',])+)
+      (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
     }x.freeze
 
     SOURCE_REGEX = /
