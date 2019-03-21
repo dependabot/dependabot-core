@@ -1,3 +1,10 @@
+## v0.98.25, 21 March 2019
+
+- Python: Split Pipfile manifest updater into separate class
+- Use GitHub repo name defintion for GitLab and Azure
+- PHP: Handle relative paths that are actually from the root
+- Rebuild Dockerfile using Ruby 2.6.2
+
 ## v0.98.24, 21 March 2019
 
 - Ruby: Update list of latest rubies
