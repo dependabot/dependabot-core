@@ -63,7 +63,9 @@ module Dependabot
         # some requirements have changed. Otherwise, this must be a case where
         # we have a requirements.txt *and* some other resolver of which the
         # dependency is a sub-dependency.
-        changed_reqs = reqs - dependencies.flat_map(&:previous_requirements)
+        changed_reqs = reqs.
+                       zip(dependencies.flat_map(&:previous_requirements)).
+                       reject { |(new_req, old_req)| new_req == old_req }
         changed_reqs.none? ? subdependency_resolver : :requirements
       end
 

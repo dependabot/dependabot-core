@@ -73,9 +73,9 @@ module Dependabot
           # and *aren't* a straight lockfile for the Pipfile
           next if included_in_pipenv_deps?(normalised_name(dep["name"]))
 
-          # If a requirement has a `<` or `<=` marker then updating it is
+          # If a requirement has a `<`, `<=` or '==' marker then updating it is
           # probably blocked. Ignore it.
-          next if dep["markers"].include?("<")
+          next if dep["markers"].include?("<") || dep["markers"].include?("==")
 
           requirements =
             if lockfile_for_pip_compile_file?(dep["file"]) then []
