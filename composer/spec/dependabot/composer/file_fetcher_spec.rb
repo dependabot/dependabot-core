@@ -342,8 +342,8 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             expect(file_fetcher_instance.files.map(&:name)).
               to match_array(
                 %w(composer.json composer.lock
-                   components/bump-core/composer.json
-                   components/another-dep/composer.json)
+                   ../components/bump-core/composer.json
+                   ../components/another-dep/composer.json)
               )
           end
         end

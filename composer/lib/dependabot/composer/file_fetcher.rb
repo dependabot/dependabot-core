@@ -130,7 +130,7 @@ module Dependabot
           cleaned_filename = Pathname.new(cleaned_filename).cleanpath.to_path
 
           DependencyFile.new(
-            name: cleaned_filename,
+            name: Pathname.new(filename).cleanpath.to_path,
             content: _fetch_file_content(cleaned_filename),
             directory: directory,
             type: "file"
