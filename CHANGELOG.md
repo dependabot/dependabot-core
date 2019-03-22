@@ -1,3 +1,7 @@
+## v0.98.28, 22 March 2019
+
+- .NET: More sophisticated property value updater
+
 ## v0.98.27, 21 March 2019
 
 - Maven: Handle repeated dependency declarations with different scopes
