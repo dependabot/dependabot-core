@@ -1,3 +1,8 @@
+## v0.98.29, 22 March 2019
+
+- Composer: Correct name for path deps starting with ../
+- Yarn: handle git dependencies with token
+
 ## v0.98.28, 22 March 2019
 
 - .NET: More sophisticated property value updater
