@@ -110,4 +110,53 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
       end
     end
   end
+
+  describe "#replace_sources" do
+    subject(:updated_content) { preparer.replace_sources(credentials) }
+
+    let(:credentials) do
+      [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }, {
+        "type" => "python_index",
+        "index-url" => "https://username:password@pypi.posrip.com/pypi/"
+      }]
+    end
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Pipfile.lock",
+        content: fixture("lockfiles", lockfile_fixture_name)
+      )
+    end
+    let(:pipfile_fixture_name) { "version_not_specified" }
+    let(:lockfile_fixture_name) { "version_not_specified.lock" }
+
+    it "adds the source" do
+      expect(updated_content).
+        to include("https://username:password@pypi.posrip.com/pypi/")
+    end
+
+    context "with auth details provided as a token" do
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "python_index",
+          "index-url" => "https://pypi.posrip.com/pypi/",
+          "token" => "username:password"
+        }]
+      end
+
+      it "adds the source" do
+        expect(updated_content).
+          to include("https://username:password@pypi.posrip.com/pypi/")
+      end
+    end
+  end
 end

@@ -4,6 +4,7 @@ require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -149,10 +150,10 @@ module Dependabot
         credential_urls =
           credentials.
           select { |cred| cred["type"] == "python_index" }.
-          map { |cred| cred["index-url"].gsub(%r{/$}, "") }
+          map { |c| AuthedUrlBuilder.authed_url(credential: c) }
 
         (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
-          base_url + "/#{dependency.name}/json"
+          base_url.gsub(%r{/$}, "") + "/#{dependency.name}/json"
         end
       end
     end

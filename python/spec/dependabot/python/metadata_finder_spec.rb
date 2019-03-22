@@ -57,18 +57,15 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "with a private index" do
       let(:credentials) do
-        [
-          {
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          },
-          {
-            "type" => "python_index",
-            "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-          }
-        ]
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "python_index",
+          "index-url" => "https://username:password@pypi.posrip.com/pypi/"
+        }]
       end
       before do
         private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
@@ -80,6 +77,23 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
+
+      context "with the creds passed as a token" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/",
+            "token" => "username:password"
+          }]
+        end
+
+        it { is_expected.to eq("https://github.com/spotify/luigi") }
+      end
 
       context "that isn't used" do
         before do

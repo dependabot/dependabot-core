@@ -12,6 +12,7 @@ require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
+require "dependabot/python/authed_url_builder"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -340,7 +341,10 @@ module Dependabot
           @config_variable_sources ||=
             credentials.
             select { |cred| cred["type"] == "python_index" }.
-            map { |h| { "url" => h["index-url"].gsub(%r{/*$}, "") + "/" } }
+            map do |h|
+              url = AuthedUrlBuilder.authed_url(credential: h)
+              { "url" => url.gsub(%r{/*$}, "") + "/" }
+            end
         end
 
         def pyproject_sources

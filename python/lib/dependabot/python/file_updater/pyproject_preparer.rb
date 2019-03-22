@@ -4,6 +4,7 @@ require "toml-rb"
 
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -96,7 +97,7 @@ module Dependabot
           @config_variable_sources ||=
             credentials.
             select { |cred| cred["type"] == "python_index" }.
-            map { |cred| { "url" => cred["index-url"] } }
+            map { |c| { "url" => AuthedUrlBuilder.authed_url(credential: c) } }
         end
 
         def parsed_lockfile

@@ -35,6 +35,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("tool.poetry.source") }
       it { is_expected.to include('url = "https://username:password@pypi') }
+
+      context "that includes auth details" do
+        let(:credentials) do
+          [{
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/",
+            "token" => "username:password"
+          }]
+        end
+
+        it { is_expected.to include("tool.poetry.source") }
+        it { is_expected.to include('url = "https://username:password@pypi') }
+      end
     end
   end
 

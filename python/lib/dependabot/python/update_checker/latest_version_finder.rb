@@ -4,6 +4,7 @@ require "excon"
 
 require "dependabot/python/update_checker"
 require "dependabot/shared_helpers"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -194,14 +195,15 @@ module Dependabot
 
           index_url_creds = credentials.
                             select { |cred| cred["type"] == "python_index" }
-          urls[:main] =
-            index_url_creds.
-            find { |cred| cred["replaces-base"] }&.
-            fetch("index-url")
+
+          if (main_cred = index_url_creds.find { |cred| cred["replaces-base"] })
+            urls[:main] = AuthedUrlBuilder.authed_url(credential: main_cred)
+          end
+
           urls[:extra] =
             index_url_creds.
             reject { |cred| cred["replaces-base"] }.
-            map { |cred| cred["index-url"] }
+            map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
 
           urls
         end

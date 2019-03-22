@@ -242,6 +242,26 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "with credentials passed as a token" do
+          before do
+            stub_request(:get, pypi_url).to_return(status: 404, body: "")
+            stub_request(:get, pypi_url).
+              with(basic_auth: %w(user pass)).
+              to_return(status: 200, body: pypi_response)
+          end
+
+          let(:credentials) do
+            [{
+              "type" => "python_index",
+              "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+              "token" => "user:pass",
+              "replaces-base" => "true"
+            }]
+          end
+
+          it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+        end
       end
     end
 
