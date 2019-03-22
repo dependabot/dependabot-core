@@ -178,13 +178,8 @@ module Dependabot
     end
 
     def gitlab_commit_comparison_status(ref1, ref2)
-      access_token = credentials.
-                     select { |cred| cred["type"] == "git_source" }.
-                     find { |cred| cred["host"] == "gitlab.com" }&.
-                     fetch("token")
-
-      client = Gitlab.client(endpoint: "https://gitlab.com/api/v4",
-                             private_token: access_token.to_s)
+      client = Clients::GitlabWithRetries.
+               for_gitlab_dot_com(credentials: credentials)
 
       comparison = client.compare(listing_source_repo, ref1, ref2)
 
