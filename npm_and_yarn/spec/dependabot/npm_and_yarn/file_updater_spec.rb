@@ -573,6 +573,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               end
             end
           end
+
+          context "when using a URL token" do
+            let(:manifest_fixture_name) { "git_dependency_token.json" }
+            let(:yarn_lock_fixture_name) { "git_dependency_token.lock" }
+            let(:npm_lock_fixture_name) { "git_dependency_token.json" }
+
+            it "only updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json yarn.lock))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(
+                parsed_package_lock["dependencies"]["is-number"]["version"]
+              ).to eq("git+https://dummy-token@github.com/jonschlinkert/"\
+                      "is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+
+              expect(updated_yarn_lock.content).
+                to include("is-number@https://dummy-token@github.com/"\
+                           "jonschlinkert/is-number.git#master")
+              expect(updated_yarn_lock.content).to include("0c6b15a88b")
+              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+            end
+          end
         end
 
         context "when using git host URL: gitlab" do
