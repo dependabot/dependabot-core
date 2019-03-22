@@ -98,7 +98,7 @@ module Dependabot
       if bare_uri.match?(%r{[^/]+:[^/]+@})
         # URI already has authentication details
         "https://#{bare_uri}"
-      elsif cred
+      elsif cred&.fetch("username", nil) && cred&.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
         auth_string = "#{cred.fetch('username')}:#{cred.fetch('password')}"
         "https://#{auth_string}@#{bare_uri}"

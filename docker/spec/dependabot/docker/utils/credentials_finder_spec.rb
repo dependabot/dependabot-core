@@ -53,6 +53,34 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         it { is_expected.to eq(credentials.first) }
       end
 
+      context "without a username or password" do
+        let(:credentials) do
+          [{
+            "type" => "docker_registry",
+            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
+          }]
+        end
+
+        context "and a valid AWS response (via proxying)" do
+          before do
+            stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/").
+              and_return(
+                status: 200,
+                body: fixture("docker", "ecr_responses", "auth_data")
+              )
+          end
+
+          pending "returns an updated set of credentials" do
+            expect(found_credentials).to eq(
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+              "username" => "AWS",
+              "password" => "secret_aws_password"
+            )
+          end
+        end
+      end
+
       context "with as AKID as the username" do
         let(:credentials) do
           [{

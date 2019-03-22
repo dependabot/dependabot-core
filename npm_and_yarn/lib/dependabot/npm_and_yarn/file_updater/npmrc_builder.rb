@@ -18,6 +18,7 @@ module Dependabot
           @credentials = credentials
         end
 
+        # PROXY WORK
         def npmrc_content
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials

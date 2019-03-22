@@ -330,12 +330,14 @@ module Dependabot
         end
 
         def relevant_credentials
-          credentials.select do |cred|
-            next true if cred["type"] == "git_source"
-            next true if cred["type"] == "rubygems_server"
+          credentials.
+            select { |cred| cred["password"] || cred["token"] }.
+            select do |cred|
+              next true if cred["type"] == "git_source"
+              next true if cred["type"] == "rubygems_server"
 
-            false
-          end
+              false
+            end
         end
 
         def updated_gemfile_content(file)

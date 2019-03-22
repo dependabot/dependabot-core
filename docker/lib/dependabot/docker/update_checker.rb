@@ -267,6 +267,8 @@ module Dependabot
         registry_hostname == "registry.hub.docker.com"
       end
 
+      # Has test that it works without username / password.
+      # TODO: Test with proxy
       def registry_credentials
         credentials_finder.credentials_for_registry(registry_hostname)
       end
@@ -286,8 +288,8 @@ module Dependabot
         @docker_registry_client ||=
           DockerRegistry2::Registry.new(
             "https://#{registry_hostname}",
-            user: registry_credentials&.fetch("username"),
-            password: registry_credentials&.fetch("password")
+            user: registry_credentials&.fetch("username", nil),
+            password: registry_credentials&.fetch("password", nil)
           )
       end
 

@@ -5,9 +5,7 @@ require "gitlab"
 module Dependabot
   module Clients
     class GitlabWithRetries
-      RETRYABLE_ERRORS = [
-        Gitlab::Error::BadGateway
-      ].freeze
+      RETRYABLE_ERRORS = [Gitlab::Error::BadGateway].freeze
 
       #######################
       # Constructor methods #
@@ -17,6 +15,7 @@ module Dependabot
         access_token =
           credentials.
           select { |cred| cred["type"] == "git_source" }.
+          select { |cred| cred["password"] }.
           find { |cred| cred["host"] == source.hostname }&.
           fetch("password")
 
@@ -30,6 +29,7 @@ module Dependabot
         access_token =
           credentials.
           select { |cred| cred["type"] == "git_source" }.
+          select { |cred| cred["password"] }.
           find { |cred| cred["host"] == "gitlab.com" }&.
           fetch("password")
 

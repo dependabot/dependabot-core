@@ -264,25 +264,26 @@ module Dependabot
           elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first
-          elsif (cred_url = credential_url(resolved_url)) then cred_url
+          elsif (cred_url = url_for_relevant_cred(resolved_url)) then cred_url
           else resolved_url.split("/")[0..2].join("/")
           end
 
         { type: "private_registry", url: url }
       end
 
-      def credential_url(resolved_url)
-        registries = credentials.
-                     select { |cred| cred["type"] == "npm_registry" }
+      def url_for_relevant_cred(resolved_url)
+        credential_matching_url =
+          credentials.
+          select { |cred| cred["type"] == "npm_registry" }.
+          sort_by { |cred| cred["registry"].length }.
+          find { |details| resolved_url.include?(details["registry"]) }
 
-        registries.each do |details|
-          reg = details["registry"]
-          next unless resolved_url.include?(reg)
+        return unless credential_matching_url
 
-          return resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
-        end
-
-        false
+        # Trim the resolved URL so that it ends at the same point as the
+        # credential registry
+        reg = credential_matching_url["registry"]
+        resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
       end
 
       def package_files

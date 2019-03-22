@@ -247,12 +247,14 @@ module Dependabot
 
         def git_credentials
           credentials.
-            select { |cred| cred.fetch("type") == "git_source" }
+            select { |cred| cred.fetch("type") == "git_source" }.
+            select { |cred| cred["password"] }
         end
 
         def registry_credentials
           credentials.
-            select { |cred| cred.fetch("type") == "composer_repository" }
+            select { |cred| cred.fetch("type") == "composer_repository" }.
+            select { |cred| cred["password"] }
         end
 
         def composer_json

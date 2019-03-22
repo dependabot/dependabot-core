@@ -303,6 +303,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   }]
                 )
               end
+
+              context "excluding the auth token" do
+                let(:credentials) do
+                  [{
+                    "type" => "npm_registry",
+                    "registry" =>
+                      "artifactory01.mydomain.com/artifactory/api/npm/my-repo"
+                  }]
+                end
+
+                its(:requirements) do
+                  is_expected.to eq(
+                    [{
+                      requirement: "^0.0.1",
+                      file: "package.json",
+                      groups: ["dependencies"],
+                      source: {
+                        type: "private_registry",
+                        url: "https://artifactory01.mydomain.com/artifactory/"\
+                             "api/npm/my-repo"
+                      }
+                    }]
+                  )
+                end
+              end
             end
           end
         end

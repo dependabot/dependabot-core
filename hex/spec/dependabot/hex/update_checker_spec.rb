@@ -247,6 +247,29 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
+      context "with no token" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "hex_organization",
+            "organization" => "dependabot"
+          }]
+        end
+
+        # This needs to changes to the Elixir helper
+        pending "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { subject }.
+            to raise_error(error_class) do |error|
+              expect(error.source).to eq("dependabot")
+            end
+        end
+      end
+
       context "with no credentials" do
         let(:credentials) do
           [{

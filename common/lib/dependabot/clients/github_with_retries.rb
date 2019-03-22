@@ -30,6 +30,7 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "git_source" }.
           select { |cred| cred["host"] == source.hostname }.
+          select { |cred| cred["password"] }.
           map { |cred| cred.fetch("password") }
 
         new(
@@ -43,6 +44,7 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "git_source" }.
           select { |cred| cred["host"] == "github.com" }.
+          select { |cred| cred["password"] }.
           map { |cred| cred.fetch("password") }
 
         new(access_tokens: access_tokens)

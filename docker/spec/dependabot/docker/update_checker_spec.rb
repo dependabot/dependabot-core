@@ -459,20 +459,17 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "with authentication credentials" do
         let(:credentials) do
-          [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            },
-            {
-              "type" => "docker_registry",
-              "registry" => "registry-host.io:5000",
-              "username" => "grey",
-              "password" => "pa55word"
-            }
-          ]
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word"
+          }]
         end
 
         before do
@@ -482,6 +479,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         it { is_expected.to eq("17.10") }
+
+        context "that don't have a username or password" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000"
+            }]
+          end
+
+          it { is_expected.to eq("17.10") }
+        end
       end
     end
   end

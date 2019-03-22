@@ -409,37 +409,6 @@ RSpec.describe namespace::PipfileVersionResolver do
       let(:pipfile_fixture_name) { "environment_variable_source" }
       let(:lockfile_fixture_name) { "environment_variable_source.lock" }
 
-      context "with no credentials" do
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }.
-            to raise_error(error_class) do |error|
-              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
-            end
-        end
-      end
-
-      context "with a non-matching credential" do
-        let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "python_index",
-            "index-url" => "https://pypi.gemfury.com/secret_codes/"
-          }]
-        end
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }.
-            to raise_error(error_class) do |error|
-              expect(error.source).to eq("https://pypi.python.org/${ENV_VAR}/")
-            end
-        end
-      end
-
       context "with a matching credential" do
         let(:credentials) do
           [{

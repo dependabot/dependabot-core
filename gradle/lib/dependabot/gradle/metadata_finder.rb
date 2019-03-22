@@ -151,6 +151,8 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
+      # Has test that it works without username / password.
+      # TODO: Test with proxy
       def auth_details
         cred =
           credentials.select { |c| c["type"] == "maven_repository" }.

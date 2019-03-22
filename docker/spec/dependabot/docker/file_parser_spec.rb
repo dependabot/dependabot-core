@@ -281,6 +281,17 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect(dependency.requirements).to eq(expected_requirements)
               end
             end
+
+            context "that don't include a username and password" do
+              let(:credentials) do
+                [{
+                  "type" => "docker_registry",
+                  "registry" => "registry-host.io:5000"
+                }]
+              end
+
+              its(:length) { is_expected.to eq(1) }
+            end
           end
 
           context "that uses Amazon ECR" do

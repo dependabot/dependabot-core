@@ -146,6 +146,8 @@ module Dependabot
         @pypi_listing = {} # No listing found
       end
 
+      # Has test that it works without username / password.
+      # TODO: Test with proxy
       def possible_listing_urls
         credential_urls =
           credentials.

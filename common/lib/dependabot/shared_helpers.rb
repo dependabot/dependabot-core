@@ -179,7 +179,8 @@ module Dependabot
 
       github_credentials = credentials.
                            select { |c| c["type"] == "git_source" }.
-                           select { |c| c["host"] == "github.com" }
+                           select { |c| c["host"] == "github.com" }.
+                           select { |c| c["password"] || c["username"] }
 
       # If multiple credentials are specified for github.com, pick the one that
       # *isn't* just an app token (since it must have been added deliberately)

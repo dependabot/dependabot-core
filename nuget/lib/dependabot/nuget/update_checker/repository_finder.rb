@@ -134,6 +134,8 @@ module Dependabot
           @known_repositories.uniq
         end
 
+        # Has test that it works without username / password.
+        # TODO: Test with proxy
         def credential_repositories
           @credential_repositories ||=
             credentials.

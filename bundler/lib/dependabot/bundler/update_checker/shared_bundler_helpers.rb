@@ -221,15 +221,21 @@ module Dependabot
         end
 
         def relevant_credentials
-          private_registry_credentials + git_source_credentials
+          [
+            *git_source_credentials,
+            *private_registry_credentials
+          ].select { |cred| cred["password"] || cred["token"] }
         end
 
         def private_registry_credentials
-          credentials.select { |cred| cred["type"] == "rubygems_server" }
+          credentials.
+            select { |cred| cred["type"] == "rubygems_server" }
         end
 
         def git_source_credentials
-          credentials.select { |cred| cred["type"] == "git_source" }
+          credentials.
+            select { |cred| cred["password"] || cred["token"] }.
+            select { |cred| cred["type"] == "git_source" }
         end
 
         def gemfile

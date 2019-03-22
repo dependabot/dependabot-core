@@ -88,6 +88,8 @@ module Dependabot
         source.fetch("source_url")
       end
 
+      # Has test that it works without username / password.
+      # TODO: Test with proxy
       def auth_header
         source = dependency.requirements.
                  find { |r| r&.fetch(:source) }&.fetch(:source)

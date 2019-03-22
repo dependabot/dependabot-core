@@ -262,6 +262,25 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             to have_requested(:get, gemfury_url).
             with(basic_auth: %w(user pass))
         end
+
+        context "without a username and password" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "composer_repository",
+              "registry" => "php.fury.io"
+            }]
+          end
+
+          it "uses the credentials" do
+            checker.latest_version
+            expect(WebMock).to have_requested(:get, gemfury_url)
+          end
+        end
       end
     end
 

@@ -225,7 +225,7 @@ module Dependabot
         credentials.
           select { |cred| cred["type"] == "npm_registry" }.
           find { |cred| cred["registry"] == dependency_registry }&.
-          fetch("token")
+          fetch("token", nil)
       end
 
       def non_standard_registry?

@@ -120,6 +120,23 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq("https://github.com/dotnet/core-setup") }
       end
 
+      context "with details in the credentials (but no token)" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "nuget_feed",
+            "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+                     "index.json"
+          }]
+        end
+
+        it { is_expected.to eq("https://github.com/dotnet/core-setup") }
+      end
+
       context "that requires authentication" do
         before do
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -132,20 +149,17 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
         context "with details in the credentials" do
           let(:credentials) do
-            [
-              {
-                "type" => "git_source",
-                "host" => "github.com",
-                "username" => "x-access-token",
-                "password" => "token"
-              },
-              {
-                "type" => "nuget_feed",
-                "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
-                         "index.json",
-                "token" => "my:passw0rd"
-              }
-            ]
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "nuget_feed",
+              "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+                       "index.json",
+              "token" => "my:passw0rd"
+            }]
           end
 
           it { is_expected.to eq("https://github.com/dotnet/core-setup") }

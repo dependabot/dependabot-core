@@ -80,8 +80,8 @@ module Dependabot
       def get(url)
         response = Excon.get(
           url,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
           idempotent: true,
           **Dependabot::SharedHelpers.excon_defaults
         )

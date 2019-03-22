@@ -421,10 +421,6 @@ module Dependabot
         end
 
         def check_private_sources_are_reachable
-          env_sources = pipfile_sources.select { |h| h["url"].include?("${") }
-
-          check_env_sources_included_in_config_variables(env_sources)
-
           sources_to_check =
             pipfile_sources.reject { |h| h["url"].include?("${") } +
             config_variable_sources
@@ -534,24 +530,8 @@ module Dependabot
           error_message.include?('Command "python setup.py egg_info" failed')
         end
 
-        def check_env_sources_included_in_config_variables(env_sources)
-          config_variable_source_urls =
-            config_variable_sources.map { |s| s["url"] }
-
-          env_sources.each do |source|
-            url = source["url"]
-            known_parts = url.split(/\$\{.*?\}/).reject(&:empty?).compact
-
-            # If the whole URL is an environment variable we can't do a check
-            next if known_parts.none?
-
-            regex = known_parts.map { |p| Regexp.quote(p) }.join(".*?")
-            next if config_variable_source_urls.any? { |s| s.match?(regex) }
-
-            raise PrivateSourceAuthenticationFailure, url
-          end
-        end
-
+        # Has test that it works without username / password.
+        # TODO: Test with proxy
         def config_variable_sources
           @config_variable_sources ||=
             credentials.

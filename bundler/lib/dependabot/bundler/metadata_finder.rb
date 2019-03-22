@@ -220,7 +220,7 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "rubygems_server" }.
           find { |cred| registry_url.include?(cred["host"]) }&.
-          fetch("token")
+          fetch("token", nil)
 
         return {} unless token
 

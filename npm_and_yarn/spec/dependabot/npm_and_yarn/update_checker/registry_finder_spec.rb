@@ -43,12 +43,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     it { is_expected.to eq("registry.npmjs.org") }
 
     context "with credentials for a private registry" do
-      before do
-        credentials << {
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
           "type" => "npm_registry",
           "registry" => "npm.fury.io/dependabot",
           "token" => "secret_token"
-        }
+        }]
       end
 
       context "which doesn't list the dependency" do
@@ -70,6 +75,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
         end
 
         it { is_expected.to eq("npm.fury.io/dependabot") }
+
+        context "but doesn't include auth" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "npm_registry",
+              "registry" => "npm.fury.io/dependabot"
+            }]
+          end
+
+          before do
+            body = fixture("gemfury_response_etag.json")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              to_return(status: 200, body: body)
+          end
+
+          it { is_expected.to eq("npm.fury.io/dependabot") }
+        end
       end
 
       context "which times out" do
