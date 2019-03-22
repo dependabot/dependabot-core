@@ -3,6 +3,8 @@
 require "excon"
 require "gitlab"
 require "dependabot/clients/github_with_retries"
+require "dependabot/clients/gitlab_with_retries"
+require "dependabot/clients/bitbucket"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
 require "dependabot/utils"
@@ -10,7 +12,6 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/.freeze
@@ -166,6 +167,7 @@ module Dependabot
 
       allow_identical && status == "identical"
     rescue Octokit::NotFound, Gitlab::Error::NotFound,
+           Clients::Bitbucket::NotFound,
            Octokit::InternalServerError
       false
     end
@@ -194,33 +196,15 @@ module Dependabot
             "#{listing_source_repo}/commits/?"\
             "include=#{ref2}&exclude=#{ref1}"
 
-      response = Excon.get(url,
-                           headers: bitbucket_auth_header,
-                           idempotent: true,
-                           **SharedHelpers.excon_defaults)
+      client = Clients::Bitbucket.
+               for_bitbucket_dot_org(credentials: credentials)
+
+      response = client.get(url)
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)
       if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
       else "ahead"
-      end
-    end
-
-    def bitbucket_auth_header
-      token = credentials.
-              select { |cred| cred["type"] == "git_source" }.
-              find { |cred| cred["host"] == "bitbucket.org" }&.
-              fetch("token")
-
-      if token.nil? then {}
-      elsif token.include?(":")
-        encoded_token = Base64.encode64(token).delete("\n")
-        { "Authorization" => "Basic #{encoded_token}" }
-      elsif Base64.decode64(token).ascii_only? &&
-            Base64.decode64(token).include?(":")
-        { "Authorization" => "Basic #{token.delete("\n")}" }
-      else
-        { "Authorization" => "Bearer #{token}" }
       end
     end
 
@@ -356,4 +340,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
