@@ -1,3 +1,9 @@
+## v0.98.31, 22 March 2019
+
+- Python: Allow credentials to be passed with a token
+- Use Bitbucket client in GitCommitChecker
+- Use GitLab client when doing commit comparison
+
 ## v0.98.30, 22 March 2019
 
 - Python: Reorganize FileUpdater#resolver_type to better handle cases where req.txt needs updating
