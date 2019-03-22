@@ -489,7 +489,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        pending "raises a helpful error message" do
+        it "raises a helpful error message" do
           expect { checker.latest_resolvable_version }.
             to raise_error do |error|
               expect(error).
@@ -509,7 +509,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        pending "raises a helpful error message" do
+        it "raises a helpful error message" do
           expect { checker.latest_resolvable_version }.
             to raise_error do |error|
               expect(error).
