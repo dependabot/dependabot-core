@@ -1,3 +1,9 @@
+## v0.98.30, 22 March 2019
+
+- Python: Reorganize FileUpdater#resolver_type to better handle cases where req.txt needs updating
+- Python: More marker parsing improvements
+- Python: Better handling of markers in requirements.txt
+
 ## v0.98.29, 22 March 2019
 
 - Composer: Correct name for path deps starting with ../
