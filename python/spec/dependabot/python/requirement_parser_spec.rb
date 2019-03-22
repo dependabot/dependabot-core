@@ -156,6 +156,16 @@ RSpec.describe Dependabot::Python::RequirementParser do
                             ])
         end
       end
+
+      context "with brackets" do
+        let(:line) { "luigi (>0.1.0,<2)" }
+        its([:requirements]) do
+          is_expected.to eq([
+                              { comparison: ">", version: "0.1.0" },
+                              { comparison: "<", version: "2" }
+                            ])
+        end
+      end
     end
   end
 end
