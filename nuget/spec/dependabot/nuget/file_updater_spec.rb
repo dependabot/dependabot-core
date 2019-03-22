@@ -130,8 +130,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
 
         it "updates the property correctly" do
-          expect(updated_csproj_file.content).
-            to include("<NukeVersion>0.1.500</NukeVersion>")
+          expect(updated_csproj_file.content).to include(
+            %(NukeVersion Condition="$(NukeVersion) == ''">0.1.500</NukeVersion)
+          )
         end
       end
     end

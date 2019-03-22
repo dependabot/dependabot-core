@@ -29,10 +29,10 @@ module Dependabot
           node = declaration_details.fetch(:node)
 
           updated_content = declaration_file.content.sub(
-            %r{<#{Regexp.quote(node.name)}>
+            %r{(<#{Regexp.quote(node.name)}(?:\s[^>]*)?>)
                \s*#{Regexp.quote(node.content)}\s*
                </#{Regexp.quote(node.name)}>}xm,
-            "<#{node.name}>#{updated_value}</#{node.name}>"
+            '\1' + "#{updated_value}</#{node.name}>"
           )
 
           files = dependency_files.dup

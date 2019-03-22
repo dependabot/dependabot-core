@@ -29,7 +29,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater::PropertyValueUpdater do
 
     it "updates the property" do
       expect(updated_files.first.content).
-        to include("<NukeVersion>0.1.500</NukeVersion>")
+        to include(
+          %(<NukeVersion Condition="$(NukeVersion) == ''">0.1.500</NukeVersion>)
+        )
       expect(updated_files.first.content).
         to include('Version="$(NukeVersion)" />')
     end

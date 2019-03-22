@@ -9,7 +9,7 @@
     <NoWarn>CS0649;CS0169</NoWarn>
 
     <!-- NUKE CONFIGURATION -->
-    <NukeVersion>0.1.434</NukeVersion>
+    <NukeVersion Condition="$(NukeVersion) == ''">0.1.434</NukeVersion>
     <NukeCodeGeneration>False</NukeCodeGeneration>
   </PropertyGroup>
 
