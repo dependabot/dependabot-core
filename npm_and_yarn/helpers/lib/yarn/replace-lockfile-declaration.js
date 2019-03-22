@@ -5,9 +5,9 @@ const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
 // Get an array of a dependency's requested version ranges from a lockfile
 function getRequestedVersions(depName, lockfileJson) {
   const requestedVersions = [];
-  // TODO: Rethink this regex matching, for example, we don't currently match:
-  // @dependabot/pack-core@^git+ssh://git@github.com:dependabot/pack-core.git
-  const re = /^(.*)@([^@]*?)$/;
+  // Matching dependency name and version requirements which could be a full url:
+  // dep@version, @private-dep@version, private-dep@https:://token@gh.com...#ref
+  const re = /^(.[^@]*)@(.*?)$/;
 
   Object.entries(lockfileJson).forEach(([name, _]) => {
     if (name.match(re)) {
