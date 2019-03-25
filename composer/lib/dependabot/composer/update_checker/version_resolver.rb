@@ -122,6 +122,8 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_composer_errors(error)
+          sanitized_message = remove_url_credentials(error.message)
+
           if error.message.start_with?("Failed to execute git clone")
             dependency_url =
               error.message.match(/--mirror '(?<url>.*?)'/).
@@ -132,8 +134,9 @@ module Dependabot
               error.message.match(/Failed to clone (?<url>.*?) via/).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif error.message.start_with?("Could not parse version")
-            raise Dependabot::DependencyFileNotResolvable, error.message
+          elsif error.message.start_with?("Could not parse version") ||
+                error.message.include?("does not allow connections to http://")
+            raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.include?("requested PHP extension")
             extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
             msg = "Dependabot's installed extensions didn't match those "\
@@ -221,6 +224,10 @@ module Dependabot
           credentials.
             select { |cred| cred["type"] == "composer_repository" }.
             select { |cred| cred["password"] }
+        end
+
+        def remove_url_credentials(message)
+          message.gsub(%r{(?<=://)[^\s]*:[^\s]*(?=@)}, "****")
         end
       end
     end
