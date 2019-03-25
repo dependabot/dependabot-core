@@ -1,3 +1,7 @@
+## v0.98.35, 25 March 2019
+
+- Bundler: Don't add .rb suffix to require_relative files that already include it
+
 ## v0.98.34, 25 March 2019
 
 - Python: Don't include dependencies parsed from a req.txt that are also included in Poetry
