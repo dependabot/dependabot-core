@@ -1,3 +1,7 @@
+## v0.98.33, 25 March 2019
+
+- Yarn: install specific sub-dependency version
+
 ## v0.98.32, 25 March 2019
 
 - Composer: Serve resolvability error if required connections are disallowed
