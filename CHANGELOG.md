@@ -1,3 +1,8 @@
+## v0.98.32, 25 March 2019
+
+- Composer: Serve resolvability error if required connections are disallowed
+- Allow config variables without credentials wherever possible
+
 ## v0.98.31, 22 March 2019
 
 - Python: Allow credentials to be passed with a token
