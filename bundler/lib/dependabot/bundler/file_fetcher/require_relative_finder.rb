@@ -34,7 +34,8 @@ module Dependabot
 
             path = node.children[2].loc.expression.source.gsub(/['"]/, "")
             path = File.join(current_dir, path) unless current_dir.nil?
-            return [Pathname.new(path + ".rb").cleanpath.to_path]
+            path += ".rb" unless path.end_with?(".rb")
+            return [Pathname.new(path).cleanpath.to_path]
           end
 
           node.children.flat_map do |child_node|

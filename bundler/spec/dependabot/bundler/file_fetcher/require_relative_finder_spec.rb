@@ -40,6 +40,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher::RequireRelativeFinder do
 
       it { is_expected.to eq(["../some_other_file.rb"]) }
 
+      context "for a file that includes a .rb suffix" do
+        let(:file_body) { 'require_relative "../some_other_file.rb"' }
+        it { is_expected.to eq(["../some_other_file.rb"]) }
+      end
+
       # rubocop:disable Lint/InterpolationCheck
       context "that needs to be evaled" do
         let(:file_body) { 'require_relative "./my_file_#{raise %(hell)}"' }
