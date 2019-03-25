@@ -64,8 +64,8 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         updated_files.find { |f| f.name == "pom.xml" }
       end
 
-      its(:content) { is_expected.to include "<version>4.6.1</version>" }
-      its(:content) { is_expected.to include "<version>23.3-jre</version>" }
+      its(:content) { is_expected.to include("<version>4.6.1</version>") }
+      its(:content) { is_expected.to include("<version>23.3-jre</version>") }
 
       it "doesn't update the formatting of the POM" do
         expect(updated_pom_file.content).
@@ -75,7 +75,15 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
         let(:dependency_groups) { [] }
-        its(:content) { is_expected.to include "<version>4.6.1</version>" }
+        its(:content) { is_expected.to include("<version> 4.6.1 </version>") }
+      end
+
+      context "with a comment on the version" do
+        let(:pom_body) { fixture("poms", "version_with_comment.xml") }
+
+        its(:content) do
+          is_expected.to include("<version>4.6.1<!--updateme--></version>")
+        end
       end
 
       context "when the requirement is a hard requirement" do

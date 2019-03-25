@@ -140,8 +140,8 @@ module Dependabot
         original_req_string = previous_req.fetch(:requirement)
 
         old_declaration.gsub(
-          %r{<version>\s*#{Regexp.quote(original_req_string)}\s*</version>},
-          "<version>#{requirement.fetch(:requirement)}</version>"
+          /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
+          requirement.fetch(:requirement)
         )
       end
 
