@@ -1,6 +1,6 @@
 const path = require("path");
 const os = require("os");
-const fs = require("fs-extra");
+const fs = require("fs");
 const nock = require("nock");
 const {
   updateDependencyFiles,
@@ -17,20 +17,20 @@ describe("updater", () => {
 
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => fs.removeSync(tempDir));
+  afterEach(() => fs.rmdirSync(tempDir));
 
   async function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`
     );
-    await fs.copy(srcPackageJson, `${destDir}/package.json`);
+    await fs.copyFile(srcPackageJson, `${destDir}/package.json`);
 
     const srcLockfile = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package-lock.json`
     );
-    await fs.copy(srcLockfile, `${destDir}/package-lock.json`);
+    await fs.copyFile(srcLockfile, `${destDir}/package-lock.json`);
   }
 
   it("generates an updated package-lock.json", async () => {
