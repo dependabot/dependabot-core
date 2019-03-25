@@ -1,3 +1,9 @@
+## v0.98.34, 25 March 2019
+
+- Python: Don't include dependencies parsed from a req.txt that are also included in Poetry
+- Maven: Better file update regex (trust declaration finder more)
+- JS: try/catch helper scripts
+
 ## v0.98.33, 25 March 2019
 
 - Yarn: install specific sub-dependency version
