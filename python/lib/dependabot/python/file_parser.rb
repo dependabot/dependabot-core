@@ -69,9 +69,10 @@ module Dependabot
         dependencies = DependencySet.new
         parsed_requirement_files.each do |dep|
           # This isn't ideal, but currently the FileUpdater won't update
-          # deps that appear in a requirements.txt and Pipfile / Pipfile.lock
-          # and *aren't* a straight lockfile for the Pipfile
+          # deps that appear in a requirements.txt and Pipenv / Poetry
+          # and *aren't* a straight lockfile for Pipenv / Poetry
           next if included_in_pipenv_deps?(normalised_name(dep["name"]))
+          next if included_in_poetry_deps?(normalised_name(dep["name"]))
 
           # If a requirement has a `<`, `<=` or '==' marker then updating it is
           # probably blocked. Ignore it.
@@ -103,6 +104,12 @@ module Dependabot
         return false unless pipfile
 
         pipenv_dependencies.dependencies.map(&:name).include?(dep_name)
+      end
+
+      def included_in_poetry_deps?(dep_name)
+        return false unless using_poetry?
+
+        poetry_dependencies.dependencies.map(&:name).include?(dep_name)
       end
 
       def blocking_marker?(dep)

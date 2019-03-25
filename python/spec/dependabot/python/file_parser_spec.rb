@@ -992,6 +992,72 @@ RSpec.describe Dependabot::Python::FileParser do
           end
         end
       end
+
+      context "and a requirements.txt" do
+        let(:files) { [pyproject, requirements] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "version_not_specified.toml")
+          )
+        end
+
+        its(:length) { is_expected.to eq(4) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "*",
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+
+        describe "the second dependency" do
+          subject(:dependency) { dependencies[1] }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("pytest")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "*",
+                file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+
+        describe "the third dependency" do
+          subject(:dependency) { dependencies[2] }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("psycopg2")
+            expect(dependency.version).to eq("2.6.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
     end
   end
 end
