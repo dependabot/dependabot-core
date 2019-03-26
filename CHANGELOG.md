@@ -1,3 +1,9 @@
+## v0.98.41, 26 March 2019
+
+- Python: Handle yanked dependencies in PoetryVersionResolver
+- Python: Better environment variable support in LatestVersionFinder
+- Fix rubocop
+
 ## v0.98.40, 26 March 2019
 
 - Python: Handle environment variables in LatestVersionFinder
