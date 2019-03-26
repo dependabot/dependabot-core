@@ -212,23 +212,17 @@ module Dependabot
 
         def clean_check_and_remove_environment_variables(url)
           url = url.strip.gsub(%r{/*$}, "") + "/"
-          return url unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
+          url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}, "")
+          authed_base_url(url)
+        end
 
-          config_variable_urls =
-            [
-              config_variable_index_urls[:main],
-              *config_variable_index_urls[:extra]
-            ].
-            compact.
-            map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
+        def authed_base_url(base_url)
+          cred = credentials.
+                  select { |c| c["type"] == "python_index" }.
+                  find { |c| c.fetch("index-url").include?(base_url) }
+          return base_url unless cred
 
-          regexp = url.split(ENVIRONMENT_VARIABLE_REGEX).
-                   map { |part| Regexp.quote(part) }.
-                   join(".+")
-          authed_url = config_variable_urls.find { |u| u.match?(regexp) }
-          return authed_url if authed_url
-
-          raise PrivateSourceAuthenticationFailure, url
+          AuthedUrlBuilder.authed_url(credential: cred)
         end
 
         def ignore_reqs
