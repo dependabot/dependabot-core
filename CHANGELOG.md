@@ -1,3 +1,7 @@
+## v0.98.40, 26 March 2019
+
+- Python: Handle environment variables in LatestVersionFinder
+
 ## v0.98.39, 26 March 2019
 
 - Python: Fix copy-paste error
