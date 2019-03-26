@@ -288,6 +288,40 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
 
         its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+
+        context "that includes an environment variables" do
+          let(:dependency_files) do
+            [
+              Dependabot::DependencyFile.new(
+                name: "pip.conf",
+                content: fixture("conf_files", "extra_index_env_variable")
+              )
+            ]
+          end
+
+          it "raises a helpful error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { subject }.
+              to raise_error(error_class) do |error|
+                expect(error.source).
+                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}"\
+                        "/source/+simple/")
+              end
+          end
+
+          context "that was provided as a config variable" do
+            let(:credentials) do
+              [{
+                "type" => "python_index",
+                "index-url" => "https://pypi.weasyldev.com/weasyl/"\
+                               "source/+simple",
+                "replaces-base" => "false"
+              }]
+            end
+
+            its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+          end
+        end
       end
 
       context "set in a requirements.txt file" do
