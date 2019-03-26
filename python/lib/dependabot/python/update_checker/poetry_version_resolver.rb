@@ -94,7 +94,8 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
-          raise unless error.message.include?("SolverProblemError")
+          raise unless error.message.include?("SolverProblemError") ||
+                       error.message.include?("PackageNotFound")
 
           check_original_requirements_resolvable
 
@@ -117,7 +118,8 @@ module Dependabot
 
             true
           rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("SolverProblemError")
+            raise unless error.message.include?("SolverProblemError") ||
+                         error.message.include?("PackageNotFound")
 
             msg = clean_error_message(error.message)
             raise DependencyFileNotResolvable, msg

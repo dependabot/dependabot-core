@@ -169,7 +169,6 @@ RSpec.describe namespace::PoetryVersionResolver do
     context "not resolvable" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "solver_problem.toml" }
-      let(:latest_version) { Gem::Version.new("18.9.beta.0") }
 
       it "raises a helpful error" do
         expect { subject }.
@@ -177,6 +176,20 @@ RSpec.describe namespace::PoetryVersionResolver do
             expect(error.message).
               to include("depends on black (^18) which doesn't match any")
           end
+      end
+
+      context "because of a yanked dependency" do
+        let(:dependency_files) { [pyproject, lockfile] }
+        let(:pyproject_fixture_name) { "yanked_version.toml" }
+        let(:lockfile_fixture_name) { "yanked_version.lock" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to include("Package croniter (0.3.26) not found")
+            end
+        end
       end
     end
   end
