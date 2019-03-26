@@ -1,3 +1,8 @@
+## v0.98.37, 26 March 2019
+
+- Python: Handle errors due to updating a dep to a version with a Python requirement issue (poetry)
+- Add handling for tree creation race to pull request updater
+
 ## v0.98.36, 26 March 2019
 
 - Handle unexpected previous versions in CommitsFinder
