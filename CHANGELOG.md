@@ -1,3 +1,7 @@
+## v0.98.38, 26 March 2019
+
+- Bundler: Handle tricky ruby requirements in a gemspec when generating new lockfiles
+
 ## v0.98.37, 26 March 2019
 
 - Python: Handle errors due to updating a dep to a version with a Python requirement issue (poetry)
