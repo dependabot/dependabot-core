@@ -240,6 +240,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                               "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
+
+        context "without a non-correct previous version" do
+          let(:dependency_previous_version) { "master" }
+
+          it do
+            is_expected.to eq("https://github.com/netflix/pollyjs/"\
+                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+          end
+        end
       end
     end
 

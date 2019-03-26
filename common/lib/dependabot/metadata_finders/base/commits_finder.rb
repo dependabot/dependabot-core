@@ -161,7 +161,7 @@ module Dependabot
           return false unless version
 
           unless version_class.correct?(version)
-            tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/)
+            return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/)
           end
 
           version_regex = GitCommitChecker::VERSION_REGEX
