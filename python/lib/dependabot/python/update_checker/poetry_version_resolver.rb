@@ -51,7 +51,7 @@ module Dependabot
         end
 
         def fetch_latest_resolvable_version
-          @latest_resolvable_version_string ||=
+          latest_resolvable_version_string =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
 
@@ -77,9 +77,9 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => error
               handle_poetry_errors(error)
             end
-          return unless @latest_resolvable_version_string
+          return unless latest_resolvable_version_string
 
-          Python::Version.new(@latest_resolvable_version_string)
+          Python::Version.new(latest_resolvable_version_string)
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
@@ -94,10 +94,16 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
-          if error.message.include?("SolverProblemError")
-            check_original_requirements_resolvable
-          end
+          raise unless error.message.include?("SolverProblemError")
 
+          check_original_requirements_resolvable
+
+          # If the original requirements are resolvable but the new version
+          # would break Python version compatibility the update is blocked
+          return if error.message.include?("support the following Python")
+
+          # If any kind of other error is now occuring as a result of our change
+          # then we want to hear about it
           raise
         end
 
