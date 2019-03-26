@@ -334,7 +334,7 @@ module Dependabot
           original_content = dependency_files.
                              find { |f| f.name == compiled_name }&.content ||
                              dependency_files.
-                             find { |f| f.name == filename }.conten
+                             find { |f| f.name == filename }.content
 
           updated_content = File.read(compiled_name)
           new_content = updated_content
