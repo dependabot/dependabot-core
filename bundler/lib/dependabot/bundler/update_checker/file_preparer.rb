@@ -8,7 +8,7 @@ require "dependabot/bundler/file_updater/git_source_remover"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/file_updater/gemspec_dependency_name_finder"
 require "dependabot/bundler/file_updater/lockfile_updater"
-require "dependabot/bundler/update_checker/ruby_requirement_setter"
+require "dependabot/bundler/file_updater/ruby_requirement_setter"
 
 module Dependabot
   module Bundler
@@ -240,8 +240,8 @@ module Dependabot
 
         def lock_ruby_version(gemfile_content)
           top_level_gemspecs.each do |gs|
-            gemfile_content =
-              RubyRequirementSetter.new(gemspec: gs).rewrite(gemfile_content)
+            gemfile_content = FileUpdater::RubyRequirementSetter.
+                              new(gemspec: gs).rewrite(gemfile_content)
           end
 
           gemfile_content

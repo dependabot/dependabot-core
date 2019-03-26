@@ -1023,6 +1023,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(updated_files.map(&:name)).
               to match_array(["Gemfile", "Gemfile.lock"])
           end
+
+          context "with a tricky ruby requirement" do
+            let(:gemspec_body) { fixture("ruby", "gemspecs", "tricky_ruby") }
+
+            it "returns an updated Gemfile and Gemfile.lock" do
+              expect(updated_files.map(&:name)).
+                to match_array(["Gemfile", "Gemfile.lock"])
+            end
+          end
         end
 
         context "when the gem in the gemspec is being updated" do

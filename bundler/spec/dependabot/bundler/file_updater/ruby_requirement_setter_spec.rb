@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/bundler/update_checker/ruby_requirement_setter"
+require "dependabot/bundler/file_updater/ruby_requirement_setter"
 
-module_to_test = Dependabot::Bundler::UpdateChecker
+module_to_test = Dependabot::Bundler::FileUpdater
 RSpec.describe module_to_test::RubyRequirementSetter do
   let(:setter) { described_class.new(gemspec: gemspec) }
   let(:gemspec) do

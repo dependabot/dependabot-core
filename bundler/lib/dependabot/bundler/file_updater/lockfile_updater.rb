@@ -20,6 +20,7 @@ module Dependabot
         require_relative "gemspec_updater"
         require_relative "gemspec_sanitizer"
         require_relative "gemspec_dependency_name_finder"
+        require_relative "ruby_requirement_setter"
 
         LOCKFILE_ENDING =
           /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
@@ -93,10 +94,22 @@ module Dependabot
               end
             end
           post_process_lockfile(lockfile_body)
+        rescue Dependabot::DependencyFileNotResolvable => error
+          raise unless ruby_lock_error?(error)
+
+          @dont_lock_ruby_version = true
+          retry
+        end
+
+        def ruby_lock_error?(error)
+          return false unless error.message.include?(" for gem \"ruby\0\"")
+          return false if @dont_lock_ruby_version
+
+          dependency_files.any? { |f| f.name.end_with?(".gemspec") }
         end
 
         def write_temporary_dependency_files
-          File.write(gemfile.name, updated_gemfile_content(gemfile))
+          File.write(gemfile.name, prepared_gemfile_content(gemfile))
           File.write(lockfile.name, sanitized_lockfile_body)
 
           top_level_gemspecs.each do |gemspec|
@@ -338,6 +351,21 @@ module Dependabot
 
               false
             end
+        end
+
+        def prepared_gemfile_content(file)
+          content =
+            GemfileUpdater.new(
+              dependencies: dependencies,
+              gemfile: file
+            ).updated_gemfile_content
+          return content if @dont_lock_ruby_version
+
+          top_level_gemspecs.each do |gs|
+            content = RubyRequirementSetter.new(gemspec: gs).rewrite(content)
+          end
+
+          content
         end
 
         def updated_gemfile_content(file)
