@@ -1,3 +1,7 @@
+## v0.98.39, 26 March 2019
+
+- Python: Fix copy-paste error
+
 ## v0.98.38, 26 March 2019
 
 - Bundler: Handle tricky ruby requirements in a gemspec when generating new lockfiles
