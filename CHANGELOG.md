@@ -1,3 +1,7 @@
+## v0.98.36, 26 March 2019
+
+- Handle unexpected previous versions in CommitsFinder
+
 ## v0.98.35, 25 March 2019
 
 - Bundler: Don't add .rb suffix to require_relative files that already include it
