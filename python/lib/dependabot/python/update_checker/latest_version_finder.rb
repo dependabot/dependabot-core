@@ -218,8 +218,8 @@ module Dependabot
 
         def authed_base_url(base_url)
           cred = credentials.
-                  select { |c| c["type"] == "python_index" }.
-                  find { |c| c.fetch("index-url").include?(base_url) }
+                 select { |c| c["type"] == "python_index" }.
+                 find { |c| c.fetch("index-url").include?(base_url) }
           return base_url unless cred
 
           AuthedUrlBuilder.authed_url(credential: cred)
