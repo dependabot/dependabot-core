@@ -1,3 +1,7 @@
+## v0.98.44, 27 March 2019
+
+- Python: Fetch requirement files with lines that start with a comment
+
 ## v0.98.43, 27 March 2019
 
 
