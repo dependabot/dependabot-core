@@ -1,3 +1,7 @@
+## v0.98.42, 27 March 2019
+
+- Bump @dependabot/yarn-lib from 1.13.0 to 1.15.2 in /npm_and_yarn/helpers
+
 ## v0.98.41, 26 March 2019
 
 - Python: Handle yanked dependencies in PoetryVersionResolver
