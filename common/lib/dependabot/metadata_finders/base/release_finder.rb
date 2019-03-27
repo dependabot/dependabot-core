@@ -113,9 +113,12 @@ module Dependabot
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
+            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
+                        map { |nm| nm.chars.count(".") }.max
 
             tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
                           select { |nm| version_class.correct?(nm) }.
+                          select { |nm| nm.chars.count(".") == dot_count }.
                           map { |nm| version_class.new(nm) }.max
 
             next conservative unless tag_version
@@ -132,9 +135,12 @@ module Dependabot
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
             cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
+            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
+                        map { |nm| nm.chars.count(".") }.max
 
             tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?).
                           select { |nm| version_class.correct?(nm) }.
+                          select { |nm| nm.chars.count(".") == dot_count }.
                           map { |nm| version_class.new(nm) }.min
 
             next conservative unless tag_version

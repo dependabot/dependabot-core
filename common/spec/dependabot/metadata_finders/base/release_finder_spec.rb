@@ -298,6 +298,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             let(:dependency_previous_version) { "3.5.2" }
             it { is_expected.to be_nil }
           end
+
+          context "but has 'Fix #123' names" do
+            let(:dependency_version) { "2.1.0" }
+            let(:dependency_previous_version) { "2.0.0" }
+            let(:github_response) do
+              fixture("github", "releases_fix_names.json")
+            end
+
+            it "figures out not to use the 'Fix #123' names" do
+              expect(subject).to be_nil
+            end
+          end
         end
 
         context "when the release has a bad name" do
