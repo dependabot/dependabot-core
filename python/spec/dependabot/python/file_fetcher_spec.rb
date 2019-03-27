@@ -110,15 +110,26 @@ RSpec.describe Dependabot::Python::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "requirements_content.json"),
+            body: fixture("github", requirements_fixture_name),
             headers: { "content-type" => "application/json" }
           )
       end
+      let(:requirements_fixture_name) { "requirements_content.json" }
 
       it "fetches the requirements.txt file" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
           to eq(["requirements.txt"])
+      end
+
+      context "that includes comments" do
+        let(:requirements_fixture_name) { "requirements_with_comments.json" }
+
+        it "fetches the requirements.txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to eq(["requirements.txt"])
+        end
       end
 
       context "and a todo.txt that is actually a requirements file" do
