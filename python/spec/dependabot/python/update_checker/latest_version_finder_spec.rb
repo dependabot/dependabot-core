@@ -178,6 +178,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "with auth details that need handling carefully" do
+          let(:dependency_files) do
+            [
+              Dependabot::DependencyFile.new(
+                name: "pip.conf",
+                content: fixture("conf_files", "custom_index_double_at")
+              )
+            ]
+          end
+
+          it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+        end
       end
 
       context "set in a requirements.txt file" do

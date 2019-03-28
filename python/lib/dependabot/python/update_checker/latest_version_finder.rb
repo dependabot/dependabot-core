@@ -108,7 +108,12 @@ module Dependabot
             clean_check_and_remove_environment_variables(url)
           end
 
-          [main_index_url, *extra_index_urls].uniq
+          # URL encode any `@` characters within registry URL creds.
+          # TODO: The test that fails if the `map` here is removed is likely a
+          # bug in Ruby's URI parser, and should be fixed there.
+          [main_index_url, *extra_index_urls].map do |url|
+            url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
+          end.uniq
         end
 
         def main_index_url
