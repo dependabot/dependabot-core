@@ -1,3 +1,7 @@
+## v0.98.47, 28 March 2019
+
+- Python: Handle basic auth credentials that include an `@` in the username
+
 ## v0.98.46, 28 March 2019
 
 - NPM: Optionally build npmrc without credentials
