@@ -40,7 +40,7 @@ module Dependabot
           return unless global_registry
 
           "registry = https://#{global_registry['registry']}\n"\
-          "#{global_registry_auth_line}\n"\
+          "#{global_registry_auth_line}"\
           "always-auth = true"
         end
 
@@ -62,16 +62,17 @@ module Dependabot
         end
 
         def global_registry_auth_line
-          token = global_registry.fetch("token")
+          token = global_registry.fetch("token", nil)
+          return "" unless token
 
           if token.include?(":")
             encoded_token = Base64.encode64(token).delete("\n")
-            "_auth = #{encoded_token}"
+            "_auth = #{encoded_token}\n"
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
-            "_auth = #{token.delete("\n")}"
+            "_auth = #{token.delete("\n")}\n"
           else
-            "_authToken = #{token}"
+            "_authToken = #{token}\n"
           end
         end
 
@@ -94,7 +95,7 @@ module Dependabot
 
           initial_content +
             "registry = https://#{global_registry['registry']}\n"\
-            "#{global_registry_auth_line}\n"\
+            "#{global_registry_auth_line}"\
             "always-auth = true\n"
         end
 
@@ -112,6 +113,7 @@ module Dependabot
           build_npmrc_content_from_lockfile
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
@@ -119,7 +121,9 @@ module Dependabot
 
             lines << registry_scope(registry) if registry_scope(registry)
 
-            token = cred.fetch("token")
+            token = cred.fetch("token", nil)
+            next unless token
+
             if token.include?(":")
               encoded_token = Base64.encode64(token).delete("\n")
               lines << "//#{registry}:_auth=#{encoded_token}"
@@ -136,6 +140,7 @@ module Dependabot
           # Work around a suspected yarn bug
           ["always-auth = true"] + lines
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def registry_scope(registry)
           # Central registries don't just apply to scopes
