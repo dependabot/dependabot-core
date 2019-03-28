@@ -1,3 +1,7 @@
+## v0.98.45, 28 March 2019
+
+- Bundler: Handle repos without a lockfile where the dep being updated has an implicit pre-release requirement
+
 ## v0.98.44, 27 March 2019
 
 - Python: Fetch requirement files with lines that start with a comment
