@@ -103,7 +103,7 @@ module Dependabot
             end
           end
         rescue Dependabot::DependencyFileNotResolvable => error
-          return if ignored_versions.any? && !dependency.appears_in_lockfile?
+          return if error_due_to_restrictive_upper_bound?(error)
           return if circular_dependency_at_new_version?(error)
           raise unless ruby_lock_error?(error)
 
@@ -117,6 +117,16 @@ module Dependabot
           return false unless error.message.include?("CyclicDependencyError")
 
           error.message.include?("'#{dependency.name}'")
+        end
+
+        def error_due_to_restrictive_upper_bound?(error)
+          # We see this when the dependency doesn't appear in the lockfile and
+          # has an overly restricture upper bound that we've added, either due
+          # to an ignore condition or us missing that a pre-release is required
+          # (as another dependency places a pre-release requirement on the dep)
+          return false if dependency.appears_in_lockfile?
+
+          error.message.include?("#{dependency.name} ")
         end
 
         def ruby_lock_error?(error)

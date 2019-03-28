@@ -18,11 +18,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      unlock_requirement: unlock_requirement
+      unlock_requirement: unlock_requirement,
+      latest_allowable_version: latest_allowable_version
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:ignored_versions) { [] }
+  let(:latest_allowable_version) { nil }
   let(:unlock_requirement) { false }
 
   let(:dependency) do
@@ -389,22 +391,28 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       end
 
       context "with an upper bound that is lower than the current req" do
-        let(:resolver) do
-          described_class.new(
-            dependency: dependency,
-            unprepared_dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            credentials: [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }],
-            unlock_requirement: unlock_requirement,
-            latest_allowable_version: "1.0.0"
-          )
-        end
+        let(:latest_allowable_version) { "1.0.0" }
         let(:ignored_versions) { ["> 1.0.0"] }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "with an implicit pre-release requirement" do
+        let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
+        let(:gemspec_fixture_name) { "implicit_pre" }
+        let(:latest_allowable_version) { "4.2.3" }
+
+        let(:unlock_requirement) { true }
+        let(:current_version) { nil }
+        let(:dependency_name) { "activesupport" }
+        let(:requirements) do
+          [{
+            file: "example.gemspec",
+            requirement: ">= 4.0",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it { is_expected.to be_nil }
       end
