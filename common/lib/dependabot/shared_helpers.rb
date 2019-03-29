@@ -165,6 +165,8 @@ module Dependabot
       )
     end
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
@@ -180,7 +182,7 @@ module Dependabot
       github_credentials = credentials.
                            select { |c| c["type"] == "git_source" }.
                            select { |c| c["host"] == "github.com" }.
-                           select { |c| c["password"] || c["username"] }
+                           select { |c| c["password"] && c["username"] }
 
       # If multiple credentials are specified for github.com, pick the one that
       # *isn't* just an app token (since it must have been added deliberately)
@@ -196,6 +198,7 @@ module Dependabot
       git_store_content = ""
       deduped_credentials.each do |cred|
         next unless cred["type"] == "git_source"
+        next unless cred["username"] && cred["password"]
 
         authenticated_url =
           "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
@@ -207,6 +210,8 @@ module Dependabot
       # Save the file
       File.write("git.store", git_store_content)
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def self.stash_global_git_config
       return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)
