@@ -1,3 +1,7 @@
+## v0.98.50, 29 March 2019
+
+- Bundler: Handle resolver returning `nil` for an unchanged git source
+
 ## v0.98.49, 28 March 2019
 
 - Handle missing token in js registry finder
