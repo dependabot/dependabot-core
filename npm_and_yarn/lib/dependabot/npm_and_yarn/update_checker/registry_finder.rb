@@ -84,7 +84,7 @@ module Dependabot
         def auth_token
           known_registries.
             find { |cred| cred["registry"] == registry }&.
-            fetch("token")
+            fetch("token", nil)
         end
 
         def locked_registry

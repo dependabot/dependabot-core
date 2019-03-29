@@ -248,6 +248,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           end
           it { is_expected.to eq("Authorization" => "Basic c2VjcmV0OnRva2Vu") }
         end
+
+        context "without a token" do
+          before do
+            credentials.last.delete("token")
+            body = fixture("gemfury_response_etag.json")
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              to_return(status: 404)
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              to_return(status: 200, body: body)
+          end
+
+          it { is_expected.to eq({}) }
+        end
       end
     end
   end
