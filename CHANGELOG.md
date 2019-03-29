@@ -1,3 +1,7 @@
+## v0.98.49, 28 March 2019
+
+- Handle missing token in js registry finder
+
 ## v0.98.48, 29 March 2019
 
 - Don't attempt to configure git creds that don't have a username or password
