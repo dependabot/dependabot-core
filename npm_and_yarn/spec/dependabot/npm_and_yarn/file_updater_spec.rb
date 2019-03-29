@@ -685,7 +685,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           }
           pack_url = git_url + "/info/refs?service=git-upload-pack"
           stub_request(:get, pack_url).
-            with(basic_auth: ["x-access-token", "token"]).
             to_return(
               status: 200,
               body: fixture("git", "upload_packs", git_pack_fixture_name),
