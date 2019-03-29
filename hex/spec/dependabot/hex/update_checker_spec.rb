@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         # This needs to changes to the Elixir helper
-        pending "raises a helpful error" do
+        it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { subject }.
             to raise_error(error_class) do |error|
