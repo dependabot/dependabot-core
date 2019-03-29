@@ -206,7 +206,7 @@ module Dependabot
         # If this dependency has a git version in the Gemfile.lock but not in
         # the Gemfile (i.e., because they're out-of-sync) we might not get a
         # commit_sha back from Bundler. In that case, return `nil`.
-        return unless details.key?(:commit_sha)
+        return unless details&.key?(:commit_sha)
 
         details.fetch(:commit_sha)
       rescue Dependabot::DependencyFileNotResolvable
