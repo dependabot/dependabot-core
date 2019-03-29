@@ -1,3 +1,7 @@
+## v0.98.48, 29 March 2019
+
+- Don't attempt to configure git creds that don't have a username or password
+
 ## v0.98.47, 28 March 2019
 
 - Python: Handle basic auth credentials that include an `@` in the username
