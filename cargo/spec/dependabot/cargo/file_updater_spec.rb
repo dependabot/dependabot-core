@@ -20,9 +20,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
   let(:credentials) do
     [{
       "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
+      "host" => "github.com"
     }]
   end
   let(:files) { [manifest, lockfile] }

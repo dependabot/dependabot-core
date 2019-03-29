@@ -21,9 +21,7 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
+        "host" => "github.com"
       }]
     )
   end

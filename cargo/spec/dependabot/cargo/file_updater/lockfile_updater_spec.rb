@@ -12,9 +12,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       dependency_files: dependency_files,
       credentials: [{
         "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
+        "host" => "github.com"
       }]
     )
   end

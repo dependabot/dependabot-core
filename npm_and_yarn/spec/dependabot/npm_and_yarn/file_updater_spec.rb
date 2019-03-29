@@ -22,9 +22,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   let(:credentials) do
     [{
       "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
+      "host" => "github.com"
     }]
   end
   let(:package_json) do
