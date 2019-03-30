@@ -263,7 +263,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           expect { finder.latest_version_details }.
             to raise_error do |error|
               expect(error).to be_a(error_class)
-              expect(error.source).to eq("repo.fury.io")
+              expect(error.source).to eq("https://repo.fury.io")
             end
         end
       end
