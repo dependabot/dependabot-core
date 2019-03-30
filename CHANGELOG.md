@@ -1,3 +1,7 @@
+## v0.98.53, 30 March 2019
+
+- Python: Handle environment variables for Gemfury URLs
+
 ## v0.98.52, 29 March 2019
 
 - Pass empty string token to elixir helper, again
