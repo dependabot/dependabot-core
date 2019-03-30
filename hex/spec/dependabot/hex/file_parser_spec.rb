@@ -366,20 +366,17 @@ RSpec.describe Dependabot::Hex::FileParser do
           Dependabot::Dependency.new(
             name: "plug",
             version: "1.3.6",
-            requirements: [
-              {
-                requirement: "1.3.6",
-                file: "apps/dependabot_web/mix.exs",
-                groups: [],
-                source: nil
-              },
-              {
-                requirement: "~> 1.3.0",
-                file: "apps/dependabot_business/mix.exs",
-                groups: [],
-                source: nil
-              }
-            ],
+            requirements: [{
+              requirement: "1.3.6",
+              file: "apps/dependabot_web/mix.exs",
+              groups: [],
+              source: nil
+            }, {
+              requirement: "~> 1.3.0",
+              file: "apps/dependabot_business/mix.exs",
+              groups: [],
+              source: nil
+            }],
             package_manager: "hex"
           )
         )
