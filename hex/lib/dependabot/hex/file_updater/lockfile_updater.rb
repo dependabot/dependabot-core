@@ -136,7 +136,7 @@ module Dependabot
         # TODO: Test with proxy
         def organization_credentials
           credentials.select { |cred| cred["type"] == "hex_organization" }.
-            flat_map { |cred| [cred["organization"], cred["token"]] }
+            flat_map { |cred| [cred["organization"], cred.fetch("token", "")] }
         end
       end
     end
