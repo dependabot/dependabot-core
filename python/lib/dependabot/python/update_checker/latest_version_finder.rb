@@ -238,18 +238,25 @@ module Dependabot
 
           cleaned_url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}, "")
           authed_url = authed_base_url(cleaned_url)
-          return authed_url unless authed_url == cleaned_url
+          return authed_url if credential_for(cleaned_url)
 
           raise PrivateSourceAuthenticationFailure, url
         end
 
         def authed_base_url(base_url)
-          cred = credentials.
-                 select { |c| c["type"] == "python_index" }.
-                 find { |c| c.fetch("index-url").include?(base_url) }
+          cred = credential_for(base_url)
           return base_url unless cred
 
-          AuthedUrlBuilder.authed_url(credential: cred)
+          AuthedUrlBuilder.authed_url(credential: cred).gsub(%r{/*$}, "") + "/"
+        end
+
+        def credential_for(url)
+          credentials.
+            select { |c| c["type"] == "python_index" }.
+            find do |c|
+              cred_url = c.fetch("index-url").gsub(%r{/*$}, "") + "/"
+              cred_url.include?(url)
+            end
         end
 
         def ignore_reqs

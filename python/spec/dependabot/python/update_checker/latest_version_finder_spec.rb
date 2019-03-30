@@ -333,6 +333,23 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             end
 
             its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+
+            context "with a gemfury style" do
+              let(:credentials) do
+                [{
+                  "type" => "python_index",
+                  "index-url" => "https://pypi.weasyldev.com/source/+simple"
+                }]
+              end
+              let(:url) { "https://pypi.weasyldev.com/source/+simple/luigi/" }
+
+              before do
+                stub_request(:get, url).
+                  to_return(status: 200, body: extra_response)
+              end
+
+              its(:to_s) { is_expected.to eq("3.0.0+weasyl.2") }
+            end
           end
         end
       end
