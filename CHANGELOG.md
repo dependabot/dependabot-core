@@ -1,3 +1,7 @@
+## v0.98.52, 29 March 2019
+
+- Pass empty string token to elixir helper, again
+
 ## v0.98.51, 30 March 2019
 
 - Ruby: Include protocol when raising PrivateSourceAuthenticationFailure errors
