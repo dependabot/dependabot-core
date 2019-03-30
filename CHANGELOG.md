@@ -1,3 +1,9 @@
+## v0.98.51, 30 March 2019
+
+- Ruby: Include protocol when raising PrivateSourceAuthenticationFailure errors
+- Elixir: Pass empty string token to elixir helper
+- JS: Better regsitry uniq-ing
+
 ## v0.98.50, 29 March 2019
 
 - Bundler: Handle resolver returning `nil` for an unchanged git source
