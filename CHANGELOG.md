@@ -1,3 +1,7 @@
+## v0.98.55, 31 March 2019
+
+- JS: Handle npm lockfile name substitution in post-processing
+
 ## v0.98.54, 31 March 2019
 
 - JS: Don't replace package name when generating updated npm lockfile
