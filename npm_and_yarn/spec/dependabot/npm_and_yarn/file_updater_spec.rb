@@ -2133,7 +2133,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)
-          expect(updated_files.last.content).to include("{{ name }}")
+        end
+      end
+
+      context "with a name that was sanitized" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
+
+        it "updates the files" do
+          expect(updated_files.count).to eq(2)
+          expect(updated_files.last.content).
+            to start_with("{\n  \"name\": \"{{ name }}\",\n")
         end
       end
 

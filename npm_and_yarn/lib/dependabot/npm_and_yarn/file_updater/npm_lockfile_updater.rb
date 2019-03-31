@@ -35,7 +35,7 @@ module Dependabot
                 run_current_npm_update(lockfile_name: lockfile_name)
               end
               updated_content = updated_files.fetch(lockfile_name)
-              post_process_npm_lockfile(updated_content)
+              post_process_npm_lockfile(lockfile.content, updated_content)
             end
         rescue SharedHelpers::HelperSubprocessFailed => error
           handle_npm_updater_error(error, lockfile)
@@ -474,8 +474,9 @@ module Dependabot
           npm_lockfile.merge("dependencies" => dependencies)
         end
 
-        def post_process_npm_lockfile(lockfile_content)
-          updated_content = lockfile_content
+        def post_process_npm_lockfile(original_content, updated_content)
+          updated_content =
+            replace_project_metadata(updated_content, original_content)
 
           # Switch SSH requirements back for git dependencies
           git_ssh_requirements_to_swap.each do |req|
@@ -513,6 +514,17 @@ module Dependabot
           end
 
           updated_content
+        end
+
+        def replace_project_metadata(new_content, old_content)
+          old_name = old_content.match(/(?<="name": ").*(?=",)/)&.to_s
+
+          if old_name
+            new_content = new_content.
+                          sub(/(?<="name": ").*(?=",)/, old_name)
+          end
+
+          new_content
         end
 
         def tarball_urls
@@ -554,6 +566,7 @@ module Dependabot
 
         def sanitized_package_json_content(content)
           content.
+            gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
         end
