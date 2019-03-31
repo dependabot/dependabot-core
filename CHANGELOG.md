@@ -1,3 +1,7 @@
+## v0.98.54, 31 March 2019
+
+- JS: Don't replace package name when generating updated npm lockfile
+
 ## v0.98.53, 30 March 2019
 
 - Python: Handle environment variables for Gemfury URLs
