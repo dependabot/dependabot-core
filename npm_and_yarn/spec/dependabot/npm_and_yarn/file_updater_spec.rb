@@ -2133,6 +2133,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)
+          expect(updated_files.last.content).to include("{{ name }}")
         end
       end
 
