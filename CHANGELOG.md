@@ -1,3 +1,7 @@
+## v0.98.57, 1 April 2019
+
+- Python: Case insensitive check for whether dependency name is in error message
+
 ## v0.98.56, 1 April 2019
 
 - JS: Ignore 500s from private registries
