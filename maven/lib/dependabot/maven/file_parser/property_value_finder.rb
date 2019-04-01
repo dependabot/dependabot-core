@@ -15,7 +15,7 @@ module Dependabot
       class PropertyValueFinder
         require_relative "repositories_finder"
 
-        DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/_])+)}.freeze
+        DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_]|$)+)}.freeze
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files

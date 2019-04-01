@@ -683,6 +683,7 @@ RSpec.describe Dependabot::Maven::FileParser do
               junit:junit
               org.apache.struts:struts-core
               org.springframework:spring-aop
+              org.springframework:spring-testing
               org.apache.maven.plugins:maven-compiler-plugin
             )
           )

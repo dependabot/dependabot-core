@@ -66,6 +66,11 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:property_name) { "spring.version" }
       let(:callsite_pom) { grandchild_pom }
       its([:value]) { is_expected.to eq("2.5.6") }
+
+      context "and the property name needs careful manipulation" do
+        let(:property_name) { "spring.version.2.2" }
+        its([:value]) { is_expected.to eq("2.2.1") }
+      end
     end
 
     context "when the property is declared in a remote pom" do
