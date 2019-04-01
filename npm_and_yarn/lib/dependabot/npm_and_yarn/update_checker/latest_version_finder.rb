@@ -31,7 +31,7 @@ module Dependabot
           return nil if specified_dist_tag_requirement?
 
           { version: version_from_versions_array }
-        rescue Excon::Error::Socket, Excon::Error::Timeout
+        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
           raise if dependency_registry == "registry.npmjs.org"
           # Custom registries can be flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.

@@ -380,6 +380,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "when the request 500s" do
+        before do
+          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 500)
+          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            to_return(status: 500)
+
+          # Speed up spec by stopping any sleep logic
+          allow(version_finder).to receive(:sleep).and_return(true)
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "with credentials" do
         let(:credentials) do
           [{
