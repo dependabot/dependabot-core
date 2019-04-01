@@ -150,7 +150,7 @@ module Dependabot
           end
 
           if error.message.include?('Command "python setup.py egg_info"') &&
-             error.message.include?(dependency.name)
+             error.message.match?(/#{Regexp.quote(dependency.name)}/i)
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
             return nil
@@ -162,7 +162,7 @@ module Dependabot
 
             # The latest version of the dependency we're updating to needs a
             # different Python version. Skip the update.
-            return if error.message.include?(dependency.name)
+            return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
