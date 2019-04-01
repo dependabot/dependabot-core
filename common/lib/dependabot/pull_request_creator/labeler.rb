@@ -27,13 +27,15 @@ module Dependabot
       end
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,
-                     includes_security_fixes:, label_language:)
+                     includes_security_fixes:, label_language:,
+                     automerge_candidate:)
         @source                  = source
         @custom_labels           = custom_labels
         @credentials             = credentials
         @dependencies            = dependencies
         @includes_security_fixes = includes_security_fixes
         @label_language          = label_language
+        @automerge_candidate     = automerge_candidate
       end
 
       def create_default_labels_if_required
@@ -46,7 +48,8 @@ module Dependabot
         [
           *default_labels_for_pr,
           includes_security_fixes? ? security_label : nil,
-          semver_labels_exist? ? semver_label : nil
+          semver_labels_exist? ? semver_label : nil,
+          automerge_candidate? ? automerge_label : nil
         ].compact.uniq
       end
 
@@ -79,6 +82,10 @@ module Dependabot
 
       def includes_security_fixes?
         @includes_security_fixes
+      end
+
+      def automerge_candidate?
+        @automerge_candidate
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
@@ -191,6 +198,10 @@ module Dependabot
         return unless update_type
 
         labels.find { |l| l.downcase == update_type.to_s }
+      end
+
+      def automerge_label
+        labels.find { |l| l.casecmp("automerge").zero? }
       end
 
       def language_label_exists?

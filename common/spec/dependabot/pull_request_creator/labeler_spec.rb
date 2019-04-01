@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       custom_labels: custom_labels,
       includes_security_fixes: includes_security_fixes,
       dependencies: [dependency],
-      label_language: label_language
+      label_language: label_language,
+      automerge_candidate: automerge_candidate
     )
   end
 
@@ -42,6 +43,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       previous_requirements: previous_requirements
     )
   end
+  let(:automerge_candidate) { false }
 
   let(:version) { "1.5.0" }
   let(:previous_version) { "1.4.0" }
@@ -282,86 +284,6 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             expect(WebMock).
               to_not have_requested(:post, "#{repo_api_url}/labels")
           end
-        end
-      end
-
-      context "for a repo without patch, minor and major labels" do
-        it "does not include a patch label" do
-          expect(labeler.labels_for_pr).to_not include("patch")
-        end
-      end
-
-      context "for a repo that has patch, minor and major labels" do
-        before do
-          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
-            to_return(status: 200,
-                      body: fixture("github", "labels_with_semver_tags.json"),
-                      headers: json_header)
-        end
-        subject { labeler.labels_for_pr }
-
-        context "with a version and a previous version" do
-          let(:previous_version) { "1.4.0" }
-
-          context "for a patch release" do
-            let(:version) { "1.4.1" }
-            it { is_expected.to include("patch") }
-          end
-
-          context "for a minor release" do
-            let(:version) { "1.5.1" }
-            it { is_expected.to include("minor") }
-          end
-
-          context "for a major release" do
-            let(:version) { "2.5.1" }
-            it { is_expected.to include("major") }
-          end
-
-          context "for a non-semver release" do
-            let(:version) { "random" }
-            it { is_expected.to eq(["dependencies"]) }
-          end
-
-          context "for a git dependency" do
-            let(:version) { "6cf3d8c20aa5171b4f9f98ab8f4b6ced5ace912f" }
-            let(:previous_version) do
-              "9cd93a80d534ff616458af949b0d67aa10812d1a"
-            end
-            let(:requirements) do
-              [{
-                file: "Gemfile",
-                requirement: "~> 1.5.0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "v1.5.0"
-                }
-              }]
-            end
-            let(:previous_requirements) do
-              [{
-                file: "Gemfile",
-                requirement: "~> 1.4.0",
-                groups: [],
-                source: {
-                  type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "v1.4.0"
-                }
-              }]
-            end
-
-            it { is_expected.to include("minor") }
-          end
-        end
-
-        context "without a previous version" do
-          let(:previous_version) { nil }
-          it { is_expected.to eq(["dependencies"]) }
         end
       end
 
@@ -614,6 +536,119 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         context "when only one doesn't exist" do
           let(:custom_labels) { %w(wontfix non-existent) }
           it { is_expected.to eq(["wontfix"]) }
+        end
+      end
+
+      context "for an automerge candidate" do
+        let(:automerge_candidate) { true }
+
+        it { is_expected.to_not include("automerge") }
+
+        context "for a repo that has an automerge label" do
+          before do
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_automerge_tag.json"),
+                headers: json_header
+              )
+          end
+
+          it { is_expected.to include("automerge") }
+        end
+      end
+
+      context "for a non-automerge candidate" do
+        let(:automerge_candidate) { false }
+
+        context "for a repo that has an automerge label" do
+          before do
+            stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_automerge_tag.json"),
+                headers: json_header
+              )
+          end
+
+          it { is_expected.to_not include("automerge") }
+        end
+      end
+
+      context "for a repo without patch, minor and major labels" do
+        it { is_expected.to_not include("patch") }
+      end
+
+      context "for a repo that has patch, minor and major labels" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100").
+            to_return(status: 200,
+                      body: fixture("github", "labels_with_semver_tags.json"),
+                      headers: json_header)
+        end
+
+        context "with a version and a previous version" do
+          let(:previous_version) { "1.4.0" }
+
+          context "for a patch release" do
+            let(:version) { "1.4.1" }
+            it { is_expected.to include("patch") }
+          end
+
+          context "for a minor release" do
+            let(:version) { "1.5.1" }
+            it { is_expected.to include("minor") }
+          end
+
+          context "for a major release" do
+            let(:version) { "2.5.1" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a non-semver release" do
+            let(:version) { "random" }
+            it { is_expected.to eq(["dependencies"]) }
+          end
+
+          context "for a git dependency" do
+            let(:version) { "6cf3d8c20aa5171b4f9f98ab8f4b6ced5ace912f" }
+            let(:previous_version) do
+              "9cd93a80d534ff616458af949b0d67aa10812d1a"
+            end
+            let(:requirements) do
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.5.0"
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.4.0",
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/gocardless/business",
+                  branch: "master",
+                  ref: "v1.4.0"
+                }
+              }]
+            end
+
+            it { is_expected.to include("minor") }
+          end
+        end
+
+        context "without a previous version" do
+          let(:previous_version) { nil }
+          it { is_expected.to eq(["dependencies"]) }
         end
       end
     end

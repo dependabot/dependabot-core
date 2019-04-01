@@ -24,7 +24,7 @@ module Dependabot
                    author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
-                   label_language: false)
+                   label_language: false, automerge_candidate: false)
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -40,6 +40,7 @@ module Dependabot
       @vulnerabilities_fixed = vulnerabilities_fixed
       @branch_name_separator = branch_name_separator
       @label_language        = label_language
+      @automerge_candidate   = automerge_candidate
 
       check_dependencies_have_previous_version
     end
@@ -64,6 +65,10 @@ module Dependabot
 
     def label_language?
       @label_language
+    end
+
+    def automerge_candidate?
+      @automerge_candidate
     end
 
     def github_creator
@@ -134,7 +139,8 @@ module Dependabot
           credentials: credentials,
           includes_security_fixes: includes_security_fixes?,
           dependencies: dependencies,
-          label_language: label_language?
+          label_language: label_language?,
+          automerge_candidate: automerge_candidate?
         )
     end
 

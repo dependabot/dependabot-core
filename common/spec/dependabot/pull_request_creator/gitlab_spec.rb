@@ -52,7 +52,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       custom_labels: custom_labels,
       includes_security_fixes: false,
       dependencies: [dependency],
-      label_language: false
+      label_language: false,
+      automerge_candidate: false
     )
   end
   let(:custom_labels) { nil }
