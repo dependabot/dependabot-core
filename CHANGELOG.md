@@ -1,3 +1,7 @@
+## v0.98.61, 1 April 2019
+
+- Revert "Bundler: Include protocol when raising PrivateSourceAuthenticationFailure errors"
+
 ## v0.98.60, 1 April 2019
 
 - Bump semver from 5.6.0 to 6.0.0 in /npm_and_yarn/helpers
