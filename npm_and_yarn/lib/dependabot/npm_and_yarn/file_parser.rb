@@ -93,21 +93,23 @@ module Dependabot
       def build_dependency(file:, type:, name:, requirement:)
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
-          requirement: requirement
+          requirement: requirement,
+          manifest_name: file.name
         )
-        return if lockfile_details && !version_for(name, requirement)
+        version = version_for(name, requirement, file.name)
+        return if lockfile_details && !version
         return if ignore_requirement?(requirement)
         return if workspace_package_names.include?(name)
 
         Dependency.new(
           name: name,
-          version: version_for(name, requirement),
+          version: version,
           package_manager: "npm_and_yarn",
           requirements: [{
             requirement: requirement_for(requirement),
             file: file.name,
             groups: [type],
-            source: source_for(name, requirement)
+            source: source_for(name, requirement, file.name)
           }]
         )
       end
@@ -151,26 +153,27 @@ module Dependabot
           package_files.map { |f| JSON.parse(f.content)["name"] }.compact
       end
 
-      def version_for(name, requirement)
+      def version_for(name, requirement, manifest_name)
         if git_url_with_semver?(requirement)
-          semver_version = semver_version_for(name, requirement)
+          semver_version = semver_version_for(name, requirement, manifest_name)
           return semver_version if semver_version
 
-          git_revision = git_revision_for(name, requirement)
+          git_revision = git_revision_for(name, requirement, manifest_name)
           version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
-          git_revision_for(name, requirement)
+          git_revision_for(name, requirement, manifest_name)
         else
-          semver_version_for(name, requirement)
+          semver_version_for(name, requirement, manifest_name)
         end
       end
 
-      def git_revision_for(name, requirement)
+      def git_revision_for(name, requirement, manifest_name)
         return unless git_url?(requirement)
 
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
-          requirement: requirement
+          requirement: requirement,
+          manifest_name: manifest_name
         )
         lock_version = lockfile_details&.fetch("version", nil)
         lock_res = lockfile_details&.fetch("resolved", nil)
@@ -208,10 +211,11 @@ module Dependabot
         nil
       end
 
-      def semver_version_for(name, requirement)
+      def semver_version_for(name, requirement, manifest_name)
         lock_version = lockfile_parser.lockfile_details(
           dependency_name: name,
-          requirement: requirement
+          requirement: requirement,
+          manifest_name: manifest_name
         )&.fetch("version", nil)
 
         return unless lock_version
@@ -223,12 +227,13 @@ module Dependabot
         lock_version
       end
 
-      def source_for(name, requirement)
+      def source_for(name, requirement, manifest_name)
         return git_source_for(requirement) if git_url?(requirement)
 
         resolved_url = lockfile_parser.lockfile_details(
           dependency_name: name,
-          requirement: requirement
+          requirement: requirement,
+          manifest_name: manifest_name
         )&.fetch("resolved", nil)
 
         return unless resolved_url

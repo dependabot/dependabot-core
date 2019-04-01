@@ -19,32 +19,28 @@ module Dependabot
           dependency_set.dependencies
         end
 
-        def lockfile_details(dependency_name:, requirement:)
-          [*package_locks, *shrinkwraps].each do |package_lock|
-            parsed_package_lock_json = parse_package_lock(package_lock)
-            next unless parsed_package_lock_json.dig("dependencies",
-                                                     dependency_name)
+        def lockfile_details(dependency_name:, requirement:, manifest_name:)
+          potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
+            details =
+              if [*package_locks, *shrinkwraps].include?(lockfile)
+                parsed_lockfile = parse_package_lock(lockfile)
+                parsed_lockfile.dig("dependencies", dependency_name)
+              else
+                parsed_yarn_lock = parse_yarn_lock(lockfile)
+                details_candidates =
+                  parsed_yarn_lock.
+                  select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
 
-            return parsed_package_lock_json.dig("dependencies", dependency_name)
-          end
-
-          yarn_locks.each do |yarn_lock|
-            parsed_yarn_lock = parse_yarn_lock(yarn_lock)
-
-            details_candidates =
-              parsed_yarn_lock.
-              select { |k, _| k.split(/(?<=\w)\@/).first == dependency_name }
-
-            # If there's only one entry for this dependency, use it, even if
-            # the requirement in the lockfile doesn't match
-            details = details_candidates.first.last if details_candidates.one?
-
-            details ||=
-              details_candidates.
-              find do |k, _|
-                k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
-              end&.
-              last
+                # If there's only one entry for this dependency, use it, even if
+                # the requirement in the lockfile doesn't match
+                if details_candidates.one?
+                  details_candidates.first.last
+                else
+                  details_candidates.find do |k, _|
+                    k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
+                  end&.last
+                end
+              end
 
             return details if details
           end
@@ -55,6 +51,19 @@ module Dependabot
         private
 
         attr_reader :dependency_files
+
+        def potential_lockfiles_for_manifest(manifest_filename)
+          dir_name = File.dirname(manifest_filename)
+          possible_lockfile_names =
+            %w(package-lock.json npm-shrinkwrap.json yarn.lock).map do |f|
+              Pathname.new(File.join(dir_name, f)).cleanpath.to_path
+            end +
+            %w(yarn.lock package-lock.json npm-shrinkwrap.json)
+
+          possible_lockfile_names.uniq.
+            map { |nm| dependency_files.find { |f| f.name == nm } }.
+            compact
+        end
 
         def yarn_lock_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new

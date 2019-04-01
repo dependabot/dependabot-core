@@ -172,11 +172,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     subject(:lockfile_details) do
       lockfile_parser.lockfile_details(
         dependency_name: dependency_name,
-        requirement: requirement
+        requirement: requirement,
+        manifest_name: manifest_name
       )
     end
     let(:dependency_name) { "etag" }
     let(:requirement) { nil }
+    let(:manifest_name) { "package.json" }
 
     context "for yarn lockfiles" do
       let(:dependency_files) { [yarn_lockfile] }
@@ -221,6 +223,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
           "dev" => true
         )
+      end
+
+      context "when a nested lockfile is also present" do
+        let(:dependency_files) { [npm_lockfile, irrelevant_npm_lockfile] }
+        let(:irrelevant_npm_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "nested/package-lock.json",
+            content: fixture("npm_lockfiles", "package1.json")
+          )
+        end
+
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "1.8.1",
+            "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
+            "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
+            "dev" => true
+          )
+        end
+
+        context "that should be used for this manifest" do
+          let(:manifest_name) { "nested/package.json" }
+
+          it "finds the correct dependency" do
+            expect(lockfile_details).to eq(
+              "version" => "1.8.0",
+              "resolved" => "https://registry.npmjs.org/etag/-/etag-1.8.0.tgz",
+              "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSm111c="
+            )
+          end
+        end
       end
     end
 
