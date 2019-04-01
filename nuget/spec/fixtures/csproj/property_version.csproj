@@ -11,6 +11,7 @@
     <!-- NUKE CONFIGURATION -->
     <NukeVersion Condition="$(NukeVersion) == ''">0.1.434</NukeVersion>
     <NukeCodeGeneration>False</NukeCodeGeneration>
+    <FunctionVersion>$(NukeVersion.Substring(2,2))</FunctionVersion>
   </PropertyGroup>
 
   <ItemGroup>

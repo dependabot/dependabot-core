@@ -18,6 +18,7 @@ module Dependabot
 
         def property_details(property_name:, callsite_file:, stack: [])
           stack += [[property_name, callsite_file.name]]
+          return if property_name.include?("(")
 
           node_details = deep_find_prop_node(
             property: property_name,

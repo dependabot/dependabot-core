@@ -49,6 +49,11 @@ RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
       it { is_expected.to be_nil }
     end
 
+    context "with a property that calls a function" do
+      let(:property_name) { "FunctionVersion" }
+      it { is_expected.to be_nil }
+    end
+
     context "from a directory.build.props file" do
       let(:files) { [file, build_file, imported_file] }
 
