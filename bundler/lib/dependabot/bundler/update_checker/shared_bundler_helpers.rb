@@ -141,23 +141,19 @@ module Dependabot
           when "Bundler::Fetcher::AuthenticationRequiredError"
             regex = /bundle config (?<source>.*) username:password/
             source = error.error_message.match(regex)[:source]
-            source = "https://" + source unless source.match?(%r{^https?://})
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::BadAuthenticationError"
             regex = /Bad username or password for (?<source>.*)\.$/
             source = error.error_message.match(regex)[:source]
-            source = "https://" + source unless source.match?(%r{^https?://})
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::CertificateFailureError"
             regex = /verify the SSL certificate for (?<source>.*)\.$/
             source = error.error_message.match(regex)[:source]
-            source = "https://" + source unless source.match?(%r{^https?://})
             raise Dependabot::PrivateSourceCertificateFailure, source
           when "Bundler::HTTPError"
             regex = /Could not fetch specs from (?<source>.*)$/
             if error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
-              source = "https://" + source unless source.match?(%r{^https?://})
               raise if source.include?("rubygems.org")
 
               raise Dependabot::PrivateSourceTimedOut, source
@@ -205,18 +201,13 @@ module Dependabot
         end
 
         def jfrog_source
-          source =
-            in_a_temporary_bundler_context(error_handling: false) do
-              ::Bundler::Definition.build(gemfile.name, nil, {}).
-                send(:sources).
-                rubygems_remotes.
-                find { |uri| uri.host.include?("jfrog") }&.
-                host
-            end
-          return unless source
-
-          source = "https://" + source unless source.match?(%r{^https?://})
-          source
+          in_a_temporary_bundler_context(error_handling: false) do
+            ::Bundler::Definition.build(gemfile.name, nil, {}).
+              send(:sources).
+              rubygems_remotes.
+              find { |uri| uri.host.include?("jfrog") }&.
+              host
+          end
         end
 
         def write_temporary_dependency_files
