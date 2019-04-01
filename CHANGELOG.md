@@ -1,3 +1,7 @@
+## v0.98.59, 1 April 2019
+
+- Maven: Better dot separator regex in PropertyValueFinder
+
 ## v0.98.58, 1 April 2019
 
 - JS: Don't mistake v-prefixed versions for distribution tags
