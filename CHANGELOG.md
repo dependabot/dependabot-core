@@ -1,3 +1,7 @@
+## v0.98.63, 1 April 2019
+
+- Add an automerge label to automerge candidates if one is present
+
 ## v0.98.62, 1 April 2019
 
 - JS: Look for dependency details in a lockfile that might match this manifest (not any lockfile)
