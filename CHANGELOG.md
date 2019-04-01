@@ -1,3 +1,8 @@
+## v0.98.56, 1 April 2019
+
+- JS: Ignore 500s from private registries
+- .NET: Handle property versions that reference a function
+
 ## v0.98.55, 31 March 2019
 
 - JS: Handle npm lockfile name substitution in post-processing
