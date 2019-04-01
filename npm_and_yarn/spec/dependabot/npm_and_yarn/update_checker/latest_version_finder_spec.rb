@@ -810,6 +810,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when a version with a v-prefix is specified" do
+      let(:req_string) { "v1.0.0" }
+      before do
+        stub_request(:get, registry_listing_url + "/1.0.0").
+          to_return(status: 200)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.0.0")) }
+    end
+
     context "when constrained" do
       let(:req_string) { "<= 1.5.0" }
       before do

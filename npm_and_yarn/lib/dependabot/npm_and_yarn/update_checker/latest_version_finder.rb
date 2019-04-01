@@ -131,8 +131,9 @@ module Dependabot
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
             next false if req[:requirement].nil?
+            next false unless req[:requirement].match?(/^[A-Za-z]/)
 
-            req[:requirement].match?(/^[A-Za-z]/)
+            !req[:requirement].match?(/^v\d/i)
           end
         end
 
