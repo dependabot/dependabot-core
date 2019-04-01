@@ -1,3 +1,7 @@
+## v0.98.62, 1 April 2019
+
+- JS: Look for dependency details in a lockfile that might match this manifest (not any lockfile)
+
 ## v0.98.61, 1 April 2019
 
 - Revert "Bundler: Include protocol when raising PrivateSourceAuthenticationFailure errors"
