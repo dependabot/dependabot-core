@@ -1,3 +1,7 @@
+## v0.98.58, 1 April 2019
+
+- JS: Don't mistake v-prefixed versions for distribution tags
+
 ## v0.98.57, 1 April 2019
 
 - Python: Case insensitive check for whether dependency name is in error message
