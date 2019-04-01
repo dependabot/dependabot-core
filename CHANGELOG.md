@@ -1,3 +1,7 @@
+## v0.98.60, 1 April 2019
+
+- Bump semver from 5.6.0 to 6.0.0 in /npm_and_yarn/helpers
+
 ## v0.98.59, 1 April 2019
 
 - Maven: Better dot separator regex in PropertyValueFinder
