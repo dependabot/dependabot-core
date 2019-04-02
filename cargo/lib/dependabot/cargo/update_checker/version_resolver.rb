@@ -174,6 +174,8 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
@@ -181,7 +183,8 @@ module Dependabot
             return nil
           end
 
-          if error.message.include?("authenticate when downloading repository")
+          if error.message.include?("authenticate when downloading repo") ||
+             error.message.include?("HTTP 200 response: got 401")
             raise if unreachable_git_urls.none?
 
             # Check all dependencies for reachability (so that we raise a
@@ -210,6 +213,8 @@ module Dependabot
           raise error
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def unreachable_git_urls
           @unreachable_git_urls ||=
