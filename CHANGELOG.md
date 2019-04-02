@@ -1,3 +1,7 @@
+## v0.98.70, 2 April 2019
+
+- Ruby: Always evaluate files from within a base directory
+
 ## v0.98.69, 2 April 2019
 
 - Cargo: Handle additional error type that represents an unreachable git repo
