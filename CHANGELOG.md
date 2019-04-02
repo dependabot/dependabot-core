@@ -1,3 +1,7 @@
+## v0.98.68, 2 April 2019
+
+- Yarn: ignore platform check
+
 ## v0.98.67, 2 April 2019
 
 - PHP: Move back to clearer memory limit setting
