@@ -1,3 +1,7 @@
+## v0.98.69, 2 April 2019
+
+- Cargo: Handle additional error type that represents an unreachable git repo
+
 ## v0.98.68, 2 April 2019
 
 - Yarn: ignore platform check
