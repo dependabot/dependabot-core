@@ -2686,6 +2686,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to include("241058716a075a04fd6a84cd76151cd94c3ffd3a")
         end
       end
+
+      context "when package has a invalid platform requirement" do
+        let(:manifest_fixture_name) { "invalid_platform.json" }
+        let(:yarn_lock_fixture_name) { "invalid_platform.lock" }
+        let(:dependency_name) { "node-adodb" }
+        let(:requirements) do
+          [{
+            requirement: "^5.0.2",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^5.0.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_version) { "5.0.2" }
+        let(:version) { "5.0.0" }
+
+        it "updates the manifest and lockfile" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json yarn.lock))
+
+          expect(updated_yarn_lock.content).to include(
+            "node-adodb@^5.0.2"
+          )
+        end
+      end
     end
   end
 end

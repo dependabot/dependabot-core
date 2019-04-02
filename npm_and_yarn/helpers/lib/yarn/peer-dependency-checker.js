@@ -91,6 +91,7 @@ async function checkPeerDepsForReq(
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
     ignoreEngines: true,
+    ignorePlatform: true,
     dev: devRequirement(requirement),
     optional: optionalRequirement(requirement)
   };

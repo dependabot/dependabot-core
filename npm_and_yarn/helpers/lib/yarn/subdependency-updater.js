@@ -30,7 +30,8 @@ async function getLockfileEntryForUpdate(depName, depVersion) {
   const flags = {
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
-    ignoreEngines: true
+    ignoreEngines: true,
+    ignorePlatform: true
   };
   const reporter = new EventReporter();
   const config = new Config(reporter);
