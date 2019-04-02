@@ -132,8 +132,6 @@ module Dependabot
           @lockfile ||= dependency_files.find { |f| f.name == "mix.lock" }
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def organization_credentials
           credentials.select { |cred| cred["type"] == "hex_organization" }.
             flat_map { |cred| [cred["organization"], cred.fetch("token", "")] }

@@ -267,8 +267,6 @@ module Dependabot
         registry_hostname == "registry.hub.docker.com"
       end
 
-      # Has test that it works without username / password.
-      # TODO: Test with proxy
       def registry_credentials
         credentials_finder.credentials_for_registry(registry_hostname)
       end

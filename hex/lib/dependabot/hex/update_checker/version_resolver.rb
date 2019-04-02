@@ -159,8 +159,6 @@ module Dependabot
           File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def organization_credentials
           credentials.
             select { |cred| cred["type"] == "hex_organization" }.

@@ -195,8 +195,6 @@ module Dependabot
           urls
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def config_variable_index_urls
           urls = { main: nil, extra: [] }
 

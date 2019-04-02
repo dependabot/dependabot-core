@@ -113,8 +113,6 @@ module Dependabot
             map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def config_variable_sources(credentials)
           @config_variable_sources ||=
             credentials.

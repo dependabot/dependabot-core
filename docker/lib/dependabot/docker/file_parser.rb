@@ -137,8 +137,6 @@ module Dependabot
         end
       end
 
-      # Has test that it works without username / password.
-      # TODO: Test with proxy
       def registry_credentials(registry_url)
         credentials_finder.credentials_for_registry(registry_url)
       end

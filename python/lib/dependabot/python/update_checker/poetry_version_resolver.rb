@@ -345,8 +345,6 @@ module Dependabot
           name.downcase.gsub(/[-_.]+/, "-")
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def config_variable_sources
           @config_variable_sources ||=
             credentials.

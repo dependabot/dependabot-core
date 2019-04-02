@@ -530,8 +530,6 @@ module Dependabot
           error_message.include?('Command "python setup.py egg_info" failed')
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def config_variable_sources
           @config_variable_sources ||=
             credentials.

@@ -165,8 +165,6 @@ module Dependabot
             end
         end
 
-        # Has test that it works without username / password.
-        # TODO: Test with proxy
         def credentials_repository_details
           credentials.
             select { |cred| cred["type"] == "maven_repository" }.
