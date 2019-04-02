@@ -1,3 +1,7 @@
+## v0.98.66, 2 April 2019
+
+- NPM: ignore prepare and prepack scripts when installing git dependencies
+
 ## v0.98.65, 2 April 2019
 
 - Add fallback PHP environment variable
