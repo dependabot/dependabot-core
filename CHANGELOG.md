@@ -1,3 +1,7 @@
+## v0.98.64, 2 April 2019
+
+- Docker: Handle invalid file encoding
+
 ## v0.98.63, 1 April 2019
 
 - Add an automerge label to automerge candidates if one is present
