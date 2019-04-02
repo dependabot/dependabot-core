@@ -18,14 +18,21 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files += dockerfiles
+        fetched_files += correctly_encoded_dockerfiles
 
         return fetched_files if fetched_files.any?
 
-        raise(
-          Dependabot::DependencyFileNotFound,
-          File.join(directory, "Dockerfile")
-        )
+        if incorrectly_encoded_dockerfiles.none?
+          raise(
+            Dependabot::DependencyFileNotFound,
+            File.join(directory, "Dockerfile")
+          )
+        else
+          raise(
+            Dependabot::DependencyFileNotParseable,
+            incorrectly_encoded_dockerfiles.first.path
+          )
+        end
       end
 
       def dockerfiles
@@ -33,6 +40,14 @@ module Dependabot
           repo_contents(raise_errors: false).
           select { |f| f.type == "file" && f.name.match?(/dockerfile/i) }.
           map { |f| fetch_file_from_host(f.name) }
+      end
+
+      def correctly_encoded_dockerfiles
+        dockerfiles.select { |f| f.content.valid_encoding? }
+      end
+
+      def incorrectly_encoded_dockerfiles
+        dockerfiles.reject { |f| f.content.valid_encoding? }
       end
     end
   end

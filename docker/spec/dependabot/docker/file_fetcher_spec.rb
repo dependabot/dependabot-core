@@ -45,15 +45,71 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_dockerfile.json"),
+          body: dockerfile_fixture,
           headers: { "content-type" => "application/json" }
         )
     end
+
+    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
 
     it "fetches the Dockerfile" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Dockerfile))
+    end
+
+    context "that has an invalid encoding" do
+      let(:dockerfile_fixture) { fixture("github", "contents_image.json") }
+
+      it "raises a helpful error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+  end
+
+  context "with multiple Dockerfiles" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_docker_repo_multiple.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "Dockerfile-base?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: dockerfile_2_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:dockerfile_2_fixture) { fixture("github", "contents_dockerfile.json") }
+
+    it "fetches both Dockerfiles" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Dockerfile Dockerfile-base))
+    end
+
+    context "one of which has an invalid encoding" do
+      let(:dockerfile_2_fixture) { fixture("github", "contents_image.json") }
+
+      it "fetches the first Dockerfile, and ignores the invalid one" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Dockerfile))
+      end
     end
   end
 
