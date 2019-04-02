@@ -241,7 +241,7 @@ module Dependabot
         def credentials_env
           credentials.
             select { |c| c.fetch("type") == "php_environment_variable" }.
-            map { |cred| [cred["env-key"], cred["env-value"]] }.
+            map { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }.
             to_h
         end
 
