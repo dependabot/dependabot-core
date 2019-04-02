@@ -114,7 +114,6 @@ module Dependabot
       end
 
       def parsed_gemfile
-        base_directory = dependency_files.first.directory
         @parsed_gemfile ||=
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
@@ -148,7 +147,7 @@ module Dependabot
       def parsed_gemspec(file)
         @parsed_gemspecs ||= {}
         @parsed_gemspecs[file.name] ||=
-          SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.in_a_temporary_directory(base_directory) do
             [file, *imported_ruby_files].each do |f|
               path = f.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -163,6 +162,10 @@ module Dependabot
       rescue SharedHelpers::ChildProcessFailed => error
         msg = error.error_class + " with message: " + error.error_message
         raise Dependabot::DependencyFileNotEvaluatable, msg
+      end
+
+      def base_directory
+        dependency_files.first.directory
       end
 
       def prepared_dependency_files
