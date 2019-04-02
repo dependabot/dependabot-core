@@ -1,3 +1,7 @@
+## v0.98.65, 2 April 2019
+
+- Add fallback PHP environment variable
+
 ## v0.98.64, 2 April 2019
 
 - Docker: Handle invalid file encoding
