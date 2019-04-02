@@ -31,12 +31,16 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   //
   // `'prefer-offline': true` sets fetch() cache key to `force-cache`
   // https://github.com/npm/npm-registry-fetch
+  //
+  // `'ignore-scripts': true` used to disable prepare and prepack scripts
+  // which are run when installing git dependencies
   await runAsync(npm, npm.load, [
     {
       loglevel: "silent",
       force: true,
       audit: false,
-      "prefer-offline": true
+      "prefer-offline": true,
+      "ignore-scripts": true
     }
   ]);
   const manifest = JSON.parse(readFile("package.json"));
