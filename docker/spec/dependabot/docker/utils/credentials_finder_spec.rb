@@ -70,12 +70,10 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
               )
           end
 
-          pending "returns an updated set of credentials" do
+          it "returns details without credentials" do
             expect(found_credentials).to eq(
               "type" => "docker_registry",
-              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-              "username" => "AWS",
-              "password" => "secret_aws_password"
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com"
             )
           end
         end

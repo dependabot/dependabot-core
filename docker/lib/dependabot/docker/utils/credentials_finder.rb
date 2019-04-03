@@ -34,13 +34,14 @@ module Dependabot
           # If credentials have been generated from AWS we can just return them
           return registry_details if registry_details["username"] == "AWS"
 
+          # If we don't have credentials, we might get them from the proxy
+          return registry_details if registry_details["username"].nil?
+
           # Otherwise, we need to use the provided Access Key ID and secret to
           # generate a temporary username and password
-          #
-          # TODO: Make this work with proxying
           aws_credentials = Aws::Credentials.new(
-            registry_details.fetch("username", nil),
-            registry_details.fetch("password", nil)
+            registry_details["username"],
+            registry_details["password"]
           )
 
           registry_hostname = registry_details.fetch("registry")
