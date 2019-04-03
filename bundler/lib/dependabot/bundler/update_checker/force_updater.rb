@@ -102,7 +102,7 @@ module Dependabot
             flat_map(&:requirement_trees).
             reject do |tree|
               # If the final requirement wasn't specific, it can't be binding
-              next true unless tree.last.requirement.specific?
+              next true if tree.last.requirement == Gem::Requirement.new(">= 0")
 
               # If the conflict wasn't for the dependency we're updating then
               # we don't have enough info to reject it
