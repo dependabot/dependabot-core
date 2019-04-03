@@ -122,21 +122,16 @@ module Dependabot
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
             rescue Excon::Error::Socket, Excon::Error::Timeout
-              central =
-                Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
-              raise if repository_details.fetch("url") == central
+              raise if central_repo_urls.include?(repository_details["url"])
 
               Nokogiri::XML("")
             end
         end
 
         def check_response(response, repository_url)
-          central =
-            Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
-
           return unless [401, 403].include?(response.status)
           return if @forbidden_urls.include?(repository_url)
-          return if repository_url == central
+          return if central_repo_urls.include?(repository_url)
 
           @forbidden_urls << repository_url
         end
@@ -216,6 +211,14 @@ module Dependabot
 
         def version_class
           Maven::Version
+        end
+
+        def central_repo_urls
+          central_url_without_protocol =
+            Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.
+            gsub(%r{^.*://}, "")
+
+          %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
       end
     end
