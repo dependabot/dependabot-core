@@ -101,9 +101,15 @@ module Dependabot
             error.cause.conflicts.values.
             flat_map(&:requirement_trees).
             reject do |tree|
+              # If the final requirement wasn't specific, it can't be binding
               next true unless tree.last.requirement.specific?
+
+              # If the conflict wasn't for the dependency we're updating then
+              # we don't have enough info to reject it
               next false unless tree.last.name == dependency.name
 
+              # If the final requirement *was* for the dependency we're updating
+              # then we can ignore the tree if it permits the target version
               tree.last.requirement.satisfied_by?(
                 Gem::Version.new(target_version)
               )
