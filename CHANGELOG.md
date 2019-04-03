@@ -1,3 +1,8 @@
+## v0.98.73, 4 April 2019
+
+- Ruby: Don't ignore all > requirements in ForceUpdater
+- Ruby: Only consider relevant conflicts when unlocking additional deps
+
 ## v0.98.72, 3 April 2019
 
 - Maven: Include http:// version of central registry in special handling
