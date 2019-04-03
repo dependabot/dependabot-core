@@ -98,7 +98,7 @@ module Dependabot
 
         def new_dependencies_to_unlock_from(error:, already_unlocked:)
           potentials_deps =
-            error.cause.conflicts.values.
+            relevant_conflicts(error, already_unlocked).
             flat_map(&:requirement_trees).
             reject do |tree|
               # If the final requirement wasn't specific, it can't be binding
@@ -119,6 +119,21 @@ module Dependabot
             reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
             reject { |dep| [dependency.name, "ruby\0"].include?(dep.name) }.
             uniq
+        end
+
+        def relevant_conflicts(error, dependencies_being_unlocked)
+          names = [*dependencies_being_unlocked.map(&:name), dependency.name]
+
+          # For a conflict to be relevant to the updates we're making it must be
+          # 1) caused by a new requirement introduced by our unlocking, or
+          # 2) caused by an old requirement that prohibits the update.
+          # Hence, we look at the beginning and end of the requirement trees
+          error.cause.conflicts.values.
+            select do |conflict|
+              conflict.requirement_trees.any? do |t|
+                names.include?(t.last.name) || names.include?(t.first.name)
+              end
+            end
         end
 
         def raise_unresolvable_error(error)
