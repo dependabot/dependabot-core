@@ -267,7 +267,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         )
       end
 
-      it { is_expected.to eq(Gem::Version.new("2.4.0")) }
+      it { is_expected.to eq(Gem::Version.new("2.4.1")) }
 
       context "when out of range version" do
         let(:dependency_files) do

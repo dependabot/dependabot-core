@@ -1105,7 +1105,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         }]
       end
 
-      it "upates both lockfiles" do
+      it "updates both lockfiles" do
         expect(updated_files.map(&:name)).
           to match_array(
             [
@@ -1219,7 +1219,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:requirements) { [] }
       let(:previous_requirements) { nil }
 
-      it "upates only relevant lockfiles" do
+      it "updates only relevant lockfiles" do
         expect(updated_files.map(&:name)).
           to match_array(
             [
@@ -1239,7 +1239,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           to include("mime@^2.0.3:\n  version \"2.4.0\"")
 
         expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-          to eq("2.4.0")
+          to eq("2.4.1")
       end
 
       context "updates to lowest required version" do
@@ -1249,7 +1249,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
-        it "upates only relevant lockfiles" do
+        it "updates only relevant lockfiles" do
           expect(updated_files.map(&:name)).
             to match_array(
               [
@@ -1271,7 +1271,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           # TODO: Change this to 2.3.1 once npm supports updating to specific
           # sub dependency versions
           expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-            to eq("2.4.0")
+            to eq("2.4.1")
         end
       end
 
@@ -1317,7 +1317,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to include("mime@^2.0.3:\n  version \"2.4.0\"")
 
           expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-            to eq("2.4.0")
+            to eq("2.4.1")
 
           expect(parsed_package4_npm_lock["dependencies"]["mime"]["version"]).
             to eq("1.6.0")
