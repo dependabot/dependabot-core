@@ -1,3 +1,7 @@
+## v0.98.72, 3 April 2019
+
+- Maven: Include http:// version of central registry in special handling
+
 ## v0.98.71, 2 April 2019
 
 - Docker: make ECR requests work w/o credentials
