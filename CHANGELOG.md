@@ -1,3 +1,7 @@
+## v0.98.71, 2 April 2019
+
+- Docker: make ECR requests work w/o credentials
+
 ## v0.98.70, 2 April 2019
 
 - Ruby: Always evaluate files from within a base directory
