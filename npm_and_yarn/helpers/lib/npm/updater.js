@@ -74,17 +74,11 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
+    // Fix already present git sub-dependency with invalid "from" and "requires"
+    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
     await runAsync(initialInstaller, initialInstaller.run, []);
-
-    const intermediaryLockfile = JSON.parse(readFile(lockfileName));
-    const updatedIntermediaryLockfile = removeInvalidGitUrls(
-      intermediaryLockfile
-    );
-    fs.writeFileSync(
-      path.join(directory, lockfileName),
-      JSON.stringify(updatedIntermediaryLockfile, null, 2)
-    );
-
+    // Fix npm5 lockfiles where invalid "from" is introduced after first install
+    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
     await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
@@ -93,6 +87,15 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   const updatedLockfile = readFile(lockfileName);
 
   return { [lockfileName]: updatedLockfile };
+}
+
+function updateLockfileWithValidGitUrls(lockfilePath) {
+  const lockfile = fs.readFileSync(lockfilePath).toString();
+  const updatedLockfileObject = removeInvalidGitUrls(JSON.parse(lockfile));
+  fs.writeFileSync(
+    lockfilePath,
+    JSON.stringify(updatedLockfileObject, null, 2)
+  );
 }
 
 function flattenAllDependencies(manifest) {
