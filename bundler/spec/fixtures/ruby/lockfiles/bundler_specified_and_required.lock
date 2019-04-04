@@ -1,0 +1,23 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    appraisal (2.2.0)
+      bundler
+      rake
+      thor (>= 0.14.0)
+    business (1.4.0)
+    rake (12.3.2)
+    statesman (1.2.5)
+    thor (0.20.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  appraisal
+  bundler (~> 1.15.0)
+  business (~> 1.4.0)
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   1.17.3

@@ -140,6 +140,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             let(:gemfile_fixture_name) { "bundler_specified_in_source" }
             its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
           end
+
+          context "and required by another dependency" do
+            let(:gemfile_fixture_name) { "bundler_specified_and_required" }
+            let(:lockfile_fixture_name) do
+              "bundler_specified_and_required.lock"
+            end
+
+            it { is_expected.to be_nil }
+          end
         end
       end
 

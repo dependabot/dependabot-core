@@ -90,6 +90,11 @@ module Dependabot
               # subdependency that was removed when attempting to update it.
               next nil if dep.nil?
 
+              # If the dependency is Bundler itself then we can't trust the
+              # version that has been returned (it's the version Dependabot is
+              # running on, rather than the true latest resolvable version).
+              next nil if dep.name == "bundler"
+
               # If the old Gemfile index was used then it won't have checked
               # Ruby compatibility. Fix that by doing the check manually (and
               # saying no update is possible if the Ruby version is a mismatch)
