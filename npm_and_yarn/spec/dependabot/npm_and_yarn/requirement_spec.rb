@@ -33,6 +33,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
       end
 
+      context "with an additional equal sign" do
+        let(:requirement_string) { "^=1.0.0" }
+        it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0.a")) }
+      end
+
       context "for two digits with x" do
         let(:requirement_string) { "^1.2.x" }
         it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
@@ -76,6 +81,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       context "with a pre-1.0.0 specifying major.minor.patch version" do
         let(:requirement_string) { "~0.0.3" }
         it { is_expected.to eq(described_class.new("~> 0.0.3")) }
+      end
+
+      context "with an additional equal sign" do
+        let(:requirement_string) { "~ =1.5.1" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5.1").to_s) }
       end
 
       context "with a pre-1.0.0 specifying major.minor version only" do

@@ -76,7 +76,7 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
 
       def convert_tilde_req(req_string)
-        version = req_string.gsub(/^~\>?/, "")
+        version = req_string.gsub(/^~\>?[\s=]*/, "")
         parts = version.split(".")
         parts << "0" if parts.count < 3
         "~> #{parts.join('.')}"
@@ -115,7 +115,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def convert_caret_req(req_string)
-        version = req_string.gsub(/^\^/, "")
+        version = req_string.gsub(/^\^[\s=]*/, "")
         parts = version.split(".")
         parts = parts.fill("x", parts.length...3)
         first_non_zero = parts.find { |d| d != "0" }
