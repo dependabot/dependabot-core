@@ -1,3 +1,8 @@
+## v0.98.75, 4 April 2019
+
+- JS: Handle invalid requirements better, and ignore rogue equal signs
+- Docker: Treat RestClient::Exceptions::ReadTimeout exceptions the same as RestClient::Exceptions::OpenTimeout
+
 ## v0.98.74, 4 April 2019
 
 - Better GitHub link replacement
