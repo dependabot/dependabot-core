@@ -196,7 +196,8 @@ module Dependabot
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
-      rescue RestClient::Exceptions::OpenTimeout
+      rescue RestClient::Exceptions::OpenTimeout,
+             RestClient::Exceptions::ReadTimeout
         raise if using_dockerhub?
 
         raise PrivateSourceTimedOut, registry_hostname
