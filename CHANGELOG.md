@@ -1,3 +1,8 @@
+## v0.98.74, 4 April 2019
+
+- Better GitHub link replacement
+- Maven: Handle requirements which include underscores
+
 ## v0.98.73, 4 April 2019
 
 - Ruby: Don't ignore all > requirements in ForceUpdater
