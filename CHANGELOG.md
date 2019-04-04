@@ -1,3 +1,7 @@
+## v0.98.76, 4 April 2019
+
+- NPM: Fix git dependencies with invalid requires
+
 ## v0.98.75, 4 April 2019
 
 - JS: Handle invalid requirements better, and ignore rogue equal signs
