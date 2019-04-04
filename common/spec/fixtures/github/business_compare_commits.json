@@ -331,7 +331,7 @@
           "email": "greysteil@gmail.com",
           "date": "2014-12-24T13:41:22Z"
         },
-        "message": "Spacing",
+        "message": "Spacing: https://github.com/my/repo/pull/5",
         "tree": {
           "sha": "8379df34da8e2985b89ca93c430120bb35d5d978",
           "url": "https://api.github.com/repos/gocardless/business/git/trees/8379df34da8e2985b89ca93c430120bb35d5d978"

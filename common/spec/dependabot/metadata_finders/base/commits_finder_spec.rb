@@ -581,7 +581,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                           "a5970daf0b824e4c3974e57474b6cf9e39a11d0f"
               },
               {
-                message: "Spacing",
+                message: "Spacing: https://github.com/my/repo/pull/5",
                 sha: "0bfb8c3f0d2701abf9248185beeb8adf643374f6",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "0bfb8c3f0d2701abf9248185beeb8adf643374f6"
