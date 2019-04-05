@@ -1,3 +1,7 @@
+## v0.98.78, 5 April 2019
+
+- Gradle: Better PROPERTY_REGEX
+
 ## v0.98.77, 5 April 2019
 
 - Python: Raise error for invalid poetry requirements
