@@ -18,7 +18,7 @@ module Dependabot
         /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
           (?:\$\{(?<property_name>[^:\s]*?)\})|
-          (?:\$(?<property_name>[^:\s]*))
+          (?:\$(?<property_name>[^:\s"']*))
         /x.freeze
 
       PART = %r{[^\s,@'":/\\]+}.freeze
