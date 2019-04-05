@@ -46,6 +46,20 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
           )
         end
       end
+
+      context "with an invalid requirement" do
+        let(:pyproject_fixture_name) { "invalid_wildcard.toml" }
+
+        it "raises a helpful error" do
+          expect { parser.dependency_set }.
+            to raise_error do |error|
+              expect(error.class).
+                to eq(Dependabot::DependencyFileNotEvaluatable)
+              expect(error.message).
+                to eq('Illformed requirement ["2.18.^"]')
+            end
+        end
+      end
     end
 
     context "with a lockfile" do

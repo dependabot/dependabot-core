@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
+require "dependabot/python/requirement"
 require "dependabot/errors"
 
 module Dependabot
@@ -39,6 +40,8 @@ module Dependabot
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
               next if req.is_a?(Hash) && req.key?("git")
+
+              check_requirements(req)
 
               dependencies <<
                 Dependency.new(
@@ -85,6 +88,13 @@ module Dependabot
           parsed_lockfile.fetch("package", []).
             find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
             fetch("verison", nil)
+        end
+
+        def check_requirements(req)
+          requirement = req.is_a?(String) ? req : req["version"]
+          Python::Requirement.requirements_array(requirement)
+        rescue Gem::Requirement::BadRequirementError => error
+          raise Dependabot::DependencyFileNotEvaluatable, error.message
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
