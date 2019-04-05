@@ -1,3 +1,9 @@
+## v0.98.77, 5 April 2019
+
+- Python: Raise error for invalid poetry requirements
+- Ruby: Ignore Bundler updates if requirement is non-trivial
+- Python: Bump pip-tools from 3.5.0 to 3.6.0 in /python/helpers
+
 ## v0.98.76, 4 April 2019
 
 - NPM: Fix git dependencies with invalid requires
