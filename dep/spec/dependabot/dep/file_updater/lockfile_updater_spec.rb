@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Dep::FileUpdater::LockfileUpdater do
 
         it "updates the lockfile correctly" do
           expect(updated_lockfile_content).
-            to include("e3703dcdd614d2d7488fff034c75c551ea25da95")
+            to include("31e7599a6c37728c25ca34167be099d072ad335d")
           expect(updated_lockfile_content).
             to include(
               "  branch = \"master\"\n"\
