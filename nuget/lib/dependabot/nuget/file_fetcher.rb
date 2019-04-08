@@ -77,7 +77,7 @@ module Dependabot
           end.compact
       end
 
-      def sln_file_name
+      def sln_file_names
         sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
         src_dir = repo_contents.any? { |f| f.name == "src" && f.type == "dir" }
 
@@ -91,8 +91,7 @@ module Dependabot
         # Return `nil` if no sln files were found
         return if sln_files.none?
 
-        # Use the biggest sln file
-        sln_files.max_by(&:size).name
+        sln_files.map(&:name)
       end
 
       def directory_build_props_files
@@ -124,13 +123,15 @@ module Dependabot
       end
 
       def sln_project_files
-        return [] unless sln_file
+        return [] unless sln_files
 
         @sln_project_files ||=
           begin
-            paths = SlnProjectPathsFinder.
-                    new(sln_file: sln_file).
-                    project_paths
+            paths = sln_files.flat_map do |sln_file|
+              SlnProjectPathsFinder.
+                new(sln_file: sln_file).
+                project_paths
+            end
 
             paths.map do |path|
               fetch_file_from_host(path)
@@ -142,10 +143,12 @@ module Dependabot
           end
       end
 
-      def sln_file
-        return unless sln_file_name
+      def sln_files
+        return unless sln_file_names
 
-        @sln_file ||= fetch_file_from_host(sln_file_name)
+        @sln_files ||= sln_file_names.map do |sln_file_name|
+          fetch_file_from_host(sln_file_name)
+        end
       end
 
       def csproj_file
