@@ -1,3 +1,7 @@
+## v0.99.1, 8 April 2019
+
+- Git submodules: Raise parser error for trailing slashes in path
+
 ## v0.99.0, 5 April 2019
 
 - NPM: Fix "premature close" for git dependencies
