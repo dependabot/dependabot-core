@@ -1160,13 +1160,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:npm_package_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package1/package.json",
-          content: fixture("package_files", "lerna_sub_dependency_update.json")
+          content: fixture("package_files", "subdependency_in_range.json")
         )
       end
       let(:npm_lock_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package1/package-lock.json",
-          content: fixture("npm_lockfiles", "lerna_sub_dependency_update.json")
+          content: fixture("npm_lockfiles", "subdependency_in_range.json")
         )
       end
 
@@ -1174,27 +1174,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         Dependabot::DependencyFile.new(
           name: "packages/package2/package.json",
           content: fixture("package_files",
-                           "lerna_sub_dependency_up_to_date.json")
+                           "subdependency_out_of_range_gt.json")
         )
       end
       let(:npm_lock_up_to_date) do
         Dependabot::DependencyFile.new(
           name: "packages/package2/package-lock.json",
           content: fixture("npm_lockfiles",
-                           "lerna_sub_dependency_up_to_date.json")
+                           "subdependency_out_of_range_gt.json")
         )
       end
 
       let(:yarn_package_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package3/package.json",
-          content: fixture("package_files", "lerna_sub_dependency_update.json")
+          content: fixture("package_files", "subdependency_in_range.json")
         )
       end
       let(:yarn_lock_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package3/yarn.lock",
-          content: fixture("yarn_lockfiles", "lerna_sub_dependency_update.lock")
+          content: fixture("yarn_lockfiles", "subdependency_in_range.lock")
         )
       end
 
@@ -1202,20 +1202,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         Dependabot::DependencyFile.new(
           name: "packages/package4/package.json",
           content: fixture("package_files",
-                           "lerna_sub_dependency_update_out_of_range.json")
+                           "subdependency_out_of_range_lt.json")
         )
       end
       let(:npm_lock_update_out_of_range) do
         Dependabot::DependencyFile.new(
           name: "packages/package4/package-lock.json",
           content: fixture("npm_lockfiles",
-                           "lerna_sub_dependency_update_out_of_range.json")
+                           "subdependency_out_of_range_lt.json")
         )
       end
 
-      let(:dependency_name) { "mime" }
-      let(:version) { "2.4.0" }
-      let(:previous_version) { "2.3.0" }
+      let(:dependency_name) { "extend" }
+      let(:version) { "2.0.2" }
+      let(:previous_version) { "2.0.0" }
       let(:requirements) { [] }
       let(:previous_requirements) { nil }
 
@@ -1236,16 +1236,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
         expect(package3_yarn_lock.content).
-          to include("mime@^2.0.3:\n  version \"2.4.0\"")
+          to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
-        expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-          to eq("2.4.2")
+        expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+          to eq("2.0.2")
       end
 
       context "updates to lowest required version" do
-        let(:dependency_name) { "mime" }
-        let(:version) { "2.3.1" }
-        let(:previous_version) { "2.3.0" }
+        let(:dependency_name) { "extend" }
+        let(:version) { "2.0.1" }
+        let(:previous_version) { "2.0.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
@@ -1266,12 +1266,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
           expect(package3_yarn_lock.content).
-            to include("mime@^2.0.3:\n  version \"2.3.1\"")
+            to include("extend@~2.0.0:\n  version \"2.0.1\"")
 
-          # TODO: Change this to 2.3.1 once npm supports updating to specific
+          # TODO: Change this to 2.0.1 once npm supports updating to specific
           # sub dependency versions
-          expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-            to eq("2.4.2")
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+            to eq("2.0.2")
         end
       end
 
@@ -1314,13 +1314,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
 
           expect(package3_yarn_lock.content).
-            to include("mime@^2.0.3:\n  version \"2.4.0\"")
+            to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
-          expect(parsed_package1_npm_lock["dependencies"]["mime"]["version"]).
-            to eq("2.4.2")
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+            to eq("2.0.2")
 
-          expect(parsed_package4_npm_lock["dependencies"]["mime"]["version"]).
-            to eq("1.6.0")
+          expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"]).
+            to eq("1.3.0")
         end
       end
     end

@@ -27,8 +27,8 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "mime",
-      version: "2.4.0",
+      name: "extend",
+      version: "2.0.2",
       previous_version: nil,
       requirements: [],
       package_manager: "npm_and_yarn"
@@ -50,20 +50,20 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
   let(:yarn_lock_update) do
     Dependabot::DependencyFile.new(
       name: "package/yarn.lock",
-      content: fixture("yarn_lockfiles", "lerna_sub_dependency_update.lock")
+      content: fixture("yarn_lockfiles", "subdependency_in_range.lock")
     )
   end
   let(:npm_lock_update) do
     Dependabot::DependencyFile.new(
       name: "package2/package-lock.json",
-      content: fixture("npm_lockfiles", "lerna_sub_dependency_update.json")
+      content: fixture("npm_lockfiles", "subdependency_in_range.json")
     )
   end
   let(:npm_lock_up_to_date) do
     Dependabot::DependencyFile.new(
       name: "package3/package-lock.json",
       content: fixture("npm_lockfiles",
-                       "lerna_sub_dependency_up_to_date.json")
+                       "subdependency_out_of_range_gt.json")
     )
   end
 
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
         Dependabot::DependencyFile.new(
           name: "package4/package-lock.json",
           content: fixture("npm_lockfiles",
-                           "lerna_sub_dependency_update_out_of_range.json")
+                           "subdependency_out_of_range_lt.json")
         )
       end
 
@@ -94,8 +94,8 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
 
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "mime",
-          version: "1.6.0",
+          name: "extend",
+          version: "1.3.0",
           previous_version: nil,
           requirements: [],
           package_manager: "npm_and_yarn"
