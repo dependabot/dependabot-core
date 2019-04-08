@@ -30,16 +30,19 @@ module Dependabot
       end
 
       def submodule_refs
-        submodule_paths.
+        @submodule_refs ||=
+          submodule_paths.
           map { |path| fetch_submodule_ref_from_host(path) }.
-          tap { |refs| refs.each { |f| f.support_file = true } }
+          tap { |refs| refs.each { |f| f.support_file = true } }.
+          uniq
       end
 
       def submodule_paths
-        Dependabot::SharedHelpers.in_a_temporary_directory do
-          File.write(".gitmodules", gitmodules_file.content)
-          ParseConfig.new(".gitmodules").params.values.map { |p| p["path"] }
-        end
+        @submodule_paths ||=
+          Dependabot::SharedHelpers.in_a_temporary_directory do
+            File.write(".gitmodules", gitmodules_file.content)
+            ParseConfig.new(".gitmodules").params.values.map { |p| p["path"] }
+          end
       end
 
       def fetch_submodule_ref_from_host(submodule_path)

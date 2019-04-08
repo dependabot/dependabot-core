@@ -26,9 +26,7 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
   let(:relative_submodule) do
     Dependabot::DependencyFile.new(name: "relative/url", content: "sha3")
   end
-  let(:gitmodules_body) do
-    fixture("gitmodules", ".gitmodules")
-  end
+  let(:gitmodules_body) { fixture("gitmodules", ".gitmodules") }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
@@ -109,6 +107,17 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
             groups: []
           }]
         )
+      end
+    end
+
+    context "with a trailing slash in a path" do
+      let(:gitmodules_body) { fixture("gitmodules", "trailing_slash") }
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { dependencies }.
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_name).to eq(".gitmodules")
+          end
       end
     end
   end

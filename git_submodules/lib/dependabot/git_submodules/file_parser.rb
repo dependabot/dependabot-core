@@ -14,11 +14,13 @@ module Dependabot
           File.write(".gitmodules", gitmodules_file.content)
 
           ParseConfig.new(".gitmodules").params.map do |_, params|
-            branch = params["branch"]
+            if params.fetch("path").end_with?("/")
+              raise DependencyFileNotParseable, gitmodules_file.path
+            end
 
             Dependency.new(
-              name: params["path"],
-              version: submodule_sha(params["path"]),
+              name: params.fetch("path"),
+              version: submodule_sha(params.fetch("path")),
               package_manager: "submodules",
               requirements: [{
                 requirement: nil,
@@ -26,8 +28,8 @@ module Dependabot
                 source: {
                   type: "git",
                   url: absolute_url(params["url"]),
-                  branch: branch,
-                  ref: branch
+                  branch: params["branch"],
+                  ref: params["branch"]
                 },
                 groups: []
               }]
