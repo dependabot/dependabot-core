@@ -202,13 +202,13 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       let(:npm_package_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package1/package.json",
-          content: fixture("package_files", "lerna_sub_dependency_update.json")
+          content: fixture("package_files", "subdependency_in_range.json")
         )
       end
       let(:npm_lock_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package1/package-lock.json",
-          content: fixture("npm_lockfiles", "lerna_sub_dependency_update.json")
+          content: fixture("npm_lockfiles", "subdependency_in_range.json")
         )
       end
 
@@ -216,28 +216,28 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         Dependabot::DependencyFile.new(
           name: "packages/package2/package.json",
           content: fixture("package_files",
-                           "lerna_sub_dependency_up_to_date.json")
+                           "subdependency_out_of_range_gt.json")
         )
       end
       let(:npm_lock_up_to_date) do
         Dependabot::DependencyFile.new(
           name: "packages/package2/package-lock.json",
           content: fixture("npm_lockfiles",
-                           "lerna_sub_dependency_up_to_date.json")
+                           "subdependency_out_of_range_gt.json")
         )
       end
 
       let(:yarn_package_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package3/package.json",
-          content: fixture("package_files", "lerna_sub_dependency_update.json")
+          content: fixture("package_files", "subdependency_in_range.json")
         )
       end
       let(:yarn_lock_update) do
         Dependabot::DependencyFile.new(
           name: "packages/package3/yarn.lock",
           content: fixture("yarn_lockfiles",
-                           "lerna_sub_dependency_update.lock")
+                           "subdependency_in_range.lock")
         )
       end
 
@@ -245,29 +245,29 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         Dependabot::DependencyFile.new(
           name: "packages/package4/package.json",
           content: fixture("package_files",
-                           "lerna_sub_dependency_update_out_of_range.json")
+                           "subdependency_out_of_range_lt.json")
         )
       end
       let(:npm_lock_update_out_of_range) do
         Dependabot::DependencyFile.new(
           name: "packages/package4/package-lock.json",
           content: fixture("npm_lockfiles",
-                           "lerna_sub_dependency_update_out_of_range.json")
+                           "subdependency_out_of_range_lt.json")
         )
       end
 
-      let(:latest_allowable_version) { "2.4.0" }
+      let(:latest_allowable_version) { "2.0.2" }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "mime",
-          version: "2.3.0",
+          name: "extend",
+          version: "2.0.2",
           previous_version: nil,
           requirements: [],
           package_manager: "npm_and_yarn"
         )
       end
 
-      it { is_expected.to eq(Gem::Version.new("2.4.2")) }
+      it { is_expected.to eq(Gem::Version.new("2.0.2")) }
 
       context "when out of range version" do
         let(:dependency_files) do
@@ -287,7 +287,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         end
 
         it "updates out of range to latest resolvable version" do
-          expect(latest_resolvable_version).to eq(Gem::Version.new("1.6.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("1.3.0"))
         end
       end
     end

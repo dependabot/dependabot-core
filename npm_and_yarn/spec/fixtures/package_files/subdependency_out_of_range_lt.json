@@ -1,15 +1,14 @@
 {
-  "name": "yarn",
+  "name": "test",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "url-loader": "^1.1.2"
+    "test-old-npm-sub-dependency": "github:dependabot-fixtures/test-old-npm-sub-dependency#3022e23aa7dac4d134d176ad2feaed72457946b4"
   }
 }
