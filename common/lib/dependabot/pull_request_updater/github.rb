@@ -85,8 +85,8 @@ module Dependabot
             base_commit,
             options
           )
-        rescue Octokit::UnprocessableEntity => error
-          raise unless error.message == "Tree SHA does not exist"
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.message == "Tree SHA does not exist"
 
           # Sometimes a race condition on GitHub's side means we get an error
           # here. No harm in retrying if we do.

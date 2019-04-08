@@ -47,8 +47,8 @@ module Dependabot
         annotate_pull_request(pull_request)
 
         pull_request
-      rescue Octokit::Error => error
-        handle_error(error)
+      rescue Octokit::Error => e
+        handle_error(e)
       end
 
       private

@@ -51,15 +51,17 @@ module Dependabot
         @files ||= fetch_files
       end
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def commit
         branch = target_branch || default_branch_for_repo
 
         @commit ||= client_for_provider.fetch_commit(repo, branch)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::BranchNotFound, branch
-      rescue Octokit::Conflict => error
-        raise unless error.message.include?("Repository is empty")
+      rescue Octokit::Conflict => e
+        raise unless e.message.include?("Repository is empty")
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       private
 

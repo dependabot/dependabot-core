@@ -75,6 +75,7 @@ module Dependabot
         @client.respond_to?(method_name) || super
       end
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def retry_connection_failures
         retry_attempt = 0
 
@@ -85,6 +86,7 @@ module Dependabot
           retry_attempt <= @max_retries ? retry : raise
         end
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
     end
   end
 end

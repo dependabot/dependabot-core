@@ -54,10 +54,10 @@ module Dependabot
             )
           end
         end
-      rescue SharedHelpers::HelperSubprocessFailed => error
+      rescue SharedHelpers::HelperSubprocessFailed => e
         retry_count ||= 0
         retry_count += 1
-        retry if transitory_failure?(error) && retry_count < 2
+        retry if transitory_failure?(e) && retry_count < 2
         raise
       end
 

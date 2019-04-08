@@ -281,8 +281,8 @@ module Dependabot
           accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, "dependencies"].uniq
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.errors.first.fetch(:code) == "already_exists"
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.errors.first.fetch(:code) == "already_exists"
 
         @labels = [*@labels, "dependencies"].uniq
       end

@@ -51,8 +51,8 @@ module Dependabot
               to: :markdown,
               wrap: :none
             )
-          rescue Errno::ENOENT => error
-            raise unless error.message == "No such file or directory - pandoc"
+          rescue Errno::ENOENT => e
+            raise unless e.message == "No such file or directory - pandoc"
 
             # If pandoc isn't installed just return the rst
             pruned_text
