@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Maven::Version do
     end
 
     context "with a build number" do
-      let(:version_string) { "1.0.0+12"}
+      let(:version_string) { "1.0.0+12" }
       it { is_expected.to eq(true) }
     end
   end
