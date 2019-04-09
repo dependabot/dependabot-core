@@ -1,0 +1,18 @@
+{
+  "name": "Another.sln",
+  "path": "Another.sln",
+  "sha": "033b789a8b0639af562271728bc5ffc3ad81a6e5",
+  "size": 14844,
+  "url": "https://api.github.com/repos/fsharp/fsharp/contents/Another.sln?ref=master",
+  "html_url": "https://github.com/fsharp/fsharp/blob/master/Another.sln",
+  "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+  "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/Another.sln",
+  "type": "file",
+  "content": "TWljcm9zb2Z0IFZpc3VhbCBTdHVkaW8gU29sdXRpb24gRmlsZSwgRm9ybWF0IFZlcnNpb24gMTIuMDAKIyBWaXN1YWwgU3R1ZGlvIDE1ClZpc3VhbFN0dWRpb1ZlcnNpb24gPSAxNS4wLjI2NDMwLjEzCk1pbmltdW1WaXN1YWxTdHVkaW9WZXJzaW9uID0gMTAuMC40MDIxOS4xClByb2plY3QoIns5QTE5MTAzRi0xNkY3LTQ2NjgtQkU1NC05QTFFN0E0Rjc1NTZ9IikgPSAiVmFsaWRhdG9yIiwgIlZhbGlkYXRvclxWYWxpZGF0b3IuY3Nwcm9qIiwgIns1MjM2N0JDQi1EQzY4LTQ4NjctQjEyRi1CM0Q1M0Y2MkFFN0V9IgpFbmRQcm9qZWN0\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/fsharp/fsharp/contents/Another.sln?ref=master",
+    "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+    "html": "https://github.com/fsharp/fsharp/blob/master/Another.sln"
+  }
+}

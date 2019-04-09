@@ -353,6 +353,13 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
+      stub_request(:get, url + "Another.sln?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_other_sln.json"),
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     it "fetches the files the .sln points to" do
@@ -391,16 +398,43 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
             body: fixture("github", "contents_dotnet_sln_nested.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, url + "src/Another.sln?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_other_sln_nested.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get, File.join(url, "src/Validator/Directory.Build.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, url + "src/Validator?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/Validator/Validator.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_from_other_sln.json"),
+            headers: { "content-type" => "application/json" }
+          )
       end
 
       it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.count).to eq(4)
+        expect(file_fetcher_instance.files.count).to eq(5)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
               src/GraphQL.Common/packages.config
+              src/Validator/Validator.csproj
               src/src.props
             )
           )
