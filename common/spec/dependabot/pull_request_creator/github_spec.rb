@@ -466,6 +466,23 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             }
           )
       end
+
+      context "that doesn't exist" do
+        before do
+          stub_request(:post, "#{repo_api_url}/pulls").
+            to_return(status: 422,
+                      body: fixture("github", "invalid_base_branch.json"),
+                      headers: json_header)
+          stub_request(:get, "#{repo_api_url}/git/refs/heads/my_branch").
+            to_return(status: 404,
+                      body: fixture("github", "not_found.json"),
+                      headers: json_header)
+        end
+
+        it "quietly ignores the failure" do
+          expect { creator.create }.to_not raise_error
+        end
+      end
     end
 
     context "when the 'dependencies' label doesn't yet exist" do

@@ -35,7 +35,7 @@ module Dependabot
       end
 
       def create
-        return if branch_exists? && pull_request_exists?
+        return if branch_exists?(branch_name) && pull_request_exists?
 
         commit = create_commit
         branch = create_or_update_branch(commit)
@@ -61,13 +61,13 @@ module Dependabot
           )
       end
 
-      def branch_exists?
+      def branch_exists?(name)
         @branch_ref ||=
-          github_client_for_source.ref(source.repo, "heads/#{branch_name}")
+          github_client_for_source.ref(source.repo, "heads/#{name}")
         if @branch_ref.is_a?(Array)
-          @branch_ref.any? { |r| r.ref == "refs/heads/#{branch_name}" }
+          @branch_ref.any? { |r| r.ref == "refs/heads/#{name}" }
         else
-          @branch_ref.ref == "refs/heads/#{branch_name}"
+          @branch_ref.ref == "refs/heads/#{name}"
         end
       rescue Octokit::NotFound
         false
@@ -162,7 +162,11 @@ module Dependabot
       end
 
       def create_or_update_branch(commit)
-        branch_exists? ? update_branch(commit) : create_branch(commit)
+        if branch_exists?(branch_name)
+          update_branch(commit)
+        else
+          create_branch(commit)
+        end
       rescue Octokit::UnprocessableEntity
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
@@ -253,7 +257,14 @@ module Dependabot
         )
       rescue Octokit::UnprocessableEntity => error
         # Ignore races that we lose
-        raise unless error.message.include?("pull request already exists")
+        return if error.message.include?("pull request already exists")
+
+        # Ignore cases where the target branch has been deleted
+        return if error.message.include?("field: base") &&
+                  source.branch &&
+                  !branch_exists?(source.branch)
+
+        raise
       end
 
       def default_branch
