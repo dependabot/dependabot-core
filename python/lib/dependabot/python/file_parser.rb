@@ -148,11 +148,11 @@ module Dependabot
           check_requirements(requirements)
           requirements
         end
-      rescue SharedHelpers::HelperSubprocessFailed => error
+      rescue SharedHelpers::HelperSubprocessFailed => e
         evaluation_errors = REQUIREMENT_FILE_EVALUATION_ERRORS
-        raise unless error.message.start_with?(*evaluation_errors)
+        raise unless e.message.start_with?(*evaluation_errors)
 
-        raise Dependabot::DependencyFileNotEvaluatable, error.message
+        raise Dependabot::DependencyFileNotEvaluatable, e.message
       end
 
       def check_requirements(requirements)

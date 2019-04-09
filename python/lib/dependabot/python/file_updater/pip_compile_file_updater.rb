@@ -162,13 +162,13 @@ module Dependabot
         def run_pip_compile_command(command, escape_command_str: true)
           run_command("pyenv local #{python_version}")
           run_command(command, escape_command_str: escape_command_str)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          original_error ||= error
-          msg = error.message
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          original_error ||= e
+          msg = e.message
 
           relevant_error =
             if error_suggests_bad_python_version?(msg) then original_error
-            else error
+            else e
             end
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)

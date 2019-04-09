@@ -367,7 +367,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.6.5")) }
+        it { is_expected.to eq(Gem::Version.new("1.6.6")) }
       end
 
       context "that has a .python-version file" do

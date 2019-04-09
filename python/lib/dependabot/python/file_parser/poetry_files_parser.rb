@@ -93,8 +93,8 @@ module Dependabot
         def check_requirements(req)
           requirement = req.is_a?(String) ? req : req["version"]
           Python::Requirement.requirements_array(requirement)
-        rescue Gem::Requirement::BadRequirementError => error
-          raise Dependabot::DependencyFileNotEvaluatable, error.message
+        rescue Gem::Requirement::BadRequirementError => e
+          raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

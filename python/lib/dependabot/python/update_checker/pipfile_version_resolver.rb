@@ -84,8 +84,8 @@ module Dependabot
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
               end
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              handle_pipenv_errors(error)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              handle_pipenv_errors(e)
             end
           return unless @latest_resolvable_version_string
 

@@ -242,14 +242,14 @@ module Dependabot
 
         path_setup_file_paths.each do |path|
           path_setup_files += fetch_path_setup_file(path)
-        rescue Dependabot::DependencyFileNotFound => error
-          unfetchable_files << error.file_path.gsub(%r{^/}, "")
+        rescue Dependabot::DependencyFileNotFound => e
+          unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
         poetry_path_setup_file_paths.each do |path|
           path_setup_files += fetch_path_setup_file(path, allow_pyproject: true)
-        rescue Dependabot::DependencyFileNotFound => error
-          unfetchable_files << error.file_path.gsub(%r{^/}, "")
+        rescue Dependabot::DependencyFileNotFound => e
+          unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
         if unfetchable_files.any?

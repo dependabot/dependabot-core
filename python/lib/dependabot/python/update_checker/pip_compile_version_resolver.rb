@@ -77,8 +77,8 @@ module Dependabot
 
                 parse_updated_files
               end
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              handle_pip_compile_errors(error)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              handle_pip_compile_errors(e)
             end
           return unless @latest_resolvable_version_string
 
