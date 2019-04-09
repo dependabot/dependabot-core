@@ -47,15 +47,15 @@ module Dependabot
         doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
           dep = dependency_from_dependency_node(pom, dependency_node)
           dependency_set << dep if dep
-        rescue DependencyFileNotEvaluatable => error
-          errors << error
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
         end
 
         doc.css(PLUGIN_SELECTOR).each do |dependency_node|
           dep = dependency_from_plugin_node(pom, dependency_node)
           dependency_set << dep if dep
-        rescue DependencyFileNotEvaluatable => error
-          errors << error
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
         end
 
         raise errors.first if errors.any? && dependency_set.dependencies.none?
