@@ -1,3 +1,6 @@
+## v0.99.3, 9 April 2019
+
+
 ## v0.99.2, 9 April 2019
 
 - Nuget: support multiple .sln files
