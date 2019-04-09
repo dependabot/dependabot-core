@@ -45,9 +45,9 @@ module Dependabot
 
             raise "Failed to update #{dependency.name}!"
           end
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
-          retry if better_specification_needed?(error)
-          handle_cargo_error(error)
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          retry if better_specification_needed?(e)
+          handle_cargo_error(e)
         end
 
         private

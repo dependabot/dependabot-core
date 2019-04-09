@@ -107,10 +107,10 @@ module Dependabot
               details
             end
           end
-        rescue Dependabot::DependencyFileNotResolvable => error
-          return if error_due_to_restrictive_upper_bound?(error)
-          return if circular_dependency_at_new_version?(error)
-          raise unless ruby_lock_error?(error)
+        rescue Dependabot::DependencyFileNotResolvable => e
+          return if error_due_to_restrictive_upper_bound?(e)
+          return if circular_dependency_at_new_version?(e)
+          raise unless ruby_lock_error?(e)
 
           @gemspec_ruby_unlocked = true
           regenerate_dependency_files_without_ruby_lock && retry

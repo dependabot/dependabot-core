@@ -235,13 +235,12 @@ module Dependabot
 
               check_npm_response(npm_response)
               JSON.parse(npm_response.body)
-            rescue JSON::ParserError, Excon::Error::Timeout,
-                   RegistryError => error
+            rescue JSON::ParserError, Excon::Error::Timeout, RegistryError => e
               return if git_dependency?
 
               retry_count ||= 0
               retry_count += 1
-              raise_npm_details_error(error) if retry_count > 2
+              raise_npm_details_error(e) if retry_count > 2
               sleep(rand(3.0..10.0)) && retry
             end
         end

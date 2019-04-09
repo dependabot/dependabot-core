@@ -53,13 +53,13 @@ module Dependabot
             stderr_to_stdout: true
           )
         end
-      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => error
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         result_json =
-          error.message.lines.
+          e.message.lines.
           drop_while { |l| !l.start_with?('{"result":') }.
           join
 
-        raise DependencyFileNotEvaluatable, error.message if result_json.empty?
+        raise DependencyFileNotEvaluatable, e.message if result_json.empty?
 
         JSON.parse(result_json).fetch("result")
       end

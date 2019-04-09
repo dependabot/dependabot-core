@@ -56,8 +56,8 @@ module Dependabot
             end
 
           updated_version
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_dep_errors(error)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_dep_errors(e)
         end
 
         def get_version_from_lockfile(lockfile_content)

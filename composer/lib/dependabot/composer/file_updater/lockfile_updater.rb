@@ -33,11 +33,11 @@ module Dependabot
 
               updated_content
             end
-        rescue SharedHelpers::HelperSubprocessFailed => error
+        rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0
           retry_count += 1
-          retry if transitory_failure?(error) && retry_count <= 1
-          handle_composer_errors(error)
+          retry if transitory_failure?(e) && retry_count <= 1
+          handle_composer_errors(e)
         end
 
         private

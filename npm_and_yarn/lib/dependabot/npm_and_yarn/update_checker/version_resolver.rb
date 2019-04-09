@@ -186,14 +186,14 @@ module Dependabot
             filtered_package_files.flat_map do |file|
               path = Pathname.new(file.name).dirname
               run_checker(path: path, version: version)
-            rescue SharedHelpers::HelperSubprocessFailed => error
+            rescue SharedHelpers::HelperSubprocessFailed => e
               errors = []
-              if error.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-                error.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
+              if e.message.match?(NPM_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
-              elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-                error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+              elsif e.message.match?(YARN_PEER_DEP_ERROR_REGEX)
+                e.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
               else raise

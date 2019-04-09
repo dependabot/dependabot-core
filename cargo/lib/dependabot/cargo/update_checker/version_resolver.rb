@@ -55,9 +55,9 @@ module Dependabot
 
             version_class.new(updated_version)
           end
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          retry if better_specification_needed?(error)
-          handle_cargo_errors(error)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          retry if better_specification_needed?(e)
+          handle_cargo_errors(e)
         end
 
         def fetch_version_from_new_lockfile

@@ -61,8 +61,8 @@ module Dependabot
             )
             updated_files.fetch(lockfile_name)
           end
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_yarn_lock_updater_error(error, yarn_lock)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_yarn_lock_updater_error(e, yarn_lock)
         end
 
         def run_current_yarn_update(path:, lockfile_name:)

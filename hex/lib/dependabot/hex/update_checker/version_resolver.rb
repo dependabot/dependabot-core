@@ -47,8 +47,8 @@ module Dependabot
           end
 
           version_class.new(latest_resolvable_version)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_hex_errors(error)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_hex_errors(e)
         end
 
         def run_elixir_update_checker

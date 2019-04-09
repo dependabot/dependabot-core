@@ -61,17 +61,17 @@ module Dependabot
               yield
             end
           end
-        rescue SharedHelpers::ChildProcessFailed, ArgumentError => error
+        rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
           retry_count ||= 0
           retry_count += 1
-          if retryable_error?(error) && retry_count <= 2
+          if retryable_error?(e) && retry_count <= 2
             sleep(rand(1.0..5.0)) && retry
           end
 
           raise unless error_handling
 
           # Raise more descriptive errors
-          handle_bundler_errors(error)
+          handle_bundler_errors(e)
         end
 
         def retryable_error?(error)

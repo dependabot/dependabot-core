@@ -94,8 +94,8 @@ module Dependabot
               end
             end
           post_process_lockfile(lockfile_body)
-        rescue Dependabot::DependencyFileNotResolvable => error
-          raise unless ruby_lock_error?(error)
+        rescue Dependabot::DependencyFileNotResolvable => e
+          raise unless ruby_lock_error?(e)
 
           @dont_lock_ruby_version = true
           retry

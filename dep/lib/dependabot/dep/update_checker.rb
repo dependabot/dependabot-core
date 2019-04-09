@@ -101,8 +101,8 @@ module Dependabot
         latest_release =
           begin
             latest_resolvable_released_version(unlock_requirement: true)
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("Solving failure")
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.include?("Solving failure")
           end
 
         # If there's a resolvable release that includes the current pinned

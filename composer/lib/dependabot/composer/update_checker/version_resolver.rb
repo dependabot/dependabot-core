@@ -47,11 +47,11 @@ module Dependabot
 
             run_update_checker
           end
-        rescue SharedHelpers::HelperSubprocessFailed => error
+        rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0
           retry_count += 1
-          retry if transitory_failure?(error) && retry_count < 2
-          handle_composer_errors(error)
+          retry if transitory_failure?(e) && retry_count < 2
+          handle_composer_errors(e)
         end
 
         def transitory_failure?(error)

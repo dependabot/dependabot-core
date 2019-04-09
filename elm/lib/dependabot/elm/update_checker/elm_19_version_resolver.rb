@@ -109,9 +109,9 @@ module Dependabot
               response = run_shell_command(command)
 
               CliParser.decode_install_preview(response)
-            rescue SharedHelpers::HelperSubprocessFailed => error
+            rescue SharedHelpers::HelperSubprocessFailed => e
               # 5) We bump our dep but elm blows up
-              handle_elm_errors(error)
+              handle_elm_errors(e)
             end
         end
 

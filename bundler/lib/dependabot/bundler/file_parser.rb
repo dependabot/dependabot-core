@@ -129,11 +129,11 @@ module Dependabot
                 reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
             end
           end
-      rescue SharedHelpers::ChildProcessFailed, ArgumentError => err
-        handle_marshall_error(err) if err.is_a?(ArgumentError)
+      rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
+        handle_marshall_error(e) if e.is_a?(ArgumentError)
 
-        msg = err.error_class + " with message: " +
-              err.error_message.force_encoding("UTF-8").encode
+        msg = e.error_class + " with message: " +
+              e.error_message.force_encoding("UTF-8").encode
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 

@@ -37,8 +37,8 @@ module Dependabot
               updated_content = updated_files.fetch(lockfile_name)
               post_process_npm_lockfile(lockfile.content, updated_content)
             end
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          handle_npm_updater_error(error, lockfile)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_npm_updater_error(e, lockfile)
         end
 
         private

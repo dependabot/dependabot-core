@@ -42,11 +42,11 @@ module Dependabot
               definition.resolve_remotely!
               specs = definition.resolve
               dependencies_from([dependency] + other_updates, specs)
-            rescue ::Bundler::VersionConflict => error
+            rescue ::Bundler::VersionConflict => e
               # TODO: Not sure this won't unlock way too many things...
               new_dependencies_to_unlock =
                 new_dependencies_to_unlock_from(
-                  error: error,
+                  error: e,
                   already_unlocked: other_updates
                 )
 

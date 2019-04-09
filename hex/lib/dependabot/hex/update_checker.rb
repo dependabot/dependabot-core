@@ -88,12 +88,12 @@ module Dependabot
       def latest_resolvable_commit_with_unchanged_git_source
         fetch_latest_resolvable_version(unlock_requirement: false)
       rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => error
+             Dependabot::DependencyFileNotResolvable => e
         # Resolution may fail, as Elixir updates straight to the tip of the
         # branch. Just return `nil` if it does (so no update).
-        return if error.message.include?("resolution failed")
+        return if e.message.include?("resolution failed")
 
-        raise error
+        raise e
       end
 
       def git_dependency?

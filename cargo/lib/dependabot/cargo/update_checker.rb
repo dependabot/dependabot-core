@@ -157,8 +157,8 @@ module Dependabot
           credentials: credentials
         ).latest_resolvable_version
         @git_tag_resolvable = true
-      rescue SharedHelpers::HelperSubprocessFailed => error
-        raise error unless error.message.include?("versions conflict")
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        raise e unless e.message.include?("versions conflict")
 
         @git_tag_resolvable = false
       end
