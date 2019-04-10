@@ -1,3 +1,7 @@
+## v0.99.5, 10 April 2019
+
+- .NET: Treat dependency names as case-insensitive
+
 ## v0.99.4, 10 April 2019
 
 - PHP: Bump composer/composer from 1.8.4 to 1.8.5
