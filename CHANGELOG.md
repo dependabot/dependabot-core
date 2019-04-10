@@ -1,5 +1,11 @@
+## v0.99.4, 10 April 2019
+
+- PHP: Bump composer/composer from 1.8.4 to 1.8.5
+
 ## v0.99.3, 9 April 2019
 
+- Handle deleted target branches when creating a PR
+- Python: Use pyenv v1.2.11 in Dockerfile, and update available Python versions
 
 ## v0.99.2, 9 April 2019
 
