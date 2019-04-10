@@ -1,3 +1,8 @@
+## v0.99.6, 10 April 2019
+
+- Gradle: Handle commented out lines when updating files
+- Python: Handle wildcards in requirements with a non-equality operator
+
 ## v0.99.5, 10 April 2019
 
 - .NET: Treat dependency names as case-insensitive
