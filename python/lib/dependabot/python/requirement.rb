@@ -118,12 +118,18 @@ module Dependabot
       def convert_wildcard(req_string)
         # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
+        quoted_ops = OPS.keys.sort_by(&:length).reverse.
+                     map { |k| Regexp.quote(k) }.join("|")
+        op = req_string.match(/\A\s*(#{quoted_ops})?/).
+             captures.first.to_s&.strip
+        exact_op = ["", "=", "==", "==="].include?(op)
+
         req_string.
           split(".").
           first(req_string.split(".").index("*") + 1).
           join(".").
-          tr("*", "0").
-          gsub(/^(?<!!)=*/, "~>")
+          tr("*", exact_op ? "0" : "a").
+          tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
   end

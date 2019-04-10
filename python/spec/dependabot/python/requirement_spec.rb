@@ -87,6 +87,11 @@ RSpec.describe Dependabot::Python::Requirement do
         let(:requirement_string) { "1.3.*" }
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
       end
+
+      context "with a >= op" do
+        let(:requirement_string) { ">= 1.3.*" }
+        it { is_expected.to eq(described_class.new(">= 1.3.a")) }
+      end
     end
 
     context "with another operator after the first" do
