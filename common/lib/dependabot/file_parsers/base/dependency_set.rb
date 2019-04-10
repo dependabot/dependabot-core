@@ -8,13 +8,14 @@ module Dependabot
   module FileParsers
     class Base
       class DependencySet
-        def initialize(dependencies = [])
+        def initialize(dependencies = [], case_sensitive: false)
           unless dependencies.is_a?(Array) &&
                  dependencies.all? { |dep| dep.is_a?(Dependency) }
             raise ArgumentError, "must be an array of Dependency objects"
           end
 
           @dependencies = dependencies
+          @case_sensitive = case_sensitive
         end
 
         attr_reader :dependencies
@@ -24,7 +25,7 @@ module Dependabot
             raise ArgumentError, "must be a Dependency object"
           end
 
-          existing_dependency = dependencies.find { |d| d.name == dep.name }
+          existing_dependency = dependency_for_name(dep.name)
 
           return self if existing_dependency&.to_h == dep.to_h
 
@@ -48,6 +49,16 @@ module Dependabot
         end
 
         private
+
+        def case_sensitive?
+          @case_sensitive
+        end
+
+        def dependency_for_name(name)
+          return dependencies.find { |d| d.name == name } if case_sensitive?
+
+          dependencies.find { |d| d.name&.downcase == name&.downcase }
+        end
 
         def combined_dependency(old_dep, new_dep)
           package_manager = old_dep.package_manager

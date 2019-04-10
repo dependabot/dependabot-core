@@ -51,6 +51,18 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
             to eq('<PackageReference Include="Microsoft.Extensions.'\
                   'DependencyModel" Version="1.1.1" />')
         end
+
+        context "with a difference in capitalization" do
+          let(:dependency_name) { "Microsoft.Extensions.dependencymodel" }
+
+          it "finds the declaration" do
+            expect(declaration_strings.count).to eq(1)
+
+            expect(declaration_strings.first).
+              to eq('<PackageReference Include="Microsoft.Extensions.'\
+                    'DependencyModel" Version="1.1.1" />')
+          end
+        end
       end
 
       context "and the version as an attribute of a normal node" do

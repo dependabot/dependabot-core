@@ -65,7 +65,37 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         let(:existing_dependency) { dependency }
 
         it { is_expected.to be_a(described_class) }
-        its(:dependencies) { is_expected.to eq([dependency]) }
+        its(:dependencies) { is_expected.to eq([existing_dependency]) }
+
+        context "with a difference in name capitalisation" do
+          let(:existing_dependency) do
+            Dependabot::Dependency.new(
+              name: "Business",
+              version: "1.3",
+              requirements: [{
+                requirement: "1",
+                file: "a",
+                groups: nil,
+                source: nil
+              }],
+              package_manager: "dummy"
+            )
+          end
+
+          context "acting case-sensitively" do
+            let(:dependency_set) { described_class.new(case_sensitive: true) }
+
+            it { is_expected.to be_a(described_class) }
+            its(:dependencies) do
+              is_expected.to eq([existing_dependency, dependency])
+            end
+          end
+
+          context "acting case-insensitively (the default)" do
+            it { is_expected.to be_a(described_class) }
+            its(:dependencies) { is_expected.to eq([existing_dependency]) }
+          end
+        end
       end
 
       context "and is different to the one being added" do

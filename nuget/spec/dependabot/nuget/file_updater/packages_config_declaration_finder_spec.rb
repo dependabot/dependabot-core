@@ -50,6 +50,18 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
             to eq('<package id="NuGet.Core" version="2.11.1" '\
                   'targetFramework="net46" />')
         end
+
+        context "and a difference in capitalization" do
+          let(:dependency_name) { "Nuget.Core" }
+
+          it "finds the declaration" do
+            expect(declaration_strings.count).to eq(1)
+
+            expect(declaration_strings.first).
+              to eq('<package id="NuGet.Core" version="2.11.1" '\
+                    'targetFramework="net46" />')
+          end
+        end
       end
 
       context "and a non-matching version" do

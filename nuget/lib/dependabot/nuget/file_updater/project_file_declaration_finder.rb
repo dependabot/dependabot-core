@@ -49,7 +49,7 @@ module Dependabot
 
             node_name = node.attribute("Include")&.value&.strip ||
                         node.at_xpath("./Include")&.content&.strip
-            next false unless node_name == dependency_name
+            next false unless node_name&.downcase == dependency_name&.downcase
 
             node_requirement = node.attribute("Version")&.value&.strip ||
                                node.at_xpath("./Version")&.content&.strip
