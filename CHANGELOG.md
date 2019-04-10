@@ -1,3 +1,7 @@
+## v0.99.7, 10 April 2019
+
+- JS: Handle build metadata in version strings
+
 ## v0.99.6, 10 April 2019
 
 - Gradle: Handle commented out lines when updating files
