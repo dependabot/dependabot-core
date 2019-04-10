@@ -256,6 +256,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
           let(:version_string) { "v1.0.0" }
           it { is_expected.to eq(true) }
         end
+
+        context "that includes a local version" do
+          let(:version_string) { "1.0.0+gc.1" }
+          it { is_expected.to eq(true) }
+        end
       end
     end
   end

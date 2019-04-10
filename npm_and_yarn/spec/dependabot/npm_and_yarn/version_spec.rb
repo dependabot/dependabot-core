@@ -20,6 +20,11 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
       it { is_expected.to eq(true) }
     end
 
+    context "with build metadata" do
+      let(:version_string) { "1.0.0+some-metadata" }
+      it { is_expected.to eq(true) }
+    end
+
     context "with an invalid string" do
       let(:version_string) { "va1.0.0" }
       it { is_expected.to eq(false) }
@@ -52,6 +57,11 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end
+
+    context "with build metadata" do
+      let(:version_string) { "1.0.0+some-metadata" }
+      it { is_expected.to eq "1.0.0+some-metadata" }
+    end
   end
 
   describe "compatibility with Gem::Requirement" do
@@ -83,6 +93,13 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
         let(:version_string) { "v0.9.0" }
         it { is_expected.to eq(false) }
       end
+    end
+
+    context "with build metadata" do
+      let(:requirement) { Gem::Requirement.new("1.0.0") }
+      let(:version_string) { "1.0.0+build-metadata" }
+
+      it { is_expected.to eq(true) }
     end
   end
 end

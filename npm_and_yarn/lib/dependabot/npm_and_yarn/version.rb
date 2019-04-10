@@ -12,19 +12,36 @@ require "rubygems_version_patch"
 module Dependabot
   module NpmAndYarn
     class Version < Gem::Version
+      attr_reader :build_info
+
+      VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+
       def self.correct?(version)
         version = version.gsub(/^v/, "") if version.is_a?(String)
-        super(version)
+
+        return false if version.nil?
+
+        version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
       def initialize(version)
         @version_string = version.to_s
         version = version.gsub(/^v/, "") if version.is_a?(String)
+
+        if version.to_s.include?("+")
+          version, @build_info = version.to_s.split("+")
+        end
+
         super
       end
 
       def to_s
         @version_string
+      end
+
+      def inspect
+        "#<#{self.class} #{@version_string}>"
       end
     end
   end
