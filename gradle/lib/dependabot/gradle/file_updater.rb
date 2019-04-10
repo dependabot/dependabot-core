@@ -127,6 +127,7 @@ module Dependabot
         buildfile = buildfiles.find { |f| f.name == requirement.fetch(:file) }
         buildfile.content.lines.find do |line|
           line = evaluate_properties(line, buildfile)
+          line = line.gsub(%r{(?<=^|\s)//.*$}, "")
           next false unless line.include?(dependency.name.split(":").first)
           next false unless line.include?(dependency.name.split(":").last)
 

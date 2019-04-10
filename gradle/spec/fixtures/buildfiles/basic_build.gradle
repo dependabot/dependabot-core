@@ -29,6 +29,7 @@ build.dependsOn shadowJar
 dependencies {
     compile project(":ChatMenuAPI")
 
+    // Some details about 'co.aikar:acf-paper', version: '0.5.0-SNAPSHOT'
     compile group: 'co.aikar', name: 'acf-paper', version: '0.5.0-SNAPSHOT', changing: true
     compile group: 'com.google.inject', name: 'guice', version: '4.2.0'
     compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
