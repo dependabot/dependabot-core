@@ -158,14 +158,3 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
     bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
     bash /opt/hex/helpers/build /opt/hex && \
     bash /opt/composer/helpers/build /opt/composer
-
-# Force npm to run installs without downloading any files or running any
-# lifecycle hooks. This prevents npm from running prepare and prepack scripts
-# when installing git dependencies which is likely to fail inside the updater
-# container. We need to set this config globally to make it work for git
-# dependencies, which are installed by shelling out to npm without the dry-run
-# flag that was passed to the installer from the npm helpers in dependabot-core.
-#
-# Sets global config in /usr/etc/npmrc - "-g" is needed because we're running as
-# root here and not "dependabot" which is used by the updater
-RUN npm config set dry-run true -g
