@@ -36,6 +36,13 @@ module Dependabot
           end
       end
 
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        # TODO: Implement this properly!
+        latest_resolvable_version
+      end
+
       def latest_resolvable_version_with_no_unlock
         return latest_resolvable_version unless dependency.top_level?
 
@@ -48,11 +55,12 @@ module Dependabot
 
       def updated_requirements
         resolvable_version =
-          if latest_resolvable_version.is_a?(version_class)
-            latest_resolvable_version.to_s
-          elsif latest_resolvable_version.nil?
-            nil
+          if [version_class, NilClass].include?(preferred_resolvable_version)
+            preferred_resolvable_version&.to_s
           else
+            # If the preferred_resolvable_version came back as anything other
+            # than a version class or `nil` it must be because this is a git
+            # dependency, for which we don't check resolvability.
             latest_version_details&.fetch(:version, nil)&.to_s
           end
 
