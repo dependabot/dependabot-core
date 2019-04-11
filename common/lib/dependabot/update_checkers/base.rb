@@ -2,6 +2,7 @@
 
 require "json"
 require "dependabot/utils"
+require "dependabot/security_advisory"
 
 module Dependabot
   module UpdateCheckers
@@ -60,7 +61,22 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def preferred_resolvable_version
+        # If this dependency is vulnerable, prefer trying to update to the
+        # lowest_resolvable_security_fix_version. Otherwise update all the way
+        # to the latest_resolvable_version.
+        return lowest_resolvable_security_fix_version if vulnerable?
+
+        latest_resolvable_version
+      rescue NotImplementedError
+        latest_resolvable_version
+      end
+
       def latest_resolvable_version
+        raise NotImplementedError
+      end
+
+      def lowest_resolvable_security_fix_version
         raise NotImplementedError
       end
 
@@ -88,7 +104,7 @@ module Dependabot
       end
 
       def vulnerable?
-        return false if security_advisory_reqs.none?
+        return false if security_advisories.none?
 
         # Can't (currently) detect whether dependencies without a version
         # (i.e., for repos without a lockfile) are vulnerable
@@ -97,29 +113,8 @@ module Dependabot
         # Can't (currently) detect whether git dependencies are vulnerable
         return false if existing_version_is_sha?
 
-        version = dependency.version
-        security_advisory_reqs.any? do |advisory|
-          in_safe_range =
-            advisory.fetch(:safe_versions, []).
-            any? { |r| r.satisfied_by?(version_class.new(version)) }
-
-          # If version is known safe for this advisory, it's not vulnerable
-          next false if in_safe_range
-
-          in_vulnerable_range =
-            advisory.fetch(:vulnerable_versions, []).
-            any? { |r| r.satisfied_by?(version_class.new(version)) }
-
-          # If in the vulnerable range and not known safe, it's vulnerable
-          next true if in_vulnerable_range
-
-          # If a vulnerable range present but not met, it's not vulnerable
-          next false if advisory.fetch(:vulnerable_versions, []).any?
-
-          # Finally, if no vulnerable range provided, but a safe range provided,
-          # and this versions isn't included (checked earler), it's vulnerable
-          advisory.fetch(:safe_versions, []).any?
-        end
+        version = version_class.new(dependency.version)
+        security_advisories.any? { |a| a.vulnerable?(version) }
       end
 
       private
@@ -142,7 +137,7 @@ module Dependabot
       def updated_dependency_with_own_req_unlock
         Dependency.new(
           name: dependency.name,
-          version: latest_resolvable_version.to_s,
+          version: preferred_resolvable_version.to_s,
           requirements: updated_requirements,
           previous_version: dependency.version,
           previous_requirements: dependency.requirements,
@@ -191,7 +186,7 @@ module Dependabot
           new_version = latest_resolvable_version_with_no_unlock
           new_version && !new_version.to_s.start_with?(dependency.version)
         when :own
-          new_version = latest_resolvable_version
+          new_version = preferred_resolvable_version
           new_version && !new_version.to_s.start_with?(dependency.version)
         when :all
           latest_version_resolvable_with_full_unlock?
@@ -218,7 +213,7 @@ module Dependabot
           new_version = latest_resolvable_version_with_no_unlock
           new_version && new_version > version_class.new(dependency.version)
         when :own
-          new_version = latest_resolvable_version
+          new_version = preferred_resolvable_version
           new_version && new_version > version_class.new(dependency.version)
         when :all
           latest_version_resolvable_with_full_unlock?
@@ -255,25 +250,6 @@ module Dependabot
 
       def ignore_reqs
         ignored_versions.map { |req| requirement_class.new(req.split(",")) }
-      end
-
-      def security_advisory_reqs
-        @security_advisory_reqs ||= security_advisories.map do |vuln|
-          vulnerable_versions =
-            vuln.fetch(:vulnerable_versions, []).flat_map do |vuln_str|
-              requirement_class.requirements_array(vuln_str)
-            end
-
-          safe_versions =
-            vuln.fetch(:safe_versions, []).flat_map do |safe_str|
-              requirement_class.requirements_array(safe_str)
-            end
-
-          {
-            vulnerable_versions: vulnerable_versions,
-            safe_versions: safe_versions
-          }
-        end
       end
     end
   end

@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/security_advisory"
 require "dependabot/update_checkers/base"
 
 RSpec.describe Dependabot::UpdateCheckers::Base do
@@ -473,10 +474,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
 
     let(:security_advisories) do
-      [{
-        vulnerable_versions: ["~> 0.5", "~> 1.0"],
-        safe_versions: ["> 1.5.1"]
-      }]
+      [
+        Dependabot::SecurityAdvisory.new(
+          package_manager: "dummy",
+          vulnerable_versions: ["~> 0.5", "~> 1.0"],
+          safe_versions: ["> 1.5.1"]
+        )
+      ]
     end
     let(:version) { "1.5.1" }
 
@@ -496,7 +500,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
 
     context "with only safe versions" do
-      let(:security_advisories) { [{ safe_versions: ["> 1.5.1"] }] }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "dummy",
+            safe_versions: ["> 1.5.1"]
+          )
+        ]
+      end
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
@@ -510,7 +521,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
 
     context "with only vulnerable versions" do
-      let(:security_advisories) { [{ vulnerable_versions: ["<= 1.5.1"] }] }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "dummy",
+            vulnerable_versions: ["<= 1.5.1"]
+          )
+        ]
+      end
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
@@ -525,47 +543,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     context "with no details" do
       let(:security_advisories) do
-        [{
-          vulnerable_versions: [],
-          safe_versions: []
-        }]
+        [
+          Dependabot::SecurityAdvisory.new(package_manager: "dummy")
+        ]
       end
       it { is_expected.to eq(false) }
-    end
-  end
-
-  describe "#security_advisory_reqs" do
-    subject(:security_advisory_reqs) do
-      updater_instance.send(:security_advisory_reqs)
-    end
-
-    let(:updater_instance) do
-      described_class.new(
-        dependency: dependency,
-        dependency_files: [],
-        security_advisories: [{
-          vulnerable_versions: ["~> 0.5", "~> 1.0"],
-          safe_versions: ["> 1.5.1"]
-        }],
-        credentials: [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "token"
-        }]
-      )
-    end
-
-    it "builds the requirement ranges correctly" do
-      expect(security_advisory_reqs).to eq(
-        [{
-          vulnerable_versions: [
-            Gem::Requirement.new("~> 0.5"),
-            Gem::Requirement.new("~> 1.0")
-          ],
-          safe_versions: [Gem::Requirement.new("> 1.5.1")]
-        }]
-      )
     end
   end
 end
