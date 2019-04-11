@@ -1,3 +1,12 @@
+## v0.100.0, 12 April 2019
+
+- Bump poetry from 0.12.11 to 0.12.12 in /python/helpers
+- Add SecurityAdvisory class, used in UpdateCheckers::Base to determine if a
+  version is vulnerable
+- NPM: Remove dry-run config setting
+- Add UpdateCheckers::Base#vulnerable? method, which checks against security advisories
+- Accept a security_advisories argument to UpdateCheckers::Base.new
+
 ## v0.99.7, 10 April 2019
 
 - JS: Handle build metadata in version strings
