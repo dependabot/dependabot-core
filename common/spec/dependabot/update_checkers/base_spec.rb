@@ -447,6 +447,93 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     end
   end
 
+  describe "#vulnerable?" do
+    subject(:vulnerable) { updater_instance.send(:vulnerable?) }
+
+    let(:updater_instance) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: [],
+        security_advisories: security_advisories,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: version,
+        requirements: original_requirements,
+        package_manager: "dummy"
+      )
+    end
+
+    let(:security_advisories) do
+      [{
+        vulnerable_versions: ["~> 0.5", "~> 1.0"],
+        safe_versions: ["> 1.5.1"]
+      }]
+    end
+    let(:version) { "1.5.1" }
+
+    context "with a safe version" do
+      let(:version) { "1.5.2" }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a vulnerable version" do
+      let(:version) { "1.5.1" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with no vulnerabilities" do
+      let(:security_advisories) { [] }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with only safe versions" do
+      let(:security_advisories) { [{ safe_versions: ["> 1.5.1"] }] }
+
+      context "with a vulnerable version" do
+        let(:version) { "1.5.1" }
+        it { is_expected.to eq(true) }
+      end
+
+      context "with a safe version" do
+        let(:version) { "1.5.2" }
+        it { is_expected.to eq(false) }
+      end
+    end
+
+    context "with only vulnerable versions" do
+      let(:security_advisories) { [{ vulnerable_versions: ["<= 1.5.1"] }] }
+
+      context "with a vulnerable version" do
+        let(:version) { "1.5.1" }
+        it { is_expected.to eq(true) }
+      end
+
+      context "with a safe version" do
+        let(:version) { "1.5.2" }
+        it { is_expected.to eq(false) }
+      end
+    end
+
+    context "with no details" do
+      let(:security_advisories) do
+        [{
+          vulnerable_versions: [],
+          safe_versions: []
+        }]
+      end
+      it { is_expected.to eq(false) }
+    end
+  end
+
   describe "#security_advisory_reqs" do
     subject(:security_advisory_reqs) do
       updater_instance.send(:security_advisory_reqs)

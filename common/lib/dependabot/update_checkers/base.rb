@@ -22,7 +22,7 @@ module Dependabot
       end
 
       def up_to_date?
-        if dependency.appears_in_lockfile?
+        if dependency.version
           version_up_to_date?
         else
           requirements_up_to_date?
@@ -33,7 +33,7 @@ module Dependabot
         # Can't update if all versions are being ignored
         return false if ignore_reqs.include?(requirement_class.new(">= 0"))
 
-        if dependency.appears_in_lockfile?
+        if dependency.version
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else
           # TODO: Handle full unlock updates for dependencies without a lockfile
@@ -85,6 +85,41 @@ module Dependabot
       # from a web API). This method is overridden in those cases.
       def requirements_unlocked_or_can_be?
         true
+      end
+
+      def vulnerable?
+        return false if security_advisory_reqs.none?
+
+        # Can't (currently) detect whether dependencies without a version
+        # (i.e., for repos without a lockfile) are vulnerable
+        return false unless dependency.version
+
+        # Can't (currently) detect whether git dependencies are vulnerable
+        return false if existing_version_is_sha?
+
+        version = dependency.version
+        security_advisory_reqs.any? do |advisory|
+          in_safe_range =
+            advisory.fetch(:safe_versions, []).
+            any? { |r| r.satisfied_by?(version_class.new(version)) }
+
+          # If version is known safe for this advisory, it's not vulnerable
+          next false if in_safe_range
+
+          in_vulnerable_range =
+            advisory.fetch(:vulnerable_versions, []).
+            any? { |r| r.satisfied_by?(version_class.new(version)) }
+
+          # If in the vulnerable range and not known safe, it's vulnerable
+          next true if in_vulnerable_range
+
+          # If a vulnerable range present but not met, it's not vulnerable
+          next false if advisory.fetch(:vulnerable_versions, []).any?
+
+          # Finally, if no vulnerable range provided, but a safe range provided,
+          # and this versions isn't included (checked earler), it's vulnerable
+          advisory.fetch(:safe_versions, []).any?
+        end
       end
 
       private
@@ -225,12 +260,12 @@ module Dependabot
       def security_advisory_reqs
         @security_advisory_reqs ||= security_advisories.map do |vuln|
           vulnerable_versions =
-            vuln.fetch(:vulnerable_versions).flat_map do |vuln_str|
+            vuln.fetch(:vulnerable_versions, []).flat_map do |vuln_str|
               requirement_class.requirements_array(vuln_str)
             end
 
           safe_versions =
-            vuln.fetch(:safe_versions).flat_map do |safe_str|
+            vuln.fetch(:safe_versions, []).flat_map do |safe_str|
               requirement_class.requirements_array(safe_str)
             end
 
