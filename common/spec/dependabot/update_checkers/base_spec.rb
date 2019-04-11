@@ -446,4 +446,39 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       end
     end
   end
+
+  describe "#security_advisory_reqs" do
+    subject(:security_advisory_reqs) do
+      updater_instance.send(:security_advisory_reqs)
+    end
+
+    let(:updater_instance) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: [],
+        security_advisories: [{
+          vulnerable_versions: ["~> 0.5", "~> 1.0"],
+          safe_versions: ["> 1.5.1"]
+        }],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }]
+      )
+    end
+
+    it "builds the requirement ranges correctly" do
+      expect(security_advisory_reqs).to eq(
+        [{
+          vulnerable_versions: [
+            Gem::Requirement.new("~> 0.5"),
+            Gem::Requirement.new("~> 1.0")
+          ],
+          safe_versions: [Gem::Requirement.new("> 1.5.1")]
+        }]
+      )
+    end
+  end
 end

@@ -7,15 +7,18 @@ module Dependabot
   module UpdateCheckers
     class Base
       attr_reader :dependency, :dependency_files, :credentials,
-                  :ignored_versions, :requirements_update_strategy
+                  :ignored_versions, :security_advisories,
+                  :requirements_update_strategy
 
       def initialize(dependency:, dependency_files:, credentials:,
-                     ignored_versions: [], requirements_update_strategy: nil)
+                     ignored_versions: [], security_advisories: [],
+                     requirements_update_strategy: nil)
         @dependency = dependency
         @dependency_files = dependency_files
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions
+        @security_advisories = security_advisories
       end
 
       def up_to_date?
@@ -217,6 +220,25 @@ module Dependabot
 
       def ignore_reqs
         ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+      end
+
+      def security_advisory_reqs
+        @security_advisory_reqs ||= security_advisories.map do |vuln|
+          vulnerable_versions =
+            vuln.fetch(:vulnerable_versions).flat_map do |vuln_str|
+              requirement_class.requirements_array(vuln_str)
+            end
+
+          safe_versions =
+            vuln.fetch(:safe_versions).flat_map do |safe_str|
+              requirement_class.requirements_array(safe_str)
+            end
+
+          {
+            vulnerable_versions: vulnerable_versions,
+            safe_versions: safe_versions
+          }
+        end
       end
     end
   end
