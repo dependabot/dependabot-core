@@ -248,6 +248,19 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           expect(WebMock).to_not have_requested(:patch, pull_request_url)
         end
       end
+
+      context "but the PR has been closed" do
+        before do
+          stub_request(:patch, pull_request_url).
+            to_return(
+              status: 422,
+              body: fixture("github", "update_closed_pr_branch.json"),
+              headers: json_header
+            )
+        end
+
+        specify { expect { updater.update }.to_not raise_error }
+      end
     end
 
     context "with author details" do
