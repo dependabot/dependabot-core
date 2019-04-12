@@ -20,16 +20,14 @@ module Dependabot
         raise ArgumentError, "must be a #{version_class}"
       end
 
-      in_safe_range =
-        safe_versions.
-        any? { |r| r.satisfied_by?(version_class.new(version)) }
+      in_safe_range = safe_versions.
+                      any? { |r| r.satisfied_by?(version) }
 
       # If version is known safe for this advisory, it's not vulnerable
       return false if in_safe_range
 
-      in_vulnerable_range =
-        vulnerable_versions.
-        any? { |r| r.satisfied_by?(version_class.new(version)) }
+      in_vulnerable_range = vulnerable_versions.
+                            any? { |r| r.satisfied_by?(version) }
 
       # If in the vulnerable range and not known safe, it's vulnerable
       return true if in_vulnerable_range
