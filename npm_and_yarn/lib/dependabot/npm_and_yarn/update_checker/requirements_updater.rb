@@ -19,14 +19,13 @@ module Dependabot
           %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
-                       latest_version:, latest_resolvable_version:)
+                       latest_resolvable_version:)
           @requirements = requirements
           @updated_source = updated_source
           @update_strategy = update_strategy
 
           check_update_strategy
 
-          @latest_version = version_class.new(latest_version) if latest_version
           return unless latest_resolvable_version
 
           @latest_resolvable_version =
@@ -53,7 +52,7 @@ module Dependabot
         private
 
         attr_reader :requirements, :updated_source, :update_strategy,
-                    :latest_version, :latest_resolvable_version
+                    :latest_resolvable_version
 
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)

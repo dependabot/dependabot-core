@@ -555,7 +555,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         with(
           requirements: dependency_requirements,
           updated_source: nil,
-          latest_version: "1.7.0",
           latest_resolvable_version: "1.7.0",
           update_strategy: :bump_versions
         ).
@@ -589,7 +588,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           with(
             requirements: dependency_requirements,
             updated_source: nil,
-            latest_version: "1.7.0",
             latest_resolvable_version: "1.7.0",
             update_strategy: :bump_versions_if_necessary
           ).
@@ -617,7 +615,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           with(
             requirements: dependency_requirements,
             updated_source: nil,
-            latest_version: "1.7.0",
             latest_resolvable_version: "1.7.0",
             update_strategy: :widen_ranges
           ).
@@ -699,7 +696,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               branch: nil,
               ref: "master"
             },
-            latest_version: "4.0.0",
             latest_resolvable_version: "4.0.0",
             update_strategy: :bump_versions
           ).
@@ -734,7 +730,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 branch: nil,
                 ref: "master"
               },
-              latest_version: "4.0.0",
               latest_resolvable_version: "4.0.0",
               update_strategy: :bump_versions
             ).
@@ -781,7 +776,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             with(
               requirements: dependency_requirements,
               updated_source: nil,
-              latest_version: "4.0.0",
               latest_resolvable_version: "4.0.0",
               update_strategy: :bump_versions
             ).
@@ -835,7 +829,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           with(
             requirements: dependency_requirements,
             updated_source: nil,
-            latest_version: "16.3.1",
             latest_resolvable_version: nil,
             update_strategy: :widen_ranges
           ).

@@ -70,8 +70,6 @@ module Dependabot
           RequirementsUpdater.new(
             requirements: dependency.requirements,
             updated_source: updated_source,
-            latest_version:
-              latest_version_details&.fetch(:version, nil)&.to_s,
             latest_resolvable_version: resolvable_version,
             update_strategy: requirements_update_strategy
           ).updated_requirements
@@ -112,7 +110,6 @@ module Dependabot
           requirements: RequirementsUpdater.new(
             requirements: original_dep.requirements,
             updated_source: original_dep == dependency ? updated_source : nil,
-            latest_version: update_details[:version].to_s,
             latest_resolvable_version: update_details[:version].to_s,
             update_strategy: requirements_update_strategy
           ).updated_requirements,

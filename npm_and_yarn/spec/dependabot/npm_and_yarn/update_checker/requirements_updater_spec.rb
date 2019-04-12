@@ -9,7 +9,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       requirements: requirements,
       updated_source: updated_source,
       update_strategy: update_strategy,
-      latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
   end
@@ -27,7 +26,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   let(:package_json_req_string) { "^1.4.0" }
 
   let(:update_strategy) { :bump_versions }
-  let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
   let(:version_class) { Dependabot::NpmAndYarn::Version }
 
