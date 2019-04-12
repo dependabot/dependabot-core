@@ -56,12 +56,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     )
   end
 
-  describe "#latest_version_details_from_registry" do
-    subject { version_finder.latest_version_details_from_registry }
-    its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+  describe "#latest_version_from_registry" do
+    subject { version_finder.latest_version_from_registry }
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     it "only hits the registry once" do
-      version_finder.latest_version_details_from_registry
+      version_finder.latest_version_from_registry
       expect(WebMock).to have_requested(:get, registry_listing_url).once
     end
 
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         stub_request(:get, registry_listing_url + "/1.6.0").
           to_return(status: 200)
       end
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
     context "when the user wants a dist tag" do
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         stub_request(:get, registry_listing_url + "/1.5.1").
           to_return(status: 200)
       end
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.5.1")) }
+      it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
     context "when the latest version is a prerelease" do
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200)
       end
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
       context "when the user has specified a bad requirement" do
         let(:dependency) do
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
       context "and the user is on an old pre-release" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
       context "and the user is on a pre-release for this version" do
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
 
         # Note: this is the dist-tag latest version, *not* the latest prerelease
-        its([:version]) { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
+        it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
         context "but only says so in their requirements (with a .)" do
           let(:dependency) do
@@ -194,15 +194,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           end
           let(:requirement) { "^2.0.0-pre" }
 
-          its([:version]) do
-            is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1"))
-          end
+          it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
           context "specified with a dash" do
             let(:requirement) { "^2.0.0-pre" }
-            its([:version]) do
-              is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1"))
-            end
+            it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
           end
         end
       end
@@ -248,7 +244,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           }]
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
       context "without credentials" do
@@ -268,7 +264,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { version_finder.latest_version_details_from_registry }.
+          expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.npmjs.org")
             end
@@ -298,7 +294,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             to_return(status: 200, body: body)
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
     end
 
@@ -344,7 +340,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
 
         it "raises a to Dependabot::PrivateSourceTimedOut error" do
-          expect { version_finder.latest_version_details_from_registry }.
+          expect { version_finder.latest_version_from_registry }.
             to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
@@ -409,7 +405,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           }]
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+        it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
         context "when the latest version has been yanked" do
           before do
@@ -431,7 +427,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             ).to_return(status: 200)
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
         end
 
         context "when the registry doesn't implement the /version endpoint" do
@@ -450,7 +446,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             ).to_return(status: 404)
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
         end
 
         context "when the registry doesn't escape dependency URLs properly" do
@@ -470,7 +466,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             ).to_return(status: 200)
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
         end
 
         context "without a lockfile" do
@@ -488,7 +484,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             )
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
         end
 
         context "without https" do
@@ -522,7 +518,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             )
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
         end
       end
 
@@ -538,7 +534,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { version_finder.latest_version_details_from_registry }.
+          expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
               expect(error.source).to eq("npm.fury.io/dependabot")
             end
@@ -553,7 +549,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             )
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
           context "that require an environment variable" do
             let(:npmrc) do
@@ -565,7 +561,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
             it "raises a PrivateSourceAuthenticationFailure error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
-              expect { version_finder.latest_version_details_from_registry }.
+              expect { version_finder.latest_version_from_registry }.
                 to raise_error(error_class) do |error|
                   expect(error.source).to eq("npm.fury.io/dependabot")
                 end
@@ -588,7 +584,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
       end
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
     context "when the npm link resolves to an empty hash" do
@@ -608,7 +604,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200, body: body)
       end
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
     end
 
     context "when the latest version has been yanked" do
@@ -622,7 +618,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200)
       end
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
     context "when the npm link resolves to a 403" do
@@ -635,7 +631,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it "raises an error" do
-        expect { version_finder.latest_version_details_from_registry }.
+        expect { version_finder.latest_version_from_registry }.
           to raise_error(described_class::RegistryError)
       end
     end
@@ -650,7 +646,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it "raises an error" do
-        expect { version_finder.latest_version_details_from_registry }.
+        expect { version_finder.latest_version_from_registry }.
           to raise_error(described_class::RegistryError)
       end
 
@@ -670,7 +666,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
 
         it "does not raise an error" do
-          expect { version_finder.latest_version_details_from_registry }.
+          expect { version_finder.latest_version_from_registry }.
             to_not raise_error
         end
       end
@@ -698,7 +694,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { version_finder.latest_version_details_from_registry }.
+          expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.npmjs.org")
             end
@@ -714,7 +710,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises an error" do
-            expect { version_finder.latest_version_details_from_registry }.
+            expect { version_finder.latest_version_from_registry }.
               to raise_error(described_class::RegistryError)
           end
         end
@@ -730,7 +726,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200)
       end
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
 
       context "that the user is already using" do
         let(:dependency) do
@@ -747,7 +743,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
 
       context "that the user has pinned in their package.json" do
@@ -765,7 +761,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
     end
 
@@ -775,7 +771,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it "picks the latest dist-tags version" do
-        expect(subject[:version]).to eq(Gem::Version.new("1.7.0"))
+        expect(subject).to eq(Gem::Version.new("1.7.0"))
       end
     end
   end

@@ -23,13 +23,12 @@ module Dependabot
           @ignored_versions = ignored_versions
         end
 
-        def latest_version_details_from_registry
+        def latest_version_from_registry
           return unless valid_npm_details?
-          return { version: version_from_dist_tags } if version_from_dist_tags
+          return version_from_dist_tags if version_from_dist_tags
           return if specified_dist_tag_requirement?
 
-          version = possible_versions.find { |v| !yanked?(v) }
-          { version: version }
+          possible_versions.find { |v| !yanked?(v) }
         rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
           raise if dependency_registry == "registry.npmjs.org"
           # Custom registries can be flaky. We don't want to make that
@@ -48,10 +47,6 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
-        def possible_versions
-          possible_versions_with_details.map(&:first)
-        end
-
         def possible_versions_with_details
           npm_details.fetch("versions", {}).
             reject { |_, details| details["deprecated"] }.
@@ -59,6 +54,10 @@ module Dependabot
             reject { |k, _| k.prerelease? && !related_to_current_pre?(k) }.
             reject { |k, _| ignore_reqs.any? { |r| r.satisfied_by?(k) } }.
             sort_by(&:first).reverse
+        end
+
+        def possible_versions
+          possible_versions_with_details.map(&:first)
         end
 
         private
