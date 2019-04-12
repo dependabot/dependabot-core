@@ -1,3 +1,7 @@
+## v0.101.1, 12 April 2019
+
+- JS: Fix update checker for deprecated deps
+
 ## v0.101.0, 12 April 2019
 
 - Gradle: Upgrade to lowest fixed version if a dependency is vulnerable
