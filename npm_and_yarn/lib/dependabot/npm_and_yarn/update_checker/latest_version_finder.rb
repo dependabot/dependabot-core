@@ -44,16 +44,8 @@ module Dependabot
             return version_from_dist_tags(npm_details)
           end
 
-          reqs = dependency.requirements.map do |r|
-            NpmAndYarn::Requirement.
-              requirements_array(r.fetch(:requirement))
-          end.compact
-
-          possible_versions.
-            find do |version|
-              reqs.all? { |r| r.any? { |opt| opt.satisfied_by?(version) } } &&
-                !yanked?(version)
-            end
+          in_range_versions = filter_out_of_range_versions(possible_versions)
+          in_range_versions.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
@@ -61,12 +53,7 @@ module Dependabot
         end
 
         def possible_versions
-          npm_details.fetch("versions", {}).
-            reject { |_, details| details["deprecated"] }.
-            keys.map { |v| version_class.new(v) }.
-            reject { |v| v.prerelease? && !related_to_current_pre?(v) }.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-            sort.reverse
+          possible_versions_with_details.map(&:first)
         end
 
         def possible_versions_with_details
@@ -82,6 +69,15 @@ module Dependabot
 
         attr_reader :dependency, :credentials, :dependency_files,
                     :ignored_versions
+
+        def filter_out_of_range_versions(possible_versions)
+          reqs = dependency.requirements.map do |r|
+            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+          end.compact
+
+          possible_versions.
+            select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
+        end
 
         def version_from_dist_tags(npm_details)
           dist_tags = npm_details["dist-tags"].keys
