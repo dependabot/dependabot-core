@@ -1,3 +1,10 @@
+## v0.101.0, 12 April 2019
+
+- Gradle: Upgrade to lowest fixed version if a dependency is vulnerable
+- .NET: Upgrade to lowest fixed version if a dependency is vulnerable
+- Maven: Upgrade to lowest fixed version if a dependency is vulnerable
+- Maven: Cache release checks
+
 ## v0.100.2, 12 April 2019
 
 - Ignore closed PR errors when updating a PR's branch
