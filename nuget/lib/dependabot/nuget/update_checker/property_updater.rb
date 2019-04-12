@@ -30,7 +30,8 @@ module Dependabot
                 dependency: dep,
                 dependency_files: dependency_files,
                 credentials: credentials,
-                ignored_versions: ignored_versions
+                ignored_versions: ignored_versions,
+                security_advisories: []
               ).versions.map { |v| v.fetch(:version) }
 
               versions.include?(target_version) || versions.none?

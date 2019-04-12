@@ -15,25 +15,33 @@ module Dependabot
         require_relative "repository_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions: [])
-          @dependency = dependency
-          @dependency_files = dependency_files
-          @credentials = credentials
-          @ignored_versions = ignored_versions
+                       ignored_versions:, security_advisories:)
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @credentials         = credentials
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
         end
 
         def latest_version_details
           @latest_version_details ||=
             begin
-              tmp_versions = versions
-              tmp_versions.reject! do |d|
-                version = d.fetch(:version)
-                version.prerelease? && !related_to_current_pre?(version)
-              end
-              tmp_versions.reject! do |hash|
-                ignore_reqs.any? { |r| r.satisfied_by?(hash.fetch(:version)) }
-              end
-              tmp_versions.max_by { |hash| hash.fetch(:version) }
+              possible_versions = versions
+              possible_versions = filter_prereleases(possible_versions)
+              possible_versions = filter_ignored_versions(possible_versions)
+              possible_versions.max_by { |hash| hash.fetch(:version) }
+            end
+        end
+
+        def lowest_security_fix_version_details
+          @lowest_security_fix_version_details ||=
+            begin
+              possible_versions = versions
+              possible_versions = filter_prereleases(possible_versions)
+              possible_versions = filter_ignored_versions(possible_versions)
+              possible_versions = filter_vulnerable_versions(possible_versions)
+              possible_versions = filter_lower_versions(possible_versions)
+              possible_versions.min_by { |hash| hash.fetch(:version) }
             end
         end
 
@@ -42,9 +50,47 @@ module Dependabot
         end
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions
+                    :ignored_versions, :security_advisories
 
         private
+
+        def filter_prereleases(possible_versions)
+          possible_versions.reject do |d|
+            version = d.fetch(:version)
+            version.prerelease? && !related_to_current_pre?(version)
+          end
+        end
+
+        def filter_ignored_versions(possible_versions)
+          versions_array = possible_versions
+
+          ignored_versions.each do |req|
+            ignore_req = requirement_class.new(req.split(","))
+            versions_array =
+              versions_array.
+              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_vulnerable_versions(possible_versions)
+          versions_array = possible_versions
+
+          security_advisories.each do |advisory|
+            versions_array =
+              versions_array.
+              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_lower_versions(possible_versions)
+          possible_versions.select do |v|
+            v.fetch(:version) > version_class.new(dependency.version)
+          end
+        end
 
         def available_v3_versions
           v3_nuget_listings.flat_map do |listing|
@@ -206,10 +252,6 @@ module Dependabot
               credentials: credentials,
               config_file: nuget_config
             ).dependency_urls
-        end
-
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
         def nuget_config
