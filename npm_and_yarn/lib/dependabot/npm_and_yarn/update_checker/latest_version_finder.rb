@@ -16,11 +16,12 @@ module Dependabot
         class RegistryError < StandardError; end
 
         def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:)
-          @dependency       = dependency
-          @credentials      = credentials
-          @dependency_files = dependency_files
-          @ignored_versions = ignored_versions
+                       ignored_versions:, security_advisories:)
+          @dependency          = dependency
+          @credentials         = credentials
+          @dependency_files    = dependency_files
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
         end
 
         def latest_version_from_registry
@@ -63,7 +64,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions
+                    :ignored_versions, :security_advisories
 
         def valid_npm_details?
           !npm_details&.fetch("dist-tags", nil).nil?

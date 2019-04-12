@@ -110,7 +110,8 @@ module Dependabot
               dependency: dep,
               credentials: credentials,
               dependency_files: dependency_files,
-              ignored_versions: []
+              ignored_versions: [],
+              security_advisories: []
             )
         end
 

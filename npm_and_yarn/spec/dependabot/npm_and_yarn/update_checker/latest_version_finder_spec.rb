@@ -23,10 +23,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:dependency_files) { [package_json] }
   let(:package_json) do
     Dependabot::DependencyFile.new(

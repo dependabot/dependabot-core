@@ -28,10 +28,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:dependency_files) { [package_json] }
   let(:package_json) do
     Dependabot::DependencyFile.new(
@@ -168,7 +170,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         dependency: dependency,
         credentials: credentials,
         dependency_files: dependency_files,
-        ignored_versions: ignored_versions
+        ignored_versions: ignored_versions,
+        security_advisories: security_advisories
       ).and_call_original
 
       expect(checker.latest_version).to eq(Gem::Version.new("1.7.0"))
@@ -411,7 +414,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency: dependency,
           credentials: credentials,
           dependency_files: dependency_files,
-          ignored_versions: ignored_versions
+          ignored_versions: ignored_versions,
+          security_advisories: security_advisories
         ).and_call_original
 
         expect(checker.latest_resolvable_version_with_no_unlock).
@@ -574,6 +578,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          security_advisories: security_advisories,
           requirements_update_strategy: :bump_versions_if_necessary
         )
       end

@@ -20,7 +20,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: []
+      ignored_versions: [],
+      security_advisories: []
     )
   end
   let(:react_dom_registry_listing_url) do
