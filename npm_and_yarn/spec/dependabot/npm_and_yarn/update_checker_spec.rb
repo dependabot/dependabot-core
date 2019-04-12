@@ -409,6 +409,47 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.2.1")) }
+
+      context "for a sub-dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "acorn",
+            version: "5.1.1",
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["<= 5.2.0"]
+            )
+          ]
+        end
+        let(:registry_listing_url) { "https://registry.npmjs.org/acorn" }
+
+        it "delegates to SubdependencyVersionResolver" do
+          dummy_version_resolver =
+            instance_double(described_class::SubdependencyVersionResolver)
+
+          expect(described_class::SubdependencyVersionResolver).
+            to receive(:new).
+            with(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              latest_allowable_version: Gem::Version.new("1.7.0")
+            ).and_return(dummy_version_resolver)
+          expect(dummy_version_resolver).
+            to receive(:latest_resolvable_version).
+            and_return(Gem::Version.new("5.7.3"))
+
+          expect(checker.preferred_resolvable_version).
+            to eq(Gem::Version.new("5.7.3"))
+        end
+      end
     end
   end
 
