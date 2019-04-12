@@ -10,7 +10,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
 
@@ -43,6 +44,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
     "https://api.nuget.org/v3-flatcontainer/"\
@@ -231,6 +233,29 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+  end
+
+  describe "#lowest_security_fix_version_details" do
+    subject(:lowest_security_fix_version_details) do
+      finder.lowest_security_fix_version_details
+    end
+
+    let(:dependency_version) { "1.1.1" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          package_manager: "nuget",
+          vulnerable_versions: ["< 2.0.0"]
+        )
+      ]
+    end
+
+    its([:version]) { is_expected.to eq(version_class.new("2.0.0")) }
+
+    context "when the user is ignoring the lowest version" do
+      let(:ignored_versions) { [">= 2.a, <= 2.0.0"] }
+      its([:version]) { is_expected.to eq(version_class.new("2.0.3")) }
     end
   end
 

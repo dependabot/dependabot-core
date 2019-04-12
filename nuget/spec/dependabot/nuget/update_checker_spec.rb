@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker"
@@ -13,7 +14,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
 
@@ -46,6 +48,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
     "https://api.nuget.org/v3-flatcontainer/"\
@@ -156,6 +159,25 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+    it { is_expected.to eq(version_class.new("2.1.0")) }
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "1.1.1" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "nuget",
+            vulnerable_versions: ["< 2.0.0"]
+          )
+        ]
+      end
+
+      it { is_expected.to eq(version_class.new("2.0.0")) }
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
     it { is_expected.to be_nil }
@@ -258,6 +280,47 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           }
         }]
       )
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "1.1.1" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "nuget",
+            vulnerable_versions: ["< 2.0.0"]
+          )
+        ]
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).to receive(:new).with(
+          requirements: dependency_requirements,
+          latest_version: "2.0.0",
+          source_details: {
+            source_url: nil,
+            nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                        "microsoft.extensions.dependencymodel/2.0.0/"\
+                        "microsoft.extensions.dependencymodel.nuspec",
+            repo_url: "https://api.nuget.org/v3/index.json"
+          }
+        ).and_call_original
+        expect(updated_requirements).to eq(
+          [{
+            file: "my.csproj",
+            requirement: "2.0.0",
+            groups: [],
+            source: {
+              type: "nuget_repo",
+              url: "https://api.nuget.org/v3/index.json",
+              source_url: nil,
+              nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                          "microsoft.extensions.dependencymodel/2.0.0/"\
+                          "microsoft.extensions.dependencymodel.nuspec"
+            }
+          }]
+        )
+      end
     end
 
     context "with a custom repo in a nuget.config file" do
