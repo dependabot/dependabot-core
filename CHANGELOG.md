@@ -1,3 +1,7 @@
+## v0.100.1, 12 April 2019
+
+- Don't re-cast versions to versions in SecurityAdvisory
+
 ## v0.100.0, 12 April 2019
 
 - Bump poetry from 0.12.11 to 0.12.12 in /python/helpers
