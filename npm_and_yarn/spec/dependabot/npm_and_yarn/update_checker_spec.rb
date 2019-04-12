@@ -793,5 +793,53 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
       end
     end
+
+    context "updating a deprecated dependency with a peer requirement" do
+      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:registry_listing_url) { "https://registry.npmjs.org/react-dom" }
+      let(:registry_response) do
+        fixture("npm_responses", "peer_dependency_deprecated.json")
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^15.2.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react-dom",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: dependency_requirements
+        )
+      end
+
+      before do
+        stub_request(:get, registry_listing_url + "/16.3.1").
+          to_return(status: 200)
+        stub_request(:get, "https://registry.npmjs.org/test").
+          to_return(status: 200)
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: nil,
+            latest_version: "16.3.1",
+            latest_resolvable_version: nil,
+            update_strategy: :widen_ranges
+          ).
+          and_call_original
+
+        # No change in updated_requirements
+        expect(checker.updated_requirements).
+          to eq(dependency_requirements)
+      end
+    end
   end
 end
