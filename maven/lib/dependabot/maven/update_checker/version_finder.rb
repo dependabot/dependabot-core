@@ -134,23 +134,27 @@ module Dependabot
         end
 
         def released?(version)
-          repositories.any? do |repository_details|
-            url = repository_details.fetch("url")
-            response = Excon.get(
-              dependency_files_url(url, version),
-              user: repository_details.fetch("username"),
-              password: repository_details.fetch("password"),
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+          @released_check ||= {}
+          return @released_check[version] if @released_check.key?(version)
 
-            artifact_id = dependency.name.split(":").last
-            type = dependency.requirements.first.
-                   dig(:metadata, :packaging_type)
-            response.body.include?("#{artifact_id}-#{version}.#{type}")
-          rescue Excon::Error::Socket, Excon::Error::Timeout
-            false
-          end
+          @released_check[version] =
+            repositories.any? do |repository_details|
+              url = repository_details.fetch("url")
+              response = Excon.get(
+                dependency_files_url(url, version),
+                user: repository_details.fetch("username"),
+                password: repository_details.fetch("password"),
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              )
+
+              artifact_id = dependency.name.split(":").last
+              type = dependency.requirements.first.
+                     dig(:metadata, :packaging_type)
+              response.body.include?("#{artifact_id}-#{version}.#{type}")
+            rescue Excon::Error::Socket, Excon::Error::Timeout
+              false
+            end
         end
 
         def dependency_metadata(repository_details)
