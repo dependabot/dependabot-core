@@ -24,13 +24,12 @@ module Dependabot
         end
 
         def latest_version_details_from_registry
-          return nil unless npm_details&.fetch("dist-tags", nil)
+          return unless valid_npm_details?
+          return { version: version_from_dist_tags } if version_from_dist_tags
+          return if specified_dist_tag_requirement?
 
-          dist_tag_version = version_from_dist_tags(npm_details)
-          return { version: dist_tag_version } if dist_tag_version
-          return nil if specified_dist_tag_requirement?
-
-          { version: version_from_versions_array }
+          version = possible_versions.find { |v| !yanked?(v) }
+          { version: version }
         rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
           raise if dependency_registry == "registry.npmjs.org"
           # Custom registries can be flaky. We don't want to make that
@@ -38,11 +37,8 @@ module Dependabot
         end
 
         def latest_version_with_no_unlock
-          return unless npm_details
-
-          if specified_dist_tag_requirement?
-            return version_from_dist_tags(npm_details)
-          end
+          return unless valid_npm_details?
+          return version_from_dist_tags if specified_dist_tag_requirement?
 
           in_range_versions = filter_out_of_range_versions(possible_versions)
           in_range_versions.find { |version| !yanked?(version) }
@@ -70,6 +66,10 @@ module Dependabot
         attr_reader :dependency, :credentials, :dependency_files,
                     :ignored_versions
 
+        def valid_npm_details?
+          !npm_details&.fetch("dist-tags", nil).nil?
+        end
+
         def filter_out_of_range_versions(possible_versions)
           reqs = dependency.requirements.map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
@@ -79,7 +79,7 @@ module Dependabot
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
-        def version_from_dist_tags(npm_details)
+        def version_from_dist_tags
           dist_tags = npm_details["dist-tags"].keys
 
           # Check if a dist tag was specified as a requirement. If it was, and
@@ -162,10 +162,6 @@ module Dependabot
           end
         end
 
-        def version_from_versions_array
-          possible_versions.find { |version| !yanked?(version) }
-        end
-
         def yanked?(version)
           @yanked ||= {}
           return @yanked[version] if @yanked.key?(version)
@@ -174,20 +170,18 @@ module Dependabot
             begin
               status = Excon.get(
                 dependency_url + "/#{version}",
-                SharedHelpers.excon_defaults.merge(
-                  headers: registry_auth_headers,
-                  idempotent: true
-                )
+                headers: registry_auth_headers,
+                idempotent: true,
+                **SharedHelpers.excon_defaults
               ).status
 
               if status == 404 && dependency_registry != "registry.npmjs.org"
                 # Some registries don't handle escaped package names properly
                 status = Excon.get(
                   dependency_url.gsub("%2F", "/") + "/#{version}",
-                  SharedHelpers.excon_defaults.merge(
-                    headers: registry_auth_headers,
-                    idempotent: true
-                  )
+                  headers: registry_auth_headers,
+                  idempotent: true,
+                  **SharedHelpers.excon_defaults
                 ).status
               end
 
@@ -210,10 +204,9 @@ module Dependabot
             begin
               Excon.get(
                 dependency_url + "/latest",
-                SharedHelpers.excon_defaults.merge(
-                  headers: registry_auth_headers,
-                  idempotent: true
-                )
+                headers: registry_auth_headers,
+                idempotent: true,
+                **SharedHelpers.excon_defaults
               ).status < 400
             rescue Excon::Error::Timeout
               # Give the benefit of the doubt if the registry is playing up
@@ -244,10 +237,9 @@ module Dependabot
         def fetch_npm_response
           response = Excon.get(
             dependency_url,
-            SharedHelpers.excon_defaults.merge(
-              headers: registry_auth_headers,
-              idempotent: true
-            )
+            headers: registry_auth_headers,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
           )
 
           return response unless response.status == 500
@@ -262,11 +254,10 @@ module Dependabot
           username, password = decoded_token.split(":")
           Excon.get(
             dependency_url,
-            SharedHelpers.excon_defaults.merge(
-              user: username,
-              password: password,
-              idempotent: true
-            )
+            user: username,
+            password: password,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
           )
         end
 
@@ -326,24 +317,32 @@ module Dependabot
         end
 
         def registry_finder
-          @registry_finder ||=
-            RegistryFinder.new(
-              dependency: dependency,
-              credentials: credentials,
-              npmrc_file: dependency_files.
-                          find { |f| f.name.end_with?(".npmrc") },
-              yarnrc_file: dependency_files.
-                           find { |f| f.name.end_with?(".yarnrc") }
-            )
+          @registry_finder ||= RegistryFinder.new(
+            dependency: dependency,
+            credentials: credentials,
+            npmrc_file: npmrc_file,
+            yarnrc_file: yarnrc_file
+          )
         end
 
         def ignore_reqs
-          ignored_versions.
-            map { |req| NpmAndYarn::Requirement.new(req.split(",")) }
+          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
         def version_class
           NpmAndYarn::Version
+        end
+
+        def requirement_class
+          NpmAndYarn::Requirement
+        end
+
+        def npmrc_file
+          dependency_files.find { |f| f.name.end_with?(".npmrc") }
+        end
+
+        def yarnrc_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc") }
         end
 
         # TODO: Remove need for me
