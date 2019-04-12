@@ -1,3 +1,7 @@
+## v0.100.2, 12 April 2019
+
+- Ignore closed PR errors when updating a PR's branch
+
 ## v0.100.1, 12 April 2019
 
 - Don't re-cast versions to versions in SecurityAdvisory
