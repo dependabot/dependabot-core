@@ -4,7 +4,7 @@
 
 ## v0.102.0, 12 April 2019
 
-JS: Update insecure dependencies to the minimum secure version
+- JS: Update insecure dependencies to the minimum secure version
 
 ## v0.101.2, 12 April 2019
 
