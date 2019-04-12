@@ -1,3 +1,8 @@
+## v0.101.2, 12 April 2019
+
+- Nuget: support lowercase version attributes
+- JS: Pass security advisories to LatestVersionChecker
+
 ## v0.101.1, 12 April 2019
 
 - JS: Fix update checker for deprecated deps
