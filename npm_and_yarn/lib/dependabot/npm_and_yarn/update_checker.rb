@@ -50,7 +50,7 @@ module Dependabot
           return latest_resolvable_version_with_no_unlock_for_git_dependency
         end
 
-        latest_version_finder.latest_resolvable_version_with_no_unlock
+        latest_version_finder.latest_version_with_no_unlock
       end
 
       def updated_requirements

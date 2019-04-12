@@ -37,7 +37,7 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
-        def latest_resolvable_version_with_no_unlock
+        def latest_version_with_no_unlock
           return unless npm_details
 
           if specified_dist_tag_requirement?

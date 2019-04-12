@@ -770,8 +770,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     end
   end
 
-  describe "#latest_resolvable_version_with_no_unlock" do
-    subject { version_finder.latest_resolvable_version_with_no_unlock }
+  describe "#latest_version_with_no_unlock" do
+    subject { version_finder.latest_version_with_no_unlock }
 
     let(:dependency) do
       Dependabot::Dependency.new(
