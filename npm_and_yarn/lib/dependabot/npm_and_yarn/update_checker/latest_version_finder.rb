@@ -48,6 +48,24 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
+        def lowest_security_fix_version
+          return unless valid_npm_details?
+
+          versions_array =
+            if specified_dist_tag_requirement?
+              [version_from_dist_tags].compact
+            else possible_versions
+            end
+
+          secure_versions = filter_vulnerable_versions(versions_array)
+          secure_versions = filter_lower_versions(secure_versions)
+          secure_versions.reverse.find { |version| !yanked?(version) }
+        rescue Excon::Error::Socket, Excon::Error::Timeout
+          raise if dependency_registry == "registry.npmjs.org"
+          # Sometimes custom registries are flaky. We don't want to make that
+          # our problem, so we quietly return `nil` here.
+        end
+
         def possible_versions_with_details
           npm_details.fetch("versions", {}).
             reject { |_, details| details["deprecated"] }.
@@ -70,13 +88,30 @@ module Dependabot
           !npm_details&.fetch("dist-tags", nil).nil?
         end
 
-        def filter_out_of_range_versions(possible_versions)
+        def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
           end.compact
 
-          possible_versions.
+          versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
+        end
+
+        def filter_vulnerable_versions(versions_array)
+          updated_versions_array = versions_array
+
+          security_advisories.each do |advisory|
+            updated_versions_array =
+              updated_versions_array.
+              reject { |v| advisory.vulnerable?(v) }
+          end
+
+          updated_versions_array
+        end
+
+        def filter_lower_versions(versions_array)
+          versions_array.
+            select { |version| version > version_class.new(dependency.version) }
         end
 
         def version_from_dist_tags

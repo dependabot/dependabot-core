@@ -50,13 +50,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "etag",
-      version: "1.0.0",
+      version: dependency_version,
       requirements: [
         { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
       ],
       package_manager: "npm_and_yarn"
     )
   end
+  let(:dependency_version) { "1.0.0" }
 
   describe "#latest_version_from_registry" do
     subject { version_finder.latest_version_from_registry }
@@ -860,6 +861,58 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(nil) }
+    end
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject { version_finder.lowest_security_fix_version }
+    before do
+      stub_request(:get, registry_listing_url + "/1.2.1").
+        to_return(status: 200)
+    end
+
+    let(:dependency_version) { "1.1.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          package_manager: "npm_and_yarn",
+          vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+        )
+      ]
+    end
+
+    it { is_expected.to eq(Gem::Version.new("1.2.1")) }
+
+    context "when the lowest version has been yanked" do
+      before do
+        stub_request(:get, registry_listing_url + "/1.2.1").
+          to_return(status: 404)
+        stub_request(:get, registry_listing_url + "/1.3.1").
+          to_return(status: 200)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.3.1")) }
+    end
+
+    context "when the user wants a dist tag" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "stable",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      before do
+        stub_request(:get, registry_listing_url + "/1.5.1").
+          to_return(status: 200)
+      end
+      it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
   end
 
