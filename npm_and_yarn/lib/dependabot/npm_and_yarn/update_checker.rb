@@ -55,8 +55,10 @@ module Dependabot
 
       def updated_requirements
         resolvable_version =
-          if [version_class, NilClass].include?(preferred_resolvable_version)
-            preferred_resolvable_version&.to_s
+          if preferred_resolvable_version.is_a?(version_class)
+            preferred_resolvable_version.to_s
+          elsif preferred_resolvable_version.nil?
+            nil
           else
             # If the preferred_resolvable_version came back as anything other
             # than a version class or `nil` it must be because this is a git

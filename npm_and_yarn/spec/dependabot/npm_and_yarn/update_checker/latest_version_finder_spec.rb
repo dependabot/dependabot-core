@@ -768,6 +768,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.7.0")) }
       end
     end
+
+    context "when the dependency has been deprecated" do
+      let(:registry_response) do
+        fixture("npm_responses", "etag_deprecated.json")
+      end
+
+      it "picks the latest dist-tags version" do
+        expect(subject[:version]).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
@@ -845,6 +855,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
     end
+
+    context "when the dependency has been deprecated" do
+      let(:registry_response) do
+        fixture("npm_responses", "etag_deprecated.json")
+      end
+
+      it { is_expected.to eq(nil) }
+    end
   end
 
   describe "#possible_versions" do
@@ -882,6 +900,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           ]
         )
       end
+    end
+
+    context "when the dependency has been deprecated" do
+      let(:registry_response) do
+        fixture("npm_responses", "etag_deprecated.json")
+      end
+
+      it { is_expected.to eq([]) }
     end
   end
 
