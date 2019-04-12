@@ -55,13 +55,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "etag",
-      version: "1.0.0",
+      version: dependency_version,
       requirements: [
         { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
       ],
       package_manager: "npm_and_yarn"
     )
   end
+  let(:dependency_version) { "1.0.0" }
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -387,6 +388,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+
+    it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "1.1.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+          )
+        ]
+      end
+      before do
+        stub_request(:get, registry_listing_url + "/1.2.1").
+          to_return(status: 200)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.2.1")) }
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
@@ -535,7 +560,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "etag",
-        version: "1.0.0",
+        version: dependency_version,
         requirements: dependency_requirements,
         package_manager: "npm_and_yarn"
       )
@@ -568,6 +593,43 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             source: nil
           }]
         )
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "1.1.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
+          )
+        ]
+      end
+      before do
+        stub_request(:get, registry_listing_url + "/1.2.1").
+          to_return(status: 200)
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            updated_source: nil,
+            latest_resolvable_version: "1.2.1",
+            update_strategy: :bump_versions
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "package.json",
+              requirement: "^1.2.1",
+              groups: [],
+              source: nil
+            }]
+          )
+      end
     end
 
     context "when a requirements_update_strategy has been specified" do

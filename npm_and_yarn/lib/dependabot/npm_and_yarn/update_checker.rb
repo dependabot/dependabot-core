@@ -39,8 +39,8 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        # TODO: Implement this properly!
-        latest_resolvable_version
+        # TODO: Might want to check resolvability here?
+        latest_version_finder.lowest_security_fix_version
       end
 
       def latest_resolvable_version_with_no_unlock
