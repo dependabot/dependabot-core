@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       end
 
       its(:content) { is_expected.to include 'Version="1.1.2" />' }
-      its(:content) { is_expected.to include 'Version="1.1.0">' }
+      its(:content) { is_expected.to include 'version="1.1.0">' }
 
       it "doesn't update the formatting of the project file" do
         expect(updated_csproj_file.content).to include("</PropertyGroup>\n\n")
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
 
         its(:content) { is_expected.to include 'Version="1.1.2" />' }
-        its(:content) { is_expected.to include 'Version="1.1.0">' }
+        its(:content) { is_expected.to include 'version="1.1.0">' }
       end
 
       describe "the updated vbproj file" do

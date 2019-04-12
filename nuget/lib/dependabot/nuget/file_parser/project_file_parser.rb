@@ -86,9 +86,7 @@ module Dependabot
         end
 
         def dependency_requirement(dependency_node, project_file)
-          raw_requirement =
-            dependency_node.attribute("Version")&.value&.strip ||
-            dependency_node.at_xpath("./Version")&.content&.strip
+          raw_requirement = get_node_version_value(dependency_node)
           return unless raw_requirement
 
           evaluated_value(raw_requirement, project_file)
@@ -110,9 +108,7 @@ module Dependabot
         end
 
         def req_property_name(dependency_node)
-          raw_requirement =
-            dependency_node.attribute("Version")&.value&.strip ||
-            dependency_node.at_xpath("./Version")&.content&.strip
+          raw_requirement = get_node_version_value(dependency_node)
           return unless raw_requirement
 
           return unless raw_requirement.match?(PROPERTY_REGEX)
@@ -120,6 +116,14 @@ module Dependabot
           raw_requirement.
             match(PROPERTY_REGEX).
             named_captures.fetch("property")
+        end
+
+        def get_node_version_value(node)
+          attribute = "Version"
+          node.attribute(attribute)&.value&.strip ||
+            node.at_xpath("./#{attribute}")&.content&.strip ||
+            node.attribute(attribute.downcase)&.value&.strip ||
+            node.at_xpath("./#{attribute.downcase}")&.content&.strip
         end
 
         def evaluated_value(value, project_file)
