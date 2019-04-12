@@ -1,3 +1,7 @@
+## v0.102.1, 12 April 2019
+
+- JS: Don't assume we can upgrade sub-dependencies to a secure verison
+
 ## v0.102.0, 12 April 2019
 
 
