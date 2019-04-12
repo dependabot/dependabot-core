@@ -74,7 +74,7 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
 
           expect(declaration_strings.first).
             to eq('<PackageReference Include="Microsoft.Extensions.'\
-                  'PlatformAbstractions" Version="1.1.0"></PackageReference>')
+                  'PlatformAbstractions" version="1.1.0"></PackageReference>')
         end
       end
 
