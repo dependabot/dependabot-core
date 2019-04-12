@@ -14,39 +14,36 @@ module Dependabot
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         TYPE_SUFFICES = %w(jre android java).freeze
 
-        def initialize(dependency:, dependency_files:, ignored_versions:)
-          @dependency = dependency
-          @dependency_files = dependency_files
-          @ignored_versions = ignored_versions
+        def initialize(dependency:, dependency_files:, ignored_versions:,
+                       security_advisories:)
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
         end
 
         def latest_version_details
           possible_versions = versions
 
-          unless wants_prerelease?
-            possible_versions =
-              possible_versions.
-              reject { |v| v.fetch(:version).prerelease? }
-          end
-
-          unless wants_date_based_version?
-            possible_versions =
-              possible_versions.
-              reject { |v| v.fetch(:version) > version_class.new(1900) }
-          end
-
-          possible_versions =
-            possible_versions.
-            select { |v| matches_dependency_version_type?(v.fetch(:version)) }
-
-          ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(req.split(","))
-            possible_versions =
-              possible_versions.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
-          end
+          possible_versions = filter_prereleases(possible_versions)
+          possible_versions = filter_date_based_versions(possible_versions)
+          possible_versions = filter_version_types(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
 
           possible_versions.last
+        end
+
+        def lowest_security_fix_version_details
+          possible_versions = versions
+
+          possible_versions = filter_prereleases(possible_versions)
+          possible_versions = filter_date_based_versions(possible_versions)
+          possible_versions = filter_version_types(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
+          possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = filter_lower_versions(possible_versions)
+
+          possible_versions.first
         end
 
         def versions
@@ -65,7 +62,57 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :ignored_versions
+        attr_reader :dependency, :dependency_files, :ignored_versions,
+                    :security_advisories
+
+        def filter_prereleases(possible_versions)
+          return possible_versions if wants_prerelease?
+
+          possible_versions.reject { |v| v.fetch(:version).prerelease? }
+        end
+
+        def filter_date_based_versions(possible_versions)
+          return possible_versions if wants_date_based_version?
+
+          possible_versions.
+            reject { |v| v.fetch(:version) > version_class.new(1900) }
+        end
+
+        def filter_version_types(possible_versions)
+          possible_versions.
+            select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+        end
+
+        def filter_ignored_versions(possible_versions)
+          versions_array = possible_versions
+
+          ignored_versions.each do |req|
+            ignore_req = Gradle::Requirement.new(req.split(","))
+            versions_array =
+              versions_array.
+              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_vulnerable_versions(possible_versions)
+          versions_array = possible_versions
+
+          security_advisories.each do |advisory|
+            versions_array =
+              versions_array.
+              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_lower_versions(possible_versions)
+          possible_versions.select do |v|
+            v.fetch(:version) > version_class.new(dependency.version)
+          end
+        end
 
         def wants_prerelease?
           return false unless dependency.version

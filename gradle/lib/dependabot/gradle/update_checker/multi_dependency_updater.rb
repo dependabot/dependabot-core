@@ -27,7 +27,8 @@ module Dependabot
               VersionFinder.new(
                 dependency: dep,
                 dependency_files: dependency_files,
-                ignored_versions: ignored_versions
+                ignored_versions: ignored_versions,
+                security_advisories: []
               ).versions.
                 map { |v| v.fetch(:version) }.
                 include?(target_version)
@@ -81,10 +82,6 @@ module Dependabot
           @dependency_set ||= dependency.requirements.
                               find { |r| r.dig(:metadata, :dependency_set) }&.
                               dig(:metadata, :dependency_set)
-        end
-
-        def pom
-          dependency_files.find { |f| f.name == "pom.xml" }
         end
 
         def updated_requirements(dep)

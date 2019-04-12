@@ -10,11 +10,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -126,6 +128,25 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       its([:source_url]) do
         is_expected.to eq("https://maven.google.com")
       end
+    end
+  end
+
+  describe "#lowest_security_fix_version_details" do
+    subject { finder.lowest_security_fix_version_details }
+
+    let(:dependency_version) { "18.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          package_manager: "gradle",
+          safe_versions: ["> 19.0"]
+        )
+      ]
+    end
+
+    its([:version]) { is_expected.to eq(version_class.new("20.0")) }
+    its([:source_url]) do
+      is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
   end
 
