@@ -28,7 +28,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:dependency_files) { [buildfile] }
@@ -40,6 +42,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     )
   end
   let(:buildfile_fixture_name) { "basic_build.gradle" }
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -194,6 +198,25 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+    it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "18.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "gradle",
+            safe_versions: ["> 19.0"]
+          )
+        ]
+      end
+
+      it { is_expected.to eq(version_class.new("20.0")) }
+    end
+  end
+
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
 
@@ -225,6 +248,42 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           }]
         )
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "18.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "gradle",
+            safe_versions: ["> 19.0"]
+          )
+        ]
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            latest_version: "20.0",
+            source_url: "https://repo.maven.apache.org/maven2",
+            properties_to_update: []
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "build.gradle",
+              requirement: "20.0",
+              groups: [],
+              source: {
+                type: "maven_repo",
+                url: "https://repo.maven.apache.org/maven2"
+              }
+            }]
+          )
+      end
     end
   end
 
