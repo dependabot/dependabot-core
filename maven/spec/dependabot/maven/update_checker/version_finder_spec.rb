@@ -11,12 +11,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:version_class) { Dependabot::Maven::Version }
   let(:credentials) { [] }
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -38,7 +40,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   let(:dependency_requirements) do
     [{
       file: "pom.xml",
-      requirement: "23.3-jre",
+      requirement: dependency_version,
       groups: [],
       source: nil,
       metadata: { packaging_type: "jar" }
@@ -294,6 +296,52 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       its([:source_url]) do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
+    end
+  end
+
+  describe "#lowest_security_fix_version_details" do
+    subject { finder.lowest_security_fix_version_details }
+
+    let(:dependency_version) { "18.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          package_manager: "maven",
+          safe_versions: ["> 19.0"]
+        )
+      ]
+    end
+    let(:maven_central_version_files_url) do
+      "https://repo.maven.apache.org/maven2/"\
+      "com/google/guava/guava/20.0/"
+    end
+    let(:maven_central_version_files) do
+      fixture("maven_central_version_files", "guava-23.6.html").
+        gsub("23.6-jre", "20.0")
+    end
+
+    its([:version]) { is_expected.to eq(version_class.new("20.0")) }
+    its([:source_url]) do
+      is_expected.to eq("https://repo.maven.apache.org/maven2")
+    end
+
+    context "when the lowest version hasn't actually been released" do
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-23.6-no-jar.html").
+          gsub("23.6-jre", "20.0")
+      end
+      let(:next_maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-23.6.html").
+          gsub("23.6-jre", "21.0")
+      end
+      before do
+        stub_request(
+          :get,
+          maven_central_version_files_url.gsub("20.0", "21.0")
+        ).to_return(status: 200, body: next_maven_central_version_files)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("21.0")) }
     end
   end
 

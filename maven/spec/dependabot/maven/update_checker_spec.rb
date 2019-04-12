@@ -15,7 +15,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
 
@@ -43,6 +44,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:maven_central_metadata_url) do
     "https://repo.maven.apache.org/maven2/"\
@@ -398,14 +400,35 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+    it { is_expected.to eq(version_class.new("23.6-jre")) }
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "18.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "maven",
+            safe_versions: ["> 19.0"]
+          )
+        ]
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/20.0/"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-23.6.html").
+          gsub("23.6-jre", "20.0")
+      end
+
+      it { is_expected.to eq(version_class.new("20.0")) }
+    end
+  end
+
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
-
-    before do
-      allow(checker).
-        to receive(:latest_version).
-        and_return(version_class.new("23.6-jre"))
-    end
 
     it "delegates to the RequirementsUpdater" do
       expect(described_class::RequirementsUpdater).
@@ -429,6 +452,50 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           }]
         )
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "18.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            package_manager: "maven",
+            safe_versions: ["> 19.0"]
+          )
+        ]
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/20.0/"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-23.6.html").
+          gsub("23.6-jre", "20.0")
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            latest_version: "20.0",
+            source_url: "https://repo.maven.apache.org/maven2",
+            properties_to_update: []
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "pom.xml",
+              requirement: "20.0",
+              groups: [],
+              source: {
+                type: "maven_repo",
+                url: "https://repo.maven.apache.org/maven2"
+              }
+            }]
+          )
+      end
     end
   end
 

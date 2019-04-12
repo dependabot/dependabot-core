@@ -26,6 +26,12 @@ module Dependabot
         latest_version
       end
 
+      def lowest_resolvable_security_fix_version
+        return nil if version_comes_from_multi_dependency_property?
+
+        lowest_security_fix_version_details&.fetch(:version)
+      end
+
       def latest_resolvable_version_with_no_unlock
         # Irrelevant, since Maven has a single dependency file (the pom.xml).
         #
@@ -44,8 +50,8 @@ module Dependabot
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: latest_version&.to_s,
-          source_url: latest_version_details&.fetch(:source_url),
+          latest_version: preferred_resolvable_version&.to_s,
+          source_url: preferred_version_details&.fetch(:source_url),
           properties_to_update: property_names
         ).updated_requirements
       end
@@ -89,8 +95,19 @@ module Dependabot
         super
       end
 
+      def preferred_version_details
+        return lowest_security_fix_version_details if vulnerable?
+
+        latest_version_details
+      end
+
       def latest_version_details
         @latest_version_details ||= version_finder.latest_version_details
+      end
+
+      def lowest_security_fix_version_details
+        @lowest_security_fix_version_details ||=
+          version_finder.lowest_security_fix_version_details
       end
 
       def version_finder
@@ -99,7 +116,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories
           )
       end
 

@@ -14,41 +14,37 @@ module Dependabot
         TYPE_SUFFICES = %w(jre android java).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:)
-          @dependency       = dependency
-          @dependency_files = dependency_files
-          @credentials      = credentials
-          @ignored_versions = ignored_versions
-          @forbidden_urls   = []
+                       ignored_versions:, security_advisories:)
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @credentials         = credentials
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
+          @forbidden_urls      = []
         end
 
         def latest_version_details
           possible_versions = versions
 
-          unless wants_prerelease?
-            possible_versions =
-              possible_versions.
-              reject { |v| v.fetch(:version).prerelease? }
-          end
-
-          unless wants_date_based_version?
-            possible_versions =
-              possible_versions.
-              reject { |v| v.fetch(:version) > version_class.new(1900) }
-          end
-
-          possible_versions =
-            possible_versions.
-            select { |v| matches_dependency_version_type?(v.fetch(:version)) }
-
-          ignored_versions.each do |req|
-            ignore_req = Maven::Requirement.new(req.split(","))
-            possible_versions =
-              possible_versions.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
-          end
+          possible_versions = filter_prereleases(possible_versions)
+          possible_versions = filter_date_based_versions(possible_versions)
+          possible_versions = filter_version_types(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
 
           possible_versions.reverse.find { |v| released?(v.fetch(:version)) }
+        end
+
+        def lowest_security_fix_version_details
+          possible_versions = versions
+
+          possible_versions = filter_prereleases(possible_versions)
+          possible_versions = filter_date_based_versions(possible_versions)
+          possible_versions = filter_version_types(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
+          possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = filter_lower_versions(possible_versions)
+
+          possible_versions.find { |v| released?(v.fetch(:version)) }
         end
 
         def versions
@@ -72,7 +68,56 @@ module Dependabot
         private
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :forbidden_urls
+                    :ignored_versions, :forbidden_urls, :security_advisories
+
+        def filter_prereleases(possible_versions)
+          return possible_versions if wants_prerelease?
+
+          possible_versions.reject { |v| v.fetch(:version).prerelease? }
+        end
+
+        def filter_date_based_versions(possible_versions)
+          return possible_versions if wants_date_based_version?
+
+          possible_versions.
+            reject { |v| v.fetch(:version) > version_class.new(1900) }
+        end
+
+        def filter_version_types(possible_versions)
+          possible_versions.
+            select { |v| matches_dependency_version_type?(v.fetch(:version)) }
+        end
+
+        def filter_ignored_versions(possible_versions)
+          versions_array = possible_versions
+
+          ignored_versions.each do |req|
+            ignore_req = Maven::Requirement.new(req.split(","))
+            versions_array =
+              versions_array.
+              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_vulnerable_versions(possible_versions)
+          versions_array = possible_versions
+
+          security_advisories.each do |advisory|
+            versions_array =
+              versions_array.
+              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
+          end
+
+          versions_array
+        end
+
+        def filter_lower_versions(possible_versions)
+          possible_versions.select do |v|
+            v.fetch(:version) > version_class.new(dependency.version)
+          end
+        end
 
         def wants_prerelease?
           return false unless dependency.version
@@ -89,23 +134,27 @@ module Dependabot
         end
 
         def released?(version)
-          repositories.any? do |repository_details|
-            url = repository_details.fetch("url")
-            response = Excon.get(
-              dependency_files_url(url, version),
-              user: repository_details.fetch("username"),
-              password: repository_details.fetch("password"),
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+          @released_check ||= {}
+          return @released_check[version] if @released_check.key?(version)
 
-            artifact_id = dependency.name.split(":").last
-            type = dependency.requirements.first.
-                   dig(:metadata, :packaging_type)
-            response.body.include?("#{artifact_id}-#{version}.#{type}")
-          rescue Excon::Error::Socket, Excon::Error::Timeout
-            false
-          end
+          @released_check[version] =
+            repositories.any? do |repository_details|
+              url = repository_details.fetch("url")
+              response = Excon.get(
+                dependency_files_url(url, version),
+                user: repository_details.fetch("username"),
+                password: repository_details.fetch("password"),
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              )
+
+              artifact_id = dependency.name.split(":").last
+              type = dependency.requirements.first.
+                     dig(:metadata, :packaging_type)
+              response.body.include?("#{artifact_id}-#{version}.#{type}")
+            rescue Excon::Error::Socket, Excon::Error::Timeout
+              false
+            end
         end
 
         def dependency_metadata(repository_details)
