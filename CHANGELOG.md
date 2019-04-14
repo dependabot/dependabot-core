@@ -1,3 +1,7 @@
+## v0.103.3, 14 April 2019
+
+- Python: Fix handling of comparisons with non-canonical segments
+
 ## v0.103.2, 14 April 2019
 
 - Python: Support pre-releases in wildcards, and allow Python 3.8-dev
