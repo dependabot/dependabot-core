@@ -242,7 +242,7 @@ RSpec.describe namespace::PipfileVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.7.3, 3.7.2")
+                to include("supported in Dependabot: 3.8-dev, 3.7.3, 3.7.2")
             end
         end
       end
