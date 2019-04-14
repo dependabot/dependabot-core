@@ -258,12 +258,12 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             )
           stub_request(
             :get,
-            url + "components/bump-core/composer.json?ref=sha"
+            url + "components/path_dep/composer.json?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
           stub_request(
             :get,
-            url + "components/bump-core?ref=sha"
+            url + "components/path_dep?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
@@ -272,16 +272,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             )
           stub_request(
             :get,
-            base_url + "components/bump-core/composer.json?ref=sha"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "composer_json_content.json"),
-              headers: { "content-type" => "application/json" }
-            )
-          stub_request(
-            :get,
-            base_url + "components/another-dep/composer.json?ref=sha"
+            base_url + "components/path_dep/composer.json?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
@@ -293,8 +284,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
         it "fetches the composer.json, composer.lock and the path dependency" do
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(
-              %w(composer.json composer.lock components/bump-core/composer.json
-                 components/another-dep/composer.json)
+              %w(composer.json composer.lock components/path_dep/composer.json)
             )
         end
 
@@ -308,18 +298,16 @@ RSpec.describe Dependabot::Composer::FileFetcher do
                               "composer_json_with_relative_path_deps.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "composer.lock?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github",
+                              "composer_lock_with_relative_path_deps.json"),
+                headers: { "content-type" => "application/json" }
+              )
             stub_request(:get, base_url + "my/components?ref=sha").
               with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
-            stub_request(
-              :get,
-              base_url + "my/components/another-dep/composer.json?ref=sha"
-            ).with(headers: { "Authorization" => "token token" }).
-              to_return(status: 404)
-            stub_request(
-              :get,
-              base_url + "my/components/another-dep?ref=sha"
-            ).with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
             stub_request(
               :get,
@@ -328,12 +316,12 @@ RSpec.describe Dependabot::Composer::FileFetcher do
               to_return(status: 404)
             stub_request(
               :get,
-              base_url + "my/components/bump-core/composer.json?ref=sha"
+              base_url + "my/components/path_dep/composer.json?ref=sha"
             ).with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
             stub_request(
               :get,
-              base_url + "my/components/bump-core?ref=sha"
+              base_url + "my/components/path_dep?ref=sha"
             ).with(headers: { "Authorization" => "token token" }).
               to_return(status: 404)
           end
@@ -342,8 +330,7 @@ RSpec.describe Dependabot::Composer::FileFetcher do
             expect(file_fetcher_instance.files.map(&:name)).
               to match_array(
                 %w(composer.json composer.lock
-                   ../components/bump-core/composer.json
-                   ../components/another-dep/composer.json)
+                   ../components/path_dep/composer.json)
               )
           end
         end

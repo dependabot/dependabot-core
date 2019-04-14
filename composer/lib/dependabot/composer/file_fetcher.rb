@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -59,7 +60,7 @@ module Dependabot
                 begin
                   composer_json_files << fetch_file_with_root_fallback(file)
                 rescue Dependabot::DependencyFileNotFound
-                  unfetchable_deps << path
+                  unfetchable_deps << dir
                 end
               end
             end
@@ -99,22 +100,29 @@ module Dependabot
           select { |file| file.type == "dir" }.
           map { |f| path.gsub(/\*$/, f.name) }
       rescue Octokit::NotFound, Gitlab::Error::NotFound
-        # If there's no lockfile, or if none of the dependencies are path
-        # dependencies, then we can ignore failures to find path deps
-        return [] unless composer_lock&.content&.include?('"path"')
+        lockfile_path_dependency_paths.
+          select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
+      end
 
-        # Otherwise, we don't know what to do. For now, just raise. If we see
-        # this in the wild we can make a call on the correct handling
-        raise if directory == "/"
+      def lockfile_path_dependency_paths
+        keys = FileParser::DEPENDENCY_GROUP_KEYS.
+               map { |h| h.fetch(:lockfile) }
 
-        # If the directory isn't found at the full path, try looking for it
-        # at the root of the repository.
-        depth = directory.gsub(%r{^/}, "").gsub(%r{/$}, "").split("/").count
-        dir = "../" * depth + path.gsub(/\*$/, "").gsub(/^\.*/, "")
+        keys.flat_map do |key|
+          next [] unless parsed_lockfile[key]
 
-        repo_contents(dir: dir).
-          select { |file| file.type == "dir" }.
-          map { |f| path.gsub(/\*$/, f.name) }
+          parsed_lockfile[key].
+            select { |details| details.dig("dist", "type") == "path" }.
+            map { |details| details.dig("dist", "url") }
+        end
+      end
+
+      def parsed_lockfile
+        return {} unless composer_lock
+
+        @parsed_lockfile ||= JSON.parse(composer_lock.content)
+      rescue JSON::ParserError
+        {}
       end
 
       def fetch_file_with_root_fallback(filename)
@@ -125,7 +133,7 @@ module Dependabot
         rescue Dependabot::DependencyFileNotFound
           # If the file isn't found at the full path, try looking for it
           # without considering the directory (i.e., check if the path should
-          # have been relevative to the root of the repository).
+          # have been relative to the root of the repository).
           cleaned_filename = filename.gsub(/^\./, "")
           cleaned_filename = Pathname.new(cleaned_filename).cleanpath.to_path
 
