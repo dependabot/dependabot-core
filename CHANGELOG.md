@@ -1,3 +1,7 @@
+## v0.103.1, 14 April 2019
+
+- Composer: Build path dependencies from lockfile even when whole dir is missing
+
 ## v0.103.0, 14 April 2019
 
 - Require a dependency_name when creating a SecurityAdvisory
