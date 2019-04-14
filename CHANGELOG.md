@@ -1,3 +1,8 @@
+## v0.103.0, 14 April 2019
+
+- Require a dependency_name when creating a SecurityAdvisory
+- Python: Bump cython from 0.29.6 to 0.29.7
+
 ## v0.102.1, 12 April 2019
 
 - JS: Don't assume we can upgrade sub-dependencies to a secure verison
