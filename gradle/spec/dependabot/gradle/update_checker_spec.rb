@@ -207,6 +207,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "gradle",
             safe_versions: ["> 19.0"]
           )
@@ -255,6 +256,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "gradle",
             safe_versions: ["> 19.0"]
           )

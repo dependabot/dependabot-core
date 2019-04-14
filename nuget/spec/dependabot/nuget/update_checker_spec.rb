@@ -168,6 +168,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "nuget",
             vulnerable_versions: ["< 2.0.0"]
           )
@@ -287,6 +288,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "nuget",
             vulnerable_versions: ["< 2.0.0"]
           )

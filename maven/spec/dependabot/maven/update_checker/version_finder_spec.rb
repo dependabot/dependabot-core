@@ -306,6 +306,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
+          dependency_name: "rails",
           package_manager: "maven",
           safe_versions: ["> 19.0"]
         )

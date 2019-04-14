@@ -875,6 +875,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
+          dependency_name: "rails",
           package_manager: "npm_and_yarn",
           vulnerable_versions: ["~1.1.0", "1.2.0", "1.3.0"]
         )
