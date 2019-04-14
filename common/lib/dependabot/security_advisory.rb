@@ -4,12 +4,15 @@ require "rubygems_version_patch"
 
 module Dependabot
   class SecurityAdvisory
-    attr_reader :vulnerable_versions, :safe_versions, :package_manager
+    attr_reader :dependency_name, :package_manager,
+                :vulnerable_versions, :safe_versions
 
-    def initialize(vulnerable_versions: [], safe_versions: [], package_manager:)
+    def initialize(dependency_name:, package_manager:,
+                   vulnerable_versions: [], safe_versions: [])
+      @dependency_name = dependency_name
+      @package_manager = package_manager
       @vulnerable_versions = vulnerable_versions || []
       @safe_versions = safe_versions || []
-      @package_manager = package_manager
 
       convert_string_version_requirements
       check_version_requirements

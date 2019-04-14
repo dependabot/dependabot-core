@@ -476,6 +476,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
+          dependency_name: "rails",
           package_manager: "dummy",
           vulnerable_versions: ["~> 0.5", "~> 1.0"],
           safe_versions: ["> 1.5.1"]
@@ -503,6 +504,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "dummy",
             safe_versions: ["> 1.5.1"]
           )
@@ -524,6 +526,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
             package_manager: "dummy",
             vulnerable_versions: ["<= 1.5.1"]
           )
@@ -544,7 +547,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     context "with no details" do
       let(:security_advisories) do
         [
-          Dependabot::SecurityAdvisory.new(package_manager: "dummy")
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "rails",
+            package_manager: "dummy"
+          )
         ]
       end
       it { is_expected.to eq(false) }

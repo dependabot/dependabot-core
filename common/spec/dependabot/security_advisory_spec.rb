@@ -6,9 +6,10 @@ require "dependabot/security_advisory"
 RSpec.describe Dependabot::SecurityAdvisory do
   let(:security_advisory) do
     described_class.new(
-      safe_versions: safe_versions,
+      dependency_name: "rails",
+      package_manager: "dummy",
       vulnerable_versions: vulnerable_versions,
-      package_manager: "dummy"
+      safe_versions: safe_versions
     )
   end
   let(:safe_versions) { [] }
@@ -19,9 +20,10 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     let(:args) do
       {
-        safe_versions: safe_versions,
+        dependency_name: "rails",
+        package_manager: "dummy",
         vulnerable_versions: vulnerable_versions,
-        package_manager: "dummy"
+        safe_versions: safe_versions
       }
     end
     let(:safe_versions) { [] }
