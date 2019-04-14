@@ -124,11 +124,12 @@ module Dependabot
              captures.first.to_s&.strip
         exact_op = ["", "=", "==", "==="].include?(op)
 
-        req_string.
+        req_string.strip.
           split(".").
           first(req_string.split(".").index("*") + 1).
           join(".").
-          tr("*", "a").
+          gsub(/\*(?!$)/, "0").
+          gsub(/\*$/, "0.a").
           tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end

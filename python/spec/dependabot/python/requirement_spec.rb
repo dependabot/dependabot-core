@@ -81,11 +81,13 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.a").to_s) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s) }
 
       context "without a prefix" do
         let(:requirement_string) { "1.3.*" }
-        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.a").to_s) }
+        its(:to_s) do
+          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s)
+        end
       end
 
       context "with a >= op" do
@@ -108,7 +110,7 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with an array" do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
       its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.a"]).to_s)
+        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0.a"]).to_s)
       end
     end
 
@@ -197,6 +199,25 @@ RSpec.describe Dependabot::Python::Requirement do
       context "for an out-of-range version" do
         let(:version_string) { "0.9.0" }
         it { is_expected.to eq(false) }
+      end
+
+      context "with a wildcard" do
+        let(:requirement_string) { "1.8.*" }
+
+        context "and a pre-release" do
+          let(:version_string) { "1.8-dev" }
+          it { is_expected.to eq(true) }
+        end
+
+        context "and a full-release" do
+          let(:version_string) { "1.8.1" }
+          it { is_expected.to eq(true) }
+
+          context "that is out of range" do
+            let(:version_string) { "1.9.1" }
+            it { is_expected.to eq(false) }
+          end
+        end
       end
     end
   end

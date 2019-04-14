@@ -45,7 +45,7 @@ module Dependabot
       end
 
       def <=>(other)
-        version_comparison = super(other)
+        version_comparison = old_comp(other)
         return version_comparison unless version_comparison.zero?
 
         unless post_version_comparison(other).zero?
@@ -110,6 +110,48 @@ module Dependabot
           tr("-", ".").
           gsub(/(\d)([a-z])/i, '\1.\2')
       end
+
+      # TODO: Delete this once we're using a version of Rubygems that includes
+      # https://github.com/rubygems/rubygems/pull/2651
+      #
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Style/CaseEquality
+      # rubocop:disable Metrics/LineLength
+      # rubocop:disable Style/ParallelAssignment
+      # rubocop:disable Style/RedundantReturn
+      def old_comp(other)
+        return unless Gem::Version === other
+        return 0 if @version == other._version || canonical_segments == other.canonical_segments
+
+        lhsegments = canonical_segments
+        rhsegments = other.canonical_segments
+
+        lhsize = lhsegments.size
+        rhsize = rhsegments.size
+        limit  = (lhsize > rhsize ? lhsize : rhsize) - 1
+
+        i = 0
+
+        while i <= limit
+          lhs, rhs = lhsegments[i] || 0, rhsegments[i] || 0
+          i += 1
+
+          next      if lhs == rhs
+          return -1 if String  === lhs && Numeric === rhs
+          return  1 if Numeric === lhs && String  === rhs
+
+          return lhs <=> rhs
+        end
+
+        return 0
+      end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Style/CaseEquality
+      # rubocop:enable Metrics/LineLength
+      # rubocop:enable Style/ParallelAssignment
+      # rubocop:enable Style/RedundantReturn
     end
   end
 end
