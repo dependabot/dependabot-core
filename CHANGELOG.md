@@ -1,3 +1,7 @@
+## v0.103.2, 14 April 2019
+
+- Python: Support pre-releases in wildcards, and allow Python 3.8-dev
+
 ## v0.103.1, 14 April 2019
 
 - Composer: Build path dependencies from lockfile even when whole dir is missing
