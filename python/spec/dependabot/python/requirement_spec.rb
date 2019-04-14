@@ -81,11 +81,11 @@ RSpec.describe Dependabot::Python::Requirement do
 
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.a").to_s) }
 
       context "without a prefix" do
         let(:requirement_string) { "1.3.*" }
-        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0").to_s) }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.a").to_s) }
       end
 
       context "with a >= op" do
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with an array" do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
       its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0"]).to_s)
+        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.a"]).to_s)
       end
     end
 

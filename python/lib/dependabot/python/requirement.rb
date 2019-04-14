@@ -128,7 +128,7 @@ module Dependabot
           split(".").
           first(req_string.split(".").index("*") + 1).
           join(".").
-          tr("*", exact_op ? "0" : "a").
+          tr("*", "a").
           tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
