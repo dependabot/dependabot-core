@@ -19,7 +19,7 @@ module Dependabot
     end
 
     def vulnerable?(version)
-      unless version.is_a?(version_class)
+      unless version.is_a?(version_class) || version.instance_of?(Gem::Version)
         raise ArgumentError, "must be a #{version_class}"
       end
 
