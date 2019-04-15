@@ -52,14 +52,8 @@ module Dependabot
         end
 
         def latest_rubygems_version_details
-          response = Excon.get(
-            "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-
           relevant_versions =
-            JSON.parse(response.body).
+            rubygems_version_details.
             reject do |d|
               version = Gem::Version.new(d["number"])
               next true if version.prerelease? && !wants_prerelease?
@@ -80,21 +74,39 @@ module Dependabot
         end
 
         def latest_private_version_details
-          in_a_temporary_bundler_context do
-            spec =
+          private_versions.empty? ? nil : { version: private_versions.max }
+        end
+
+        def rubygems_version_details
+          @rubygems_version_details ||=
+            begin
+              response = Excon.get(
+                "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              )
+
+              JSON.parse(response.body)
+            end
+        rescue JSON::ParserError, Excon::Error::Timeout
+          @rubygems_version_details = []
+        end
+
+        def private_versions
+          @private_versions ||=
+            in_a_temporary_bundler_context do
               dependency_source.
-              fetchers.flat_map do |fetcher|
-                fetcher.
-                  specs_with_retry([dependency.name], dependency_source).
-                  search_all(dependency.name).
-                  reject { |s| s.version.prerelease? && !wants_prerelease? }.
-                  reject do |s|
-                    ignore_reqs.any? { |r| r.satisfied_by?(s.version) }
-                  end
-              end.
-              max_by(&:version)
-            spec.nil? ? nil : { version: spec.version }
-          end
+                fetchers.flat_map do |fetcher|
+                  fetcher.
+                    specs_with_retry([dependency.name], dependency_source).
+                    search_all(dependency.name).
+                    reject { |s| s.version.prerelease? && !wants_prerelease? }.
+                    reject do |s|
+                      ignore_reqs.any? { |r| r.satisfied_by?(s.version) }
+                    end
+                end.
+                map(&:version)
+            end
         end
 
         def latest_git_version_details

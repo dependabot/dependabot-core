@@ -6,6 +6,7 @@ require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -25,6 +26,14 @@ module Dependabot
         return latest_resolvable_version_for_git_dependency if git_dependency?
 
         latest_resolvable_version_details&.fetch(:version)
+      end
+
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+        return latest_resolvable_version if git_dependency?
+
+        # TODO: Actually implement this!
+        latest_resolvable_version
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -349,6 +358,7 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
 
 Dependabot::UpdateCheckers.
   register("bundler", Dependabot::Bundler::UpdateChecker)
