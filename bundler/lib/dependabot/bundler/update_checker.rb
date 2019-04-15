@@ -83,11 +83,8 @@ module Dependabot
 
       def requirements_unlocked_or_can_be?
         dependency.requirements.
-          reject { |r| r[:requirement].nil? }.
+          select { |r| requirement_class.new(r[:requirement]).specific? }.
           all? do |req|
-            requirement = requirement_class.new(req[:requirement])
-            next true if requirement.satisfied_by?(Gem::Version.new("100000"))
-
             file = dependency_files.find { |f| f.name == req.fetch(:file) }
             updated = FileUpdater::RequirementReplacer.new(
               dependency: dependency,
