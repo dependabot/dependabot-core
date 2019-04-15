@@ -19,66 +19,91 @@ module Dependabot
         include SharedBundlerHelpers
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:)
-          @dependency       = dependency
-          @dependency_files = dependency_files
-          @credentials      = credentials
-          @ignored_versions = ignored_versions
+                       ignored_versions:, security_advisories:)
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @credentials         = credentials
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
         end
 
         def latest_version_details
           @latest_version_details ||= fetch_latest_version_details
         end
 
+        def lowest_security_fix_version
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        end
+
         private
 
         attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions
+                    :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
-          return latest_rubygems_version_details if dependency.name == "bundler"
-
-          case dependency_source
-          when NilClass then latest_rubygems_version_details
-          when ::Bundler::Source::Rubygems
-            if dependency_source.remotes.none? ||
-               dependency_source.remotes.first.to_s == "https://rubygems.org/"
-              latest_rubygems_version_details
-            else
-              latest_private_version_details
-            end
-          when ::Bundler::Source::Git then latest_git_version_details
+          if dependency_source.is_a?(::Bundler::Source::Git) &&
+             dependency.name != "bundler"
+            return latest_git_version_details
           end
+
+          relevant_versions = registry_versions
+          relevant_versions = filter_prerelease_versions(relevant_versions)
+          relevant_versions = filter_ignored_versions(relevant_versions)
+
+          relevant_versions.empty? ? nil : { version: relevant_versions.max }
         end
 
-        def latest_rubygems_version_details
-          relevant_versions =
-            rubygems_version_details.
-            reject do |d|
-              version = Gem::Version.new(d["number"])
-              next true if version.prerelease? && !wants_prerelease?
-              next true if ignore_reqs.any? { |r| r.satisfied_by?(version) }
+        def fetch_lowest_security_fix_version
+          return if dependency_source.is_a?(::Bundler::Source::Git)
 
-              false
-            end
+          relevant_versions = registry_versions
+          relevant_versions = filter_prerelease_versions(relevant_versions)
+          relevant_versions = filter_ignored_versions(relevant_versions)
+          relevant_versions = filter_vulnerable_versions(relevant_versions)
+          relevant_versions = filter_lower_versions(relevant_versions)
 
-          dep = relevant_versions.max_by { |d| Gem::Version.new(d["number"]) }
-          return unless dep
-
-          {
-            version: Gem::Version.new(dep["number"]),
-            sha: dep["sha"]
-          }
-        rescue JSON::ParserError, Excon::Error::Timeout
-          nil
+          relevant_versions.min
         end
 
-        def latest_private_version_details
-          private_versions.empty? ? nil : { version: private_versions.max }
+        def filter_prerelease_versions(versions_array)
+          versions_array.
+            reject { |v| v.prerelease? && !wants_prerelease? }
         end
 
-        def rubygems_version_details
-          @rubygems_version_details ||=
+        def filter_ignored_versions(versions_array)
+          versions_array.
+            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        end
+
+        def filter_vulnerable_versions(versions_array)
+          arr = versions_array
+
+          security_advisories.each do |advisory|
+            arr = arr.reject { |v| advisory.vulnerable?(v) }
+          end
+
+          arr
+        end
+
+        def filter_lower_versions(versions_array)
+          versions_array.
+            select { |version| version > Gem::Version.new(dependency.version) }
+        end
+
+        def registry_versions
+          return rubygems_versions if dependency.name == "bundler"
+          return rubygems_versions unless dependency_source
+          return [] unless dependency_source.is_a?(::Bundler::Source::Rubygems)
+
+          remote = dependency_source.remotes.first
+          return rubygems_versions if remote.nil?
+          return rubygems_versions if remote.to_s == "https://rubygems.org/"
+
+          private_registry_versions
+        end
+
+        def rubygems_versions
+          @rubygems_versions ||=
             begin
               response = Excon.get(
                 "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
@@ -86,24 +111,21 @@ module Dependabot
                 **SharedHelpers.excon_defaults
               )
 
-              JSON.parse(response.body)
+              JSON.parse(response.body).
+                map { |d| Gem::Version.new(d["number"]) }
             end
         rescue JSON::ParserError, Excon::Error::Timeout
-          @rubygems_version_details = []
+          @rubygems_versions = []
         end
 
-        def private_versions
-          @private_versions ||=
+        def private_registry_versions
+          @private_registry_versions ||=
             in_a_temporary_bundler_context do
               dependency_source.
                 fetchers.flat_map do |fetcher|
                   fetcher.
                     specs_with_retry([dependency.name], dependency_source).
-                    search_all(dependency.name).
-                    reject { |s| s.version.prerelease? && !wants_prerelease? }.
-                    reject do |s|
-                      ignore_reqs.any? { |r| r.satisfied_by?(s.version) }
-                    end
+                    search_all(dependency.name)
                 end.
                 map(&:version)
             end

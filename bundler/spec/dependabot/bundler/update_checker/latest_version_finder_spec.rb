@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       ignored_versions: ignored_versions,
+      security_advisories: security_advisories,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -473,6 +475,55 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           it { is_expected.to be_nil }
         end
       end
+    end
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject { finder.lowest_security_fix_version }
+
+    let(:current_version) { "1.1.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "rails",
+          package_manager: "bundler",
+          vulnerable_versions: ["<= 1.3.0"]
+        )
+      ]
+    end
+
+    context "with a rubygems source" do
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.4.0")) }
+    end
+
+    context "with a private rubygems source" do
+      let(:gemfile_fixture_name) { "specified_source" }
+      let(:lockfile_fixture_name) { "specified_source.lock" }
+      let(:source) { { type: "rubygems" } }
+      let(:registry_url) { "https://repo.fury.io/greysteil/" }
+      let(:gemfury_business_url) do
+        "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
+      end
+
+      before do
+        stub_request(:get, registry_url + "versions").
+          with(basic_auth: ["SECRET_CODES", ""]).
+          to_return(status: 404)
+        stub_request(:get, registry_url + "api/v1/dependencies").
+          with(basic_auth: ["SECRET_CODES", ""]).
+          to_return(status: 200)
+        stub_request(:get, gemfury_business_url).
+          with(basic_auth: ["SECRET_CODES", ""]).
+          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
   end
 end

@@ -340,7 +340,8 @@ module Dependabot
               dependency: dependency,
               dependency_files: prepared_dependency_files,
               credentials: credentials,
-              ignored_versions: ignored_versions
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories
             )
           end
       end
