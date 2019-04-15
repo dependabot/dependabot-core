@@ -485,7 +485,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
-          dependency_name: "rails",
+          dependency_name: dependency_name,
           package_manager: "bundler",
           vulnerable_versions: ["<= 1.3.0"]
         )

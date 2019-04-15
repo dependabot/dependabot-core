@@ -32,8 +32,12 @@ module Dependabot
         raise "Dependency not vulnerable!" unless vulnerable?
         return latest_resolvable_version if git_dependency?
 
-        # TODO: Actually implement this!
-        latest_resolvable_version
+        lowest_fix =
+          latest_version_finder(remove_git_source: false).
+          lowest_security_fix_version
+        return unless lowest_fix
+
+        resolvable?(lowest_fix) ? lowest_fix : latest_resolvable_version
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -72,7 +76,7 @@ module Dependabot
             updated_source: updated_source,
             latest_version: latest_version_details&.fetch(:version)&.to_s,
             latest_resolvable_version:
-              latest_resolvable_version_details&.fetch(:version)&.to_s
+              preferred_resolvable_version_details&.fetch(:version)&.to_s
           ).updated_requirements
         end
       end
@@ -127,8 +131,34 @@ module Dependabot
         force_updater.updated_dependencies
       end
 
+      def preferred_resolvable_version_details
+        if vulnerable?
+          return { version: lowest_resolvable_security_fix_version }
+        end
+
+        latest_resolvable_version_details
+      end
+
       def git_dependency?
         git_commit_checker.git_dependency?
+      end
+
+      def resolvable?(version)
+        @resolvable ||= {}
+        @resolvable[version] ||=
+          begin
+            ForceUpdater.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              target_version: version,
+              requirements_update_strategy: requirements_update_strategy,
+              update_multiple_dependencies: false
+            ).updated_dependencies
+            true
+          rescue Dependabot::DependencyFileNotResolvable
+            false
+          end
       end
 
       def latest_version_details(remove_git_source: false)

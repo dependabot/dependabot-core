@@ -15,7 +15,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:credentials) do
@@ -30,6 +31,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   let(:github_token) { "token" }
   let(:directory) { "/" }
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -1320,6 +1322,29 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
+    subject { checker.preferred_resolvable_version }
+
+    it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "bundler",
+            vulnerable_versions: ["<= 1.4.0"]
+          )
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     include_context "stub rubygems compact index"
     include_context "stub rubygems versions api"
@@ -1364,6 +1389,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     let(:requirements_updater) do
       Dependabot::Bundler::UpdateChecker::RequirementsUpdater
     end
+    before do
+      allow(requirements_updater).to receive(:new).and_call_original
+    end
 
     context "with a Gemfile and a Gemfile.lock" do
       let(:dependency_files) { [gemfile, lockfile] }
@@ -1391,6 +1419,32 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         expect(updated_requirements.count).to eq(1)
         expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+      end
+
+      context "with a security vulnerability" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "bundler",
+              vulnerable_versions: ["<= 1.4.0"]
+            )
+          ]
+        end
+
+        it "delegates to Bundler::RequirementsUpdater with the right params" do
+          expect(requirements_updater).
+            to receive(:new).with(
+              requirements: requirements,
+              update_strategy: :bump_versions,
+              latest_version: "1.13.0",
+              latest_resolvable_version: "1.5.0",
+              updated_source: nil
+            ).and_call_original
+
+          expect(updated_requirements.count).to eq(1)
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.5.0")
+        end
       end
 
       context "with a sub-dependency" do

@@ -16,12 +16,14 @@ module Dependabot
     class UpdateChecker
       class ForceUpdater
         def initialize(dependency:, dependency_files:, credentials:,
-                       target_version:, requirements_update_strategy:)
+                       target_version:, requirements_update_strategy:,
+                       update_multiple_dependencies: true)
           @dependency                   = dependency
           @dependency_files             = dependency_files
           @credentials                  = credentials
           @target_version               = target_version
           @requirements_update_strategy = requirements_update_strategy
+          @update_multiple_dependencies = update_multiple_dependencies
         end
 
         def updated_dependencies
@@ -33,6 +35,10 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials,
                     :target_version, :requirements_update_strategy
 
+        def update_multiple_dependencies?
+          @update_multiple_dependencies
+        end
+
         def force_update
           in_a_temporary_bundler_context do
             other_updates = []
@@ -43,6 +49,8 @@ module Dependabot
               specs = definition.resolve
               dependencies_from([dependency] + other_updates, specs)
             rescue ::Bundler::VersionConflict => e
+              raise unless update_multiple_dependencies?
+
               # TODO: Not sure this won't unlock way too many things...
               new_dependencies_to_unlock =
                 new_dependencies_to_unlock_from(
