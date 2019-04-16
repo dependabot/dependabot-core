@@ -56,29 +56,27 @@ module Dependabot
       end
 
       def updated_requirements
-        if updated_source&.fetch(:ref, nil) &&
-           updated_source.fetch(:ref) != dependency_source_details.fetch(:ref)
-          updated_version =
-            latest_resolvable_version_details_with_updated_git_source&.
-            fetch(:version)&.
-            to_s
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            update_strategy: requirements_update_strategy,
-            updated_source: updated_source,
-            latest_version: updated_version,
-            latest_resolvable_version: updated_version
-          ).updated_requirements
-        else
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            update_strategy: requirements_update_strategy,
-            updated_source: updated_source,
-            latest_version: latest_version_details&.fetch(:version)&.to_s,
-            latest_resolvable_version:
-              preferred_resolvable_version_details&.fetch(:version)&.to_s
-          ).updated_requirements
-        end
+        latest_version_for_req_updater =
+          if switching_source_from_git_to_rubygems?
+            latest_resolvable_version_with_updated_git_source&.to_s
+          else
+            latest_version_details&.fetch(:version)&.to_s
+          end
+
+        latest_resolvable_version_for_req_updater =
+          if switching_source_from_git_to_rubygems?
+            latest_version_for_req_updater
+          else
+            preferred_resolvable_version_details&.fetch(:version)&.to_s
+          end
+
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          update_strategy: requirements_update_strategy,
+          updated_source: updated_source,
+          latest_version: latest_version_for_req_updater,
+          latest_resolvable_version: latest_resolvable_version_for_req_updater
+        ).updated_requirements
       end
 
       def requirements_unlocked_or_can_be?
@@ -256,7 +254,7 @@ module Dependabot
 
         return false if git_commit_checker.local_tag_for_latest_version.nil?
 
-        latest_resolvable_version_details_with_updated_git_source
+        latest_resolvable_version_with_updated_git_source
 
         @git_tag_resolvable = true
       rescue Dependabot::DependencyFileNotResolvable
@@ -303,6 +301,12 @@ module Dependabot
         Gem::Version.correct?(latest_resolvable_version_for_git_dependency)
       end
 
+      def switching_source_from_git_to_rubygems?
+        return false unless updated_source&.fetch(:ref, nil)
+
+        updated_source.fetch(:ref) != dependency_source_details.fetch(:ref)
+      end
+
       def force_updater
         @force_updater ||=
           ForceUpdater.new(
@@ -322,8 +326,8 @@ module Dependabot
           )
       end
 
-      def latest_resolvable_version_details_with_updated_git_source
-        @latest_resolvable_version_details_with_updated_git_source ||=
+      def latest_resolvable_version_with_updated_git_source
+        @latest_resolvable_version_with_updated_git_source ||=
           begin
             replacement_tag = git_commit_checker.local_tag_for_latest_version
 
@@ -333,7 +337,7 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               replacement_git_pin: replacement_tag.fetch(:tag)
-            ).latest_resolvable_version_details
+            ).latest_resolvable_version_details&.fetch(:version)
           end
       end
 
