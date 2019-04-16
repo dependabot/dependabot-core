@@ -65,8 +65,9 @@ module Dependabot
         end
 
         def filter_prerelease_versions(versions_array)
-          versions_array.
-            reject { |v| v.prerelease? && !wants_prerelease? }
+          return versions_array if wants_prerelease?
+
+          versions_array.reject(&:prerelease?)
         end
 
         def filter_ignored_versions(versions_array)
