@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           [{
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-            "replaces-base" => "true"
+            "replaces-base" => true
           }]
         end
 
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
               "type" => "python_index",
               "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
               "token" => "user:pass",
-              "replaces-base" => "true"
+              "replaces-base" => true
             }]
           end
 
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
                 "type" => "python_index",
                 "index-url" => "https://pypi.weasyldev.com/weasyl/"\
                                "source/+simple",
-                "replaces-base" => "false"
+                "replaces-base" => false
               }]
             end
 
@@ -387,7 +387,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           [{
             "type" => "python_index",
             "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
-            "replaces-base" => "false"
+            "replaces-base" => false
           }]
         end
 

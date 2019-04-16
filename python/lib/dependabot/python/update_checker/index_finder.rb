@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "excon"
-
 require "dependabot/python/update_checker"
 require "dependabot/python/authed_url_builder"
 require "dependabot/errors"
@@ -10,6 +8,7 @@ module Dependabot
   module Python
     class UpdateChecker
       class IndexFinder
+        PYPI_BASE_URL = "https://pypi.python.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/.freeze
 
         def initialize(dependency_files:, credentials:)
@@ -46,7 +45,7 @@ module Dependabot
             pipfile_index_urls[:main] ||
             requirement_file_index_urls[:main] ||
             pip_conf_index_urls[:main] ||
-            "https://pypi.python.org/simple/"
+            PYPI_BASE_URL
 
           return unless url
 
