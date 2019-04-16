@@ -41,8 +41,7 @@ module Dependabot
                     :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
-          if dependency_source.is_a?(::Bundler::Source::Git) &&
-             dependency.name != "bundler"
+          if dependency_source.is_a?(::Bundler::Source::Git)
             return latest_git_version_details
           end
 
@@ -76,13 +75,8 @@ module Dependabot
         end
 
         def filter_vulnerable_versions(versions_array)
-          arr = versions_array
-
-          security_advisories.each do |advisory|
-            arr = arr.reject { |v| advisory.vulnerable?(v) }
-          end
-
-          arr
+          versions_array.
+            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
         end
 
         def filter_lower_versions(versions_array)
