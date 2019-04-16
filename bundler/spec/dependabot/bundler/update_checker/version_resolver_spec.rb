@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "Gemfile.lock" }
         let(:requirement_string) { "~> 1.4" }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
       end
 
       context "when updating a dep blocked by a sub-dep" do
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:requirement_string) { "~> 1.4" }
 
         context "and it's that gem that we're attempting to bump" do
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
 
         context "and it's another gem" do
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:gemfile_fixture_name) { "git_source_circular" }
         let(:lockfile_fixture_name) { "git_source_circular.lock" }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
       end
 
       context "with a ruby exec command that fails" do
@@ -396,7 +396,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
       it "doesn't just fall back to latest_version" do
         expect(resolver.latest_resolvable_version_details[:version]).
-          to eq(Gem::Version.new("1.8.0"))
+          to eq(Gem::Version.new("1.13.0"))
       end
 
       context "with an upper bound that is lower than the current req" do

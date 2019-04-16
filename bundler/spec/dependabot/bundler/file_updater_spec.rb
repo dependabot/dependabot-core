@@ -363,7 +363,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include("business (1.8.0)")
+            expect(file.content).to include("business (1.13.0)")
             expect(file.content).to include("statesman (1.3.1)")
           end
         end

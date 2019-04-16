@@ -566,7 +566,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.13.0")) }
 
         context "when the user is ignoring the latest version" do
           let(:ignored_versions) { [">= 1.7.0.a, < 2.0"] }
@@ -586,7 +586,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.13.0")) }
       end
 
       context "with multiple requirements" do
@@ -600,7 +600,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.13.0")) }
       end
 
       context "with a gem.rb and gems.locked setup" do
@@ -640,7 +640,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }]
           end
 
-          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          it { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
       end
     end
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
         let(:gemspec_fixture_name) { "no_overlap" }
 
-        it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+        it { is_expected.to eq(Gem::Version.new("1.13.0")) }
 
         it "doesn't persist any temporary changes to Bundler's root" do
           expect { checker.latest_resolvable_version }.
@@ -669,7 +669,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "that requires other files" do
           let(:gemspec_fixture_name) { "no_overlap_with_require" }
-          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          it { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
 
         context "that is the gem we're checking" do
@@ -740,7 +740,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               and_return(true)
           end
 
-          it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+          it { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
 
         context "when the dependency has never been released" do
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 and_return(true)
             end
 
-            it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+            it { is_expected.to eq(Gem::Version.new("1.13.0")) }
           end
 
           context "and the release looks like a version" do
@@ -1046,7 +1046,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           let(:dependency_name) { "onfido" }
-          let(:current_version) { "1.8.0" }
+          let(:current_version) { "1.13.0" }
           let(:requirements) do
             [{
               file: "Gemfile",
@@ -1164,7 +1164,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("1.8.0"))
+          to eq(Gem::Version.new("1.13.0"))
       end
 
       context "when the gemspec has a path" do
@@ -1191,7 +1191,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         it "doesn't just fall back to latest_version" do
           expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.8.0"))
+            to eq(Gem::Version.new("1.13.0"))
         end
       end
 
@@ -1239,7 +1239,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       it "doesn't just fall back to latest_version" do
         expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("1.8.0"))
+          to eq(Gem::Version.new("1.13.0"))
       end
 
       context "given a gem with a private git source" do
@@ -1328,7 +1328,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
     subject { checker.preferred_resolvable_version }
 
-    it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+    it { is_expected.to eq(Gem::Version.new("1.13.0")) }
 
     context "with a security vulnerability" do
       let(:security_advisories) do
@@ -1413,12 +1413,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             requirements: requirements,
             update_strategy: :bump_versions,
             latest_version: "1.13.0",
-            latest_resolvable_version: "1.8.0",
+            latest_resolvable_version: "1.13.0",
             updated_source: nil
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
       end
 
       context "with a security vulnerability" do
@@ -1488,12 +1488,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               requirements: requirements,
               update_strategy: :bump_versions,
               latest_version: "1.13.0",
-              latest_resolvable_version: "1.8.0",
+              latest_resolvable_version: "1.13.0",
               updated_source: nil
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+          expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
           expect(updated_requirements.first[:file]).to eq("gems.rb")
         end
       end
@@ -1683,12 +1683,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             requirements: requirements,
             update_strategy: :bump_versions,
             latest_version: "1.13.0",
-            latest_resolvable_version: "1.8.0",
+            latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
         expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
       end
     end
@@ -1720,12 +1720,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             requirements: requirements,
             update_strategy: :bump_versions_if_necessary,
             latest_version: "1.13.0",
-            latest_resolvable_version: "1.8.0",
+            latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
         expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
       end
     end
@@ -1749,12 +1749,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             requirements: requirements,
             update_strategy: :bump_versions_if_necessary,
             latest_version: "1.13.0",
-            latest_resolvable_version: "1.8.0",
+            latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.8.0")
+        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
       end
     end
 

@@ -58,7 +58,7 @@ module Dependabot
       def updated_requirements
         latest_version_for_req_updater =
           if switching_source_from_git_to_rubygems?
-            latest_resolvable_version_with_updated_git_source&.to_s
+            git_commit_checker.local_tag_for_latest_version.fetch(:version).to_s
           else
             latest_version_details&.fetch(:version)&.to_s
           end
@@ -140,7 +140,9 @@ module Dependabot
 
       def resolvable?(version)
         @resolvable ||= {}
-        @resolvable[version] ||=
+        return @resolvable[version] if @resolvable.key?(version)
+
+        @resolvable[version] =
           begin
             ForceUpdater.new(
               dependency: dependency,
@@ -248,17 +250,10 @@ module Dependabot
       end
 
       def latest_git_tag_is_resolvable?
-        return @git_tag_resolvable if @latest_git_tag_is_resolvable_checked
+        latest_tag_details = git_commit_checker.local_tag_for_latest_version
+        return false unless latest_tag_details
 
-        @latest_git_tag_is_resolvable_checked = true
-
-        return false if git_commit_checker.local_tag_for_latest_version.nil?
-
-        latest_resolvable_version_with_updated_git_source
-
-        @git_tag_resolvable = true
-      rescue Dependabot::DependencyFileNotResolvable
-        @git_tag_resolvable = false
+        resolvable?(latest_tag_details.fetch(:version))
       end
 
       def git_branch_or_ref_in_release?(release)
@@ -324,21 +319,6 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           )
-      end
-
-      def latest_resolvable_version_with_updated_git_source
-        @latest_resolvable_version_with_updated_git_source ||=
-          begin
-            replacement_tag = git_commit_checker.local_tag_for_latest_version
-
-            VersionResolver.new(
-              dependency: dependency,
-              unprepared_dependency_files: dependency_files,
-              credentials: credentials,
-              ignored_versions: ignored_versions,
-              replacement_git_pin: replacement_tag.fetch(:tag)
-            ).latest_resolvable_version_details&.fetch(:version)
-          end
       end
 
       def version_resolver(remove_git_source:, unlock_requirement: true)

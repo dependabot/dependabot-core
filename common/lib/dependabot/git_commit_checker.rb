@@ -86,8 +86,10 @@ module Dependabot
 
       return unless tag
 
+      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
       {
         tag: tag.name,
+        version: version_class.new(version),
         commit_sha: tag.commit_sha,
         tag_sha: tag.tag_sha
       }

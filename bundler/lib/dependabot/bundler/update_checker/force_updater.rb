@@ -168,7 +168,10 @@ module Dependabot
           new_req = Gem::Requirement.create("= #{target_version}")
           definition.dependencies.
             find { |d| d.name == dependency.name }.
-            instance_variable_set(:@requirement, new_req)
+            tap do |dep|
+              dep.instance_variable_set(:@requirement, new_req)
+              dep.source = nil if dep.source.is_a?(::Bundler::Source::Git)
+            end
 
           definition
         end
