@@ -17,6 +17,7 @@ RUN apt-get update \
       dirmngr \
       git \
       bzr \
+      mercurial \
       gnupg2 \
       curl \
       wget \
