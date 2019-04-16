@@ -1,3 +1,7 @@
+## v0.104.0, 16 April 2019
+
+- Ruby: Update to minimal version possible for security updates
+
 ## v0.103.3, 14 April 2019
 
 - Python: Fix handling of comparisons with non-canonical segments
