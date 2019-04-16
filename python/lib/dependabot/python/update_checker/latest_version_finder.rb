@@ -36,21 +36,37 @@ module Dependabot
 
         def fetch_latest_version
           versions = available_versions
-          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          versions.reject!(&:prerelease?) unless wants_prerelease?
+          versions = filter_prerelease_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions.max
         end
 
         def fetch_latest_version_with_no_unlock
           versions = available_versions
+          versions = filter_prerelease_versions(versions)
+          versions = filter_ignored_versions(versions)
+          versions = filter_out_of_range_versions(versions)
+          versions.max
+        end
+
+        def filter_prerelease_versions(versions_array)
+          return versions_array if wants_prerelease?
+
+          versions_array.reject(&:prerelease?)
+        end
+
+        def filter_ignored_versions(versions_array)
+          versions_array.
+            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        end
+
+        def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.map do |r|
-            reqs = (r.fetch(:requirement) || "").split(",").map(&:strip)
-            requirement_class.new(reqs)
-          end
-          versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.sort.reverse.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }.
-            find { |v| reqs.all? { |r| r.satisfied_by?(v) } }
+            requirement_class.requirements_array(r.fetch(:requirement))
+          end.compact
+
+          versions_array.
+            select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
         def wants_prerelease?
@@ -68,33 +84,34 @@ module Dependabot
         # See https://www.python.org/dev/peps/pep-0503/ for details of the
         # Simple Repository API we use here.
         def available_versions
-          index_urls.flat_map do |index_url|
-            sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
-            index_response = registry_response_for_dependency(index_url)
+          @available_versions ||=
+            index_urls.flat_map do |index_url|
+              sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+              index_response = registry_response_for_dependency(index_url)
 
-            if [401, 403].include?(index_response.status) &&
-               [401, 403].include?(registry_index_response(index_url).status)
+              if [401, 403].include?(index_response.status) &&
+                 [401, 403].include?(registry_index_response(index_url).status)
+                raise PrivateSourceAuthenticationFailure, sanitized_url
+              end
+
+              index_response.body.
+                scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
+                select { |n| n.match?(name_regex) }.
+                map do |filename|
+                  version =
+                    filename.
+                    gsub(/#{name_regex}-/i, "").
+                    split(/-|\.tar\.|\.zip|\.whl/).
+                    first
+                  next unless version_class.correct?(version)
+
+                  version_class.new(version)
+                end.compact
+            rescue Excon::Error::Timeout, Excon::Error::Socket
+              raise if MAIN_PYPI_INDEXES.include?(index_url)
+
               raise PrivateSourceAuthenticationFailure, sanitized_url
             end
-
-            index_response.body.
-              scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
-              select { |n| n.match?(name_regex) }.
-              map do |filename|
-                version =
-                  filename.
-                  gsub(/#{name_regex}-/i, "").
-                  split(/-|\.tar\.|\.zip|\.whl/).
-                  first
-                next unless version_class.correct?(version)
-
-                version_class.new(version)
-              end.compact
-          rescue Excon::Error::Timeout, Excon::Error::Socket
-            next if MAIN_PYPI_INDEXES.include?(index_url)
-
-            raise PrivateSourceAuthenticationFailure, sanitized_url
-          end
         end
 
         def index_urls
