@@ -1,3 +1,12 @@
+## v0.104.6, 17 April 2019
+
+- Python: Refactor PipCompileVersionResolver to match other resolvers
+- Python: Refactor PoetryVersionResolver to match PipenvVersionResolver
+- Python: Refactor PipenvVersionResolver#latest_resolvable_version to take a
+  requirement arg
+- Python: Refactor PipenvVersionResolver to make it more extensible
+- PHP: Re-remove Xdebug
+
 ## v0.104.5, 17 April 2019
 
 - Add back x-debug
