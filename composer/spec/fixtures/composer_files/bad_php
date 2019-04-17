@@ -6,7 +6,7 @@
     },
     "config": {
         "platform": {
-            "ext-xdebug": "1.0.0"
+            "ext-redis": "1.0.0"
         }
     }
 }
