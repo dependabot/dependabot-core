@@ -77,7 +77,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         }]
       end
 
-      context "when originally unpinned"
+      context "when originally unpinned" do
         let(:updated_requirement) { "<= 18.1.0" }
         it { is_expected.to eq(Gem::Version.new("18.1.0")) }
       end
