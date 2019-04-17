@@ -31,17 +31,11 @@ module Dependabot
         @latest_resolvable_version ||=
           case resolver_type
           when :pipfile
-            PipenvVersionResolver.new(
-              resolver_args.merge(unlock_requirement: true)
-            ).latest_resolvable_version
+            pipenv_version_resolver.latest_resolvable_version
           when :poetry
-            PoetryVersionResolver.new(
-              resolver_args.merge(unlock_requirement: true)
-            ).latest_resolvable_version
+            poetry_version_resolver.latest_resolvable_version
           when :pip_compile
-            PipCompileVersionResolver.new(
-              resolver_args.merge(unlock_requirement: true)
-            ).latest_resolvable_version
+            pip_compile_version_resolver.latest_resolvable_version
           when :requirements
             # pip doesn't (yet) do any dependency resolution, so if we don't
             # have a Pipfile or a pip-compile file, we just return the latest
@@ -55,16 +49,16 @@ module Dependabot
         @latest_resolvable_version_with_no_unlock ||=
           case resolver_type
           when :pipfile
-            PipenvVersionResolver.new(
-              resolver_args.merge(unlock_requirement: false)
+            pipenv_version_resolver(
+              unlock_requirement: false
             ).latest_resolvable_version
           when :poetry
-            PoetryVersionResolver.new(
-              resolver_args.merge(unlock_requirement: false)
+            poetry_version_resolver(
+              unlock_requirement: false
             ).latest_resolvable_version
           when :pip_compile
-            PipCompileVersionResolver.new(
-              resolver_args.merge(unlock_requirement: false)
+            pip_compile_version_resolver(
+              unlock_requirement: false
             ).latest_resolvable_version
           when :requirements
             latest_pip_version_with_no_unlock
@@ -74,9 +68,17 @@ module Dependabot
 
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
-        return latest_resolvable_version unless resolver_type == :requirements
 
-        # TODO: Handle package managers with a resolvability concept
+        @lowest_resolvable_security_fix_version ||=
+          case resolver_type
+          when :requirements
+            latest_version_finder.lowest_security_fix_version
+          when :pipfile, :poetry, :pip_compile
+            # TODO: Handle package managers with a resolvability concept
+            latest_resolvable_version
+          else raise "Unexpected resolver type #{resolver_type}"
+          end
+
         latest_version_finder.lowest_security_fix_version
       end
 
@@ -150,6 +152,27 @@ module Dependabot
         reqs = reqs.compact
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Python::Requirement.new(r).exact? }
+      end
+
+      def pipenv_version_resolver(unlock_requirement: true)
+        @pipenv_version_resolver ||= {}
+        @pipenv_version_resolver[unlock_requirement] ||=
+          PipenvVersionResolver.
+          new(resolver_args.merge(unlock_requirement: unlock_requirement))
+      end
+
+      def pip_compile_version_resolver(unlock_requirement: true)
+        @pip_compile_version_resolver ||= {}
+        @pip_compile_version_resolver[unlock_requirement] ||=
+          PipCompileVersionResolver.
+          new(resolver_args.merge(unlock_requirement: unlock_requirement))
+      end
+
+      def poetry_version_resolver(unlock_requirement: true)
+        @poetry_version_resolver ||= {}
+        @poetry_version_resolver[unlock_requirement] ||=
+          PoetryVersionResolver.
+          new(resolver_args.merge(unlock_requirement: unlock_requirement))
       end
 
       def resolver_args
