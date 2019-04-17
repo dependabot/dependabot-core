@@ -20,39 +20,34 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
-
         attr_reader :dependency, :dependency_files, :credentials
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       unlock_requirement:, latest_allowable_version:)
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
-          @latest_allowable_version = latest_allowable_version
-          @unlock_requirement       = unlock_requirement
         end
 
-        def latest_resolvable_version
-          return @latest_resolvable_version if @resolution_already_attempted
+        def latest_resolvable_version(requirement: nil)
+          version_string =
+            fetch_latest_resolvable_version_string(requirement: requirement)
 
-          @resolution_already_attempted = true
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+          version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
         private
 
-        attr_reader :latest_allowable_version
+        # rubocop:disable Metrics/MethodLength
+        def fetch_latest_resolvable_version_string(requirement:)
+          @latest_resolvable_version_string ||= {}
+          if @latest_resolvable_version_string.key?(requirement)
+            return @latest_resolvable_version_string[requirement]
+          end
 
-        def unlock_requirement?
-          @unlock_requirement
-        end
-
-        def fetch_latest_resolvable_version
-          @latest_resolvable_version_string ||=
+          @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files
+                write_temporary_dependency_files(updated_req: requirement)
                 install_required_python
 
                 filenames_to_compile.each do |filename|
@@ -80,10 +75,8 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_pip_compile_errors(e)
             end
-          return unless @latest_resolvable_version_string
-
-          Python::Version.new(@latest_resolvable_version_string)
         end
+        # rubocop:enable Metrics/MethodLength
 
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
@@ -159,7 +152,7 @@ module Dependabot
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              write_temporary_dependency_files(unlock_requirement: false)
+              write_temporary_dependency_files(update_requirement: false)
 
               filenames_to_compile.each do |filename|
                 run_command("pyenv exec pip-compile --allow-unsafe #{filename}")
@@ -243,14 +236,16 @@ module Dependabot
           message.include?('Command "python setup.py egg_info" failed')
         end
 
-        def write_temporary_dependency_files(unlock_requirement: true)
+        def write_temporary_dependency_files(updated_req: nil,
+                                             update_requirement: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(
-              path,
-              unlock_requirement ? unlock_dependency(file) : file.content
-            )
+            updated_content =
+              if update_requirement then update_req_file(file, updated_req)
+              else file.content
+              end
+            File.write(path, updated_content)
           end
 
           # Overwrite the .python-version with updated content
@@ -297,10 +292,8 @@ module Dependabot
           end
         end
 
-        def unlock_dependency(file)
+        def update_req_file(file, updated_req)
           return file.content unless file.name.end_with?(".in")
-          return file.content unless dependency.version
-          return file.content unless unlock_requirement?
 
           req = dependency.requirements.find { |r| r[:file] == file.name }
           return file.content unless req&.fetch(:requirement)
@@ -309,42 +302,8 @@ module Dependabot
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: req[:requirement],
-            new_requirement: updated_version_requirement_string
+            new_requirement: updated_req
           ).updated_content
-        end
-
-        def updated_version_requirement_string
-          lower_bound_req = updated_version_req_lower_bound
-
-          # Add the latest_allowable_version as an upper bound. This means
-          # ignore conditions are considered when checking for the latest
-          # resolvable version.
-          #
-          # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
-          # unresolvable then the `latest_allowable_version` will be v3, and
-          # we won't be ignoring v2.x releases like we should be.
-          return lower_bound_req if latest_allowable_version.nil?
-          unless Python::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
-
-          lower_bound_req + ", <= #{latest_allowable_version}"
-        end
-
-        def updated_version_req_lower_bound
-          if dependency.version
-            ">= #{dependency.version}"
-          else
-            version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.compact.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
-
-            ">= #{version_for_requirement || 0}"
-          end
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

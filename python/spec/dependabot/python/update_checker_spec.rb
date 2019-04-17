@@ -169,9 +169,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }
         let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+        let(:pypi_url) { "https://pypi.python.org/simple/urllib3/" }
+        let(:pypi_response) { fixture("pypi_simple_response_urllib3.html") }
 
-        let(:dependency_name) { "urllib" }
+        let(:dependency_name) { "urllib3" }
         let(:dependency_version) { "1.22" }
         let(:dependency_requirements) do
           [{
@@ -189,9 +190,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             and_return(dummy_resolver)
           expect(dummy_resolver).
             to receive(:latest_resolvable_version).
-            and_return(Gem::Version.new("2.5.0"))
+            with(requirement: ">= 1.22, <= 1.24.2").
+            and_return(Gem::Version.new("1.24.2"))
           expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("2.5.0"))
+            to eq(Gem::Version.new("1.24.2"))
         end
       end
     end
@@ -385,9 +387,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       let(:pypi_url) { "https://pypi.python.org/simple/requests/" }
-      let(:pypi_response) do
-        fixture("pypi_simple_response_requests.html")
-      end
+      let(:pypi_response) { fixture("pypi_simple_response_requests.html") }
 
       context "for a library" do
         before do

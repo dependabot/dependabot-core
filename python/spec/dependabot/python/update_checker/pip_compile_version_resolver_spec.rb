@@ -11,9 +11,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials,
-      unlock_requirement: unlock_requirement,
-      latest_allowable_version: latest_version
+      credentials: credentials
     )
   end
   let(:credentials) do
@@ -24,8 +22,6 @@ RSpec.describe namespace::PipCompileVersionResolver do
       "password" => "token"
     }]
   end
-  let(:unlock_requirement) { true }
-  let(:latest_version) { Gem::Version.new("18.1.0") }
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
     Dependabot::DependencyFile.new(
@@ -62,7 +58,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject do
+      resolver.latest_resolvable_version(requirement: updated_requirement)
+    end
+    let(:updated_requirement) { ">= 17.3.0, <= 18.1.0" }
 
     it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
@@ -78,20 +77,21 @@ RSpec.describe namespace::PipCompileVersionResolver do
         }]
       end
 
+      let(:updated_requirement) { "<= 18.1.0" }
       it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
       context "when not unlocking requirements" do
-        let(:unlock_requirement) { false }
+        let(:updated_requirement) { "<= 17.4.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version isn't allowed" do
-        let(:latest_version) { Gem::Version.new("18.0.0") }
+        let(:updated_requirement) { "<= 18.0.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version is nil" do
-        let(:latest_version) { nil }
+        let(:updated_requirement) { ">= 0" }
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
 
@@ -106,7 +106,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
             source: nil
           }]
         end
-        let(:latest_version) { Gem::Version.new("2.7.5") }
+        let(:updated_requirement) { ">= 2.6.1, <= 2.7.5" }
 
         context "but only in an imported file" do
           let(:dependency_files) do
@@ -133,7 +133,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
         let(:dependency_name) { "boto3" }
         let(:dependency_version) { "1.7.84" }
-        let(:latest_version) { Gem::Version.new("1.9.28") }
+        let(:updated_requirement) { ">= 1.7.84, <= 1.9.28" }
         let(:dependency_requirements) do
           [{
             file: "requirements/test.in",
@@ -147,7 +147,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         context "and updating would cause a conflict" do
           let(:dependency_name) { "moto" }
           let(:dependency_version) { "1.3.6" }
-          let(:latest_version) { Gem::Version.new("1.3.7") }
+          let(:updated_requirement) { ">= 1.3.6, <= 1.3.7" }
 
           let(:dependency_requirements) do
             [{
@@ -217,7 +217,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_files) { [manifest_file] }
       let(:dependency_name) { "boto3" }
       let(:dependency_version) { nil }
-      let(:latest_version) { Gem::Version.new("1.9.28") }
+      let(:updated_requirement) { ">= 0, <= 1.9.28" }
       let(:dependency_requirements) do
         [{
           file: "requirements/test.in",
@@ -241,7 +241,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_files) { [manifest_file] }
       let(:dependency_name) { "boto3" }
       let(:dependency_version) { nil }
-      let(:latest_version) { Gem::Version.new("1.9.28") }
+      let(:updated_requirement) { ">= 0, <= 1.9.28" }
       let(:dependency_requirements) do
         [{
           file: "requirements/test.in",
@@ -266,6 +266,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
+      let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
 
       it { is_expected.to be >= Gem::Version.new("4.3.0") }
     end
@@ -293,6 +294,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "setuptools" }
       let(:dependency_version) { "40.4.1" }
       let(:dependency_requirements) { [] }
+      let(:updated_requirement) { ">= 40.4.1" }
 
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
@@ -349,6 +351,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           source: nil
         }]
       end
+      let(:updated_requirement) { ">= 0.1.1, <= 2.0.0" }
 
       it { is_expected.to eq(Gem::Version.new("0.1.2")) }
 

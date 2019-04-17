@@ -40,7 +40,9 @@ module Dependabot
               requirement: unlocked_requirement_string
             )
           when :pip_compile
-            pip_compile_version_resolver.latest_resolvable_version
+            pip_compile_version_resolver.latest_resolvable_version(
+              requirement: unlocked_requirement_string
+            )
           when :requirements
             # pip doesn't (yet) do any dependency resolution, so if we don't
             # have a Pipfile or a pip-compile file, we just return the latest
@@ -62,9 +64,9 @@ module Dependabot
               requirement: current_requirement_string
             )
           when :pip_compile
-            pip_compile_version_resolver(
-              unlock_requirement: false
-            ).latest_resolvable_version
+            pip_compile_version_resolver.latest_resolvable_version(
+              requirement: current_requirement_string
+            )
           when :requirements
             latest_pip_version_with_no_unlock
           else raise "Unexpected resolver type #{resolver_type}"
@@ -160,34 +162,23 @@ module Dependabot
       end
 
       def pipenv_version_resolver
-        @pipenv_version_resolver ||=
-          PipenvVersionResolver.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials
-          )
+        @pipenv_version_resolver ||= PipenvVersionResolver.new(resolver_args)
       end
 
-      def pip_compile_version_resolver(unlock_requirement: true)
-        @pip_compile_version_resolver ||= {}
-        @pip_compile_version_resolver[unlock_requirement] ||=
-          PipCompileVersionResolver.
-          new(resolver_args.merge(unlock_requirement: unlock_requirement))
+      def pip_compile_version_resolver
+        @pip_compile_version_resolver ||=
+          PipCompileVersionResolver.new(resolver_args)
       end
 
-      def poetry_version_resolver(unlock_requirement: true)
-        @poetry_version_resolver ||= {}
-        @poetry_version_resolver[unlock_requirement] ||=
-          PoetryVersionResolver.
-          new(resolver_args.merge(unlock_requirement: unlock_requirement))
+      def poetry_version_resolver
+        @poetry_version_resolver ||= PoetryVersionResolver.new(resolver_args)
       end
 
       def resolver_args
         {
           dependency: dependency,
           dependency_files: dependency_files,
-          credentials: credentials,
-          latest_allowable_version: latest_version
+          credentials: credentials
         }
       end
 
@@ -209,12 +200,12 @@ module Dependabot
       def unlocked_requirement_string
         lower_bound_req = updated_version_req_lower_bound
 
-        # Add the latest_allowable_version as an upper bound. This means
+        # Add the latest_version as an upper bound. This means
         # ignore conditions are considered when checking for the latest
         # resolvable version.
         #
         # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
-        # unresolvable then the `latest_allowable_version` will be v3, and
+        # unresolvable then the `latest_version` will be v3, and
         # we won't be ignoring v2.x releases like we should be.
         return lower_bound_req if latest_version.nil?
         return lower_bound_req unless Python::Version.correct?(latest_version)
