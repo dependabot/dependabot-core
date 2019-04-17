@@ -1,3 +1,13 @@
+## v0.104.1, 17 April 2019
+
+- Add mercurial to Dockerfile
+- Ruby: Minor efficiency improvement in LatestVersionFinder
+- Python: Refactor LatestVersionFinder to make private methods easier to reuse
+- Add tests for Python::UpdateChecker::IndexFinder
+- Python: Split index finder logic into separate class
+- More simplification of Bundler::UpdateChecker
+- Clean up Bundler::UpdateChecker::LatestVersionFinder
+
 ## v0.104.0, 16 April 2019
 
 - Ruby: Update to minimal version possible for security updates
