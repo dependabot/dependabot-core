@@ -16,17 +16,13 @@ module Dependabot
         class UnfixableRequirement < StandardError; end
 
         attr_reader :requirements, :update_strategy, :has_lockfile,
-                    :latest_version, :latest_resolvable_version
+                    :latest_resolvable_version
 
         def initialize(requirements:, update_strategy:, has_lockfile:,
-                       latest_version:, latest_resolvable_version:)
+                       latest_resolvable_version:)
           @requirements = requirements
           @update_strategy = update_strategy
           @has_lockfile = has_lockfile
-
-          if latest_version
-            @latest_version = Python::Version.new(latest_version)
-          end
 
           return unless latest_resolvable_version
 

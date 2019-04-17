@@ -7,7 +7,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version,
       update_strategy: update_strategy,
       has_lockfile: has_lockfile
@@ -36,7 +35,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
   let(:setup_py_req_string) { ">= 1.4.0" }
   let(:has_lockfile) { true }
 
-  let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
   describe "#updated_requirements" do

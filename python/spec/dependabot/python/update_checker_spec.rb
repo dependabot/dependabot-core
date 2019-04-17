@@ -19,7 +19,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:credentials) do
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
@@ -240,6 +242,25 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("2.5.0"))
       end
+    end
+  end
+
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+
+    it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+    context "with an insecure version" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+      it { is_expected.to eq(Gem::Version.new("2.1.1")) }
     end
   end
 

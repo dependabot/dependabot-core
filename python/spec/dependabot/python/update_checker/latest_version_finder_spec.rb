@@ -479,7 +479,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   describe "#lowest_security_fix_version" do
     subject { finder.lowest_security_fix_version }
 
-    let(:dependency_version) { "1.1.0" }
+    let(:dependency_version) { "2.0.0" }
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
