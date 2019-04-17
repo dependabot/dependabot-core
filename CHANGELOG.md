@@ -1,3 +1,7 @@
+## v0.105.1, 17 April 2019
+
+- JS: Handle MyGet format resolved URLs
+
 ## v0.105.0, 17 April 2019
 
 - Python: Update to lowest fix for security vulnerabilities (all package managers)
