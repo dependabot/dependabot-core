@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
   let(:credentials) do
@@ -28,6 +29,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(

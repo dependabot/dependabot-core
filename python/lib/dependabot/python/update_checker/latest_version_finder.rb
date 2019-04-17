@@ -13,11 +13,12 @@ module Dependabot
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:)
-          @dependency       = dependency
-          @dependency_files = dependency_files
-          @credentials      = credentials
-          @ignored_versions = ignored_versions
+                       ignored_versions:, security_advisories:)
+          @dependency          = dependency
+          @dependency_files    = dependency_files
+          @credentials         = credentials
+          @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
         end
 
         def latest_version
