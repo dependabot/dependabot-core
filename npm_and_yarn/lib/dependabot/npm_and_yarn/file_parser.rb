@@ -266,6 +266,9 @@ module Dependabot
           if resolved_url.include?("/~/")
             # Gemfury format
             resolved_url.split("/~/").first
+          elsif resolved_url.include?("/#{name}/-/#{name}")
+            # MyGet format
+            resolved_url.split("/#{name}/-/#{name}").first
           elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first
