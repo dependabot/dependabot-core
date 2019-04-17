@@ -1,3 +1,7 @@
+## v0.104.4, 17 April 2019
+
+- JS: Handle package.json files that specify an array of dependencies (not an object)
+
 ## v0.104.3, 17 April 2019
 
 - Remove xdebug from container
