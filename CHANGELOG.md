@@ -1,3 +1,7 @@
+## v0.105.0, 17 April 2019
+
+- Python: Update to lowest fix for security vulnerabilities (all package managers)
+
 ## v0.104.6, 17 April 2019
 
 - Python: Refactor PipCompileVersionResolver to match other resolvers
