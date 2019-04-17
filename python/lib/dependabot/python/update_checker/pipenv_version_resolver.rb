@@ -27,7 +27,7 @@ module Dependabot
       # Unfortunately, Pipenv doesn't resolve how we'd expect - it appears to
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
-      class PipfileVersionResolver
+      class PipenvVersionResolver
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze

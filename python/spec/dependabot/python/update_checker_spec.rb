@@ -207,10 +207,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         }]
       end
 
-      it "delegates to PipfileVersionResolver" do
+      it "delegates to PipenvVersionResolver" do
         dummy_resolver =
-          instance_double(described_class::PipfileVersionResolver)
-        allow(described_class::PipfileVersionResolver).to receive(:new).
+          instance_double(described_class::PipenvVersionResolver)
+        allow(described_class::PipenvVersionResolver).to receive(:new).
           and_return(dummy_resolver)
         expect(dummy_resolver).
           to receive(:latest_resolvable_version).

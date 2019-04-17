@@ -13,7 +13,7 @@ module Dependabot
   module Python
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       require_relative "update_checker/poetry_version_resolver"
-      require_relative "update_checker/pipfile_version_resolver"
+      require_relative "update_checker/pipenv_version_resolver"
       require_relative "update_checker/pip_compile_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
@@ -31,7 +31,7 @@ module Dependabot
         @latest_resolvable_version ||=
           case resolver_type
           when :pipfile
-            PipfileVersionResolver.new(
+            PipenvVersionResolver.new(
               resolver_args.merge(unlock_requirement: true)
             ).latest_resolvable_version
           when :poetry
@@ -55,7 +55,7 @@ module Dependabot
         @latest_resolvable_version_with_no_unlock ||=
           case resolver_type
           when :pipfile
-            PipfileVersionResolver.new(
+            PipenvVersionResolver.new(
               resolver_args.merge(unlock_requirement: false)
             ).latest_resolvable_version
           when :poetry

@@ -3,10 +3,10 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/python/update_checker/pipfile_version_resolver"
+require "dependabot/python/update_checker/pipenv_version_resolver"
 
 namespace = Dependabot::Python::UpdateChecker
-RSpec.describe namespace::PipfileVersionResolver do
+RSpec.describe namespace::PipenvVersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
