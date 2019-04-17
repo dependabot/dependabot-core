@@ -22,6 +22,7 @@ module Dependabot
         https://pypi.python.org/simple/
         https://pypi.org/simple/
       ).freeze
+      VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
 
       def latest_version
         @latest_version ||= fetch_latest_version
@@ -31,7 +32,9 @@ module Dependabot
         @latest_resolvable_version ||=
           case resolver_type
           when :pipenv
-            pipenv_version_resolver.latest_resolvable_version
+            pipenv_version_resolver.latest_resolvable_version(
+              requirement: unlocked_requirement_string
+            )
           when :poetry
             poetry_version_resolver.latest_resolvable_version
           when :pip_compile
@@ -49,9 +52,9 @@ module Dependabot
         @latest_resolvable_version_with_no_unlock ||=
           case resolver_type
           when :pipenv
-            pipenv_version_resolver(
-              unlock_requirement: false
-            ).latest_resolvable_version
+            pipenv_version_resolver.latest_resolvable_version(
+              requirement: current_requirement_string
+            )
           when :poetry
             poetry_version_resolver(
               unlock_requirement: false
@@ -154,11 +157,13 @@ module Dependabot
         reqs.any? { |r| Python::Requirement.new(r).exact? }
       end
 
-      def pipenv_version_resolver(unlock_requirement: true)
-        @pipenv_version_resolver ||= {}
-        @pipenv_version_resolver[unlock_requirement] ||=
-          PipenvVersionResolver.
-          new(resolver_args.merge(unlock_requirement: unlock_requirement))
+      def pipenv_version_resolver
+        @pipenv_version_resolver ||=
+          PipenvVersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
       end
 
       def pip_compile_version_resolver(unlock_requirement: true)
@@ -182,6 +187,51 @@ module Dependabot
           credentials: credentials,
           latest_allowable_version: latest_version
         }
+      end
+
+      def current_requirement_string
+        reqs = dependency.requirements
+        return if reqs.none?
+
+        requirement =
+          case resolver_type
+          when :pipenv then reqs.find { |r| r[:file] == "Pipfile" }
+          when :poetry then reqs.find { |r| r[:file] == "pyproject.toml" }
+          when :pip_compile then reqs.find { |r| r[:file].end_with?(".in") }
+          when :requirements then reqs.find { |r| r[:file].end_with?(".txt") }
+          end
+
+        requirement.fetch(:requirement)
+      end
+
+      def unlocked_requirement_string
+        lower_bound_req = updated_version_req_lower_bound
+
+        # Add the latest_allowable_version as an upper bound. This means
+        # ignore conditions are considered when checking for the latest
+        # resolvable version.
+        #
+        # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
+        # unresolvable then the `latest_allowable_version` will be v3, and
+        # we won't be ignoring v2.x releases like we should be.
+        return lower_bound_req if latest_version.nil?
+        return lower_bound_req unless Python::Version.correct?(latest_version)
+
+        lower_bound_req + ", <= #{latest_version}"
+      end
+
+      def updated_version_req_lower_bound
+        return ">= #{dependency.version}" if dependency.version
+
+        version_for_requirement =
+          dependency.requirements.map { |r| r[:requirement] }.compact.
+          reject { |req_string| req_string.start_with?("<") }.
+          select { |req_string| req_string.match?(VERSION_REGEX) }.
+          map { |req_string| req_string.match(VERSION_REGEX) }.
+          select { |version| Gem::Version.correct?(version) }.
+          max_by { |version| Gem::Version.new(version) }
+
+        ">= #{version_for_requirement || 0}"
       end
 
       def fetch_latest_version

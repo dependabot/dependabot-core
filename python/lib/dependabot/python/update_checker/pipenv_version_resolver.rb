@@ -28,7 +28,6 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
@@ -41,42 +40,22 @@ module Dependabot
 
         attr_reader :dependency, :dependency_files, :credentials
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       unlock_requirement:, latest_allowable_version:)
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
-          @latest_allowable_version = latest_allowable_version
-          @unlock_requirement       = unlock_requirement
 
           check_private_sources_are_reachable
         end
 
-        def latest_resolvable_version
-          return @latest_resolvable_version if @resolution_already_attempted
-
-          @resolution_already_attempted = true
-
-          updated_requirement =
-            unlock_requirement? ? unlocked_requirement_string : nil
-          @latest_resolvable_version ||=
-            fetch_latest_resolvable_version(requirement: updated_requirement)
-        end
-
-        private
-
-        attr_reader :latest_allowable_version
-
-        def unlock_requirement?
-          @unlock_requirement
-        end
-
-        def fetch_latest_resolvable_version(requirement:)
+        def latest_resolvable_version(requirement: nil)
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
 
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
+
+        private
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
@@ -456,40 +435,6 @@ module Dependabot
             rescue Excon::Error::Timeout, Excon::Error::Socket
               raise PrivateSourceTimedOut, sanitized_url
             end
-        end
-
-        def unlocked_requirement_string
-          lower_bound_req = updated_version_req_lower_bound
-
-          # Add the latest_allowable_version as an upper bound. This means
-          # ignore conditions are considered when checking for the latest
-          # resolvable version.
-          #
-          # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
-          # unresolvable then the `latest_allowable_version` will be v3, and
-          # we won't be ignoring v2.x releases like we should be.
-          return lower_bound_req if latest_allowable_version.nil?
-          unless Python::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
-
-          lower_bound_req + ", <= #{latest_allowable_version}"
-        end
-
-        def updated_version_req_lower_bound
-          if dependency.version
-            ">= #{dependency.version}"
-          else
-            version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.compact.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
-
-            ">= #{version_for_requirement || 0}"
-          end
         end
 
         def run_command(command, env: {})

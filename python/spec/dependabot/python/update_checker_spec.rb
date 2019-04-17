@@ -214,6 +214,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           and_return(dummy_resolver)
         expect(dummy_resolver).
           to receive(:latest_resolvable_version).
+          with(requirement: ">= 2.0.0, <= 2.6.0").
           and_return(Gem::Version.new("2.5.0"))
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("2.5.0"))
@@ -294,6 +295,32 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           ).and_call_original
         expect(checker.latest_resolvable_version_with_no_unlock).
           to eq(Gem::Version.new("2.6.0"))
+      end
+    end
+
+    context "with a Pipfile" do
+      let(:dependency_files) { [pipfile] }
+      let(:version) { nil }
+      let(:requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==2.18.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "delegates to PipenvVersionResolver" do
+        dummy_resolver =
+          instance_double(described_class::PipenvVersionResolver)
+        allow(described_class::PipenvVersionResolver).to receive(:new).
+          and_return(dummy_resolver)
+        expect(dummy_resolver).
+          to receive(:latest_resolvable_version).
+          with(requirement: "==2.18.0").
+          and_return(Gem::Version.new("2.18.0"))
+        expect(checker.latest_resolvable_version_with_no_unlock).
+          to eq(Gem::Version.new("2.18.0"))
       end
     end
   end

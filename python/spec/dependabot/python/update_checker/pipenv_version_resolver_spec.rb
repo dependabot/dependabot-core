@@ -11,9 +11,7 @@ RSpec.describe namespace::PipenvVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials,
-      unlock_requirement: unlock_requirement,
-      latest_allowable_version: latest_version
+      credentials: credentials
     )
   end
   let(:credentials) do
@@ -24,7 +22,6 @@ RSpec.describe namespace::PipenvVersionResolver do
       "password" => "token"
     }]
   end
-  let(:unlock_requirement) { true }
   let(:dependency_files) { [pipfile, lockfile] }
   let(:latest_version) { Gem::Version.new("2.18.4") }
   let(:pipfile) do
@@ -61,7 +58,10 @@ RSpec.describe namespace::PipenvVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject do
+      resolver.latest_resolvable_version(requirement: updated_requirement)
+    end
+    let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
 
     context "with a lockfile" do
       let(:dependency_files) { [pipfile, lockfile] }
@@ -69,7 +69,7 @@ RSpec.describe namespace::PipenvVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
-        let(:unlock_requirement) { false }
+        let(:updated_requirement) { "== 2.18.0" }
         it { is_expected.to be >= Gem::Version.new("2.18.0") }
       end
     end
@@ -81,12 +81,12 @@ RSpec.describe namespace::PipenvVersionResolver do
     end
 
     context "when the latest version isn't allowed" do
-      let(:latest_version) { Gem::Version.new("2.18.3") }
+      let(:updated_requirement) { ">= 2.18.0, <= 2.18.3" }
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "when the latest version is nil" do
-      let(:latest_version) { nil }
+      let(:updated_requirement) { ">= 2.18.0" }
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
@@ -103,6 +103,7 @@ RSpec.describe namespace::PipenvVersionResolver do
           source: nil
         }]
       end
+      let(:updated_requirement) { ">= 0.16.1, <= 1.0.0" }
 
       it { is_expected.to be >= Gem::Version.new("0.16.12") }
     end
@@ -154,7 +155,7 @@ RSpec.describe namespace::PipenvVersionResolver do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
       let(:dependency_requirements) { [] }
-      let(:latest_version) { Gem::Version.new("1.8.0") }
+      let(:updated_requirement) { ">= 1.5.3, <= 1.8.0" }
 
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
 
@@ -162,7 +163,7 @@ RSpec.describe namespace::PipenvVersionResolver do
         let(:lockfile_fixture_name) { "unnecessary_subdependency.lock" }
         let(:dependency_name) { "setuptools" }
         let(:dependency_version) { "40.2.0" }
-        let(:latest_version) { Gem::Version.new("41.0.0") }
+        let(:updated_requirement) { ">= 40.2.0, <= 41.0.0" }
 
         it { is_expected.to be_nil }
       end
@@ -260,7 +261,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:latest_version) { Gem::Version.new("3.8.1") }
+        let(:updated_requirement) { ">= 3.4.0, <= 3.8.1" }
 
         it { is_expected.to eq(Gem::Version.new("3.8.1")) }
 
@@ -284,7 +285,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:latest_version) { Gem::Version.new("2.1.4") }
+        let(:updated_requirement) { ">= 1.1.14, <= 2.1.4" }
 
         it { is_expected.to eq(Gem::Version.new("1.11.20")) }
       end
@@ -302,7 +303,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:latest_version) { Gem::Version.new("6.14.6") }
+        let(:updated_requirement) { ">= 3.4.0, <= 6.14.6" }
         it { is_expected.to eq(Gem::Version.new("6.14.6")) }
       end
     end
@@ -325,7 +326,7 @@ RSpec.describe namespace::PipenvVersionResolver do
     context "with extra requirements" do
       let(:dependency_name) { "raven" }
       let(:dependency_version) { "5.27.1" }
-      let(:latest_version) { Gem::Version.new("7.0.0") }
+      let(:updated_requirement) { ">= 5.27.1, <= 7.0.0" }
       let(:pipfile_fixture_name) { "extra_subdependency" }
       let(:lockfile_fixture_name) { "extra_subdependency.lock" }
 
