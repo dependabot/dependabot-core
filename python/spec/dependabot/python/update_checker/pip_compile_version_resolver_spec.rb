@@ -63,7 +63,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     end
     let(:updated_requirement) { ">= 17.3.0, <= 18.1.0" }
 
-    it { is_expected.to be >= Gem::Version.new("18.1.0") }
+    it { is_expected.to eq(Gem::Version.new("18.1.0")) }
 
     context "with an upper bound" do
       let(:manifest_fixture_name) { "bounded.in" }
@@ -77,15 +77,17 @@ RSpec.describe namespace::PipCompileVersionResolver do
         }]
       end
 
-      let(:updated_requirement) { "<= 18.1.0" }
-      it { is_expected.to be >= Gem::Version.new("18.1.0") }
+      context "when originally unpinned"
+        let(:updated_requirement) { "<= 18.1.0" }
+        it { is_expected.to eq(Gem::Version.new("18.1.0")) }
+      end
 
       context "when not unlocking requirements" do
         let(:updated_requirement) { "<= 17.4.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
-      context "when the latest version isn't allowed" do
+      context "when the latest version isn't allowed (doesn't exist)" do
         let(:updated_requirement) { "<= 18.0.0" }
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end

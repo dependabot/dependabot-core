@@ -6,6 +6,7 @@ require "toml-rb"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 require "dependabot/python/requirement"
 require "dependabot/python/requirement_parser"
 
@@ -76,17 +77,12 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        @lowest_resolvable_security_fix_version ||=
-          case resolver_type
-          when :requirements
-            latest_version_finder.lowest_security_fix_version
-          when :pipenv, :poetry, :pip_compile
-            # TODO: Handle package managers with a resolvability concept
-            latest_resolvable_version
-          else raise "Unexpected resolver type #{resolver_type}"
-          end
+        if defined?(@lowest_resolvable_security_fix_version)
+          return @lowest_resolvable_security_fix_version
+        end
 
-        latest_version_finder.lowest_security_fix_version
+        @lowest_resolvable_security_fix_version =
+          fetch_lowest_resolvable_security_fix_version
       end
 
       def updated_requirements
@@ -120,6 +116,24 @@ module Dependabot
 
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
+      end
+
+      def fetch_lowest_resolvable_security_fix_version
+        fix_version = latest_version_finder.lowest_security_fix_version
+        return latest_resolvable_version if fix_version.nil?
+        return fix_version if resolver_type == :requirements
+
+        resolver =
+          case resolver_type
+          when :pip_compile then pip_compile_version_resolver
+          when :pipenv then pipenv_version_resolver
+          when :poetry then poetry_version_resolver
+          else raise "Unexpected resolver type #{resolver_type}"
+          end
+
+        resolver.latest_resolvable_version(requirement: "==#{fix_version}")
+      rescue DependabotError
+        latest_resolvable_version
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

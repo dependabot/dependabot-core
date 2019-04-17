@@ -265,6 +265,48 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         ]
       end
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+
+      context "with a pip-compile file" do
+        let(:dependency_files) { [manifest_file, generated_file] }
+        let(:manifest_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.in",
+            content: fixture("pip_compile_files", manifest_fixture_name)
+          )
+        end
+        let(:generated_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/test.txt",
+            content: fixture("requirements", generated_fixture_name)
+          )
+        end
+        let(:manifest_fixture_name) { "unpinned.in" }
+        let(:generated_fixture_name) { "pip_compile_unpinned.txt" }
+        let(:dependency_name) { "attrs" }
+        let(:dependency_version) { "17.3.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: nil,
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:pypi_url) { "https://pypi.python.org/simple/attrs/" }
+        let(:pypi_response) { fixture("pypi_simple_response_attrs.html") }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "pip",
+              vulnerable_versions: ["< 17.4.0"]
+            )
+          ]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("17.4.0")) }
+      end
     end
   end
 
