@@ -56,7 +56,11 @@ module Dependabot
           return @latest_resolvable_version if @resolution_already_attempted
 
           @resolution_already_attempted = true
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+
+          updated_requirement =
+            unlock_requirement? ? unlocked_requirement_string : nil
+          @latest_resolvable_version ||=
+            fetch_latest_resolvable_version(requirement: updated_requirement)
         end
 
         private
@@ -67,11 +71,23 @@ module Dependabot
           @unlock_requirement
         end
 
-        def fetch_latest_resolvable_version
-          @latest_resolvable_version_string ||=
+        def fetch_latest_resolvable_version(requirement:)
+          version_string =
+            fetch_latest_resolvable_version_string(requirement: requirement)
+
+          version_string.nil? ? nil : Python::Version.new(version_string)
+        end
+
+        def fetch_latest_resolvable_version_string(requirement:)
+          @latest_resolvable_version_string ||= {}
+          if @latest_resolvable_version_string.key?(requirement)
+            return @latest_resolvable_version_string[requirement]
+          end
+
+          @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
-                write_temporary_dependency_files
+                write_temporary_dependency_files(updated_req: requirement)
                 install_required_python
 
                 # Shell out to Pipenv, which handles everything for us.
@@ -87,9 +103,6 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_pipenv_errors(e)
             end
-          return unless @latest_resolvable_version_string
-
-          Python::Version.new(@latest_resolvable_version_string)
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
@@ -252,7 +265,8 @@ module Dependabot
           msg.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
-        def write_temporary_dependency_files(update_pipfile: true)
+        def write_temporary_dependency_files(updated_req: nil,
+                                             update_pipfile: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -273,11 +287,12 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, "[metadata]\nname = sanitized-package\n")
           end
+          return unless update_pipfile
 
           # Overwrite the pipfile with updated content
           File.write(
             "Pipfile",
-            pipfile_content(update_pipfile: update_pipfile)
+            pipfile_content(updated_requirement: updated_req)
           )
         end
 
@@ -312,12 +327,10 @@ module Dependabot
           dependency_files.find { |f| f.name == config_name }
         end
 
-        def pipfile_content(update_pipfile: true)
+        def pipfile_content(updated_requirement:)
           content = pipfile.content
-          return content unless update_pipfile
-
           content = freeze_other_dependencies(content)
-          content = unlock_target_dependency(content) if unlock_requirement?
+          content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
           content
         end
@@ -328,7 +341,9 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
-        def unlock_target_dependency(pipfile_content)
+        def set_target_dependency_req(pipfile_content, updated_requirement)
+          return pipfile_content unless updated_requirement
+
           pipfile_object = TomlRB.parse(pipfile_content)
 
           %w(packages dev-packages).each do |type|
@@ -337,11 +352,9 @@ module Dependabot
             next unless pkg_name
 
             if pipfile_object.dig(type, pkg_name).is_a?(Hash)
-              pipfile_object[type][pkg_name]["version"] =
-                updated_version_requirement_string
+              pipfile_object[type][pkg_name]["version"] = updated_requirement
             else
-              pipfile_object[type][pkg_name] =
-                updated_version_requirement_string
+              pipfile_object[type][pkg_name] = updated_requirement
             end
           end
 
@@ -445,7 +458,7 @@ module Dependabot
             end
         end
 
-        def updated_version_requirement_string
+        def unlocked_requirement_string
           lower_bound_req = updated_version_req_lower_bound
 
           # Add the latest_allowable_version as an upper bound. This means
