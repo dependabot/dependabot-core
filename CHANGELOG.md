@@ -1,3 +1,8 @@
+## v0.104.3, 17 April 2019
+
+- Remove xdebug from container
+- Rename pipfile resolver to pipenv
+
 ## v0.104.2, 17 April 2019
 
 - Python: Refactor UpdateChecker to make it more extensible
