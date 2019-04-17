@@ -14,46 +14,39 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/authed_url_builder"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
-
         attr_reader :dependency, :dependency_files, :credentials
 
-        def initialize(dependency:, dependency_files:, credentials:,
-                       unlock_requirement:, latest_allowable_version:)
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
-          @latest_allowable_version = latest_allowable_version
-          @unlock_requirement       = unlock_requirement
 
           check_private_sources_are_reachable
         end
 
-        def latest_resolvable_version
-          return @latest_resolvable_version if @resolution_already_attempted
+        def latest_resolvable_version(requirement: nil)
+          version_string =
+            fetch_latest_resolvable_version_string(requirement: requirement)
 
-          @resolution_already_attempted = true
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+          version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
         private
 
-        attr_reader :latest_allowable_version
+        def fetch_latest_resolvable_version_string(requirement:)
+          @latest_resolvable_version_string ||= {}
+          if @latest_resolvable_version_string.key?(requirement)
+            return @latest_resolvable_version_string[requirement]
+          end
 
-        def unlock_requirement?
-          @unlock_requirement
-        end
-
-        def fetch_latest_resolvable_version
-          latest_resolvable_version_string =
+          @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+              write_temporary_dependency_files(updated_req: requirement)
 
               if python_version && !pre_installed_python?(python_version)
                 run_poetry_command("pyenv install -s #{python_version}")
@@ -77,9 +70,6 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => e
               handle_poetry_errors(e)
             end
-          return unless latest_resolvable_version_string
-
-          Python::Version.new(latest_resolvable_version_string)
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
@@ -131,7 +121,8 @@ module Dependabot
           message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
-        def write_temporary_dependency_files(update_pyproject: true)
+        def write_temporary_dependency_files(updated_req: nil,
+                                             update_pyproject: true)
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -143,7 +134,10 @@ module Dependabot
 
           # Overwrite the pyproject with updated content
           if update_pyproject
-            File.write("pyproject.toml", updated_pyproject_content)
+            File.write(
+              "pyproject.toml",
+              updated_pyproject_content(updated_requirement: updated_req)
+            )
           else
             File.write("pyproject.toml", sanitized_pyproject_content)
           end
@@ -191,15 +185,12 @@ module Dependabot
           PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
         end
 
-        def updated_pyproject_content
-          @updated_pyproject_content ||=
-            begin
-              content = pyproject.content
-              content = sanitize_pyproject_content(content)
-              content = freeze_other_dependencies(content)
-              content = unlock_target_dependency(content) if unlock_requirement?
-              content
-            end
+        def updated_pyproject_content(updated_requirement:)
+          content = pyproject.content
+          content = sanitize_pyproject_content(content)
+          content = freeze_other_dependencies(content)
+          content = set_target_dependency_req(content, updated_requirement)
+          content
         end
 
         def sanitized_pyproject_content
@@ -220,7 +211,9 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
-        def unlock_target_dependency(pyproject_content)
+        def set_target_dependency_req(pyproject_content, updated_requirement)
+          return pyproject_content unless updated_requirement
+
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
@@ -230,11 +223,9 @@ module Dependabot
             next unless pkg_name
 
             if poetry_object.dig(type, pkg_name).is_a?(Hash)
-              poetry_object[type][pkg_name]["version"] =
-                updated_version_requirement_string
+              poetry_object[type][pkg_name]["version"] = updated_requirement
             else
-              poetry_object[type][pkg_name] =
-                updated_version_requirement_string
+              poetry_object[type][pkg_name] = updated_requirement
             end
           end
 
@@ -264,40 +255,6 @@ module Dependabot
             rescue Excon::Error::Timeout, Excon::Error::Socket
               raise PrivateSourceTimedOut, sanitized_url
             end
-        end
-
-        def updated_version_requirement_string
-          lower_bound_req = updated_version_req_lower_bound
-
-          # Add the latest_allowable_version as an upper bound. This means
-          # ignore conditions are considered when checking for the latest
-          # resolvable version.
-          #
-          # NOTE: This isn't perfect. If v2.x is ignored and v3 is out but
-          # unresolvable then the `latest_allowable_version` will be v3, and
-          # we won't be ignoring v2.x releases like we should be.
-          return lower_bound_req if latest_allowable_version.nil?
-          unless Python::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
-
-          lower_bound_req + ", <= #{latest_allowable_version}"
-        end
-
-        def updated_version_req_lower_bound
-          if dependency.version
-            ">= #{dependency.version}"
-          else
-            version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.compact.
-              reject { |req_string| req_string.start_with?("<") }.
-              select { |req_string| req_string.match?(VERSION_REGEX) }.
-              map { |req_string| req_string.match(VERSION_REGEX) }.
-              select { |version| Gem::Version.correct?(version) }.
-              max_by { |version| Gem::Version.new(version) }
-
-            ">= #{version_for_requirement || 0}"
-          end
         end
 
         def pyproject
@@ -372,4 +329,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

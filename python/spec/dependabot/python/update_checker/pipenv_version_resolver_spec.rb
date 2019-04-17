@@ -23,7 +23,6 @@ RSpec.describe namespace::PipenvVersionResolver do
     }]
   end
   let(:dependency_files) { [pipfile, lockfile] }
-  let(:latest_version) { Gem::Version.new("2.18.4") }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",

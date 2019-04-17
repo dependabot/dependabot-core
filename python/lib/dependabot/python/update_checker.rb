@@ -36,7 +36,9 @@ module Dependabot
               requirement: unlocked_requirement_string
             )
           when :poetry
-            poetry_version_resolver.latest_resolvable_version
+            poetry_version_resolver.latest_resolvable_version(
+              requirement: unlocked_requirement_string
+            )
           when :pip_compile
             pip_compile_version_resolver.latest_resolvable_version
           when :requirements
@@ -56,9 +58,9 @@ module Dependabot
               requirement: current_requirement_string
             )
           when :poetry
-            poetry_version_resolver(
-              unlock_requirement: false
-            ).latest_resolvable_version
+            poetry_version_resolver.latest_resolvable_version(
+              requirement: current_requirement_string
+            )
           when :pip_compile
             pip_compile_version_resolver(
               unlock_requirement: false

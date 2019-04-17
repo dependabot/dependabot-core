@@ -11,9 +11,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials,
-      unlock_requirement: unlock_requirement,
-      latest_allowable_version: latest_version
+      credentials: credentials
     )
   end
   let(:credentials) do
@@ -24,9 +22,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       "password" => "token"
     }]
   end
-  let(:unlock_requirement) { true }
   let(:dependency_files) { [pyproject, lockfile] }
-  let(:latest_version) { Gem::Version.new("2.18.4") }
   let(:pyproject) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
@@ -61,7 +57,10 @@ RSpec.describe namespace::PoetryVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject do
+      resolver.latest_resolvable_version(requirement: updated_requirement)
+    end
+    let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
 
     context "without a lockfile (but with a latest version)" do
       let(:dependency_files) { [pyproject] }
@@ -75,7 +74,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
       context "when not unlocking the requirement" do
-        let(:unlock_requirement) { false }
+        let(:updated_requirement) { "== 2.18.0" }
         it { is_expected.to eq(Gem::Version.new("2.18.0")) }
       end
 
@@ -96,12 +95,12 @@ RSpec.describe namespace::PoetryVersionResolver do
     end
 
     context "when the latest version isn't allowed" do
-      let(:latest_version) { Gem::Version.new("2.18.3") }
+      let(:updated_requirement) { ">= 2.18.0, <= 2.18.3" }
       it { is_expected.to eq(Gem::Version.new("2.18.3")) }
     end
 
     context "when the latest version is nil" do
-      let(:latest_version) { nil }
+      let(:updated_requirement) { ">= 2.18.0" }
       it { is_expected.to be >= Gem::Version.new("2.19.0") }
     end
 
@@ -109,7 +108,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:dependency_name) { "idna" }
       let(:dependency_version) { "2.5" }
       let(:dependency_requirements) { [] }
-      let(:latest_version) { Gem::Version.new("2.7") }
+      let(:updated_requirement) { ">= 2.5, <= 2.7" }
 
       # Resolution blocked by requests
       it { is_expected.to eq(Gem::Version.new("2.5")) }
@@ -118,7 +117,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:dependency_name) { "cryptography" }
         let(:dependency_version) { "2.4.2" }
         let(:dependency_requirements) { [] }
-        let(:latest_version) { Gem::Version.new("2.5") }
+        let(:updated_requirement) { ">= 2.4.2, <= 2.5" }
         let(:lockfile_fixture_name) { "extra_dependency.lock" }
 
         it { is_expected.to be_nil }
@@ -144,6 +143,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           source: nil
         }]
       end
+      let(:updated_requirement) { ">= 2.6.0, <= 2.18.4" }
 
       # Conflict with chardet is introduced in v2.16.0
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
@@ -162,6 +162,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           source: nil
         }]
       end
+      let(:updated_requirement) { ">= 1.4.2, <= 1.4.3" }
 
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end

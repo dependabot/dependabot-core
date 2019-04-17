@@ -239,6 +239,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           and_return(dummy_resolver)
         expect(dummy_resolver).
           to receive(:latest_resolvable_version).
+          with(requirement: ">= 2.0.0, <= 2.6.0").
           and_return(Gem::Version.new("2.5.0"))
         expect(checker.latest_resolvable_version).
           to eq(Gem::Version.new("2.5.0"))
