@@ -169,9 +169,15 @@ module Dependabot
         current_dir = nil if current_dir == ""
         path_dep_starts = %w(file: / ./ ../ ~/ link:.)
 
-        JSON.parse(file.content).
-          values_at(*NpmAndYarn::FileParser::DEPENDENCY_TYPES).
-          compact.flat_map(&:to_a).
+        dependency_objects =
+          JSON.parse(file.content).
+          values_at(*NpmAndYarn::FileParser::DEPENDENCY_TYPES).compact
+
+        unless dependency_objects.all? { |o| o.is_a?(Hash) }
+          raise Dependabot::DependencyFileNotParseable, file.path
+        end
+
+        dependency_objects.flat_map(&:to_a).
           select { |_, v| v.start_with?(*path_dep_starts) }.
           map do |name, path|
             path = path.sub(/^file:/, "").sub(/^link:/, "")

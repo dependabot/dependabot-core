@@ -322,6 +322,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
+    context "with a bad dependencies object" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_dependency_arrays.json"),
+            headers: json_header
+          )
+      end
+
+      it "raises a DependencyFileNotParseable error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+            expect(error.file_name).to eq("package.json")
+          end
+      end
+    end
+
     context "that has a fetchable path" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
