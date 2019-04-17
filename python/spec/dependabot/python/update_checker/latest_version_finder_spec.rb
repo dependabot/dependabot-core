@@ -475,4 +475,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.5.0")) }
     end
   end
+
+  describe "#lowest_security_fix_version" do
+    subject { finder.lowest_security_fix_version }
+
+    let(:dependency_version) { "1.1.0" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "pip",
+          vulnerable_versions: ["<= 2.1.0"]
+        )
+      ]
+    end
+    it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+  end
 end
