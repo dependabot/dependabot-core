@@ -1,3 +1,11 @@
+## v0.104.2, 17 April 2019
+
+- Python: Refactor UpdateChecker to make it more extensible
+- Python: Rename PipfileVersionResolver to PipenvVersionResolver
+- Python: Update to lowest fixed version for vulnerable requirement.txt versions
+- Python: Add lowest_security_fix_version to UpdateChecker::LatestVersionFinder
+- Python: Pass security_advisories to LatestVersionFinder
+
 ## v0.104.1, 17 April 2019
 
 - Add mercurial to Dockerfile
