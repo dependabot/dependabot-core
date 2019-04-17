@@ -30,7 +30,7 @@ module Dependabot
       def latest_resolvable_version
         @latest_resolvable_version ||=
           case resolver_type
-          when :pipfile
+          when :pipenv
             pipenv_version_resolver.latest_resolvable_version
           when :poetry
             poetry_version_resolver.latest_resolvable_version
@@ -48,7 +48,7 @@ module Dependabot
       def latest_resolvable_version_with_no_unlock
         @latest_resolvable_version_with_no_unlock ||=
           case resolver_type
-          when :pipfile
+          when :pipenv
             pipenv_version_resolver(
               unlock_requirement: false
             ).latest_resolvable_version
@@ -73,7 +73,7 @@ module Dependabot
           case resolver_type
           when :requirements
             latest_version_finder.lowest_security_fix_version
-          when :pipfile, :poetry, :pip_compile
+          when :pipenv, :poetry, :pip_compile
             # TODO: Handle package managers with a resolvability concept
             latest_resolvable_version
           else raise "Unexpected resolver type #{resolver_type}"
@@ -127,7 +127,7 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipfile if req_files.any? { |f| f == "Pipfile" }
+        return :pipenv if req_files.any? { |f| f == "Pipfile" }
         return :poetry if req_files.any? { |f| f == "pyproject.toml" }
         return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
@@ -140,7 +140,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
-        return :pipfile if pipfile_lock
+        return :pipenv if pipfile_lock
         return :poetry if poetry_lock || pyproject_lock
         return :pip_compile if pip_compile_files.any?
 
