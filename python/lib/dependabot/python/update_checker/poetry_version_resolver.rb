@@ -36,6 +36,21 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        def resolvable?(version:)
+          @resolvable ||= {}
+          return @resolvable[version] if @resolvable.key?(version)
+
+          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+            @resolvable[version] = true
+          else
+            @resolvable[version] = false
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless e.message.include?("SolverProblemError")
+
+          @resolvable[version] = false
+        end
+
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
@@ -99,6 +114,8 @@ module Dependabot
         end
 
         def check_original_requirements_resolvable
+          return @original_reqs_resolvable if @original_reqs_resolvable
+
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(update_pyproject: false)
 
@@ -106,7 +123,7 @@ module Dependabot
               "pyenv exec poetry update #{dependency.name} --lock"
             )
 
-            true
+            @original_reqs_resolvable = true
           rescue SharedHelpers::HelperSubprocessFailed => error
             raise unless error.message.include?("SolverProblemError") ||
                          error.message.include?("PackageNotFound")

@@ -55,6 +55,17 @@ module Dependabot
           version_string.nil? ? nil : Python::Version.new(version_string)
         end
 
+        def resolvable?(version:)
+          @resolvable ||= {}
+          return @resolvable[version] if @resolvable.key?(version)
+
+          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+            @resolvable[version] = true
+          else
+            @resolvable[version] = false
+          end
+        end
+
         private
 
         def fetch_latest_resolvable_version_string(requirement:)

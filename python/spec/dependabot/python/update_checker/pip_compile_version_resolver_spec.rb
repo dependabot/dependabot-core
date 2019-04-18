@@ -401,4 +401,43 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
   end
+
+  describe "#resolvable?" do
+    subject { resolver.resolvable?(version: version) }
+    let(:version) { Gem::Version.new("18.1.0") }
+
+    context "that is resolvable" do
+      let(:version) { Gem::Version.new("18.1.0") }
+      it { is_expected.to eq(true) }
+    end
+
+    context "that is not resolvable" do
+      let(:version) { Gem::Version.new("99.18.4") }
+      it { is_expected.to eq(false) }
+
+      context "because the original manifest isn't resolvable" do
+        let(:manifest_fixture_name) { "unresolvable.in" }
+        let(:dependency_files) { [manifest_file] }
+        let(:dependency_name) { "boto3" }
+        let(:dependency_version) { nil }
+        let(:version) { "1.9.28" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "==1.9.27",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to start_with("Could not find a version that matches boto3")
+            end
+        end
+      end
+    end
+  end
 end

@@ -131,9 +131,7 @@ module Dependabot
           else raise "Unexpected resolver type #{resolver_type}"
           end
 
-        resolver.latest_resolvable_version(requirement: "==#{fix_version}")
-      rescue DependabotError
-        latest_resolvable_version
+        resolver.resolvable?(version: fix_version) ? fix_version : nil
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

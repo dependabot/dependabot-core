@@ -485,4 +485,43 @@ RSpec.describe namespace::PipenvVersionResolver do
       end
     end
   end
+
+  describe "#resolvable?" do
+    subject { resolver.resolvable?(version: version) }
+    let(:version) { Gem::Version.new("2.18.4") }
+
+    context "that is resolvable" do
+      let(:version) { Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(true) }
+    end
+
+    context "that is not resolvable" do
+      let(:version) { Gem::Version.new("99.18.4") }
+      it { is_expected.to eq(false) }
+
+      context "because the original manifest isn't resolvable" do
+        let(:pipfile_fixture_name) { "conflict_at_current" }
+        let(:lockfile_fixture_name) { "conflict_at_current.lock" }
+        let(:version) { Gem::Version.new("99.18.4") }
+        let(:dependency_requirements) do
+          [{
+            file: "Pipfile",
+            requirement: "==2.18.0",
+            groups: ["default"],
+            source: nil
+          }]
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to include(
+                "Could not find a version that matches "\
+                "chardet<3.1.0,==3.0.0,>=3.0.2\n"
+              )
+            end
+        end
+      end
+    end
+  end
 end

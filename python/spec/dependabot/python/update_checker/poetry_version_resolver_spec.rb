@@ -194,4 +194,32 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
   end
+
+  describe "#resolvable?" do
+    subject { resolver.resolvable?(version: version) }
+    let(:version) { Gem::Version.new("2.18.4") }
+
+    context "that is resolvable" do
+      let(:version) { Gem::Version.new("2.18.4") }
+      it { is_expected.to eq(true) }
+    end
+
+    context "that is not resolvable" do
+      let(:version) { Gem::Version.new("99.18.4") }
+      it { is_expected.to eq(false) }
+
+      context "because the original manifest isn't resolvable" do
+        let(:dependency_files) { [pyproject] }
+        let(:pyproject_fixture_name) { "solver_problem.toml" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to include("depends on black (^18) which doesn't match any")
+            end
+        end
+      end
+    end
+  end
 end
