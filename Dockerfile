@@ -133,8 +133,12 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 ### RUST
 
 # Install Rust 1.33.0
+# RUSTUP_USE_CURL is necessary because rustup <=1.17.0 doesn't support proxy
+# authentication. We can remove it once something later than 1.17.0 is out as
+# https://github.com/rust-lang/rustup.rs/pull/1746 should have fixed the issue.
 ENV RUSTUP_HOME=/opt/rust \
-    PATH="${PATH}:/opt/rust/bin"
+    PATH="${PATH}:/opt/rust/bin" \
+    RUSTUP_USE_CURL=1
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 
