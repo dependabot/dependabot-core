@@ -1,3 +1,8 @@
+## v0.105.4, 18 April 2019
+
+- Ruby: Handle Ruby lock errors correctly in LockfileUpdater
+- Ruby: Update versions constant
+
 ## v0.105.3, 18 April 2019
 
 - Python: Handle lockfile-only updates with an unrelated requirement
