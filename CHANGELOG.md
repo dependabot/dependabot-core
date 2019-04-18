@@ -1,3 +1,7 @@
+## v0.105.6, 18 April 2019
+
+- Python: Add `resolvable?` method to version resolvers, and use in update checkers
+
 ## v0.105.5, 18 April 2019
 
 - JS: Handle cases where requirements stay identical except for switch to private source
