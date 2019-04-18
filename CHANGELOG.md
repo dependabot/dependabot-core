@@ -1,3 +1,7 @@
+## v0.105.7, 18 April 2019
+
+- Stop using commit compare API endpoint when building commit diffs (it sometimes 500s)
+
 ## v0.105.6, 18 April 2019
 
 - Python: Add `resolvable?` method to version resolvers, and use in update checkers
