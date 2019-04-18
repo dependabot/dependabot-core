@@ -94,7 +94,8 @@ module Dependabot
               end
             end
           post_process_lockfile(lockfile_body)
-        rescue Dependabot::DependencyFileNotResolvable => e
+        rescue SharedHelpers::ChildProcessFailed => e
+          raise unless e.error_class == "Bundler::VersionConflict"
           raise unless ruby_lock_error?(e)
 
           @dont_lock_ruby_version = true
