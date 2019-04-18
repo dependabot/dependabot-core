@@ -1,3 +1,9 @@
+## v0.105.3, 18 April 2019
+
+- Python: Handle lockfile-only updates with an unrelated requirement
+- Rust: Tell rustup to use cURL
+- Rust: Change ownership of /opt/rust in dev dockerfile
+
 ## v0.105.2, 18 April 2019
 
 - Rust: Add LatestVersionFinder#lowest_security_fix_version
