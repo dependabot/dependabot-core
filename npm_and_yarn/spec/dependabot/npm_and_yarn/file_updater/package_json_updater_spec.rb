@@ -73,6 +73,62 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
     end
 
+    context "when the requirement hasn't changed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "fetch-factory",
+          version: "0.1.5",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "0.1.x",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "0.1.x",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+      let(:manifest_fixture_name) { "minor_version_specified.json" }
+
+      its(:content) do
+        is_expected.to eq(fixture("package_files", manifest_fixture_name))
+      end
+
+      context "except for the source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "fetch-factory",
+            version: "0.1.5",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.1.x",
+              groups: ["dependencies"],
+              source: {
+                type: "private_registry",
+                url: "http://registry.npm.taobao.org"
+              }
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "0.1.x",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        its(:content) do
+          is_expected.to eq(fixture("package_files", manifest_fixture_name))
+        end
+      end
+    end
+
     context "when a dev dependency is specified" do
       let(:dependency) do
         Dependabot::Dependency.new(

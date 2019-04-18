@@ -64,8 +64,18 @@ module Dependabot
         end
 
         def updated_requirements(dependency)
-          new_requirements(dependency).
-            reject { |r| dependency.previous_requirements.include?(r) }
+          updated_requirement_pairs =
+            dependency.requirements.zip(dependency.previous_requirements).
+            reject do |new_req, old_req|
+              next true if new_req == old_req
+              next false unless old_req[:source].nil?
+
+              new_req[:requirement] == old_req[:requirement]
+            end
+
+          updated_requirement_pairs.
+            map(&:first).
+            select { |r| r[:file] == package_json.name }
         end
 
         def update_package_json_declaration(package_json_content:, new_req:,
