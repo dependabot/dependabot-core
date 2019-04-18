@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
@@ -8,6 +7,7 @@ require "dependabot/update_checkers/base"
 module Dependabot
   module Cargo
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/file_preparer"
@@ -23,12 +23,7 @@ module Dependabot
             # they can't be passed to GitCommitChecker.
             nil
           else
-            versions = available_versions
-            versions.reject!(&:prerelease?) unless wants_prerelease?
-            versions.reject! do |v|
-              ignore_reqs.any? { |r| r.satisfied_by?(v) }
-            end
-            versions.max
+            latest_version_finder.latest_version
           end
       end
 
@@ -88,6 +83,16 @@ module Dependabot
 
       def requirement_update_strategy
         library? ? :bump_versions_if_necessary : :bump_versions
+      end
+
+      def latest_version_finder
+        @latest_version_finder ||= LatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          security_advisories: security_advisories
+        )
       end
 
       def latest_version_for_git_dependency
@@ -213,25 +218,6 @@ module Dependabot
         sources.first
       end
 
-      def wants_prerelease?
-        if dependency.version &&
-           version_class.new(dependency.version).prerelease?
-          return true
-        end
-
-        dependency.requirements.any? do |req|
-          reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
-          reqs.any? { |r| r.match?(/[A-Za-z]/) }
-        end
-      end
-
-      def available_versions
-        crates_listing.
-          fetch("versions", []).
-          reject { |v| v["yanked"] }.
-          map { |v| version_class.new(v.fetch("num")) }
-      end
-
       def git_dependency?
         git_commit_checker.git_dependency?
       end
@@ -257,24 +243,6 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           )
-      end
-
-      def crates_listing
-        return @crates_listing unless @crates_listing.nil?
-
-        response = Excon.get(
-          "https://crates.io/api/v1/crates/#{dependency.name}",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
-        @crates_listing = JSON.parse(response.body)
-      rescue Excon::Error::Timeout
-        retrying ||= false
-        raise if retrying
-
-        retrying = true
-        sleep(rand(1.0..5.0)) && retry
       end
     end
   end
