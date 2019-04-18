@@ -3,7 +3,10 @@ FROM dependabot/dependabot-core
 RUN apt-get update && apt-get install -y vim strace ltrace gdb
 
 RUN useradd -m dependabot
-RUN chown -R dependabot:dependabot /usr/local/.pyenv /opt/go/gopath
+RUN chown -R dependabot:dependabot \
+  /usr/local/.pyenv \
+  /opt/go/gopath \
+  /opt/rust/
 USER dependabot
 
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
