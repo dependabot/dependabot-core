@@ -344,8 +344,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
 
     context "with a Pipfile" do
-      let(:dependency_files) { [pipfile] }
-      let(:version) { nil }
+      let(:dependency_files) { [pipfile, lockfile] }
+      let(:version) { "2.18.0" }
       let(:requirements) do
         [{
           file: "Pipfile",
@@ -353,6 +353,12 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           groups: [],
           source: nil
         }]
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("lockfiles", "exact_version.lock")
+        )
       end
 
       it "delegates to PipenvVersionResolver" do
@@ -366,6 +372,30 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           and_return(Gem::Version.new("2.18.0"))
         expect(checker.latest_resolvable_version_with_no_unlock).
           to eq(Gem::Version.new("2.18.0"))
+      end
+
+      context "with a requirement from a setup.py" do
+        let(:requirements) do
+          [{
+            file: "setup.py",
+            requirement: nil,
+            groups: ["install_requires"],
+            source: nil
+          }]
+        end
+
+        it "delegates to PipenvVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipenvVersionResolver)
+          allow(described_class::PipenvVersionResolver).to receive(:new).
+            and_return(dummy_resolver)
+          expect(dummy_resolver).
+            to receive(:latest_resolvable_version).
+            with(requirement: nil).
+            and_return(Gem::Version.new("2.18.0"))
+          expect(checker.latest_resolvable_version_with_no_unlock).
+            to eq(Gem::Version.new("2.18.0"))
+        end
       end
     end
   end

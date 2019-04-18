@@ -208,7 +208,7 @@ module Dependabot
           when :requirements then reqs.find { |r| r[:file].end_with?(".txt") }
           end
 
-        requirement.fetch(:requirement)
+        requirement&.fetch(:requirement)
       end
 
       def unlocked_requirement_string
