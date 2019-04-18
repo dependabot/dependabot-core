@@ -1,3 +1,9 @@
+## v0.105.2, 18 April 2019
+
+- Rust: Add LatestVersionFinder#lowest_security_fix_version
+- Rust: Extract specs for LatestVersionFinder
+- Rust: Extract latest version finder logic into separate class
+
 ## v0.105.1, 17 April 2019
 
 - JS: Handle MyGet format resolved URLs
