@@ -1,3 +1,7 @@
+## v0.105.5, 18 April 2019
+
+- JS: Handle cases where requirements stay identical except for switch to private source
+
 ## v0.105.4, 18 April 2019
 
 - Ruby: Handle Ruby lock errors correctly in LockfileUpdater
