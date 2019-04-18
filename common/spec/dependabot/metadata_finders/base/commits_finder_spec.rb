@@ -553,18 +553,28 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         before do
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/business/compare/"\
-            "v1.3.0...v1.4.0"
+            "https://api.github.com/repos/gocardless/business/commits?"\
+            "sha=v1.3.0"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body: fixture("github", "business_compare_commits.json"),
+              body: fixture("github", "commits-business-1.3.0.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/business/commits?"\
+            "sha=v1.4.0"
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "commits-business-1.4.0.json"),
               headers: { "Content-Type" => "application/json" }
             )
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
+          is_expected.to eq(
             [
               {
                 message: "Remove SEPA calendar (replaced by TARGET)",
@@ -616,8 +626,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
             stub_request(
               :get,
-              "https://api.github.com/repos/gocardless/business/compare/"\
-              "v1.3.0...v1.4.0"
+              "https://api.github.com/repos/gocardless/business/commits?"\
+              "sha=v1.3.0"
             ).with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: 404,

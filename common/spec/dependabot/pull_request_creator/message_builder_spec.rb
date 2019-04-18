@@ -620,9 +620,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200,
                   body: fixture("github", "changelog_contents.json"),
                   headers: json_header)
-      stub_request(:get, "#{business_repo_url}/compare/v1.4.0...v1.5.0").
+      stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0").
         to_return(status: 200,
-                  body: fixture("github", "business_compare_commits.json"),
+                  body: fixture("github", "commits-business-1.4.0.json"),
+                  headers: json_header)
+      stub_request(:get, "#{business_repo_url}/commits?sha=v1.4.0").
+        to_return(status: 200,
+                  body: fixture("github", "commits-business-1.3.0.json"),
                   headers: json_header)
       stub_request(:get, "https://rubygems.org/api/v1/gems/business.json").
         to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
@@ -726,15 +730,22 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/business/compare/"\
-            "2468a02a6230e59ed1232d95d1ad3ef157195b03..."\
+            "#{business_repo_url}/commits?sha="\
+            "2468a02a6230e59ed1232d95d1ad3ef157195b03"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "commits-business-1.3.0.json"),
+            headers: json_header
+          )
+          stub_request(
+            :get,
+            "#{business_repo_url}/commits?sha="\
             "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "business_compare_commits.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
+          ).to_return(
+            status: 200,
+            body: fixture("github", "commits-business-1.4.0.json"),
+            headers: json_header
+          )
         end
 
         it "has the right text" do
@@ -806,13 +817,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/business/compare/"\
-            "2468a02a6230e59ed1232d95d1ad3ef157195b03...v1.5.0"
-          ).with(headers: { "Authorization" => "token token" }).
+            "#{business_repo_url}/commits?sha="\
+            "2468a02a6230e59ed1232d95d1ad3ef157195b03"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "commits-business-1.3.0.json"),
+            headers: json_header
+          )
+          stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0").
             to_return(
               status: 200,
-              body: fixture("github", "business_compare_commits.json"),
-              headers: { "Content-Type" => "application/json" }
+              body: fixture("github", "commits-business-1.4.0.json"),
+              headers: json_header
             )
         end
 
@@ -930,15 +946,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 body: fixture("github", "business_files_no_changelog.json"),
                 headers: json_header
               )
-            stub_request(
-              :get,
-              "https://api.github.com/repos/gocardless/business/compare/"\
-              "v1.5.0...v1.6.0"
-            ).with(headers: { "Authorization" => "token token" }).
+            stub_request(:get, "#{business_repo_url}/commits?sha=v1.6.0").
               to_return(
                 status: 200,
-                body: fixture("github", "business_compare_commits.json"),
-                headers: { "Content-Type" => "application/json" }
+                body: fixture("github", "commits-business-1.4.0.json"),
+                headers: json_header
+              )
+            stub_request(:get, "#{business_repo_url}/commits?sha=v1.5.0").
+              to_return(
+                status: 200,
+                body: fixture("github", "commits-business-1.3.0.json"),
+                headers: json_header
               )
           end
 
