@@ -84,64 +84,6 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
-    context "when the crates.io link resolves to a redirect" do
-      let(:redirect_url) { "https://crates.io/api/v1/crates/Time" }
-
-      before do
-        stub_request(:get, crates_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: crates_response)
-      end
-
-      it { is_expected.to eq(Gem::Version.new("0.1.40")) }
-    end
-
-    context "when the crates.io link fails at first" do
-      before do
-        stub_request(:get, crates_url).
-          to_raise(Excon::Error::Timeout).then.
-          to_return(status: 200, body: crates_response)
-      end
-
-      it { is_expected.to eq(Gem::Version.new("0.1.40")) }
-    end
-
-    context "when the crates link resolves to a 'Not Found' page" do
-      before do
-        stub_request(:get, crates_url).
-          to_return(status: 404, body: crates_response)
-      end
-      let(:crates_fixture_name) { "not_found.json" }
-
-      it { is_expected.to be_nil }
-    end
-
-    context "when the latest version is a pre-release" do
-      let(:dependency_name) { "xdg" }
-      let(:dependency_version) { "2.0.0" }
-      it { is_expected.to eq(Gem::Version.new("2.1.0")) }
-
-      context "and the user wants a pre-release" do
-        context "because their current version is a pre-release" do
-          let(:dependency_version) { "2.0.0-pre4" }
-          it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
-        end
-
-        context "because their requirements say they want pre-releases" do
-          let(:requirements) do
-            [{
-              file: "Cargo.toml",
-              requirement: "~2.0.0-pre1",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          end
-          it { is_expected.to eq(Gem::Version.new("3.0.0-pre1")) }
-        end
-      end
-    end
-
     context "with a git dependency" do
       let(:dependency_name) { "utf8-ranges" }
       let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
