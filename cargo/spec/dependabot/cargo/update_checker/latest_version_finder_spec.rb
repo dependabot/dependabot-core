@@ -128,4 +128,60 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       end
     end
   end
+
+  describe "#lowest_security_fix_version" do
+    subject { finder.lowest_security_fix_version }
+
+    let(:dependency_name) { "time" }
+    let(:dependency_version) { "0.1.12" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "cargo",
+          vulnerable_versions: ["<= 0.1.18"]
+        )
+      ]
+    end
+    it { is_expected.to eq(Gem::Version.new("0.1.19")) }
+
+    context "when the lowest version is being ignored" do
+      let(:ignored_versions) { [">= 0.1.18, < 0.1.20"] }
+      it { is_expected.to eq(Gem::Version.new("0.1.20")) }
+    end
+
+    context "when the lowest fixed version is a pre-release" do
+      let(:dependency_name) { "xdg" }
+      let(:dependency_version) { "1.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "cargo",
+            vulnerable_versions: ["<= 2.0.0-pre2"]
+          )
+        ]
+      end
+      it { is_expected.to eq(Gem::Version.new("2.0.0")) }
+
+      context "and the user wants a pre-release" do
+        context "because their current version is a pre-release" do
+          let(:dependency_version) { "2.0.0-pre1" }
+          it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
+        end
+
+        context "because their requirements say they want pre-releases" do
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "~2.0.0-pre1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          it { is_expected.to eq(Gem::Version.new("2.0.0-pre3")) }
+        end
+      end
+    end
+  end
 end
