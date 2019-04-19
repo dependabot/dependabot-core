@@ -1,3 +1,7 @@
+## v0.105.8, 19 April 2019
+
+- Python: Handle subdependency resolution checking properly for pip-compile
+
 ## v0.105.7, 18 April 2019
 
 - Stop using commit compare API endpoint when building commit diffs (it sometimes 500s)
