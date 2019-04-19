@@ -270,7 +270,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_requirements) { [] }
       let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
 
-      it { is_expected.to be >= Gem::Version.new("4.3.0") }
+      it { is_expected.to eq(Gem::Version.new("4.3.0")) }
     end
 
     context "with a dependency with an unmet marker" do
@@ -409,11 +409,31 @@ RSpec.describe namespace::PipCompileVersionResolver do
     context "that is resolvable" do
       let(:version) { Gem::Version.new("18.1.0") }
       it { is_expected.to eq(true) }
+
+      context "with a subdependency" do
+        let(:dependency_name) { "pbr" }
+        let(:dependency_version) { "4.0.2" }
+        let(:dependency_requirements) { [] }
+        let(:version) { Gem::Version.new("5.1.3") }
+
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
       it { is_expected.to eq(false) }
+
+      context "with a subdependency" do
+        let(:manifest_fixture_name) { "requests.in" }
+        let(:generated_fixture_name) { "pip_compile_requests.txt" }
+        let(:dependency_name) { "urllib3" }
+        let(:dependency_version) { "1.22" }
+        let(:dependency_requirements) { [] }
+        let(:version) { Gem::Version.new("1.23") }
+
+        it { is_expected.to eq(false) }
+      end
 
       context "because the original manifest isn't resolvable" do
         let(:manifest_fixture_name) { "unresolvable.in" }

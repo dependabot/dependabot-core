@@ -307,9 +307,8 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           req = dependency.requirements.find { |r| r[:file] == file.name }
-          return file.content unless req
 
-          unless req.fetch(:requirement)
+          unless req&.fetch(:requirement)
             return file.content + "\n#{dependency.name} #{updated_req}"
           end
 
