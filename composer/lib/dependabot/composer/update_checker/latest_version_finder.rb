@@ -21,9 +21,7 @@ module Dependabot
         end
 
         def latest_version
-          return nil if path_dependency?
-
-          @latest_version ||= fetch_latest_version_from_registry
+          @latest_version ||= fetch_latest_version
         end
 
         private
@@ -31,15 +29,22 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials,
                     :ignored_versions, :security_advisories
 
-        def fetch_latest_version_from_registry
-          versions =
-            registry_versions.
-            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
-            map { |version| version_class.new(version.gsub(/^v/, "")) }
-
-          versions.reject!(&:prerelease?) unless wants_prerelease?
-          versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        def fetch_latest_version
+          versions = available_versions
+          versions = filter_prerelease_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions.max
+        end
+
+        def filter_prerelease_versions(versions_array)
+          return versions_array if wants_prerelease?
+
+          versions_array.reject(&:prerelease?)
+        end
+
+        def filter_ignored_versions(versions_array)
+          versions_array.
+            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
         end
 
         def wants_prerelease?
@@ -53,12 +58,14 @@ module Dependabot
           end
         end
 
-        def path_dependency?
-          dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
+        def available_versions
+          registry_version_details.
+            select { |version| version_class.correct?(version.gsub(/^v/, "")) }.
+            map { |version| version_class.new(version.gsub(/^v/, "")) }
         end
 
-        def registry_versions
-          return @registry_versions unless @registry_versions.nil?
+        def registry_version_details
+          return @registry_version_details unless @registry_version_details.nil?
 
           repositories =
             JSON.parse(composer_file.content).
@@ -74,11 +81,11 @@ module Dependabot
             urls << "https://packagist.org/p/#{dependency.name.downcase}.json"
           end
 
-          @registry_versions = []
+          @registry_version_details = []
           urls.each do |url|
-            @registry_versions += fetch_registry_versions_from_url(url)
+            @registry_version_details += fetch_registry_versions_from_url(url)
           end
-          @registry_versions.uniq
+          @registry_version_details.uniq
         end
 
         def fetch_registry_versions_from_url(url)
