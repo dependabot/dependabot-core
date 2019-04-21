@@ -378,10 +378,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         with(
           requirements: requirements,
           updated_source: nil,
-          latest_version: "0.1.40",
-          latest_resolvable_version: "0.1.40",
-          update_strategy: :bump_versions,
-          library: false
+          target_version: "0.1.40",
+          update_strategy: :bump_versions
         ).
         and_call_original
       expect(checker.updated_requirements).

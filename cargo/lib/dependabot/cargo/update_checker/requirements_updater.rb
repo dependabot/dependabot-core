@@ -21,25 +21,16 @@ module Dependabot
           %i(bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
-                       library:, latest_version:, latest_resolvable_version:)
+                       target_version:)
           @requirements = requirements
           @updated_source = updated_source
           @update_strategy = update_strategy
-          @library = library
 
           check_update_strategy
 
-          if latest_version && version_class.correct?(latest_version)
-            @latest_version = version_class.new(latest_version)
-          end
+          return unless target_version && version_class.correct?(target_version)
 
-          if latest_resolvable_version &&
-             version_class.correct?(latest_resolvable_version)
-            @latest_resolvable_version =
-              version_class.new(latest_resolvable_version)
-          end
-
-          @latest_version ||= @latest_resolvable_version
+          @target_version = version_class.new(target_version)
         end
 
         def updated_requirements
@@ -62,15 +53,8 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :updated_source, :update_strategy
-
-        def library?
-          @library
-        end
-
-        def target_version
-          library? ? @latest_version : @latest_resolvable_version
-        end
+        attr_reader :requirements, :updated_source, :update_strategy,
+                    :target_version
 
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)

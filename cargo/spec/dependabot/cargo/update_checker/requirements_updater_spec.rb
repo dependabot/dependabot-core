@@ -8,10 +8,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       update_strategy: update_strategy,
-      library: library,
       updated_source: updated_source,
-      latest_version: latest_version,
-      latest_resolvable_version: latest_resolvable_version
+      target_version: target_version
     )
   end
 
@@ -27,9 +25,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
   let(:req_string) { "^1.4.0" }
 
   let(:update_strategy) { :bump_versions }
-  let(:library) { false }
-  let(:latest_version) { "1.5.0" }
-  let(:latest_resolvable_version) { "1.5.0" }
+  let(:target_version) { "1.5.0" }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
@@ -39,14 +35,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
     let(:req_string) { "^1.0.0" }
 
     context "when there is no latest version" do
-      let(:latest_resolvable_version) { nil }
+      let(:target_version) { nil }
       its([:requirement]) { is_expected.to eq(req_string) }
     end
 
     context "with no requirement string (e.g., for a git dependency)" do
       let(:requirements) { [cargo_req] }
 
-      let(:latest_resolvable_version) do
+      let(:target_version) do
         "aa218f56b14c9653891f9e74264a383fa43fefbd"
       end
       let(:cargo_req) do
@@ -81,7 +77,6 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
     context "for a bump_versions strategy" do
       let(:update_strategy) { :bump_versions }
-      let(:library) { false }
 
       context "when there is a latest version" do
         context "and a full version was previously specified" do
@@ -101,7 +96,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "and only the major part was previously specified" do
           let(:req_string) { "1" }
-          let(:latest_resolvable_version) { "4.5.0" }
+          let(:target_version) { "4.5.0" }
           its([:requirement]) { is_expected.to eq("4") }
         end
 
@@ -112,7 +107,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "and the new version has much fewer digits than the old one" do
           let(:req_string) { "1.1.0.1" }
-          let(:latest_resolvable_version) { "4" }
+          let(:target_version) { "4" }
           its([:requirement]) { is_expected.to eq("4") }
         end
 
@@ -131,7 +126,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
             context "to a new pre-release version" do
               let(:req_string) { "1.2.3-beta" }
-              let(:latest_resolvable_version) { "1.2.3-beta.2" }
+              let(:target_version) { "1.2.3-beta.2" }
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
             end
           end
@@ -221,10 +216,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
     context "for a bump_versions_if_necessary strategy" do
       let(:update_strategy) { :bump_versions_if_necessary }
-      let(:library) { true }
 
       context "when there is no latest version" do
-        let(:latest_version) { nil }
+        let(:target_version) { nil }
         its([:requirement]) { is_expected.to eq(req_string) }
       end
 
@@ -246,7 +240,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "and only the major part was previously specified" do
           let(:req_string) { "1" }
-          let(:latest_version) { "4.5.0" }
+          let(:target_version) { "4.5.0" }
           its([:requirement]) { is_expected.to eq("4") }
         end
 
@@ -257,7 +251,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "and the new version has much fewer digits than the old one" do
           let(:req_string) { "1.1.0.1" }
-          let(:latest_version) { "4" }
+          let(:target_version) { "4" }
           its([:requirement]) { is_expected.to eq("4") }
         end
 
@@ -276,7 +270,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
             context "to a new pre-release version" do
               let(:req_string) { "0.2.3-beta" }
-              let(:latest_version) { "1.2.3-beta.2" }
+              let(:target_version) { "1.2.3-beta.2" }
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
             end
           end

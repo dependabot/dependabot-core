@@ -57,9 +57,7 @@ module Dependabot
         RequirementsUpdater.new(
           requirements: dependency.requirements,
           updated_source: updated_source,
-          latest_resolvable_version: latest_resolvable_version&.to_s,
-          latest_version: latest_version&.to_s,
-          library: library?,
+          target_version: target_version,
           update_strategy: requirement_update_strategy
         ).updated_requirements
       end
@@ -73,6 +71,10 @@ module Dependabot
 
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
+      end
+
+      def target_version
+        library? ? latest_version&.to_s : latest_resolvable_version&.to_s
       end
 
       def library?
