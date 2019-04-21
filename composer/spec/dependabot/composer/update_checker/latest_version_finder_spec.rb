@@ -285,4 +285,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
     end
   end
+
+  describe "#lowest_security_fix_version" do
+    subject { finder.lowest_security_fix_version }
+
+    let(:dependency_version) { "1.0.1" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "composer",
+          vulnerable_versions: ["<= 1.11.0"]
+        )
+      ]
+    end
+    it { is_expected.to eq(Gem::Version.new("1.12.0")) }
+  end
 end

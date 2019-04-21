@@ -24,6 +24,10 @@ module Dependabot
           @latest_version ||= fetch_latest_version
         end
 
+        def lowest_security_fix_version
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        end
+
         private
 
         attr_reader :dependency, :dependency_files, :credentials,
@@ -36,6 +40,15 @@ module Dependabot
           versions.max
         end
 
+        def fetch_lowest_security_fix_version
+          versions = available_versions
+          versions = filter_prerelease_versions(versions)
+          versions = filter_ignored_versions(versions)
+          versions = filter_vulnerable_versions(versions)
+          versions = filter_lower_versions(versions)
+          versions.min
+        end
+
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
@@ -45,6 +58,16 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           versions_array.
             reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        end
+
+        def filter_vulnerable_versions(versions_array)
+          versions_array.
+            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
+        end
+
+        def filter_lower_versions(versions_array)
+          versions_array.
+            select { |version| version > version_class.new(dependency.version) }
         end
 
         def wants_prerelease?
