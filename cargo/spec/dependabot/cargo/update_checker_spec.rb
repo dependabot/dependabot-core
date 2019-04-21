@@ -21,11 +21,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -283,6 +285,26 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+
+    it { is_expected.to eq(Gem::Version.new("0.1.40")) }
+
+    context "with an insecure version" do
+      let(:dependency_version) { "0.1.38" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "cargo",
+            vulnerable_versions: ["<= 0.1.38"]
+          )
+        ]
+      end
+      it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
     let(:dependency_name) { "regex" }
@@ -391,6 +413,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             source: nil
           }]
         )
+    end
+
+    context "with an insecure version" do
+      let(:dependency_version) { "0.1.38" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "cargo",
+            vulnerable_versions: ["<= 0.1.38"]
+          )
+        ]
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: requirements,
+            updated_source: nil,
+            target_version: "0.1.39",
+            update_strategy: :bump_versions
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "Cargo.toml",
+              requirement: "0.1.39",
+              groups: [],
+              source: nil
+            }]
+          )
+      end
     end
   end
 end

@@ -42,6 +42,17 @@ module Dependabot
           end
       end
 
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        if defined?(@lowest_resolvable_security_fix_version)
+          return @lowest_resolvable_security_fix_version
+        end
+
+        @lowest_resolvable_security_fix_version =
+          fetch_lowest_resolvable_security_fix_version
+      end
+
       def latest_resolvable_version_with_no_unlock
         return if path_dependency?
 
@@ -74,7 +85,7 @@ module Dependabot
       end
 
       def target_version
-        library? ? latest_version&.to_s : latest_resolvable_version&.to_s
+        library? ? latest_version&.to_s : preferred_resolvable_version&.to_s
       end
 
       def library?
@@ -194,6 +205,33 @@ module Dependabot
           original_dependency_files: dependency_files,
           credentials: credentials
         ).latest_resolvable_version
+      end
+
+      def fetch_lowest_resolvable_security_fix_version
+        fix_version = latest_version_finder.lowest_security_fix_version
+        return latest_resolvable_version if fix_version.nil?
+
+        if path_dependency? || git_dependency? || git_subdependency?
+          return latest_resolvable_version
+        end
+
+        prepared_files = FilePreparer.new(
+          dependency_files: dependency_files,
+          dependency: dependency,
+          unlock_requirement: true,
+          latest_allowable_version: fix_version
+        ).prepared_dependency_files
+
+        resolved_fix_version = VersionResolver.new(
+          dependency: dependency,
+          prepared_dependency_files: prepared_files,
+          original_dependency_files: dependency_files,
+          credentials: credentials
+        ).latest_resolvable_version
+
+        return fix_version if fix_version == resolved_fix_version
+
+        latest_resolvable_version
       end
 
       def updated_source
