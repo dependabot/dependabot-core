@@ -49,7 +49,6 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: latest_version&.to_s,
           latest_resolvable_version: latest_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy
         ).updated_requirements

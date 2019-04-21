@@ -795,7 +795,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         to receive(:new).
         with(
           requirements: dependency_requirements,
-          latest_version: "1.7.0",
           latest_resolvable_version: "1.6.0",
           update_strategy: :bump_versions_if_necessary
         ).

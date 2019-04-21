@@ -8,7 +8,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
     described_class.new(
       requirements: requirements,
       update_strategy: update_strategy,
-      latest_version: latest_version,
       latest_resolvable_version: latest_resolvable_version
     )
   end
@@ -25,7 +24,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
   let(:composer_json_req_string) { "^1.4.0" }
 
   let(:update_strategy) { :bump_versions }
-  let(:latest_version) { "1.8.0" }
   let(:latest_resolvable_version) { "1.5.0" }
 
   describe "#updated_requirements" do
