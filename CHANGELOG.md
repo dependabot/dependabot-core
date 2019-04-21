@@ -1,3 +1,14 @@
+## v0.106.0, 21 April 2019
+
+- Pass old commit SHA when updating a PR, and use it to identify the relevant commit
+- Composer: Add lowest_security_fix_version to LatestVersionFinder
+- Composer: Refactor LatestVersionFinder to be more extensible
+- Composer: Move tests for latest version finding to new class
+- Composer: Extract latest_version logic into LatestVersionFinder class
+- Composer: Stop passing latest_version to RequirementsUpdater (it was unused)
+- Rust: Update to lowest fixed version for vulnerable dependencies
+- Rust: Pass a single version to RequirementsUpdater
+
 ## v0.105.8, 19 April 2019
 
 - Python: Handle subdependency resolution checking properly for pip-compile
