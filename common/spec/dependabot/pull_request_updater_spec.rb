@@ -11,6 +11,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
     described_class.new(
       source: source,
       base_commit: base_commit,
+      old_commit: old_commit,
       files: files,
       credentials: credentials,
       pull_request_number: pull_request_number
@@ -20,6 +21,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
   let(:files) { [] }
   let(:base_commit) { "basecommitsha" }
+  let(:old_commit) { "oldcommitsha" }
   let(:pull_request_number) { 1 }
   let(:credentials) { [] }
 
@@ -34,6 +36,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
           with(
             source: source,
             base_commit: base_commit,
+            old_commit: old_commit,
             files: files,
             credentials: credentials,
             pull_request_number: pull_request_number,

@@ -11,6 +11,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     described_class.new(
       source: source,
       base_commit: base_commit,
+      old_commit: old_commit,
       files: files,
       credentials: credentials,
       pull_request_number: pull_request_number
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
   end
   let(:files) { [gemfile, gemfile_lock] }
   let(:base_commit) { "basecommitsha" }
+  let(:old_commit) { "oldcommitsha" }
   let(:pull_request_number) { 1 }
   let(:credentials) do
     [{
@@ -206,6 +208,44 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             }
           )
       end
+
+      context "multiple of which are from Dependabot" do
+        before do
+          stub_request(:get, pull_request_url).
+            to_return(status: 200,
+                      body: fixture("github", "pull_request_added.json"),
+                      headers: json_header)
+          stub_request(:get, "#{pull_request_url}/commits").
+            to_return(
+              status: 200,
+              body:
+                fixture("github", "pull_request_commits_many_dependabot.json"),
+              headers: json_header
+            )
+        end
+        let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
+
+        it "has the right commit message" do
+          updater.update
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            with(
+              body: {
+                parents: ["basecommitsha"],
+                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                message:
+                  "Bump business from 1.4.0 to 1.5.0\n\n"\
+                  "Bumps [business](https://github.com/gocardless/business)"\
+                  " from 1.4.0 to 1.5.0.\n"\
+                  "- [Changelog](https://github.com/gocardless/business/blo"\
+                  "b/master/CHANGELOG.md)\n"\
+                  "- [Commits](https://github.com/gocardless/business/compa"\
+                  "re/v3.0.0...v1.5.0)"
+              }
+            )
+        end
+      end
     end
 
     context "when the default branch has changed" do
@@ -268,6 +308,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         Dependabot::PullRequestUpdater.new(
           source: source,
           base_commit: base_commit,
+          old_commit: old_commit,
           files: files,
           credentials: credentials,
           pull_request_number: pull_request_number,
@@ -296,6 +337,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           described_class.new(
             source: source,
             base_commit: base_commit,
+            old_commit: old_commit,
             files: files,
             credentials: credentials,
             pull_request_number: pull_request_number,

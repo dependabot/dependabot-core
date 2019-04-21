@@ -8,14 +8,15 @@ require "dependabot/pull_request_updater"
 module Dependabot
   class PullRequestUpdater
     class Github
-      attr_reader :source, :files, :base_commit, :credentials,
+      attr_reader :source, :files, :base_commit, :old_commit, :credentials,
                   :pull_request_number, :author_details, :signature_key
 
-      def initialize(source:, base_commit:, files:, credentials:,
-                     pull_request_number:, author_details: nil,
-                     signature_key: nil)
+      def initialize(source:, base_commit:, old_commit:, files:,
+                     credentials:, pull_request_number:,
+                     author_details: nil, signature_key: nil)
         @source              = source
         @base_commit         = base_commit
+        @old_commit          = old_commit
         @files               = files
         @credentials         = credentials
         @pull_request_number = pull_request_number
@@ -161,6 +162,7 @@ module Dependabot
               pull_request_commits(source.repo, pull_request_number)
 
             commit =
+              commits.find { |c| c.sha == old_commit } ||
               commits.find { |c| c.commit.author.name == author_name } ||
               commits.first
 
