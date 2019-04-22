@@ -96,11 +96,12 @@ module Dependabot
 
           # Sometimes a race condition on GitHub's side means we get an error
           # here. No harm in retrying if we do.
-          # NOTE: Error here might be that the tree got deleted somehow. If it's
-          # that we'll need to change this retry to recreate the tree, too.
           retry_count ||= 0
           retry_count += 1
-          retry_count > 3 ? raise : retry
+          raise if retry_count > 3
+
+          sleep(rand(0.9))
+          retry
         end
       end
 
