@@ -96,7 +96,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     context "for an application" do
       context "that doesn't use a commit convention" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(
               status: 200,
               body: commits_response,
@@ -107,9 +107,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
+        context "but does have prefixed commits" do
+          let(:commits_response) { fixture("github", "commits_prefixed.json") }
+
+          it { is_expected.to eq("build: bump business from 1.4.0 to 1.5.0") }
+        end
+
         context "that 409s when asked for commits" do
           before do
-            stub_request(:get, watched_repo_url + "/commits").
+            stub_request(:get, watched_repo_url + "/commits?per_page=100").
               to_return(status: 409, headers: json_header)
           end
 
@@ -125,6 +131,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "#{CGI.escape(source.repo)}/repository"
           end
           let(:commits_response) { fixture("gitlab", "commits.json") }
+          before do
+            stub_request(:get, watched_repo_url + "/commits").
+              to_return(
+                status: 200,
+                body: commits_response,
+                headers: json_header
+              )
+          end
 
           it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
         end
@@ -328,7 +342,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that uses angular commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "commits_angular.json"),
                       headers: json_header)
@@ -340,7 +354,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "and capitalizes them" do
           before do
-            stub_request(:get, watched_repo_url + "/commits").
+            stub_request(:get, watched_repo_url + "/commits?per_page=100").
               to_return(
                 status: 200,
                 body: fixture("github", "commits_angular_capitalized.json"),
@@ -386,7 +400,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that uses eslint commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "commits_eslint.json"),
                       headers: json_header)
@@ -404,7 +418,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that uses gitmoji commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "commits_gitmoji.json"),
                       headers: json_header)
@@ -430,7 +444,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that doesn't use a commit convention" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200, body: "[]", headers: json_header)
         end
 
@@ -552,7 +566,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that uses angular commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "commits_angular.json"),
                       headers: json_header)
@@ -572,7 +586,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "that uses eslint commits" do
         before do
-          stub_request(:get, watched_repo_url + "/commits").
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
             to_return(status: 200,
                       body: fixture("github", "commits_eslint.json"),
                       headers: json_header)
@@ -600,7 +614,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     before do
-      stub_request(:get, watched_repo_url + "/commits").
+      stub_request(:get, watched_repo_url + "/commits?per_page=100").
         to_return(status: 200, body: "[]", headers: json_header)
 
       stub_request(:get, business_repo_url).
@@ -1521,7 +1535,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     context "for a repo that uses gitmoji commits" do
       before do
         allow(builder).to receive(:pr_name).and_call_original
-        stub_request(:get, watched_repo_url + "/commits").
+        stub_request(:get, watched_repo_url + "/commits?per_page=100").
           to_return(status: 200,
                     body: fixture("github", "commits_gitmoji.json"),
                     headers: json_header)

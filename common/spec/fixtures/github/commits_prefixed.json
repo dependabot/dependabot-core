@@ -1,0 +1,2140 @@
+[
+  {
+    "sha": "ddbe30e8f5399516e2a1c70293fffb7aa47fbba5",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmRkYmUzMGU4ZjUzOTk1MTZlMmExYzcwMjkzZmZmYjdhYTQ3ZmJiYTU=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T22:06:38Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T22:06:38Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "2822964bc2beedb0903ee0f2f7e75a7d9a8aa7f0",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/2822964bc2beedb0903ee0f2f7e75a7d9a8aa7f0"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/ddbe30e8f5399516e2a1c70293fffb7aa47fbba5",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/ddbe30e8f5399516e2a1c70293fffb7aa47fbba5",
+    "html_url": "https://github.com/blackflux/object-scan/commit/ddbe30e8f5399516e2a1c70293fffb7aa47fbba5",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/ddbe30e8f5399516e2a1c70293fffb7aa47fbba5/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "4e39dc9933aaa716ab473a5931aee85b92bdf834",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/4e39dc9933aaa716ab473a5931aee85b92bdf834",
+        "html_url": "https://github.com/blackflux/object-scan/commit/4e39dc9933aaa716ab473a5931aee85b92bdf834"
+      }
+    ]
+  },
+  {
+    "sha": "4e39dc9933aaa716ab473a5931aee85b92bdf834",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjRlMzlkYzk5MzNhYWE3MTZhYjQ3M2E1OTMxYWVlODViOTJiZGY4MzQ=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T22:03:23Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T22:03:23Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "b400b22c2cc5a854a124917406e39038e368f4cf",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/b400b22c2cc5a854a124917406e39038e368f4cf"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/4e39dc9933aaa716ab473a5931aee85b92bdf834",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/4e39dc9933aaa716ab473a5931aee85b92bdf834",
+    "html_url": "https://github.com/blackflux/object-scan/commit/4e39dc9933aaa716ab473a5931aee85b92bdf834",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/4e39dc9933aaa716ab473a5931aee85b92bdf834/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+        "html_url": "https://github.com/blackflux/object-scan/commit/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182"
+      }
+    ]
+  },
+  {
+    "sha": "da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmRhN2Y2MDg1YmE3OTRkY2RjNjFmNTRhYTRmOWE5ZWY4ZjY2YzAxODI=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:57:36Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:57:36Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "9d916e17357c0640630e29ba0bb27f0b34d0c211",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/9d916e17357c0640630e29ba0bb27f0b34d0c211"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+    "html_url": "https://github.com/blackflux/object-scan/commit/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/da7f6085ba794dcdc61f54aa4f9a9ef8f66c0182/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "2226378ea432e521935d6dceddc38615fa9fbc28",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/2226378ea432e521935d6dceddc38615fa9fbc28",
+        "html_url": "https://github.com/blackflux/object-scan/commit/2226378ea432e521935d6dceddc38615fa9fbc28"
+      }
+    ]
+  },
+  {
+    "sha": "2226378ea432e521935d6dceddc38615fa9fbc28",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjIyMjYzNzhlYTQzMmU1MjE5MzVkNmRjZWRkYzM4NjE1ZmE5ZmJjMjg=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:55:08Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:55:08Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "c245357cd6c803281512614b51c67eefebdb07aa",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/c245357cd6c803281512614b51c67eefebdb07aa"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/2226378ea432e521935d6dceddc38615fa9fbc28",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/2226378ea432e521935d6dceddc38615fa9fbc28",
+    "html_url": "https://github.com/blackflux/object-scan/commit/2226378ea432e521935d6dceddc38615fa9fbc28",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/2226378ea432e521935d6dceddc38615fa9fbc28/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "486397ad7111a794b0a3d1f94757e31b04304e29",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/486397ad7111a794b0a3d1f94757e31b04304e29",
+        "html_url": "https://github.com/blackflux/object-scan/commit/486397ad7111a794b0a3d1f94757e31b04304e29"
+      }
+    ]
+  },
+  {
+    "sha": "486397ad7111a794b0a3d1f94757e31b04304e29",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjQ4NjM5N2FkNzExMWE3OTRiMGEzZDFmOTQ3NTdlMzFiMDQzMDRlMjk=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:50:36Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:50:36Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "0ddcc1e748d7c5c1d44ac1909a1749916bc737b1",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/0ddcc1e748d7c5c1d44ac1909a1749916bc737b1"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/486397ad7111a794b0a3d1f94757e31b04304e29",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/486397ad7111a794b0a3d1f94757e31b04304e29",
+    "html_url": "https://github.com/blackflux/object-scan/commit/486397ad7111a794b0a3d1f94757e31b04304e29",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/486397ad7111a794b0a3d1f94757e31b04304e29/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "78ac74f51bf602b56d0b3281500b0412498551d9",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/78ac74f51bf602b56d0b3281500b0412498551d9",
+        "html_url": "https://github.com/blackflux/object-scan/commit/78ac74f51bf602b56d0b3281500b0412498551d9"
+      }
+    ]
+  },
+  {
+    "sha": "78ac74f51bf602b56d0b3281500b0412498551d9",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0Ojc4YWM3NGY1MWJmNjAyYjU2ZDBiMzI4MTUwMGIwNDEyNDk4NTUxZDk=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:45:09Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:45:09Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "ab5c0ca3c97d00ba3595bba5208bb94a84f51e5c",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/ab5c0ca3c97d00ba3595bba5208bb94a84f51e5c"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/78ac74f51bf602b56d0b3281500b0412498551d9",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/78ac74f51bf602b56d0b3281500b0412498551d9",
+    "html_url": "https://github.com/blackflux/object-scan/commit/78ac74f51bf602b56d0b3281500b0412498551d9",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/78ac74f51bf602b56d0b3281500b0412498551d9/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+        "html_url": "https://github.com/blackflux/object-scan/commit/86bf78efd7b09ed4e6901e1b6f8292eb634abec3"
+      }
+    ]
+  },
+  {
+    "sha": "86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0Ojg2YmY3OGVmZDdiMDllZDRlNjkwMWUxYjZmODI5MmViNjM0YWJlYzM=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:41:26Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:41:26Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "39eb6fbd9bf53ac7ccbfb0527d1bd94ac0d686c6",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/39eb6fbd9bf53ac7ccbfb0527d1bd94ac0d686c6"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+    "html_url": "https://github.com/blackflux/object-scan/commit/86bf78efd7b09ed4e6901e1b6f8292eb634abec3",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/86bf78efd7b09ed4e6901e1b6f8292eb634abec3/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+        "html_url": "https://github.com/blackflux/object-scan/commit/f973a6f82a6b1e4049294449079d6ede2f1a2b37"
+      }
+    ]
+  },
+  {
+    "sha": "f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmY5NzNhNmY4MmE2YjFlNDA0OTI5NDQ0OTA3OWQ2ZWRlMmYxYTJiMzc=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:35:13Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:35:13Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "d584781cfddaa6ddd9a2318dfc1acb3371164256",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/d584781cfddaa6ddd9a2318dfc1acb3371164256"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+    "html_url": "https://github.com/blackflux/object-scan/commit/f973a6f82a6b1e4049294449079d6ede2f1a2b37",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/f973a6f82a6b1e4049294449079d6ede2f1a2b37/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+        "html_url": "https://github.com/blackflux/object-scan/commit/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f"
+      }
+    ]
+  },
+  {
+    "sha": "1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjE0MjZlNWI3YjVmNGVkN2E3YTY1ZWM2ZWM5ZjkzNzJmOWJkZTZlOGY=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:28:22Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:28:22Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "e74c711149baaa7fae45463a253193dcfbc8887d",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/e74c711149baaa7fae45463a253193dcfbc8887d"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+    "html_url": "https://github.com/blackflux/object-scan/commit/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/1426e5b7b5f4ed7a7a65ec6ec9f9372f9bde6e8f/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "cc0dec714a839bb874e6d980fa355de615e2cfae",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/cc0dec714a839bb874e6d980fa355de615e2cfae",
+        "html_url": "https://github.com/blackflux/object-scan/commit/cc0dec714a839bb874e6d980fa355de615e2cfae"
+      }
+    ]
+  },
+  {
+    "sha": "cc0dec714a839bb874e6d980fa355de615e2cfae",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmNjMGRlYzcxNGE4MzliYjg3NGU2ZDk4MGZhMzU1ZGU2MTVlMmNmYWU=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:25:07Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:25:07Z"
+      },
+      "message": "amend: rename",
+      "tree": {
+        "sha": "b8303efc05e12df5ccc15a0f94078b2bb8d81c0e",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/b8303efc05e12df5ccc15a0f94078b2bb8d81c0e"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/cc0dec714a839bb874e6d980fa355de615e2cfae",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/cc0dec714a839bb874e6d980fa355de615e2cfae",
+    "html_url": "https://github.com/blackflux/object-scan/commit/cc0dec714a839bb874e6d980fa355de615e2cfae",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/cc0dec714a839bb874e6d980fa355de615e2cfae/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "7027f5c9920c388e1e10447769ed00a328165f7c",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/7027f5c9920c388e1e10447769ed00a328165f7c",
+        "html_url": "https://github.com/blackflux/object-scan/commit/7027f5c9920c388e1e10447769ed00a328165f7c"
+      }
+    ]
+  },
+  {
+    "sha": "7027f5c9920c388e1e10447769ed00a328165f7c",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjcwMjdmNWM5OTIwYzM4OGUxZTEwNDQ3NzY5ZWQwMGEzMjgxNjVmN2M=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:17:39Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T21:17:39Z"
+      },
+      "message": "amend: simplification",
+      "tree": {
+        "sha": "a14304d797a76426bdc8e8f872fc9b2673dd69be",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/a14304d797a76426bdc8e8f872fc9b2673dd69be"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/7027f5c9920c388e1e10447769ed00a328165f7c",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/7027f5c9920c388e1e10447769ed00a328165f7c",
+    "html_url": "https://github.com/blackflux/object-scan/commit/7027f5c9920c388e1e10447769ed00a328165f7c",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/7027f5c9920c388e1e10447769ed00a328165f7c/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "1777ef09fd97cd78d6332d61f47535541ef7cb47",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/1777ef09fd97cd78d6332d61f47535541ef7cb47",
+        "html_url": "https://github.com/blackflux/object-scan/commit/1777ef09fd97cd78d6332d61f47535541ef7cb47"
+      }
+    ]
+  },
+  {
+    "sha": "1777ef09fd97cd78d6332d61f47535541ef7cb47",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjE3NzdlZjA5ZmQ5N2NkNzhkNjMzMmQ2MWY0NzUzNTU0MWVmN2NiNDc=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:51:13Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:51:13Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "bf0eaba7410c39a54ca6c9e312aa5c1aee23b310",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/bf0eaba7410c39a54ca6c9e312aa5c1aee23b310"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/1777ef09fd97cd78d6332d61f47535541ef7cb47",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/1777ef09fd97cd78d6332d61f47535541ef7cb47",
+    "html_url": "https://github.com/blackflux/object-scan/commit/1777ef09fd97cd78d6332d61f47535541ef7cb47",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/1777ef09fd97cd78d6332d61f47535541ef7cb47/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "bf4bf0d62d6e891271da112bd8d87fe35753507e",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/bf4bf0d62d6e891271da112bd8d87fe35753507e",
+        "html_url": "https://github.com/blackflux/object-scan/commit/bf4bf0d62d6e891271da112bd8d87fe35753507e"
+      }
+    ]
+  },
+  {
+    "sha": "bf4bf0d62d6e891271da112bd8d87fe35753507e",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmJmNGJmMGQ2MmQ2ZTg5MTI3MWRhMTEyYmQ4ZDg3ZmUzNTc1MzUwN2U=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:49:42Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:49:42Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "b8e32d3cd0d2e8fd0fe7dc6c723ee5cb130680ec",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/b8e32d3cd0d2e8fd0fe7dc6c723ee5cb130680ec"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/bf4bf0d62d6e891271da112bd8d87fe35753507e",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/bf4bf0d62d6e891271da112bd8d87fe35753507e",
+    "html_url": "https://github.com/blackflux/object-scan/commit/bf4bf0d62d6e891271da112bd8d87fe35753507e",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/bf4bf0d62d6e891271da112bd8d87fe35753507e/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "f0f2e73079ae084837e8971b454dcaaf9c39345e",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/f0f2e73079ae084837e8971b454dcaaf9c39345e",
+        "html_url": "https://github.com/blackflux/object-scan/commit/f0f2e73079ae084837e8971b454dcaaf9c39345e"
+      }
+    ]
+  },
+  {
+    "sha": "f0f2e73079ae084837e8971b454dcaaf9c39345e",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmYwZjJlNzMwNzlhZTA4NDgzN2U4OTcxYjQ1NGRjYWFmOWMzOTM0NWU=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:44:21Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T19:44:21Z"
+      },
+      "message": "amend: corrected \"isMatch\" logic",
+      "tree": {
+        "sha": "87190c95b13e700326308852e146c01ac05fbc8d",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/87190c95b13e700326308852e146c01ac05fbc8d"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/f0f2e73079ae084837e8971b454dcaaf9c39345e",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/f0f2e73079ae084837e8971b454dcaaf9c39345e",
+    "html_url": "https://github.com/blackflux/object-scan/commit/f0f2e73079ae084837e8971b454dcaaf9c39345e",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/f0f2e73079ae084837e8971b454dcaaf9c39345e/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5a2a1582cdefa987a26e64c22e2ab5f278ce9264",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/5a2a1582cdefa987a26e64c22e2ab5f278ce9264",
+        "html_url": "https://github.com/blackflux/object-scan/commit/5a2a1582cdefa987a26e64c22e2ab5f278ce9264"
+      }
+    ]
+  },
+  {
+    "sha": "7b565d82d06dbd446982fd3a6c54d62740eb5b10",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjdiNTY1ZDgyZDA2ZGJkNDQ2OTgyZmQzYTZjNTRkNjI3NDBlYjViMTA=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T18:47:59Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T18:47:59Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "6578df8d704cd5594a15fee36609f6cfd1d44ff8",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/6578df8d704cd5594a15fee36609f6cfd1d44ff8"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/7b565d82d06dbd446982fd3a6c54d62740eb5b10",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/7b565d82d06dbd446982fd3a6c54d62740eb5b10",
+    "html_url": "https://github.com/blackflux/object-scan/commit/7b565d82d06dbd446982fd3a6c54d62740eb5b10",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/7b565d82d06dbd446982fd3a6c54d62740eb5b10/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "eafd84e418fc9d675d082e99036f731b47b8a97f",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/eafd84e418fc9d675d082e99036f731b47b8a97f",
+        "html_url": "https://github.com/blackflux/object-scan/commit/eafd84e418fc9d675d082e99036f731b47b8a97f"
+      }
+    ]
+  },
+  {
+    "sha": "eafd84e418fc9d675d082e99036f731b47b8a97f",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmVhZmQ4NGU0MThmYzlkNjc1ZDA4MmU5OTAzNmY3MzFiNDdiOGE5N2Y=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T18:43:44Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T18:43:44Z"
+      },
+      "message": "amend: improved search depth for \"late\" exclusion paths",
+      "tree": {
+        "sha": "fb7933bb766e6b535945a6f21b077f5aacf7af1f",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/fb7933bb766e6b535945a6f21b077f5aacf7af1f"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/eafd84e418fc9d675d082e99036f731b47b8a97f",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/eafd84e418fc9d675d082e99036f731b47b8a97f",
+    "html_url": "https://github.com/blackflux/object-scan/commit/eafd84e418fc9d675d082e99036f731b47b8a97f",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/eafd84e418fc9d675d082e99036f731b47b8a97f/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+        "html_url": "https://github.com/blackflux/object-scan/commit/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0"
+      }
+    ]
+  },
+  {
+    "sha": "26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjI2YTQxZDBjZDRkZWU0NDkwZTUwZjNmNGVhNmJiNTIxNzM5NWE3YzA=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T17:52:24Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T17:52:24Z"
+      },
+      "message": "amend: renaming and minor fix for \"isMatch\" (wip)",
+      "tree": {
+        "sha": "ea3ee6a4defc352b9d9eba2c1bd4f35fba55aa82",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/ea3ee6a4defc352b9d9eba2c1bd4f35fba55aa82"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+    "html_url": "https://github.com/blackflux/object-scan/commit/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/26a41d0cd4dee4490e50f3f4ea6bb5217395a7c0/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "cce4a27f3b20bb763e444f3cfe65f1e833009242",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/cce4a27f3b20bb763e444f3cfe65f1e833009242",
+        "html_url": "https://github.com/blackflux/object-scan/commit/cce4a27f3b20bb763e444f3cfe65f1e833009242"
+      }
+    ]
+  },
+  {
+    "sha": "cce4a27f3b20bb763e444f3cfe65f1e833009242",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmNjZTRhMjdmM2IyMGJiNzYzZTQ0NGYzY2ZlNjVmMWU4MzMwMDkyNDI=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T17:07:37Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T17:07:37Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "11db061ea7738e463b639957f774290448653e91",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/11db061ea7738e463b639957f774290448653e91"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/cce4a27f3b20bb763e444f3cfe65f1e833009242",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/cce4a27f3b20bb763e444f3cfe65f1e833009242",
+    "html_url": "https://github.com/blackflux/object-scan/commit/cce4a27f3b20bb763e444f3cfe65f1e833009242",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/cce4a27f3b20bb763e444f3cfe65f1e833009242/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+        "html_url": "https://github.com/blackflux/object-scan/commit/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88"
+      }
+    ]
+  },
+  {
+    "sha": "eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmViMWNkYTk2OTJlZDRhODBiNjRkM2FhYjYxZjdiYmY1NWQyNjhlODg=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:55:56Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:55:56Z"
+      },
+      "message": "amend: more integration tests",
+      "tree": {
+        "sha": "aaebac2cdec6030391b6101e5d73cbae1d52d310",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/aaebac2cdec6030391b6101e5d73cbae1d52d310"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+    "html_url": "https://github.com/blackflux/object-scan/commit/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/eb1cda9692ed4a80b64d3aab61f7bbf55d268e88/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "0f420e4082d7ce1c21a12038693a12bbd0371e57",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/0f420e4082d7ce1c21a12038693a12bbd0371e57",
+        "html_url": "https://github.com/blackflux/object-scan/commit/0f420e4082d7ce1c21a12038693a12bbd0371e57"
+      }
+    ]
+  },
+  {
+    "sha": "0f420e4082d7ce1c21a12038693a12bbd0371e57",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjBmNDIwZTQwODJkN2NlMWMyMWExMjAzODY5M2ExMmJiZDAzNzFlNTc=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:48:20Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:48:20Z"
+      },
+      "message": "amend: removed remaining todo",
+      "tree": {
+        "sha": "3a8ae339b56815f3e54a77a1d4c75811639cc94c",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/3a8ae339b56815f3e54a77a1d4c75811639cc94c"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/0f420e4082d7ce1c21a12038693a12bbd0371e57",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/0f420e4082d7ce1c21a12038693a12bbd0371e57",
+    "html_url": "https://github.com/blackflux/object-scan/commit/0f420e4082d7ce1c21a12038693a12bbd0371e57",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/0f420e4082d7ce1c21a12038693a12bbd0371e57/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d1c9c34dbbb7280093ef0237bd4058f69c9d4c25",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/d1c9c34dbbb7280093ef0237bd4058f69c9d4c25",
+        "html_url": "https://github.com/blackflux/object-scan/commit/d1c9c34dbbb7280093ef0237bd4058f69c9d4c25"
+      }
+    ]
+  },
+  {
+    "sha": "3cda7a1bf8f0e5ac4cfd9d3a2232641c0f750edd",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjNjZGE3YTFiZjhmMGU1YWM0Y2ZkOWQzYTIyMzI2NDFjMGY3NTBlZGQ=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:43:44Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:43:44Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "a84ff36843048253c6fa0a67621998e9de4f145a",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/a84ff36843048253c6fa0a67621998e9de4f145a"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/3cda7a1bf8f0e5ac4cfd9d3a2232641c0f750edd",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/3cda7a1bf8f0e5ac4cfd9d3a2232641c0f750edd",
+    "html_url": "https://github.com/blackflux/object-scan/commit/3cda7a1bf8f0e5ac4cfd9d3a2232641c0f750edd",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/3cda7a1bf8f0e5ac4cfd9d3a2232641c0f750edd/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "16ce2a8b2de6a488307d35b754f4b14a53ff6a93",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/16ce2a8b2de6a488307d35b754f4b14a53ff6a93",
+        "html_url": "https://github.com/blackflux/object-scan/commit/16ce2a8b2de6a488307d35b754f4b14a53ff6a93"
+      }
+    ]
+  },
+  {
+    "sha": "98dbf3b9c1352d937ac6fa3c188e5ec46f3aa98d",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0Ojk4ZGJmM2I5YzEzNTJkOTM3YWM2ZmEzYzE4OGU1ZWM0NmYzYWE5OGQ=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:28:42Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:28:42Z"
+      },
+      "message": "amend: removed explained todo",
+      "tree": {
+        "sha": "a53b534a4e9deac58e8c4ae3189f066bd30870d7",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/a53b534a4e9deac58e8c4ae3189f066bd30870d7"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/98dbf3b9c1352d937ac6fa3c188e5ec46f3aa98d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/98dbf3b9c1352d937ac6fa3c188e5ec46f3aa98d",
+    "html_url": "https://github.com/blackflux/object-scan/commit/98dbf3b9c1352d937ac6fa3c188e5ec46f3aa98d",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/98dbf3b9c1352d937ac6fa3c188e5ec46f3aa98d/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "8891dafff15176d718b3542dd5582520e37ba96a",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/8891dafff15176d718b3542dd5582520e37ba96a",
+        "html_url": "https://github.com/blackflux/object-scan/commit/8891dafff15176d718b3542dd5582520e37ba96a"
+      }
+    ]
+  },
+  {
+    "sha": "8891dafff15176d718b3542dd5582520e37ba96a",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0Ojg4OTFkYWZmZjE1MTc2ZDcxOGIzNTQyZGQ1NTgyNTIwZTM3YmE5NmE=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:27:22Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:27:22Z"
+      },
+      "message": "amend: added test for recursive position computation",
+      "tree": {
+        "sha": "1e8451d8860baed32c41f8ac8d90ebe843176d8e",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/1e8451d8860baed32c41f8ac8d90ebe843176d8e"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/8891dafff15176d718b3542dd5582520e37ba96a",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/8891dafff15176d718b3542dd5582520e37ba96a",
+    "html_url": "https://github.com/blackflux/object-scan/commit/8891dafff15176d718b3542dd5582520e37ba96a",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/8891dafff15176d718b3542dd5582520e37ba96a/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "307e28206183211586d6329936ae91a950a28e42",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/307e28206183211586d6329936ae91a950a28e42",
+        "html_url": "https://github.com/blackflux/object-scan/commit/307e28206183211586d6329936ae91a950a28e42"
+      }
+    ]
+  },
+  {
+    "sha": "307e28206183211586d6329936ae91a950a28e42",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjMwN2UyODIwNjE4MzIxMTU4NmQ2MzI5OTM2YWU5MWE5NTBhMjhlNDI=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:04:43Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T16:04:43Z"
+      },
+      "message": "amend: reverted minor",
+      "tree": {
+        "sha": "7f2d42bba58d447f7a49b377bcef090e0bef8ed8",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/7f2d42bba58d447f7a49b377bcef090e0bef8ed8"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/307e28206183211586d6329936ae91a950a28e42",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/307e28206183211586d6329936ae91a950a28e42",
+    "html_url": "https://github.com/blackflux/object-scan/commit/307e28206183211586d6329936ae91a950a28e42",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/307e28206183211586d6329936ae91a950a28e42/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+        "html_url": "https://github.com/blackflux/object-scan/commit/166d43e6dbced42bbb6e4710fc977b11b276e8ec"
+      }
+    ]
+  },
+  {
+    "sha": "166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjE2NmQ0M2U2ZGJjZWQ0MmJiYjZlNDcxMGZjOTc3YjExYjI3NmU4ZWM=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:58:27Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:58:27Z"
+      },
+      "message": "amend: minor",
+      "tree": {
+        "sha": "92aa8b483d6ef2ba912f57c420e7b5d8c6df1721",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/92aa8b483d6ef2ba912f57c420e7b5d8c6df1721"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+    "html_url": "https://github.com/blackflux/object-scan/commit/166d43e6dbced42bbb6e4710fc977b11b276e8ec",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/166d43e6dbced42bbb6e4710fc977b11b276e8ec/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+        "html_url": "https://github.com/blackflux/object-scan/commit/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7"
+      }
+    ]
+  },
+  {
+    "sha": "b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OmIyMWFhM2UwODY1ZWVjNmQxYmZjZGRmYzI2ZGMwZjcwMmNjNGQwZTc=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:53:31Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:53:31Z"
+      },
+      "message": "Merge branch 'dev' of https://github.com/blackflux/object-scan",
+      "tree": {
+        "sha": "7f2d42bba58d447f7a49b377bcef090e0bef8ed8",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/7f2d42bba58d447f7a49b377bcef090e0bef8ed8"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+    "html_url": "https://github.com/blackflux/object-scan/commit/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/b21aa3e0865eec6d1bfcddfc26dc0f702cc4d0e7/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+        "html_url": "https://github.com/blackflux/object-scan/commit/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda"
+      },
+      {
+        "sha": "30b24e5f9abad0f2cf2ff6bedbce693489b04af7",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/30b24e5f9abad0f2cf2ff6bedbce693489b04af7",
+        "html_url": "https://github.com/blackflux/object-scan/commit/30b24e5f9abad0f2cf2ff6bedbce693489b04af7"
+      }
+    ]
+  },
+  {
+    "sha": "6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+    "node_id": "MDY6Q29tbWl0MTM2Nzc0OTI0OjZiZjhkYTZmNDc2MjEzNmYxN2MyYTFlNWU4YzJlNTFmMTYyZTdmZGE=",
+    "commit": {
+      "author": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:52:56Z"
+      },
+      "committer": {
+        "name": "Lukas Siemon",
+        "email": "lukas.siemon@gmail.com",
+        "date": "2019-04-20T15:52:56Z"
+      },
+      "message": "amend: refactor",
+      "tree": {
+        "sha": "f0c5067f9f0d217d1d0deae5af4803bcc1b7ec05",
+        "url": "https://api.github.com/repos/blackflux/object-scan/git/trees/f0c5067f9f0d217d1d0deae5af4803bcc1b7ec05"
+      },
+      "url": "https://api.github.com/repos/blackflux/object-scan/git/commits/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/blackflux/object-scan/commits/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+    "html_url": "https://github.com/blackflux/object-scan/commit/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda",
+    "comments_url": "https://api.github.com/repos/blackflux/object-scan/commits/6bf8da6f4762136f17c2a1e5e8c2e51f162e7fda/comments",
+    "author": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "simlu",
+      "id": 1539747,
+      "node_id": "MDQ6VXNlcjE1Mzk3NDc=",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1539747?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/simlu",
+      "html_url": "https://github.com/simlu",
+      "followers_url": "https://api.github.com/users/simlu/followers",
+      "following_url": "https://api.github.com/users/simlu/following{/other_user}",
+      "gists_url": "https://api.github.com/users/simlu/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/simlu/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/simlu/subscriptions",
+      "organizations_url": "https://api.github.com/users/simlu/orgs",
+      "repos_url": "https://api.github.com/users/simlu/repos",
+      "events_url": "https://api.github.com/users/simlu/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/simlu/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d092e45f0eaa430eb96b9042dd960474c5be6626",
+        "url": "https://api.github.com/repos/blackflux/object-scan/commits/d092e45f0eaa430eb96b9042dd960474c5be6626",
+        "html_url": "https://github.com/blackflux/object-scan/commit/d092e45f0eaa430eb96b9042dd960474c5be6626"
+      }
+    ]
+  }
+]

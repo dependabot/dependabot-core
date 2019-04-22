@@ -172,8 +172,8 @@ module Dependabot
         # use that as our model for subsequent commits
         case last_dependabot_commit_style
         when :gitmoji then "⬆️ "
-        when :contentional_prefix then "#{last_dependabot_commit_prefix}: "
-        when :contentional_prefix_with_scope
+        when :conventional_prefix then "#{last_dependabot_commit_prefix}: "
+        when :conventional_prefix_with_scope
           scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
           "#{last_dependabot_commit_prefix}(#{scope}): "
         else
@@ -197,7 +197,7 @@ module Dependabot
       def capitalize_first_word?
         case last_dependabot_commit_style
         when :gitmoji then true
-        when :contentional_prefix, :contentional_prefix_with_scope
+        when :conventional_prefix, :conventional_prefix_with_scope
           last_dependabot_commit_message.match?(/: (\[Security\] )?(B|U)/)
         else
           if using_angular_commit_messages? || using_eslint_commit_messages?
@@ -221,6 +221,9 @@ module Dependabot
         elsif using_eslint_commit_messages?
           # https://eslint.org/docs/developer-guide/contributing/pull-requests
           "Upgrade: "
+        elsif using_prefixed_commit_messages?
+          # https://eslint.org/docs/developer-guide/contributing/pull-requests
+          "build: "
         elsif using_gitmoji_commit_messages?
           "⬆️ "
         end
@@ -230,10 +233,10 @@ module Dependabot
         return unless (msg = last_dependabot_commit_message)
 
         return :gitmoji if msg.start_with?("⬆️")
-        return :contentional_prefix if msg.match?(/^(chore|build|upgrade):/i)
+        return :conventional_prefix if msg.match?(/^(chore|build|upgrade):/i)
         return unless msg.match?(/^(chore|build|upgrade)\(/i)
 
-        :contentional_prefix_with_scope
+        :conventional_prefix_with_scope
       end
 
       def last_dependabot_commit_prefix
@@ -815,6 +818,17 @@ module Dependabot
         semantic_messages.count.to_f / recent_commit_messages.count > 0.3
       end
 
+      def using_prefixed_commit_messages?
+        return false if using_gitmoji_commit_messages?
+        return false if recent_commit_messages.none?
+
+        prefixed_messages = recent_commit_messages.select do |message|
+          message.start_with?(/[a-z][^\s]+:/)
+        end
+
+        prefixed_messages.count.to_f / recent_commit_messages.count > 0.3
+      end
+
       def angular_commit_prefix
         raise "Not using angular commits!" unless using_angular_commit_messages?
 
@@ -911,7 +925,8 @@ module Dependabot
       end
 
       def recent_github_commits
-        @recent_github_commits ||= github_client_for_source.commits(source.repo)
+        @recent_github_commits ||=
+          github_client_for_source.commits(source.repo, per_page: 100)
       rescue Octokit::Conflict
         @recent_github_commits ||= []
       end
