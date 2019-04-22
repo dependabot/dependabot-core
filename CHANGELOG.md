@@ -1,3 +1,7 @@
+## v0.106.1, 22 April 2019
+
+- Make commit prefixing more robust
+
 ## v0.106.0, 21 April 2019
 
 - Pass old commit SHA when updating a PR, and use it to identify the relevant commit
