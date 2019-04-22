@@ -200,7 +200,7 @@ module Dependabot
           return [] unless lockfile
 
           all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
-                      specs.map(&:name).map(&:to_s)
+                      specs.map(&:name).map(&:to_s).uniq
           top_level = build_definition([]).dependencies.
                       map(&:name).map(&:to_s)
 
