@@ -1,3 +1,7 @@
+## v0.106.5, 23 April 2019
+
+- JS: Add floor to satisfying_versions in version resolver
+
 ## v0.106.4, 23 April 2019
 
 - JS: Ignore aliased dependencies in lockfile parser
