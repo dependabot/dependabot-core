@@ -85,7 +85,12 @@ module Dependabot
       end
 
       def target_version
-        library? ? latest_version&.to_s : preferred_resolvable_version&.to_s
+        # Unless we can resolve a new version, don't try to update to a latest
+        # version (even for a library) as we rely on a resolvable version being
+        # present in other areas
+        return unless preferred_resolvable_version
+
+        library? ? latest_version&.to_s : preferred_resolvable_version.to_s
       end
 
       def library?
