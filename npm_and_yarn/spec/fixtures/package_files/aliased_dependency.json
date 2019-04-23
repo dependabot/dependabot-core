@@ -14,7 +14,7 @@
     },
     "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
     "dependencies": {
-        "my-fetch-factory": "npm:fetch-factory@0.0.2"
+        "my-fetch-factory": "npm:fetch-factory@^0.0.1"
     },
     "devDependencies": {
         "etag": "^1.0.0"
