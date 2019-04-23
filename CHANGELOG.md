@@ -1,3 +1,7 @@
+## v0.106.3, 23 April 2019
+
+- Rust: Require a resolvable version, even when updating a library
+
 ## v0.106.2, 23 April 2019
 
 - Ruby: Include a lower Ruby version in list of possible rubies (in case a < req specified)
