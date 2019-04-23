@@ -248,12 +248,15 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def satisfying_versions
           latest_version_finder(dependency).
             possible_versions_with_details.
             select do |version, details|
               next false unless satisfies_peer_reqs_on_dep?(version)
               next true unless details["peerDependencies"]
+              next true if version == version_for_dependency(dependency)
 
               details["peerDependencies"].all? do |dep, req|
                 dep = top_level_dependencies.find { |d| d.name == dep }
@@ -270,6 +273,8 @@ module Dependabot
             end.
             map(&:first)
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def satisfies_peer_reqs_on_dep?(version)
           newly_broken_peer_reqs_on_dep.all? do |peer_req|
