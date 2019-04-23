@@ -1,3 +1,8 @@
+## v0.106.2, 23 April 2019
+
+- Ruby: Include a lower Ruby version in list of possible rubies (in case a < req specified)
+- Add sleep before retrying commit creation
+
 ## v0.106.1, 22 April 2019
 
 - Make commit prefixing more robust
