@@ -12,6 +12,7 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
     class FileParser < Dependabot::FileParsers::Base
@@ -120,10 +121,8 @@ module Dependabot
 
       def ignore_requirement?(requirement)
         return true if local_path?(requirement)
-        return true if non_git_url?(requirement)
 
-        # TODO: Handle aliased packages
-        alias_package?(requirement)
+        non_git_url?(requirement)
       end
 
       def local_path?(requirement)
@@ -131,7 +130,20 @@ module Dependabot
       end
 
       def alias_package?(requirement)
-        requirement.start_with?("npm:")
+        return false unless requirement.start_with?("npm:")
+
+        alias_req_string = requirement.sub(/^npm:/, "")
+        alias_req_string[1..-1]&.include?("@")
+      end
+
+      def aliased_package_details(requirement)
+        return unless alias_package?(requirement)
+
+        alias_req_string = requirement.sub(/^npm:/, "")
+        {
+          name: alias_req_string.rpartition("@").first,
+          requirement: alias_req_string.rpartition("@").last
+        }
       end
 
       def non_git_url?(requirement)
@@ -228,6 +240,10 @@ module Dependabot
       end
 
       def source_for(name, requirement, manifest_name)
+        if alias_package?(requirement)
+          return source_for_alias_package(requirement, manifest_name)
+        end
+
         return git_source_for(requirement) if git_url?(requirement)
 
         resolved_url = lockfile_parser.lockfile_details(
@@ -244,7 +260,24 @@ module Dependabot
         private_registry_source_for(resolved_url, name)
       end
 
+      def source_for_alias_package(requirement, manifest_name)
+        aliased_package_details = aliased_package_details(requirement)
+        alias_source = source_for(
+          aliased_package_details.fetch(:name),
+          aliased_package_details.fetch(:requirement),
+          manifest_name
+        )
+        source = { aliased_package_name: aliased_package_details.fetch(:name) }
+
+        source.merge(alias_source || {})
+      end
+
       def requirement_for(requirement)
+        if alias_package?(requirement)
+          aliased_req = aliased_package_details(requirement).fetch(:requirement)
+          return requirement_for(aliased_req)
+        end
+
         return requirement unless git_url?(requirement)
 
         details = requirement.match(GIT_URL_REGEX).named_captures
@@ -312,6 +345,7 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
 
 Dependabot::FileParsers.
   register("npm_and_yarn", Dependabot::NpmAndYarn::FileParser)

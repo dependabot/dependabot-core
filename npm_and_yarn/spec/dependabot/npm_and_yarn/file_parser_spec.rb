@@ -978,9 +978,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package_json_fixture_name) { "aliased_dependency.json" }
           let(:yarn_lock_fixture_name) { "aliased_dependency.lock" }
 
-          it "doesn't include the aliased dependency" do
-            expect(top_level_dependencies.length).to eq(1)
-            expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+          it "includes the aliased dependency" do
+            expect(top_level_dependencies.length).to eq(2)
+
+            expect(top_level_dependencies.first.name).to eq("my-fetch-factory")
+            expect(top_level_dependencies.first.version).to eq("0.0.1")
+            expect(top_level_dependencies.first.requirements).to eq(
+              [{
+                requirement: "^0.0.1",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: { aliased_package_name: "fetch-factory" }
+              }]
+            )
           end
         end
 
