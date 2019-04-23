@@ -6,9 +6,7 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
   subject(:lockfile_parser) do
-    described_class.new(
-      dependency_files: dependency_files
-    )
+    described_class.new(dependency_files: dependency_files)
   end
   let(:npm_lockfile) do
     Dependabot::DependencyFile.new(
@@ -55,6 +53,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:yarn_lockfile_fixture_name) { "empty_version.lock" }
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
+      end
+
+      context "that contains an aliased dependency" do
+        let(:yarn_lockfile_fixture_name) { "aliased_dependency.lock" }
+
+        it "excludes the dependency" do
+          # Lockfile contains 11 dependencies but one is an alias
+          expect(dependencies.count).to eq(10)
+          expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+        end
       end
 
       context "that contain multiple dependencies" do
@@ -205,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           )
         end
 
-        context "when the requiremtn doesn't match" do
+        context "when the requirement doesn't match" do
           let(:requirement) { "^3.3.0" }
 
           it { is_expected.to eq(nil) }

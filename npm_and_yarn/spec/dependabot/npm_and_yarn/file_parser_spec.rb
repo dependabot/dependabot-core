@@ -981,6 +981,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
             expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+            expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
           end
         end
 

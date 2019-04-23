@@ -71,6 +71,7 @@ module Dependabot
           yarn_locks.each do |yarn_lock|
             parse_yarn_lock(yarn_lock).each do |req, details|
               next unless semver_version_for(details["version"])
+              next if alias_package?(req)
 
               # Note: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
@@ -149,6 +150,10 @@ module Dependabot
           return if version_string.include?("#")
 
           version_string
+        end
+
+        def alias_package?(requirement)
+          requirement.include?("@npm:")
         end
 
         def parse_package_lock(package_lock)
