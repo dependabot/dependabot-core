@@ -1,3 +1,7 @@
+## v0.106.4, 23 April 2019
+
+- JS: Ignore aliased dependencies in lockfile parser
+
 ## v0.106.3, 23 April 2019
 
 - Rust: Require a resolvable version, even when updating a library
