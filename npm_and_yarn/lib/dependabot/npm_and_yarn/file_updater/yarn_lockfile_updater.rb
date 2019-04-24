@@ -168,8 +168,13 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_yarn_lock_updater_error(error, yarn_lock)
-          # When the package.json doesn't include a name or version
-          if error.message.match?(INVALID_PACKAGE)
+          # Invalid package: When package.json doesn't include a name or version
+          # Local path error: When installing a git dependency which
+          # is using local file paths for sub-dependencies (e.g. unbuilt yarn
+          # workspace project)
+          sub_dep_local_path_err = "Package \"\" refers to a non-existing file"
+          if error.message.match?(INVALID_PACKAGE) ||
+             error.message.start_with?(sub_dep_local_path_err)
             raise_resolvability_error(error, yarn_lock)
           end
 

@@ -178,10 +178,15 @@ module Dependabot
             handle_missing_package(package_name, error, lockfile)
           end
 
-          # When the package.json doesn't include a name or version, or name
-          # has non url-friendly characters
+          # Invalid package: When the package.json doesn't include a name or
+          # version, or name has non url-friendly characters
+          # Local path error: When installing a git dependency which
+          # is using local file paths for sub-dependencies (e.g. unbuilt yarn
+          # workspace project)
+          sub_dep_local_path_error = "does not contain a package.json file"
           if error.message.match?(INVALID_PACKAGE) ||
-             error.message.start_with?("Invalid package name")
+             error.message.start_with?("Invalid package name") ||
+             error.message.include?(sub_dep_local_path_error)
             raise_resolvability_error(error, lockfile)
           end
 
