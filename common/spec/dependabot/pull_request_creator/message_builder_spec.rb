@@ -110,7 +110,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "but does have prefixed commits" do
           let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
-          it { is_expected.to eq("build: bump business from 1.4.0 to 1.5.0") }
+          it {
+            is_expected.to eq("build(deps): bump business from 1.4.0 to 1.5.0")
+          }
         end
 
         context "that 409s when asked for commits" do

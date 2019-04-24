@@ -215,15 +215,15 @@ module Dependabot
       end
 
       def build_commit_prefix_from_previous_commits
+        scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
         if using_angular_commit_messages?
-          scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
           "#{angular_commit_prefix}(#{scope}): "
         elsif using_eslint_commit_messages?
           # https://eslint.org/docs/developer-guide/contributing/pull-requests
           "Upgrade: "
         elsif using_prefixed_commit_messages?
           # https://eslint.org/docs/developer-guide/contributing/pull-requests
-          "build: "
+          "build#{scope}): "
         elsif using_gitmoji_commit_messages?
           "⬆️ "
         end
