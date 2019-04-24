@@ -49,6 +49,8 @@ module Dependabot
           /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/.freeze
         FORBIDDEN_PACKAGE =
           %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
+          -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
 
@@ -217,6 +219,15 @@ module Dependabot
           if error.message.match?(FORBIDDEN_PACKAGE)
             package_name =
               error.message.match(FORBIDDEN_PACKAGE).
+              named_captures["package_req"].
+              gsub("%2f", "/")
+            handle_missing_package(package_name, error, lockfile)
+          end
+
+          # Some private registries return a 403 when the user is readonly
+          if error.message.match?(FORBIDDEN_PACKAGE_403)
+            package_name =
+              error.message.match(FORBIDDEN_PACKAGE_403).
               named_captures["package_req"].
               gsub("%2f", "/")
             handle_missing_package(package_name, error, lockfile)
