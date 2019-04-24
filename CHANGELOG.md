@@ -1,3 +1,7 @@
+## v0.106.6, 24 April 2019
+
+- Rust: Handle git dependencies changing version to a pre
+
 ## v0.106.5, 23 April 2019
 
 - JS: Add floor to satisfying_versions in version resolver
