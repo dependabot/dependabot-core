@@ -1,3 +1,7 @@
+## v0.106.7, 24 April 2019
+
+- Rust: Update target-specific dependencies
+
 ## v0.106.6, 24 April 2019
 
 - Rust: Handle git dependencies changing version to a pre
