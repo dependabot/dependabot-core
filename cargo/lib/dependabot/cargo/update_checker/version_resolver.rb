@@ -176,6 +176,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/MethodLength
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
@@ -210,11 +211,18 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
+          if git_dependency? && error.message.include?("no matching package")
+            # This happens when updating a git dependency whose version has
+            # changed from a release to a pre-release version
+            return nil
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/MethodLength
 
         def unreachable_git_urls
           @unreachable_git_urls ||=
