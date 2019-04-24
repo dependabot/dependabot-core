@@ -941,6 +941,63 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               to include("is-number@^4.0.0")
           end
         end
+
+        context "when updating to a dependency with file path sub-deps" do
+          let(:dependency_name) do
+            "@segment/analytics.js-integration-facebook-pixel"
+          end
+          let(:ref) { "master" }
+          let(:old_ref) { "2.4.1" }
+          let(:requirements) do
+            [{
+              requirement: req,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/segmentio/analytics.js-integrations",
+                branch: nil,
+                ref: ref
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              requirement: old_req,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/segmentio/analytics.js-integrations",
+                branch: nil,
+                ref: old_ref
+              }
+            }]
+          end
+          let(:previous_version) { "3b1bb80b302c2e552685dc8a029797ec832ea7c9" }
+          let(:version) { "5677730fd3b9de2eb2224b968259893e5fc9adac" }
+          let(:manifest_fixture_name) { "git_dependency_local_file.json" }
+          let(:yarn_lock_fixture_name) { "git_dependency_local_file.lock" }
+          let(:npm_lock_fixture_name) { "git_dependency_local_file.json" }
+
+          context "with a yarn lockfile" do
+            let(:files) { [package_json, yarn_lock] }
+
+            it "raises a helpful error" do
+              expect { updated_files }.
+                to raise_error(Dependabot::DependencyFileNotResolvable)
+            end
+          end
+
+          context "with a npm lockfile" do
+            let(:files) { [package_json, package_lock] }
+
+            it "raises a helpful error" do
+              expect { updated_files }.
+                to raise_error(Dependabot::DependencyFileNotResolvable)
+            end
+          end
+        end
       end
     end
 
