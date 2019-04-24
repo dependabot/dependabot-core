@@ -1,3 +1,8 @@
+## v0.106.8, 24 April 2019
+
+- NPM: Handle private registry error '403 Fobidden'
+- JS: Handle git dependenices with file-path sub-dependencies
+
 ## v0.106.7, 24 April 2019
 
 - Rust: Update target-specific dependencies
