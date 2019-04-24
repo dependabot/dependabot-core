@@ -174,7 +174,6 @@ module Dependabot
         when :gitmoji then "⬆️ "
         when :conventional_prefix then "#{last_dependabot_commit_prefix}: "
         when :conventional_prefix_with_scope
-          scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
           "#{last_dependabot_commit_prefix}(#{scope}): "
         else
           # Otherwise we need to detect the user's preferred style from the
@@ -215,18 +214,20 @@ module Dependabot
       end
 
       def build_commit_prefix_from_previous_commits
-        scope = dependencies.any?(&:production?) ? "deps" : "deps-dev"
         if using_angular_commit_messages?
           "#{angular_commit_prefix}(#{scope}): "
         elsif using_eslint_commit_messages?
           # https://eslint.org/docs/developer-guide/contributing/pull-requests
           "Upgrade: "
-        elsif using_prefixed_commit_messages?
-          # https://eslint.org/docs/developer-guide/contributing/pull-requests
-          "build#{scope}): "
         elsif using_gitmoji_commit_messages?
           "⬆️ "
+        elsif using_prefixed_commit_messages?
+          "build(#{scope}): "
         end
+      end
+
+      def scope
+        dependencies.any?(&:production?) ? "deps" : "deps-dev"
       end
 
       def last_dependabot_commit_style
