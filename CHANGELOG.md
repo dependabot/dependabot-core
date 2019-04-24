@@ -1,3 +1,10 @@
+## v0.106.9, 25 April 2019
+
+- Add scope to fallback commit message
+- Python: Ignore irrelevant pyproject files to avoid pep517 warnings
+- Python: Bump pip from 19.0.3 to 19.1 in /python/helpers
+- Python: Bump pip-tools from 3.6.0 to 3.6.1 in /python/helpers (#1120)
+
 ## v0.106.8, 24 April 2019
 
 - NPM: Handle private registry error '403 Fobidden'
