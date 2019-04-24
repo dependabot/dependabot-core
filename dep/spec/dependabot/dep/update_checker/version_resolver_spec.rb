@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Dep::UpdateChecker::VersionResolver do
           }
         end
 
-        it { is_expected.to eq("f4905fbd45b6790792202848439271c74074bbfd") }
+        it { is_expected.to eq("c942b20a5d85b458c4dce1589326051d85e25d6d") }
       end
 
       context "that is unreachable" do

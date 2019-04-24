@@ -166,12 +166,12 @@ RSpec.describe Dependabot::Dep::FileUpdater::LockfileUpdater do
 
         it "updates the lockfile correctly" do
           expect(updated_lockfile_content).
-            to include("f4905fbd45b6790792202848439271c74074bbfd")
+            to include("c942b20a5d85b458c4dce1589326051d85e25d6d")
           expect(updated_lockfile_content).
             to include(
               "  branch = \"master\"\n"\
-              "  digest = \"1:7fdb899d551eb7a6863f5bd26cecdfd9dd46904723c93bd"\
-              "ecf1909f671049f38\"\n"\
+              "  digest = \"1:bac96bbcaaf8f81c72a1dd59aceaf7cb0b16b64ff0c45c3"\
+              "2af78dc9218651e07\"\n"\
               "  name = \"golang.org/x/text\""
             )
         end
