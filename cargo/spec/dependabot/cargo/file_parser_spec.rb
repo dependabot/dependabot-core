@@ -503,7 +503,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
-          subject(:dependency) { dependencies.first }
+          subject(:dependency) { top_level_dependencies.first }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -526,7 +526,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
           let(:lockfile_fixture_name) { "blank_version" }
 
           describe "the first dependency" do
-            subject(:dependency) { dependencies.first }
+            subject(:dependency) { top_level_dependencies.first }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -535,6 +535,29 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency.requirements).to eq(
                 [{
                   requirement: nil,
+                  file: "Cargo.toml",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              )
+            end
+          end
+        end
+
+        context "with a target-specific dependency" do
+          let(:manifest_fixture_name) { "target_dependency" }
+          let(:lockfile_fixture_name) { "target_dependency" }
+
+          describe "the last dependency" do
+            subject(:dependency) { top_level_dependencies.last }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("time")
+              expect(dependency.version).to eq("0.1.12")
+              expect(dependency.requirements).to eq(
+                [{
+                  requirement: "<= 0.1.12",
                   file: "Cargo.toml",
                   groups: ["dependencies"],
                   source: nil

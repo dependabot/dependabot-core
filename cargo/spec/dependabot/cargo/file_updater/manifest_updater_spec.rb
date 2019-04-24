@@ -65,6 +65,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         it { is_expected.to include(%(business_time = "0.1.12")) }
       end
 
+      context "with a target-specific dependency" do
+        let(:manifest_fixture_name) { "target_dependency" }
+        it { is_expected.to include(%(time = "<= 0.1.38")) }
+      end
+
       context "with an optional dependency" do
         let(:manifest_fixture_name) { "optional_dependency" }
         let(:dependency_name) { "utf8-ranges" }

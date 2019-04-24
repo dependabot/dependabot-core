@@ -59,28 +59,42 @@ module Dependabot
       def manifest_dependencies
         dependency_set = DependencySet.new
 
-        DEPENDENCY_TYPES.each do |type|
-          manifest_files.each do |file|
+        manifest_files.each do |file|
+          DEPENDENCY_TYPES.each do |type|
             parsed_file(file).fetch(type, {}).each do |name, requirement|
               next unless name == name_from_declaration(name, requirement)
               next if lockfile && !version_from_lockfile(name, requirement)
 
-              dependency_set << Dependency.new(
-                name: name,
-                version: version_from_lockfile(name, requirement),
-                package_manager: "cargo",
-                requirements: [{
-                  requirement: requirement_from_declaration(requirement),
-                  file: file.name,
-                  groups: [type],
-                  source: source_from_declaration(requirement)
-                }]
-              )
+              dependency_set << build_dependency(name, requirement, type, file)
+            end
+
+            parsed_file(file).fetch("target", {}).each do |_, t_details|
+              t_details.fetch(type, {}).each do |name, requirement|
+                next unless name == name_from_declaration(name, requirement)
+                next if lockfile && !version_from_lockfile(name, requirement)
+
+                dependency_set <<
+                  build_dependency(name, requirement, type, file)
+              end
             end
           end
         end
 
         dependency_set
+      end
+
+      def build_dependency(name, requirement, type, file)
+        Dependency.new(
+          name: name,
+          version: version_from_lockfile(name, requirement),
+          package_manager: "cargo",
+          requirements: [{
+            requirement: requirement_from_declaration(requirement),
+            file: file.name,
+            groups: [type],
+            source: source_from_declaration(requirement)
+          }]
+        )
       end
 
       def lockfile_dependencies

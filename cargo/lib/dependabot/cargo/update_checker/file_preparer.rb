@@ -81,7 +81,34 @@ module Dependabot
             end
           end
 
+          replace_req_on_target_specific_deps!(parsed_manifest, filename)
+
           TomlRB.dump(parsed_manifest)
+        end
+
+        def replace_req_on_target_specific_deps!(parsed_manifest, filename)
+          parsed_manifest.fetch("target", {}).each do |target, _|
+            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+              dependency_names = dependency_names_for_type_and_target(
+                parsed_manifest,
+                type,
+                target
+              )
+
+              dependency_names.each do |name|
+                req = parsed_manifest.dig("target", target, type, name)
+
+                updated_req = temporary_requirement_for_resolution(filename)
+
+                if req.is_a?(Hash)
+                  parsed_manifest["target"][target][type][name]["version"] =
+                    updated_req
+                else
+                  parsed_manifest["target"][target][type][name] = updated_req
+                end
+              end
+            end
+          end
         end
 
         def replace_git_pin(content)
@@ -103,7 +130,37 @@ module Dependabot
             end
           end
 
+          replace_git_pin_on_target_specific_deps!(parsed_manifest)
+
           TomlRB.dump(parsed_manifest)
+        end
+
+        def replace_git_pin_on_target_specific_deps!(parsed_manifest)
+          parsed_manifest.fetch("target", {}).each do |target, _|
+            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+              dependency_names = dependency_names_for_type_and_target(
+                parsed_manifest,
+                type,
+                target
+              )
+
+              dependency_names.each do |name|
+                req = parsed_manifest.dig("target", target, type, name)
+                next unless req.is_a?(Hash)
+                next unless [req["tag"], req["rev"]].compact.uniq.count == 1
+
+                if req["tag"]
+                  parsed_manifest["target"][target][type][name]["tag"] =
+                    replacement_git_pin
+                end
+
+                if req["rev"]
+                  parsed_manifest["target"][target][type][name]["rev"] =
+                    replacement_git_pin
+                end
+              end
+            end
+          end
         end
 
         def replace_ssh_urls(content)
@@ -177,6 +234,16 @@ module Dependabot
         def dependency_names_for_type(parsed_manifest, type)
           names = []
           parsed_manifest.fetch(type, {}).each do |nm, req|
+            next unless dependency.name == name_from_declaration(nm, req)
+
+            names << nm
+          end
+          names
+        end
+
+        def dependency_names_for_type_and_target(parsed_manifest, type, target)
+          names = []
+          (parsed_manifest.dig("target", target, type) || {}).each do |nm, req|
             next unless dependency.name == name_from_declaration(nm, req)
 
             names << nm
