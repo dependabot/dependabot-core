@@ -99,8 +99,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:manifest_fixture_name) { "target_dependency" }
       let(:lockfile_fixture_name) { "target_dependency" }
       let(:dependency_name) { "time" }
-      let(:dependency_version) { "0.1.38" }
-      let(:string_req) { "0.1.12" }
+      let(:dependency_version) { "0.1.12" }
+      let(:string_req) { "<=0.1.12" }
 
       it { is_expected.to be >= Gem::Version.new("0.1.41") }
     end

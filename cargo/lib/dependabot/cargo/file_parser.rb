@@ -65,17 +65,7 @@ module Dependabot
               next unless name == name_from_declaration(name, requirement)
               next if lockfile && !version_from_lockfile(name, requirement)
 
-              dependency_set << Dependency.new(
-                name: name,
-                version: version_from_lockfile(name, requirement),
-                package_manager: "cargo",
-                requirements: [{
-                  requirement: requirement_from_declaration(requirement),
-                  file: file.name,
-                  groups: [type],
-                  source: source_from_declaration(requirement)
-                }]
-              )
+              dependency_set << build_dependency(name, requirement, type, file)
             end
 
             parsed_file(file).fetch("target", {}).each do |_, t_details|
@@ -83,23 +73,28 @@ module Dependabot
                 next unless name == name_from_declaration(name, requirement)
                 next if lockfile && !version_from_lockfile(name, requirement)
 
-                dependency_set << Dependency.new(
-                  name: name,
-                  version: version_from_lockfile(name, requirement),
-                  package_manager: "cargo",
-                  requirements: [{
-                    requirement: requirement_from_declaration(requirement),
-                    file: file.name,
-                    groups: [type],
-                    source: source_from_declaration(requirement)
-                  }]
-                )
+                dependency_set <<
+                  build_dependency(name, requirement, type, file)
               end
             end
           end
         end
 
         dependency_set
+      end
+
+      def build_dependency(name, requirement, type, file)
+        Dependency.new(
+          name: name,
+          version: version_from_lockfile(name, requirement),
+          package_manager: "cargo",
+          requirements: [{
+            requirement: requirement_from_declaration(requirement),
+            file: file.name,
+            groups: [type],
+            source: source_from_declaration(requirement)
+          }]
+        )
       end
 
       def lockfile_dependencies

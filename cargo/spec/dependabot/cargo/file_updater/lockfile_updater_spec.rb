@@ -114,6 +114,23 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         let(:lockfile_fixture_name) { "target_dependency" }
+        let(:dependency_previous_version) { "0.1.12" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "<= 0.1.38",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "<= 0.1.12",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).

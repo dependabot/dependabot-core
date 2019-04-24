@@ -8,6 +8,7 @@ require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/shared_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class FileUpdater
@@ -227,7 +228,28 @@ module Dependabot
             end
           end
 
+          pin_target_specific_dependencies!(parsed_manifest)
+
           TomlRB.dump(parsed_manifest)
+        end
+
+        def pin_target_specific_dependencies!(parsed_manifest)
+          parsed_manifest.fetch("target", {}).each do |target, t_details|
+            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+              t_details.fetch(type, {}).each do |name, requirement|
+                next unless name == dependency.name
+
+                updated_req = "=#{dependency.version}"
+
+                if requirement.is_a?(Hash)
+                  parsed_manifest["target"][target][type][name]["version"] =
+                    updated_req
+                else
+                  parsed_manifest["target"][target][type][name] = updated_req
+                end
+              end
+            end
+          end
         end
 
         def replace_ssh_urls(content)
@@ -341,3 +363,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

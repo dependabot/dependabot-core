@@ -554,10 +554,10 @@ RSpec.describe Dependabot::Cargo::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("time")
-              expect(dependency.version).to eq("0.1.38")
+              expect(dependency.version).to eq("0.1.12")
               expect(dependency.requirements).to eq(
                 [{
-                  requirement: "0.1.12",
+                  requirement: "<= 0.1.12",
                   file: "Cargo.toml",
                   groups: ["dependencies"],
                   source: nil

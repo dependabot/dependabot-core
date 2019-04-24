@@ -81,6 +81,21 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             to include('regex = ">= 0.1.41"')
         end
 
+        context "the a target-specific dependency" do
+          let(:manifest_fixture_name) { "target_dependency" }
+          let(:lockfile_fixture_name) { "target_dependency" }
+          let(:dependency_name) { "time" }
+          let(:dependency_version) { "0.1.12" }
+          let(:string_req) { "<= 0.1.12" }
+
+          it "updates the requirement" do
+            expect(prepared_manifest_file.content).
+              to include('time = ">= 0.1.12"')
+            expect(prepared_manifest_file.content).
+              to_not include('time = "<= 0.1.12"')
+          end
+        end
+
         context "without a lockfile" do
           let(:dependency_files) { [manifest] }
           let(:dependency_version) { nil }

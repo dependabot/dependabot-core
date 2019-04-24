@@ -7,4 +7,4 @@ authors = ["support@dependabot.com"]
 regex = "0.1.41"
 
 [target.x86_64-pc-windows-gnu.dependencies]
-time = "0.1.12"
+time = "<= 0.1.12"
