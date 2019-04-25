@@ -154,9 +154,9 @@ RSpec.describe namespace::PipenvVersionResolver do
       let(:dependency_name) { "py" }
       let(:dependency_version) { "1.5.3" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 1.5.3, <= 1.8.0" }
+      let(:updated_requirement) { ">= 1.5.3, <= 1.7.0" }
 
-      it { is_expected.to eq(Gem::Version.new("1.8.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
       context "that no longer appears in the lockfile after updating" do
         let(:lockfile_fixture_name) { "unnecessary_subdependency.lock" }
@@ -493,11 +493,28 @@ RSpec.describe namespace::PipenvVersionResolver do
     context "that is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
       it { is_expected.to eq(true) }
+
+      context "with a subdependency" do
+        let(:dependency_name) { "py" }
+        let(:dependency_version) { "1.5.3" }
+        let(:dependency_requirements) { [] }
+        let(:version) { Gem::Version.new("1.7.0") }
+
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
       it { is_expected.to eq(false) }
+
+      context "with a subdependency" do
+        let(:dependency_name) { "py" }
+        let(:dependency_version) { "1.5.3" }
+        let(:dependency_requirements) { [] }
+
+        it { is_expected.to eq(false) }
+      end
 
       context "because the original manifest isn't resolvable" do
         let(:pipfile_fixture_name) { "conflict_at_current" }

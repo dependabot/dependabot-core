@@ -287,6 +287,26 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
       end
 
+      describe "when updating a subdependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "py",
+            version: "1.7.0",
+            previous_version: "1.5.3",
+            package_manager: "pip",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+
+        it "updates only what it needs to" do
+          expect(json_lockfile["default"].key?("py")).to eq(false)
+          expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
+          expect(json_lockfile["_meta"]["hash"]).
+            to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
+        end
+      end
+
       describe "with a subdependency from an extra" do
         let(:dependency) do
           Dependabot::Dependency.new(
