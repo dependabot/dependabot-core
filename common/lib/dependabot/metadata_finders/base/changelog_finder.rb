@@ -134,7 +134,8 @@ module Dependabot
             dependency_file_list(ref).
             select { |f| f.type == "file" }.
             reject { |f| f.name.end_with?(".sh") }.
-            reject { |f| f.size > 1_000_000 }
+            reject { |f| f.size > 1_000_000 }.
+            reject { |f| f.size < 100 }
 
           CHANGELOG_NAMES.each do |name|
             candidates = files.select { |f| f.name =~ /#{name}/i }
@@ -267,7 +268,7 @@ module Dependabot
             OpenStruct.new(
               name: file.fetch("path").split("/").last,
               type: file.fetch("type") == "commit_file" ? "file" : file["type"],
-              size: file.fetch("size", 0),
+              size: file.fetch("size", 100),
               html_url: "#{source.url}/src/#{branch}/#{file['path']}",
               download_url: "#{source.url}/raw/#{branch}/#{file['path']}"
             )
@@ -283,7 +284,7 @@ module Dependabot
             OpenStruct.new(
               name: file.name,
               type: file.type == "blob" ? "file" : file.type,
-              size: 0, # GitLab doesn't return file size
+              size: 100, # GitLab doesn't return file size
               html_url: "#{source.url}/blob/master/#{file.path}",
               download_url: "#{source.url}/raw/master/#{file.path}"
             )
