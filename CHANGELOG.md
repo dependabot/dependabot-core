@@ -1,3 +1,7 @@
+## v0.106.10, 25 April 2019
+
+- Add php7.2-mysql providing pdo-mysql
+
 ## v0.106.9, 25 April 2019
 
 - Add scope to fallback commit message
