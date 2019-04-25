@@ -1,3 +1,9 @@
+## v0.106.11, 25 April 2019
+
+- Python: Update to a specific version when updating Pipenv subdependencies
+- Python: Update poetry sub-dependencies to a specific version
+- Require minimum file size for changelogs
+
 ## v0.106.10, 25 April 2019
 
 - Add php7.2-mysql providing pdo-mysql
