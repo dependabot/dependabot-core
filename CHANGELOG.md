@@ -1,3 +1,7 @@
+## v0.106.12, 25 April 2019
+
+- NPM: Preserve indentation of lockfiles
+
 ## v0.106.11, 25 April 2019
 
 - Python: Update to a specific version when updating Pipenv subdependencies
