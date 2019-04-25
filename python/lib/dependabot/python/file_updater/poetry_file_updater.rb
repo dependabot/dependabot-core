@@ -120,26 +120,48 @@ module Dependabot
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
           dependencies.each do |dep|
-            %w(dependencies dev-dependencies).each do |type|
-              names = poetry_object[type]&.keys || []
-              pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name
-
-              if poetry_object[type][pkg_name].is_a?(Hash)
-                poetry_object[type][pkg_name]["version"] = dep.version
-              else
-                poetry_object[type][pkg_name] = dep.version
-              end
+            if dep.requirements.find { |r| r[:file] == pyproject.name }
+              lock_declaration_to_new_version!(poetry_object, dep)
+            else
+              create_declaration_at_new_version!(poetry_object, dep)
             end
           end
 
           TomlRB.dump(pyproject_object)
         end
 
+        def lock_declaration_to_new_version!(poetry_object, dep)
+          %w(dependencies dev-dependencies).each do |type|
+            names = poetry_object[type]&.keys || []
+            pkg_name = names.find { |nm| normalise(nm) == dep.name }
+            next unless pkg_name
+
+            if poetry_object[type][pkg_name].is_a?(Hash)
+              poetry_object[type][pkg_name]["version"] = dep.version
+            else
+              poetry_object[type][pkg_name] = dep.version
+            end
+          end
+        end
+
+        def create_declaration_at_new_version!(poetry_object, dep)
+          poetry_object[subdep_type] ||= {}
+          poetry_object[subdep_type][dependency.name] = dep.version
+        end
+
         def add_private_sources(pyproject_content)
           PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             replace_sources(credentials)
+        end
+
+        def subdep_type
+          category =
+            TomlRB.parse(lockfile.content).fetch("package", []).
+            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
+            fetch("category")
+
+          category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
         def sanitize(pyproject_content)

@@ -14,6 +14,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/authed_url_builder"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -246,7 +247,22 @@ module Dependabot
             end
           end
 
+          # If this is a sub-dependency, add the new requirement
+          unless dependency.requirements.find { |r| r[:file] == pyproject.name }
+            poetry_object[subdep_type] ||= {}
+            poetry_object[subdep_type][dependency.name] = updated_requirement
+          end
+
           TomlRB.dump(pyproject_object)
+        end
+
+        def subdep_type
+          category =
+            TomlRB.parse(lockfile.content).fetch("package", []).
+            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
+            fetch("category")
+
+          category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
         def check_private_sources_are_reachable
@@ -346,3 +362,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
