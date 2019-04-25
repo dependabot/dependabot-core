@@ -147,8 +147,9 @@ module Dependabot
             %w(packages dev-packages).each do |type|
               names = pipfile_object[type]&.keys || []
               pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name
+              next unless pkg_name || subdep_type?(type)
 
+              pkg_name ||= dependency.name
               if pipfile_object[type][pkg_name].is_a?(Hash)
                 pipfile_object[type][pkg_name]["version"] =
                   "==#{dep.version}"
@@ -159,6 +160,18 @@ module Dependabot
           end
 
           TomlRB.dump(pipfile_object)
+        end
+
+        def subdep_type?(type)
+          return false if dependency.top_level?
+
+          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
+                          find { |i| i.fetch(:pipfile) == type }.
+                          fetch(:lockfile)
+
+          JSON.parse(lockfile.content).
+            fetch(lockfile_type, {}).
+            keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
