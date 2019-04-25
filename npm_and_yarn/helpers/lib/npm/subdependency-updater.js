@@ -2,12 +2,28 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm");
 const installer = require("npm/lib/install");
+const detectIndent = require("detect-indent");
+const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
 
 const { muteStderr, runAsync } = require("./helpers.js");
 
-async function updateDependencyFile(directory, lockfileName) {
+async function updateDependencyFile(directory, lockfileName, dependencies) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
+
+  const lockfile = readFile(lockfileName);
+  const indent = detectIndent(lockfile).indent || "  ";
+  const lockfileObject = JSON.parse(lockfile);
+  // Remove the dependency we want to update from the lockfile and let
+  // npm find the latest resolvable version and fix the lockfile
+  const updatedLockfileObject = removeDependenciesFromLockfile(
+    lockfileObject,
+    dependencies.map(dep => dep.name)
+  );
+  fs.writeFileSync(
+    path.join(directory, lockfileName),
+    JSON.stringify(updatedLockfileObject, null, indent)
+  );
 
   // `force: true` ignores checks for platform (os, cpu) and engines
   // in npm/lib/install/validate-args.js

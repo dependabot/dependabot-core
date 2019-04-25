@@ -115,7 +115,7 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "npm:updateSubdependency",
-                args: [Dir.pwd, lockfile_name]
+                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
               )
             end
           end
@@ -141,7 +141,7 @@ module Dependabot
 
           [*package_locks, *shrinkwraps].each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, prepared_npm_lockfile_content(f.content))
+            File.write(f.name, f.content)
           end
         end
 
@@ -150,26 +150,6 @@ module Dependabot
         # yarn find the latest resolvable version and fix the lockfile
         def prepared_yarn_lockfile_content(content)
           content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
-        end
-
-        def prepared_npm_lockfile_content(content)
-          JSON.dump(
-            remove_dependency_from_npm_lockfile(JSON.parse(content))
-          )
-        end
-
-        # Duplicated in NpmLockfileUpdater
-        # Remove the dependency we want to update from the lockfile and let
-        # npm find the latest resolvable version and fix the lockfile
-        def remove_dependency_from_npm_lockfile(npm_lockfile)
-          return npm_lockfile unless npm_lockfile.key?("dependencies")
-
-          dependencies =
-            npm_lockfile["dependencies"].
-            reject { |key, _| key == dependency.name }.
-            map { |k, v| [k, remove_dependency_from_npm_lockfile(v)] }.
-            to_h
-          npm_lockfile.merge("dependencies" => dependencies)
         end
 
         def prepared_package_json_content(file)

@@ -36,17 +36,13 @@ describe("updater", () => {
   it("generates an updated package-lock.json", async () => {
     await copyDependencies("original", tempDir);
 
-    const result = await updateDependencyFiles(
-      tempDir,
-      [
-        {
-          name: "left-pad",
-          version: "1.1.3",
-          requirements: [{ file: "package.json", groups: ["dependencies"] }]
-        }
-      ],
-      "package-lock.json"
-    );
+    const result = await updateDependencyFiles(tempDir, "package-lock.json", [
+      {
+        name: "left-pad",
+        version: "1.1.3",
+        requirements: [{ file: "package.json", groups: ["dependencies"] }]
+      }
+    ]);
     expect(result).toEqual({
       "package-lock.json": helpers.loadFixture(
         "updater/updated/package-lock.json"
