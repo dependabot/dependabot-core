@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.15.2",
+    "detect-indent": "^5.0.0",
     "npm": "^6.9.0",
     "semver": "^6.0.0"
   },

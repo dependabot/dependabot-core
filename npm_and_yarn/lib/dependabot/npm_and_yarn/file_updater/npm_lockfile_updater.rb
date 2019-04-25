@@ -153,8 +153,8 @@ module Dependabot
             function: "npm:update",
             args: [
               Dir.pwd,
-              top_level_dependency_updates,
-              lockfile_name
+              lockfile_name,
+              top_level_dependency_updates
             ]
           )
         end
@@ -163,7 +163,7 @@ module Dependabot
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             function: "npm:updateSubdependency",
-            args: [Dir.pwd, lockfile_name]
+            args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
           )
         end
 
@@ -396,7 +396,7 @@ module Dependabot
 
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
 
-            File.write(f.name, prepared_npm_lockfile_content(f.content))
+            File.write(f.name, f.content)
           end
         end
 
@@ -469,25 +469,6 @@ module Dependabot
           end
 
           @git_ssh_requirements_to_swap
-        end
-
-        def prepared_npm_lockfile_content(content)
-          JSON.dump(remove_dependency_from_npm_lockfile(JSON.parse(content)))
-        end
-
-        # Duplicated in SubdependencyVersionResolver
-        # Remove the dependency we want to update from the lockfile and let
-        # npm find the latest resolvable version and fix the lockfile
-        def remove_dependency_from_npm_lockfile(npm_lockfile)
-          return npm_lockfile unless npm_lockfile.key?("dependencies")
-
-          sub_dependency_names = sub_dependencies.map(&:name)
-          dependencies =
-            npm_lockfile["dependencies"].
-            reject { |key, _| sub_dependency_names.include?(key) }.
-            map { |k, v| [k, remove_dependency_from_npm_lockfile(v)] }.
-            to_h
-          npm_lockfile.merge("dependencies" => dependencies)
         end
 
         def post_process_npm_lockfile(original_content, updated_content)

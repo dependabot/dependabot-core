@@ -2200,7 +2200,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the files" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.last.content).
-            to start_with("{\n  \"name\": \"{{ name }}\",\n")
+            to start_with("{\n\t\"name\": \"{{ name }}\",\n")
         end
       end
 
@@ -2285,7 +2285,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         let(:dependency_name) { "acorn" }
         let(:version) { "5.7.3" }
-        let(:previous_version) { "5.1.1" }
+        let(:previous_version) { "5.5.3" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
@@ -2293,6 +2293,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
             to eq("5.7.3")
+        end
+
+        context "with non-standard indentation" do
+          it "preserves indentation in the package-lock.json" do
+            expect(updated_npm_lock.content).to eq(
+              fixture("npm_lockfiles",
+                      "subdependency_update_preserved_indentation.json")
+            )
+          end
         end
       end
 
@@ -2405,6 +2414,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
             to eq("git+https://github.com/select2/select2.git#"\
                   "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
+        end
+      end
+
+      context "with non-standard indentation" do
+        it "preserves indentation in the package-lock.json" do
+          expect(updated_npm_lock.content).to eq(
+            fixture("npm_lockfiles", "package_lock_preserved_indentation.json")
+          )
         end
       end
     end
