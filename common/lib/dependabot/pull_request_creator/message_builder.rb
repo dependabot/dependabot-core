@@ -408,7 +408,7 @@ module Dependabot
 
         msg = ""
         fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
-        msg = sanitize_tags(msg)
+        msg = sanitize_template_tags(msg)
 
         build_details_tag(summary: "Vulnerabilities fixed", body: msg)
       end
@@ -432,7 +432,7 @@ module Dependabot
           text: msg,
           base_url: source_url(dep) + "/blob/HEAD/"
         )
-        msg = sanitize_tags(msg)
+        msg = sanitize_template_tags(msg)
 
         build_details_tag(summary: "Release notes", body: msg)
       end
@@ -451,7 +451,7 @@ module Dependabot
           end
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
-        msg = sanitize_tags(msg)
+        msg = sanitize_template_tags(msg)
 
         build_details_tag(summary: "Changelog", body: msg)
       end
@@ -471,7 +471,7 @@ module Dependabot
           end
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
-        msg = sanitize_tags(msg)
+        msg = sanitize_template_tags(msg)
 
         build_details_tag(summary: "Upgrade guide", body: msg)
       end
@@ -488,6 +488,8 @@ module Dependabot
           msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
         end
 
+        msg = msg.gsub(/\<.*?\>/) { |tag| "\\#{tag}" }
+
         msg +=
           if commits(dep).count > 10
             "- Additional commits viewable in "\
@@ -496,7 +498,6 @@ module Dependabot
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
         msg = link_issues(text: msg, dependency: dep)
-        msg = sanitize_tags(msg)
 
         build_details_tag(summary: "Commits", body: msg)
       end
@@ -758,15 +759,13 @@ module Dependabot
         end
       end
 
-      def sanitize_tags(text)
-        sanitized_tags = %w(del details ins template)
-
+      def sanitize_template_tags(text)
         text.gsub(/\<.*?\>/) do |tag|
           tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
 
-          # Unclosed calls to some tags overflow out of the blockquote block,
+          # Unclosed calls to template overflow out of the blockquote block,
           # wrecking the rest of our PRs. Other tags don't share this problem.
-          next "\\#{tag}" if tag_contents.start_with?(*sanitized_tags)
+          next "\\#{tag}" if tag_contents.start_with?("template")
 
           tag
         end
