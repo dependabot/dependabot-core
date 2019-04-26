@@ -1,3 +1,9 @@
+## v0.106.14, 26 April 2019
+
+- Escape more tags when sanitizing lines
+- Replace empty links (caused by rst processing)
+- NPM: Remove extraneous git url fix
+
 ## v0.106.13, 26 April 2019
 
 - Docker: Make self.updated_files_regex case insensitive
