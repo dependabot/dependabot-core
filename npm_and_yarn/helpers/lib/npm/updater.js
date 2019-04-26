@@ -83,17 +83,6 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
     // Fix npm5 lockfiles where invalid "from" is introduced after first install
     updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
 
-    const lockfile = readFile(lockfileName);
-    const indent = detectIndent(lockfile).indent || "  ";
-    const intermediaryLockfile = JSON.parse(lockfile);
-    const updatedIntermediaryLockfile = removeInvalidGitUrls(
-      intermediaryLockfile
-    );
-    fs.writeFileSync(
-      path.join(directory, lockfileName),
-      JSON.stringify(updatedIntermediaryLockfile, null, indent)
-    );
-
     await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
