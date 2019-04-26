@@ -10,7 +10,7 @@ module Dependabot
       FROM_REGEX = /[Ff][Rr][Oo][Mm]/.freeze
 
       def self.updated_files_regex
-        [/dockerfile/]
+        [/dockerfile/i]
       end
 
       def updated_dependency_files
