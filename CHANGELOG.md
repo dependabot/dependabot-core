@@ -1,3 +1,7 @@
+## v0.106.13, 26 April 2019
+
+- Docker: Make self.updated_files_regex case insensitive
+
 ## v0.106.12, 25 April 2019
 
 - NPM: Preserve indentation of lockfiles
