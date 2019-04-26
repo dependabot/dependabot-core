@@ -265,9 +265,14 @@ module Dependabot
         def fetch_bitbucket_file_list
           branch = default_bitbucket_branch
           bitbucket_client.fetch_repo_contents(source.repo).map do |file|
+            type = case file.fetch("type")
+                   when "commit_file" then "file"
+                   when "commit_directory" then "dir"
+                   else file.fetch("type")
+                   end
             OpenStruct.new(
               name: file.fetch("path").split("/").last,
-              type: file.fetch("type") == "commit_file" ? "file" : file["type"],
+              type: type,
               size: file.fetch("size", 100),
               html_url: "#{source.url}/src/#{branch}/#{file['path']}",
               download_url: "#{source.url}/raw/#{branch}/#{file['path']}"
@@ -281,9 +286,14 @@ module Dependabot
 
         def fetch_gitlab_file_list
           gitlab_client.repo_tree(source.repo).map do |file|
+            type = case file.type
+                   when "blob" then "file"
+                   when "tree" then "dir"
+                   else file.fetch("type")
+                   end
             OpenStruct.new(
               name: file.name,
-              type: file.type == "blob" ? "file" : file.type,
+              type: type,
               size: 100, # GitLab doesn't return file size
               html_url: "#{source.url}/blob/master/#{file.path}",
               download_url: "#{source.url}/raw/master/#{file.path}"
