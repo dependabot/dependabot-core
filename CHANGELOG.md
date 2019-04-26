@@ -1,3 +1,7 @@
+## v0.106.18, 26 April 2019
+
+- Bump poetry from 0.12.12 to 0.12.13 in /python/helpers
+
 ## v0.106.17, 26 April 2019
 
 - Update changelog finder to look in GitLab and Bitbucket directories, too
