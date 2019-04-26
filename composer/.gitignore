@@ -1,0 +1,7 @@
+/.bundle/
+/.env
+/tmp
+/dependabot-*.gem
+/helpers/vendor/
+.php_cs.cache
+Gemfile.lock

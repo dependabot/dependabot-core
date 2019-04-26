@@ -1,0 +1,43 @@
+{
+    "authors": "David Heinemeier Hansson",
+    "bug_tracker_uri": null,
+    "changelog_uri": "https://github.com/rails/rails/blob/v5.2.2/activerecord/CHANGELOG.md",
+    "dependencies": {
+        "development": [],
+        "runtime": [
+            {
+                "name": "activemodel",
+                "requirements": "= 5.2.2"
+            },
+            {
+                "name": "activesupport",
+                "requirements": "= 5.2.2"
+            },
+            {
+                "name": "arel",
+                "requirements": ">= 9.0"
+            }
+        ]
+    },
+    "documentation_uri": "http://www.rubydoc.info/gems/activerecord/5.2.2",
+    "downloads": 169371097,
+    "gem_uri": "https://rubygems.org/gems/activerecord-5.2.2.gem",
+    "homepage_uri": "http://rubyonrails.org",
+    "info": "Databases on Rails. Build a persistent domain model by mapping database tables to Ruby classes. Strong conventions for associations, validations, aggregations, migrations, and testing come baked-in.",
+    "licenses": [
+        "MIT"
+    ],
+    "mailing_list_uri": null,
+    "metadata": {
+        "changelog_uri": "https://github.com/rails/rails/blob/v5.2.2/activerecord/CHANGELOG.md",
+        "source_code_uri": "https://github.com/rails/rails/tree/v5.2.2/activerecord"
+    },
+    "name": "activerecord",
+    "platform": "ruby",
+    "project_uri": "https://rubygems.org/gems/activerecord",
+    "sha": "1e8c0fabfd6618e167d125d8d074a1392f4a760b8b16513d179f1765b4d540a5",
+    "source_code_uri": "https://github.com/rails/rails/tree/v5.2.2/activerecord",
+    "version": "5.2.2",
+    "version_downloads": 1613808,
+    "wiki_uri": null
+}

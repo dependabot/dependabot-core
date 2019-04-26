@@ -2,16 +2,22 @@ FROM ubuntu:18.04
 
 ### SYSTEM DEPENDENCIES
 
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LC_ALL="en_US.UTF-8" \
+    LANG="en_US.UTF-8"
+
 # Everything from `make` onwards in apt-get install is only installed to ensure
 # Python support works with all packages (which may require specific libraries
 # at install time).
-ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
       build-essential \
       dirmngr \
       git \
+      bzr \
+      mercurial \
       gnupg2 \
       curl \
       wget \
@@ -36,20 +42,22 @@ RUN apt-get update \
       libmysqlclient-dev \
       xz-utils \
       tk-dev \
+      libxml2-dev \
+      libxmlsec1-dev \
+      python3-enchant \
     && locale-gen en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8
 
 
 ### RUBY
 
-# Install Ruby 2.5, update RubyGems, and install Bundler
+# Install Ruby 2.6.2, update RubyGems, and install Bundler
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
-    && apt-get install -y ruby2.5 ruby2.5-dev \
-    && gem update --system 2.7.7 \
-    && gem install --no-ri --no-rdoc bundler -v 1.17.1
+    && apt-get install -y ruby2.6 ruby2.6-dev \
+    && gem update --system 3.0.3 \
+    && gem install bundler -v 1.17.3 --no-document
 
 
 ### PYTHON
@@ -58,10 +66,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.8 && cd - \
-    && pyenv install 3.6.7 \
-    && pyenv install 2.7.15 \
-    && pyenv global 3.6.7
+    && cd /usr/local/.pyenv && git checkout v1.2.11 && cd - \
+    && pyenv install 3.6.8 \
+    && pyenv install 2.7.16 \
+    && pyenv global 3.6.8
 
 
 ### JAVASCRIPT
@@ -88,11 +96,12 @@ RUN npm install elm@0.18.0 \
 ### PHP
 
 # Install PHP 7.2 and Composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-intl php7.2-common php7.2-gettext php7.2-curl php-xdebug php7.2-bcmath php-gmp php7.2-imagick php7.2-gd php7.2-redis php7.2-soap php7.2-ldap \
+    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-intl php7.2-common php7.2-gettext php7.2-curl php7.2-bcmath php7.2-gmp php7.2-imagick php7.2-gd php7.2-redis php7.2-soap php7.2-ldap php7.2-memcached php7.2-sqlite3 php7.2-apcu php7.2-mongodb php7.2-zmq php7.2-mysql \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -100,13 +109,11 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl -O https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz \
-    && tar xvf go1.11.2.linux-amd64.tar.gz \
-    && wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
-    && mv dep-linux-amd64 go/bin/dep \
-    && chmod +x go/bin/dep \
-    && mv go /root
-ENV PATH=/root/go/bin:$PATH GOPATH=/opt/go
+RUN curl https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | tar -xz -C /opt \
+    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
+    && chmod +x /opt/go/bin/dep \
+    && mkdir /opt/go/gopath
+ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
 ### ELIXIR
@@ -117,7 +124,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.7.4/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.1/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
@@ -125,7 +132,34 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.30.1
+# Install Rust 1.33.0
+# RUSTUP_USE_CURL is necessary because rustup <=1.17.0 doesn't support proxy
+# authentication. We can remove it once something later than 1.17.0 is out as
+# https://github.com/rust-lang/rustup.rs/pull/1746 should have fixed the issue.
 ENV RUSTUP_HOME=/opt/rust \
-    PATH="${PATH}:/opt/rust/bin"
+    PATH="${PATH}:/opt/rust/bin" \
+    RUSTUP_USE_CURL=1
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+
+### NEW NATIVE HELPERS
+
+COPY terraform/helpers /opt/terraform/helpers
+COPY python/helpers /opt/python/helpers
+COPY dep/helpers /opt/dep/helpers
+COPY go_modules/helpers /opt/go_modules/helpers
+COPY hex/helpers /opt/hex/helpers
+COPY composer/helpers /opt/composer/helpers
+COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
+    PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
+    MIX_HOME="/opt/hex/mix"
+
+RUN bash /opt/terraform/helpers/build /opt/terraform && \
+    bash /opt/python/helpers/build /opt/python && \
+    bash /opt/dep/helpers/build /opt/dep && \
+    bash /opt/go_modules/helpers/build /opt/go_modules && \
+    bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
+    bash /opt/hex/helpers/build /opt/hex && \
+    bash /opt/composer/helpers/build /opt/composer

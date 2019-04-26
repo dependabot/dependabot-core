@@ -1,0 +1,18 @@
+[
+    {
+        "name": "bump-core.gemspec",
+        "path": "bump-core.gemspec",
+        "sha": "7ac321e0e1b20c05042f3af419beb322db0e4cc1",
+        "size": 917,
+        "url": "https://api.github.com/repos/gocardless/business/contents/bump-core.gemspec?ref=master",
+        "html_url": "https://github.com/gocardless/business/blob/master/bump-core.gemspec",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/7ac321e0e1b20c05042f3af419beb322db0e4cc1",
+        "download_url": "https://raw.githubusercontent.com/gocardless/business/master/bump-core.gemspec",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/bump-core.gemspec?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/blobs/7ac321e0e1b20c05042f3af419beb322db0e4cc1",
+            "html": "https://github.com/gocardless/business/blob/master/bump-core.gemspec"
+        }
+    }
+]

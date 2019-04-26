@@ -1,16 +1,17 @@
-The Prosperity Public License 1.0.1
+The Prosperity Public License 2.0.0
 
-Copyright Notice: {Licensor Name}
+Contributor: Dependabot Ltd
 
-Source Notice: {https://example.com/project}
+Source Code: https://github.com/dependabot/dependabot-core
 
 This license lets you use and share this software for free,
 with a trial-length time limit on commercial use. Specifically:
 
 If you follow the rules below, you may do everything with this
-software that would otherwise infringe my copyright in it or any
-patent claim I can license that covers this software as of my
-latest contribution.
+software that would otherwise infringe either the contributor's
+copyright in it, any patent claim the contributor can license
+that covers this software as of the contributor's latest
+contribution, or both.
 
 1. You must limit use of this software in any manner primarily
    intended for or directed toward commercial advantage or
@@ -19,19 +20,20 @@ latest contribution.
    developing feedback, modifications, or extensions that you
    contribute back to those giving this license.
 
-2. Ensure everyone who gets a copy of this software from you,
-   in source code or any other form, gets the text of this
-   license and the copyright and source notices above.
+2. Ensure everyone who gets a copy of this software from you, in
+   source code or any other form, gets the text of this license
+   and the contributor and source code lines above.
 
-3. Do not make any legal claim against anyone for infringing
-   any patent claim they would infringe by using this software
-   alone, accusing this software, with or without changes,
-   alone or as part of a larger program.
+3. Do not make any legal claim against anyone for infringing any
+   patent claim they would infringe by using this software alone,
+   accusing this software, with or without changes, alone or as
+   part of a larger application.
 
 You are excused for unknowingly breaking rule 1 if you stop
 doing anything requiring this license within 30 days of
 learning you broke the rule.
 
 **This software comes as is, without any warranty at all. As far
-as the law allows, I will not be liable for any damages related
-to this software or this license, for any kind of legal claim.**
+as the law allows, the contributor will not be liable for any
+damages related to this software or this license, for any kind of
+legal claim.**

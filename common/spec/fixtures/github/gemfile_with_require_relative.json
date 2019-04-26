@@ -1,0 +1,18 @@
+{
+  "name": "Gemfile",
+  "path": "Library/Homebrew/test/Gemfile",
+  "sha": "34ba794a8964b59b330bde0a495d81f0d761e20f",
+  "size": 326,
+  "url": "https://api.github.com/repos/Homebrew/brew/contents/Library/Homebrew/test/Gemfile?ref=master",
+  "html_url": "https://github.com/Homebrew/brew/blob/master/Library/Homebrew/test/Gemfile",
+  "git_url": "https://api.github.com/repos/Homebrew/brew/git/blobs/34ba794a8964b59b330bde0a495d81f0d761e20f",
+  "download_url": "https://raw.githubusercontent.com/Homebrew/brew/master/Library/Homebrew/test/Gemfile",
+  "type": "file",
+  "content": "c291cmNlICJodHRwczovL3J1YnlnZW1zLm9yZyIKCnJlcXVpcmVfcmVsYXRp\ndmUgIi4uL2NvbnN0YW50cyIKCmdlbSAicGFyYWxsZWxfdGVzdHMiCmdlbSAi\ncnNwZWMiCmdlbSAicnNwZWMtaXRzIiwgcmVxdWlyZTogZmFsc2UKZ2VtICJy\nc3BlYy1yZXRyeSIsIHJlcXVpcmU6IGZhbHNlCmdlbSAicnNwZWMtd2FpdCIs\nIHJlcXVpcmU6IGZhbHNlCmdlbSAicnVib2NvcCIsIEhPTUVCUkVXX1JVQk9D\nT1BfVkVSU0lPTgoKZ3JvdXAgOmNvdmVyYWdlIGRvCiAgZ2VtICJjb2RlY292\nIiwgcmVxdWlyZTogZmFsc2UKICBnZW0gInNpbXBsZWNvdiIsIHJlcXVpcmU6\nIGZhbHNlCmVuZAo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/Homebrew/brew/contents/Library/Homebrew/test/Gemfile?ref=master",
+    "git": "https://api.github.com/repos/Homebrew/brew/git/blobs/34ba794a8964b59b330bde0a495d81f0d761e20f",
+    "html": "https://github.com/Homebrew/brew/blob/master/Library/Homebrew/test/Gemfile"
+  }
+}

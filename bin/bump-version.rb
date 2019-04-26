@@ -8,7 +8,8 @@ end
 component = ARGV[0].to_sym
 
 # Update version file
-version_path = File.join(__dir__, "..", "lib", "dependabot", "version.rb")
+version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
+                         "version.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
@@ -24,7 +25,7 @@ new_version =
 new_version_contents = version_contents.gsub(version, new_version)
 File.open(version_path, "w") { |f| f.write(new_version_contents) }
 
-puts "✓ lib/dependabot/version.rb updated"
+puts "✓ common/lib/dependabot/version.rb updated"
 
 # Update CHANGELOG
 
@@ -46,7 +47,9 @@ puts
 puts "Double check the changes (editing CHANGELOG.md where necessary), then"
 puts "commit, tag, and push the release:"
 puts
-puts "git commit -a -m 'v#{new_version}'"
+puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
+puts "git commit -m 'v#{new_version}'"
+puts "git push origin master"
 puts "git tag 'v#{new_version}'"
 puts "git push --tags origin master"
 puts

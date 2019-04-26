@@ -1,0 +1,4 @@
+-e git+https://github.com/box/flaky.git@v3.5.3#egg=flaky
+-e git+https://github.com/testing-cabal/mock.git@2.0.0#egg=mock
+
+Attrs

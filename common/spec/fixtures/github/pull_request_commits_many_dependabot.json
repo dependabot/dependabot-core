@@ -1,0 +1,160 @@
+[
+    {
+        "sha": "b77867746a7d5465191aac03b4441b169bd54f7d",
+        "node_id": "MDY6Q29tbWl0ODgwNzAwMTk6Yjc3ODY3NzQ2YTdkNTQ2NTE5MWFhYzAzYjQ0NDFiMTY5YmQ1NGY3ZA==",
+        "commit": {
+            "author": {
+                "name": "dependabot[bot]",
+                "email": "support@dependabot.com",
+                "date": "2018-12-05T12:45:04Z"
+            },
+            "committer": {
+                "name": "dependabot[bot]",
+                "email": "support@dependabot.com",
+                "date": "2018-12-05T12:45:04Z"
+            },
+            "message": "Disable trailing comma cops",
+            "tree": {
+                "sha": "4bb0a80266254e37f0bff3ad76d7a450d4ddfe06",
+                "url": "https://api.github.com/repos/hmarr/dependabot-backend/git/trees/4bb0a80266254e37f0bff3ad76d7a450d4ddfe06"
+            },
+            "url": "https://api.github.com/repos/hmarr/dependabot-backend/git/commits/b77867746a7d5465191aac03b4441b169bd54f7d",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/b77867746a7d5465191aac03b4441b169bd54f7d",
+        "html_url": "https://github.com/hmarr/dependabot-backend/commit/b77867746a7d5465191aac03b4441b169bd54f7d",
+        "comments_url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/b77867746a7d5465191aac03b4441b169bd54f7d/comments",
+        "author": {
+            "login": "dependabot-bot",
+            "id": 36207117,
+            "node_id": "MDQ6VXNlcjM2MjA3MTE3",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/36207117?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/dependabot-bot",
+            "html_url": "https://github.com/dependabot-bot",
+            "followers_url": "https://api.github.com/users/dependabot-bot/followers",
+            "following_url": "https://api.github.com/users/dependabot-bot/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot-bot/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/dependabot-bot/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot-bot/subscriptions",
+            "organizations_url": "https://api.github.com/users/dependabot-bot/orgs",
+            "repos_url": "https://api.github.com/users/dependabot-bot/repos",
+            "events_url": "https://api.github.com/users/dependabot-bot/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/dependabot-bot/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "dependabot-bot",
+            "id": 36207117,
+            "node_id": "MDQ6VXNlcjM2MjA3MTE3",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/36207117?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/dependabot-bot",
+            "html_url": "https://github.com/dependabot-bot",
+            "followers_url": "https://api.github.com/users/dependabot-bot/followers",
+            "following_url": "https://api.github.com/users/dependabot-bot/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot-bot/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/dependabot-bot/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot-bot/subscriptions",
+            "organizations_url": "https://api.github.com/users/dependabot-bot/orgs",
+            "repos_url": "https://api.github.com/users/dependabot-bot/repos",
+            "events_url": "https://api.github.com/users/dependabot-bot/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/dependabot-bot/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "0b7144dca992829a894671e275dec5bd66ebb16d",
+                "url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/0b7144dca992829a894671e275dec5bd66ebb16d",
+                "html_url": "https://github.com/hmarr/dependabot-backend/commit/0b7144dca992829a894671e275dec5bd66ebb16d"
+            }
+        ]
+    },
+    {
+        "sha": "0b7144dca992829a894671e275dec5bd66ebb16d",
+        "node_id": "MDY6Q29tbWl0ODgwNzAwMTk6MGI3MTQ0ZGNhOTkyODI5YTg5NDY3MWUyNzVkZWM1YmQ2NmViYjE2ZA==",
+        "commit": {
+            "author": {
+                "name": "dependabot[bot]",
+                "email": "support@dependabot.com",
+                "date": "2018-12-05T12:45:04Z"
+            },
+            "committer": {
+                "name": "dependabot[bot]",
+                "email": "support@dependabot.com",
+                "date": "2018-12-05T12:45:04Z"
+            },
+            "message": "Bump business from 1.4.0 to 1.5.0\n\nBumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v3.0.0...v1.5.0)",
+            "tree": {
+                "sha": "91e0455a9dba0c8c7f6b8511025d4806eb12b7c2",
+                "url": "https://api.github.com/repos/hmarr/dependabot-backend/git/trees/91e0455a9dba0c8c7f6b8511025d4806eb12b7c2"
+            },
+            "url": "https://api.github.com/repos/hmarr/dependabot-backend/git/commits/0b7144dca992829a894671e275dec5bd66ebb16d",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\niQIzBAABCgAdFiEEMXIDZjtYdYzhgV7HTA8oiMmM8zEFAlwHyFEACgkQTA8oiMmM\n8zHYnA/+PrwruK5RzKoUzGkVkMS/m1Rancg+NEDjgd77bVIozTyYJHSvoauZO8Xk\nOD2PfEkoKeY4OkVYgenD2k/6m4TjjyPopF5TzO+FVAnW6uK7vLck8zcoPC+RaBwY\nESYcQ9uSSGQGDrQbqudTtPmF0NsRKAvDWni52JlZkxqOqIyaUv495qfQLrdsA3VI\nDyR5+EhAJR3hUQpP2XEZRP5KH9xs2PGWWKWxy08hTfZlvqHAhUotf430NK7q6u2y\nJ19iLQhwmQvpry6Uk6di8mocgYpv0y/PR7Vu7LDHXwEgd+Mrjyo867a0mFZtbbNs\nl0qrbgRa5rPUJnb9B1bbOVJchmCbH24OlxNLrDy5inGvC9Cdkl59npmjAcwaWmPU\nfNWFvpZ5e8W6NBumJLWf4zSapU9g6oaKY2I11IDXJLSlhOWMeInDpn+cL1C51Xva\nng4BwAkCZr7A7Sc/jarnObYFqtv+kYeNPVSEh2Sg+CnVmypUcEMdaIkaaT4iufVY\netTVt0VBAClOKam29h9ePaWmIjVADelVRW7vFNsjrnR9WSvQs6xzsbF34g2WdQR6\neoEQ6w6hETGBRkTgycfseeZC8RhSmN6LO3dBJh1E5ARACg6QuCHeU2jPIReDQe8n\nS/i0xK879xMe4v1WwOvsimZkg1NBsgrEEAshOgfBIkkelO+KBeQ=\n=Iat2\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 91e0455a9dba0c8c7f6b8511025d4806eb12b7c2\nparent 1557de94c9ffd6ccd07060fb024c509418589405\nauthor dependabot[bot] <support@dependabot.com> 1544013904 +0000\ncommitter dependabot[bot] <support@dependabot.com> 1544013904 +0000\n\nBump rubocop from 0.60.0 to 0.61.0\n\nBumps [rubocop](https://github.com/rubocop-hq/rubocop) from 0.60.0 to 0.61.0.\n- [Release notes](https://github.com/rubocop-hq/rubocop/releases)\n- [Changelog](https://github.com/rubocop-hq/rubocop/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/rubocop-hq/rubocop/compare/v0.60.0...v0.61.0)\n\nSigned-off-by: dependabot[bot] <support@dependabot.com>"
+            }
+        },
+        "url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/0b7144dca992829a894671e275dec5bd66ebb16d",
+        "html_url": "https://github.com/hmarr/dependabot-backend/commit/0b7144dca992829a894671e275dec5bd66ebb16d",
+        "comments_url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/0b7144dca992829a894671e275dec5bd66ebb16d/comments",
+        "author": {
+            "login": "dependabot-bot",
+            "id": 36207117,
+            "node_id": "MDQ6VXNlcjM2MjA3MTE3",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/36207117?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/dependabot-bot",
+            "html_url": "https://github.com/dependabot-bot",
+            "followers_url": "https://api.github.com/users/dependabot-bot/followers",
+            "following_url": "https://api.github.com/users/dependabot-bot/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot-bot/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/dependabot-bot/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot-bot/subscriptions",
+            "organizations_url": "https://api.github.com/users/dependabot-bot/orgs",
+            "repos_url": "https://api.github.com/users/dependabot-bot/repos",
+            "events_url": "https://api.github.com/users/dependabot-bot/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/dependabot-bot/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "dependabot-bot",
+            "id": 36207117,
+            "node_id": "MDQ6VXNlcjM2MjA3MTE3",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/36207117?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/dependabot-bot",
+            "html_url": "https://github.com/dependabot-bot",
+            "followers_url": "https://api.github.com/users/dependabot-bot/followers",
+            "following_url": "https://api.github.com/users/dependabot-bot/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot-bot/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/dependabot-bot/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot-bot/subscriptions",
+            "organizations_url": "https://api.github.com/users/dependabot-bot/orgs",
+            "repos_url": "https://api.github.com/users/dependabot-bot/repos",
+            "events_url": "https://api.github.com/users/dependabot-bot/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/dependabot-bot/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "1557de94c9ffd6ccd07060fb024c509418589405",
+                "url": "https://api.github.com/repos/hmarr/dependabot-backend/commits/1557de94c9ffd6ccd07060fb024c509418589405",
+                "html_url": "https://github.com/hmarr/dependabot-backend/commit/1557de94c9ffd6ccd07060fb024c509418589405"
+            }
+        ]
+    }
+]

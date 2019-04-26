@@ -1,0 +1,12 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+
+[requires]
+python_version = "3.4"
+
+[dev-packages]
+pytest = "==3.4.0"
+
+[packages]
+requests = "==2.18.0"

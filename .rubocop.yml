@@ -2,11 +2,10 @@ AllCops:
   DisplayCopNames: true
   TargetRubyVersion: 2.5
   Exclude:
-    - vendor/**/*
-    - bin/**/*
-    - tmp/**/*
-    - helpers/utils/git-credential-store-immutable
-    - helpers/python/**/*
+    - '*/vendor/**/*'
+    - '*/bin/**/*'
+    - '*/tmp/**/*'
+    - '*/helpers/**/*'
 
 Layout/DotPosition:
   EnforcedStyle: trailing
@@ -34,8 +33,9 @@ Metrics/MethodLength:
 
 Metrics/BlockLength:
   Exclude:
-    - spec/**/*
-    - dependabot-core.gemspec
+    - '*/Rakefile'
+    - '*/spec/**/*'
+    - '*/dependabot-*.gemspec'
 
 Metrics/ParameterLists:
   CountKeywordArgs: false

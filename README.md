@@ -1,12 +1,11 @@
 <p align="center">
-  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg" alt="Dependabot" width="300">
+  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v4" alt="Dependabot" width="336">
 </p>
 
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise) and GitLab. We
-plan to add support for Bitbucket in future, too.
+for updating dependencies on GitHub (including GitHub Enterprise) and GitLab.
 
 If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
@@ -14,8 +13,8 @@ should give you the tools you need. A reference implementation is available
 
 ## What's in this repo?
 
-Dependabot Core is a collection of helper classes for automating dependency
-updating in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
+Dependabot Core is a collection of packages for automating dependency updating
+in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
 .NET. It can also update git submodules, Docker files and Terraform files.
 Highlights include:
 
@@ -43,30 +42,109 @@ The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
 Elixir, Go and Rust are required for dealing with updates for their respective
 languages.
 
-Before running Dependabot Core, install dependencies for the core library and
-the helpers:
+To install the helpers for each language:
 
-1. `bundle install`
-2. `cd helpers/yarn && yarn install && cd -`
-3. `cd helpers/npm && yarn install && cd -`
-4. `cd helpers/php && composer install && cd -`
-5. `cd helpers/python && pyenv exec pip install -r requirements.txt && cd -`
-6. `cd helpers/elixir && mix deps.get && cd -`
+1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+2. `cd composer/helpers && composer install --no-dev && cd -`
+3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
+4. `cd elixir/helpers && mix deps.get && cd -`
+5. `cd terraform && helpers/build helpers/install-dir/terraform && cd -`
+
+## Local development
+
+Run the tests by running `rspec spec` inside each of the packages. Style is
+enforced by RuboCop. To check for style violations, simply run `rubocop` in
+each of the packages.
+
+### Running with Docker
+
+While you can run Dependabot Core without Docker, we also provide a development
+Dockerfile. In most cases, you'll be better off running Dependabot in the
+development Docker container as it bakes in all required dependencies.
+
+Start by building the initial Dependabot Core image, or pull it from the
+Docker registry.
+
+```shell
+$ docker pull dependabot/dependabot-core # OR
+$ docker build -t dependabot/dependabot-core . # this may take a while
+```
+
+Once you have the base Docker image, you can build and run the development
+container using the `docker-dev-shell` script. The script will automatically
+build the container if it's not present, and can be forced to rebuild with the
+`--rebuild` flag. The image includes all dependencies, and the script runs the
+image, mounting the local copy of Dependabot Core so changes made locally will
+be reflected inside the container. This means you can continue to use your
+editor of choice, while running the tests inside the container.
+
+```shell
+$ bin/docker-dev-shell
+=> building image from Dockerfile.development
+=> running docker development shell
+[dependabot-core-dev] ~/dependabot-core $
+```
+
+### Dry run script
+
+*Note: you must have run `bundle install` in the `omnibus` directory before
+running this script.*
+
+You can use the "dry-run" script to simulate a dependency update job, printing
+the diff that would be generated to the terminal. It takes two positional
+arguments: the package manager and the GitHub repo name (including the
+account):
+
+```bash
+$ cd omnibus && bundle install && cd -
+$ bin/dry-run.rb go_modules rsc/quote
+=> fetching dependency files
+=> parsing dependency files
+=> updating 2 dependencies
+...
+```
 
 ## Architecture
 
-Dependabot Core has helper classes for seven concerns. Where relevant, each
-concern will have a language-specific class.
+Dependabot Core is a collection of Ruby packages (gems), which contain the
+logic for updating dependencies in a number of languages.
 
-| Service                          | Description                                                                                   |
-|----------------------------------|-----------------------------------------------------------------------------------------------|
-| `Dependabot::FileFetchers`       | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [file fetchers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_fetchers) for more details. |
-| `Dependabot::FileParsers`        | Parses a dependency file and extracts a list of dependencies for a project. See the [file parsers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_parsers) for more details. |
-| `Dependabot::UpdateCheckers`     | Checks whether a given dependency is up-to-date. See the [update checkers](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/update_checkers) for more details. |
-| `Dependabot::FileUpdaters`       | Updates a dependency file to use the latest version of a given dependency. See the [file updaters](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/file_updaters) for more details. |
-| `Dependabot::MetadataFinders`    | Looks up metadata about a dependency, such as its GitHub URL. See the [metadata finders](https://github.com/dependabot/dependabot-core/tree/master/lib/dependabot/metadata_finders) for more details. |
-| `Dependabot::PullRequestCreator` | Creates a Pull Request to the original repo with the updated dependency file.                 |
-| `Dependabot::PullRequestUpdater` | Updates an existing Pull Request with new dependency files (e.g., to resolve conflicts).      |
+### `dependabot-common`
+
+The `common` package contains all general-purpose / shared functionality. For
+instance the code for creating pull requests via GitHub's API lives here, as
+does most of the logic for handling Git dependencies (as most languages support
+Git dependencies in one way or another). There are also base classes defined for
+each of the major concerns required to implement support for a language or
+package manager.
+
+### `dependabot-{package-manager}`
+
+There is a gem for each package manager or language that Dependabot
+supports. At a minimum, each of these gems will implement the following
+classes:
+
+| Service          | Description                                                                                   |
+|------------------|-----------------------------------------------------------------------------------------------|
+| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_fetchers/README.md) for more details. |
+| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_parsers/README.md) for more details. |
+| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/update_checkers/README.md) for more details. |
+| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/file_updaters/README.md) for more details. |
+| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/metadata_finders/README.md) for more details. |
+| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/version.rb) for an example. |
+| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/requirement.rb) for an example. |
+
+The high level flow looks like this:
+
+<p align="center">
+  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/package-manager-architecture.svg" alt="Dependabot architecture">
+</p>
+
+### `dependabot-omnibus`
+
+This is a "meta" gem, that simply depends on all the others. If you want to
+automatically include support for all languages, you can just include this gem
+and you'll get all you need.
 
 ## Why is this public?
 
@@ -86,7 +164,7 @@ If you use Dependabot Core then we'd love to hear what you build!
 
 We use the License Zero Prosperity Public License, which essentially enshrines
 the following:
-- If you would like to use Dependabot Core for non-commerical purposes, such as
+- If you would like to use Dependabot Core in a non-commercial capacity, such as
   to host a bot at your workplace, then we give you full permission to do so. In
   fact, we'd love you to, and will help and support you however we can.
 - If you would like to add Dependabot's functionality to your for-profit

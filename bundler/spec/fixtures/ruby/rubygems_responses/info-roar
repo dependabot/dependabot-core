@@ -1,0 +1,50 @@
+---
+0.0.1.alpha1 |checksum:a43c54d822f7ab41b8f04845be3290e6db39bf356a736ae8b811107643f44175,rubygems:> 1.3.1
+0.8.0 hooks:~> 0.1.4,representable:>= 0,restfulie:~> 1.0.0,test_xml:>= 0|checksum:8a1691804abdebc5566bffae8f8188461e3c9f8662ac821f14ba56e8646278ba
+0.8.1 hooks:~> 0.1.4,representable:~> 0.9.2,restfulie:~> 1.0.0|checksum:76390db44b1080ec3cda39c9205ad08fd8007ff9fcedc602cbc1984af63bea6a
+0.8.2 hooks:~> 0.1.4,representable:~> 0.9.2|checksum:b21bc48d54269344b06f8230cab20b7ee832eaabb1bb8306ac6542805cbf52a5
+0.8.3 hooks:~> 0.1.4,representable:~> 0.10.3|checksum:794adc75cc216b68f1ed8164abbd31bcd6661355db01d54abaa9cf01b92282c7
+0.9.0 hooks:~> 0.1.4,representable:~> 0.12|checksum:6803745b8312496edf8226189ee42565318e69678d7184304226144ba60bd608
+0.9.1 representable:~> 1.0.1|checksum:cbff8b538a845a24eec46762058777c756cd99598761e4f16c5683a76e4f87de
+0.9.2 representable:~> 1.1|checksum:a4073c4dbdbdbba5933e79f464b767478ccd16b6559a7b10b01db18ac873a39d
+0.10.0 representable:>= 1.1.3|checksum:90ccb2ea9815f9b5f639bb153fd076a9157309e3df1be5b9d1165a400c293f4c
+0.10.1 representable:>= 1.1.7|checksum:05c78cb222d15c20a5c9b4bf5e7a68d10d9847c6b1d726085ca062ec1d69210b
+0.10.2 representable:>= 1.1.7|checksum:0d9703a31d9b146ede8b3c9061777038a3fa4bcee1c3b7f08c8a566f2791b03b
+0.11.0 representable:>= 1.1.7|checksum:bc7898fe06b9a660c5d7bf6e4af3eca9a0069c52680eb6df3636d840ff813a5e
+0.11.1 representable:>= 1.2.2|checksum:dbe2b7c327985e056a2705bd59205a95558591d245251e93bc9784bb6e25d75b
+0.11.2 representable:>= 1.2.2|checksum:2b29aa308d7276aa8cdbbe2624a0ddbc8a7ae19b650220e645e2362e26cb99db
+0.11.3 representable:>= 1.2.2|checksum:fb8d717cc5add9fba6c16319e565f2c7af561c7b58b20e499d8f80e248331c52
+0.11.4 representable:>= 1.2.8|checksum:8e8884d76b081a84b04eab18f358027e8b9fcb070b2ebd4171383e31280bfc19
+0.11.5 representable:>= 1.2.8|checksum:9413a8d622b783e5e43fa01a848efdf6e8d58997253c0ef08bb85ff3c85989c7
+0.11.6 representable:>= 1.2.8|checksum:b287d4ceabfd6ec2c222b0e1b9d3eab6774e1733fcdf693e88ccf643c1695453
+0.11.7 representable:>= 1.2.8|checksum:ebf62f39d642ed05c45347b89ac11f4a8ef533b3c734f6d06a225ccb3e676fc9
+0.11.8 representable:>= 1.2.8|checksum:6f5e8955049e298b2dce727b9b5ac9afecf05681addab3ba45b6464fa2156a48
+0.11.9 representable:>= 1.2.8|checksum:d3bb2cd8851cfa3c4bd867e7e65970c564e60fe4ac889381e25890427ee44c76
+0.11.10 representable:>= 1.2.8|checksum:c4d2f0b91355caa48cc934eeeb5949b16074bfe54ad5c6189a066f08043fa4a3
+0.11.11 representable:>= 1.2.8|checksum:be4c4b33b796396c0adb840399c451c6040dff64d960362d112d7e6b07cbf974
+0.11.12 representable:>= 1.2.8|checksum:57e803090731c1234176ab0e3b2211a75c9a1691dadcd10a61855097a760a779
+0.11.13 representable:>= 1.2.8|checksum:2d79ee5a19a72ce5bbcad48c783f65b52b489a6e9ac162158fd725eb141bcb5e
+0.11.14 representable:>= 1.2.8|checksum:35fa20184fe0dba3207e2db78a71ce0e56c5184d8a7920c4ff6d16d33bc9154f
+0.11.15 representable:>= 1.2.8|checksum:d549db41d3a3568727f555fcaa13d74e15f4d0c59265e471896c5122c7f9461d
+0.11.16 representable:>= 1.4.2|checksum:579383a781146e023faf4d4ee98bfc116736c14880d16931caddfca6fb748da5
+0.11.17 representable:>= 1.5.0|checksum:7b78e002811b62d4e9e794e70c6445c8a22a750e0cefdf57419eccf6a28c8b35
+0.11.18 representable:>= 1.5.2|checksum:69218a83e35fc446b1d0c9bea26a38312470eee9120f67fd32ef71f5894cde40
+0.11.19 representable:~> 1.5.3|checksum:a021caf0e5986d9ec6fae25cb6ab998c00e1937cd07c689a4cba39e0a5b4136f
+0.12.0 representable:~> 1.6.0|checksum:ec4913a8ba13c54bde7488ca5eeb4e7cac731922010ceb9b594cd487139b6473
+0.12.1 representable:>= 1.6.0|checksum:52db53aedc024f08e955eeab356c1287fb08bef5fa978f8e4202de485fe85d20
+0.12.2 representable:>= 1.6.0|checksum:6da3e831801e08f2dd42da83f6d653b7840c1fbab363f18521b280159ac9631b
+0.12.3 representable:>= 1.6.0|checksum:7cc7a7bd328826a0deb95fa83d503c331003e7b692ac8f2db2de94d76ffd3160
+0.12.4 representable:>= 1.6.0|checksum:c719dca59829b441e9b205091cb63861da17660faec75eb91ad7262234901d49
+0.12.5 representable:>= 1.6.0|checksum:dfd1bb9d9ef0a591ea8f8f8d95bb9fc6f50f3aa038c0d7e145f9641466e27255
+0.12.6 representable:>= 1.6.0|checksum:8ac710b658b46f55a6fe00011e25a7915d473496dc4a0137931c25335fd82fe5
+0.12.7 representable:>= 1.6.0|checksum:e39b8c58cc53f50f19ad496b0fa8bec25879a8f367f9e0d525af4615abd5d171
+0.12.8 representable:< 2.0.0&>= 1.6.0|checksum:4b3e95b38b049d4136ab12ce7892fed27b4905d46c82ffc210e8440a911509e1
+0.12.9 representable:< 2.0.0&>= 1.6.0|checksum:11b129c49526ca5ee4e436a5cb8aa9238f7d5b9f56536b348d627898c25a6e9b
+1.0.0.beta1 representable:<= 3.0.0&>= 2.0.0|checksum:891bd1b7588eb32d8b0599578cf4052b0670d078f75f988f72945d0d7a995353,rubygems:> 1.3.1
+1.0.0.beta2 representable:<= 3.0.0&>= 2.0.1|checksum:e71ec57178bf071134f33d8bcd3d4bcb6a2aeaa6839237ab83a1a6e2829f1d15,rubygems:> 1.3.1
+1.0.0 representable:<= 3.0.0&>= 2.0.1|checksum:a6c2802877bcf8c060f933e0382dfce99320ea5758a30657bee62d1183975c8a
+1.0.1 representable:<= 3.0.0&>= 2.0.1|checksum:3bc9f4dc0f4aa4eb74f0d40b0ab496e2d286c08edf6337e24780a728226c4d13
+1.0.2 representable:<= 3.0.0&>= 2.0.1|checksum:2b5d6e343d71394cfd22efc874c0da01590b864b5dac9db0a729cd35e2aa358d
+1.0.3 representable:<= 3.0.0&>= 2.0.1|checksum:fa3f7acdc098133f56792651835eefd676c54efa0871dd6ec42f1fbb2898de4e
+1.0.4 representable:< 2.4.0&>= 2.0.1|checksum:7e0db0c2ce2a702cf6b96b8ba78d6101c36a0b505ff0404995dd073451a2cd2f
+1.1.0 representable:~> 3.0.0|checksum:c62af8132763dab8d46663f0c241840e72f34b5cdfc550588b1afdd812ab7c9d

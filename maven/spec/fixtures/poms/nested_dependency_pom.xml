@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.sanction.thunder</groupId>
+  <artifactId>parent</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <scm>
+    <url>https://github.com/RohanNagar/thunder</url>
+    <connection>scm:git:git@github.com:RohanNagar/thunder</connection>
+    <developerConnection>scm:git:git@github.com:RohanNagar/thunder</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <java.minimum.version>1.8</java.minimum.version>
+
+    <!-- Plugin versions -->
+    <checkstyle.version>8.2</checkstyle.version>
+    <checkstyle-plugin.version>3.0.0</checkstyle-plugin.version>
+    <coveralls.version>4.3.0</coveralls.version>
+    <jacoco.version>0.7.9</jacoco.version>
+
+    <!-- Dependency versions -->
+    <aws.ses.version>1.11.225</aws.ses.version>
+    <aws.dynamodb.version>1.11.91</aws.dynamodb.version>
+    <commons-validator.version>1.6</commons-validator.version>
+    <dagger.version>2.14.1</dagger.version>
+    <dropwizard.version>1.2.3</dropwizard.version>
+    <jackson.api.version>2.9.4</jackson.api.version>
+    <junit.version>4.12</junit.version>
+    <mockito.version>2.13.0</mockito.version>
+    <retrofit.version>1.9.0</retrofit.version>
+  </properties>
+
+  <!-- Allows for releases into AWS S3 -->
+  <distributionManagement>
+    <repository>
+      <id>maven-s3-release-repo</id>
+      <name>S3 Release Repository</name>
+      <url>s3://artifacts.sanction.com/maven/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>maven-s3-snapshot-repo</id>
+      <name>S3 Snapshot Repository</name>
+      <url>s3://artifacts.sanction.com/maven/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.2</version>
+          <configuration>
+            <compilerArgument>-Xlint:all</compilerArgument>
+            <showWarnings>true</showWarnings>
+            <showDeprecation>true</showDeprecation>
+            <source>${java.minimum.version}</source>
+            <target>${java.minimum.version}</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+            <tagNameFormat>v@{project.version}</tagNameFormat>
+          </configuration>
+        </plugin>
+        <!-- Enforce code style -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${checkstyle-plugin.version}</version>
+          <configuration>
+            <sourceDirectories>${project.build.sourceDirectory}</sourceDirectories>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          </configuration>
+          <executions>
+            <execution>
+              <phase>compile</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+                <configLocation>checkstyle.xml</configLocation>
+                <violationSeverity>warning</violationSeverity>
+              </configuration>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${checkstyle.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <!-- Code coverage -->
+        <plugin>
+          <groupId>org.eluder.coveralls</groupId>
+          <artifactId>coveralls-maven-plugin</artifactId>
+          <version>${coveralls.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.version}</version>
+          <configuration>
+            <excludes>
+              <!-- Generated Dagger Files -->
+              <exclude>**/*Module_Provide*</exclude>
+              <exclude>**/Dagger*</exclude>
+              <exclude>**/*_Factory*</exclude>
+
+              <!-- Dagger Modules -->
+              <exclude>**/*Module*</exclude>
+            </excludes>
+          </configuration>
+          <executions>
+            <execution>
+              <id>prepare-agent</id>
+              <goals>
+                <goal>prepare-agent</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <!-- Extension to allow urls to start with s3:// -->
+    <extensions>
+      <extension>
+        <groupId>org.springframework.build</groupId>
+        <artifactId>aws-maven</artifactId>
+        <version>5.0.0.RELEASE</version>
+      </extension>
+    </extensions>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-ses</artifactId>
+        <version>${aws.ses.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-validator</groupId>
+        <artifactId>commons-validator</artifactId>
+        <version>${commons-validator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-dynamodb</artifactId>
+        <version>${aws.dynamodb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${jackson.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-guava</artifactId>
+        <version>${jackson.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.dagger</groupId>
+        <artifactId>dagger</artifactId>
+        <version>${dagger.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.dagger</groupId>
+        <artifactId>dagger-compiler</artifactId>
+        <version>${dagger.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.retrofit</groupId>
+        <artifactId>converter-jackson</artifactId>
+        <version>${retrofit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.retrofit</groupId>
+        <artifactId>retrofit</artifactId>
+        <version>${retrofit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-auth</artifactId>
+        <version>${dropwizard.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-core</artifactId>
+        <version>${dropwizard.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard</groupId>
+        <artifactId>dropwizard-testing</artifactId>
+        <version>${dropwizard.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${mockito.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <modules>
+    <module>api</module>
+    <module>application</module>
+    <module>client</module>
+  </modules>
+</project>
