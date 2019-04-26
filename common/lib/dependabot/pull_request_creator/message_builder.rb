@@ -406,18 +406,18 @@ module Dependabot
         fixed_vulns = vulnerabilities_fixed[dep.name]
         return "" unless fixed_vulns&.any?
 
-        msg = "\n<details>\n<summary>Vulnerabilities fixed</summary>\n\n"
+        msg = ""
         fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
-        msg += "</details>"
-        sanitize_template_tags(msg)
+        msg = sanitize_tags(msg)
+
+        build_details_tag(summary: "Vulnerabilities fixed", body: msg)
       end
 
       def release_cascade(dep)
         return "" unless releases_text(dep) && releases_url(dep)
 
-        msg = "\n<details>\n<summary>Release notes</summary>\n\n"
-        msg += "*Sourced from [#{dep.display_name}'s releases]"\
-               "(#{releases_url(dep)}).*\n\n"
+        msg = "*Sourced from [#{dep.display_name}'s releases]"\
+              "(#{releases_url(dep)}).*\n\n"
         msg +=
           begin
             release_note_lines = releases_text(dep).split("\n").first(50)
@@ -427,21 +427,21 @@ module Dependabot
             end
             release_note_lines.join
           end
-        msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(
           text: msg,
           base_url: source_url(dep) + "/blob/HEAD/"
         )
-        sanitize_template_tags(msg)
+        msg = sanitize_tags(msg)
+
+        build_details_tag(summary: "Release notes", body: msg)
       end
 
       def changelog_cascade(dep)
         return "" unless changelog_url(dep) && changelog_text(dep)
 
-        msg = "\n<details>\n<summary>Changelog</summary>\n\n"
-        msg += "*Sourced from "\
-               "[#{dep.display_name}'s changelog](#{changelog_url(dep)}).*\n\n"
+        msg = "*Sourced from "\
+              "[#{dep.display_name}'s changelog](#{changelog_url(dep)}).*\n\n"
         msg +=
           begin
             changelog_lines = changelog_text(dep).split("\n").first(50)
@@ -449,19 +449,19 @@ module Dependabot
             changelog_lines << truncated_line if changelog_lines.count == 50
             changelog_lines.join
           end
-        msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
-        sanitize_template_tags(msg)
+        msg = sanitize_tags(msg)
+
+        build_details_tag(summary: "Changelog", body: msg)
       end
 
       def upgrade_guide_cascade(dep)
         return "" unless upgrade_url(dep) && upgrade_text(dep)
 
-        msg = "\n<details>\n<summary>Upgrade guide</summary>\n\n"
-        msg += "*Sourced from "\
-               "[#{dep.display_name}'s upgrade guide]"\
-               "(#{upgrade_url(dep)}).*\n\n"
+        msg = "*Sourced from "\
+              "[#{dep.display_name}'s upgrade guide]"\
+              "(#{upgrade_url(dep)}).*\n\n"
         msg +=
           begin
             upgrade_lines = upgrade_text(dep).split("\n").first(50)
@@ -469,16 +469,17 @@ module Dependabot
             upgrade_lines << truncated_line if upgrade_lines.count == 50
             upgrade_lines.join
           end
-        msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
-        sanitize_template_tags(msg)
+        msg = sanitize_tags(msg)
+
+        build_details_tag(summary: "Upgrade guide", body: msg)
       end
 
       def commits_cascade(dep)
         return "" unless commits_url(dep) && commits(dep)
 
-        msg = "\n<details>\n<summary>Commits</summary>\n\n"
+        msg = ""
 
         commits(dep).reverse.first(10).each do |commit|
           title = commit[:message].strip.split("\n").first
@@ -494,18 +495,25 @@ module Dependabot
           else
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
-
-        msg += "</details>"
         msg = link_issues(text: msg, dependency: dep)
-        sanitize_template_tags(msg)
+        msg = sanitize_tags(msg)
+
+        build_details_tag(summary: "Commits", body: msg)
       end
 
       def maintainer_changes_cascade(dep)
         return "" unless maintainer_changes(dep)
 
-        msg = "\n<details>\n<summary>Maintainer changes</summary>\n\n"
-        msg += maintainer_changes(dep)
-        msg + "\n</details>"
+        build_details_tag(
+          summary: "Maintainer changes",
+          body: maintainer_changes(dep) + "\n"
+        )
+      end
+
+      def build_details_tag(summary:, body:)
+        msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
+        msg += body
+        msg + "</details>"
       end
 
       def serialized_vulnerability_details(details)
@@ -750,13 +758,15 @@ module Dependabot
         end
       end
 
-      def sanitize_template_tags(text)
+      def sanitize_tags(text)
+        sanitized_tags = %w(del details ins template)
+
         text.gsub(/\<.*?\>/) do |tag|
           tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
 
           # Unclosed calls to some tags overflow out of the blockquote block,
           # wrecking the rest of our PRs. Other tags don't share this problem.
-          next "\\#{tag}" if tag_contents.start_with?("template", "ins", "del")
+          next "\\#{tag}" if tag_contents.start_with?(*sanitized_tags)
 
           tag
         end
