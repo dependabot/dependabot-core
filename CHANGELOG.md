@@ -1,3 +1,7 @@
+## v0.106.15, 26 April 2019
+
+- Clean up tag sanitization and details tag creation
+
 ## v0.106.14, 26 April 2019
 
 - Escape more tags when sanitizing lines
