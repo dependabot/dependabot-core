@@ -577,7 +577,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           is_expected.to eq(
             [
               {
-                message: "Remove SEPA calendar (replaced by TARGET)",
+                message: "[12]() Remove SEPA calendar (replaced by TARGET)",
                 sha: "d2eb29beda934c14220146c82f830de2edd63a25",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "d2eb29beda934c14220146c82f830de2edd63a25"

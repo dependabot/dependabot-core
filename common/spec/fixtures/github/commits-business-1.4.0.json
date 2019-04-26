@@ -418,7 +418,7 @@
         "email": "greysteil@gmail.com",
         "date": "2014-12-24T11:21:55Z"
       },
-      "message": "Remove SEPA calendar (replaced by TARGET)",
+      "message": "[12]() Remove SEPA calendar (replaced by TARGET)",
       "tree": {
         "sha": "3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d",
         "url": "https://api.github.com/repos/gocardless/business/git/trees/3cd4baecf39a9ae26ec01108bf1e9b7adc7fca7d"

@@ -684,8 +684,14 @@ module Dependabot
       end
 
       def link_issues(text:, dependency:)
-        text.gsub(ISSUE_TAG_REGEX) do |mention|
+        updated_text = text.gsub(ISSUE_TAG_REGEX) do |mention|
           number = mention.tr("#", "").gsub("GH-", "")
+          "[#{mention}](#{source_url(dependency)}/issues/#{number})"
+        end
+
+        updated_text.gsub(/\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/) do |mention|
+          mention = mention.match(/(?<=\[)(.*)(?=\])/).to_s
+          number = mention.match(/\d+/).to_s
           "[#{mention}](#{source_url(dependency)}/issues/#{number})"
         end
       end

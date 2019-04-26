@@ -84,7 +84,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "gocardless/business/issues/8) from gocardless/rename-sepa-to-ecb\n"\
     "- [`d2eb29b`](https://github.com/gocardless/business/commit/"\
     "d2eb29beda934c14220146c82f830de2edd63a25) "\
-    "Remove SEPA calendar (replaced by TARGET)\n"\
+    "[12](https://github-redirect.dependabot.com/gocardless/business/"\
+    "issues/12) Remove SEPA calendar (replaced by TARGET)\n"\
     "- See full diff in [compare view](https://github.com/gocardless/business/"\
     "compare/#{base}...#{head})\n"\
     "</details>\n"
