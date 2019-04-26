@@ -754,9 +754,9 @@ module Dependabot
         text.gsub(/\<.*?\>/) do |tag|
           tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
 
-          # Unclosed calls to template overflow out of the blockquote block,
+          # Unclosed calls to some tags overflow out of the blockquote block,
           # wrecking the rest of our PRs. Other tags don't share this problem.
-          next "\\#{tag}" if tag_contents.start_with?("template")
+          next "\\#{tag}" if tag_contents.start_with?("template", "ins", "del")
 
           tag
         end
