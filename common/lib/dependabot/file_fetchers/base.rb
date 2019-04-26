@@ -201,10 +201,16 @@ module Dependabot
         gitlab_client.
           repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
+            type = case file.type
+                   when "blob" then "file"
+                   when "tree" then "dir"
+                   else file.fetch("type")
+                   end
+
             OpenStruct.new(
               name: file.name,
               path: file.path,
-              type: file.type == "blob" ? "file" : file.type,
+              type: type,
               size: 0 # GitLab doesn't return file size
             )
           end
