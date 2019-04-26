@@ -1,3 +1,8 @@
+## v0.106.17, 26 April 2019
+
+- Update changelog finder to look in GitLab and Bitbucket directories, too
+- Convert GitLab API types to match GitHub
+
 ## v0.106.16, 26 April 2019
 
 - Sanitize all tags in commit messages
