@@ -1,3 +1,7 @@
+## v0.106.16, 26 April 2019
+
+- Sanitize all tags in commit messages
+
 ## v0.106.15, 26 April 2019
 
 - Clean up tag sanitization and details tag creation
