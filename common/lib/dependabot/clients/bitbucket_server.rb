@@ -47,7 +47,7 @@ module Dependabot
 
         loop do
             if path != nil then
-              response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/files/" + URI.encode(path) + "?at=" + commit + "&start=" + next_page_start.to_s)
+              response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/files/" + path + "?at=" + commit + "&start=" + next_page_start.to_s)
             else
               response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/files?at=" + commit + "&start=" + next_page_start.to_s)
             end
