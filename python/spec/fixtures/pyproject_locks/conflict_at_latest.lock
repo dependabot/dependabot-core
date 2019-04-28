@@ -87,7 +87,7 @@ version = "1.11.0"
 [metadata]
 content-hash = "eae25082e355381411c3f71fde8ff26a0d09429d27f4ad6272faea571a2311b5"
 platform = "*"
-python-versions = "^3.6"
+python-versions = "^3.7"
 
 [metadata.hashes]
 attrs = ["4b90b09eeeb9b88c35bc642cbac057e45a5fd85367b985bd2809c62b7b939265", "e0d0eb91441a3b53dab4d9b743eafc1ac44476296a2053b6ca3af0b139faf87b"]

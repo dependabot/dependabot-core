@@ -672,7 +672,7 @@ version = "1.1.0"
 [metadata]
 content-hash = "22162a04575d4859af6e719d86a7f92aa1be63a283b73a2e3bb1b1982b59a357"
 platform = "*"
-python-versions = "^3.6"
+python-versions = "^3.7"
 
 [metadata.hashes]
 argcomplete = ["7a2ccde074eb6631232b2f91f8d8d5985d5bebf0e36b091113096e3a0385546b", "c2a0a88492c31a42dde41636fbd4c406cde78fe7fb938ab511b733bff6358782"]

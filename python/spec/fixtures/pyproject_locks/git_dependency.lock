@@ -105,7 +105,7 @@ url = "https://github.com/uiri/toml.git"
 [metadata]
 content-hash = "80da4e266d3df8763c306c1d07185f613e151e825f8f75820f8dca443057a707"
 platform = "*"
-python-versions = "^3.6"
+python-versions = "^3.7"
 
 [metadata.hashes]
 atomicwrites = ["0312ad34fcad8fac3704d441f7b317e50af620823353ec657a53e981f92920c0", "ec9ae8adaae229e4f8446952d204a3e4b5fdd2d099f9be3aaf556120135fb3ee"]
