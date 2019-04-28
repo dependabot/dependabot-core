@@ -366,7 +366,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:dependency_version) { "0.10.13" }
         let(:requirements) { [] }
 
-        it { is_expected.to eq(Gem::Version.new("0.10.15")) }
+        it { is_expected.to eq(Gem::Version.new("0.10.16")) }
       end
     end
 

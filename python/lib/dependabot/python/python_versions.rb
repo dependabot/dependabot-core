@@ -4,7 +4,7 @@ module Dependabot
   module Python
     module PythonVersions
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.6.8 2.7.16
+        3.7.3 2.7.16
       ).freeze
 
       # Due to an OpenSSL issue we can only install the following versions in

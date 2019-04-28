@@ -144,7 +144,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             expect(error.message).to eq(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.6.8"
+              "but the running Python is 3.7.3"
             )
           end
       end
