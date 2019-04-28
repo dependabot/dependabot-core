@@ -1,3 +1,8 @@
+## v0.106.19, 28 April 2019
+
+- Python: Use Python 3.7.3 instead of 2.6.8
+- Python: Bump poetry from 0.12.13 to 0.12.14 in /python/helpers
+
 ## v0.106.18, 26 April 2019
 
 - Bump poetry from 0.12.12 to 0.12.13 in /python/helpers
