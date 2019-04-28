@@ -217,6 +217,13 @@ module Dependabot
             return nil
           end
 
+          if error.message.include?("all possible versions conflict")
+            # This happens when a top-level requirement locks us to an old
+            # patch release of a dependency that is a sub-dep of what we're
+            # updating. It's (probably) a Cargo bug.
+            return nil
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
