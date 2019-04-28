@@ -95,13 +95,13 @@ RUN npm install elm@0.18.0 \
 
 ### PHP
 
-# Install PHP 7.2 and Composer
+# Install PHP 7.3 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.2 php7.2-xml php7.2-json php7.2-zip php7.2-mbstring php7.2-intl php7.2-common php7.2-gettext php7.2-curl php7.2-bcmath php7.2-gmp php7.2-imagick php7.2-gd php7.2-redis php7.2-soap php7.2-ldap php7.2-memcached php7.2-sqlite3 php7.2-apcu php7.2-mongodb php7.2-zmq php7.2-mysql \
+    && apt-get install -y php7.3 php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-mongodb php7.3-zmq php7.3-mysql \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
