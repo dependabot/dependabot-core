@@ -1,3 +1,9 @@
+## v0.106.20, 28 April 2019
+
+- Rust: Handle a resolvability issue
+- Rust: Require a unique source (not just source type)
+- Upgrade to PHP 7.3
+
 ## v0.106.19, 28 April 2019
 
 - Python: Use Python 3.7.3 instead of 2.6.8
