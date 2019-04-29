@@ -1,3 +1,7 @@
+## v0.106.24, 29 April 2019
+
+- Cargo: Handle private git dependencies that aren't parsed
+
 ## v0.106.23, 29 April 2019
 
 - Python: Respect Python version specified in runtime.txt
