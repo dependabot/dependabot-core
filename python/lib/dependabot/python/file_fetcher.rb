@@ -103,6 +103,16 @@ module Dependabot
       def python_version
         @python_version ||= fetch_file_if_present(".python-version")&.
                             tap { |f| f.support_file = true }
+
+        return @python_version if @python_version
+        return if [".", "/"].include?(directory)
+
+        # Check the top-level for a .python-version file, too
+        reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
+        @python_version ||=
+          fetch_file_if_present(File.join(reverse_path, ".python-version"))&.
+          tap { |f| f.support_file = true }&.
+          tap { |f| f.name = ".python-version" }
       end
 
       def pipfile

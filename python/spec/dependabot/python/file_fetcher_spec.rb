@@ -929,6 +929,33 @@ RSpec.describe Dependabot::Python::FileFetcher do
                    ../flowmachine/setup.py ../flowclient/setup.py)
               )
           end
+
+          context "with a .python-version file at the top level" do
+            before do
+              stub_request(:get, url + "?ref=sha").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(
+                  status: 200,
+                  body: fixture("github", "contents_python_with_conf.json"),
+                  headers: { "content-type" => "application/json" }
+                )
+              stub_request(:get, url + ".python-version?ref=sha").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(
+                  status: 200,
+                  body: fixture("github", "setup_content.json"),
+                  headers: { "content-type" => "application/json" }
+                )
+            end
+
+            it "fetches the .python-version" do
+              expect(file_fetcher_instance.files.map(&:name)).
+                to match_array(
+                  %w(Pipfile Pipfile.lock .python-version
+                     ../flowmachine/setup.py ../flowclient/setup.py)
+                )
+            end
+          end
         end
       end
 
