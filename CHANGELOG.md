@@ -1,3 +1,7 @@
+## v0.106.22, 29 April 2019
+
+- PHP: Fetch path dependencies specified in a hash (rather than an array)
+
 ## v0.106.21, 29 April 2019
 
 - Python: Look for .python-version file at top-level, too
