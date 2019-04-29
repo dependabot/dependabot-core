@@ -1,3 +1,7 @@
+## v0.106.21, 29 April 2019
+
+- Python: Look for .python-version file at top-level, too
+
 ## v0.106.20, 28 April 2019
 
 - Rust: Handle a resolvability issue
