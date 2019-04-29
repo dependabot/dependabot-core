@@ -413,7 +413,7 @@ module Dependabot
             return pipfile_python_requirement
           end
 
-          python_version_file_version
+          python_version_file_version || runtime_file_python_version
         end
 
         def python_version_file_version
@@ -423,6 +423,12 @@ module Dependabot
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
         def pyenv_versions
@@ -561,6 +567,10 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
       end
     end

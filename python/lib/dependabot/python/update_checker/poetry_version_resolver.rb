@@ -169,12 +169,14 @@ module Dependabot
             poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
 
-          return python_version_file_version unless requirement
+          unless requirement
+            return python_version_file_version || runtime_file_python_version
+          end
 
           requirements =
             Python::Requirement.requirements_array(requirement)
 
-          version = PythonVersions::SUPPORTED_VERSIONS.find do |v|
+          version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
             requirements.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
           end
           return version if version
@@ -193,6 +195,12 @@ module Dependabot
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
         def pyenv_versions
@@ -308,6 +316,10 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
 
         def run_poetry_command(command)
