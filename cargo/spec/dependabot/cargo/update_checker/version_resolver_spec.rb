@@ -280,15 +280,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to_return(status: 403)
         end
 
-        # TODO: make non-pending once we're using a Cargo release that includes
-        #       this PR: https://github.com/rust-lang/cargo/pull/6681
-        #       Without that change to Cargo, this test hangs indefinitely.
-        skip "raises a GitDependenciesNotReachable error" do
+        it "raises a GitDependenciesNotReachable error" do
           expect { subject }.
             to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls).
                 to eq(["https://github.com/greysteil/utf8-ranges"])
             end
+        end
+
+        context "but is skipped by the parser (because it has multiple URLs)" do
+          let(:unprepared_dependency_files) do
+            [manifest, workspace_child, workspace_child2]
+          end
+          let(:manifest_fixture_name) { "workspace_root_multiple" }
+          let(:workspace_child) do
+            Dependabot::DependencyFile.new(
+              name: "lib/sub_crate/Cargo.toml",
+              content: fixture("manifests", "workspace_child_with_git")
+            )
+          end
+          let(:workspace_child2) do
+            Dependabot::DependencyFile.new(
+              name: "lib/sub_crate2/Cargo.toml",
+              content:
+                fixture("manifests", "workspace_child_with_git_unreachable")
+            )
+          end
+
+          it "raises a GitDependenciesNotReachable error" do
+            expect { subject }.
+              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls).
+                  to eq(["https://github.com/greysteil/utf8-ranges"])
+              end
+          end
         end
       end
 

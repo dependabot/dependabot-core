@@ -186,11 +186,19 @@ module Dependabot
 
           if error.message.include?("authenticate when downloading repo") ||
              error.message.include?("HTTP 200 response: got 401")
-            raise if unreachable_git_urls.none?
-
             # Check all dependencies for reachability (so that we raise a
             # consistent error)
-            raise Dependabot::GitDependenciesNotReachable, unreachable_git_urls
+            urls = unreachable_git_urls
+
+            if urls.none?
+              url = error.message.match(UNABLE_TO_UPDATE).
+                    named_captures.fetch("url").split(/[#?]/).first
+              raise if reachable_git_urls.include?(url)
+
+              urls << url
+            end
+
+            raise Dependabot::GitDependenciesNotReachable, urls
           end
 
           if error.message.match?(BRANCH_NOT_FOUND_REGEX)
@@ -232,30 +240,41 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
 
         def unreachable_git_urls
-          @unreachable_git_urls ||=
-            begin
-              dependencies = FileParser.new(
-                dependency_files: original_dependency_files,
-                source: nil
-              ).parse
+          return @unreachable_git_urls if defined?(@unreachable_git_urls)
 
-              unreachable_git_dependencies =
-                dependencies.
-                select do |dep|
-                  checker = GitCommitChecker.new(
-                    dependency: dep,
-                    credentials: credentials
-                  )
+          @unreachable_git_urls = []
+          @reachable_git_urls = []
 
-                  checker.git_dependency? && !checker.git_repo_reachable?
-                end
+          dependencies = FileParser.new(
+            dependency_files: original_dependency_files,
+            source: nil
+          ).parse
 
-              unreachable_git_dependencies.map do |dep|
-                dep.requirements.
-                  find { |r| r.dig(:source, :type) == "git" }.
+          dependencies.each do |dep|
+            checker = GitCommitChecker.new(
+              dependency: dep,
+              credentials: credentials
+            )
+            next unless checker.git_dependency?
+
+            url = dep.requirements.find { |r| r.dig(:source, :type) == "git" }.
                   fetch(:source).fetch(:url)
-              end
+
+            if checker.git_repo_reachable?
+              @reachable_git_urls << url
+            else
+              @unreachable_git_urls << url
             end
+          end
+
+          @unreachable_git_urls
+        end
+
+        def reachable_git_urls
+          return @reachable_git_urls if defined?(@reachable_git_urls)
+
+          unreachable_git_urls
+          @reachable_git_urls
         end
 
         def resolvability_error?(message)
