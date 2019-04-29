@@ -1,3 +1,7 @@
+## v0.106.23, 29 April 2019
+
+- Python: Respect Python version specified in runtime.txt
+
 ## v0.106.22, 29 April 2019
 
 - PHP: Fetch path dependencies specified in a hash (rather than an array)
