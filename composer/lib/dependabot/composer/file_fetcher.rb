@@ -77,12 +77,14 @@ module Dependabot
 
       def path_sources
         @path_sources ||=
-          JSON.parse(composer_json.content).
-          fetch("repositories", []).
-          select { |details| details["type"] == "path" }.
-          map { |details| details["url"] }
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, composer_json.path
+          begin
+            repos = parsed_composer_json.fetch("repositories", [])
+            repos = repos.values if repos.is_a?(Hash)
+
+            repos.
+              select { |details| details["type"] == "path" }.
+              map { |details| details["url"] }
+          end
       end
 
       def build_unfetchable_deps(unfetchable_deps)
@@ -115,6 +117,12 @@ module Dependabot
             select { |details| details.dig("dist", "type") == "path" }.
             map { |details| details.dig("dist", "url") }
         end
+      end
+
+      def parsed_composer_json
+        @parsed_composer_json ||= JSON.parse(composer_json.content)
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, composer_json.path
       end
 
       def parsed_lockfile
