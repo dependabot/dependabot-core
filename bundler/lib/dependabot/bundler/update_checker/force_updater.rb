@@ -64,8 +64,8 @@ module Dependabot
               retry
             end
           end
-        rescue SharedHelpers::ChildProcessFailed => error
-          raise_unresolvable_error(error)
+        rescue SharedHelpers::ChildProcessFailed => e
+          raise_unresolvable_error(e)
         end
 
         #########################

@@ -188,12 +188,12 @@ module Dependabot
 
       def latest_resolvable_commit_with_unchanged_git_source
         fetch_latest_resolvable_version(unlock_requirement: false)
-      rescue SharedHelpers::HelperSubprocessFailed => error
+      rescue SharedHelpers::HelperSubprocessFailed => e
         # Resolution may fail, as Cargo updates straight to the tip of the
         # branch. Just return `nil` if it does (so no update).
-        return if error.message.include?("versions conflict")
+        return if e.message.include?("versions conflict")
 
-        raise error
+        raise e
       end
 
       def fetch_latest_resolvable_version(unlock_requirement:)

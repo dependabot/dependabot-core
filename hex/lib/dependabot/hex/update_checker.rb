@@ -144,8 +144,8 @@ module Dependabot
 
         @git_tag_resolvable = !resolver_result.nil?
       rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => error
-        raise error unless error.message.include?("resolution failed")
+             Dependabot::DependencyFileNotResolvable => e
+        raise e unless e.message.include?("resolution failed")
 
         @git_tag_resolvable = false
       end

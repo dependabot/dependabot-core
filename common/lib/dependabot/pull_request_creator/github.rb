@@ -122,8 +122,8 @@ module Dependabot
             base_commit,
             options
           )
-        rescue Octokit::UnprocessableEntity => error
-          raise unless error.message == "Tree SHA does not exist"
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.message == "Tree SHA does not exist"
 
           # Sometimes a race condition on GitHub's side means we get an error
           # here. No harm in retrying if we do.
@@ -181,9 +181,9 @@ module Dependabot
           "heads/#{branch_name}",
           commit.sha
         )
-      rescue Octokit::UnprocessableEntity => error
+      rescue Octokit::UnprocessableEntity => e
         # Return quietly in the case of a race
-        return nil if error.message.match?(/Reference already exists/i)
+        return nil if e.message.match?(/Reference already exists/i)
         raise if @retrying_branch_creation
 
         @retrying_branch_creation = true
@@ -220,9 +220,9 @@ module Dependabot
           reviewers: reviewers_hash[:reviewers] || [],
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
-      rescue Octokit::UnprocessableEntity => error
-        return if error.message.include?("not a collaborator")
-        return if error.message.include?("Could not resolve to a node")
+      rescue Octokit::UnprocessableEntity => e
+        return if e.message.include?("not a collaborator")
+        return if e.message.include?("Could not resolve to a node")
 
         raise
       end
@@ -244,8 +244,8 @@ module Dependabot
           pull_request.number,
           milestone: milestone
         )
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.message.include?("code: invalid")
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message.include?("code: invalid")
       end
 
       def create_pull_request
@@ -256,12 +256,12 @@ module Dependabot
           pr_name,
           pr_description
         )
-      rescue Octokit::UnprocessableEntity => error
+      rescue Octokit::UnprocessableEntity => e
         # Ignore races that we lose
-        return if error.message.include?("pull request already exists")
+        return if e.message.include?("pull request already exists")
 
         # Ignore cases where the target branch has been deleted
-        return if error.message.include?("field: base") &&
+        return if e.message.include?("field: base") &&
                   source.branch &&
                   !branch_exists?(source.branch)
 

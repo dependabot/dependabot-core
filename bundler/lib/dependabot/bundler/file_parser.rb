@@ -159,8 +159,8 @@ module Dependabot
               ::Bundler.load_gemspec_uncached(file.name)
             end
           end
-      rescue SharedHelpers::ChildProcessFailed => error
-        msg = error.error_class + " with message: " + error.error_message
+      rescue SharedHelpers::ChildProcessFailed => e
+        msg = e.error_class + " with message: " + e.error_message
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 

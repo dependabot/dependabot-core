@@ -65,6 +65,7 @@ module Dependabot
 
       private
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def fetch_file_if_present(filename, fetch_submodules: false)
         dir = File.dirname(filename)
         basename = File.basename(filename)
@@ -80,7 +81,9 @@ module Dependabot
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
 
@@ -93,6 +96,7 @@ module Dependabot
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       def repo_contents(dir: ".", ignore_base_directory: false,
                         raise_errors: true, fetch_submodules: false)
@@ -111,6 +115,7 @@ module Dependabot
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def _fetch_repo_contents(path, fetch_submodules: false,
                                raise_errors: true)
         path = path.gsub(" ", "%20")
@@ -139,6 +144,7 @@ module Dependabot
         retrying = true
         retry
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
         case provider
@@ -264,6 +270,7 @@ module Dependabot
         end
       end
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def _fetch_file_content(path, fetch_submodules: false)
         path = path.gsub(%r{^/*}, "")
 
@@ -283,6 +290,7 @@ module Dependabot
         retrying = true
         retry
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       def _fetch_file_content_fully_specified(provider, repo, path, commit)
         case provider
@@ -312,8 +320,8 @@ module Dependabot
         end
 
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
-      rescue Octokit::Forbidden => error
-        raise unless error.message.include?("too_large")
+      rescue Octokit::Forbidden => e
+        raise unless e.message.include?("too_large")
 
         # Fall back to Git Data API to fetch the file
         prefix_dir = directory.gsub(%r{(^/|/$)}, "")
@@ -329,12 +337,14 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def default_branch_for_repo
         @default_branch_for_repo ||= client_for_provider.
                                      fetch_default_branch(repo)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::RepoNotFound, source
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       # Update the @linked_paths hash by exploiting a side-effect of
       # recursively calling `repo_contents` for each directory up the tree
