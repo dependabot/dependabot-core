@@ -1,3 +1,7 @@
+## v0.106.27, 30 April 2019
+
+- Allow a custom prefix to be passed to BranchNamer
+
 ## v0.106.26, 30 April 2019
 
 - Gradle: Parse and update plugin versions
