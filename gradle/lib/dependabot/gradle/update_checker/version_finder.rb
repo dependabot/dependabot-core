@@ -12,6 +12,7 @@ module Dependabot
     class UpdateChecker
       class VersionFinder
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
+        GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         TYPE_SUFFICES = %w(jre android java).freeze
 
         def initialize(dependency:, dependency_files:, ignored_versions:,
@@ -64,6 +65,10 @@ module Dependabot
 
         attr_reader :dependency, :dependency_files, :ignored_versions,
                     :security_advisories
+
+        def plugin?
+          dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+        end
 
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
@@ -177,18 +182,26 @@ module Dependabot
         end
 
         def repository_urls
+          plugin? ? plugin_repository_urls : dependency_repository_urls
+        end
+
+        def dependency_repository_urls
           requirement_files =
             dependency.requirements.
             map { |r| r.fetch(:file) }.
             map { |nm| dependency_files.find { |f| f.name == nm } }
 
-          @repository_urls ||=
+          @dependency_repository_urls ||=
             requirement_files.flat_map do |target_file|
               Gradle::FileParser::RepositoriesFinder.new(
                 dependency_files: dependency_files,
                 target_dependency_file: target_file
               ).repository_urls
             end.uniq
+        end
+
+        def plugin_repository_urls
+          [GRADLE_PLUGINS_REPO] + dependency_repository_urls
         end
 
         def matches_dependency_version_type?(comparison_version)
@@ -211,7 +224,12 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id = dependency.name.split(":")
+          group_id, artifact_id =
+            if plugin?
+              [dependency.name, "#{dependency.name}.gradle.plugin"]
+            else
+              dependency.name.split(":")
+            end
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\

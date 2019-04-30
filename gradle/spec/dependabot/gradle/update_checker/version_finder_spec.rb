@@ -173,6 +173,59 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a plugin" do
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "2.0.5.RELEASE",
+          groups: ["plugins"],
+          source: nil
+        }]
+      end
+      let(:dependency_name) { "org.springframework.boot" }
+      let(:dependency_version) { "2.0.5.RELEASE" }
+
+      let(:gradle_plugin_metadata_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/"\
+        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+      end
+      let(:gradle_plugin_releases) do
+        fixture("gradle_plugin_metadata", "org_springframework_boot.xml")
+      end
+      let(:maven_metadata_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot/"\
+        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, gradle_plugin_metadata_url).
+          to_return(status: 200, body: gradle_plugin_releases)
+        stub_request(:get, maven_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.2.RELEASE"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+
+      describe "the last version" do
+        subject { versions.last }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+    end
+
     context "with a custom repository" do
       let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
 
