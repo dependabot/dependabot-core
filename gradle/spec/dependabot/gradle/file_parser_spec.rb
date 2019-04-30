@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
     context "specified in a dependencySet" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
 
-      its(:length) { is_expected.to eq(19) }
+      its(:length) { is_expected.to eq(21) }
 
       describe "a dependencySet dependency" do
         subject(:dependency) do
@@ -165,6 +165,27 @@ RSpec.describe Dependabot::Gradle::FileParser do
                   version: "1.15.1"
                 }
               }
+            }]
+          )
+        end
+      end
+
+      describe "a plugin dependency" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "org.springframework.boot" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("org.springframework.boot")
+          expect(dependency.version).to eq("2.0.5.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.0.5.RELEASE",
+              file: "build.gradle",
+              groups: ["plugins"],
+              source: nil,
+              metadata: nil
             }]
           )
         end

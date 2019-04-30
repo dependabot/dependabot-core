@@ -8,6 +8,9 @@ require "dependabot/shared_helpers"
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
 #   DependencyHandler.html
+#
+# In addition, documentation on plugins is at:
+# - https://docs.gradle.org/current/userguide/plugins.html
 module Dependabot
   module Gradle
     class FileParser < Dependabot::FileParsers::Base
@@ -29,6 +32,9 @@ module Dependabot
       DEPENDENCY_SET_DECLARATION_REGEX =
         /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/.freeze
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/.freeze
+      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/.freeze
+      PLUGIN_BLOCK_ENTRY_REGEX =
+        /id\s+"(?<id>#{PART})"\s+version\s+"(?<version>#{VSN_PART})"/.freeze
 
       def parse
         dependency_set = DependencySet.new
@@ -53,6 +59,7 @@ module Dependabot
         dependency_set += shortform_buildfile_dependencies(buildfile)
         dependency_set += keyword_arg_buildfile_dependencies(buildfile)
         dependency_set += dependency_set_dependencies(buildfile)
+        dependency_set += plugin_dependencies(buildfile)
 
         dependency_set
       end
@@ -125,6 +132,34 @@ module Dependabot
         dependency_set
       end
 
+      def plugin_dependencies(buildfile)
+        dependency_set = DependencySet.new
+
+        plugin_blocks = []
+
+        prepared_content(buildfile).scan(PLUGIN_BLOCK_DECLARATION_REGEX) do
+          mch = Regexp.last_match
+          plugin_blocks <<
+            mch.post_match[0..closing_bracket_index(mch.post_match)]
+        end
+
+        plugin_blocks.each do |blk|
+          blk.lines.each do |line|
+            name    = line.match(/id\s+"(?<id>#{PART})"/)&.
+                      named_captures&.fetch("id")
+            version = line.match(/version\s+"(?<version>#{VSN_PART})"/)&.
+                      named_captures&.fetch("version")
+            next unless name && version
+
+            details = { name: name, group: "plugins", version: version }
+            dep = dependency_from(details_hash: details, buildfile: buildfile)
+            dependency_set << dep if dep
+          end
+        end
+
+        dependency_set
+      end
+
       def argument_from_string(string, arg_name)
         string.
           match(map_value_regex(arg_name))&.
@@ -137,7 +172,14 @@ module Dependabot
         name    = evaluated_value(details_hash[:name], buildfile)
         version = evaluated_value(details_hash[:version], buildfile)
 
-        dependency_name = "#{group}:#{name}"
+        dependency_name =
+          if group == "plugins" then name
+          else "#{group}:#{name}"
+          end
+        groups =
+          if group == "plugins" then ["plugins"]
+          else []
+          end
 
         # If we can't evaluate a property they we won't be able to
         # update this dependency
@@ -150,7 +192,7 @@ module Dependabot
             requirement: version,
             file: buildfile.name,
             source: nil,
-            groups: [],
+            groups: groups,
             metadata: dependency_metadata(details_hash, in_dependency_set)
           }],
           package_manager: "gradle"
