@@ -1,3 +1,8 @@
+## v0.106.25, 30 April 2019
+
+- Composer: Handle people putting strange things in their repositories hash/array
+- Fix error-related rubocops
+
 ## v0.106.24, 29 April 2019
 
 - Cargo: Handle private git dependencies that aren't parsed
