@@ -79,7 +79,10 @@ module Dependabot
         @path_sources ||=
           begin
             repos = parsed_composer_json.fetch("repositories", [])
+            return [] unless repos.is_a?(Hash) || repos.is_a?(Array)
+
             repos = repos.values if repos.is_a?(Hash)
+            repos = repos.select { |r| r.is_a?(Hash) }
 
             repos.
               select { |details| details["type"] == "path" }.
