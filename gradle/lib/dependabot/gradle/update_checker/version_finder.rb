@@ -66,10 +66,6 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :ignored_versions,
                     :security_advisories
 
-        def plugin?
-          dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
-        end
-
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
 
@@ -235,6 +231,10 @@ module Dependabot
           "#{group_id.tr('.', '/')}/"\
           "#{artifact_id}/"\
           "maven-metadata.xml"
+        end
+
+        def plugin?
+          dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
         end
 
         def version_class
