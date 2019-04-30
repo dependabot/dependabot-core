@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "co.aikar:acf-paper",
-      version: "0.5.0-SNAPSHOT",
+      version: "0.6.0-SNAPSHOT",
       requirements: [{
         file: "build.gradle",
         requirement: "0.6.0-SNAPSHOT",
@@ -73,6 +73,37 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         )
       end
       its(:content) { is_expected.to include "version: '4.2.0'" }
+
+      context "with a plugin" do
+        let(:buildfile_fixture_name) { "dependency_set.gradle" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.springframework.boot",
+            version: "2.1.4.RELEASE",
+            requirements: [{
+              file: "build.gradle",
+              requirement: "2.1.4.RELEASE",
+              groups: ["plugins"],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "build.gradle",
+              requirement: "2.0.5.RELEASE",
+              groups: ["plugins"],
+              source: nil,
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        its(:content) do
+          is_expected.to include(
+            'id "org.springframework.boot" version "2.1.4.RELEASE" apply false'
+          )
+        end
+      end
 
       context "with multiple buildfiles" do
         let(:dependency_files) { [buildfile, subproject_buildfile] }

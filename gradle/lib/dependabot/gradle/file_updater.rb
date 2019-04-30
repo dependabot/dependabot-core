@@ -128,8 +128,14 @@ module Dependabot
         buildfile.content.lines.find do |line|
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
-          next false unless line.include?(dependency.name.split(":").first)
-          next false unless line.include?(dependency.name.split(":").last)
+
+          if dependency.name.include?(":")
+            next false unless line.include?(dependency.name.split(":").first)
+            next false unless line.include?(dependency.name.split(":").last)
+          else
+            name_regex = /id\s+['"]#{Regexp.quote(dependency.name)}['"]/
+            next false unless line.match?(name_regex)
+          end
 
           line.include?(requirement.fetch(:requirement))
         end

@@ -145,9 +145,9 @@ module Dependabot
 
         plugin_blocks.each do |blk|
           blk.lines.each do |line|
-            name    = line.match(/id\s+"(?<id>#{PART})"/)&.
+            name    = line.match(/id\s+['"](?<id>#{PART})['"]/)&.
                       named_captures&.fetch("id")
-            version = line.match(/version\s+"(?<version>#{VSN_PART})"/)&.
+            version = line.match(/version\s+['"](?<version>#{VSN_PART})['"]/)&.
                       named_captures&.fetch("version")
             next unless name && version
 
