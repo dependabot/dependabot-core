@@ -1,3 +1,7 @@
+## v0.106.26, 30 April 2019
+
+- Gradle: Parse and update plugin versions
+
 ## v0.106.25, 30 April 2019
 
 - Composer: Handle people putting strange things in their repositories hash/array
