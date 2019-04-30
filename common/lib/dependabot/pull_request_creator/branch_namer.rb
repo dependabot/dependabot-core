@@ -6,13 +6,15 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix
 
-      def initialize(dependencies:, files:, target_branch:, separator: "/")
+      def initialize(dependencies:, files:, target_branch:, separator: "/",
+                     prefix: "dependabot")
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
         @separator     = separator
+        @prefix        = prefix
       end
 
       # rubocop:disable Metrics/AbcSize
@@ -54,7 +56,7 @@ module Dependabot
 
       def prefixes
         [
-          "dependabot",
+          prefix,
           package_manager,
           files.first.directory.tr(" ", "-"),
           target_branch
