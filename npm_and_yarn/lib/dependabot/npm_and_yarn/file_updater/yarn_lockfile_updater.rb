@@ -114,15 +114,15 @@ module Dependabot
               end
             end
           end
-        rescue SharedHelpers::HelperSubprocessFailed => error
+        rescue SharedHelpers::HelperSubprocessFailed => e
           names = dependencies.map(&:name)
           package_missing = names.any? do |name|
-            error.message.include?("find package \"#{name}")
+            e.message.include?("find package \"#{name}")
           end
 
-          raise unless error.message.include?("The registry may be down") ||
-                       error.message.include?("ETIMEDOUT") ||
-                       error.message.include?("ENOBUFS") ||
+          raise unless e.message.include?("The registry may be down") ||
+                       e.message.include?("ETIMEDOUT") ||
+                       e.message.include?("ENOBUFS") ||
                        package_missing
 
           retry_count ||= 0

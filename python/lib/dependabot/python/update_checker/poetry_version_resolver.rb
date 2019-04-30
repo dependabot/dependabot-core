@@ -125,11 +125,11 @@ module Dependabot
             )
 
             @original_reqs_resolvable = true
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("SolverProblemError") ||
-                         error.message.include?("PackageNotFound")
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.include?("SolverProblemError") ||
+                         e.message.include?("PackageNotFound")
 
-            msg = clean_error_message(error.message)
+            msg = clean_error_message(e.message)
             raise DependencyFileNotResolvable, msg
           end
         end

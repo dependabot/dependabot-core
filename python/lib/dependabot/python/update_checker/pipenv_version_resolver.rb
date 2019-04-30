@@ -199,8 +199,8 @@ module Dependabot
               run_pipenv_command("pyenv exec pipenv lock")
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              handle_pipenv_errors_resolving_original_reqs(error)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              handle_pipenv_errors_resolving_original_reqs(e)
             end
           end
         end
@@ -488,13 +488,13 @@ module Dependabot
         def run_pipenv_command(command, env: pipenv_env_variables)
           run_command("pyenv local #{python_version}")
           run_command(command, env: env)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          original_error ||= error
-          msg = error.message
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          original_error ||= e
+          msg = e.message
 
           relevant_error =
             if may_be_using_wrong_python_version?(msg) then original_error
-            else error
+            else e
             end
 
           raise relevant_error unless may_be_using_wrong_python_version?(msg)

@@ -298,11 +298,11 @@ module Dependabot
           end
 
           true
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          raise unless error.message.include?("no matching version") ||
-                       error.message.include?("failed to select a version") ||
-                       error.message.include?("no matching package named") ||
-                       error.message.include?("failed to parse manifest")
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise unless e.message.include?("no matching version") ||
+                       e.message.include?("failed to select a version") ||
+                       e.message.include?("no matching package named") ||
+                       e.message.include?("failed to parse manifest")
 
           false
         end

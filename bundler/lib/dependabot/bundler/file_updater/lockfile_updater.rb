@@ -131,6 +131,7 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Naming/RescuedExceptionsVariableName
         def generate_lockfile
           dependencies_to_unlock = dependencies.map(&:name)
 
@@ -149,10 +150,10 @@ module Dependabot
             end
 
             definition.to_lock
-          rescue ::Bundler::GemNotFound => error
-            unlock_yanked_gem(dependencies_to_unlock, error) && retry
-          rescue ::Bundler::VersionConflict => error
-            unlock_blocking_subdeps(dependencies_to_unlock, error) && retry
+          rescue ::Bundler::GemNotFound => e
+            unlock_yanked_gem(dependencies_to_unlock, e) && retry
+          rescue ::Bundler::VersionConflict => e
+            unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
           rescue *RETRYABLE_ERRORS
             raise if @retrying
 
@@ -161,6 +162,7 @@ module Dependabot
             retry
           end
         end
+        # rubocop:enable Naming/RescuedExceptionsVariableName
 
         def unlock_yanked_gem(dependencies_to_unlock, error)
           raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)

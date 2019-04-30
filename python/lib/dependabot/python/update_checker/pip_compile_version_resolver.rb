@@ -170,13 +170,13 @@ module Dependabot
               end
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              unless error.message.include?("Could not find a version") ||
-                     error.message.include?("UnsupportedConstraint")
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              unless e.message.include?("Could not find a version") ||
+                     e.message.include?("UnsupportedConstraint")
                 raise
               end
 
-              msg = clean_error_message(error.message)
+              msg = clean_error_message(e.message)
               raise if msg.empty?
 
               raise DependencyFileNotResolvable, msg
@@ -205,13 +205,13 @@ module Dependabot
         def run_pip_compile_command(command)
           run_command("pyenv local #{python_version}")
           run_command(command)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          original_error ||= error
-          msg = error.message
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          original_error ||= e
+          msg = e.message
 
           relevant_error =
             if error_suggests_bad_python_version?(msg) then original_error
-            else error
+            else e
             end
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)

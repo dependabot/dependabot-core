@@ -302,8 +302,8 @@ module Dependabot
           accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, "security"].uniq
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.errors.first.fetch(:code) == "already_exists"
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.errors.first.fetch(:code) == "already_exists"
 
         @labels = [*@labels, "security"].uniq
       end
@@ -330,8 +330,8 @@ module Dependabot
           accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, langauge_name].uniq
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.errors.first.fetch(:code) == "already_exists"
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.errors.first.fetch(:code) == "already_exists"
 
         @labels = [*@labels, langauge_name].uniq
       end
