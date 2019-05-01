@@ -1,3 +1,7 @@
+## v0.106.28, 1 May 2019
+
+- Python: Handle sub-dependencies that are removed from the lockfile during update
+
 ## v0.106.27, 30 April 2019
 
 - Allow a custom prefix to be passed to BranchNamer
