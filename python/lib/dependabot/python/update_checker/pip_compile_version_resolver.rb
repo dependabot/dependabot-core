@@ -70,6 +70,7 @@ module Dependabot
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
+                  write_original_manifest_files unless dependency.top_level?
                   run_pip_compile_command(
                     "pyenv exec pip-compile --allow-unsafe "\
                      "--build-isolation #{filename}"
@@ -275,6 +276,13 @@ module Dependabot
           end
         end
         # rubocop:enable Metrics/AbcSize
+
+        def write_original_manifest_files
+          pip_compile_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
+        end
 
         def irrelevant_pyproject?(file)
           return false unless file.name == "pyproject.toml"

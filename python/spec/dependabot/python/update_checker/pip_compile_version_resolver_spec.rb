@@ -271,6 +271,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
 
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
+
+      context "that is superfluous" do
+        let(:dependency_name) { "requests" }
+        let(:dependency_version) { "2.18.0" }
+        let(:dependency_requirements) { [] }
+        let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
+        let(:generated_fixture_name) { "pip_compile_unpinned_rogue.txt" }
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a dependency with an unmet marker" do
