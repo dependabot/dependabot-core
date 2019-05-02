@@ -1,3 +1,8 @@
+## v0.106.29, 2 May 2019
+
+- Handle issue linking of issue numbers prefixed with `\#`
+- Don't sanitize @-mentions in code quotes
+
 ## v0.106.28, 1 May 2019
 
 - Python: Handle sub-dependencies that are removed from the lockfile during update
