@@ -18,7 +18,7 @@ module Dependabot
                 :credentials, :pr_message_footer, :custom_labels,
                 :author_details, :signature_key, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
-                :branch_name_prefix
+                :branch_name_prefix, :github_link_proxy
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
@@ -26,7 +26,8 @@ module Dependabot
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
                    branch_name_prefix: "dependabot",
-                   label_language: false, automerge_candidate: false)
+                   label_language: false, automerge_candidate: false,
+                   github_link_proxy: "github-redirect.dependabot.com")
       @dependencies          = dependencies
       @source                = source
       @base_commit           = base_commit
@@ -44,6 +45,7 @@ module Dependabot
       @branch_name_prefix    = branch_name_prefix
       @label_language        = label_language
       @automerge_candidate   = automerge_candidate
+      @github_link_proxy     = github_link_proxy
 
       check_dependencies_have_previous_version
     end
@@ -120,7 +122,8 @@ module Dependabot
           credentials: credentials,
           author_details: author_details,
           pr_message_footer: pr_message_footer,
-          vulnerabilities_fixed: vulnerabilities_fixed
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_link_proxy: github_link_proxy
         )
     end
 

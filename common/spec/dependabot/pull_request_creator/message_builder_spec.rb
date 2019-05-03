@@ -15,7 +15,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_footer: pr_message_footer,
       author_details: author_details,
-      vulnerabilities_fixed: vulnerabilities_fixed
+      vulnerabilities_fixed: vulnerabilities_fixed,
+      github_link_proxy: github_link_proxy
     )
   end
 
@@ -47,6 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
+  let(:github_link_proxy) { "github-redirect.dependabot.com" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -678,6 +680,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
             "<br />"
           )
+      end
+
+      context "without a github link proxy" do
+        let(:github_link_proxy) { nil }
+
+        it "has the right text" do
+          commits = commits_details(base: "v1.4.0", head: "v1.5.0").
+                    gsub("github-redirect.dependabot.com", "github.com")
+          expect(pr_message).
+            to eq(
+              "Bumps [business](https://github.com/gocardless/business) "\
+              "from 1.4.0 to 1.5.0.\n"\
+              "<details>\n"\
+              "<summary>Changelog</summary>\n\n"\
+              "*Sourced from [business's changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
+              "> ## 1.5.0 - June 2, 2015\n"\
+              "> \n"\
+              "> - Add 2016 holiday definitions\n"\
+              "</details>\n"\
+              "#{commits}"\
+              "<br />"
+            )
+        end
       end
 
       context "with a relative link in the changelog" do

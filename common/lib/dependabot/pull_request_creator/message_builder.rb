@@ -37,11 +37,12 @@ module Dependabot
       }x.freeze
 
       attr_reader :source, :dependencies, :files, :credentials,
-                  :pr_message_footer, :author_details, :vulnerabilities_fixed
+                  :pr_message_footer, :author_details, :vulnerabilities_fixed,
+                  :github_link_proxy
 
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_footer: nil, author_details: nil,
-                     vulnerabilities_fixed: {})
+                     vulnerabilities_fixed: {}, github_link_proxy: nil)
         @dependencies          = dependencies
         @files                 = files
         @source                = source
@@ -49,6 +50,7 @@ module Dependabot
         @pr_message_footer     = pr_message_footer
         @author_details        = author_details
         @vulnerabilities_fixed = vulnerabilities_fixed
+        @github_link_proxy     = github_link_proxy
       end
 
       def pr_name
@@ -749,7 +751,7 @@ module Dependabot
           next_char = last_match.post_match.chars.first
 
           sanitized_url =
-            ref.gsub("github.com", "github-redirect.dependabot.com")
+            ref.gsub("github.com", github_link_proxy || "github.com")
           if (previous_char.nil? || previous_char.match?(/\s/)) &&
              (next_char.nil? || next_char.match?(/\s/))
             "[##{last_match.named_captures.fetch('number')}](#{sanitized_url})"
