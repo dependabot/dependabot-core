@@ -16,7 +16,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       pr_message_footer: pr_message_footer,
       author_details: author_details,
       vulnerabilities_fixed: vulnerabilities_fixed,
-      github_link_proxy: github_link_proxy
+      github_redirection_service: github_redirection_service
     )
   end
 
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
-  let(:github_link_proxy) { "github-redirect.dependabot.com" }
+  let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -683,7 +683,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "without a github link proxy" do
-        let(:github_link_proxy) { nil }
+        let(:github_redirection_service) { nil }
 
         it "has the right text" do
           commits = commits_details(base: "v1.4.0", head: "v1.5.0").
