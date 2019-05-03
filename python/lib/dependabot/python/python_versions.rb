@@ -21,7 +21,7 @@ module Dependabot
       # the two pre-installed versions listed first.
       SUPPORTED_VERSIONS_TO_ITERATE =
         [
-          *PRE_INSTALLED_PYTHON_VERSIONS,
+          *PRE_INSTALLED_PYTHON_VERSIONS.select { |v| v.start_with?("3") },
           *SUPPORTED_VERSIONS
         ].freeze
     end
