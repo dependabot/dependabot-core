@@ -144,6 +144,28 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
+    context "with another dependency with an unmet marker" do
+      let(:manifest_fixture_name) { "unmet_marker.in" }
+      let(:generated_fixture_name) { "pip_compile_unmet_marker.txt" }
+
+      it "updates the requirements.txt, keeping the unmet dep out of it" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).to_not include("flaky")
+      end
+    end
+
+    context "with a met marker that forces a difference Python version" do
+      let(:manifest_fixture_name) { "met_marker.in" }
+      let(:generated_fixture_name) { "pip_compile_met_marker.txt" }
+
+      it "updates the requirements.txt, keeping the unmet dep in it" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).to include("flaky")
+      end
+    end
+
     context "with an unsafe dependency" do
       let(:manifest_fixture_name) { "unsafe.in" }
       let(:dependency_name) { "flake8" }

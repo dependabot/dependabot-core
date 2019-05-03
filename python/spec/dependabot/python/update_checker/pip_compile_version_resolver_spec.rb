@@ -283,23 +283,6 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "with a dependency with an unmet marker" do
-      let(:manifest_fixture_name) { "unmet_marker.in" }
-      let(:generated_fixture_name) { "pip_compile_unmet_marker.txt" }
-      let(:dependency_name) { "flaky" }
-      let(:dependency_version) { nil }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: nil,
-          groups: [],
-          source: nil
-        }]
-      end
-
-      it { is_expected.to be_nil }
-    end
-
     context "with a dependency that is 'unsafe' to lock" do
       let(:manifest_fixture_name) { "setuptools.in" }
       let(:generated_fixture_name) { "pip_compile_setuptools.txt" }

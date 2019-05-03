@@ -550,6 +550,7 @@ module Dependabot
           # (e.g., Django 2.x implies Python 3)
           @python_version ||=
             user_specified_python_version ||
+            python_version_from_compiled_requirements ||
             PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
         end
 
@@ -569,6 +570,34 @@ module Dependabot
           runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
+        def python_version_from_compiled_requirements
+          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
+            version = Python::Version.new(version_string)
+            compiled_file_python_requirement_markers.all? do |req|
+              req.satisfied_by?(version)
+            end
+          end
+        end
+
+        def compiled_file_python_requirement_markers
+          @python_requirement_strings ||=
+            compiled_files.flat_map do |file|
+              file.content.lines.
+                select { |l| l.include?(";") && l.include?("python") }.
+                map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
+                compact.
+                map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
+                select do |r|
+                  requirement_class.new(r)
+                  true
+                rescue Gem::Requirement::BadRequirementError
+                  false
+                end
+            end
+
+          @python_requirement_strings.map { |r| requirement_class.new(r) }
+        end
+
         def pyenv_versions
           @pyenv_versions ||= run_command("pyenv install --list")
         end
@@ -585,6 +614,10 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".in") }
         end
 
+        def compiled_files
+          dependency_files.select { |f| f.name.end_with?(".txt") }
+        end
+
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
@@ -595,6 +628,10 @@ module Dependabot
 
         def runtime_file
           dependency_files.find { |f| f.name.end_with?("runtime.txt") }
+        end
+
+        def requirement_class
+          Python::Requirement
         end
       end
       # rubocop:enable Metrics/ClassLength
