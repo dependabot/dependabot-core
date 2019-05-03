@@ -301,5 +301,4 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("docker", Dependabot::Docker::UpdateChecker)
+Dependabot::UpdateCheckers.register("docker", Dependabot::Docker::UpdateChecker)

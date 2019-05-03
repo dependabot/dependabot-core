@@ -40,6 +40,9 @@ module Dependabot
             next unless FROM_LINE.match?(line)
 
             parsed_from_line = FROM_LINE.match(line).named_captures
+            if parsed_from_line["registry"] == "docker.io"
+              parsed_from_line["registry"] = nil
+            end
 
             version = version_from(parsed_from_line)
             next unless version
@@ -161,5 +164,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("docker", Dependabot::Docker::FileParser)
+Dependabot::FileParsers.register("docker", Dependabot::Docker::FileParser)
