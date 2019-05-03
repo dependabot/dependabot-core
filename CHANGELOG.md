@@ -1,3 +1,9 @@
+## v0.106.31, 3 May 2019
+
+- Rename github_link_proxy to github_redirection_service
+- Python: Don't prioritize Python 2 above lower Python 3 versions
+- Python: Bump poetry from 0.12.14 to 0.12.15 in /python/helpers
+
 ## v0.106.30, 3 May 2019
 
 - Python: Use python version indicated by markers in compiled pip-compile files
