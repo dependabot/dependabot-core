@@ -1,3 +1,9 @@
+## v0.106.30, 3 May 2019
+
+- Python: Use python version indicated by markers in compiled pip-compile files
+- Allow a custom GitHub link proxy to be provided to MessageBuilder
+- Update Rust specs
+
 ## v0.106.29, 2 May 2019
 
 - Handle issue linking of issue numbers prefixed with `\#`
