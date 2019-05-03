@@ -1,3 +1,7 @@
+## v0.106.32, 3 May 2019
+
+- Docker: Handle v1 dockerhub references
+
 ## v0.106.31, 3 May 2019
 
 - Rename github_link_proxy to github_redirection_service
