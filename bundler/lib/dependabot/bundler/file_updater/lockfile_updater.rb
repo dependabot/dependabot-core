@@ -90,6 +90,10 @@ module Dependabot
                   )
                 end
 
+                # Equivalent of running --full-index. Ensures recent
+                # dependencies are always fetched, and fixes Artifactory issues
+                ::Bundler::Fetcher.disable_endpoint
+
                 generate_lockfile
               end
             end
