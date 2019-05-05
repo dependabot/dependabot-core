@@ -1,3 +1,7 @@
+## v0.106.33, 5 May 2019
+
+- Bundler: Use --full-index when checking for updates and updating files
+
 ## v0.106.32, 3 May 2019
 
 - Docker: Handle v1 dockerhub references
