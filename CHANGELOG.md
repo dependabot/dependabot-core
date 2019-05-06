@@ -1,3 +1,7 @@
+## v0.106.34, 6 May 2019
+
+- Python: Downgrade Poetry to avoid bug
+
 ## v0.106.33, 5 May 2019
 
 - Bundler: Use --full-index when checking for updates and updating files
