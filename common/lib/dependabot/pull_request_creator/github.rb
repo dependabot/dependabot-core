@@ -172,26 +172,28 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        retry unless retry_count >= 2
+        retry_count < 2 ? retry : raise
       end
 
       def create_branch(commit)
-        github_client_for_source.create_ref(
-          source.repo,
-          "heads/#{branch_name}",
-          commit.sha
-        )
-      rescue Octokit::UnprocessableEntity => e
-        # Return quietly in the case of a race
-        return nil if e.message.match?(/Reference already exists/i)
-        raise if @retrying_branch_creation
+        ref = "heads/#{branch_name}"
 
-        @retrying_branch_creation = true
+        begin
+          github_client_for_source.create_ref(source.repo, ref, commit.sha)
+        rescue Octokit::UnprocessableEntity => e
+          # Return quietly in the case of a race
+          return nil if e.message.match?(/Reference already exists/i)
 
-        # Branch creation will fail if a branch called `dependabot` already
-        # exists, since git won't be able to create a folder with the same name
-        @branch_name = SecureRandom.hex[0..3] + @branch_name
-        retry
+          retrying_branch_creation ||= false
+          raise if retrying_branch_creation
+
+          retrying_branch_creation = true
+
+          # Branch creation will fail if a branch called `dependabot` already
+          # exists, since git won't be able to create a dir with the same name
+          ref = "heads/#{SecureRandom.hex[0..3] + branch_name}"
+          retry
+        end
       end
 
       def update_branch(commit)

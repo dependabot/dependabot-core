@@ -228,6 +228,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "when creating the branch fails" do
+      before do
+        stub_request(:post, "#{repo_api_url}/git/refs").
+          to_return(status: 422,
+                    body: fixture("github", "create_ref_unhandled_error.json"),
+                    headers: json_header)
+      end
+
+      it "raises a normal error" do
+        expect { creator.create }.to raise_error(Octokit::UnprocessableEntity)
+      end
+    end
+
     context "when the branch already exists" do
       before do
         stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
