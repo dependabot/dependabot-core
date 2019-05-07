@@ -1,13 +1,8 @@
 ## v0.106.35, 7 May 2019
 
 - Add longer sleep when creating a commit fails
-- Merge pull request #1142 from dependabot/dependabot/pip/python/helpers/pip-19.1.1
-- Bump pip from 19.1 to 19.1.1 in /python/helpers
+- Python: Bump pip from 19.1 to 19.1.1 in /python/helpers
 - Raise error for unprocessible branch names
-- v0.106.34
-- Python: Downgrade Poetry to avoid bug
-- Merge pull request #1141 from dependabot/dependabot/composer/composer/helpers/friendsofphp/php-cs-fixer-2.15.0
-- Bump friendsofphp/php-cs-fixer in /composer/helpers
 
 ## v0.106.34, 6 May 2019
 
