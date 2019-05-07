@@ -131,7 +131,7 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 3
 
-          sleep(rand(0.9))
+          sleep(rand(1..1.99))
           retry
         end
       end
