@@ -248,46 +248,39 @@ module Dependabot
           message.include?('Command "python setup.py egg_info" failed')
         end
 
-        # rubocop:disable Metrics/AbcSize
         def write_temporary_dependency_files(updated_req: nil,
                                              update_requirement: true)
           dependency_files.each do |file|
-            next if irrelevant_pyproject?(file)
-
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content =
               if update_requirement then update_req_file(file, updated_req)
               else file.content
               end
-            File.write(file.name, updated_content)
+            File.write(path, updated_content)
           end
 
           # Overwrite the .python-version with updated content
           File.write(".python-version", python_version)
 
           setup_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, sanitized_setup_file_content(file))
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, sanitized_setup_file_content(file))
           end
 
           setup_cfg_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, "[metadata]\nname = sanitized-package\n")
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, "[metadata]\nname = sanitized-package\n")
           end
         end
-        # rubocop:enable Metrics/AbcSize
 
         def write_original_manifest_files
           pip_compile_files.each do |file|
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
             File.write(file.name, file.content)
           end
-        end
-
-        def irrelevant_pyproject?(file)
-          return false unless file.name == "pyproject.toml"
-
-          !file.content.include?("build-backend")
         end
 
         def install_required_python
@@ -419,7 +412,6 @@ module Dependabot
           updated_files =
             dependency_files.map do |file|
               next file if file.name == ".python-version"
-              next file if file.name == "pyproject.toml"
 
               updated_file = file.dup
               updated_file.content = File.read(file.name)

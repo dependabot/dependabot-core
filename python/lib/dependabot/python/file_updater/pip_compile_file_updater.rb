@@ -205,30 +205,25 @@ module Dependabot
 
         def write_updated_dependency_files
           dependency_files.each do |file|
-            next if irrelevant_pyproject?(file)
-
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, freeze_dependency_requirement(file))
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, freeze_dependency_requirement(file))
           end
 
           # Overwrite the .python-version with updated content
           File.write(".python-version", python_version)
 
           setup_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, sanitized_setup_file_content(file))
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, sanitized_setup_file_content(file))
           end
 
           setup_cfg_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, "[metadata]\nname = sanitized-package\n")
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, "[metadata]\nname = sanitized-package\n")
           end
-        end
-
-        def irrelevant_pyproject?(file)
-          return false unless file.name == "pyproject.toml"
-
-          !file.content.include?("build-backend")
         end
 
         def install_required_python
