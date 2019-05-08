@@ -72,7 +72,6 @@ module Dependabot
       end
 
       def get(url)
-        a = credentials&.fetch("username")
         response = Excon.get(
           url,
           user: credentials&.fetch("username"),
