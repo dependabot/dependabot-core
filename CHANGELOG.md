@@ -1,3 +1,8 @@
+## v0.106.38, 8 May 2019
+
+- Cache that a branch can't be found
+- Don't cache a single branch_ref now that branch_exists? takes an argument
+
 ## v0.106.37, 8 May 2019
 
 - Bundler: Always include spaces after commas
