@@ -1,3 +1,8 @@
+## v0.106.36, 8 May 2019
+
+- Use updated branch name when creating PRs
+- Python: Revert "Ignore irrelevant pyproject files to avoid pep517 warnings"
+
 ## v0.106.35, 7 May 2019
 
 - Add longer sleep when creating a commit fails
