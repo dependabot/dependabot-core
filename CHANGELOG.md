@@ -1,3 +1,7 @@
+## v0.106.37, 8 May 2019
+
+- Bundler: Always include spaces after commas
+
 ## v0.106.36, 8 May 2019
 
 - Use updated branch name when creating PRs
