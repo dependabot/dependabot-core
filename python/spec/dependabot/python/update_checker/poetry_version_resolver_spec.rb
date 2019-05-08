@@ -113,6 +113,13 @@ RSpec.describe namespace::PoetryVersionResolver do
       # Resolution blocked by requests
       it { is_expected.to eq(Gem::Version.new("2.5")) }
 
+      context "that can be updated, but not to the latest version" do
+        let(:pyproject_fixture_name) { "latest_subdep_blocked.toml" }
+        let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
+
+        it { is_expected.to eq(Gem::Version.new("2.6")) }
+      end
+
       context "that shouldn't be in the lockfile at all" do
         let(:dependency_name) { "cryptography" }
         let(:dependency_version) { "2.4.2" }
@@ -120,7 +127,10 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:updated_requirement) { ">= 2.4.2, <= 2.5" }
         let(:lockfile_fixture_name) { "extra_dependency.lock" }
 
-        it { is_expected.to be_nil }
+        # Ideally we would ignore sub-dependencies that shouldn't be in the
+        # lockfile, but determining that is hard. It's fine for us to update
+        # them instead - they'll be removed in another (unrelated) PR
+        it { is_expected.to eq(Gem::Version.new("2.5")) }
       end
     end
 
@@ -202,11 +212,33 @@ RSpec.describe namespace::PoetryVersionResolver do
     context "that is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
       it { is_expected.to eq(true) }
+
+      context "with a subdependency" do
+        let(:dependency_name) { "idna" }
+        let(:dependency_version) { "2.5" }
+        let(:dependency_requirements) { [] }
+        let(:pyproject_fixture_name) { "latest_subdep_blocked.toml" }
+        let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
+        let(:version) { Gem::Version.new("2.6") }
+
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "that is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
       it { is_expected.to eq(false) }
+
+      context "with a subdependency" do
+        let(:dependency_name) { "idna" }
+        let(:dependency_version) { "2.5" }
+        let(:dependency_requirements) { [] }
+        let(:pyproject_fixture_name) { "latest_subdep_blocked.toml" }
+        let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
+        let(:version) { Gem::Version.new("2.7") }
+
+        it { is_expected.to eq(false) }
+      end
 
       context "because the original manifest isn't resolvable" do
         let(:dependency_files) { [pyproject] }

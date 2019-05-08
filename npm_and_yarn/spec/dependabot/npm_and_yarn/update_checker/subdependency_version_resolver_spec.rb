@@ -94,7 +94,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "acorn",
-          version: "5.1.1",
+          version: "5.5.3",
           requirements: [],
           package_manager: "npm_and_yarn"
         )
@@ -135,7 +135,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "acorn",
-          version: "5.2.1",
+          version: "5.5.3",
           requirements: [],
           package_manager: "npm_and_yarn"
         )
@@ -165,7 +165,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "acorn",
-          version: "5.2.1",
+          version: "5.5.3",
           requirements: [],
           package_manager: "npm_and_yarn"
         )

@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         }
       end
 
-      it { is_expected.to eq("74dc0260efd2c5e17c35643a2b47dc508ec823fd") }
+      it { is_expected.to eq("eda2c387d1f4368933ebd53b89850bcdf11f1560") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -280,15 +280,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to_return(status: 403)
         end
 
-        # TODO: make non-pending once we're using a Cargo release that includes
-        #       this PR: https://github.com/rust-lang/cargo/pull/6681
-        #       Without that change to Cargo, this test hangs indefinitely.
-        skip "raises a GitDependenciesNotReachable error" do
+        it "raises a GitDependenciesNotReachable error" do
           expect { subject }.
             to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls).
                 to eq(["https://github.com/greysteil/utf8-ranges"])
             end
+        end
+
+        context "but is skipped by the parser (because it has multiple URLs)" do
+          let(:unprepared_dependency_files) do
+            [manifest, workspace_child, workspace_child2]
+          end
+          let(:manifest_fixture_name) { "workspace_root_multiple" }
+          let(:workspace_child) do
+            Dependabot::DependencyFile.new(
+              name: "lib/sub_crate/Cargo.toml",
+              content: fixture("manifests", "workspace_child_with_git")
+            )
+          end
+          let(:workspace_child2) do
+            Dependabot::DependencyFile.new(
+              name: "lib/sub_crate2/Cargo.toml",
+              content:
+                fixture("manifests", "workspace_child_with_git_unreachable")
+            )
+          end
+
+          it "raises a GitDependenciesNotReachable error" do
+            expect { subject }.
+              to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+                expect(error.dependency_urls).
+                  to eq(["https://github.com/greysteil/utf8-ranges"])
+              end
+          end
         end
       end
 
@@ -366,7 +391,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:dependency_version) { "0.10.13" }
         let(:requirements) { [] }
 
-        it { is_expected.to eq(Gem::Version.new("0.10.15")) }
+        it { is_expected.to eq(Gem::Version.new("0.10.16")) }
       end
     end
 

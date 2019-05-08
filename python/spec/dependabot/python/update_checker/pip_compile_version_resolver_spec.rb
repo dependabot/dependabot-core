@@ -271,23 +271,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
 
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
-    end
 
-    context "with a dependency with an unmet marker" do
-      let(:manifest_fixture_name) { "unmet_marker.in" }
-      let(:generated_fixture_name) { "pip_compile_unmet_marker.txt" }
-      let(:dependency_name) { "flaky" }
-      let(:dependency_version) { nil }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: nil,
-          groups: [],
-          source: nil
-        }]
+      context "that is superfluous" do
+        let(:dependency_name) { "requests" }
+        let(:dependency_version) { "2.18.0" }
+        let(:dependency_requirements) { [] }
+        let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
+        let(:generated_fixture_name) { "pip_compile_unpinned_rogue.txt" }
+
+        it { is_expected.to be_nil }
       end
-
-      it { is_expected.to be_nil }
     end
 
     context "with a dependency that is 'unsafe' to lock" do

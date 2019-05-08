@@ -1,3 +1,128 @@
+## v0.106.37, 8 May 2019
+
+- Bundler: Always include spaces after commas
+
+## v0.106.36, 8 May 2019
+
+- Use updated branch name when creating PRs
+- Python: Revert "Ignore irrelevant pyproject files to avoid pep517 warnings"
+
+## v0.106.35, 7 May 2019
+
+- Add longer sleep when creating a commit fails
+- Python: Bump pip from 19.1 to 19.1.1 in /python/helpers
+- Raise error for unprocessible branch names
+
+## v0.106.34, 6 May 2019
+
+- Python: Downgrade Poetry to avoid bug
+
+## v0.106.33, 5 May 2019
+
+- Bundler: Use --full-index when checking for updates and updating files
+
+## v0.106.32, 3 May 2019
+
+- Docker: Handle v1 dockerhub references
+
+## v0.106.31, 3 May 2019
+
+- Rename github_link_proxy to github_redirection_service
+- Python: Don't prioritize Python 2 above lower Python 3 versions
+- Python: Bump poetry from 0.12.14 to 0.12.15 in /python/helpers
+
+## v0.106.30, 3 May 2019
+
+- Python: Use python version indicated by markers in compiled pip-compile files
+- Allow a custom GitHub link proxy to be provided to MessageBuilder
+- Update Rust specs
+
+## v0.106.29, 2 May 2019
+
+- Handle issue linking of issue numbers prefixed with `\#`
+- Don't sanitize @-mentions in code quotes
+
+## v0.106.28, 1 May 2019
+
+- Python: Handle sub-dependencies that are removed from the lockfile during update
+
+## v0.106.27, 30 April 2019
+
+- Allow a custom prefix to be passed to BranchNamer
+
+## v0.106.26, 30 April 2019
+
+- Gradle: Parse and update plugin versions
+
+## v0.106.25, 30 April 2019
+
+- Composer: Handle people putting strange things in their repositories hash/array
+- Fix error-related rubocops
+
+## v0.106.24, 29 April 2019
+
+- Cargo: Handle private git dependencies that aren't parsed
+
+## v0.106.23, 29 April 2019
+
+- Python: Respect Python version specified in runtime.txt
+
+## v0.106.22, 29 April 2019
+
+- PHP: Fetch path dependencies specified in a hash (rather than an array)
+
+## v0.106.21, 29 April 2019
+
+- Python: Look for .python-version file at top-level, too
+
+## v0.106.20, 28 April 2019
+
+- Rust: Handle a resolvability issue
+- Rust: Require a unique source (not just source type)
+- Upgrade to PHP 7.3
+
+## v0.106.19, 28 April 2019
+
+- Python: Use Python 3.7.3 instead of 2.6.8
+- Python: Bump poetry from 0.12.13 to 0.12.14 in /python/helpers
+
+## v0.106.18, 26 April 2019
+
+- Bump poetry from 0.12.12 to 0.12.13 in /python/helpers
+
+## v0.106.17, 26 April 2019
+
+- Update changelog finder to look in GitLab and Bitbucket directories, too
+- Convert GitLab API types to match GitHub
+
+## v0.106.16, 26 April 2019
+
+- Sanitize all tags in commit messages
+
+## v0.106.15, 26 April 2019
+
+- Clean up tag sanitization and details tag creation
+
+## v0.106.14, 26 April 2019
+
+- Escape more tags when sanitizing lines
+- Replace empty links (caused by rst processing)
+- NPM: Remove extraneous git url fix
+
+## v0.106.13, 26 April 2019
+
+- Docker: Make self.updated_files_regex case insensitive
+
+## v0.106.12, 25 April 2019
+
+- NPM: Preserve indentation of lockfiles
+
+## v0.106.11, 25 April 2019
+
+- Python: Update to a specific version when updating Pipenv subdependencies
+- Python: Update poetry sub-dependencies to a specific version
+- Require minimum file size for changelogs
+
 ## v0.106.10, 25 April 2019
 
 - Add php7.2-mysql providing pdo-mysql

@@ -191,10 +191,11 @@ module Dependabot
               updated_requirement.split(",").
               map do |r|
                 req_string = serialized_req(r, use_equality_operator)
-                %(#{open_quote}#{req_string}#{close_quote})
+                req_string = %(#{open_quote}#{req_string}#{close_quote})
+                req_string = req_string.delete(" ") unless space_after_specifier
+                req_string
               end.join(", ")
 
-            new_requirement_string.delete!(" ") unless space_after_specifier
             new_requirement_string
           end
 

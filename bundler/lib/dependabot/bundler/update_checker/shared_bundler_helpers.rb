@@ -36,7 +36,6 @@ module Dependabot
         #########################
 
         def in_a_temporary_bundler_context(error_handling: true)
-          base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do |tmp_dir|
             write_temporary_dependency_files
 
@@ -58,6 +57,10 @@ module Dependabot
                 )
               end
 
+              # Equivalent of running --full-index. Ensures recent dependencies
+              # are always fetched, and fixes Artifactory issues
+              ::Bundler::Fetcher.disable_endpoint
+
               yield
             end
           end
@@ -68,10 +71,11 @@ module Dependabot
             sleep(rand(1.0..5.0)) && retry
           end
 
-          raise unless error_handling
+          error_handling ? handle_bundler_errors(e) : raise
+        end
 
-          # Raise more descriptive errors
-          handle_bundler_errors(e)
+        def base_directory
+          dependency_files.first.directory
         end
 
         def retryable_error?(error)

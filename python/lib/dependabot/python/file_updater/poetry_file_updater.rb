@@ -120,26 +120,48 @@ module Dependabot
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
           dependencies.each do |dep|
-            %w(dependencies dev-dependencies).each do |type|
-              names = poetry_object[type]&.keys || []
-              pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name
-
-              if poetry_object[type][pkg_name].is_a?(Hash)
-                poetry_object[type][pkg_name]["version"] = dep.version
-              else
-                poetry_object[type][pkg_name] = dep.version
-              end
+            if dep.requirements.find { |r| r[:file] == pyproject.name }
+              lock_declaration_to_new_version!(poetry_object, dep)
+            else
+              create_declaration_at_new_version!(poetry_object, dep)
             end
           end
 
           TomlRB.dump(pyproject_object)
         end
 
+        def lock_declaration_to_new_version!(poetry_object, dep)
+          %w(dependencies dev-dependencies).each do |type|
+            names = poetry_object[type]&.keys || []
+            pkg_name = names.find { |nm| normalise(nm) == dep.name }
+            next unless pkg_name
+
+            if poetry_object[type][pkg_name].is_a?(Hash)
+              poetry_object[type][pkg_name]["version"] = dep.version
+            else
+              poetry_object[type][pkg_name] = dep.version
+            end
+          end
+        end
+
+        def create_declaration_at_new_version!(poetry_object, dep)
+          poetry_object[subdep_type] ||= {}
+          poetry_object[subdep_type][dependency.name] = dep.version
+        end
+
         def add_private_sources(pyproject_content)
           PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             replace_sources(credentials)
+        end
+
+        def subdep_type
+          category =
+            TomlRB.parse(lockfile.content).fetch("package", []).
+            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
+            fetch("category")
+
+          category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
         def sanitize(pyproject_content)
@@ -210,11 +232,13 @@ module Dependabot
             poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
 
-          return python_version_file_version unless requirement
+          unless requirement
+            return python_version_file_version || runtime_file_python_version
+          end
 
           requirements = Python::Requirement.requirements_array(requirement)
 
-          PythonVersions::SUPPORTED_VERSIONS.find do |version|
+          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
             requirements.any? do |r|
               r.satisfied_by?(Python::Version.new(version))
             end
@@ -228,6 +252,12 @@ module Dependabot
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
         def pyenv_versions
@@ -295,6 +325,10 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
       end
     end

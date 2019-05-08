@@ -70,6 +70,7 @@ module Dependabot
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
+                  write_original_manifest_files unless dependency.top_level?
                   run_pip_compile_command(
                     "pyenv exec pip-compile --allow-unsafe "\
                      "--build-isolation #{filename}"
@@ -170,13 +171,13 @@ module Dependabot
               end
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed => error
-              unless error.message.include?("Could not find a version") ||
-                     error.message.include?("UnsupportedConstraint")
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              unless e.message.include?("Could not find a version") ||
+                     e.message.include?("UnsupportedConstraint")
                 raise
               end
 
-              msg = clean_error_message(error.message)
+              msg = clean_error_message(e.message)
               raise if msg.empty?
 
               raise DependencyFileNotResolvable, msg
@@ -205,13 +206,13 @@ module Dependabot
         def run_pip_compile_command(command)
           run_command("pyenv local #{python_version}")
           run_command(command)
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          original_error ||= error
-          msg = error.message
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          original_error ||= e
+          msg = e.message
 
           relevant_error =
             if error_suggests_bad_python_version?(msg) then original_error
-            else error
+            else e
             end
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)
@@ -247,39 +248,39 @@ module Dependabot
           message.include?('Command "python setup.py egg_info" failed')
         end
 
-        # rubocop:disable Metrics/AbcSize
         def write_temporary_dependency_files(updated_req: nil,
                                              update_requirement: true)
           dependency_files.each do |file|
-            next if irrelevant_pyproject?(file)
-
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content =
               if update_requirement then update_req_file(file, updated_req)
               else file.content
               end
-            File.write(file.name, updated_content)
+            File.write(path, updated_content)
           end
 
           # Overwrite the .python-version with updated content
           File.write(".python-version", python_version)
 
           setup_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, sanitized_setup_file_content(file))
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, sanitized_setup_file_content(file))
           end
 
           setup_cfg_files.each do |file|
-            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
-            File.write(file.name, "[metadata]\nname = sanitized-package\n")
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, "[metadata]\nname = sanitized-package\n")
           end
         end
-        # rubocop:enable Metrics/AbcSize
 
-        def irrelevant_pyproject?(file)
-          return false unless file.name == "pyproject.toml"
-
-          !file.content.include?("build-backend")
+        def write_original_manifest_files
+          pip_compile_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
         end
 
         def install_required_python
@@ -411,7 +412,6 @@ module Dependabot
           updated_files =
             dependency_files.map do |file|
               next file if file.name == ".python-version"
-              next file if file.name == "pyproject.toml"
 
               updated_file = file.dup
               updated_file.content = File.read(file.name)
@@ -430,16 +430,52 @@ module Dependabot
           # (e.g., Django 2.x implies Python 3)
           @python_version ||=
             user_specified_python_version ||
+            python_version_matching_requirements ||
             PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
         end
 
         def user_specified_python_version
           file_version = python_version_file&.content&.strip
+          file_version ||= runtime_file_python_version
 
           return unless file_version
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
+        end
+
+        def python_version_matching_requirements
+          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
+            version = Python::Version.new(version_string)
+            compiled_file_python_requirement_markers.all? do |req|
+              req.satisfied_by?(version)
+            end
+          end
+        end
+
+        def compiled_file_python_requirement_markers
+          @python_requirement_strings ||=
+            compiled_files.flat_map do |file|
+              file.content.lines.
+                select { |l| l.include?(";") && l.include?("python") }.
+                map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
+                compact.
+                map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
+                select do |r|
+                  requirement_class.new(r)
+                  true
+                rescue Gem::Requirement::BadRequirementError
+                  false
+                end
+            end
+
+          @python_requirement_strings.map { |r| requirement_class.new(r) }
         end
 
         def pyenv_versions
@@ -458,12 +494,24 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".in") }
         end
 
+        def compiled_files
+          dependency_files.select { |f| f.name.end_with?(".txt") }
+        end
+
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
+        end
+
+        def requirement_class
+          Python::Requirement
         end
       end
       # rubocop:enable Metrics/ClassLength

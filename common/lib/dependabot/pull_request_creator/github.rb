@@ -122,8 +122,8 @@ module Dependabot
             base_commit,
             options
           )
-        rescue Octokit::UnprocessableEntity => error
-          raise unless error.message == "Tree SHA does not exist"
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.message == "Tree SHA does not exist"
 
           # Sometimes a race condition on GitHub's side means we get an error
           # here. No harm in retrying if we do.
@@ -131,7 +131,7 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 3
 
-          sleep(rand(0.9))
+          sleep(rand(1..1.99))
           retry
         end
       end
@@ -172,26 +172,31 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        retry unless retry_count >= 2
+        retry_count < 2 ? retry : raise
       end
 
       def create_branch(commit)
-        github_client_for_source.create_ref(
-          source.repo,
-          "heads/#{branch_name}",
-          commit.sha
-        )
-      rescue Octokit::UnprocessableEntity => error
-        # Return quietly in the case of a race
-        return nil if error.message.match?(/Reference already exists/i)
-        raise if @retrying_branch_creation
+        ref = "heads/#{branch_name}"
 
-        @retrying_branch_creation = true
+        begin
+          branch =
+            github_client_for_source.create_ref(source.repo, ref, commit.sha)
+          @branch_name = ref.gsub(%r{^heads/}, "")
+          branch
+        rescue Octokit::UnprocessableEntity => e
+          # Return quietly in the case of a race
+          return nil if e.message.match?(/Reference already exists/i)
 
-        # Branch creation will fail if a branch called `dependabot` already
-        # exists, since git won't be able to create a folder with the same name
-        @branch_name = SecureRandom.hex[0..3] + @branch_name
-        retry
+          retrying_branch_creation ||= false
+          raise if retrying_branch_creation
+
+          retrying_branch_creation = true
+
+          # Branch creation will fail if a branch called `dependabot` already
+          # exists, since git won't be able to create a dir with the same name
+          ref = "heads/#{SecureRandom.hex[0..3] + branch_name}"
+          retry
+        end
       end
 
       def update_branch(commit)
@@ -220,9 +225,9 @@ module Dependabot
           reviewers: reviewers_hash[:reviewers] || [],
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
-      rescue Octokit::UnprocessableEntity => error
-        return if error.message.include?("not a collaborator")
-        return if error.message.include?("Could not resolve to a node")
+      rescue Octokit::UnprocessableEntity => e
+        return if e.message.include?("not a collaborator")
+        return if e.message.include?("Could not resolve to a node")
 
         raise
       end
@@ -244,8 +249,8 @@ module Dependabot
           pull_request.number,
           milestone: milestone
         )
-      rescue Octokit::UnprocessableEntity => error
-        raise unless error.message.include?("code: invalid")
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message.include?("code: invalid")
       end
 
       def create_pull_request
@@ -256,12 +261,12 @@ module Dependabot
           pr_name,
           pr_description
         )
-      rescue Octokit::UnprocessableEntity => error
+      rescue Octokit::UnprocessableEntity => e
         # Ignore races that we lose
-        return if error.message.include?("pull request already exists")
+        return if e.message.include?("pull request already exists")
 
         # Ignore cases where the target branch has been deleted
-        return if error.message.include?("field: base") &&
+        return if e.message.include?("field: base") &&
                   source.branch &&
                   !branch_exists?(source.branch)
 

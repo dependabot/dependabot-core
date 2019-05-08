@@ -15,7 +15,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_footer: pr_message_footer,
       author_details: author_details,
-      vulnerabilities_fixed: vulnerabilities_fixed
+      vulnerabilities_fixed: vulnerabilities_fixed,
+      github_redirection_service: github_redirection_service
     )
   end
 
@@ -47,6 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_footer) { nil }
   let(:author_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
+  let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -84,7 +86,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "gocardless/business/issues/8) from gocardless/rename-sepa-to-ecb\n"\
     "- [`d2eb29b`](https://github.com/gocardless/business/commit/"\
     "d2eb29beda934c14220146c82f830de2edd63a25) "\
-    "Remove SEPA calendar (replaced by TARGET)\n"\
+    "[12](https://github-redirect.dependabot.com/gocardless/business/"\
+    "issues/12) Remove SEPA calendar (replaced by TARGET)\n"\
     "- See full diff in [compare view](https://github.com/gocardless/business/"\
     "compare/#{base}...#{head})\n"\
     "</details>\n"
@@ -677,6 +680,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
             "<br />"
           )
+      end
+
+      context "without a github link proxy" do
+        let(:github_redirection_service) { nil }
+
+        it "has the right text" do
+          commits = commits_details(base: "v1.4.0", head: "v1.5.0").
+                    gsub("github-redirect.dependabot.com", "github.com")
+          expect(pr_message).
+            to eq(
+              "Bumps [business](https://github.com/gocardless/business) "\
+              "from 1.4.0 to 1.5.0.\n"\
+              "<details>\n"\
+              "<summary>Changelog</summary>\n\n"\
+              "*Sourced from [business's changelog](https://github.com/"\
+              "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
+              "> ## 1.5.0 - June 2, 2015\n"\
+              "> \n"\
+              "> - Add 2016 holiday definitions\n"\
+              "</details>\n"\
+              "#{commits}"\
+              "<br />"
+            )
+        end
       end
 
       context "with a relative link in the changelog" do

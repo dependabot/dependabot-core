@@ -18,9 +18,10 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm");
 const installer = require("npm/lib/install");
+const detectIndent = require("detect-indent");
 const { muteStderr, runAsync } = require("./helpers.js");
 
-async function updateDependencyFiles(directory, dependencies, lockfileName) {
+async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = fileName =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -76,9 +77,12 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
   try {
     // Fix already present git sub-dependency with invalid "from" and "requires"
     updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
+
     await runAsync(initialInstaller, initialInstaller.run, []);
+
     // Fix npm5 lockfiles where invalid "from" is introduced after first install
     updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
+
     await runAsync(cleanupInstaller, cleanupInstaller.run, []);
   } finally {
     unmute();
@@ -91,10 +95,11 @@ async function updateDependencyFiles(directory, dependencies, lockfileName) {
 
 function updateLockfileWithValidGitUrls(lockfilePath) {
   const lockfile = fs.readFileSync(lockfilePath).toString();
+  const indent = detectIndent(lockfile).indent || "  ";
   const updatedLockfileObject = removeInvalidGitUrls(JSON.parse(lockfile));
   fs.writeFileSync(
     lockfilePath,
-    JSON.stringify(updatedLockfileObject, null, 2)
+    JSON.stringify(updatedLockfileObject, null, indent)
   );
 }
 

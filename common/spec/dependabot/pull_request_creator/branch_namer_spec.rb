@@ -64,6 +64,20 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
+    context "with a custom prefix" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          prefix: prefix
+        )
+      end
+      let(:prefix) { "myapp" }
+
+      it { is_expected.to eq("myapp/dummy/business-1.5.0") }
+    end
+
     context "with a target branch" do
       let(:target_branch) { "my-branch" }
 

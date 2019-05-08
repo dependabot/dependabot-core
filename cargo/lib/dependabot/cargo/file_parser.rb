@@ -33,9 +33,9 @@ module Dependabot
         dependencies.reject! { |d| patched_dependencies.include?(d.name) }
 
         # TODO: Currently, Dependabot can't handle dependencies that have
-        # multiple source types. Fix that!
+        # multiple sources. Fix that!
         dependencies.reject do |dep|
-          dep.requirements.map { |r| r.dig(:source, :type) }.uniq.count > 1
+          dep.requirements.map { |r| r.fetch(:source) }.uniq.count > 1
         end
       end
 

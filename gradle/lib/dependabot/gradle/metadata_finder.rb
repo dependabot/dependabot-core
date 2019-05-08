@@ -99,7 +99,11 @@ module Dependabot
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        artifact_id = dependency.name.split(":").last
+        artifact_id =
+          if plugin? then "#{dependency.name}.gradle.plugin"
+          else dependency.name.split(":").last
+          end
+
         response = Excon.get(
           "#{maven_repo_dependency_url}/"\
           "#{dependency.version}/"\
@@ -146,9 +150,16 @@ module Dependabot
       end
 
       def maven_repo_dependency_url
-        group_id, artifact_id = dependency.name.split(":")
+        group_id, artifact_id =
+          if plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
+          else dependency.name.split(":")
+          end
 
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
+      end
+
+      def plugin?
+        dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
       end
 
       def auth_details

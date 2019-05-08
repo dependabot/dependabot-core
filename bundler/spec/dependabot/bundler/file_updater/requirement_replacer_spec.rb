@@ -51,6 +51,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
 
+      context "when the declaration changes from one to many requirements" do
+        let(:dependency_name) { "devise" }
+        let(:updated_requirement) { ">=3.2, <5.0" }
+        let(:content) { %(gem "devise", "~>3.2") }
+
+        it "should include spaces between enumerated requirements" do
+          is_expected.to include(%(gem "devise", ">=3.2", "<5.0"))
+        end
+      end
+
       context "within a source block" do
         let(:content) do
           "source 'https://example.com' do\n"\

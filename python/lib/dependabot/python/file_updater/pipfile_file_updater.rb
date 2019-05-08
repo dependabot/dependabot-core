@@ -147,8 +147,9 @@ module Dependabot
             %w(packages dev-packages).each do |type|
               names = pipfile_object[type]&.keys || []
               pkg_name = names.find { |nm| normalise(nm) == dep.name }
-              next unless pkg_name
+              next unless pkg_name || subdep_type?(type)
 
+              pkg_name ||= dependency.name
               if pipfile_object[type][pkg_name].is_a?(Hash)
                 pipfile_object[type][pkg_name]["version"] =
                   "==#{dep.version}"
@@ -159,6 +160,18 @@ module Dependabot
           end
 
           TomlRB.dump(pipfile_object)
+        end
+
+        def subdep_type?(type)
+          return false if dependency.top_level?
+
+          lockfile_type = Python::FileParser::DEPENDENCY_GROUP_KEYS.
+                          find { |i| i.fetch(:pipfile) == type }.
+                          fetch(:lockfile)
+
+          JSON.parse(lockfile.content).
+            fetch(lockfile_type, {}).
+            keys.any? { |k| normalise(k) == dependency.name }
         end
 
         def add_private_sources(pipfile_content)
@@ -376,7 +389,7 @@ module Dependabot
             return pipfile_python_requirement
           end
 
-          python_version_file_version
+          python_version_file_version || runtime_file_python_version
         end
 
         def python_version_file_version
@@ -386,6 +399,12 @@ module Dependabot
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
         def pyenv_versions
@@ -453,6 +472,10 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
 
         def pipenv_env_variables

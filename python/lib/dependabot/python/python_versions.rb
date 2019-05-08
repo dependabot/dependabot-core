@@ -4,7 +4,7 @@ module Dependabot
   module Python
     module PythonVersions
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.6.8 2.7.16
+        3.7.3 2.7.16
       ).freeze
 
       # Due to an OpenSSL issue we can only install the following versions in
@@ -21,7 +21,7 @@ module Dependabot
       # the two pre-installed versions listed first.
       SUPPORTED_VERSIONS_TO_ITERATE =
         [
-          *PRE_INSTALLED_PYTHON_VERSIONS,
+          *PRE_INSTALLED_PYTHON_VERSIONS.select { |v| v.start_with?("3") },
           *SUPPORTED_VERSIONS
         ].freeze
     end

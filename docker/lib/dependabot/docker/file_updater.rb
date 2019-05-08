@@ -10,7 +10,7 @@ module Dependabot
       FROM_REGEX = /[Ff][Rr][Oo][Mm]/.freeze
 
       def self.updated_files_regex
-        [/dockerfile/]
+        [/dockerfile/i]
       end
 
       def updated_dependency_files
@@ -81,7 +81,7 @@ module Dependabot
         escaped_declaration = Regexp.escape(old_declaration)
 
         old_declaration_regex =
-          /^#{FROM_REGEX}\s+#{escaped_declaration}(?=\s|$)/
+          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
 
         file.content.gsub(old_declaration_regex) do |old_dec|
           old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
@@ -132,5 +132,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("docker", Dependabot::Docker::FileUpdater)
+Dependabot::FileUpdaters.register("docker", Dependabot::Docker::FileUpdater)

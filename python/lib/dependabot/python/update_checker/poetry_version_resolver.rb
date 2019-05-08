@@ -14,6 +14,7 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/authed_url_builder"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -124,11 +125,11 @@ module Dependabot
             )
 
             @original_reqs_resolvable = true
-          rescue SharedHelpers::HelperSubprocessFailed => error
-            raise unless error.message.include?("SolverProblemError") ||
-                         error.message.include?("PackageNotFound")
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.include?("SolverProblemError") ||
+                         e.message.include?("PackageNotFound")
 
-            msg = clean_error_message(error.message)
+            msg = clean_error_message(e.message)
             raise DependencyFileNotResolvable, msg
           end
         end
@@ -168,12 +169,14 @@ module Dependabot
             poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
 
-          return python_version_file_version unless requirement
+          unless requirement
+            return python_version_file_version || runtime_file_python_version
+          end
 
           requirements =
             Python::Requirement.requirements_array(requirement)
 
-          version = PythonVersions::SUPPORTED_VERSIONS.find do |v|
+          version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
             requirements.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
           end
           return version if version
@@ -192,6 +195,12 @@ module Dependabot
           return unless pyenv_versions.include?("#{file_version}\n")
 
           file_version
+        end
+
+        def runtime_file_python_version
+          return unless runtime_file
+
+          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
         end
 
         def pyenv_versions
@@ -246,7 +255,22 @@ module Dependabot
             end
           end
 
+          # If this is a sub-dependency, add the new requirement
+          unless dependency.requirements.find { |r| r[:file] == pyproject.name }
+            poetry_object[subdep_type] ||= {}
+            poetry_object[subdep_type][dependency.name] = updated_requirement
+          end
+
           TomlRB.dump(pyproject_object)
+        end
+
+        def subdep_type
+          category =
+            TomlRB.parse(lockfile.content).fetch("package", []).
+            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
+            fetch("category")
+
+          category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
         def check_private_sources_are_reachable
@@ -292,6 +316,10 @@ module Dependabot
 
         def python_version_file
           dependency_files.find { |f| f.name == ".python-version" }
+        end
+
+        def runtime_file
+          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
 
         def run_poetry_command(command)
@@ -346,3 +374,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

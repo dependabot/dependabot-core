@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       expect(pytest["version"]).to eq("3.5.0")
 
       expect(lockfile_obj["metadata"]["content-hash"]).
-        to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
+        to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
     context "with a specified Python version" do
@@ -167,7 +167,35 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(pytest["version"]).to eq("3.5.0")
 
         expect(lockfile_obj["metadata"]["content-hash"]).
-          to start_with("82505f37a0da79b1e0f8d5c715d5435ef9318adf4df0e7372bde")
+          to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a1d")
+      end
+
+      context "with a sub-dependency" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "2018.11.29",
+            previous_version: "2018.4.16",
+            package_manager: "pip",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependency_name) { "certifi" }
+
+        it "updates the lockfile successfully" do
+          expect(updated_files.map(&:name)).to eq(%w(poetry.lock))
+
+          updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+
+          lockfile_obj = TomlRB.parse(updated_lockfile.content)
+          certifi = lockfile_obj["package"].find { |d| d["name"] == "certifi" }
+
+          expect(certifi["version"]).to eq("2018.11.29")
+
+          expect(lockfile_obj["metadata"]["content-hash"]).
+            to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040a")
+        end
       end
     end
   end

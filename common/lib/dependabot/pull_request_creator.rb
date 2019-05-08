@@ -17,30 +17,35 @@ module Dependabot
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
                 :author_details, :signature_key, :vulnerabilities_fixed,
-                :reviewers, :assignees, :milestone, :branch_name_separator
+                :reviewers, :assignees, :milestone, :branch_name_separator,
+                :branch_name_prefix, :github_redirection_service
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
-                   label_language: false, automerge_candidate: false)
-      @dependencies          = dependencies
-      @source                = source
-      @base_commit           = base_commit
-      @files                 = files
-      @credentials           = credentials
-      @pr_message_footer     = pr_message_footer
-      @author_details        = author_details
-      @signature_key         = signature_key
-      @custom_labels         = custom_labels
-      @reviewers             = reviewers
-      @assignees             = assignees
-      @milestone             = milestone
-      @vulnerabilities_fixed = vulnerabilities_fixed
-      @branch_name_separator = branch_name_separator
-      @label_language        = label_language
-      @automerge_candidate   = automerge_candidate
+                   branch_name_prefix: "dependabot",
+                   label_language: false, automerge_candidate: false,
+                   github_redirection_service: "github-redirect.dependabot.com")
+      @dependencies               = dependencies
+      @source                     = source
+      @base_commit                = base_commit
+      @files                      = files
+      @credentials                = credentials
+      @pr_message_footer          = pr_message_footer
+      @author_details             = author_details
+      @signature_key              = signature_key
+      @custom_labels              = custom_labels
+      @reviewers                  = reviewers
+      @assignees                  = assignees
+      @milestone                  = milestone
+      @vulnerabilities_fixed      = vulnerabilities_fixed
+      @branch_name_separator      = branch_name_separator
+      @branch_name_prefix         = branch_name_prefix
+      @label_language             = label_language
+      @automerge_candidate        = automerge_candidate
+      @github_redirection_service = github_redirection_service
 
       check_dependencies_have_previous_version
     end
@@ -117,7 +122,8 @@ module Dependabot
           credentials: credentials,
           author_details: author_details,
           pr_message_footer: pr_message_footer,
-          vulnerabilities_fixed: vulnerabilities_fixed
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_redirection_service: github_redirection_service
         )
     end
 
@@ -127,7 +133,8 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           target_branch: source.branch,
-          separator: branch_name_separator
+          separator: branch_name_separator,
+          prefix: branch_name_prefix
         )
     end
 

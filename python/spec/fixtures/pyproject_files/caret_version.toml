@@ -8,5 +8,5 @@ authors = ["Dependabot <support@dependabot.com>"]
 description = "Python datetimes made easy"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 requests = "^1.0.0"

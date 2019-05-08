@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       requirements: [{
         file: "pom.xml",
         requirement: dependency_version,
-        groups: [],
+        groups: dependency_groups,
         source: dependency_source
       }],
       package_manager: "maven"
@@ -37,6 +37,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
   let(:dependency_source) do
     { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
   end
+  let(:dependency_groups) { [] }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -48,6 +49,39 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
     before do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
+    end
+
+    context "when there is a github link in the maven response" do
+      let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
+
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      it "caches the call to maven" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, maven_url).once
+      end
+    end
+
+    context "with a plugin dependency" do
+      let(:dependency_name) { "org.springframework.boot" }
+      let(:dependency_version) { "1.5.0.RELEASE" }
+      let(:dependency_source) do
+        { type: "maven_repo", url: "https://plugins.gradle.org/m2" }
+      end
+      let(:maven_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/"\
+        "org.springframework.boot.gradle.plugin/1.5.0.RELEASE/"\
+        "org.springframework.boot.gradle.plugin-1.5.0.RELEASE.pom"
+      end
+      let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
+      let(:dependency_groups) { ["plugins"] }
+
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      it "caches the call to maven" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, maven_url).once
+      end
     end
 
     context "when the github link is buried in the pom" do
@@ -165,19 +199,6 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         it do
           is_expected.to eq("https://github.com/apache/maven-checkstyle-plugin")
         end
-      end
-    end
-
-    context "when there is a github link in the maven response" do
-      let(:maven_response) do
-        fixture("poms", "mockito-core-2.11.0.xml")
-      end
-
-      it { is_expected.to eq("https://github.com/mockito/mockito") }
-
-      it "caches the call to maven" do
-        2.times { source_url }
-        expect(WebMock).to have_requested(:get, maven_url).once
       end
     end
 

@@ -100,8 +100,8 @@ module Dependabot
             next unless dep["requirement"]
 
             Python::Requirement.new(dep["requirement"].split(","))
-          rescue Gem::Requirement::BadRequirementError => error
-            raise Dependabot::DependencyFileNotEvaluatable, error.message
+          rescue Gem::Requirement::BadRequirementError => e
+            raise Dependabot::DependencyFileNotEvaluatable, e.message
           end
         end
 

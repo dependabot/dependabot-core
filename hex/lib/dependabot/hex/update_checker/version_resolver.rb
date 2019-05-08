@@ -122,8 +122,8 @@ module Dependabot
           end
 
           true
-        rescue SharedHelpers::HelperSubprocessFailed => error
-          raise Dependabot::DependencyFileNotResolvable, error.message
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         def write_temporary_dependency_files(prepared: true)

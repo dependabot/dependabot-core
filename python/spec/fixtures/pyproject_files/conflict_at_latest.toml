@@ -8,7 +8,7 @@ authors = ["Dependabot <support@dependabot.com>"]
 description = "Various small python projects."
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 requests = "2.6.0"
 chardet = "3.0.0"
 

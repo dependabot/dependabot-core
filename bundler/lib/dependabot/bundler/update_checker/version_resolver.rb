@@ -162,13 +162,13 @@ module Dependabot
           begin
             definition = build_definition(dependencies_to_unlock)
             definition.resolve_remotely!
-          rescue ::Bundler::GemNotFound => error
-            unlock_yanked_gem(dependencies_to_unlock, error) && retry
-          rescue ::Bundler::HTTPError => error
+          rescue ::Bundler::GemNotFound => e
+            unlock_yanked_gem(dependencies_to_unlock, e) && retry
+          rescue ::Bundler::HTTPError => e
             # Retry network errors
             attempt ||= 1
             attempt += 1
-            raise if attempt > 3 || !error.message.include?("Network error")
+            raise if attempt > 3 || !e.message.include?("Network error")
 
             retry
           end
