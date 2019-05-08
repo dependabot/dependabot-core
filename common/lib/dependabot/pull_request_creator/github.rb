@@ -65,12 +65,14 @@ module Dependabot
         @branch_ref ||= {}
         @branch_ref[name] ||=
           github_client_for_source.ref(source.repo, "heads/#{name}")
+
         if @branch_ref[name].is_a?(Array)
           @branch_ref[name].any? { |r| r.ref == "refs/heads/#{name}" }
         else
           @branch_ref[name].ref == "refs/heads/#{name}"
         end
       rescue Octokit::NotFound
+        @branch_ref[name] = []
         false
       end
 
