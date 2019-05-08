@@ -239,6 +239,38 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       it "raises a normal error" do
         expect { creator.create }.to raise_error(Octokit::UnprocessableEntity)
       end
+
+      context "because the branch is a superstring of another branch" do
+        before do
+          allow(SecureRandom).to receive(:hex).and_return("rand")
+
+          stub_request(:post, "#{repo_api_url}/git/refs").
+            with(
+              body: {
+                ref: "refs/heads/rand#{branch_name}",
+                sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+              }.to_json
+            ).
+            to_return(status: 200,
+                      body: fixture("github", "create_ref.json"),
+                      headers: json_header)
+        end
+
+        it "creates a PR with the right details" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{repo_api_url}/pulls").
+            with(
+              body: {
+                base: "master",
+                head: "randdependabot/bundler/business-1.5.0",
+                title: "PR name",
+                body: "PR msg"
+              }
+            )
+        end
+      end
     end
 
     context "when the branch already exists" do

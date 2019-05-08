@@ -179,7 +179,10 @@ module Dependabot
         ref = "heads/#{branch_name}"
 
         begin
-          github_client_for_source.create_ref(source.repo, ref, commit.sha)
+          branch =
+            github_client_for_source.create_ref(source.repo, ref, commit.sha)
+          @branch_name = ref.gsub(%r{^heads/}, "")
+          branch
         rescue Octokit::UnprocessableEntity => e
           # Return quietly in the case of a race
           return nil if e.message.match?(/Reference already exists/i)
