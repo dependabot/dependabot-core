@@ -71,20 +71,6 @@ module Dependabot
         response.body
       end
 
-      def tags(repo)
-        path = "#{repo}/refs/tags?pagelen=100"
-        response = get(base_url + path)
-
-        JSON.parse(response.body).fetch("values")
-      end
-
-      def compare(repo, previous_tag, new_tag)
-        path = "#{repo}/commits/?include=#{new_tag}&exclude=#{previous_tag}"
-        response = get(base_url + path)
-
-        JSON.parse(response.body).fetch("values")
-      end
-
       def get(url)
         a = credentials&.fetch("username")
         response = Excon.get(
@@ -103,11 +89,6 @@ module Dependabot
 
       attr_reader :credentials
       attr_reader :source
-
-      def base_url
-        # TODO: Make this configurable when we support enterprise Bitbucket
-        "https://api.bitbucket.org/2.0/repositories/"
-      end
     end
   end
 end
