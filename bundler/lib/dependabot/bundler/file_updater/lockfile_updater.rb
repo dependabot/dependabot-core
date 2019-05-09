@@ -77,7 +77,8 @@ module Dependabot
                 ::Bundler.instance_variable_set(:@root, tmp_dir)
 
                 # Remove installed gems from the default Rubygems index
-                ::Gem::Specification.all = []
+                ::Gem::Specification.all =
+                  ::Gem::Specification.send(:default_stubs, "*.gemspec")
 
                 # Set auth details
                 relevant_credentials.each do |cred|
@@ -99,7 +100,6 @@ module Dependabot
             end
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::ChildProcessFailed => e
-          raise unless e.error_class == "Bundler::VersionConflict"
           raise unless ruby_lock_error?(e)
 
           @dont_lock_ruby_version = true
@@ -107,6 +107,7 @@ module Dependabot
         end
 
         def ruby_lock_error?(error)
+          return false unless error.error_class == "Bundler::VersionConflict"
           return false unless error.message.include?(" for gem \"ruby\0\"")
           return false if @dont_lock_ruby_version
 

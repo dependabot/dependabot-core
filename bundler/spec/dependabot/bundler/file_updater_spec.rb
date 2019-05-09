@@ -476,6 +476,21 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      context "with a default gem specified" do
+        let(:gemfile_fixture_name) { "default_gem_specified" }
+        let(:lockfile_fixture_name) { "default_gem_specified.lock" }
+        let(:requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.5", groups: [], source: nil }]
+        end
+        let(:previous_requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.4", groups: [], source: nil }]
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include("business (1.5.0)")
+        end
+      end
+
       context "when the Gemfile specifies a Ruby version" do
         let(:gemfile_fixture_name) { "explicit_ruby" }
         let(:lockfile_fixture_name) { "explicit_ruby.lock" }
