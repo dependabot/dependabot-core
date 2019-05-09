@@ -1,3 +1,7 @@
+## v0.106.40, 9 May 2019
+
+- Gradle: Fix VersionFinder for plugins that check maven.google.com
+
 ## v0.106.39, 9 May 2019
 
 - Use service pack to determine existing branches
