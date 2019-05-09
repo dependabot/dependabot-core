@@ -51,14 +51,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       let(:content) do
         %(version = File.read("something").strip\ncode = "require")
       end
-      it { is_expected.to eq(%(version = "text".strip\ncode = "require")) }
+      it { is_expected.to eq(%(version = "1.5.0".strip\ncode = "require")) }
 
       context "that uses File.readlines" do
         let(:content) do
           %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
         end
         it do
-          is_expected.to eq(%(version = ["text"].grep(/\S+/)\ncode = "require"))
+          is_expected.
+            to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
         end
       end
     end

@@ -295,11 +295,11 @@ module Dependabot
           end
 
           def replace_file_read(node)
-            replace(node.loc.expression, '"text"')
+            replace(node.loc.expression, %("#{replacement_version}"))
           end
 
           def replace_file_readlines(node)
-            replace(node.loc.expression, '["text"]')
+            replace(node.loc.expression, %(["#{replacement_version}"]))
           end
 
           def remove_find_args(node)
