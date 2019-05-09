@@ -1,3 +1,7 @@
+## v0.106.43, 9 May 2019
+
+- Ruby: Better default when replacing file text
+
 ## v0.106.42, 9 May 2019
 
 - JS: Handle packages without a name
