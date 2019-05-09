@@ -107,4 +107,46 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       its(:count) { is_expected.to eq(14) }
     end
   end
+
+  describe "#ref_names" do
+    subject(:ref_names) { checker.ref_names }
+
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "with source code hosted on GitHub" do
+      let(:service_pack_url) do
+        "https://github.com/gocardless/business.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+      let(:upload_pack_fixture) { "no_tags" }
+
+      context "with tags on GitHub" do
+        let(:upload_pack_fixture) { "no_versions" }
+        it { is_expected.to eq(%w(master imported release)) }
+      end
+
+      context "but no tags on GitHub" do
+        let(:upload_pack_fixture) { "no_tags" }
+        it { is_expected.to eq(%w(master rails5)) }
+      end
+
+      context "but GitHub returns a 404" do
+        before { stub_request(:get, service_pack_url).to_return(status: 404) }
+
+        it "raises a helpful error" do
+          expect { ref_names }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+    end
+  end
 end

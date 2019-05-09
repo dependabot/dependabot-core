@@ -22,6 +22,14 @@ module Dependabot
       @tags ||= tags_for_upload_pack(upload_pack)
     end
 
+    def ref_names
+      @ref_names ||=
+        upload_pack.lines.
+        select { |l| l.split(" ")[-1].start_with?("refs/tags", "refs/heads") }.
+        map { |line| line.split(%r{ refs/(tags|heads)/}).last.strip }.
+        reject { |l| l.end_with?("^{}") }
+    end
+
     private
 
     attr_reader :url, :credentials

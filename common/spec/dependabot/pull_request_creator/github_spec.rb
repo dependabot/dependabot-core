@@ -85,15 +85,12 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
+  let(:service_pack_response) { fixture("git", "upload_packs", "business") }
 
   before do
     stub_request(:get, repo_api_url).
       to_return(status: 200,
                 body: fixture("github", "bump_repo.json"),
-                headers: json_header)
-    stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
-      to_return(status: 404,
-                body: fixture("github", "not_found.json"),
                 headers: json_header)
     stub_request(:post, "#{repo_api_url}/git/trees").
       to_return(status: 200,
@@ -119,6 +116,18 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       to_return(status: 200,
                 body: fixture("github", "create_label.json"),
                 headers: json_header)
+
+    service_pack_url =
+      "https://github.com/gocardless/bump.git/info/refs"\
+      "?service=git-upload-pack"
+    stub_request(:get, service_pack_url).
+      to_return(
+        status: 200,
+        body: service_pack_response,
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
   end
 
   describe "#create" do
@@ -191,14 +200,15 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           to_return(status: 404,
                     body: fixture("github", "not_found.json"),
                     headers: json_header)
-        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
-          to_return(status: 404,
-                    body: fixture("github", "not_found.json"),
-                    headers: json_header)
         stub_request(:post, "#{repo_api_url}/git/trees").
           to_return(status: 404,
                     body: fixture("github", "not_found.json"),
                     headers: json_header)
+
+        service_pack_url =
+          "https://github.com/gocardless/bump.git/info/refs"\
+          "?service=git-upload-pack"
+        stub_request(:get, service_pack_url).to_return(status: 404)
       end
 
       it "raises a helpful error" do
@@ -212,18 +222,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             to_return(status: 200,
                       body: fixture("github", "bump_repo.json"),
                       headers: json_header)
-          stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
-            to_return(status: 404,
-                      body: fixture("github", "not_found.json"),
-                      headers: json_header)
           stub_request(:post, "#{repo_api_url}/git/trees").
             to_return(status: 404,
                       body: fixture("github", "not_found.json"),
                       headers: json_header)
+
+          service_pack_url =
+            "https://github.com/gocardless/bump.git/info/refs"\
+            "?service=git-upload-pack"
+          stub_request(:get, service_pack_url).to_return(status: 404)
         end
 
         it "raises a normal error" do
-          expect { creator.create }.to raise_error(Octokit::NotFound)
+          expect { creator.create }.to raise_error("Unexpected git error!")
         end
       end
     end
@@ -275,10 +286,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when the branch already exists" do
       before do
-        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
-          to_return(status: 200,
-                    body: [{ ref: "refs/heads/#{branch_name}" }].to_json,
-                    headers: json_header)
+        service_pack_response.gsub!("heads/rubocop", "heads/#{branch_name}")
       end
 
       context "but a PR to this branch doesn't" do
@@ -346,10 +354,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when a branch with a name that is a superstring exists" do
       before do
-        stub_request(:get, "#{repo_api_url}/git/refs/heads/#{branch_name}").
-          to_return(status: 200,
-                    body: [{ ref: "refs/heads/#{branch_name}.beta3" }].to_json,
-                    headers: json_header)
+        service_pack_response.gsub!("heads/rubocop", "heads/#{branch_name}.1")
       end
 
       it "creates a PR with the right details" do
@@ -517,10 +522,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           stub_request(:post, "#{repo_api_url}/pulls").
             to_return(status: 422,
                       body: fixture("github", "invalid_base_branch.json"),
-                      headers: json_header)
-          stub_request(:get, "#{repo_api_url}/git/refs/heads/my_branch").
-            to_return(status: 404,
-                      body: fixture("github", "not_found.json"),
                       headers: json_header)
         end
 
