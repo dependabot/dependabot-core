@@ -81,8 +81,6 @@ module Dependabot
                 "pyenv exec pip-compile #{pip_compile_options(filename)} "\
                 "#{filename}"
               )
-
-              unredact_git_credentials_in_compiled_file(filename)
             end
 
             # Remove any .python-version file before parsing the reqs
@@ -324,41 +322,6 @@ module Dependabot
           end
 
           content
-        end
-
-        # Pip redacts git credentials in the compiled pip-tools file. We don't
-        # want that, as it makes the compiled files unusable. (This is kind of
-        # a pip-tools bug.)
-        def unredact_git_credentials_in_compiled_file(filename)
-          compiled_name = filename.gsub(/\.in$/, ".txt")
-          original_content = dependency_files.
-                             find { |f| f.name == compiled_name }&.content ||
-                             dependency_files.
-                             find { |f| f.name == filename }.content
-
-          updated_content = File.read(compiled_name)
-          new_content = updated_content
-
-          update_count = 0
-          original_content.lines.each do |original_line|
-            next unless original_line.match?(/^(-e )?git+/)
-            next unless original_line.match?(%r{(?<=:)[^/].*?(?=@)})
-            next update_count += 1 if updated_content.include?(original_line)
-
-            line_to_update =
-              updated_content.lines.
-              select { |l| l.match?(/^(-e )?git+/) && l.include?(":****@") }.
-              at(update_count)
-            raise "Mismatch in editable requirements!" unless line_to_update
-
-            auth = original_line.match(%r{(?<=:)[^/].*?(?=@)}).to_s
-            new_content =
-              new_content.
-              gsub(line_to_update, line_to_update.gsub(":****@", ":#{auth}@"))
-            update_count += 1
-          end
-
-          File.write(compiled_name, new_content)
         end
 
         def update_hashes_if_required(updated_content, original_content)
