@@ -1,3 +1,7 @@
+## v0.106.39, 9 May 2019
+
+- Use service pack to determine existing branches
+
 ## v0.106.38, 8 May 2019
 
 - Cache that a branch can't be found
