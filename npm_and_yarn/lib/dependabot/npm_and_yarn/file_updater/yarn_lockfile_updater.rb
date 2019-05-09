@@ -489,7 +489,7 @@ module Dependabot
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
 
           json = JSON.parse(updated_content)
-          json["name"] = json["name"].delete(" ")
+          json["name"] = json["name"].delete(" ") if json["name"].is_a?(String)
           json.to_json
         end
 
