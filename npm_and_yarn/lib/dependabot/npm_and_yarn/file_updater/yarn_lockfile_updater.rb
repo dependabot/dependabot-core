@@ -482,10 +482,15 @@ module Dependabot
         end
 
         def sanitized_package_json_content(content)
-          content.
+          updated_content =
+            content.
             gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
+
+          json = JSON.parse(updated_content)
+          json["name"] = json["name"].delete(" ")
+          json.to_json
         end
 
         def yarn_locks
