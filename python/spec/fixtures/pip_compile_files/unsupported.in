@@ -1,2 +1,0 @@
-boto3==1.9.27
-git+https://github.com/requests/requests#egg=requests
