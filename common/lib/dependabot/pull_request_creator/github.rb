@@ -62,18 +62,11 @@ module Dependabot
       end
 
       def branch_exists?(name)
-        @branch_ref ||= {}
-        @branch_ref[name] ||=
-          github_client_for_source.ref(source.repo, "heads/#{name}")
+        git_metadata_fetcher.ref_names.include?(name)
+      rescue Dependabot::GitDependenciesNotReachable
+        raise "Unexpected git error!" if repo_exists?
 
-        if @branch_ref[name].is_a?(Array)
-          @branch_ref[name].any? { |r| r.ref == "refs/heads/#{name}" }
-        else
-          @branch_ref[name].ref == "refs/heads/#{name}"
-        end
-      rescue Octokit::NotFound
-        @branch_ref[name] = []
-        false
+        raise RepoNotFound, source.url
       end
 
       def pull_request_exists?
@@ -279,6 +272,14 @@ module Dependabot
       def default_branch
         @default_branch ||=
           github_client_for_source.repository(source.repo).default_branch
+      end
+
+      def git_metadata_fetcher
+        @git_metadata_fetcher ||=
+          GitMetadataFetcher.new(
+            url: source.url,
+            credentials: credentials
+          )
       end
 
       def commit_signature(tree, author_details_with_date)
