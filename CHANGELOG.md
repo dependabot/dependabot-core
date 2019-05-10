@@ -1,3 +1,8 @@
+## v0.106.44, 10 May 2019
+
+- JS: Bump @dependabot/yarn-lib from 1.15.2 to 1.16.0 in /npm_and_yarn/helpers
+- Python: Bump pip-tools from 3.6.1 to 3.7.0 in /python/helpers
+
 ## v0.106.43, 9 May 2019
 
 - Ruby: Better default when replacing file text
