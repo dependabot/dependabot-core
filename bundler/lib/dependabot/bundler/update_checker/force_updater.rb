@@ -79,7 +79,8 @@ module Dependabot
 
             SharedHelpers.in_a_forked_process do
               # Remove installed gems from the default Rubygems index
-              ::Gem::Specification.all = []
+              ::Gem::Specification.all =
+                ::Gem::Specification.send(:default_stubs, "*.gemspec")
 
               # Set auth details
               relevant_credentials.each do |cred|

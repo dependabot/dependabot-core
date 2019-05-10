@@ -152,6 +152,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
+      context "with a default gem specified" do
+        let(:gemfile_fixture_name) { "default_gem_specified" }
+        let(:lockfile_fixture_name) { "default_gem_specified.lock" }
+        let(:requirement_string) { "~> 1.4" }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
+      end
+
       context "with a version conflict at the latest version" do
         let(:gemfile_fixture_name) { "version_conflict_no_req_change" }
         let(:lockfile_fixture_name) { "version_conflict_no_req_change.lock" }
