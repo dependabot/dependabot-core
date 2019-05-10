@@ -1,3 +1,7 @@
+## v0.106.46, 10 May 2019
+
+- Java: Handle branch not found errors in MetadataFinder
+
 ## v0.106.45, 10 May 2019
 
 - Bundler: Update lockfiles which have tricky default gem handling
