@@ -42,6 +42,9 @@ module Dependabot
           fetcher.send(:repo_contents, raise_errors: false).
           select { |f| f.type == "dir" }.
           any? { |f| artifact.end_with?(f.name) }
+      rescue Dependabot::BranchNotFound
+        tmp_source.branch = nil
+        retry
       rescue Dependabot::RepoNotFound
         @repo_has_subdir_for_dep[tmp_source] = false
       end

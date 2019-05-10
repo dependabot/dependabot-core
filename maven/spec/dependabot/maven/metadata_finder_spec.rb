@@ -136,6 +136,45 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
             it { is_expected.to be_nil }
           end
+
+          context "and the branch can't be found" do
+            before do
+              allow_any_instance_of(Dependabot::FileFetchers::Base).
+                to receive(:commit).and_call_original
+              stub_request(:get, parent_url).
+                to_return(
+                  status: 200,
+                  body: fixture("poms", "parent-unrelated-branch-3.10.0.xml")
+                )
+              stub_request(:get, url).
+                with(headers: { "Authorization" => "token token" }).
+                to_return(status: 200,
+                          body: fixture("github", "bump_repo.json"),
+                          headers: { "content-type" => "application/json" })
+              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c965"\
+                                       "3891f9e74264a383fa43fefbd").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(
+                  status: 200,
+                  body: fixture("github", repo_contents_fixture_nm),
+                  headers: { "content-type" => "application/json" }
+                )
+              stub_request(:get, url + "/git/refs/heads/master").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(status: 200,
+                          body: fixture("github", "ref.json"),
+                          headers: { "content-type" => "application/json" })
+              stub_request(:get, url + "/git/refs/heads/missing-branch").
+                with(headers: { "Authorization" => "token token" }).
+                to_return(
+                  status: 404,
+                  headers: { "content-type" => "application/json" }
+                )
+            end
+            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+
+            it { is_expected.to eq("https://github.com/square/unrelated_name") }
+          end
         end
       end
 
