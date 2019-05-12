@@ -14,7 +14,8 @@ module Dependabot
         def sanitized_content
           mixfile_content.
             gsub(/File\.read!\(.*?\)/, '"0.0.1"').
-            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
+            gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}').
+            gsub(/config_path:.*(?:,|$)/, "")
         end
 
         private

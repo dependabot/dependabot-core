@@ -3,6 +3,7 @@
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
 require "dependabot/hex/native_helpers"
+require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -134,8 +135,19 @@ module Dependabot
           files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+
+            if file.name.end_with?("mix.exs")
+              File.write(path, sanitize_mixfile(file.content))
+            else
+              File.write(path, file.content)
+            end
           end
+        end
+
+        def sanitize_mixfile(content)
+          Hex::FileUpdater::MixfileSanitizer.new(
+            mixfile_content: content
+          ).sanitized_content
         end
 
         def version_class

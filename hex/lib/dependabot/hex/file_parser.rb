@@ -3,6 +3,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -81,9 +82,9 @@ module Dependabot
       end
 
       def sanitize_mixfile(content)
-        content.
-          gsub(/File\.read!\(.*?\)/, '"0.0.1"').
-          gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}')
+        Hex::FileUpdater::MixfileSanitizer.new(
+          mixfile_content: content
+        ).sanitized_content
       end
 
       def mix_env

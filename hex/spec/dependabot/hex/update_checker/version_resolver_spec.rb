@@ -36,11 +36,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
   end
 
   let(:original_files) { [mixfile, lockfile] }
-  let(:prepared_files) { [mixfile, lockfile] }
+  let(:prepared_files) { [sanitized_mixfile, lockfile] }
   let(:mixfile) do
     Dependabot::DependencyFile.new(
       name: "mix.exs",
       content: mixfile_fixture_body
+    )
+  end
+  let(:sanitized_mixfile) do
+    sanitized_content =
+      Dependabot::Hex::FileUpdater::MixfileSanitizer.
+      new(mixfile_content: mixfile_fixture_body).
+      sanitized_content
+    Dependabot::DependencyFile.new(
+      name: "mix.exs",
+      content: sanitized_content
     )
   end
   let(:mixfile_fixture_body) { fixture("mixfiles", mixfile_fixture_name) }
@@ -65,17 +75,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     it "respects the resolvability of the mix.exs" do
-      expect(latest_resolvable_version).
-        to be > Gem::Version.new("1.3.5")
-      expect(latest_resolvable_version).
-        to be < Gem::Version.new("1.4.0")
+      expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+      expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
     end
 
     context "with a dependency with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
 
-      it "raises a Dependabot::DependencyFileNotResolvable error",
-         skip_ci: true do
+      it "raises a DependencyFileNotResolvable error", skip_ci: true do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
@@ -94,10 +101,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       let(:mixfile_fixture_name) { "deps_warning" }
 
       it "respects the resolvability of the mix.exs" do
-        expect(latest_resolvable_version).
-          to be > Gem::Version.new("1.3.5")
-        expect(latest_resolvable_version).
-          to be < Gem::Version.new("1.4.0")
+        expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
       end
     end
 
@@ -129,10 +134,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
     context "without a lockfile" do
       it "respects the resolvability of the mix.exs" do
-        expect(latest_resolvable_version).
-          to be > Gem::Version.new("1.3.5")
-        expect(latest_resolvable_version).
-          to be < Gem::Version.new("1.4.0")
+        expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
       end
 
       context "with a mix.exs that has caused trouble in the past" do
