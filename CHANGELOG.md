@@ -1,3 +1,7 @@
+## v0.107.0, 12 May 2019
+
+- PHP: Update to minimal secure version for security updates
+
 ## v0.106.47, 12 May 2019
 
 - Elixir: Sanitize config_path out of mixfiles
