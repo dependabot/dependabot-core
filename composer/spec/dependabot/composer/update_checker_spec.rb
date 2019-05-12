@@ -14,7 +14,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       dependency: dependency,
       dependency_files: files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories
     )
   end
 
@@ -27,6 +28,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     )
   end
   let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
   let(:dependency_name) { "monolog/monolog" }
   let(:dependency_version) { "1.0.1" }
   let(:requirements) do
@@ -565,6 +567,27 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
   end
 
+  describe "#preferred_resolvable_version" do
+    subject { checker.preferred_resolvable_version }
+
+    let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
+    it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+
+    context "with an insecure version" do
+      let(:dependency_version) { "1.0.1" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "composer",
+            vulnerable_versions: ["<= 1.15.0"]
+          )
+        ]
+      end
+      it { is_expected.to eq(Gem::Version.new("1.16.0")) }
+    end
+  end
+
   describe "#updated_requirements" do
     subject { checker.updated_requirements.first }
 
@@ -589,9 +612,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       allow(checker).
         to receive(:latest_resolvable_version).
         and_return(Gem::Version.new("1.6.0"))
-      allow(checker).
-        to receive(:latest_version).
-        and_return(Gem::Version.new("1.7.0"))
     end
 
     it "delegates to the RequirementsUpdater" do
@@ -612,6 +632,44 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             source: nil
           }]
         )
+    end
+
+    context "with an insecure version" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "composer",
+            vulnerable_versions: ["<= 1.15.0"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker).
+          to receive(:lowest_resolvable_security_fix_version).
+          and_return(Gem::Version.new("1.5.0"))
+      end
+
+      it "delegates to the RequirementsUpdater" do
+        expect(described_class::RequirementsUpdater).
+          to receive(:new).
+          with(
+            requirements: dependency_requirements,
+            latest_resolvable_version: "1.5.0",
+            update_strategy: :bump_versions_if_necessary
+          ).
+          and_call_original
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              file: "composer.json",
+              requirement: "1.5.*",
+              groups: [],
+              source: nil
+            }]
+          )
+      end
     end
   end
 end

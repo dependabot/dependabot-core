@@ -33,6 +33,17 @@ module Dependabot
           ).latest_resolvable_version
       end
 
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        if defined?(@lowest_resolvable_security_fix_version)
+          return @lowest_resolvable_security_fix_version
+        end
+
+        @lowest_resolvable_security_fix_version =
+          fetch_lowest_resolvable_security_fix_version
+      end
+
       def latest_resolvable_version_with_no_unlock
         return nil if path_dependency?
 
@@ -49,7 +60,7 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_resolvable_version: latest_resolvable_version&.to_s,
+          latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy
         ).updated_requirements
       end
@@ -87,6 +98,25 @@ module Dependabot
           ignored_versions: ignored_versions,
           security_advisories: security_advisories
         )
+      end
+
+      def fetch_lowest_resolvable_security_fix_version
+        return nil if path_dependency?
+
+        fix_version = latest_version_finder.lowest_security_fix_version
+        return latest_resolvable_version if fix_version.nil?
+
+        resolved_fix_version = VersionResolver.new(
+          credentials: credentials,
+          dependency: dependency,
+          dependency_files: dependency_files,
+          latest_allowable_version: fix_version,
+          requirements_to_unlock: :own
+        ).latest_resolvable_version
+
+        return fix_version if fix_version == resolved_fix_version
+
+        latest_resolvable_version
       end
 
       def path_dependency?
