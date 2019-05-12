@@ -1,3 +1,7 @@
+## v0.106.47, 12 May 2019
+
+- Elixir: Sanitize config_path out of mixfiles
+
 ## v0.106.46, 10 May 2019
 
 - Java: Handle branch not found errors in MetadataFinder
