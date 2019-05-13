@@ -11,7 +11,7 @@ module Dependabot
         NPM_AUTH_TOKEN_REGEX =
           %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
         NPM_GLOBAL_REGISTRY_REGEX =
-          /^registry\s*=\s*(?<registry>.*)$/.freeze
+          /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
         YARN_GLOBAL_REGISTRY_REGEX =
           /^registry\s+['"](?<registry>.*)['"]/.freeze
 
