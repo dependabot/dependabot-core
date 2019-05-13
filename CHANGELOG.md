@@ -1,3 +1,7 @@
+## v0.107.2, 13 May 2019
+
+- JS: Ignore quotes in npmrc when looking for registry
+
 ## v0.107.1, 13 May 2019
 
 - Python: Handle missing references for Poetry dependencies
