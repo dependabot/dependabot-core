@@ -141,6 +141,36 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
+    context "with a dependency file that includes a git dependency" do
+      let(:pyproject_fixture_name) { "git_dependency.toml" }
+      let(:lockfile_fixture_name) { "git_dependency.lock" }
+      let(:dependency_name) { "pytest" }
+      let(:dependency_version) { "3.7.4" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "*",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:updated_requirement) { ">= 3.7.4, <= 3.9.0" }
+
+      it { is_expected.to eq(Gem::Version.new("3.8.2")) }
+
+      context "that has a bad reference" do
+        let(:pyproject_fixture_name) { "git_dependency_bad_ref.toml" }
+        let(:lockfile_fixture_name) { "git_dependency_bad_ref.lock" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency).to eq("toml")
+            end
+        end
+      end
+    end
+
     context "with a conflict at the latest version" do
       let(:pyproject_fixture_name) { "conflict_at_latest.toml" }
       let(:lockfile_fixture_name) { "conflict_at_latest.lock" }

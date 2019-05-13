@@ -20,6 +20,10 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        GIT_REFERENCE_NOT_FOUND_REGEX =
+          /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
+          freeze
+
         attr_reader :dependency, :dependency_files, :credentials
 
         def initialize(dependency:, dependency_files:, credentials:)
@@ -100,6 +104,13 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
+          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            message = error.message.gsub(/\s/, "")
+            name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                   named_captures.fetch("name")
+            raise GitDependencyReferenceNotFound, name
+          end
+
           raise unless error.message.include?("SolverProblemError") ||
                        error.message.include?("PackageNotFound")
 
