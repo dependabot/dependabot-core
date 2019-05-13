@@ -1,3 +1,7 @@
+## v0.107.1, 13 May 2019
+
+- Python: Handle missing references for Poetry dependencies
+
 ## v0.107.0, 12 May 2019
 
 - PHP: Update to minimal secure version for security updates
