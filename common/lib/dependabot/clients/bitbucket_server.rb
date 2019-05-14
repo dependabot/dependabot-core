@@ -30,15 +30,15 @@ module Dependabot
       end
 
       def fetch_commit(repo, branch)
-        response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/branches/default")
+        response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/branches?filterText=" + branch)
 
-        JSON.parse(response.body).fetch("latestCommit")
+        JSON.parse(response.body).fetch("values").first.fetch("latestCommit")
       end
 
       def fetch_default_branch(repo)
         response = get(source.api_endpoint + "projects/" + source.organization + "/repos/" + source.unscoped_repo + "/branches/default")
 
-        JSON.parse(response.body).fetch("id")
+        JSON.parse(response.body).fetch("displayId")
       end
 
       def fetch_repo_contents(repo, commit = nil, path = nil)
