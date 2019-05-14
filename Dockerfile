@@ -110,7 +110,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 
 # Install Go and dep
 RUN curl https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | tar -xz -C /opt \
-    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 \
+    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/0.5.2/dep-linux-amd64 \
     && chmod +x /opt/go/bin/dep \
     && mkdir /opt/go/gopath
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
