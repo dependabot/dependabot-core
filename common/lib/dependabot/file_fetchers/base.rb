@@ -428,7 +428,8 @@ module Dependabot
 
       def bitbucket_server_client
         @bitbucket_server_client ||=
-          Dependabot::Clients::BitbucketServer.for_source(source: source, credentials: credentials)
+          Dependabot::Clients::BitbucketServer.
+          for_source(source: source, credentials: credentials)
       end
     end
   end
