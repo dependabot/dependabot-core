@@ -168,6 +168,7 @@ module Dependabot
         repo_contents.
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
+          reject { |f| f.size > 100_000 }.
           map { |f| fetch_file_from_host(f.name) }.
           select { |f| requirements_file?(f) }.
           each { |f| @req_txt_and_in_files << f }
