@@ -190,6 +190,17 @@ RSpec.describe Dependabot::Source do
     context "without a directory" do
       let(:directory) { nil }
       it { is_expected.to eq("https://github.com/my/repo") }
+
+      context "with a custom hostname" do
+        before do
+          attrs.merge!(
+            hostname: "custom.com",
+            api_endpoint: "https://api.custom.com"
+          )
+        end
+
+        it { is_expected.to eq("https://custom.com/my/repo") }
+      end
     end
 
     context "with a directory" do

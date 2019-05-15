@@ -70,13 +70,7 @@ module Dependabot
     end
 
     def url
-      case provider
-      when "github" then "https://github.com/" + repo
-      when "bitbucket" then "https://bitbucket.org/" + repo
-      when "gitlab" then "https://gitlab.com/" + repo
-      when "azure" then "https://dev.azure.com/" + repo
-      else raise "Unexpected repo provider '#{provider}'"
-      end
+      "https://" + hostname + "/" + repo
     end
 
     def url_with_directory
