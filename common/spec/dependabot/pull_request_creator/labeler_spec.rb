@@ -100,7 +100,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             with(
               body: {
                 name: "dependencies",
-                color: "0025ff",
+                color: "0366d6",
                 description: "Pull requests that update a dependency file"
               }
             )
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
               with(
                 body: {
                   name: "dependencies",
-                  color: "0025ff",
+                  color: "0366d6",
                   description: "Pull requests that update a dependency file"
                 }
               )
@@ -369,7 +369,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             to have_requested(:post, "#{repo_api_url}/labels").
             with(
               body: "description=Pull%20requests%20that%20update%20a"\
-                    "%20dependency%20file&name=dependencies&color=%230025ff"
+                    "%20dependency%20file&name=dependencies&color=%230366d6"
             )
           expect(labeler.labels_for_pr).to include("dependencies")
         end

@@ -551,7 +551,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           with(
             body: {
               name: "dependencies",
-              color: "0025ff",
+              color: "0366d6",
               description: "Pull requests that update a dependency file"
             }
           )

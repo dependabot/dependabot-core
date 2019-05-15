@@ -10,7 +10,7 @@
         "id": 675690998,
         "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/dependencies",
         "name": "dependency/spring",
-        "color": "0025ff",
+        "color": "0366d6",
         "default": false
     },
     {

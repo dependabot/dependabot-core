@@ -35,7 +35,7 @@
   {
     "id" : 8,
     "name" : "dependencies",
-    "color" : "#0025ff",
+    "color" : "#0366d6",
     "description": "Pull requests that update a dependency file",
     "open_issues_count": 1,
     "closed_issues_count": 0,

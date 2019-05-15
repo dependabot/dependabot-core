@@ -276,7 +276,7 @@ module Dependabot
 
       def create_github_dependencies_label
         github_client_for_source.add_label(
-          source.repo, "dependencies", "0025ff",
+          source.repo, "dependencies", "0366d6",
           description: "Pull requests that update a dependency file",
           accept: "application/vnd.github.symmetra-preview+json"
         )
@@ -289,7 +289,7 @@ module Dependabot
 
       def create_gitlab_dependencies_label
         gitlab_client_for_source.create_label(
-          source.repo, "dependencies", "#0025ff",
+          source.repo, "dependencies", "#0366d6",
           description: "Pull requests that update a dependency file"
         )
         @labels = [*@labels, "dependencies"].uniq
