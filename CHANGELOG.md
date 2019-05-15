@@ -1,3 +1,7 @@
+## v0.107.4, 15 May 2019
+
+- Update dependencies label colour
+
 ## v0.107.3, 14 May 2019
 
 - Bump dep
