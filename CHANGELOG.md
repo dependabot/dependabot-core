@@ -1,3 +1,8 @@
+## v0.107.5, 15 May 2019
+
+- Allow custom headers to be passed to pull request creator
+- Python: Don't fetch large .txt files
+
 ## v0.107.4, 15 May 2019
 
 - Update dependencies label colour
