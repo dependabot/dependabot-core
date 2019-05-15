@@ -118,6 +118,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_name: "PR name",
             author_details: author_details,
             signature_key: signature_key,
+            custom_headers: nil,
             labeler: instance_of(described_class::Labeler),
             reviewers: reviewers,
             assignees: assignees,

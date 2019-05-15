@@ -18,6 +18,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       pr_name: pr_name,
       author_details: author_details,
       signature_key: signature_key,
+      custom_headers: custom_headers,
       labeler: labeler,
       reviewers: reviewers,
       assignees: assignees,
@@ -44,6 +45,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:pr_name) { "PR name" }
   let(:author_details) { nil }
   let(:signature_key) { nil }
+  let(:custom_headers) { nil }
   let(:reviewers) { nil }
   let(:assignees) { nil }
   let(:milestone) { nil }
@@ -280,6 +282,26 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                 body: "PR msg"
               }
             )
+        end
+
+        context "with a custom header" do
+          let(:custom_headers) { { "Accept" => "some-preview-header" } }
+
+          it "creates a PR with the right details" do
+            creator.create
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/pulls").
+              with(
+                body: {
+                  base: "master",
+                  head: "randdependabot/bundler/business-1.5.0",
+                  title: "PR name",
+                  body: "PR msg"
+                },
+                headers: { "Accept" => "some-preview-header" }
+              )
+          end
         end
       end
     end

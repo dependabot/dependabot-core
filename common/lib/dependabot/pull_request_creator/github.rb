@@ -11,12 +11,12 @@ module Dependabot
     class Github
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :author_details, :signature_key,
+                  :author_details, :signature_key, :custom_headers,
                   :labeler, :reviewers, :assignees, :milestone
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, signature_key:,
+                     author_details:, signature_key:, custom_headers:,
                      labeler:, reviewers:, assignees:, milestone:)
         @source         = source
         @branch_name    = branch_name
@@ -28,6 +28,7 @@ module Dependabot
         @pr_name        = pr_name
         @author_details = author_details
         @signature_key  = signature_key
+        @custom_headers = custom_headers
         @labeler        = labeler
         @reviewers      = reviewers
         @assignees      = assignees
@@ -255,14 +256,19 @@ module Dependabot
           source.branch || default_branch,
           branch_name,
           pr_name,
-          pr_description
+          pr_description,
+          headers: custom_headers || {}
         )
       rescue Octokit::UnprocessableEntity => e
+        handle_pr_creation_error(e)
+      end
+
+      def handle_pr_creation_error(error)
         # Ignore races that we lose
-        return if e.message.include?("pull request already exists")
+        return if error.message.include?("pull request already exists")
 
         # Ignore cases where the target branch has been deleted
-        return if e.message.include?("field: base") &&
+        return if error.message.include?("field: base") &&
                   source.branch &&
                   !branch_exists?(source.branch)
 
