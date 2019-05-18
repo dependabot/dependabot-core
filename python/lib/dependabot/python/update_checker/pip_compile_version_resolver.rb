@@ -130,7 +130,9 @@ module Dependabot
               write_temporary_dependency_files(update_requirement: false)
 
               filenames_to_compile.each do |filename|
-                run_command("pyenv exec pip-compile --allow-unsafe #{filename}")
+                run_pip_compile_command(
+                  "pyenv exec pip-compile --allow-unsafe #{filename}",
+                )
               end
 
               true
