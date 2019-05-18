@@ -1,3 +1,7 @@
+## v0.107.9, 18 May 2019
+
+- Elixir: Cowardly fix for a mixfile updating issue
+
 ## v0.107.8, 18 May 2019
 
 - Python: Run check_original_requirements_resolvable using correct Python version
