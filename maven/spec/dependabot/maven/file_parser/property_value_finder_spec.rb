@@ -115,6 +115,11 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         it { is_expected.to be_nil }
       end
 
+      context "that uses properties so can't be fetched" do
+        let(:base_pom_fixture_name) { "remote_parent_pom_with_props.xml" }
+        it { is_expected.to be_nil }
+      end
+
       context "that is a custom repo" do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
