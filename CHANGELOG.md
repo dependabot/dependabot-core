@@ -1,3 +1,7 @@
+## v0.107.8, 18 May 2019
+
+- Python: Run check_original_requirements_resolvable using correct Python version
+
 ## v0.107.7, 18 May 2019
 
 - Maven: Ignore unfetchable parents
