@@ -1,3 +1,8 @@
+## v0.107.7, 18 May 2019
+
+- Maven: Ignore unfetchable parents
+- Python: Bump poetry from 0.12.14 to 0.12.16
+
 ## v0.107.6, 16 May 2019
 
 - Make Source#url dependant on hostname
