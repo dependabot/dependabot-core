@@ -70,13 +70,14 @@ module Dependabot
           old_requirement =
             dependency.requirements.find { |r| r.fetch(:file) == filename }.
             fetch(:requirement)
+          updated_requirement = updated_version_requirement_string(filename)
 
           Hex::FileUpdater::MixfileRequirementUpdater.new(
             dependency_name: dependency.name,
             mixfile_content: content,
             previous_requirement: old_requirement,
-            updated_requirement: updated_version_requirement_string(filename),
-            insert_if_bare: true
+            updated_requirement: updated_requirement,
+            insert_if_bare: updated_requirement && updated_requirement != ">= 0"
           ).updated_content
         end
 
