@@ -139,6 +139,21 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
           end
 
+          context "that uses properties so can't be fetched" do
+            let(:child_pom_fixture_name) do
+              "custom_repositories_child_pom_with_props.xml"
+            end
+
+            it "returns the repositories relevant to the child" do
+              expect(repository_urls).to match_array(
+                %w(
+                  http://child-repository.jboss.org/maven2
+                  https://repo.maven.apache.org/maven2
+                )
+              )
+            end
+          end
+
           context "from the central repo" do
             before do
               stub_request(:get, central_url).
