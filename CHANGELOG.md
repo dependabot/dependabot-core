@@ -1,3 +1,7 @@
+## v0.107.11, 20 May 2019
+
+- Maven: Ignore unfetchable parents when finding repositories
+
 ## v0.107.10, 20 May 2019
 
 - Raise an identifiable error if GitHub 500s during git metadata lookup
