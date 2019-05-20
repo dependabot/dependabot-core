@@ -75,7 +75,7 @@ module Dependabot
         def original_declaration_replacement_regex
           original_string =
             original_dependency_declaration_string(old_requirement)
-          /(?<![\-\w\.])#{Regexp.escape(original_string)}(?![\-\w\.])/
+          /(?<![\-\w\.\[])#{Regexp.escape(original_string)}(?![\-\w\.])/
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

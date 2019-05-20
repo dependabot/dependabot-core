@@ -13,9 +13,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
     )
   end
 
-  let(:requirement_content) do
-    fixture("pip_compile_files", "bounded.in")
-  end
+  let(:requirement_content) { fixture("pip_compile_files", "bounded.in") }
   let(:dependency_name) { "attrs" }
   let(:old_requirement) { "<=17.4.0" }
   let(:new_requirement) { ">=17.3.0" }
@@ -49,6 +47,13 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
         let(:dependency_name) { "pytest" }
         it { is_expected.to include("pytest==1.11.5") }
         it { is_expected.to include("pytest-xdist\n") }
+      end
+
+      context "and another requirement with the dependency as an extra" do
+        let(:requirement_content) { fixture("pip_compile_files", "extra.in") }
+        let(:dependency_name) { "flask" }
+        it { is_expected.to include("flask==1.11.5") }
+        it { is_expected.to include("sentry-sdk[flask]\n") }
       end
 
       context "and a no-binary flag" do
