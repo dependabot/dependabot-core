@@ -1,3 +1,7 @@
+## v0.107.10, 20 May 2019
+
+- Raise an identifiable error if GitHub 500s during git metadata lookup
+
 ## v0.107.9, 18 May 2019
 
 - Elixir: Cowardly fix for a mixfile updating issue
