@@ -5,7 +5,7 @@ require "dependabot/errors"
 
 module Dependabot
   class GitMetadataFetcher
-    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/.freeze
+    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i.freeze
 
     def initialize(url:, credentials:)
       @url = url
@@ -44,8 +44,19 @@ module Dependabot
       )
 
       return response.body if response.status == 200
+
       if response.status >= 500 && uri.match?(KNOWN_HOSTS)
-        raise "Server error at #{uri}: #{response.body}"
+        unless uri.match?(/github\.com/i)
+          raise "Server error at #{uri}: #{response.body}"
+        end
+
+        case response.status
+        when 500 then raise Octokit::InternalServerError
+        when 501 then raise Octokit::NotImplemented
+        when 502 then raise Octokit::BadGateway
+        when 503 then raise Octokit::ServiceUnavailable
+        else raise Octokit::ServerError
+        end
       end
 
       raise Dependabot::GitDependenciesNotReachable, [uri]

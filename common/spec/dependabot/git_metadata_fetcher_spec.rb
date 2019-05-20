@@ -54,6 +54,14 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
       end
 
+      context "but GitHub returns a 500" do
+        before { stub_request(:get, service_pack_url).to_return(status: 500) }
+
+        it "raises a helpful error" do
+          expect { tags }.to raise_error(Octokit::InternalServerError)
+        end
+      end
+
       context "with tags" do
         let(:upload_pack_fixture) { "business" }
 
