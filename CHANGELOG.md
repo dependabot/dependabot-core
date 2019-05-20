@@ -1,3 +1,7 @@
+## v0.107.12, 20 May 2019
+
+- Python: Don't accidentally replace extra declarations with locked versions
+
 ## v0.107.11, 20 May 2019
 
 - Maven: Ignore unfetchable parents when finding repositories
