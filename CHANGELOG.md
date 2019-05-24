@@ -1,3 +1,8 @@
+## v0.107.13, 24 May 2019
+
+- Elm: Raise a resolvability error for old versions of Elm
+- JS: Bump semver from 6.0.0 to 6.1.0 in /npm_and_yarn/helpers
+
 ## v0.107.12, 20 May 2019
 
 - Python: Don't accidentally replace extra declarations with locked versions
