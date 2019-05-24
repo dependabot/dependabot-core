@@ -169,6 +169,19 @@ RSpec.describe namespace::PoetryVersionResolver do
             end
         end
       end
+
+      context "that is unreachable" do
+        let(:pyproject_fixture_name) { "git_dependency_unreachable.toml" }
+        let(:lockfile_fixture_name) { "git_dependency_unreachable.lock" }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).
+                to eq(["https://github.com/greysteil/unreachable.git"])
+            end
+        end
+      end
     end
 
     context "with a conflict at the latest version" do
