@@ -98,7 +98,7 @@ module Dependabot
           # here. No harm in retrying if we do.
           retry_count ||= 0
           retry_count += 1
-          raise if retry_count > 3
+          raise if retry_count > 10
 
           sleep(rand(1..1.99))
           retry
