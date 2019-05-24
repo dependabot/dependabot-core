@@ -1,3 +1,7 @@
+## v0.107.15, 24 May 2019
+
+- Python: Handle unreachable git dependencies when using Poetry
+
 ## v0.107.14, 24 May 2019
 
 - More retries for PR creation failures
