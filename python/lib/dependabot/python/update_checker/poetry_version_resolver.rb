@@ -23,6 +23,9 @@ module Dependabot
         GIT_REFERENCE_NOT_FOUND_REGEX =
           /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
           freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX =
+          /Command '\['git', 'clone', '(?<url>.+?)'.* exit status 128/.
+          freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -109,6 +112,12 @@ module Dependabot
             name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
+          end
+
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
+                  named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
           end
 
           raise unless error.message.include?("SolverProblemError") ||
