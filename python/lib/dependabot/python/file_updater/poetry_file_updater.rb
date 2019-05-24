@@ -180,14 +180,18 @@ module Dependabot
                                  "#{NativeHelpers.python_requirements_path}")
             end
 
-            run_poetry_command(
-              "pyenv exec poetry update #{dependency.name} --lock"
-            )
+            run_poetry_command(poetry_update_command)
 
             return File.read("poetry.lock") if File.exist?("poetry.lock")
 
             File.read("pyproject.lock")
           end
+        end
+
+        # Using `--lock` avoids doing an install.
+        # Using `--no-interaction` avoids asking for passwords.
+        def poetry_update_command
+          "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
         end
 
         def run_poetry_command(command)

@@ -78,10 +78,7 @@ module Dependabot
               end
 
               # Shell out to Poetry, which handles everything for us.
-              # Using `--lock` avoids doing an install.
-              run_poetry_command(
-                "pyenv exec poetry update #{dependency.name} --lock"
-              )
+              run_poetry_command(poetry_update_command)
 
               updated_lockfile =
                 if File.exist?("poetry.lock") then File.read("poetry.lock")
@@ -134,15 +131,19 @@ module Dependabot
           raise
         end
 
+        # Using `--lock` avoids doing an install.
+        # Using `--no-interaction` avoids asking for passwords.
+        def poetry_update_command
+          "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
+        end
+
         def check_original_requirements_resolvable
           return @original_reqs_resolvable if @original_reqs_resolvable
 
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files(update_pyproject: false)
 
-            run_poetry_command(
-              "pyenv exec poetry update #{dependency.name} --lock"
-            )
+            run_poetry_command(poetry_update_command)
 
             @original_reqs_resolvable = true
           rescue SharedHelpers::HelperSubprocessFailed => e
