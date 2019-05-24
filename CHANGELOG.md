@@ -1,3 +1,7 @@
+## v0.107.16, 24 May 2019
+
+- JS: Bump tar from 2.2.1 to 2.2.2 in /npm_and_yarn/helpers
+
 ## v0.107.15, 24 May 2019
 
 - Python: Handle unreachable git dependencies when using Poetry
