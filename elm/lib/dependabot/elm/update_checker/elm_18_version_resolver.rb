@@ -181,6 +181,10 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
+          if error.message.include?("You are using Elm 0.18.0, but")
+            raise Dependabot::DependencyFileNotResolvable, error.message
+          end
+
           # I don't know any other errors
           raise error
         end

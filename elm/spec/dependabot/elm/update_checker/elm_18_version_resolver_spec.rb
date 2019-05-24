@@ -195,6 +195,43 @@ RSpec.describe namespace::Elm18VersionResolver do
         end
       end
     end
+
+    context "5) old version of elm" do
+      let(:fixture_name) { "old_elm" }
+      let(:dependency_name) { "elm-lang/core" }
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "elm-package.json",
+          requirement: dependency_requirement,
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:dependency_requirement) { "4.0.0 <= v < 5.0.0" }
+
+      context ":own unlocks" do
+        let(:unlock_requirement) { :own }
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to include("You are using Elm 0.18.0, but")
+            end
+        end
+      end
+
+      context ":all unlocks" do
+        let(:unlock_requirement) { :all }
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).
+                to include("You are using Elm 0.18.0, but")
+            end
+        end
+      end
+    end
   end
 
   describe "#updated_dependencies_after_full_unlock" do
