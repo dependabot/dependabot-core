@@ -1,3 +1,7 @@
+## v0.107.14, 24 May 2019
+
+- More retries for PR creation failures
+
 ## v0.107.13, 24 May 2019
 
 - Elm: Raise a resolvability error for old versions of Elm
