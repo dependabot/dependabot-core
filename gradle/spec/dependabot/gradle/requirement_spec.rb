@@ -54,6 +54,16 @@ RSpec.describe Dependabot::Gradle::Requirement do
     context "with a dynamic version requirement" do
       let(:requirement_string) { "1.+" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
+
+      context "that specifies a minimum" do
+        let(:requirement_string) { "1.5+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5").to_s) }
+      end
+
+      context "that is just a +" do
+        let(:requirement_string) { "+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new(">= 0").to_s) }
+      end
     end
 
     context "with a hard requirement" do

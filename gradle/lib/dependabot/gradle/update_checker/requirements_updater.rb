@@ -49,7 +49,7 @@ module Dependabot
                     :properties_to_update
 
         def update_requirement(req_string)
-          if req_string.include?(".+")
+          if req_string.include?("+")
             update_dynamic_requirement(req_string)
           else
             # Since range requirements are excluded this must be exact
@@ -63,14 +63,19 @@ module Dependabot
           req_string.gsub(old_version.to_s, latest_version.to_s)
         end
 
-        # This is really only a Gradle thing, but Gradle relies on this
-        # RequirementsUpdater too
         def update_dynamic_requirement(req_string)
-          precision = req_string.split(".").take_while { |s| s != "+" }.count
+          version = req_string.split(/\.?\+/).first || "+"
+
+          precision = version.split(".").
+                      take_while { |s| !s.include?("+") }.count
 
           version_parts = latest_version.segments.first(precision)
 
-          version_parts.join(".") + ".+"
+          if req_string.end_with?(".+")
+            version_parts.join(".") + ".+"
+          else
+            version_parts.join(".") + "+"
+          end
         end
 
         def version_class

@@ -97,10 +97,11 @@ module Dependabot
       end
 
       def convert_wildcard_req(req_string)
-        version = req_string.gsub(/(?:\.|^)\+/, "")
-        return ">= 0" if version.empty?
+        version = req_string.split("+").first
+        return ">= 0" if version.nil? || version.empty?
 
-        "~> #{version}.0"
+        version += "0" if version.end_with?(".")
+        "~> #{version}"
       end
     end
   end
