@@ -9,6 +9,7 @@ require "dependabot/python/python_versions"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileUpdater
@@ -172,19 +173,21 @@ module Dependabot
 
         def updated_lockfile_content_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files(pyproject_content)
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files(pyproject_content)
 
-            if python_version && !pre_installed_python?(python_version)
-              run_poetry_command("pyenv install -s #{python_version}")
-              run_poetry_command("pyenv exec pip install -r"\
-                                 "#{NativeHelpers.python_requirements_path}")
+              if python_version && !pre_installed_python?(python_version)
+                run_poetry_command("pyenv install -s #{python_version}")
+                run_poetry_command("pyenv exec pip install -r"\
+                                   "#{NativeHelpers.python_requirements_path}")
+              end
+
+              run_poetry_command(poetry_update_command)
+
+              return File.read("poetry.lock") if File.exist?("poetry.lock")
+
+              File.read("pyproject.lock")
             end
-
-            run_poetry_command(poetry_update_command)
-
-            return File.read("poetry.lock") if File.exist?("poetry.lock")
-
-            File.read("pyproject.lock")
           end
         end
 
@@ -274,12 +277,14 @@ module Dependabot
 
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
-            File.write(File.join(dir, "pyproject.toml"), pyproject_content)
-            SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
-              function: "get_pyproject_hash",
-              args: [dir]
-            )
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              File.write(File.join(dir, "pyproject.toml"), pyproject_content)
+              SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python #{python_helper_path}",
+                function: "get_pyproject_hash",
+                args: [dir]
+              )
+            end
           end
         end
 
@@ -319,6 +324,10 @@ module Dependabot
           @lockfile ||= pyproject_lock || poetry_lock
         end
 
+        def python_helper_path
+          NativeHelpers.python_helper_path
+        end
+
         def pyproject_lock
           dependency_files.find { |f| f.name == "pyproject.lock" }
         end
@@ -338,3 +347,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

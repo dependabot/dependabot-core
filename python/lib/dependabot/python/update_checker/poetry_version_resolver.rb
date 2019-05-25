@@ -61,6 +61,7 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/MethodLength
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           if @latest_resolvable_version_string.key?(requirement)
@@ -69,28 +70,33 @@ module Dependabot
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files(updated_req: requirement)
+              SharedHelpers.with_git_configured(credentials: credentials) do
+                write_temporary_dependency_files(updated_req: requirement)
 
-              if python_version && !pre_installed_python?(python_version)
-                run_poetry_command("pyenv install -s #{python_version}")
-                run_poetry_command("pyenv exec pip install -r "\
-                                   "#{NativeHelpers.python_requirements_path}")
-              end
-
-              # Shell out to Poetry, which handles everything for us.
-              run_poetry_command(poetry_update_command)
-
-              updated_lockfile =
-                if File.exist?("poetry.lock") then File.read("poetry.lock")
-                else File.read("pyproject.lock")
+                if python_version && !pre_installed_python?(python_version)
+                  run_poetry_command("pyenv install -s #{python_version}")
+                  run_poetry_command(
+                    "pyenv exec pip install -r "\
+                    "#{NativeHelpers.python_requirements_path}"
+                  )
                 end
-              updated_lockfile = TomlRB.parse(updated_lockfile)
 
-              fetch_version_from_parsed_lockfile(updated_lockfile)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              handle_poetry_errors(e)
+                # Shell out to Poetry, which handles everything for us.
+                run_poetry_command(poetry_update_command)
+
+                updated_lockfile =
+                  if File.exist?("poetry.lock") then File.read("poetry.lock")
+                  else File.read("pyproject.lock")
+                  end
+                updated_lockfile = TomlRB.parse(updated_lockfile)
+
+                fetch_version_from_parsed_lockfile(updated_lockfile)
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                handle_poetry_errors(e)
+              end
             end
         end
+        # rubocop:enable Metrics/MethodLength
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
@@ -141,17 +147,19 @@ module Dependabot
           return @original_reqs_resolvable if @original_reqs_resolvable
 
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files(update_pyproject: false)
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_temporary_dependency_files(update_pyproject: false)
 
-            run_poetry_command(poetry_update_command)
+              run_poetry_command(poetry_update_command)
 
-            @original_reqs_resolvable = true
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            raise unless e.message.include?("SolverProblemError") ||
-                         e.message.include?("PackageNotFound")
+              @original_reqs_resolvable = true
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise unless e.message.include?("SolverProblemError") ||
+                           e.message.include?("PackageNotFound")
 
-            msg = clean_error_message(e.message)
-            raise DependencyFileNotResolvable, msg
+              msg = clean_error_message(e.message)
+              raise DependencyFileNotResolvable, msg
+            end
           end
         end
 
@@ -386,10 +394,6 @@ module Dependabot
           @pyproject_sources ||=
             sources.
             map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
-        end
-
-        def python_requirements_path
-          File.join(NativeHelpers.python_helper_path, "requirements.txt")
         end
       end
     end
