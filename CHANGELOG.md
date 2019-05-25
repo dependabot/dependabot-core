@@ -1,3 +1,8 @@
+## v0.107.18, 25 May 2019
+
+- Gradle: Handle dynamic versions with minimum patch
+- Python: Don't parse comments as part of index URL
+
 ## v0.107.17, 25 May 2019
 
 - Python: Use configured git when using Poetry
