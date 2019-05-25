@@ -64,7 +64,11 @@ module Dependabot
           requirement_node = find_ruby_requirement_node(ast)
           return unless requirement_node
 
-          eval(requirement_node.children[2].loc.expression.source)
+          begin
+            eval(requirement_node.children[2].loc.expression.source)
+          rescue StandardError
+            nil # If we can't evaluate the expression just return nil
+          end
         end
         # rubocop:enable Security/Eval
 

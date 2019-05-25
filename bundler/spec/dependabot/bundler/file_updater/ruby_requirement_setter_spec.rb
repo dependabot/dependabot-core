@@ -44,6 +44,13 @@ RSpec.describe module_to_test::RubyRequirementSetter do
         specify { expect { rewrite }.to raise_error(/Ruby version/) }
       end
 
+      context "that can't be evaluated" do
+        let(:content) { fixture("ruby", "gemfiles", "Gemfile") }
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "unevaluatable_ruby") }
+
+        it { is_expected.to_not include("ruby '") }
+      end
+
       context "with an existing ruby version" do
         context "at top level" do
           let(:content) { fixture("ruby", "gemfiles", "explicit_ruby") }
