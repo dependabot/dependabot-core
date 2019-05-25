@@ -1,3 +1,7 @@
+## v0.107.19, 25 May 2019
+
+- Terraform: Handle unparseable files
+
 ## v0.107.18, 25 May 2019
 
 - Gradle: Handle dynamic versions with minimum patch
