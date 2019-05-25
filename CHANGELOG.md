@@ -1,3 +1,8 @@
+## v0.107.17, 25 May 2019
+
+- Python: Use configured git when using Poetry
+- Ruby: Handle unevaluatable ruby versions
+
 ## v0.107.16, 24 May 2019
 
 - JS: Bump tar from 2.2.1 to 2.2.2 in /npm_and_yarn/helpers
