@@ -46,6 +46,20 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
+      context "that can't be parsed" do
+        let(:terraform_fixture_name) { "unparseable.tf" }
+
+        it "raises a helpful error" do
+          expect { parser.parse }.
+            to raise_error(Dependabot::DependencyFileNotParseable) do |err|
+              expect(err.file_path).to eq("/main.tf")
+              expect(err.message).to eq(
+                "unable to parse HCL: object expected closing RBRACE got: EOF"
+              )
+            end
+        end
+      end
+
       describe "the first dependency (default registry with version)" do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do

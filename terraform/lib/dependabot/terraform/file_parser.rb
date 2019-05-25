@@ -224,12 +224,12 @@ module Dependabot
 
             command = "#{terraform_parser_path} -reverse < tmp.tf"
             start = Time.now
-            stdout, process = Open3.capture2(command)
+            stdout, stderr, process = Open3.capture3(command)
             time_taken = Time.now - start
 
             unless process.success?
               raise SharedHelpers::HelperSubprocessFailed.new(
-                message: stdout,
+                message: stderr,
                 error_context: {
                   command: command,
                   time_taken: time_taken,
@@ -240,6 +240,9 @@ module Dependabot
 
             JSON.parse(stdout)
           end
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        msg = e.message.strip
+        raise Dependabot::DependencyFileNotParseable.new(file.path, msg)
       end
 
       def terraform_parser_path
