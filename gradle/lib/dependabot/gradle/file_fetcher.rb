@@ -59,9 +59,18 @@ module Dependabot
         dependency_plugin_paths.map do |path|
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
+          next nil if file_exists_in_submodule?(path)
+
           # Experimental feature - raise an error for Dependabot team to review
           raise "Script plugin not found: #{path}"
         end.compact
+      end
+
+      def file_exists_in_submodule?(path)
+        fetch_file_from_host(path, fetch_submodules: true)
+        true
+      rescue Dependabot::DependencyFileNotFound
+        false
       end
 
       def settings_file
