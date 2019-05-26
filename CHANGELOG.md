@@ -1,3 +1,8 @@
+## v0.107.21, 26 May 2019
+
+- Gradle: Ignore failure to fetch script plugins from submodules
+- Python: Better python version error detection
+
 ## v0.107.20, 26 May 2019
 
 - Python: Mark dependencies specified in a _dev file as development dependencies
