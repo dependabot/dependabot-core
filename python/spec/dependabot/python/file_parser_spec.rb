@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==1.3.0",
               file: "requirements.txt",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -286,12 +286,12 @@ RSpec.describe Dependabot::Python::FileParser do
               [{
                 requirement: nil,
                 file: "requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }, {
                 requirement: "==2.0.0",
                 file: "constraints.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )
@@ -313,12 +313,12 @@ RSpec.describe Dependabot::Python::FileParser do
                 [{
                   requirement: "==2.0.0",
                   file: "constraints.txt",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }, {
                   requirement: "==2.4.1",
                   file: "requirements.txt",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }]
               )
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "requirements-dev.txt",
-              groups: [],
+              groups: ["dev-dependencies"],
               source: nil
             }]
           )
@@ -380,7 +380,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "dev-requirements.txt",
-              groups: [],
+              groups: ["dev-dependencies"],
               source: nil
             }]
           )
@@ -410,7 +410,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.6.1",
               file: "requirements/dev.txt",
-              groups: [],
+              groups: ["dev-dependencies"],
               source: nil
             }]
           )
@@ -447,7 +447,7 @@ RSpec.describe Dependabot::Python::FileParser do
             [{
               requirement: "==2.1.0",
               file: "requirements.txt",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }, {
               requirement: "==2.12.*",
@@ -498,7 +498,7 @@ RSpec.describe Dependabot::Python::FileParser do
               [{
                 requirement: "==2.1.0",
                 file: "requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )
@@ -593,7 +593,7 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.4.1",
                 file: "requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }],
               package_manager: "pip"
@@ -604,7 +604,7 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.2.0",
                 file: "more_requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }],
               package_manager: "pip"
@@ -615,7 +615,7 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.6.1",
                 file: "more_requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }],
               package_manager: "pip"
@@ -626,7 +626,7 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==3.4.0",
                 file: "more_requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }],
               package_manager: "pip"
@@ -670,7 +670,7 @@ RSpec.describe Dependabot::Python::FileParser do
               [{
                 requirement: nil,
                 file: "requirements/test.in",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )
@@ -696,7 +696,7 @@ RSpec.describe Dependabot::Python::FileParser do
                 [{
                   requirement: "==1.4",
                   file: "requirements.txt",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }]
               )
@@ -714,12 +714,12 @@ RSpec.describe Dependabot::Python::FileParser do
                 [{
                   requirement: nil,
                   file: "requirements/test.in",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }, {
                   requirement: "==17.3.0",
                   file: "requirements.txt",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }]
               )
@@ -742,7 +742,7 @@ RSpec.describe Dependabot::Python::FileParser do
                 [{
                   requirement: "<=17.4.0",
                   file: "requirements/test.in",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }]
               )
@@ -944,7 +944,7 @@ RSpec.describe Dependabot::Python::FileParser do
               [{
                 requirement: "==2.6.1",
                 file: "requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )
@@ -1051,7 +1051,7 @@ RSpec.describe Dependabot::Python::FileParser do
               [{
                 requirement: "==2.6.1",
                 file: "requirements.txt",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )

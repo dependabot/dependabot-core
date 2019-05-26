@@ -85,7 +85,7 @@ module Dependabot
                 requirement: dep["requirement"],
                 file: Pathname.new(dep["file"]).cleanpath.to_path,
                 source: nil,
-                groups: []
+                groups: group_from_filename(dep["file"])
               }]
             end
 
@@ -98,6 +98,12 @@ module Dependabot
             )
         end
         dependencies
+      end
+
+      def group_from_filename(filename)
+        if filename.include?("dev") then ["dev-dependencies"]
+        else ["dependencies"]
+        end
       end
 
       def included_in_pipenv_deps?(dep_name)
