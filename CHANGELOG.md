@@ -1,3 +1,7 @@
+## v0.107.20, 26 May 2019
+
+- Python: Mark dependencies specified in a _dev file as development dependencies
+
 ## v0.107.19, 25 May 2019
 
 - Terraform: Handle unparseable files
