@@ -64,11 +64,12 @@ module Dependabot
           pull_request_number,
           labels_for_pr
         )
-      rescue Octokit::UnprocessableEntity
-        retrying ||= false
-        raise if retrying
+      rescue Octokit::UnprocessableEntity, Octokit::NotFound
+        retry_count ||= 0
+        retry_count += 1
+        raise if retry_count > 10
 
-        retrying = true
+        sleep(rand(1..1.99))
         retry
       end
 

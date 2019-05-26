@@ -799,6 +799,27 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
+        context "when GitHub unexpectedly 404s" do
+          before do
+            stub_request(:post, "#{repo_api_url}/issues/1/labels").
+              to_return(status: 404).
+              to_return(
+                status: 200,
+                body: fixture("github", "labels_with_dependencies.json"),
+                headers: json_header
+              )
+          end
+
+          it "labels the PR" do
+            label_pr
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/issues/1/labels").
+              with(body: '["dependencies"]').
+              twice
+          end
+        end
+
         context "for a security fix" do
           let(:includes_security_fixes) { true }
           before do
