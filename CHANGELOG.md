@@ -1,3 +1,7 @@
+## v0.107.22, 26 May 2019
+
+- Elixir: Better file sanitization
+
 ## v0.107.21, 26 May 2019
 
 - Gradle: Ignore failure to fetch script plugins from submodules
