@@ -172,14 +172,10 @@ module Dependabot
           run_command("pyenv local #{python_version}")
           run_command(command)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          original_error ||= e
+          original_err ||= e
           msg = e.message
 
-          relevant_error =
-            if error_suggests_bad_python_version?(msg) then original_error
-            else e
-            end
-
+          relevant_error = choose_relevant_error(original_err, e)
           raise relevant_error unless error_suggests_bad_python_version?(msg)
           raise relevant_error if user_specified_python_version
           raise relevant_error if python_version == "2.7.16"
@@ -189,6 +185,25 @@ module Dependabot
         ensure
           @python_version = nil
           FileUtils.remove_entry(".python-version", true)
+        end
+
+        def choose_relevant_error(previous_error, new_error)
+          return previous_error if previous_error == new_error
+
+          # If the previous error was definitely due to using the wrong Python
+          # version, return the new error (which can't be worse)
+          if error_certainly_bad_python_version?(previous_error.message)
+            return new_error
+          end
+
+          # Otherwise, if the new error may be due to using the wrong Python
+          # version, return the old error (which can't be worse)
+          if error_suggests_bad_python_version?(new_error.message)
+            return previous_error
+          end
+
+          # Otherwise, default to the new error
+          new_error
         end
 
         def python_env
@@ -204,6 +219,14 @@ module Dependabot
           end
 
           env
+        end
+
+        def error_certainly_bad_python_version?(message)
+          unless message.include?('Command "python setup.py egg_info" failed')
+            return false
+          end
+
+          message.include?("SyntaxError")
         end
 
         def error_suggests_bad_python_version?(message)

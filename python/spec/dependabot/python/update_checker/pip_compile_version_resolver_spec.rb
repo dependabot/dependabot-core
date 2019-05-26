@@ -342,6 +342,24 @@ RSpec.describe namespace::PipCompileVersionResolver do
         it { is_expected.to eq(Gem::Version.new("1.6.6")) }
       end
 
+      context "that has swapped syntax in the latest setup.py" do
+        let(:manifest_fixture_name) { "legacy_python_3.in" }
+        let(:generated_fixture_name) { "pip_compile_legacy_python_3.txt" }
+
+        let(:dependency_name) { "django-adv-cache-tag" }
+        let(:dependency_version) { "0.2.1" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements/test.in",
+            requirement: "==0.2.1",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "that has a .python-version file" do
         let(:dependency_files) do
           [manifest_file, generated_file, python_version_file]
