@@ -15,7 +15,7 @@ module Dependabot
           mixfile_content.
             gsub(/File\.read!\(.*?\)/, '"0.0.1"').
             gsub(/File\.read\(.*?\)/, '{:ok, "0.0.1"}').
-            gsub(/config_path:.*(?:,|$)/, "")
+            gsub(/^\s*config_path:.*(?:,|$)/, "")
         end
 
         private
