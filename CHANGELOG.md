@@ -1,3 +1,7 @@
+## v0.107.23, 26 May 2019
+
+- Retry labeling failures caused by a race on the GitHub side
+
 ## v0.107.22, 26 May 2019
 
 - Elixir: Better file sanitization
