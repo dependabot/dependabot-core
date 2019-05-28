@@ -1,3 +1,7 @@
+## v0.107.24, 28 May 2019
+
+- Add php7.3-tidy to dockerfile
+
 ## v0.107.23, 26 May 2019
 
 - Retry labeling failures caused by a race on the GitHub side
@@ -13,7 +17,7 @@
 
 ## v0.107.20, 26 May 2019
 
-- Python: Mark dependencies specified in a _dev file as development dependencies
+- Python: Mark dependencies specified in a dev file as development dependencies
 
 ## v0.107.19, 25 May 2019
 
