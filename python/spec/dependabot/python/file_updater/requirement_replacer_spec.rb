@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
 
       context "with spacing" do
         let(:requirement_content) { "django  >= 1.11, < 1.12" }
-        it { is_expected.to eq("django  >=1.11.5") }
+        it { is_expected.to eq("django  >= 1.11.5") }
       end
     end
 

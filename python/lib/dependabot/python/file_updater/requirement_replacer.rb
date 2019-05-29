@@ -25,10 +25,7 @@ module Dependabot
               # ignore it, since it isn't actually a declaration
               next mtch if Regexp.last_match.pre_match.match?(/--.*\z/)
 
-              updated_dependency_declaration_string(
-                old_requirement,
-                new_requirement
-              )
+              updated_dependency_declaration_string
             end
 
           raise "Expected content to change!" if content == updated_content
@@ -45,20 +42,32 @@ module Dependabot
           !new_hash_version.nil?
         end
 
-        def updated_dependency_declaration_string(old_req, new_req)
-          new_req_string = new_req
-          if add_space_after_commas?(old_req)
+        def updated_requirement_string
+          new_req_string = new_requirement
+
+          if add_space_after_commas?
             new_req_string = new_req_string.gsub(/,\s*/, ", ")
           end
 
+          if add_space_after_operators?
+            new_req_string =
+              new_req_string.
+              gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/, '\1 ')
+          end
+
+          new_req_string
+        end
+
+        def updated_dependency_declaration_string
+          old_req = old_requirement
           updated_string =
             if old_req
               original_dependency_declaration_string(old_req).
-                sub(RequirementParser::REQUIREMENTS, new_req_string)
+                sub(RequirementParser::REQUIREMENTS, updated_requirement_string)
             else
               original_dependency_declaration_string(old_req).
                 sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                  nm + new_req_string
+                  nm + updated_requirement_string
                 end
             end
 
@@ -76,10 +85,16 @@ module Dependabot
           )
         end
 
-        def add_space_after_commas?(old_req)
-          original_dependency_declaration_string(old_req).
+        def add_space_after_commas?
+          original_dependency_declaration_string(old_requirement).
             match(RequirementParser::REQUIREMENTS).
             to_s.include?(", ")
+        end
+
+        def add_space_after_operators?
+          original_dependency_declaration_string(old_requirement).
+            match(RequirementParser::REQUIREMENTS).
+            to_s.match?(/#{RequirementParser::COMPARISON}\s+\d/)
         end
 
         def original_declaration_replacement_regex
