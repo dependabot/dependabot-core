@@ -3,20 +3,19 @@
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
+require "dependabot/python/native_helpers"
 
 module Dependabot
   module Python
     class FileUpdater
       class RequirementReplacer
-        attr_reader :content, :dependency_name, :old_requirement,
-                    :new_requirement
-
         def initialize(content:, dependency_name:, old_requirement:,
-                       new_requirement:)
-          @content         = content
-          @dependency_name = dependency_name
-          @old_requirement = old_requirement
-          @new_requirement = new_requirement
+                       new_requirement:, new_hash_version: nil)
+          @content          = content
+          @dependency_name  = dependency_name
+          @old_requirement  = old_requirement
+          @new_requirement  = new_requirement
+          @new_hash_version = new_hash_version
         end
 
         def updated_content
@@ -39,6 +38,95 @@ module Dependabot
 
         private
 
+        attr_reader :content, :dependency_name, :old_requirement,
+                    :new_requirement, :new_hash_version
+
+        def update_hashes?
+          !new_hash_version.nil?
+        end
+
+        def updated_dependency_declaration_string(old_req, new_req)
+          new_req_string = new_req
+          if add_space_after_commas?(old_req)
+            new_req_string = new_req_string.gsub(/,\s*/, ", ")
+          end
+
+          updated_string =
+            if old_req
+              original_dependency_declaration_string(old_req).
+                sub(RequirementParser::REQUIREMENTS, new_req_string)
+            else
+              original_dependency_declaration_string(old_req).
+                sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
+                  nm + new_req_string
+                end
+            end
+
+          unless update_hashes? && requirement_includes_hashes?(old_req)
+            return updated_string
+          end
+
+          updated_string.sub(
+            RequirementParser::HASHES,
+            package_hashes_for(
+              name: dependency_name,
+              version: new_hash_version,
+              algorithm: hash_algorithm(old_req)
+            ).join(hash_separator(old_req))
+          )
+        end
+
+        def add_space_after_commas?(old_req)
+          original_dependency_declaration_string(old_req).
+            match(RequirementParser::REQUIREMENTS).
+            to_s.include?(", ")
+        end
+
+        def original_declaration_replacement_regex
+          original_string =
+            original_dependency_declaration_string(old_requirement)
+          /(?<![\-\w\.\[])#{Regexp.escape(original_string)}(?![\-\w\.])/
+        end
+
+        def requirement_includes_hashes?(requirement)
+          original_dependency_declaration_string(requirement).
+            match?(RequirementParser::HASHES)
+        end
+
+        def hash_algorithm(requirement)
+          return unless requirement_includes_hashes?(requirement)
+
+          original_dependency_declaration_string(requirement).
+            match(RequirementParser::HASHES).
+            named_captures.fetch("algorithm")
+        end
+
+        def hash_separator(requirement)
+          return unless requirement_includes_hashes?(requirement)
+
+          hash_regex = RequirementParser::HASH
+          current_separator =
+            original_dependency_declaration_string(requirement).
+            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
+            named_captures.fetch("separator")
+
+          default_separator =
+            original_dependency_declaration_string(requirement).
+            match(RequirementParser::HASH).
+            pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
+            named_captures.fetch("separator")
+
+          current_separator || default_separator
+        end
+
+        def package_hashes_for(name:, version:, algorithm:)
+          SharedHelpers.run_helper_subprocess(
+            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+            function: "get_dependency_hash",
+            args: [name, version, algorithm]
+          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+        end
+
         def original_dependency_declaration_string(old_req)
           matches = []
 
@@ -58,24 +146,6 @@ module Dependabot
           raise "Declaration not found for #{dependency_name}!" unless dec
 
           dec.to_s.strip
-        end
-
-        def updated_dependency_declaration_string(old_req, new_req)
-          if old_req
-            original_dependency_declaration_string(old_req).
-              sub(RequirementParser::REQUIREMENTS, new_req)
-          else
-            original_dependency_declaration_string(old_req).
-              sub(RequirementParser::NAME_WITH_EXTRAS) do |nm|
-                nm + new_req
-              end
-          end
-        end
-
-        def original_declaration_replacement_regex
-          original_string =
-            original_dependency_declaration_string(old_requirement)
-          /(?<![\-\w\.\[])#{Regexp.escape(original_string)}(?![\-\w\.])/
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
