@@ -10,6 +10,8 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
+      require_relative "message_builder/issue_linker"
+
       ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style
                             test).freeze
       ESLINT_PREFIXES  = %w(Breaking Build Chore Docs Fix New Update
@@ -27,9 +29,6 @@ module Dependabot
                             see_no_evil sparkles speech_balloon tada truck
                             twisted_rightwards_arrows whale wheelchair
                             white_check_mark wrench zap).freeze
-      ISSUE_TAG_REGEX =
-        /(?<=[^A-Za-z0-9\[\\]|^)\\*(?<tag>(?:\#|GH-)\d+)(?=[^A-Za-z0-9\-]|$)/.
-        freeze
       GITHUB_REF_REGEX = %r{
         (?:https?://)?
         github\.com/[^/\s]+/[^/\s]+/
@@ -695,16 +694,9 @@ module Dependabot
       end
 
       def link_issues(text:, dependency:)
-        updated_text = text.gsub(ISSUE_TAG_REGEX) do |mention|
-          number = mention.split("#").last.gsub("GH-", "")
-          "[#{mention}](#{source_url(dependency)}/issues/#{number})"
-        end
-
-        updated_text.gsub(/\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/) do |mention|
-          mention = mention.match(/(?<=\[)(.*)(?=\])/).to_s
-          number = mention.match(/\d+/).to_s
-          "[#{mention}](#{source_url(dependency)}/issues/#{number})"
-        end
+        IssueLinker.
+          new(source_url: source_url(dependency)).
+          link_issues(text: text)
       end
 
       def fix_relative_links(text:, base_url:)
