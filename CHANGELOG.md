@@ -1,3 +1,16 @@
+## v0.107.25, 29 May 2019
+
+- Python: Preserve operator spacing
+- Python: Remove duplication between RequirementReplacer and RequirementFileUpdater
+- Python: Preserve whitespace in requirement.txt updates
+- Merge pull request #1178 from dependabot/dependabot/npm_and_yarn/npm_and_yarn/helpers/semver-6.1.1
+- Bump semver from 6.1.0 to 6.1.1 in /npm_and_yarn/helpers
+- Merge pull request #1177 from dependabot/dependabot/pip/python/helpers/cython-0.29.9
+- Extract issue linking logic into a separate class
+- Bump cython from 0.29.8 to 0.29.9 in /python/helpers
+- Merge pull request #1175 from dependabot/dependabot/pip/python/helpers/cython-0.29.8
+- Bump cython from 0.29.7 to 0.29.8 in /python/helpers
+
 ## v0.107.24, 28 May 2019
 
 - Add php7.3-tidy to dockerfile
