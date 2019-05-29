@@ -1,3 +1,8 @@
+## v0.107.26, 30 May 2019
+
+- Terraform: Handle sub-dir reference in querystring
+- Gradle: Ignore dependency script paths that need value interpolation
+
 ## v0.107.25, 29 May 2019
 
 - Python: Preserve operator spacing
