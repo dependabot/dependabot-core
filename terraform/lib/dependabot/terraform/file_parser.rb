@@ -146,13 +146,13 @@ module Dependabot
           end
 
         querystr = URI.parse("https://" + bare_uri).query
-        git_url = git_url.split(%r{(?<!:)//}).first.gsub("?#{querystr}", "")
+        git_url = git_url.gsub("?#{querystr}", "").split(%r{(?<!:)//}).first
 
         {
           type: "git",
           url: git_url,
           branch: nil,
-          ref: CGI.parse(querystr.to_s)["ref"].first
+          ref: CGI.parse(querystr.to_s)["ref"].first&.split(%r{(?<!:)//})&.first
         }
       end
 
