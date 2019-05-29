@@ -84,10 +84,16 @@ module Dependabot
         end
 
         def updated_dependency_declaration_string(new_req, old_req)
+          new_req_string = new_req.fetch(:requirement)
+
+          if space_after_comma?(old_req)
+            new_req_string = new_req_string.gsub(/,\s*/, ", ")
+          end
+
           updated_string =
             original_dependency_declaration_string(old_req).sub(
               RequirementParser::REQUIREMENTS,
-              new_req.fetch(:requirement)
+              new_req_string
             )
           return updated_string unless requirement_includes_hashes?(old_req)
 
@@ -99,6 +105,12 @@ module Dependabot
               algorithm: hash_algorithm(old_req)
             ).join(hash_separator(old_req))
           )
+        end
+
+        def space_after_comma?(old_req)
+          original_dependency_declaration_string(old_req).
+            match(RequirementParser::REQUIREMENTS).
+            to_s.include?(", ")
         end
 
         def original_declaration_replacement_regex(requirement)

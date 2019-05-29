@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       version: "2.8.1",
       requirements: [{
         file: "requirements.txt",
-        requirement: "==2.8.1",
+        requirement: updated_requirement_string,
         groups: [],
         source: nil
       }],
@@ -42,6 +42,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
     )
   end
   let(:previous_requirement_string) { "==2.6.1" }
+  let(:updated_requirement_string) { "==2.8.1" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -84,6 +85,30 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         let(:requirements_fixture_name) { "comments.txt" }
         let(:previous_requirement_string) { "==2.6.1" }
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
+      end
+
+      context "when there is a range" do
+        context "with a space after the comma" do
+          let(:requirements_fixture_name) { "version_between_bounds.txt" }
+          let(:previous_requirement_string) { "<=3.0.0,==2.6.1" }
+          let(:updated_requirement_string) { "==2.8.1,<=3.0.0" }
+
+          its(:content) { is_expected.to include "psycopg2==2.8.1, <=3.0.0\n" }
+        end
+
+        context "with no space after the comma" do
+          let(:requirements) do
+            Dependabot::DependencyFile.new(
+              content: fixture("requirements", "version_between_bounds.txt").
+                       gsub(", ", ","),
+              name: "requirements.txt"
+            )
+          end
+          let(:previous_requirement_string) { "<=3.0.0,==2.6.1" }
+          let(:updated_requirement_string) { "==2.8.1,<=3.0.0" }
+
+          its(:content) { is_expected.to include "psycopg2==2.8.1,<=3.0.0\n" }
+        end
       end
 
       context "with substring names" do
@@ -391,7 +416,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           )
         end
 
-        its(:content) { is_expected.to include "'flake8 >2.5.4,<3.4.0',\n" }
+        its(:content) { is_expected.to include "'flake8 >2.5.4, <3.4.0',\n" }
       end
     end
 
