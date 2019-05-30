@@ -68,6 +68,8 @@ module Dependabot
           DEPENDENCY_TYPES.each do |type|
             deps = JSON.parse(file.content)[type] || {}
             deps.each do |name, requirement|
+              next unless requirement.is_a?(String)
+
               requirement = "*" if requirement == ""
               dep = build_dependency(
                 file: file, type: type, name: name, requirement: requirement

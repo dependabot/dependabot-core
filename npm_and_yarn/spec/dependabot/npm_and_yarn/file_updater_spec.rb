@@ -31,9 +31,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       name: "package.json"
     )
   end
-  let(:package_json_body) do
-    fixture("package_files", manifest_fixture_name)
-  end
+  let(:package_json_body) { fixture("package_files", manifest_fixture_name) }
   let(:manifest_fixture_name) { "package.json" }
   let(:package_lock) do
     Dependabot::DependencyFile.new(
@@ -41,9 +39,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       content: package_lock_body
     )
   end
-  let(:package_lock_body) do
-    fixture("npm_lockfiles", npm_lock_fixture_name)
-  end
+  let(:package_lock_body) { fixture("npm_lockfiles", npm_lock_fixture_name) }
   let(:npm_lock_fixture_name) { "package-lock.json" }
   let(:yarn_lock) do
     Dependabot::DependencyFile.new(
@@ -51,9 +47,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       content: yarn_lock_body
     )
   end
-  let(:yarn_lock_body) do
-    fixture("yarn_lockfiles", yarn_lock_fixture_name)
-  end
+  let(:yarn_lock_body) { fixture("yarn_lockfiles", yarn_lock_fixture_name) }
   let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -2197,6 +2191,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       context "when the package lock is empty" do
         let(:manifest_fixture_name) { "package.json" }
         let(:npm_lock_fixture_name) { "no_dependencies.json" }
+
+        it "updates the files" do
+          expect(updated_files.count).to eq(2)
+        end
+      end
+
+      context "with a requirement that specifies a hash" do
+        let(:manifest_fixture_name) { "hash_requirement.json" }
+        let(:npm_lock_fixture_name) { "package-lock.json" }
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)

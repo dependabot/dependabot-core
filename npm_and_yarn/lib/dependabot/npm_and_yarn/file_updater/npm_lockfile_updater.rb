@@ -403,10 +403,8 @@ module Dependabot
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 
-          types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
-
           json = JSON.parse(content)
-          types.each do |type|
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
             json.fetch(type, {}).each do |nm, _|
               updated_version = git_dependencies_to_lock.dig(nm, :version)
               next unless updated_version
@@ -460,6 +458,7 @@ module Dependabot
           package_files.each do |file|
             NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
               JSON.parse(file.content).fetch(t, {}).each do |_, requirement|
+                next unless requirement.is_a?(String)
                 next unless requirement.start_with?("git+ssh:")
 
                 req = requirement.split("#").first

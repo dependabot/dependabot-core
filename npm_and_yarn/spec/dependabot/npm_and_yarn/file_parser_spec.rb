@@ -104,6 +104,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with an ignored hash requirement" do
+          let(:package_json_fixture_name) { "hash_requirement.json" }
+          let(:npm_lock_fixture_name) { "package-lock.json" }
+
+          its(:length) { is_expected.to eq(2) }
+        end
+
         context "that contains an empty version string for a sub-dep" do
           let(:npm_lock_fixture_name) { "empty_version.json" }
 

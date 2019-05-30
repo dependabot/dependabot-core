@@ -178,7 +178,7 @@ module Dependabot
         end
 
         dependency_objects.flat_map(&:to_a).
-          select { |_, v| v.start_with?(*path_dep_starts) }.
+          select { |_, v| v.is_a?(String) && v.start_with?(*path_dep_starts) }.
           map do |name, path|
             path = path.sub(/^file:/, "").sub(/^link:/, "")
             path = File.join(current_dir, path) unless current_dir.nil?
