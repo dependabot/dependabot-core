@@ -135,7 +135,9 @@ module Dependabot
             compact.
             map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
 
-          regexp = url.split(ENVIRONMENT_VARIABLE_REGEX).
+          regexp = url.
+                   sub(%r{(?<=://).+@}, "").
+                   split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
                    join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }

@@ -199,6 +199,29 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
                 )
               end
             end
+
+            context "when the env variable is for basic auth details" do
+              let(:pip_conf_fixture_name) do
+                "extra_index_env_variable_basic_auth"
+              end
+
+              let(:credentials) do
+                [{
+                  "type" => "python_index",
+                  "index-url" => "https://pypi.weasyldev.com/source/+simple",
+                  "replaces-base" => false
+                }]
+              end
+
+              it "gets the right index URLs" do
+                expect(index_urls).to match_array(
+                  [
+                    "https://pypi.python.org/simple/",
+                    "https://pypi.weasyldev.com/source/+simple/"
+                  ]
+                )
+              end
+            end
           end
         end
       end
