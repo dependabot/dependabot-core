@@ -1,3 +1,9 @@
+## v0.107.28, 31 May 2019
+
+- Cargo: Raise a resolvability error for submodule cloning issues
+- Elm: Allow normal Ruby requirements in Elm::Requirement class
+- Gradle: Raise DependencyFileNotFound error for missing dependency script plugins
+
 ## v0.107.27, 30 May 2019
 
 - Python: Handle environment variables passed in place of basic auth details
