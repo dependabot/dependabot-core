@@ -1,3 +1,8 @@
+## v0.107.27, 30 May 2019
+
+- Python: Handle environment variables passed in place of basic auth details
+- JS: Protect against non-string versions in package.json
+
 ## v0.107.26, 30 May 2019
 
 - Terraform: Handle sub-dir reference in querystring
