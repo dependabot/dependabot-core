@@ -1,3 +1,7 @@
+## v0.107.35, 31 May 2019
+
+- Python: Allow unchanged files in RequirementReplacer if req is unchanged
+
 ## v0.107.34, 31 May 2019
 
 - Handle 451s instead of 403s from GitHub for blocked repos
