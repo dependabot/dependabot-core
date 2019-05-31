@@ -210,7 +210,7 @@ module Dependabot
             return false if semantic_msgs.all? { |m| m.match?(/:\s+\[?[a-z]/) }
           end
 
-          !commit_prefix&.match(/^[a-z]/)
+          !commit_prefix&.match(/\A[a-z]/)
         end
       end
 
@@ -235,8 +235,8 @@ module Dependabot
         return unless (msg = last_dependabot_commit_message)
 
         return :gitmoji if msg.start_with?("⬆️")
-        return :conventional_prefix if msg.match?(/^(chore|build|upgrade):/i)
-        return unless msg.match?(/^(chore|build|upgrade)\(/i)
+        return :conventional_prefix if msg.match?(/\A(chore|build|upgrade):/i)
+        return unless msg.match?(/\A(chore|build|upgrade)\(/i)
 
         :conventional_prefix_with_scope
       end
@@ -870,10 +870,11 @@ module Dependabot
         end
 
         if semantic_messages.none?
-          return last_dependabot_commit_message&.match?(/^A-Z/)
+          return last_dependabot_commit_message&.start_with?(/[A-Z]/)
         end
 
-        capitalized_msgs = semantic_messages.select { |m| m.match?(/^[A-Z]/) }
+        capitalized_msgs = semantic_messages.
+                           select { |m| m.start_with?(/[A-Z]/) }
         capitalized_msgs.count.to_f / semantic_messages.count > 0.5
       end
 
