@@ -112,7 +112,7 @@ module Dependabot
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           @changelog_from_suggested_url = nil
         end
 
@@ -258,7 +258,7 @@ module Dependabot
           end
 
           files
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
 
