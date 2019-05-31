@@ -301,6 +301,19 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
 
         specify { expect { updater.update }.to_not raise_error }
       end
+
+      context "but the PR's branch has been protected" do
+        before do
+          stub_request(:patch, branch_url).
+            to_return(
+              status: 422,
+              body: fixture("github", "force_push_protected_branch.json"),
+              headers: json_header
+            )
+        end
+
+        specify { expect { updater.update }.to_not raise_error }
+      end
     end
 
     context "with author details" do

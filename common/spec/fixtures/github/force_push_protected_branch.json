@@ -1,0 +1,4 @@
+{
+    "message": "Cannot force-push to a protected branch",
+    "documentation_url": "https://help.github.com/articles/about-protected-branches"
+}
