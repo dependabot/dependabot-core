@@ -157,14 +157,14 @@ module Dependabot
               git_commit(source.repo, pull_request.head.sha).
               message
           else
-            author_name = author_details&.fetch(:name, nil) || "dependabot[bot]"
+            author_name = author_details&.fetch(:name, nil) || "dependabot"
             commits =
               github_client_for_source.
               pull_request_commits(source.repo, pull_request_number)
 
             commit =
               commits.find { |c| c.sha == old_commit } ||
-              commits.find { |c| c.commit.author.name == author_name } ||
+              commits.find { |c| c.commit.author.name.include?(author_name) } ||
               commits.first
 
             commit.commit.message

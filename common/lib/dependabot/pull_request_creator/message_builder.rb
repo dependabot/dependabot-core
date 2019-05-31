@@ -928,7 +928,7 @@ module Dependabot
       def last_github_dependabot_commit_message
         recent_github_commits.
           reject { |c| c.commit&.message&.start_with?("Merge") }.
-          find { |c| c.commit.author&.name == "dependabot[bot]" }&.
+          find { |c| c.commit.author&.name&.include?("dependabot") }&.
           commit&.
           message&.
           strip
