@@ -184,7 +184,9 @@ module Dependabot
             new(url: source.url, credentials: credentials).
             tags.
             map(&:name)
-        rescue Dependabot::GitDependenciesNotReachable
+        rescue Dependabot::GitDependenciesNotReachable,
+               Octokit::ServiceUnavailable
+          # ServiceUnavailable normally means a DMCA takedown
           []
         end
 

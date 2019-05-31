@@ -265,6 +265,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
     end
 
+    context "with a github repo that has a DMCA takedown notice" do
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 503,
+            body: fixture("github", "dmca_takedown.txt"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it { is_expected.to eq("https://github.com/gocardless/business/commits") }
+    end
+
     context "with a github repo and no tags found" do
       let(:upload_pack_fixture) { "no_tags" }
 
