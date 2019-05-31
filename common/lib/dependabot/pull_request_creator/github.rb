@@ -6,6 +6,7 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Github
@@ -65,9 +66,13 @@ module Dependabot
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable
-        raise "Unexpected git error!" if repo_exists?
+        raise(RepoNotFound, source.url) unless repo_exists?
 
-        raise RepoNotFound, source.url
+        retrying ||= false
+        raise "Unexpected git error!" if retrying
+
+        retrying = true
+        retry
       end
 
       def pull_request_exists?
@@ -319,3 +324,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
