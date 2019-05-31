@@ -222,7 +222,7 @@ module Dependabot
           else
             releases.sort_by(&:id).reverse
           end
-        rescue Octokit::NotFound, Octokit::RepositoryUnavailable
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
 

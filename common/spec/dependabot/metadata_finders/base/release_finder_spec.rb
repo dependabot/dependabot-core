@@ -386,7 +386,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
       context "when access to the repo is blocked" do
         let(:github_response) { fixture("github", "dmca_takedown.json") }
-        let(:github_status) { 403 }
+        let(:github_status) { 451 }
 
         it { is_expected.to be_nil }
       end
