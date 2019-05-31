@@ -141,10 +141,11 @@ module Dependabot
           true
         )
       rescue Octokit::UnprocessableEntity => e
-        # Return quietly if the branch has been deleted, merged or protected
+        # Return quietly if the branch has been deleted or merged
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
-        return nil if e.message.match?(/Cannot force\-push to a protected/i)
+
+        raise BranchProtected if e.message.match?(/force\-push to a protected/i)
 
         raise
       end
