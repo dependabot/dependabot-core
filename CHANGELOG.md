@@ -1,3 +1,7 @@
+## v0.107.34, 31 May 2019
+
+- Handle 451s instead of 403s from GitHub for blocked repos
+
 ## v0.107.33, 31 May 2019
 
 - Handle blocked repositories when fetching commits and release notes
