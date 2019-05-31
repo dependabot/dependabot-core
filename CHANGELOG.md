@@ -1,3 +1,8 @@
+## v0.107.36, 1 June 2019
+
+- Only consider first line when checking if commit prefixes should be capitalized
+- Don't rely on dependabot[bot] name
+
 ## v0.107.35, 31 May 2019
 
 - Python: Allow unchanged files in RequirementReplacer if req is unchanged
