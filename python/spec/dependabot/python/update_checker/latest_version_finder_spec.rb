@@ -374,7 +374,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises a helpful error" do
-            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            error_class = Dependabot::PrivateSourceTimedOut
             expect { subject }.
               to raise_error(error_class) do |error|
                 expect(error.source).
@@ -401,7 +401,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
           end
 
           it "raises a helpful error" do
-            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            error_class = Dependabot::PrivateSourceTimedOut
             expect { subject }.
               to raise_error(error_class) do |error|
                 expect(error.source).

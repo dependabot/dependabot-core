@@ -134,7 +134,7 @@ module Dependabot
             rescue Excon::Error::Timeout, Excon::Error::Socket
               raise if MAIN_PYPI_INDEXES.include?(index_url)
 
-              raise PrivateSourceAuthenticationFailure, sanitized_url
+              raise PrivateSourceTimedOut, sanitized_url
             end
         end
 
