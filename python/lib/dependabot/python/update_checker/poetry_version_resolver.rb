@@ -14,7 +14,6 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/authed_url_builder"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -352,4 +351,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
