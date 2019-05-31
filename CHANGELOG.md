@@ -1,3 +1,7 @@
+## v0.107.29, 31 May 2019
+
+- Retry failures to fetch git repo in GitHub PR creator
+
 ## v0.107.28, 31 May 2019
 
 - Cargo: Raise a resolvability error for submodule cloning issues
