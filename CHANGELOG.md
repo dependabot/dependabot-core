@@ -1,3 +1,7 @@
+## v0.107.33, 31 May 2019
+
+- Handle blocked repositories when fetching commits and release notes
+
 ## v0.107.32, 31 May 2019
 
 - Raise a BranchProtected error for protected branches (rather than silencing)
