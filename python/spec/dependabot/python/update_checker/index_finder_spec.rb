@@ -101,6 +101,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
 
+      context "set in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "private_source.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://some.internal.registry.com/pypi/"]) }
+
+        context "that is unparseable" do
+          let(:pyproject_fixture_name) { "unparseable.toml" }
+
+          it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
+        end
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
@@ -235,6 +248,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             [
               "https://pypi.python.org/simple/",
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
+            ]
+          )
+        end
+      end
+
+      context "set in a pyproject.toml file" do
+        let(:pyproject_fixture_name) { "extra_source.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://pypi.python.org/simple/",
+              "https://some.internal.registry.com/pypi/"
             ]
           )
         end
