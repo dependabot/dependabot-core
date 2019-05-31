@@ -332,52 +332,6 @@ RSpec.describe namespace::PipenvVersionResolver do
       it { is_expected.to be >= Gem::Version.new("6.7.0") }
     end
 
-    context "with an unreachable private source" do
-      let(:pipfile_fixture_name) { "private_source" }
-      let(:lockfile_fixture_name) { "exact_version.lock" }
-
-      before do
-        stub_request(:get, "https://some.internal.registry.com/pypi/").
-          to_raise(Excon::Error::Timeout)
-      end
-
-      it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-            expect(error.source).
-              to eq("https://some.internal.registry.com/pypi/")
-          end
-      end
-
-      context "from credentials" do
-        let(:pipfile_fixture_name) { "exact_version" }
-        let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "python_index",
-            "index-url" => "https://user:pass@pypi.gemfury.com/secret_codes/"
-          }]
-        end
-
-        before do
-          stub_request(:get, "https://pypi.gemfury.com/secret_codes/").
-            to_raise(Excon::Error::Timeout)
-        end
-
-        it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-              expect(error.source).
-                to eq("https://redacted@pypi.gemfury.com/secret_codes/")
-            end
-        end
-      end
-    end
-
     context "with a git source" do
       context "for another dependency, that can't be reached" do
         let(:pipfile_fixture_name) { "git_source_unreachable" }

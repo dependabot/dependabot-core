@@ -44,8 +44,6 @@ module Dependabot
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
-
-          check_private_sources_are_reachable
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -442,31 +440,6 @@ module Dependabot
             parsed_pipfile.dig("requires", "python_version")
         end
 
-        def check_private_sources_are_reachable
-          sources_to_check =
-            pipfile_sources.reject { |h| h["url"].include?("${") } +
-            config_variable_sources
-
-          sources_to_check.
-            map { |details| details["url"] }.
-            reject { |url| MAIN_PYPI_INDEXES.include?(url) }.
-            each do |url|
-              sanitized_url = url.gsub(%r{(?<=//).*(?=@)}, "redacted")
-
-              response = Excon.get(
-                url,
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              )
-
-              if response.status == 401 || response.status == 403
-                raise PrivateSourceAuthenticationFailure, sanitized_url
-              end
-            rescue Excon::Error::Timeout, Excon::Error::Socket
-              raise PrivateSourceTimedOut, sanitized_url
-            end
-        end
-
         def run_command(command, env: {})
           start = Time.now
           command = SharedHelpers.escape_command(command)
@@ -526,12 +499,6 @@ module Dependabot
               url = AuthedUrlBuilder.authed_url(credential: h)
               { "url" => url.gsub(%r{/*$}, "") + "/" }
             end
-        end
-
-        def pipfile_sources
-          @pipfile_sources ||=
-            TomlRB.parse(pipfile.content).fetch("source", []).
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
         end
 
         def pipenv_env_variables

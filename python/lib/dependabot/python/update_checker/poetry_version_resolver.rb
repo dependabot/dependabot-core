@@ -33,8 +33,6 @@ module Dependabot
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
-
-          check_private_sources_are_reachable
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -302,31 +300,6 @@ module Dependabot
           category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
-        def check_private_sources_are_reachable
-          sources_to_check =
-            pyproject_sources +
-            config_variable_sources
-
-          sources_to_check.
-            map { |details| details["url"] }.
-            reject { |url| MAIN_PYPI_INDEXES.include?(url) }.
-            each do |url|
-              sanitized_url = url.gsub(%r{(?<=//).*(?=@)}, "redacted")
-
-              response = Excon.get(
-                url,
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              )
-
-              if response.status == 401 || response.status == 403
-                raise PrivateSourceAuthenticationFailure, sanitized_url
-              end
-            rescue Excon::Error::Timeout, Excon::Error::Socket
-              raise PrivateSourceTimedOut, sanitized_url
-            end
-        end
-
         def pyproject
           dependency_files.find { |f| f.name == "pyproject.toml" }
         end
@@ -374,26 +347,6 @@ module Dependabot
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
           name.downcase.gsub(/[-_.]+/, "-")
-        end
-
-        def config_variable_sources
-          @config_variable_sources ||=
-            credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |h|
-              url = AuthedUrlBuilder.authed_url(credential: h)
-              { "url" => url.gsub(%r{/*$}, "") + "/" }
-            end
-        end
-
-        def pyproject_sources
-          sources =
-            TomlRB.parse(pyproject.content).dig("tool", "poetry", "source") ||
-            []
-
-          @pyproject_sources ||=
-            sources.
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
         end
       end
     end
