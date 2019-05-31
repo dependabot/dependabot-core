@@ -24,6 +24,11 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
     it { is_expected.to include("Attrs>=17.3.0\n") }
     it { is_expected.to include("mock\n") }
 
+    context "with an unchanged requirement" do
+      let(:new_requirement) { old_requirement }
+      it { is_expected.to eq(requirement_content) }
+    end
+
     context "with multiple requirements" do
       let(:dependency_name) { "django" }
       let(:requirement_content) { "django>=1.11,<1.12" }
