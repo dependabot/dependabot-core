@@ -1,3 +1,7 @@
+## v0.107.32, 31 May 2019
+
+- Raise a BranchProtected error for protected branches (rather than silencing)
+
 ## v0.107.31, 31 May 2019
 
 - Handle failed attempts to update protected branches
