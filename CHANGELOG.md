@@ -1,3 +1,7 @@
+## v0.107.31, 31 May 2019
+
+- Handle failed attempts to update protected branches
+
 ## v0.107.30, 31 May 2019
 
 - Handle Octokit::UnavailableForLegalReasons errors when attempting to fetch changelogs
