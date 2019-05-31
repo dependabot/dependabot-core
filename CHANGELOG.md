@@ -1,3 +1,10 @@
+## v0.107.30, 31 May 2019
+
+- Handle Octokit::UnavailableForLegalReasons errors when attempting to fetch changelogs
+- Python: Remove private source checking from Pipenv and Poetry resolvers (done in LatestVersionFinder)
+- Python: Include pyproject source in IndexFinder
+- Python: Raise PrivateSourceTimedOut for timeouts in LatestVersionFinder
+
 ## v0.107.29, 31 May 2019
 
 - Retry failures to fetch git repo in GitHub PR creator
