@@ -71,7 +71,7 @@ module Dependabot
               file: "Gopkg.toml",
               groups: [],
               requirement: nil,
-              source: { type: "git", url: source_url }
+              source: { type: "git", url: source_url, ref: nil, branch: nil }
             }],
             package_manager: dependency.package_manager
           )
