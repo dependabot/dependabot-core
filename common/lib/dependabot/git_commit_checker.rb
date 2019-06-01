@@ -76,7 +76,7 @@ module Dependabot
     def local_tag_for_latest_version
       tag =
         local_tags.
-        select { |t| t.name.match?(VERSION_REGEX) }.
+        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }.
         reject { |t| tag_included_in_ignore_reqs?(t) }.
         reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
         max_by do |t|
@@ -231,6 +231,17 @@ module Dependabot
     def ref_or_branch
       dependency_source_details.fetch(:ref) ||
         dependency_source_details.fetch(:branch)
+    end
+
+    def version_tag?(tag)
+      tag.match?(VERSION_REGEX)
+    end
+
+    def matches_existing_prefix?(tag)
+      return true unless ref_or_branch&.match?(VERSION_REGEX)
+
+      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/, "") ==
+        tag.gsub(VERSION_REGEX, "").gsub(/v$/, "")
     end
 
     def listing_source_url
