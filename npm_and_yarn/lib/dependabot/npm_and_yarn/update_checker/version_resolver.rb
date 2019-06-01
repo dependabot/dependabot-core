@@ -305,6 +305,8 @@ module Dependabot
                 reqs = requirement_class.requirements_array(req)
 
                 reqs.any? { |r| r.satisfied_by?(latest_allowable_version) }
+              rescue Gem::Requirement::BadRequirementError
+                false
               end
             end&.
             first
