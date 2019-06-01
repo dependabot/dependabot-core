@@ -1,3 +1,7 @@
+## v0.107.38, 1 June 2019
+
+- Dep: Pass a dummy ref and branch
+
 ## v0.107.37, 1 June 2019
 
 - Keep existing tag prefix when looking for local_tag_for_latest_version
