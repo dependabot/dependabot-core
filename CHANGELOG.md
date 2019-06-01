@@ -1,3 +1,8 @@
+## v0.107.37, 1 June 2019
+
+- Keep existing tag prefix when looking for local_tag_for_latest_version
+- JS: Handle bad peer requirements
+
 ## v0.107.36, 1 June 2019
 
 - Only consider first line when checking if commit prefixes should be capitalized
