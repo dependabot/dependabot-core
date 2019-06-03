@@ -1,3 +1,8 @@
+## v0.107.39, 3 June 2019
+
+- Add retries to Bitbucket client, and change initialize signature
+- Python: Bump cython from 0.29.9 to 0.29.10
+
 ## v0.107.38, 1 June 2019
 
 - Dep: Pass a dummy ref and branch
