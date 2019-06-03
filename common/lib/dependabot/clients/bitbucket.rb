@@ -10,24 +10,11 @@ module Dependabot
       class Unauthorized < StandardError; end
       class Forbidden < StandardError; end
 
-      #######################
-      # Constructor methods #
-      #######################
-
-      def self.for_bitbucket_dot_org(credentials:)
-        credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
-
-        new(credential)
-      end
-
       ##########
       # Client #
       ##########
 
-      def initialize(credentials)
+      def initialize(credentials:)
         @credentials = credentials
       end
 

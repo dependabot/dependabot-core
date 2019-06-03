@@ -4,7 +4,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/github_with_retries"
-require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/shared_helpers"
 
@@ -399,7 +399,7 @@ module Dependabot
         # TODO: When self-hosted Bitbucket is supported this should use
         # `Bitbucket.for_source`
         @bitbucket_client ||=
-          Dependabot::Clients::Bitbucket.
+          Dependabot::Clients::BitbucketWithRetries.
           for_bitbucket_dot_org(credentials: credentials)
       end
     end

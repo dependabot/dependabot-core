@@ -5,7 +5,7 @@ require "pandoc-ruby"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
-require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
@@ -358,7 +358,7 @@ module Dependabot
         end
 
         def bitbucket_client
-          @bitbucket_client ||= Dependabot::Clients::Bitbucket.
+          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries.
                                 for_bitbucket_dot_org(credentials: credentials)
         end
 

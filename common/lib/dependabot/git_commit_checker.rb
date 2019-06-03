@@ -4,7 +4,7 @@ require "excon"
 require "gitlab"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
-require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/errors"
 require "dependabot/utils"
@@ -198,7 +198,7 @@ module Dependabot
             "#{listing_source_repo}/commits/?"\
             "include=#{ref2}&exclude=#{ref1}"
 
-      client = Clients::Bitbucket.
+      client = Clients::BitbucketWithRetries.
                for_bitbucket_dot_org(credentials: credentials)
 
       response = client.get(url)
