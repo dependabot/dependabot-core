@@ -78,6 +78,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
 
+        context "for a go 1.11 go.mod" do
+          let(:go_mod_body) do
+            fixture("go_mods", go_mod_fixture_name).sub(/go 1.12/, "")
+          end
+          it { is_expected.to_not include("go 1.") }
+        end
+
+        context "for a go 1.12 go.mod" do
+          it { is_expected.to include("go 1.12") }
+        end
+
         context "with a go.sum" do
           let(:go_sum) do
             Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
