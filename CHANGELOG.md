@@ -1,3 +1,7 @@
+## v0.107.41, 3 June 2019
+
+- Handle deleted target branch when updating a PR
+
 ## v0.107.40, 3 June 2019
 
 - If Bitbucket times out when getting commits, silence the error
