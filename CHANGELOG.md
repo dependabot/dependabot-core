@@ -1,3 +1,7 @@
+## v0.107.40, 3 June 2019
+
+- If Bitbucket times out when getting commits, silence the error
+
 ## v0.107.39, 3 June 2019
 
 - Add retries to Bitbucket client, and change initialize signature
