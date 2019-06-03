@@ -25,7 +25,8 @@ module Dependabot
       end
 
       def update
-        return unless branch_exists?
+        return unless pull_request_exists?
+        return unless branch_exists?(pull_request.head.ref)
 
         commit = create_commit
         branch = update_branch(commit)
@@ -45,10 +46,19 @@ module Dependabot
           base: target_branch
         )
       rescue Octokit::UnprocessableEntity => e
-        # Return quietly if the PR has been closed
-        return nil if e.message.match?(/closed pull request/i)
+        handle_pr_update_error(e)
+      end
 
-        raise
+      def handle_pr_update_error(error)
+        # Return quietly if the PR has been closed
+        return if error.message.match?(/closed pull request/i)
+
+        # Ignore cases where the target branch has been deleted
+        return if error.message.include?("field: base") &&
+                  source.branch &&
+                  !branch_exists?(source.branch)
+
+        raise error
       end
 
       def github_client_for_source
@@ -59,6 +69,13 @@ module Dependabot
           )
       end
 
+      def pull_request_exists?
+        pull_request
+        true
+      rescue Octokit::NotFound
+        false
+      end
+
       def pull_request
         @pull_request ||=
           github_client_for_source.pull_request(
@@ -67,8 +84,8 @@ module Dependabot
           )
       end
 
-      def branch_exists?
-        github_client_for_source.branch(source.repo, pull_request.head.ref)
+      def branch_exists?(name)
+        github_client_for_source.branch(source.repo, name)
       rescue Octokit::NotFound
         false
       end
