@@ -268,7 +268,10 @@ module Dependabot
             end
         rescue Dependabot::Clients::Bitbucket::NotFound,
                Dependabot::Clients::Bitbucket::Unauthorized,
-               Dependabot::Clients::Bitbucket::Forbidden
+               Dependabot::Clients::Bitbucket::Forbidden,
+               Excon::Error::Server,
+               Excon::Error::Socket,
+               Excon::Error::Timeout
           []
         end
 
