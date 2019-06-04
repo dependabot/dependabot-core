@@ -1,3 +1,8 @@
+## v0.107.46, 4 June 2019
+
+- Python: Sanitize poetry files before adding more details
+- JS: Handle npmrc files with carriage returns in them
+
 ## v0.107.45, 4 June 2019
 
 - Python: Correctly set Poetry sources from config variables (include a name)
