@@ -35,6 +35,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("tool.poetry.source") }
       it { is_expected.to include('url = "https://username:password@pypi') }
+      it { is_expected.to_not include("default") }
 
       context "that includes auth details" do
         let(:credentials) do
@@ -47,6 +48,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
         it { is_expected.to include("tool.poetry.source") }
         it { is_expected.to include('url = "https://username:password@pypi') }
+      end
+
+      context "that replaces the default" do
+        let(:credentials) do
+          [{
+            "type" => "python_index",
+            "index-url" => "https://pypi.posrip.com/pypi/",
+            "replaces-base" => true
+          }]
+        end
+
+        it { is_expected.to include("tool.poetry.source") }
+        it { is_expected.to include("default = true") }
       end
     end
   end
