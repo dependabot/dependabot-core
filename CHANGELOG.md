@@ -1,3 +1,7 @@
+## v0.107.43, 4 June 2019
+
+- Python: Raise helpful errors for unreachable git dependencies
+
 ## v0.107.42, 3 June 2019
 
 - Go 1.12 support
