@@ -20,8 +20,8 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
-          poetry_object["source"] = pyproject_sources +
-                                    config_variable_sources(credentials)
+          sources = pyproject_sources + config_variable_sources(credentials)
+          poetry_object["source"] = sources if sources.any?
 
           TomlRB.dump(pyproject_object)
         end
