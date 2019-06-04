@@ -1,3 +1,9 @@
+## v0.107.47, 4 June 2019
+
+- JS: Handle creds used by multiple scopes in npmrc builder
+- .NET: Handle v2 responses which don't specify a base
+- Add libgeos-dev to Dockerfile
+
 ## v0.107.46, 4 June 2019
 
 - Python: Sanitize poetry files before adding more details
