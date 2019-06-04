@@ -1,3 +1,7 @@
+## v0.107.48, 4 June 2019
+
+- Better mention sanitizing (handle codeblocks)
+
 ## v0.107.47, 4 June 2019
 
 - JS: Handle creds used by multiple scopes in npmrc builder
