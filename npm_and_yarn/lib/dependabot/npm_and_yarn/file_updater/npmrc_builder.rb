@@ -119,7 +119,7 @@ module Dependabot
           registry_credentials.each do |cred|
             registry = cred.fetch("registry").sub(%r{\/?$}, "/")
 
-            lines << registry_scope(registry) if registry_scope(registry)
+            lines += registry_scopes(registry) if registry_scopes(registry)
 
             token = cred.fetch("token", nil)
             next unless token
@@ -142,7 +142,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        def registry_scope(registry)
+        def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
 
@@ -166,10 +166,7 @@ module Dependabot
           # Registry used for unscoped packages
           return if scopes.include?(nil)
 
-          # This just seems unlikely
-          return unless scopes.uniq.count == 1
-
-          "@#{scopes.first}:registry=https://#{registry}"
+          scopes.map { |scope| "@#{scope}:registry=https://#{registry}" }
         end
 
         def registry_credentials
