@@ -1,3 +1,7 @@
+## v0.107.42, 3 June 2019
+
+- Go 1.12 support
+
 ## v0.107.41, 3 June 2019
 
 - Handle deleted target branch when updating a PR
