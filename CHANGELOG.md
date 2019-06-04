@@ -1,3 +1,7 @@
+## v0.107.44, 4 June 2019
+
+- JS: Handle a bad body response from a custom registry
+
 ## v0.107.43, 4 June 2019
 
 - Python: Raise helpful errors for unreachable git dependencies
