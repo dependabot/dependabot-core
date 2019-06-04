@@ -1,3 +1,7 @@
+## v0.107.45, 4 June 2019
+
+- Python: Correctly set Poetry sources from config variables (include a name)
+
 ## v0.107.44, 4 June 2019
 
 - JS: Handle a bad body response from a custom registry
