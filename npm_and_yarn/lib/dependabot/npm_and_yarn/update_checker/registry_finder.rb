@@ -126,7 +126,7 @@ module Dependabot
             registries << {
               "type" => "npm_registry",
               "registry" => Regexp.last_match[:registry],
-              "token" => Regexp.last_match[:token]
+              "token" => Regexp.last_match[:token]&.strip
             }
           end
 
