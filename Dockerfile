@@ -44,6 +44,7 @@ RUN apt-get update \
       tk-dev \
       libxml2-dev \
       libxmlsec1-dev \
+      libgeos-dev \
       python3-enchant \
     && locale-gen en_US.UTF-8
 
