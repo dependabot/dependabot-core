@@ -394,6 +394,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it { is_expected.to be_nil }
       end
 
+      context "when the request 200s with a bad body" do
+        before do
+          stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(
+              status: 200,
+              body: "user \"undefined\" is not a member of \"KaterTech\""
+            )
+        end
+
+        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { version_finder.latest_version_from_registry }.
+            to raise_error(error_class) do |error|
+              expect(error.source).to eq("npm.fury.io/dependabot")
+            end
+        end
+      end
+
       context "with credentials" do
         let(:credentials) do
           [{

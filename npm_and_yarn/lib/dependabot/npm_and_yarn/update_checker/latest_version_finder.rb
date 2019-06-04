@@ -322,6 +322,7 @@ module Dependabot
         end
 
         def private_dependency_not_reachable?(npm_response)
+          return true if npm_response.body.start_with?(/user ".*?" is not a /)
           return false unless [401, 402, 403, 404].include?(npm_response.status)
 
           # Check whether this dependency is (likely to be) private
