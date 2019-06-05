@@ -14,7 +14,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       files: files,
       credentials: credentials,
       pr_message_footer: pr_message_footer,
-      author_details: author_details,
+      signoff_details: signoff_details,
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     }]
   end
   let(:pr_message_footer) { nil }
-  let(:author_details) { nil }
+  let(:signoff_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
@@ -1471,7 +1471,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "with author details" do
-      let(:author_details) do
+      let(:signoff_details) do
         {
           email: "support@dependabot.com",
           name: "dependabot"
@@ -1530,7 +1530,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "with author details" do
-      let(:author_details) do
+      let(:signoff_details) do
         {
           email: "support@dependabot.com",
           name: "dependabot"
@@ -1543,7 +1543,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "that includes org details" do
-        let(:author_details) do
+        let(:signoff_details) do
           {
             email: "support@dependabot.com",
             name: "dependabot",

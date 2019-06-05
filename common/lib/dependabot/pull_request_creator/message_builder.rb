@@ -32,18 +32,18 @@ module Dependabot
                             white_check_mark wrench zap).freeze
 
       attr_reader :source, :dependencies, :files, :credentials,
-                  :pr_message_footer, :author_details, :vulnerabilities_fixed,
+                  :pr_message_footer, :signoff_details, :vulnerabilities_fixed,
                   :github_redirection_service
 
       def initialize(source:, dependencies:, files:, credentials:,
-                     pr_message_footer: nil, author_details: nil,
+                     pr_message_footer: nil, signoff_details: nil,
                      vulnerabilities_fixed: {}, github_redirection_service: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
         @credentials                = credentials
         @pr_message_footer          = pr_message_footer
-        @author_details             = author_details
+        @signoff_details            = signoff_details
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
       end
@@ -97,18 +97,18 @@ module Dependabot
       end
 
       def signoff_message
-        return unless author_details.is_a?(Hash)
-        return unless author_details[:name] && author_details[:email]
+        return unless signoff_details.is_a?(Hash)
+        return unless signoff_details[:name] && signoff_details[:email]
 
-        "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
+        "Signed-off-by: #{signoff_details[:name]} <#{signoff_details[:email]}>"
       end
 
       def on_behalf_of_message
-        return unless author_details.is_a?(Hash)
-        return unless author_details[:org_name] && author_details[:org_email]
+        return unless signoff_details.is_a?(Hash)
+        return unless signoff_details[:org_name] && signoff_details[:org_email]
 
-        "On-behalf-of: @#{author_details[:org_name]} "\
-        "<#{author_details[:org_email]}>"
+        "On-behalf-of: @#{signoff_details[:org_name]} "\
+        "<#{signoff_details[:org_email]}>"
       end
 
       def library_pr_name
