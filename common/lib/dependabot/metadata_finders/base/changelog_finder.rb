@@ -186,9 +186,7 @@ module Dependabot
 
           return unless @file_text[file.download_url].valid_encoding?
 
-          @file_text[file.download_url].
-            force_encoding("UTF-8").
-            encode.sub(/\n*\z/, "")
+          @file_text[file.download_url].sub(/\n*\z/, "")
         end
 
         def fetch_github_file(file)
@@ -202,11 +200,12 @@ module Dependabot
             file.download_url,
             idempotent: true,
             **SharedHelpers.excon_defaults
-          ).body
+          ).body.force_encoding("UTF-8").encode
         end
 
         def fetch_bitbucket_file(file)
-          bitbucket_client.get(file.download_url).body
+          bitbucket_client.get(file.download_url).body.
+            force_encoding("UTF-8").encode
         end
 
         def upgrade_guide
