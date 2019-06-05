@@ -2,8 +2,7 @@
 
 - Python: Handle flags in requirement file, and fetch constraints files better
 - Scope reference creation failure retries to a tigher error, and retry more
-- Merge pull request #1187 from dependabot/dependabot/npm_and_yarn/npm_and_yarn/helpers/handlebars-4.1.2
-- Bump handlebars from 4.1.0 to 4.1.2 in /npm_and_yarn/helpers
+- JS: Bump handlebars from 4.1.0 to 4.1.2 in /npm_and_yarn/helpers
 - Handle git URL that separate with :/
 - Ruby: Call uniq on unreachable git URIs
 
