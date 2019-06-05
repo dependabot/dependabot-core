@@ -12,7 +12,7 @@ module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/.freeze
-      CONSTRAINT_REGEX = /^-c\s?(?<path>\..*)/.freeze
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/.freeze
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -242,7 +242,13 @@ module Dependabot
                                 child_requirement_txt_files
 
         constraints_paths = all_requirement_files.map do |req_file|
-          req_file.content.scan(CONSTRAINT_REGEX).flatten
+          current_dir = File.dirname(req_file.name)
+          paths = req_file.content.scan(CONSTRAINT_REGEX).flatten
+
+          paths.map do |path|
+            path = File.join(current_dir, path) unless current_dir == "."
+            path = Pathname.new(path).cleanpath.to_path
+          end
         end.flatten.uniq
 
         constraints_paths.map { |path| fetch_file_from_host(path) }
@@ -319,7 +325,7 @@ module Dependabot
 
         file.content.lines.all? do |line|
           next true if line.strip.empty?
-          next true if line.start_with?("#", "-r ", "-c ", "-e ")
+          next true if line.start_with?("#", "-r ", "-c ", "-e ", "--")
 
           line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
         end

@@ -132,6 +132,16 @@ RSpec.describe Dependabot::Python::FileFetcher do
         end
       end
 
+      context "that includes --no-binary" do
+        let(:requirements_fixture_name) { "requirements_with_no_binary.json" }
+
+        it "fetches the requirements.txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to eq(["requirements.txt"])
+        end
+      end
+
       context "and a todo.txt that is actually a requirements file" do
         before do
           stub_request(:get, url + "todo.txt?ref=sha").
