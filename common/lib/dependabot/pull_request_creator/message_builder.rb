@@ -161,6 +161,7 @@ module Dependabot
       def pr_name_prefix
         prefix = commit_prefix.to_s
         prefix += security_prefix if includes_security_fixes?
+        prefix = prefix.gsub("⬆️ 🔒", "⬆️🔒")
         prefix + pr_name_first_word
       end
 

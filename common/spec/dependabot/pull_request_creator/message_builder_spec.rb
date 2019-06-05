@@ -433,7 +433,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("⬆️ 🔒 Bump business") }
+          it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
       end
     end
@@ -1574,7 +1574,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { "business": [{}] } }
-        it { is_expected.to start_with(":arrow_up: :lock: Bump ") }
+        it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end
   end
