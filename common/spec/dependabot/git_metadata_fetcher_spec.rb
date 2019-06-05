@@ -43,6 +43,21 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       context "but no tags on GitHub" do
         let(:upload_pack_fixture) { "no_tags" }
         it { is_expected.to eq([]) }
+
+        context "and a git@... URL" do
+          let(:url) { "git@github.com:gocardless/business" }
+          it { is_expected.to eq([]) }
+
+          context "that separates with :/" do
+            let(:url) { "git@github.com:/gocardless/business" }
+            it { is_expected.to eq([]) }
+          end
+
+          context "that separates with /" do
+            let(:url) { "git@github.com/gocardless/business" }
+            it { is_expected.to eq([]) }
+          end
+        end
       end
 
       context "but GitHub returns a 404" do

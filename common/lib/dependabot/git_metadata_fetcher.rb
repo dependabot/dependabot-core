@@ -108,7 +108,7 @@ module Dependabot
 
     def uri_with_auth(uri)
       bare_uri =
-        if uri.include?("git@") then uri.split("git@").last.sub(":", "/")
+        if uri.include?("git@") then uri.split("git@").last.sub(%r{:/?}, "/")
         else uri.sub(%r{.*?://}, "")
         end
       cred = credentials.select { |c| c["type"] == "git_source" }.
