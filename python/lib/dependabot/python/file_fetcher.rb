@@ -188,6 +188,7 @@ module Dependabot
         repo_contents(dir: relative_reqs_dir).
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
+          reject { |f| f.size > 100_000 }.
           map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
           select { |f| requirements_file?(f) }
       end
@@ -313,6 +314,7 @@ module Dependabot
       end
 
       def requirements_file?(file)
+        return false unless file.content.valid_encoding?
         return true if file.name.match?(/requirements/x)
 
         file.content.lines.all? do |line|
