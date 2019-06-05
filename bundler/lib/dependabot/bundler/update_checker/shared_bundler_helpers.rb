@@ -135,7 +135,7 @@ module Dependabot
             raise unless bad_uris.any?
 
             # We don't have access to one of repos required
-            raise Dependabot::GitDependenciesNotReachable, bad_uris
+            raise Dependabot::GitDependenciesNotReachable, bad_uris.uniq
           when "Bundler::GemNotFound", "Gem::InvalidSpecificationException",
                "Bundler::VersionConflict", "Bundler::CyclicDependencyError"
             # Bundler threw an error during resolution. Any of:
