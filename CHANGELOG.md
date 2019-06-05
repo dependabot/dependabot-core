@@ -1,3 +1,8 @@
+## v0.108.0, 5 June 2019
+
+- Pass signoff_details to MessageBuilder, not author_details
+- Put emoji tighter together when prefixing with multiple
+
 ## v0.107.48, 4 June 2019
 
 - Better mention sanitizing (handle codeblocks)
