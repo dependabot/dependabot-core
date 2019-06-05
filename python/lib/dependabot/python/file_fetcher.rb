@@ -247,7 +247,7 @@ module Dependabot
 
           paths.map do |path|
             path = File.join(current_dir, path) unless current_dir == "."
-            path = Pathname.new(path).cleanpath.to_path
+            Pathname.new(path).cleanpath.to_path
           end
         end.flatten.uniq
 
