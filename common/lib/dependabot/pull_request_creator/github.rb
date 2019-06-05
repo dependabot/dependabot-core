@@ -170,11 +170,16 @@ module Dependabot
         else
           create_branch(commit)
         end
-      rescue Octokit::UnprocessableEntity
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message.include?("Reference update failed //")
+
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        retry_count < 2 ? retry : raise
+        raise if retry_count > 10
+
+        sleep(rand(1..1.99))
+        retry
       end
 
       def create_branch(commit)
