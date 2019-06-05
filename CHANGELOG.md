@@ -1,3 +1,8 @@
+## v0.108.1, 5 June 2019
+
+- Python: Handle files that can't be encoded to UTF-8
+- Improve file encoding in changelog fetching
+
 ## v0.108.0, 5 June 2019
 
 - Pass signoff_details to MessageBuilder, not author_details
