@@ -407,6 +407,7 @@ module Dependabot
         msg = ""
         fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Vulnerabilities fixed", body: msg)
       end
@@ -431,6 +432,7 @@ module Dependabot
           base_url: source_url(dep) + "/blob/HEAD/"
         )
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Release notes", body: msg)
       end
@@ -450,6 +452,7 @@ module Dependabot
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Changelog", body: msg)
       end
@@ -470,6 +473,7 @@ module Dependabot
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Upgrade guide", body: msg)
       end
@@ -496,6 +500,7 @@ module Dependabot
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
         msg = link_issues(text: msg, dependency: dep)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Commits", body: msg)
       end
