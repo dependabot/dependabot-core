@@ -1,3 +1,11 @@
+## v0.108.4, 6 June 2019
+
+- Sanitize each cascade separately, to ensure truncated codeblocks don't cause issues
+- Rust: Handle blank versions specified within a hash
+- Fix method name typo
+- Python: Raise an error for self-referential requirements files
+- Docker: Retry RestClient::ServerBrokeConnection
+
 ## v0.108.3, 6 June 2019
 
 - Better error for debugging repeated branch creation failure
