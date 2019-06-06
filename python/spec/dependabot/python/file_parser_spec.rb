@@ -157,6 +157,22 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
+    context "that requires itself" do
+      let(:files) { [requirements] }
+      let(:requirements_fixture_name) { "cascading.txt" }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "more_requirements.txt",
+          content: requirements_body
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "with an invalid value" do
       let(:requirements_fixture_name) { "invalid_value.txt" }
 
