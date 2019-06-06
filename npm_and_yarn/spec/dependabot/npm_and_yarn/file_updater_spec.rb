@@ -989,7 +989,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             it "raises a helpful error" do
               expect { updated_files }.
-                to raise_error(Dependabot::DependencyFileNotResolvable)
+                to raise_error(
+                  Dependabot::DependencyFileNotResolvable,
+                  %r{@segment\/analytics\.js-integration-facebook-pixel}
+                )
             end
           end
 
@@ -998,7 +1001,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             it "raises a helpful error" do
               expect { updated_files }.
-                to raise_error(Dependabot::DependencyFileNotResolvable)
+                to raise_error(
+                  Dependabot::DependencyFileNotResolvable,
+                  %r{@segment\/analytics\.js-integration-facebook-pixel}
+                )
             end
           end
         end

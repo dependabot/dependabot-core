@@ -168,31 +168,33 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_yarn_lock_updater_error(error, yarn_lock)
+          error_message = error.message
           # Invalid package: When package.json doesn't include a name or version
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
           sub_dep_local_path_err = "Package \"\" refers to a non-existing file"
-          if error.message.match?(INVALID_PACKAGE) ||
-             error.message.start_with?(sub_dep_local_path_err)
-            raise_resolvability_error(error, yarn_lock)
+          if error_message.match?(INVALID_PACKAGE) ||
+             error_message.start_with?(sub_dep_local_path_err)
+            raise_resolvability_error(error_message, yarn_lock)
           end
 
-          if error.message.include?("Couldn't find package")
-            package_name =
-              error.message.match(/package "(?<package_req>.*?)"/).
-              named_captures["package_req"].
-              split(/(?<=\w)\@/).first.
-              gsub("%2f", "/")
-            handle_missing_package(package_name, error, yarn_lock)
+          if error_message.include?("Couldn't find package")
+            package_name = error_message.match(/package "(?<package_req>.*?)"/).
+                           named_captures["package_req"].
+                           split(/(?<=\w)\@/).first
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
-          if error.message.match?(%r{/[^/]+: Not found})
-            package_name =
-              error.message.match(%r{/(?<package_name>[^/]+): Not found}).
-              named_captures["package_name"].
-              gsub("%2f", "/")
-            handle_missing_package(package_name, error, yarn_lock)
+          if error_message.match?(%r{/[^/]+: Not found})
+            package_name = error_message.
+                           match(%r{/(?<package_name>[^/]+): Not found}).
+                           named_captures["package_name"]
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
           # TODO: Move this logic to the version resolver and check if a new
@@ -214,36 +216,36 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error.message.start_with?("Couldn't find any versions") &&
-             dependencies_in_error_message?(error.message) &&
+          if error_message.start_with?("Couldn't find any versions") &&
+             dependencies_in_error_message?(error_message) &&
              resolvable_before_update?(yarn_lock)
 
             # Raise a bespoke error so we can capture and ignore it if
             # we're trying to create a new PR (which will be created
             # successfully at a later date)
-            raise Dependabot::InconsistentRegistryResponse, error.message
+            raise Dependabot::InconsistentRegistryResponse, error_message
           end
 
-          if error.message.include?("Workspaces can only be enabled in priva")
-            raise Dependabot::DependencyFileNotEvaluatable, error.message
+          if error_message.include?("Workspaces can only be enabled in priva")
+            raise Dependabot::DependencyFileNotEvaluatable, error_message
           end
 
-          if error.message.match?(UNREACHABLE_GIT)
-            dependency_url = error.message.match(UNREACHABLE_GIT).
+          if error_message.match?(UNREACHABLE_GIT)
+            dependency_url = error_message.match(UNREACHABLE_GIT).
                              named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.match?(TIMEOUT_FETCHING_PACKAGE)
-            handle_timeout(error.message, yarn_lock)
+          if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
+            handle_timeout(error_message, yarn_lock)
           end
 
-          if error.message.start_with?("Couldn't find any versions") ||
-             error.message.include?(": Not found")
+          if error_message.start_with?("Couldn't find any versions") ||
+             error_message.include?(": Not found")
 
             unless resolvable_before_update?(yarn_lock)
-              raise_resolvability_error(error, yarn_lock)
+              raise_resolvability_error(error_message, yarn_lock)
             end
 
             # Dependabot has probably messed something up with the update and we
@@ -411,11 +413,11 @@ module Dependabot
             ).parse
         end
 
-        def handle_missing_package(package_name, error, yarn_lock)
+        def handle_missing_package(package_name, error_message, yarn_lock)
           missing_dep = lockfile_dependencies(yarn_lock).
                         find { |dep| dep.name == package_name }
 
-          raise_resolvability_error(error, yarn_lock) unless missing_dep
+          raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -439,23 +441,24 @@ module Dependabot
           end
         end
 
-        def raise_resolvability_error(error, yarn_lock)
+        def raise_resolvability_error(error_message, yarn_lock)
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in "\
-                "#{yarn_lock.path}:\n#{error.message}"
+                "#{yarn_lock.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def handle_timeout(message, yarn_lock)
-          url = message.match(TIMEOUT_FETCHING_PACKAGE).named_captures["url"]
+        def handle_timeout(error_message, yarn_lock)
+          url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
+                named_captures["url"]
           return if url.start_with?("https://registry.npmjs.org")
 
-          package_name =
-            message.match(TIMEOUT_FETCHING_PACKAGE).
-            named_captures["package"].gsub("%2f", "/").gsub("%2F", "/")
+          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
+                         named_captures["package"]
+          sanitized_name = sanitize_package_name(package_name)
 
           dep = lockfile_dependencies(yarn_lock).
-                find { |d| d.name == package_name }
+                find { |d| d.name == sanitized_name }
           return unless dep
 
           raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
@@ -491,6 +494,10 @@ module Dependabot
           json = JSON.parse(updated_content)
           json["name"] = json["name"].delete(" ") if json["name"].is_a?(String)
           json.to_json
+        end
+
+        def sanitize_package_name(package_name)
+          package_name.gsub("%2f", "/").gsub("%2F", "/")
         end
 
         def yarn_locks
