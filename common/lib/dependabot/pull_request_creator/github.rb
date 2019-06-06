@@ -176,7 +176,10 @@ module Dependabot
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 10
+        if retry_count > 10
+          raise "Repeatedly failed to create or update branch #{branch_name} "\
+                "with commit #{commit.sha}."
+        end
 
         sleep(rand(1..1.99))
         retry
