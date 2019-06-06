@@ -1,3 +1,9 @@
+## v0.108.3, 6 June 2019
+
+- Better error for debugging repeated branch creation failure
+- Bump js-yaml from 3.13.0 to 3.13.1 in /npm_and_yarn/helpers
+- Composer: Retry more transitory failure classes in LockfileUpdater
+
 ## v0.108.2, 5 June 2019
 
 - Python: Handle flags in requirement file, and fetch constraints files better
