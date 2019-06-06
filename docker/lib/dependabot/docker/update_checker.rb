@@ -182,11 +182,12 @@ module Dependabot
         @updated_digest ||= digest_of(latest_version)
       end
 
+      # rubocop:disable Naming/RescuedExceptionsVariableName
       def tags_from_registry
         @tags_from_registry ||=
           begin
             docker_registry_client.tags(docker_repo_name).fetch("tags")
-          rescue RestClient::Exceptions::Timeout, DockerRegistry2::NotFound
+          rescue *transient_docker_errors
             attempt ||= 1
             attempt += 1
             raise if attempt > 3
@@ -202,6 +203,7 @@ module Dependabot
 
         raise PrivateSourceTimedOut, registry_hostname
       end
+      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       def latest_digest
         return unless tags_from_registry.include?("latest")
@@ -230,7 +232,11 @@ module Dependabot
       end
 
       def transient_docker_errors
-        [RestClient::Exceptions::Timeout, DockerRegistry2::NotFound]
+        [
+          RestClient::Exceptions::Timeout,
+          RestClient::ServerBrokeConnection,
+          DockerRegistry2::NotFound
+        ]
       end
 
       def prefix_of(tag)
