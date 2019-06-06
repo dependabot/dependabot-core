@@ -131,7 +131,9 @@ module Dependabot
         unless declaration.is_a?(Hash)
           raise "Unexpected dependency declaration: #{declaration}"
         end
-        return declaration["version"] if declaration["version"]
+        if declaration["version"]&.is_a?(String) && declaration["version"] != ""
+          return declaration["version"]
+        end
 
         nil
       end
