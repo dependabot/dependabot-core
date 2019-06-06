@@ -69,7 +69,15 @@ module Dependabot
         @module_info ||=
           SharedHelpers.in_a_temporary_directory do |path|
             SharedHelpers.with_git_configured(credentials: credentials) do
-              File.write("go.mod", go_mod.content)
+              # Create a fake empty module for each local module so that
+              # `go list` works, even if some modules have been `replace`d with
+              # a local module that we don't have access to.
+              local_replacements.each do |_, stub_path|
+                Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+                FileUtils.touch(File.join(stub_path, "go.mod"))
+              end
+
+              File.write("go.mod", go_mod_content)
 
               command = "go mod edit -print > /dev/null"
               command += " && go list -m -json all"
@@ -87,6 +95,36 @@ module Dependabot
               retry
             end
           end
+      end
+
+      def local_replacements
+        @local_replacements ||=
+          SharedHelpers.in_a_temporary_directory do |path|
+            File.write("go.mod", go_mod.content)
+
+            # Parse the go.mod to get a JSON representation of the replace
+            # directives
+            command = "go mod edit -json"
+            env = { "GO111MODULE" => "on" }
+            stdout, stderr, status = Open3.capture3(env, command)
+            handle_parser_error(path, stderr) unless status.success?
+
+            # Find all the local replacements, and return them with a stub path
+            # we can use in their place. Using generated paths is safer as it
+            # means we don't need to worry about references to parent
+            # directories, etc.
+            (JSON.parse(stdout)["Replace"] || []).
+              map { |r| r["New"]["Path"] }.
+              compact.
+              select { |path| path.start_with?(".") || path.start_with?("/") }.
+              map { |path| [path, "./" + Digest::SHA2.hexdigest(path)] }
+          end
+      end
+
+      def go_mod_content
+        local_replacements.reduce(go_mod.content) do |body, (path, stub_path)|
+          body.sub(path, stub_path)
+        end
       end
 
       GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
