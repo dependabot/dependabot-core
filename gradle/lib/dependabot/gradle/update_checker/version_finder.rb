@@ -131,7 +131,7 @@ module Dependabot
 
         def google_version_details
           url = GOOGLE_MAVEN_REPO
-          group_id, artifact_id = group_and_artifcat_ids
+          group_id, artifact_id = group_and_artifact_ids
 
           dependency_metadata_url = "#{GOOGLE_MAVEN_REPO}/"\
                                     "#{group_id.tr('.', '/')}/"\
@@ -220,7 +220,7 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id = group_and_artifcat_ids
+          group_id, artifact_id = group_and_artifact_ids
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
@@ -228,7 +228,7 @@ module Dependabot
           "maven-metadata.xml"
         end
 
-        def group_and_artifcat_ids
+        def group_and_artifact_ids
           if plugin?
             [dependency.name, "#{dependency.name}.gradle.plugin"]
           else
