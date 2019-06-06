@@ -28,7 +28,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
-            "The team (by [@&#8203;greysteil](https://github.com/greysteil)) etc."
+            "The team (by [@&#8203;greysteil](https://github.com/greysteil)) "\
+            "etc."
           )
         end
       end
