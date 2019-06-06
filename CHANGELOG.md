@@ -15,7 +15,7 @@
 ## v0.108.2, 5 June 2019
 
 - Python: Handle flags in requirement file, and fetch constraints files better
-- Scope reference creation failure retries to a tigher error, and retry more
+- Scope reference creation failure retries to a tighter error, and retry more
 - JS: Bump handlebars from 4.1.0 to 4.1.2 in /npm_and_yarn/helpers
 - Handle git URL that separate with :/
 - Ruby: Call uniq on unreachable git URIs
