@@ -1,3 +1,7 @@
+## v0.108.5, 6 June 2019
+
+- JS: Sanitize escaped slashes in package names for issue details
+
 ## v0.108.4, 6 June 2019
 
 - Sanitize each cascade separately, to ensure truncated codeblocks don't cause issues
