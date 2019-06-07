@@ -178,6 +178,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("artful-20170916") }
     end
 
+    context "when the dependency's version has a 'v' in front of numeric version" do
+      let(:dependency_name) { "kube-state-metrics" }
+      let(:version) { "v1.5.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { registry: "k8s.gcr.io" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:repo_url) { "https://k8s.gcr.io/v2/kube-state-metrics/" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "gcr_io.json") }
+      it { is_expected.to eq("v1.6.0") }
+    end
+
     context "when the dependency has SHA suffices that should be ignored" do
       let(:registry_tags) do
         fixture("docker", "registry_tags", "sha_suffices.json")
