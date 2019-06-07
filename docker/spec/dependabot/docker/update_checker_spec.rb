@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("artful-20170916") }
     end
 
-    context "when the dependency's version has a 'v' in front of numeric version" do
+    context "when the dependency's version has 'v' before numeric version" do
       let(:dependency_name) { "kube-state-metrics" }
       let(:version) { "v1.5.0" }
       let(:dependency) do
