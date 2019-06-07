@@ -6,12 +6,13 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
 require "dependabot/docker/version"
+require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
+      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
       VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
       VERSION_WITH_PFX_AND_SFX =
