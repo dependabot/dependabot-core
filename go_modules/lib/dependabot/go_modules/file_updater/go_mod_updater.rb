@@ -95,12 +95,11 @@ module Dependabot
         end
 
         def dummy_main_go
-          lines = ["package main", "import ("]
+          lines = ["package dummypkg", "import ("]
           dependencies.each do |dep|
             lines << "_ \"#{dep.name}\""
           end
           lines << ")"
-          lines << "func main() {}"
           lines.join("\n")
         end
 
