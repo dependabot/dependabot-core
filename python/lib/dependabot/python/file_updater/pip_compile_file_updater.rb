@@ -18,6 +18,9 @@ module Dependabot
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        WARNINGS = /\s*# WARNING:.*\Z/m.freeze
+        UNSAFE_NOTE =
+          /\s*The following packages are considered to be unsafe.*\Z/m.freeze
 
         attr_reader :dependencies, :dependency_files, :credentials
 
@@ -289,6 +292,7 @@ module Dependabot
 
         def post_process_compiled_file(updated_content, file)
           content = replace_header_with_original(updated_content, file.content)
+          content = remove_new_warnings(content, file.content)
           content = update_hashes_if_required(content, file.content)
           replace_absolute_file_paths(content, file.content)
         end
@@ -324,6 +328,21 @@ module Dependabot
           content
         end
 
+        def remove_new_warnings(updated_content, original_content)
+          content = updated_content
+
+          if content.match?(WARNINGS) && !original_content.match?(WARNINGS)
+            content = content.sub(WARNINGS, "\n")
+          end
+
+          if content.match?(UNSAFE_NOTE) &&
+             !original_content.match?(UNSAFE_NOTE)
+            content = content.sub(UNSAFE_NOTE, "\n")
+          end
+
+          content
+        end
+
         def update_hashes_if_required(updated_content, original_content)
           deps_to_update =
             deps_to_augment_hashes_for(updated_content, original_content)
@@ -346,7 +365,7 @@ module Dependabot
         end
 
         def deps_to_augment_hashes_for(updated_content, original_content)
-          regex = RequirementParser::INSTALL_REQ_WITH_REQUIREMENT
+          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/
 
           new_matches = []
           updated_content.scan(regex) { new_matches << Regexp.last_match }
