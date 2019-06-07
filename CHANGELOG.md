@@ -1,3 +1,8 @@
+## v0.108.7, 7 June 2019
+
+- Docker: Support tag format with 'v' prefix
+- Python: Bump pip-tools from 3.7.0 to 3.8.0 in /python/helpers
+
 ## v0.108.6, 6 June 2019
 
 - Go (modules): handle local module replacements
