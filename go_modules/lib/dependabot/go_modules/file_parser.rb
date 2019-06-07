@@ -17,7 +17,7 @@ module Dependabot
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         i = 0
-        chunks = module_info(go_mod).lines.
+        chunks = module_info.lines.
                  group_by { |line| line == "{\n" ? i += 1 : i }
         deps = chunks.values.map { |chunk| JSON.parse(chunk.join) }
 
@@ -65,7 +65,7 @@ module Dependabot
         )
       end
 
-      def module_info(go_mod)
+      def module_info
         @module_info ||=
           SharedHelpers.in_a_temporary_directory do |path|
             SharedHelpers.with_git_configured(credentials: credentials) do
@@ -116,8 +116,8 @@ module Dependabot
             (JSON.parse(stdout)["Replace"] || []).
               map { |r| r["New"]["Path"] }.
               compact.
-              select { |path| path.start_with?(".") || path.start_with?("/") }.
-              map { |path| [path, "./" + Digest::SHA2.hexdigest(path)] }
+              select { |p| p.start_with?(".") || p.start_with?("/") }.
+              map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
           end
       end
 
