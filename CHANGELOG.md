@@ -1,3 +1,7 @@
+## v0.108.6, 6 June 2019
+
+- Go (modules): handle local module replacements
+
 ## v0.108.5, 6 June 2019
 
 - JS: Sanitize escaped slashes in package names for issue details
