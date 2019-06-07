@@ -204,5 +204,21 @@ RSpec.describe Dependabot::GoModules::FileParser do
           end
       end
     end
+
+    describe "a dependency replaced by a local override" do
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("=> github.com/rsc/qr v0.2.0", "=> ./foo/bar/baz")
+      end
+
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "rsc.io/qr" }
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("rsc.io/qr")
+      end
+    end
   end
 end
