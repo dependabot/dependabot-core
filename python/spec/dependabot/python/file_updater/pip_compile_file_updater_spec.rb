@@ -140,6 +140,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
             to include("--hash=sha256:bb6f5d5507621e0298794b")
           expect(updated_files.first.content).
             to include("# via pyasn1-modules")
+          expect(updated_files.first.content).to_not include("WARNING")
         end
       end
     end
