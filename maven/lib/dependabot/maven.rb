@@ -19,4 +19,10 @@ Dependabot::Dependency.
   register_production_check("maven", ->(groups) { groups != ["test"] })
 
 Dependabot::Dependency.
-  register_display_name_builder("maven", ->(name) { name.split(":").last })
+  register_display_name_builder(
+    "maven",
+    lambda { |name|
+      artifact_id = name.split(":").last
+      %w(bom library).include?(artifact_id) ? name : artifact_id
+    }
+  )
