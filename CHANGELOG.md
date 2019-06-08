@@ -1,3 +1,9 @@
+## v0.108.8, 8 June 2019
+
+- Maven, Gradle: Special case display name for undescriptive artifact IDs
+- Make dependency display name configurable by package manager
+- JS: Ignore invalid lerna.json setups
+
 ## v0.108.7, 7 June 2019
 
 - Docker: Support tag format with 'v' prefix
