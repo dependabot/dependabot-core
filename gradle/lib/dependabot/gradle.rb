@@ -18,4 +18,10 @@ require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("gradle", ->(_) { true })
 
 Dependabot::Dependency.
-  register_display_name_builder("gradle", ->(name) { name.split(":").last })
+  register_display_name_builder(
+    "gradle",
+    lambda { |name|
+      artifact_id = name.split(":").last
+      %w(bom library).include?(artifact_id) ? name : artifact_id
+    }
+  )
