@@ -216,21 +216,10 @@ module Dependabot
         end
 
         def versions_for_v3_repository(repository_details)
-          # If we have a search URL we use it (since it will exclude unlisted
-          # versions)
+          # If we have a search URL that returns results we use it
+          # (since it will exclude unlisted versions)
           if repository_details[:search_url]
-            response = Excon.get(
-              repository_details[:search_url],
-              headers: repository_details[:auth_header],
-              idempotent: true,
-              **excon_defaults
-            )
-            return unless response.status == 200
-
-            JSON.parse(response.body).fetch("data").
-              find { |d| d.fetch("id").casecmp(sanitized_name).zero? }&.
-              fetch("versions")&.
-              map { |d| d.fetch("version") }
+            fetch_versions_from_search_url(repository_details)
           # Otherwise, use the versions URL
           elsif repository_details[:versions_url]
             response = Excon.get(
@@ -243,6 +232,26 @@ module Dependabot
 
             JSON.parse(response.body).fetch("versions")
           end
+        end
+
+        def fetch_versions_from_search_url(repository_details)
+          response = Excon.get(
+            repository_details[:search_url],
+            headers: repository_details[:auth_header],
+            idempotent: true,
+            **excon_defaults
+          )
+          return unless response.status == 200
+
+          JSON.parse(response.body).fetch("data").
+            find { |d| d.fetch("id").casecmp(sanitized_name).zero? }&.
+            fetch("versions")&.
+            map { |d| d.fetch("version") }
+        rescue Excon::Error::Timeout, Excon::Error::Socket
+          repo_url = repository_details[:repository_url]
+          raise if repo_url == RepositoryFinder::DEFAULT_REPOSITORY_URL
+
+          raise PrivateSourceTimedOut, repo_url
         end
 
         def dependency_urls
