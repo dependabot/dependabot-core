@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Dependency do
   end
 
   describe "#production?" do
-    subject(:dependency) { described_class.new(dependency_args).production? }
+    subject(:production?) { described_class.new(dependency_args).production? }
 
     let(:dependency_args) do
       {
@@ -115,5 +115,19 @@ RSpec.describe Dependabot::Dependency do
 
       it { is_expected.to eq(true) }
     end
+  end
+
+  describe "#display_name" do
+    subject(:display_name) { described_class.new(dependency_args).display_name }
+
+    let(:dependency_args) do
+      {
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy"
+      }
+    end
+
+    it { is_expected.to eq("dep") }
   end
 end

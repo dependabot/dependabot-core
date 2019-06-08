@@ -17,3 +17,6 @@ Dependabot::PullRequestCreator::Labeler.
 require "dependabot/dependency"
 Dependabot::Dependency.
   register_production_check("maven", ->(groups) { groups != ["test"] })
+
+Dependabot::Dependency.
+  register_display_name_builder("maven", ->(name) { name.split(":").last })

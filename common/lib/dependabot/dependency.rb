@@ -5,6 +5,7 @@ require "rubygems_version_patch"
 module Dependabot
   class Dependency
     @production_checks = {}
+    @display_name_builders = {}
 
     def self.production_check_for_package_manager(package_manager)
       production_check = @production_checks[package_manager]
@@ -15,6 +16,14 @@ module Dependabot
 
     def self.register_production_check(package_manager, production_check)
       @production_checks[package_manager] = production_check
+    end
+
+    def self.display_name_builder_for_package_manager(package_manager)
+      @display_name_builders[package_manager]
+    end
+
+    def self.register_display_name_builder(package_manager, name_builder)
+      @display_name_builders[package_manager] = name_builder
     end
 
     attr_reader :name, :version, :requirements, :package_manager,
@@ -63,9 +72,11 @@ module Dependabot
     end
 
     def display_name
-      return name unless %w(maven gradle).include?(package_manager)
+      display_name_builder =
+        self.class.display_name_builder_for_package_manager(package_manager)
+      return name unless display_name_builder
 
-      name.split(":").last
+      display_name_builder.call(name)
     end
 
     def ==(other)
