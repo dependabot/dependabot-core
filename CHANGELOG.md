@@ -1,3 +1,8 @@
+## v0.108.9, 10 June 2019
+
+- Bundler: Remove existing load paths before loading git dependency gemspecs
+- NuGet: Additional handling for timeouts from private registries
+
 ## v0.108.8, 8 June 2019
 
 - Maven, Gradle: Special case display name for undescriptive artifact IDs
