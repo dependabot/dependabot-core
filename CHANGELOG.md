@@ -1,3 +1,7 @@
+## v0.108.10, 10 June 2019
+
+- Go (modules): don't build during go get -d
+
 ## v0.108.9, 10 June 2019
 
 - Bundler: Remove existing load paths before loading git dependency gemspecs
