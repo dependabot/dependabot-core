@@ -130,29 +130,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          describe "a non-existent dependency in a sub-directory" do
-            let(:dependency_name) do
-              "github.com/dependabot-fixtures" \
-              "/test-go_modules-non-existent-sub-dep"
-            end
-            let(:dependency_version) { "v1.0.0" }
-            let(:dependency_previous_version) { "v0.1.0" }
-            let(:go_mod_body) do
-              fixture("go_mods", go_mod_fixture_name).sub(
-                "rsc.io/quote v1.4.0",
-                "#{dependency_name} #{dependency_previous_version}"
-              )
-            end
-
-            it "raises the correct error" do
-              error_class = Dependabot::DependencyFileNotResolvable
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
-                  expect(error.message).to include("hmarr/404")
-                end
-            end
-          end
-
           describe "a dependency who's module path has changed" do
             let(:go_mod_body) do
               fixture("go_mods", go_mod_fixture_name).sub(
@@ -202,6 +179,21 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
                 to raise_error(error_class) do |error|
                   expect(error.message).to include("fatih/Color")
                 end
+            end
+          end
+
+          describe "a dependency that has no top-level package" do
+            let(:dependency_name) { "github.com/prometheus/client_golang" }
+            let(:dependency_version) { "v0.9.3" }
+            let(:go_mod_body) do
+              fixture("go_mods", go_mod_fixture_name).sub(
+                "rsc.io/quote v1.4.0",
+                "github.com/prometheus/client_golang v0.9.3"
+              )
+            end
+
+            it "raises the correct error" do
+              expect { updater.updated_go_sum_content }.to_not raise_error
             end
           end
         end

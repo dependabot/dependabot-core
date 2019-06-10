@@ -95,12 +95,19 @@ module Dependabot
         end
 
         def dummy_main_go
-          lines = ["package main", "import ("]
+          # If we use `main` as the package name, running `go get -d` seems to
+          # invoke the build systems, which can cause problems. For instance,
+          # if the go.mod includes a module that doesn't have a top-level
+          # package, we have no way of working out the import path, so the
+          # build step fails.
+          #
+          # In due course, if we end up fetching the full repo, it might be
+          # good to switch back to `main` so we can surface more errors.
+          lines = ["package dummypkg", "import ("]
           dependencies.each do |dep|
             lines << "_ \"#{dep.name}\""
           end
           lines << ")"
-          lines << "func main() {}"
           lines.join("\n")
         end
 
