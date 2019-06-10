@@ -5,3 +5,4 @@
 /helpers/node_modules
 /helpers/install-dir
 Gemfile.lock
+.byebug_history

@@ -134,6 +134,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             end
         end
       end
+
+      context "that contain bundled dependencies" do
+        let(:npm_lockfile_fixture_name) { "bundled_sub_dependency.json" }
+        subject { dependencies.find { |d| d.name == "tar" } }
+
+        its(:metadata) { is_expected.to eq(bundled: true) }
+      end
     end
 
     context "for npm shrinkwraps" do

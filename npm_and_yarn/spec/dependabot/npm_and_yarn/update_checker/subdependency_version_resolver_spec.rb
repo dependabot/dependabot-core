@@ -154,6 +154,29 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         # the same version
         it { is_expected.to eq(Gem::Version.new("5.2.1")) }
       end
+
+      context "when sub-dependnecy is bundled" do
+        let(:manifest_fixture_name) { "bundled_sub_dependency.json" }
+        let(:npm_lock_fixture_name) { "bundled_sub_dependency.json" }
+
+        let(:dependency_name) { "tar" }
+        let(:version) { "4.4.10" }
+        let(:previous_version) { "4.4.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "tar",
+            version: "4.4.1",
+            requirements: [],
+            package_manager: "npm_and_yarn",
+            metadata: { bundled: true }
+          )
+        end
+
+        it { is_expected.to eq(nil) }
+      end
     end
 
     context "with a yarn.lock and a package-lock.json" do

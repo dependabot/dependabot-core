@@ -132,7 +132,8 @@ module Dependabot
                 name: name,
                 version: semver_version_for(details["version"]),
                 package_manager: "npm_and_yarn",
-                requirements: []
+                requirements: [],
+                metadata: { bundled: details["bundled"] }
               )
 
               dependency_set += recursively_fetch_npm_lock_dependencies(details)

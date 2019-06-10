@@ -130,4 +130,19 @@ RSpec.describe Dependabot::Dependency do
 
     it { is_expected.to eq("dep") }
   end
+
+  describe "#metadata" do
+    subject(:metadata) { described_class.new(dependency_args).metadata }
+
+    let(:dependency_args) do
+      {
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { bundled: true }
+      }
+    end
+
+    it { is_expected.to eq(bundled: true) }
+  end
 end

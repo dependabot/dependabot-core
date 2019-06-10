@@ -27,10 +27,11 @@ module Dependabot
     end
 
     attr_reader :name, :version, :requirements, :package_manager,
-                :previous_version, :previous_requirements
+                :previous_version, :previous_requirements, :metadata
 
     def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil)
+                   previous_version: nil, previous_requirements: nil,
+                   metadata: nil)
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -38,6 +39,7 @@ module Dependabot
       @previous_requirements =
         previous_requirements&.map { |req| symbolize_keys(req) }
       @package_manager = package_manager
+      @metadata = metadata
 
       check_values
     end
@@ -53,7 +55,8 @@ module Dependabot
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
-        "package_manager" => package_manager
+        "package_manager" => package_manager,
+        "metadata" => metadata
       }
     end
 
