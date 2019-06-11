@@ -1,5 +1,6 @@
 ## v0.108.11, 11 June 2019
 
+- Python: Properly remove setup tools warning
 
 ## v0.108.10, 10 June 2019
 
