@@ -20,7 +20,7 @@ module Dependabot
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
         WARNINGS = /\s*# WARNING:.*\Z/m.freeze
         UNSAFE_NOTE =
-          /\s*The following packages are considered to be unsafe.*\Z/m.freeze
+          /\s*# The following packages are considered to be unsafe.*\Z/m.freeze
 
         attr_reader :dependencies, :dependency_files, :credentials
 

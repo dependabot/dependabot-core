@@ -180,6 +180,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           expect(updated_files.count).to eq(1)
           expect(updated_files.first.content).to include("flake8==3.6.0")
           expect(updated_files.first.content).to_not include("setuptools")
+          expect(updated_files.first.content).to end_with("via flake8\n")
         end
       end
 
