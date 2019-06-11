@@ -1,0 +1,16 @@
+FROM ubuntu:18.04
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends locales \
+    && rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8 \
+    && useradd -m -u 1001 -d /dependabot dependabot \
+    && su dependabot -c "mkdir /dependabot/helpers /dependabot/tools"
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LC_ALL="en_US.UTF-8" \
+    LANG="en_US.UTF-8" \
+    DEPENDABOT_NATIVE_HELPERS_PATH="/dependabot/helpers"
+
+WORKDIR /dependabot

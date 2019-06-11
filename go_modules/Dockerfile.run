@@ -1,0 +1,17 @@
+FROM dependabot/core-run-base
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      curl \
+      git \
+      bzr \
+      mercurial \
+    && rm -rf /var/lib/apt/lists/*
+
+USER dependabot
+RUN curl https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz | tar -xz -C /dependabot/tools \
+    && mkdir /dependabot/tools/gopath
+ENV PATH=/dependabot/tools/go/bin:$PATH GOPATH=/dependabot/tools/go/gopath
+
+COPY helpers /dependabot/helpers-src/go_modules
+RUN bash /dependabot/helpers-src/go_modules/build /dependabot/helpers/go_modules
