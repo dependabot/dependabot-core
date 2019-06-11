@@ -96,9 +96,9 @@ module Dependabot
               stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
 
-              # Find all the local replacements, and return them with a stub path
-              # we can use in their place. Using generated paths is safer as it
-              # means we don't need to worry about references to parent
+              # Find all the local replacements, and return them with a stub
+              # path we can use in their place. Using generated paths is safer
+              # as it means we don't need to worry about references to parent
               # directories, etc.
               (JSON.parse(stdout)["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
