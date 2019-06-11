@@ -1,3 +1,6 @@
+## v0.108.11, 11 June 2019
+
+
 ## v0.108.10, 10 June 2019
 
 - Go (modules): don't build during go get -d
