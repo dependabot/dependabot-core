@@ -1,3 +1,7 @@
+## v0.108.12, 11 June 2019
+
+- Go (modules): handle replace directive in updater
+
 ## v0.108.11, 11 June 2019
 
 - Python: Properly remove setup tools warning
