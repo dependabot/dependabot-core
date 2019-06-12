@@ -325,7 +325,7 @@ module Dependabot
 
         file.content.lines.all? do |line|
           next true if line.strip.empty?
-          next true if line.start_with?("#", "-r ", "-c ", "-e ", "--")
+          next true if line.strip.start_with?("#", "-r ", "-c ", "-e ", "--")
 
           line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
         end
