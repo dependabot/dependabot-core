@@ -236,6 +236,9 @@ module Dependabot
         [
           RestClient::Exceptions::Timeout,
           RestClient::ServerBrokeConnection,
+          RestClient::ServiceUnavailable,
+          RestClient::InternalServerError,
+          RestClient::BadGateway,
           DockerRegistry2::NotFound
         ]
       end
