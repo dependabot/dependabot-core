@@ -1,3 +1,10 @@
+## v0.108.13, 12 June 2019
+
+- Gradle: Treat Early Access Programme (EAP) versions as pre-releases
+- Cargo: Handle implicit workspace declarations
+- Docker: Retry server errors
+- Composer: Bump composer/composer from 1.8.5 to 1.8.6
+
 ## v0.108.12, 11 June 2019
 
 - Go (modules): handle replace directive in updater
