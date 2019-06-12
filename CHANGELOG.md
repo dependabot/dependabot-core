@@ -1,3 +1,7 @@
+## v0.108.14, 12 June 2019
+
+- Python: Handle requirement files with spaces before their comments
+
 ## v0.108.13, 12 June 2019
 
 - Gradle: Treat Early Access Programme (EAP) versions as pre-releases
