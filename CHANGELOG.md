@@ -1,3 +1,7 @@
+## v0.108.15, 13 June 2019
+
+- PHP: Add ext-imap to Dockerfile
+
 ## v0.108.14, 12 June 2019
 
 - Python: Handle requirement files with spaces before their comments
