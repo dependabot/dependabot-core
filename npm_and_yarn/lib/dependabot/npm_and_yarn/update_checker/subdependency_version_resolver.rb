@@ -26,6 +26,7 @@ module Dependabot
 
         def latest_resolvable_version
           raise "Not a subdependency!" if dependency.requirements.any?
+          return if bundled_dependency?
 
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
@@ -213,6 +214,26 @@ module Dependabot
           @package_files ||=
             dependency_files.
             select { |f| f.name.end_with?("package.json") }
+        end
+
+        # TODO: We should try and fix this by updating the parent that's not
+        # bundled. For this case: `chokidar > fsevents > node-pre-gyp > tar` we
+        # would need to update `fsevents`
+        #
+        # We shouldn't update bundled sub-dependencies as they have been bundled
+        # into the release at an exact version by a parent using
+        # `bundledDependencies`.
+        #
+        # For example, fsevents < 2 bundles node-pre-gyp meaning all it's
+        # sub-dependnecies get bundled into the release tarball at publish time
+        # so you always get the same sub-dependency versions if you re-install a
+        # specific version of fsevents.
+        #
+        # Updating the sub-dependency by deleting the entry works but it gets
+        # removed from the bundled set of dependencies and moved top level
+        # resulting in a bunch of package duplication which is pretty confusing.
+        def bundled_dependency?
+          dependency.subdependency_metadata&.fetch(:npm_bundled, false) || false
         end
       end
     end
