@@ -147,11 +147,13 @@ module Dependabot
 
         package_lock_path_deps =
           parsed_package_lock.fetch("dependencies", []).to_a.
+          select { |_, v| v.is_a?(Hash) }.
           select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
           map { |k, v| [k, v.fetch("version")] }
 
         shrinkwrap_path_deps =
           parsed_shrinkwrap.fetch("dependencies", []).to_a.
+          select { |_, v| v.is_a?(Hash) }.
           select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
           map { |k, v| [k, v.fetch("version")] }
 
