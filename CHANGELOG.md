@@ -1,3 +1,7 @@
+## v0.108.18, 14 June 2019
+
+- Python: Handle quotes around index URLs in requirement.txt files
+
 ## v0.108.17, 14 June 2019
 
 - Npm: Ignore bundled sub-dependencies
