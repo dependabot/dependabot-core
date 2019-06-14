@@ -233,7 +233,7 @@ module Dependabot
         # removed from the bundled set of dependencies and moved top level
         # resulting in a bunch of package duplication which is pretty confusing.
         def bundled_dependency?
-          dependency.metadata&.fetch(:bundled)
+          dependency.subdependency_metadata&.fetch(:npm_bundled, false) || false
         end
       end
     end

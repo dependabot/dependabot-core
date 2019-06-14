@@ -98,6 +98,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
 
+      it "doesn't include subdependency_metadata for unbundled dependencies" do
+        dep = dependencies.find { |d| d.name == "etag" }
+        expect(dep.subdependency_metadata).to be_nil
+      end
+
       context "that contain multiple dependencies" do
         let(:npm_lockfile_fixture_name) { "blank_requirement.json" }
 
@@ -139,7 +144,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:npm_lockfile_fixture_name) { "bundled_sub_dependency.json" }
         subject { dependencies.find { |d| d.name == "tar" } }
 
-        its(:metadata) { is_expected.to eq(bundled: true) }
+        its(:subdependency_metadata) { is_expected.to eq(npm_bundled: true) }
       end
     end
 

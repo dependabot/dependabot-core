@@ -27,11 +27,12 @@ module Dependabot
     end
 
     attr_reader :name, :version, :requirements, :package_manager,
-                :previous_version, :previous_requirements, :metadata
+                :previous_version, :previous_requirements,
+                :subdependency_metadata
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   metadata: nil)
+                   subdependency_metadata: nil)
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -39,7 +40,7 @@ module Dependabot
       @previous_requirements =
         previous_requirements&.map { |req| symbolize_keys(req) }
       @package_manager = package_manager
-      @metadata = metadata
+      @subdependency_metadata = subdependency_metadata unless top_level?
 
       check_values
     end
@@ -56,8 +57,8 @@ module Dependabot
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
         "package_manager" => package_manager,
-        "metadata" => metadata
-      }
+        "subdependency_metadata" => subdependency_metadata
+      }.compact
     end
 
     def appears_in_lockfile?
