@@ -1,3 +1,7 @@
+## v0.108.16, 14 June 2019
+
+- JS: Handle unexpected objects in package-lock.json when looking for path dependencies
+
 ## v0.108.15, 13 June 2019
 
 - PHP: Add ext-imap to Dockerfile
