@@ -58,12 +58,16 @@ module Dependabot
           urls = { main: nil, extra: [] }
 
           requirements_files.each do |file|
-            if file.content.match?(/^--index-url\s([^\s]+)/)
+            if file.content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
               urls[:main] =
-                file.content.match(/^--index-url\s([^\s]+)/).captures.first
+                file.content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/).
+                captures.first&.strip
             end
-            urls[:extra] += file.content.scan(/^--extra-index-url\s([^\s]+)/).
-                            flatten
+            urls[:extra] +=
+              file.content.
+              scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/).
+              flatten.
+              map(&:strip)
           end
 
           urls

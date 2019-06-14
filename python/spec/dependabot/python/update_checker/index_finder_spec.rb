@@ -86,6 +86,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           expect(index_urls).
             to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
+
+        context "with quotes" do
+          let(:requirements_fixture_name) { "custom_index_quotes.txt" }
+          let(:dependency_files) { [requirements_file] }
+
+          it "gets the right index URL" do
+            expect(index_urls).
+              to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          end
+        end
       end
 
       context "set in a Pipfile" do
@@ -250,6 +260,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
             ]
           )
+        end
+
+        context "with quotes" do
+          let(:requirements_fixture_name) { "extra_index_quotes.txt" }
+
+          it "gets the right index URLs" do
+            expect(index_urls).to match_array(
+              [
+                "https://pypi.python.org/simple/",
+                "https://cakebot.mycloudrepo.io/public/repositories/py/"
+              ]
+            )
+          end
         end
       end
 
