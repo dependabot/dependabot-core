@@ -1570,8 +1570,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.0",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: nil,
+                  latest_resolvable_version: nil,
                   updated_source: requirements.first[:source]
                 ).and_call_original
 
