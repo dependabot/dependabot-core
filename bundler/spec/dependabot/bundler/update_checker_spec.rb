@@ -72,6 +72,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   let(:gemspec_fixture_name) { "example" }
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
+  before do
+    stub_request(:get, rubygems_url + "versions/business_no_rubygems.json").
+      to_return(status: 404, body: "This rubygem could not be found.")
+  end
+
   describe "#latest_version" do
     subject { checker.latest_version }
 
@@ -101,10 +106,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       context "when the gem isn't on Rubygems" do
-        before do
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 404, body: "This rubygem could not be found.")
-        end
+        let(:dependency_name) { "business_no_rubygems" }
 
         it { is_expected.to be_nil }
       end
@@ -260,10 +262,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "and the gem isn't on Rubygems" do
-            before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
-            end
+            let(:dependency_name) { "business_no_rubygems" }
 
             it { is_expected.to eq(current_version) }
           end
@@ -307,9 +306,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               }]
             end
 
+            let(:dependency_name) { "business_no_rubygems" }
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/gocardless/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
@@ -378,10 +376,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
-      before do
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 404, body: "This rubygem could not be found.")
-      end
+      let(:dependency_name) { "business_no_rubygems" }
 
       it { is_expected.to be_falsey }
     end
@@ -845,9 +840,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               }]
             end
 
+            let(:dependency_name) { "business_no_rubygems" }
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/gocardless/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
@@ -1569,10 +1563,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "and the reference isn't included in the new version" do
-            before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
-            end
+            let(:dependency_name) { "business_no_rubygems" }
 
             it "delegates to Bundler::RequirementsUpdater" do
               expect(requirements_updater).
