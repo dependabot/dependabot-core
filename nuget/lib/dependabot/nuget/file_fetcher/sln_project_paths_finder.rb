@@ -7,9 +7,6 @@ module Dependabot
   module Nuget
     class FileFetcher
       class SlnProjectPathsFinder
-        PROJECT_PATH_REGEX =
-          /(?<=["'])[^"']*?\.(?:vb|cs|fs)proj(?=["'])/.freeze
-
         def initialize(sln_file:)
           @sln_file = sln_file
         end
@@ -18,11 +15,9 @@ module Dependabot
           paths = []
           sln_file_lines = sln_file.content.lines
 
-          sln_file_lines.each_with_index do |line, index|
-            next unless line.match?(/^\s*Project/)
-
-            # Don't know how to handle multi-line project declarations yet
-            next unless sln_file_lines[index + 1]&.match?(/^\s*EndProject/)
+          sln_file_lines.each do |line|
+            next unless line.match?(/^\s*Project\(/)
+            next unless line.split('"')[5]
 
             path = line.split('"')[5]
             path = path.tr("\\", "/")
