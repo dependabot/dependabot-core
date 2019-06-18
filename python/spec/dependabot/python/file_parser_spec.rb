@@ -823,6 +823,35 @@ RSpec.describe Dependabot::Python::FileParser do
           end
         end
       end
+
+      context "with extras" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("setup_files", "extras.py")
+          )
+        end
+
+        describe "a dependency with extras" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "requests" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==2.12.*",
+                file: "setup.py",
+                groups: ["install_requires"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
     end
 
     context "with a Pipfile and Pipfile.lock" do
