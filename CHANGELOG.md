@@ -1,3 +1,7 @@
+## v0.108.19, 18 June 2019
+
+- .NET: Handle multi-line sln declarations, and tighten regex. Fixes #520
+
 ## v0.108.18, 14 June 2019
 
 - Python: Handle quotes around index URLs in requirement.txt files
