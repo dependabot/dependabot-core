@@ -1,3 +1,7 @@
+## v0.108.20, 18 June 2019
+
+- Python: Better backup parsing of setup.py files
+
 ## v0.108.19, 18 June 2019
 
 - .NET: Handle multi-line sln declarations, and tighten regex. Fixes #520
