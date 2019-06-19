@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "cgi"
 require "excon"
 
 require "dependabot/python/update_checker"
@@ -12,6 +13,9 @@ module Dependabot
       class LatestVersionFinder
         require_relative "index_finder"
 
+        PYTHON_REQUIREMENT_REGEX =
+          /data-requires-python\s*=\s*["'](?<requirement>[^"']+)["']/m.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:)
           @dependency          = dependency
@@ -21,17 +25,19 @@ module Dependabot
           @security_advisories = security_advisories
         end
 
-        def latest_version
-          @latest_version ||= fetch_latest_version
+        def latest_version(python_version: nil)
+          @latest_version ||=
+            fetch_latest_version(python_version: python_version)
         end
 
-        def latest_version_with_no_unlock
+        def latest_version_with_no_unlock(python_version: nil)
           @latest_version_with_no_unlock ||=
-            fetch_latest_version_with_no_unlock
+            fetch_latest_version_with_no_unlock(python_version: python_version)
         end
 
-        def lowest_security_fix_version
-          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        def lowest_security_fix_version(python_version: nil)
+          @lowest_security_fix_version ||=
+            fetch_lowest_security_fix_version(python_version: python_version)
         end
 
         private
@@ -39,28 +45,42 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials,
                     :ignored_versions, :security_advisories
 
-        def fetch_latest_version
+        def fetch_latest_version(python_version:)
           versions = available_versions
+          versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
           versions.max
         end
 
-        def fetch_latest_version_with_no_unlock
+        def fetch_latest_version_with_no_unlock(python_version:)
           versions = available_versions
+          versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
           versions = filter_out_of_range_versions(versions)
           versions.max
         end
 
-        def fetch_lowest_security_fix_version
+        def fetch_lowest_security_fix_version(python_version:)
           versions = available_versions
+          versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
           versions = filter_vulnerable_versions(versions)
           versions = filter_lower_versions(versions)
           versions.min
+        end
+
+        def filter_unsupported_versions(versions_array, python_version)
+          versions_array.map do |details|
+            python_requirement = details.fetch(:python_requirement)
+            next details.fetch(:version) unless python_version
+            next details.fetch(:version) unless python_requirement
+            next unless python_requirement.satisfied_by?(python_version)
+
+            details.fetch(:version)
+          end.compact
         end
 
         def filter_prerelease_versions(versions_array)
@@ -118,24 +138,50 @@ module Dependabot
                 raise PrivateSourceAuthenticationFailure, sanitized_url
               end
 
-              index_response.body.
-                scan(%r{<a\s.*?>(.*?)</a>}m).flatten.
-                select { |n| n.match?(name_regex) }.
-                map do |filename|
-                  version =
-                    filename.
-                    gsub(/#{name_regex}-/i, "").
-                    split(/-|\.tar\.|\.zip|\.whl/).
-                    first
-                  next unless version_class.correct?(version)
+              version_links = []
+              index_response.body.scan(%r{<a\s.*?>.*?</a>}m) do
+                details = version_details_from_link(Regexp.last_match.to_s)
+                version_links << details if details
+              end
 
-                  version_class.new(version)
-                end.compact
+              version_links.compact
             rescue Excon::Error::Timeout, Excon::Error::Socket
               raise if MAIN_PYPI_INDEXES.include?(index_url)
 
               raise PrivateSourceTimedOut, sanitized_url
             end
+        end
+
+        def version_details_from_link(link)
+          filename = link.match(%r{<a\s.*?>(.*?)</a>}).captures.first
+          return unless filename.match?(name_regex)
+
+          version = get_version_from_filename(filename)
+          return unless version_class.correct?(version)
+
+          {
+            version: version_class.new(version),
+            python_requirement: build_python_requirement_from_link(link)
+          }
+        end
+
+        def get_version_from_filename(filename)
+          filename.
+            gsub(/#{name_regex}-/i, "").
+            split(/-|\.tar\.|\.zip|\.whl/).
+            first
+        end
+
+        def build_python_requirement_from_link(link)
+          req_string = link.
+                       match(PYTHON_REQUIREMENT_REGEX)&.
+                       named_captures&.
+                       fetch("requirement")
+          return unless req_string
+
+          requirement_class.new(CGI.unescapeHTML(req_string))
+        rescue Gem::Requirement::BadRequirementError
+          nil
         end
 
         def index_urls

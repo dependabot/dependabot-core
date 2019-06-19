@@ -104,10 +104,31 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     end
 
     context "when the PyPI response includes zipped files" do
-      let(:pypi_response) do
-        fixture("pypi_simple_response_zip.html")
-      end
+      let(:pypi_response) { fixture("pypi_simple_response_zip.html") }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "when the PyPI response includes data-requires-python entries" do
+      let(:pypi_response) { fixture("pypi_simple_response_django.html") }
+      let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+      let(:dependency_name) { "django" }
+      let(:dependency_version) { "1.2.4" }
+
+      it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+
+      context "and a python version specified" do
+        subject { finder.latest_version(python_version: python_version) }
+
+        context "that allows the latest version" do
+          let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
+          it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+        end
+
+        context "that forbids the latest version" do
+          let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
+          it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+        end
+      end
     end
 
     context "when the dependency name isn't normalised" do
@@ -414,10 +435,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version_with_no_unlock" do
-    subject { finder.send(:latest_version_with_no_unlock) }
+    subject { finder.latest_version_with_no_unlock }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "luigi",
+        name: dependency_name,
         version: version,
         requirements: requirements,
         package_manager: "pip"
@@ -435,6 +456,31 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
         it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+      end
+
+      context "when the PyPI response includes data-requires-python entries" do
+        let(:pypi_response) { fixture("pypi_simple_response_django.html") }
+        let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+        let(:dependency_name) { "django" }
+        let(:dependency_version) { "1.2.4" }
+
+        it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+
+        context "and a python version specified" do
+          subject do
+            finder.latest_version_with_no_unlock(python_version: python_version)
+          end
+
+          context "that allows the latest version" do
+            let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
+            it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+          end
+
+          context "that forbids the latest version" do
+            let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
+            it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+          end
+        end
       end
     end
 
@@ -490,5 +536,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       ]
     end
     it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+
+    context "when the PyPI response includes data-requires-python entries" do
+      let(:pypi_response) { fixture("pypi_simple_response_django.html") }
+      let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+      let(:dependency_name) { "django" }
+      let(:dependency_version) { "1.2.4" }
+
+      it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+
+      context "and a python version specified" do
+        subject do
+          finder.lowest_security_fix_version(python_version: python_version)
+        end
+
+        context "that allows the safe version" do
+          let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
+          it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+        end
+
+        context "that forbids the safe version" do
+          let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
+          it { is_expected.to be_nil }
+        end
+      end
+    end
   end
 end
