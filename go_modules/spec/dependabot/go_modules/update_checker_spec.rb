@@ -80,6 +80,22 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
+    context "with a version pinned using the `replace` directive" do
+      let(:go_mod_content) do
+        version = dependency_version
+        <<~GOMOD
+          module foobar
+          require #{dependency_name} v#{version}
+          replace #{dependency_name} => #{dependency_name} v#{version}
+        GOMOD
+      end
+
+      it "doesn't change the version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.0"))
+      end
+    end
+
     it "doesn't update to (Dependabot) ignored versions" do
       # TODO: let(:ignored_versions) { ["..."] }
     end
