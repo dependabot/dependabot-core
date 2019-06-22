@@ -1,3 +1,13 @@
+## v0.108.21, 23 June 2019
+
+- Add longer read timeout when fetching git metadata
+- PHP: Handle leading space in requirement strings
+- Python: Use --pre in pip-compile options if it was used previously
+- Go (modules): keep bumping pinned dependencies
+- Go (modules): don't update replace-pinned dependencies
+- Sanitize markdown in commit messages
+- Python: Handle a specified python version in LatestVersionFinder
+
 ## v0.108.20, 18 June 2019
 
 - Python: Better backup parsing of setup.py files
