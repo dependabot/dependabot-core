@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Dependabot\PHP;
+namespace Dependabot\Composer;
 
 use Composer\IO\NullIO;
 
