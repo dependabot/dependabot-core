@@ -114,6 +114,9 @@ module Dependabot
           # we won't be ignoring v2.x releases like we should be.
           return lower_bound unless latest_allowable_version
 
+          # If the original requirement is just a stability flag just use that
+          return lower_bound if lower_bound.strip.start_with?("@")
+
           lower_bound + ", <= #{latest_allowable_version}"
         end
 
