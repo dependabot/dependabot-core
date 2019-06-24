@@ -87,6 +87,8 @@ module Dependabot
           )
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -119,6 +121,8 @@ module Dependabot
 
           lower_bound + ", <= #{latest_allowable_version}"
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
