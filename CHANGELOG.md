@@ -1,3 +1,9 @@
+## v0.108.22, 24 June 2019
+
+- Composer: Handle stability flags in version updater
+- JS: Bump semver from 6.1.1 to 6.1.2 in /npm_and_yarn/helpers
+- PHP: Add php7.3-geoip to Dockerfile
+
 ## v0.108.21, 23 June 2019
 
 - Add longer read timeout when fetching git metadata
