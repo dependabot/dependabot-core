@@ -12,6 +12,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       source: source,
       dependencies: dependencies,
       credentials: credentials,
+      commit_message_options: commit_message_options,
       security_fix: security_fix
     )
   end
@@ -40,6 +41,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       "password" => "token"
     }]
   end
+  let(:commit_message_options) { {} }
   let(:security_fix) { false }
 
   let(:json_header) { { "Content-Type" => "application/json" } }
@@ -186,6 +188,39 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
         it { is_expected.to eq("⬆️🔒 ") }
+      end
+    end
+
+    context "when commit_message_options are provided" do
+      let(:commit_message_options) do
+        {
+          prefix: prefix,
+          include_scope: include_scope
+        }.compact
+      end
+      let(:prefix) { "custom" }
+      let(:include_scope) { nil }
+
+      it { is_expected.to eq("custom: ") }
+
+      context "with a security vulnerability fixed" do
+        let(:security_fix) { true }
+        it { is_expected.to eq("custom: [security] ") }
+
+        context "with a capitalised prefix" do
+          let(:prefix) { "Custom" }
+          it { is_expected.to eq("Custom: [Security] ") }
+        end
+      end
+
+      context "when asked to include the scope" do
+        let(:include_scope) { true }
+        it { is_expected.to eq("custom(deps): ") }
+      end
+
+      context "when asked not to include the scope" do
+        let(:include_scope) { false }
+        it { is_expected.to eq("custom: ") }
       end
     end
   end
