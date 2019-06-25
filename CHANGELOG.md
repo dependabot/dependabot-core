@@ -1,3 +1,8 @@
+## v0.108.23, 25 June 2019
+
+- JS: Handle Excon::Error::Socket errors when fetching latest details
+- Raise helpful error for unexpected Bitbucket responses
+
 ## v0.108.22, 24 June 2019
 
 - Composer: Handle stability flags in version updater
