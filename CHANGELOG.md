@@ -1,3 +1,8 @@
+## v0.108.25, 25 June 2019
+
+- Ruby: Handle unreleased git dependencies properly
+- Add tests for PrNamePrefixer
+
 ## v0.108.24, 25 June 2019
 
 - Python: Handle multiline links in PyPI simple index response
