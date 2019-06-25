@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+gem "dummy-git-dependency",
+    git: "git@github.com:dependabot-fixtures/ruby-dummy-git-dependency",
+    ref: "v1.0.0"

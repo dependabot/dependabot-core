@@ -867,6 +867,54 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
+            context "but this dependency has never been released" do
+              let(:lockfile_fixture_name) { "git_source_unreleased.lock" }
+              let(:gemfile_fixture_name) { "git_source_unreleased" }
+              let(:dependency_name) { "dummy-git-dependency" }
+              let(:current_version) do
+                "20151f9b67c8a04461fa0ee28385b6187b86587b"
+              end
+              let(:upload_pack_fixture) { "dummy-git-dependency" }
+              let(:requirements) do
+                [{
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/dependabot-fixtures/"\
+                         "ruby-dummy-git-dependency",
+                    branch: nil,
+                    ref: "v1.0.0"
+                  }
+                }]
+              end
+
+              before do
+                stub_request(
+                  :get, rubygems_url + "versions/dummy-git-dependency.json"
+                ).to_return(status: 404)
+                url = "https://github.com/dependabot-fixtures/"\
+                      "ruby-dummy-git-dependency.git"
+                git_header = {
+                  "content-type" =>
+                    "application/x-git-upload-pack-advertisement"
+                }
+                stub_request(:get, url + "/info/refs?service=git-upload-pack").
+                  with(basic_auth: ["x-access-token", "token"]).
+                  to_return(
+                    status: 200,
+                    body: fixture("git", "upload_packs", upload_pack_fixture),
+                    headers: git_header
+                  )
+              end
+
+              it "returns the commit SHA for the updated version" do
+                expect(checker.latest_resolvable_version).
+                  to eq("c0e25c2eb332122873f73acb3b61fb2e261cfd8f")
+              end
+            end
+
             context "but there are no tags" do
               let(:upload_pack_fixture) { "no_tags" }
 
