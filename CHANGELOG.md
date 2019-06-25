@@ -1,3 +1,7 @@
+## v0.108.24, 25 June 2019
+
+- Python: Handle multiline links in PyPI simple index response
+
 ## v0.108.23, 25 June 2019
 
 - JS: Handle Excon::Error::Socket errors when fetching latest details
