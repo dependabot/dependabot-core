@@ -1,3 +1,8 @@
+## v0.109.0, 26 June 2019
+
+- BREAKING: Allow commit_message_options to be passed to pull request creator.
+  This replaces the signoff_details argument. See #1227 for full details.
+
 ## v0.108.25, 25 June 2019
 
 - Ruby: Handle unreleased git dependencies properly
