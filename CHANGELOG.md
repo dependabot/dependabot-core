@@ -1,3 +1,7 @@
+## v0.109.1, 26 June 2019
+
+- Ruby: Handle precision mismatch when updating ranges
+
 ## v0.109.0, 26 June 2019
 
 - BREAKING: Allow commit_message_options to be passed to pull request creator.
