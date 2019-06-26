@@ -14,7 +14,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       files: files,
       credentials: credentials,
       pr_message_footer: pr_message_footer,
-      signoff_details: signoff_details,
+      commit_message_options: { signoff_details: signoff_details },
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )

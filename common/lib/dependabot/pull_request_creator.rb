@@ -16,7 +16,7 @@ module Dependabot
 
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
-                :author_details, :signature_key, :signoff_details,
+                :author_details, :signature_key, :commit_message_options,
                 :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :github_redirection_service,
@@ -25,7 +25,7 @@ module Dependabot
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
-                   signoff_details: nil,
+                   commit_message_options: {},
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
                    branch_name_prefix: "dependabot",
@@ -40,7 +40,7 @@ module Dependabot
       @pr_message_footer          = pr_message_footer
       @author_details             = author_details
       @signature_key              = signature_key
-      @signoff_details            = signoff_details
+      @commit_message_options     = commit_message_options
       @custom_labels              = custom_labels
       @reviewers                  = reviewers
       @assignees                  = assignees
@@ -127,7 +127,7 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           credentials: credentials,
-          signoff_details: signoff_details,
+          commit_message_options: commit_message_options,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed,
           github_redirection_service: github_redirection_service
