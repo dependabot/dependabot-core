@@ -11,7 +11,12 @@ class Updater
 {
     public static function update(array $args): array
     {
-        [$workingDirectory, $dependencyName, $dependencyVersion, $gitCredentials, $registryCredentials] = $args;
+        [$workingDirectory, $dependencyName, $dependencyVersionAndExtentions, $gitCredentials, $registryCredentials] = $args;
+        [$dependencyVersion, $extensionsString] = explode(';', $dependencyVersionAndExtentions);
+        $extensions = [];
+        if ($extensionsString !== null && strlen($extensionsString) > 0) {
+            $extensions = explode(',', $extensionsString);
+        }
 
         // Change working directory to the one provided, this ensures that we
         // install dependencies into the working dir, rather than a vendor folder
@@ -22,6 +27,7 @@ class Updater
         $io = new ExceptionIO();
         $composer = Factory::create($io);
         $config = $composer->getConfig();
+        $originalConfig = clone $config;
         $httpBasicCredentials = [];
 
         $pm = new DependabotPluginManager($io, $composer, null, false);
@@ -40,6 +46,22 @@ class Updater
                 'username' => $cred['username'],
                 'password' => $cred['password'],
             ];
+        }
+
+        if (count($extensions) > 0) {
+            $platform = [];
+            foreach ($extensions as $extension) {
+                [$extension, $version] = explode('|', $extension);
+                $platform[$extension] = $version;
+            }
+
+            $config->merge(
+                [
+                    'config' => [
+                        'platform' => $platform + $config->get('platform'),
+                    ],
+                ]
+            );
         }
 
         if ($httpBasicCredentials) {
@@ -74,20 +96,15 @@ class Updater
             ->setWhitelistTransitiveDependencies(true)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
-            ->setRunScripts(false);
+            ->setRunScripts(false)
+            ->setIgnorePlatformRequirements(false);
 
-        /*
-         * If a platform is set we assume people know what they are doing and
-         * we respect the setting.
-         * If no platform is set we ignore it so that the php we run as doesn't
-         * interfere with resolution.
-         */
-        if ($config->get('platform') === []) {
-            $install->setIgnorePlatformRequirements(true);
-        } else {
-            $install->setIgnorePlatformRequirements(false);
-        }
+        $install->run();
 
+        $install
+            ->setConfig($originalConfig)
+            ->setUpdateWhitelist(['lock'])
+            ->setIgnorePlatformRequirements(true);
         $install->run();
 
         $result = [

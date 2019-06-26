@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/errors"
+require "json"
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
@@ -15,11 +17,12 @@ module Dependabot
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
-          @credentials              = credentials
-          @dependency               = dependency
-          @dependency_files         = dependency_files
-          @requirements_to_unlock   = requirements_to_unlock
-          @latest_allowable_version = latest_allowable_version
+          @credentials                  = credentials
+          @dependency                   = dependency
+          @dependency_files             = dependency_files
+          @requirements_to_unlock       = requirements_to_unlock
+          @latest_allowable_version     = latest_allowable_version
+          @composer_platform_extensions = []
         end
 
         def latest_resolvable_version
@@ -29,14 +32,21 @@ module Dependabot
         private
 
         attr_reader :credentials, :dependency, :dependency_files,
-                    :requirements_to_unlock, :latest_allowable_version
+                    :requirements_to_unlock, :latest_allowable_version,
+                    :composer_platform_extensions
 
         def fetch_latest_resolvable_version
           version = fetch_latest_resolvable_version_string
           return if version.nil?
           return unless Composer::Version.correct?(version)
 
-          Composer::Version.new(version)
+          Composer::Version.new(Array[
+            version,
+            composer_platform_extensions.join(",")
+          ].join(";"))
+        rescue Dependabot::DependencyFileMissingExtension => e
+          composer_platform_extensions.push(*e.extensions)
+          fetch_latest_resolvable_version
         end
 
         def fetch_latest_resolvable_version_string
@@ -85,6 +95,19 @@ module Dependabot
             /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
             %("#{dependency.name}": "#{updated_version_requirement_string}")
           )
+
+          json = JSON.parse(content)
+
+          composer_platform_extensions.each do |extension_with_version|
+            json["config"] = {} if json["config"].nil? == true
+            bool = json["config"].include? "platform"
+            json["config"]["platform"] = {} if bool == false
+            extension = extension_with_version.split("|").at(0)
+            extension_version = extension_with_version.split("|").at(1)
+            json["config"]["platform"][extension] = extension_version
+          end
+
+          JSON.generate(json)
         end
 
         def updated_version_requirement_string
@@ -139,13 +162,21 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.include?("requested PHP extension")
             extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
+            extensions_with_versions = error.message.scan(
+              /\sext\-.*? .*?\s/
+            ).map(&:strip).uniq
             msg = "Dependabot's installed extensions didn't match those "\
                   "required by your application.\n\n"\
                   "Please add the following extensions to the platform "\
                   "config in your composer.json to allow Dependabot to run: "\
                   "#{extensions.join(', ')}.\n\n"\
                   "The full error raised was:\n\n#{error.message}"
-            raise Dependabot::DependencyFileNotResolvable, msg
+            raise Dependabot::DependencyFileMissingExtension.new(
+              msg,
+              extensions_with_versions.map {
+                |string| string.split(" ").join("|").gsub("*", "0.0.1")
+              }
+            )
           elsif error.message.include?("package requires php") ||
                 error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')

@@ -89,6 +89,14 @@ module Dependabot
 
   class DependencyFileNotEvaluatable < DependabotError; end
   class DependencyFileNotResolvable < DependabotError; end
+  class DependencyFileMissingExtension < DependencyFileNotResolvable
+    attr_reader :extensions
+
+    def initialize(msg, extensions)
+      @extensions = extensions
+      super(msg)
+    end
+  end
 
   #######################
   # Source level errors #

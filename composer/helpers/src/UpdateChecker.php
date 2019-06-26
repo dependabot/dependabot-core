@@ -16,7 +16,7 @@ class UpdateChecker
 
         $io = new ExceptionIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $config = $composer->getConfig();
+        $originalConfig = $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
         foreach ($gitCredentials as &$cred) {
@@ -66,20 +66,14 @@ class UpdateChecker
             ->setWhitelistTransitiveDependencies(true)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
-            ->setRunScripts(false);
+            ->setRunScripts(false)
+            ->setIgnorePlatformRequirements(false);
 
-        /*
-         * If a platform is set we assume people know what they are doing and
-         * we respect the setting.
-         * If no platform is set we ignore it so that the php we run as doesn't
-         * interfere with resolution.
-         */
-        if ($config->get('platform') === []) {
-            $install->setIgnorePlatformRequirements(true);
-        } else {
-            $install->setIgnorePlatformRequirements(false);
-        }
+        $install->run();
 
+        $install
+            ->setConfig($originalConfig)
+            ->setUpdateWhitelist(['lock']);
         $install->run();
 
         $installedPackages = $installationManager->getInstalledPackages();
