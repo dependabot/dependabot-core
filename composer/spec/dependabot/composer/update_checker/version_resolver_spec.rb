@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to be_nil }
     end
 
-    context "with a dependecy that's provided by another dep" do
+    context "with a dependency that's provided by another dep" do
       let(:manifest_fixture_name) { "provided_dependency" }
       let(:dependency_files) { [manifest] }
       let(:string_req) { "^1.0" }
@@ -94,6 +94,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { nil }
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("1.0")) }
+    end
+
+    context "with a dependency that uses a stability flag" do
+      let(:manifest_fixture_name) { "stability_flag" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:string_req) { "@stable" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:dependency_version) { "1.0.2" }
+      let(:requirements_to_unlock) { :none }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.24.0")) }
     end
 
     context "with a library that requires itself" do
@@ -137,7 +149,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    # This test is extremely slow, as it neds to wait for Composer to time out.
+    # This test is extremely slow, as it needs to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do
     #   let(:manifest_fixture_name) { "unreachable_private_registry" }

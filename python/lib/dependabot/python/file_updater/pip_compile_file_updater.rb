@@ -446,6 +446,7 @@ module Dependabot
             options << "--no-header"
           end
 
+          options << "--pre" if requirements_file.content.include?("--pre")
           options.join(" ")
         end
 

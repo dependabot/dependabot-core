@@ -27,11 +27,13 @@ module Dependabot
                             twisted_rightwards_arrows whale wheelchair
                             white_check_mark wrench zap).freeze
 
-      def initialize(source:, dependencies:, credentials:, security_fix: false)
-        @dependencies = dependencies
-        @source       = source
-        @credentials  = credentials
-        @security_fix = security_fix
+      def initialize(source:, dependencies:, credentials:, security_fix: false,
+                     commit_message_options: {})
+        @dependencies           = dependencies
+        @source                 = source
+        @credentials            = credentials
+        @security_fix           = security_fix
+        @commit_message_options = commit_message_options
       end
 
       def pr_name_prefix
@@ -41,45 +43,63 @@ module Dependabot
       end
 
       def capitalize_first_word?
-        case last_dependabot_commit_style
-        when :gitmoji then true
-        when :conventional_prefix, :conventional_prefix_with_scope
-          last_dependabot_commit_message.match?(/: (\[Security\] )?(B|U)/)
-        else
-          if using_angular_commit_messages? || using_eslint_commit_messages?
-            prefixes = ANGULAR_PREFIXES + ESLINT_PREFIXES
-            semantic_msgs = recent_commit_messages.select do |message|
-              prefixes.any? { |pre| message.match?(/#{pre}[:(]/i) }
-            end
-
-            return true if semantic_msgs.all? { |m| m.match?(/:\s+\[?[A-Z]/) }
-            return false if semantic_msgs.all? { |m| m.match?(/:\s+\[?[a-z]/) }
-          end
-
-          !commit_prefix&.match(/\A[a-z]/)
+        if commit_message_options.key?(:prefix)
+          return !commit_message_options[:prefix]&.strip&.match?(/\A[a-z]/)
         end
+
+        if last_dependabot_commit_style
+          return capitalise_first_word_from_last_dependabot_commit_style
+        end
+
+        capitalise_first_word_from_previous_commits
       end
 
       private
 
-      attr_reader :source, :dependencies, :credentials
+      attr_reader :source, :dependencies, :credentials, :commit_message_options
 
       def security_fix?
         @security_fix
       end
 
       def commit_prefix
-        # If there is a previous Dependabot commit, and it used a known style,
-        # use that as our model for subsequent commits
+        # If a preferred prefix has been explicitly provided, use it
+        if commit_message_options.key?(:prefix)
+          return prefix_from_explicitly_provided_details
+        end
+
+        # Otherwise, if there is a previous Dependabot commit and it used a
+        # known style, use that as our model for subsequent commits
+        if last_dependabot_commit_style
+          return prefix_for_last_dependabot_commit_style
+        end
+
+        # Otherwise we need to detect the user's preferred style from the
+        # existing commits on their repo
+        build_commit_prefix_from_previous_commits
+      end
+
+      def prefix_from_explicitly_provided_details
+        unless commit_message_options.key?(:prefix)
+          raise "No explicitly provided prefix!"
+        end
+
+        prefix = commit_message_options[:prefix].to_s
+        return if prefix.empty?
+
+        prefix += "(#{scope})" if commit_message_options[:include_scope]
+        prefix += ":" if prefix.match?(/[A-Za-z0-9\)\]]\Z/)
+        prefix += " " unless prefix.end_with?(" ")
+        prefix
+      end
+
+      def prefix_for_last_dependabot_commit_style
         case last_dependabot_commit_style
         when :gitmoji then "⬆️ "
         when :conventional_prefix then "#{last_dependabot_commit_prefix}: "
         when :conventional_prefix_with_scope
           "#{last_dependabot_commit_prefix}(#{scope}): "
-        else
-          # Otherwise we need to detect the user's preferred style from the
-          # existing commits on their repo
-          build_commit_prefix_from_previous_commits
+        else raise "Unknown commit style #{last_dependabot_commit_style}"
         end
       end
 
@@ -104,6 +124,29 @@ module Dependabot
 
       def scope
         dependencies.any?(&:production?) ? "deps" : "deps-dev"
+      end
+
+      def capitalise_first_word_from_last_dependabot_commit_style
+        case last_dependabot_commit_style
+        when :gitmoji then true
+        when :conventional_prefix, :conventional_prefix_with_scope
+          last_dependabot_commit_message.match?(/: (\[[Ss]ecurity\] )?(B|U)/)
+        else raise "Unknown commit style #{last_dependabot_commit_style}"
+        end
+      end
+
+      def capitalise_first_word_from_previous_commits
+        if using_angular_commit_messages? || using_eslint_commit_messages?
+          prefixes = ANGULAR_PREFIXES + ESLINT_PREFIXES
+          semantic_msgs = recent_commit_messages.select do |message|
+            prefixes.any? { |pre| message.match?(/#{pre}[:(]/i) }
+          end
+
+          return true if semantic_msgs.all? { |m| m.match?(/:\s+\[?[A-Z]/) }
+          return false if semantic_msgs.all? { |m| m.match?(/:\s+\[?[a-z]/) }
+        end
+
+        !commit_prefix&.match(/\A[a-z]/)
       end
 
       def last_dependabot_commit_style
@@ -269,12 +312,13 @@ module Dependabot
       end
 
       def last_dependabot_commit_message
-        case source.provider
-        when "github" then last_github_dependabot_commit_message
-        when "gitlab" then last_gitlab_dependabot_commit_message
-        when "azure" then last_azure_dependabot_commit_message
-        else raise "Unsupported provider: #{source.provider}"
-        end
+        @last_dependabot_commit_message ||=
+          case source.provider
+          when "github" then last_github_dependabot_commit_message
+          when "gitlab" then last_gitlab_dependabot_commit_message
+          when "azure" then last_azure_dependabot_commit_message
+          else raise "Unsupported provider: #{source.provider}"
+          end
       end
 
       def last_github_dependabot_commit_message

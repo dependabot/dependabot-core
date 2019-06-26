@@ -76,6 +76,12 @@ module Dependabot
         raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
+        if response.status >= 400
+          raise "Unhandled Bitbucket error!\n"\
+                "Status: #{response.status}\n"\
+                "Body: #{response.body}"
+        end
+
         response
       end
 

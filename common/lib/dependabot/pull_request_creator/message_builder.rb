@@ -15,18 +15,18 @@ module Dependabot
       require_relative "pr_name_prefixer"
 
       attr_reader :source, :dependencies, :files, :credentials,
-                  :pr_message_footer, :signoff_details, :vulnerabilities_fixed,
-                  :github_redirection_service
+                  :pr_message_footer, :commit_message_options,
+                  :vulnerabilities_fixed, :github_redirection_service
 
       def initialize(source:, dependencies:, files:, credentials:,
-                     pr_message_footer: nil, signoff_details: nil,
+                     pr_message_footer: nil, commit_message_options: {},
                      vulnerabilities_fixed: {}, github_redirection_service: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
         @credentials                = credentials
         @pr_message_footer          = pr_message_footer
-        @signoff_details            = signoff_details
+        @commit_message_options     = commit_message_options
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
       end
@@ -127,6 +127,7 @@ module Dependabot
       end
 
       def signoff_message
+        signoff_details = commit_message_options[:signoff_details]
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:name] && signoff_details[:email]
 
@@ -134,6 +135,7 @@ module Dependabot
       end
 
       def on_behalf_of_message
+        signoff_details = commit_message_options[:signoff_details]
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:org_name] && signoff_details[:org_email]
 
@@ -530,6 +532,7 @@ module Dependabot
             source: source,
             dependencies: dependencies,
             credentials: credentials,
+            commit_message_options: commit_message_options,
             security_fix: vulnerabilities_fixed.values.flatten.any?
           )
       end

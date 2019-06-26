@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
   end
 
   describe "with multiple possible access tokens" do
-    let(:access_tokens) { ["my-token", "my-other-token"] }
+    let(:access_tokens) { %w(my-token my-other-token) }
     let(:client) { described_class.new(access_tokens: access_tokens) }
     subject { client.contents("some/repo", path: "important_path.json") }
 

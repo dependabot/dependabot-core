@@ -108,6 +108,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
     end
 
+    context "when the PyPI response includes multi-line links" do
+      let(:pypi_response) { fixture("pypi_simple_response_multiline.html") }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "when the PyPI response includes data-requires-python entries" do
       let(:pypi_response) { fixture("pypi_simple_response_django.html") }
       let(:pypi_url) { "https://pypi.python.org/simple/django/" }

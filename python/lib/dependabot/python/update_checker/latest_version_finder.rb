@@ -153,7 +153,7 @@ module Dependabot
         end
 
         def version_details_from_link(link)
-          filename = link.match(%r{<a\s.*?>(.*?)</a>}).captures.first
+          filename = link.match(%r{<a\s.*?>(.*?)</a>}m).captures.first
           return unless filename.match?(name_regex)
 
           version = get_version_from_filename(filename)

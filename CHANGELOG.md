@@ -1,3 +1,38 @@
+## v0.109.0, 26 June 2019
+
+- BREAKING: Allow commit_message_options to be passed to pull request creator.
+  This replaces the signoff_details argument. See #1227 for full details.
+
+## v0.108.25, 25 June 2019
+
+- Ruby: Handle unreleased git dependencies properly
+- Add tests for PrNamePrefixer
+
+## v0.108.24, 25 June 2019
+
+- Python: Handle multiline links in PyPI simple index response
+
+## v0.108.23, 25 June 2019
+
+- JS: Handle Excon::Error::Socket errors when fetching latest details
+- Raise helpful error for unexpected Bitbucket responses
+
+## v0.108.22, 24 June 2019
+
+- Composer: Handle stability flags in version updater
+- JS: Bump semver from 6.1.1 to 6.1.2 in /npm_and_yarn/helpers
+- PHP: Add php7.3-geoip to Dockerfile
+
+## v0.108.21, 23 June 2019
+
+- Add longer read timeout when fetching git metadata
+- PHP: Handle leading space in requirement strings
+- Python: Use --pre in pip-compile options if it was used previously
+- Go (modules): keep bumping pinned dependencies
+- Go (modules): don't update replace-pinned dependencies
+- Sanitize markdown in commit messages
+- Python: Handle a specified python version in LatestVersionFinder
+
 ## v0.108.20, 18 June 2019
 
 - Python: Better backup parsing of setup.py files
