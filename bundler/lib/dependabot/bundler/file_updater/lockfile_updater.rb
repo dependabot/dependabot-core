@@ -136,7 +136,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Naming/RescuedExceptionsVariableName
         def generate_lockfile
           dependencies_to_unlock = dependencies.map(&:name)
 
@@ -167,7 +166,6 @@ module Dependabot
             retry
           end
         end
-        # rubocop:enable Naming/RescuedExceptionsVariableName
 
         def unlock_yanked_gem(dependencies_to_unlock, error)
           raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)

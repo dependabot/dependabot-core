@@ -183,7 +183,6 @@ module Dependabot
         @updated_digest ||= digest_of(latest_version)
       end
 
-      # rubocop:disable Naming/RescuedExceptionsVariableName
       def tags_from_registry
         @tags_from_registry ||=
           begin
@@ -204,7 +203,6 @@ module Dependabot
 
         raise PrivateSourceTimedOut, registry_hostname
       end
-      # rubocop:enable Naming/RescuedExceptionsVariableName
 
       def latest_digest
         return unless tags_from_registry.include?("latest")

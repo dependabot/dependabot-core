@@ -213,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", upload_pack_fixture),
@@ -550,7 +550,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", "is-number"),
@@ -774,7 +774,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", "is-number"),
