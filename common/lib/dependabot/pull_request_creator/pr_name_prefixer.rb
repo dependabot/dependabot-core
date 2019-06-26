@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require "dependabot/clients/azure"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class PrNamePrefixer
@@ -223,8 +225,13 @@ module Dependabot
         case source.provider
         when "github" then recent_github_commit_messages
         when "gitlab" then recent_gitlab_commit_messages
+        when "azure" then recent_azure_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
+      end
+
+      def dependabot_email
+        "support@dependabot.com"
       end
 
       def recent_github_commit_messages
@@ -242,9 +249,21 @@ module Dependabot
           gitlab_client_for_source.commits(source.repo)
 
         @recent_gitlab_commit_messages.
-          reject { |c| c.author_email == "support@dependabot.com" }.
+          reject { |c| c.author_email == dependabot_email }.
           reject { |c| c.message&.start_with?("merge !") }.
           map(&:message).
+          compact.
+          map(&:strip)
+      end
+
+      def recent_azure_commit_messages
+        @recent_azure_commit_messages ||=
+          azure_client_for_source.commits
+
+        @recent_azure_commit_messages.
+          reject { |c| c.fetch("author").fetch("email") == dependabot_email }.
+          reject { |c| c.fetch("comment")&.start_with?("Merge") }.
+          map { |c| c.fetch("comment") }.
           compact.
           map(&:strip)
       end
@@ -253,6 +272,7 @@ module Dependabot
         case source.provider
         when "github" then last_github_dependabot_commit_message
         when "gitlab" then last_gitlab_dependabot_commit_message
+        when "azure" then last_azure_dependabot_commit_message
         else raise "Unsupported provider: #{source.provider}"
         end
       end
@@ -278,7 +298,17 @@ module Dependabot
           gitlab_client_for_source.commits(source.repo)
 
         @recent_gitlab_commit_messages.
-          find { |c| c.author_email == "support@dependabot.com" }&.
+          find { |c| c.author_email == dependabot_email }&.
+          message&.
+          strip
+      end
+
+      def last_azure_dependabot_commit_message
+        @recent_azure_commit_messages ||=
+          azure_client_for_source.commits
+
+        @recent_azure_commit_messages.
+          find { |c| c.fetch("author").fetch("email") == dependabot_email }&.
           message&.
           strip
       end
@@ -299,9 +329,18 @@ module Dependabot
           )
       end
 
+      def azure_client_for_source
+        @azure_client_for_source ||=
+          Dependabot::Clients::Azure.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
       def package_manager
         @package_manager ||= dependencies.first.package_manager
       end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

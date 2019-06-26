@@ -415,9 +415,14 @@ module Dependabot
       end
 
       def build_details_tag(summary:, body:)
-        msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
-        msg += body
-        msg + "</details>"
+        # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
+        if source.provider == "azure"
+          "\n\##{summary}\n\n#{body}"
+        else
+          msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
+          msg += body
+          msg + "</details>"
+        end
       end
 
       def serialized_vulnerability_details(details)

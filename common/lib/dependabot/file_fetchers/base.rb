@@ -3,6 +3,7 @@
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
+require "dependabot/clients/azure"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -17,6 +18,7 @@ module Dependabot
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
         Gitlab::Error::NotFound,
+        Dependabot::Clients::Azure::NotFound,
         Dependabot::Clients::Bitbucket::NotFound
       ].freeze
 
@@ -152,6 +154,8 @@ module Dependabot
           _github_repo_contents(repo, path, commit)
         when "gitlab"
           _gitlab_repo_contents(repo, path, commit)
+        when "azure"
+          _azure_repo_contents(path, commit)
         when "bitbucket"
           _bitbucket_repo_contents(repo, path, commit)
         else raise "Unsupported provider '#{provider}'."
@@ -220,6 +224,25 @@ module Dependabot
               size: 0 # GitLab doesn't return file size
             )
           end
+      end
+
+      def _azure_repo_contents(path, commit)
+        response = azure_client.fetch_repo_contents(commit, path)
+
+        response.map do |entry|
+          type = case entry.fetch("gitObjectType")
+                 when "blob" then "file"
+                 when "tree" then "dir"
+                 else entry.fetch("gitObjectType")
+                 end
+
+          OpenStruct.new(
+            name: File.basename(entry.fetch("relativePath")),
+            path: entry.fetch("relativePath"),
+            type: type,
+            size: entry.fetch("size")
+          )
+        end
       end
 
       def _bitbucket_repo_contents(repo, path, commit)
@@ -299,6 +322,8 @@ module Dependabot
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
           Base64.decode64(tmp).force_encoding("UTF-8").encode
+        when "azure"
+          azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
           bitbucket_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
@@ -374,6 +399,7 @@ module Dependabot
         case source.provider
         when "github" then github_client
         when "gitlab" then gitlab_client
+        when "azure" then azure_client
         when "bitbucket" then bitbucket_client
         else raise "Unsupported provider '#{source.provider}'."
         end
@@ -393,6 +419,12 @@ module Dependabot
             source: source,
             credentials: credentials
           )
+      end
+
+      def azure_client
+        @azure_client ||=
+          Dependabot::Clients::Azure.
+          for_source(source: source, credentials: credentials)
       end
 
       def bitbucket_client
