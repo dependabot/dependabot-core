@@ -155,5 +155,28 @@ RSpec.describe Dependabot::PullRequestCreator do
         creator.create
       end
     end
+
+    context "with an Azure source" do
+      let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
+      let(:dummy_creator) { instance_double(described_class::Azure) }
+
+      it "delegates to PullRequestCreator::Azure with correct params" do
+        expect(described_class::Azure).
+          to receive(:new).
+          with(
+            source: source,
+            branch_name: "dependabot/bundler/business-1.5.0",
+            base_commit: base_commit,
+            credentials: credentials,
+            files: files,
+            commit_message: "Commit msg",
+            pr_description: "PR msg",
+            pr_name: "PR name",
+            labeler: instance_of(described_class::Labeler)
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
   end
 end

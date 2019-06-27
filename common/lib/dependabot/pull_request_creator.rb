@@ -4,6 +4,7 @@ require "dependabot/metadata_finders"
 
 module Dependabot
   class PullRequestCreator
+    require "dependabot/pull_request_creator/azure"
     require "dependabot/pull_request_creator/github"
     require "dependabot/pull_request_creator/gitlab"
     require "dependabot/pull_request_creator/message_builder"
@@ -68,6 +69,7 @@ module Dependabot
       case source.provider
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
+      when "azure" then azure_creator.create
       else raise "Unsupported provider #{source.provider}"
       end
     end
@@ -117,6 +119,20 @@ module Dependabot
         approvers: reviewers,
         assignee: assignees&.first,
         milestone: milestone
+      )
+    end
+
+    def azure_creator
+      Azure.new(
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        labeler: labeler
       )
     end
 
