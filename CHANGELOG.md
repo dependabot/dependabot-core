@@ -1,3 +1,8 @@
+## v0.110.0, 27 June 2019
+
+- Implemented Azure client for file fetcher/pull request creator
+  (see #1211. Thanks @chris5287!)
+
 ## v0.109.1, 26 June 2019
 
 - Ruby: Handle precision mismatch when updating ranges
