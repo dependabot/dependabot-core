@@ -80,17 +80,27 @@ module Dependabot
       end
 
       def prefix_from_explicitly_provided_details
-        unless commit_message_options.key?(:prefix)
-          raise "No explicitly provided prefix!"
-        end
-
-        prefix = commit_message_options[:prefix].to_s
+        prefix = explicitly_provided_prefix_string
         return if prefix.empty?
 
         prefix += "(#{scope})" if commit_message_options[:include_scope]
         prefix += ":" if prefix.match?(/[A-Za-z0-9\)\]]\Z/)
         prefix += " " unless prefix.end_with?(" ")
         prefix
+      end
+
+      def explicitly_provided_prefix_string
+        unless commit_message_options.key?(:prefix)
+          raise "No explicitly provided prefix!"
+        end
+
+        if dependencies.any?(&:production?)
+          commit_message_options[:prefix].to_s
+        elsif commit_message_options.key?(:prefix_development)
+          commit_message_options[:prefix_development].to_s
+        else
+          commit_message_options[:prefix].to_s
+        end
       end
 
       def prefix_for_last_dependabot_commit_style

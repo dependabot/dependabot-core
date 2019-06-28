@@ -33,6 +33,26 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
     )
   end
+  let(:development_dependency) do
+    Dependabot::Dependency.new(
+      name: "business",
+      version: "1.5.0",
+      previous_version: "1.4.0",
+      package_manager: "dummy",
+      requirements: [{
+        file: "Gemfile",
+        requirement: "~> 1.5.0",
+        groups: ["test"],
+        source: nil
+      }],
+      previous_requirements: [{
+        file: "Gemfile",
+        requirement: "~> 1.4.0",
+        groups: ["test"],
+        source: nil
+      }]
+    )
+  end
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -134,27 +154,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
 
       context "with a dev dependency" do
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "business",
-            version: "1.5.0",
-            previous_version: "1.4.0",
-            package_manager: "dummy",
-            requirements: [{
-              file: "Gemfile",
-              requirement: "~> 1.5.0",
-              groups: ["test"],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "Gemfile",
-              requirement: "~> 1.4.0",
-              groups: ["test"],
-              source: nil
-            }]
-          )
-        end
-
+        let(:dependencies) { [development_dependency] }
         it { is_expected.to eq("chore(deps-dev): ") }
       end
     end
@@ -195,10 +195,12 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       let(:commit_message_options) do
         {
           prefix: prefix,
+          prefix_development: development_prefix,
           include_scope: include_scope
         }.compact
       end
       let(:prefix) { "custom" }
+      let(:development_prefix) { nil }
       let(:include_scope) { nil }
 
       it { is_expected.to eq("custom: ") }
@@ -221,6 +223,16 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       context "when asked not to include the scope" do
         let(:include_scope) { false }
         it { is_expected.to eq("custom: ") }
+      end
+
+      context "with a development prefix" do
+        let(:development_prefix) { "chore" }
+        it { is_expected.to eq("custom: ") }
+
+        context "for a development dependency" do
+          let(:dependencies) { [development_dependency] }
+          it { is_expected.to eq("chore: ") }
+        end
       end
     end
   end
