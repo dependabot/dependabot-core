@@ -1,3 +1,7 @@
+## v0.110.2, 28 June 2019
+
+- Python: Use Nokogiri to parse simple index response
+
 ## v0.110.1, 28 June 2019
 
 - Docker: Paginate through all tags when registry returns paginated response
