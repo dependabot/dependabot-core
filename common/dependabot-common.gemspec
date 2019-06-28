@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
-  spec.add_dependency "docker_registry2", "~> 1.4"
+  spec.add_dependency "docker_registry2", "~> 1.7"
   spec.add_dependency "excon", "~> 0.55"
   spec.add_dependency "gitlab", "~> 4.9"
   spec.add_dependency "gpgme", "~> 2.0"
