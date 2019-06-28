@@ -1,3 +1,8 @@
+## v0.110.1, 28 June 2019
+
+- Docker: Paginate through all tags when registry returns paginated response
+- Handle custom commit message prefixes for dev dependencies
+
 ## v0.110.0, 27 June 2019
 
 - Implemented Azure client for file fetcher/pull request creator
