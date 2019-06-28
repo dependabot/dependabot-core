@@ -2,6 +2,7 @@
 
 require "cgi"
 require "excon"
+require "nokogiri"
 
 require "dependabot/python/update_checker"
 require "dependabot/shared_helpers"
@@ -12,9 +13,6 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder
         require_relative "index_finder"
-
-        PYTHON_REQUIREMENT_REGEX =
-          /data-requires-python\s*=\s*["'](?<requirement>[^"']+)["']/m.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:)
@@ -153,8 +151,9 @@ module Dependabot
         end
 
         def version_details_from_link(link)
-          filename = link.match(%r{<a\s.*?>(.*?)</a>}m).captures.first
-          return unless filename.match?(name_regex)
+          doc = Nokogiri::XML(link)
+          filename = doc.at_css("a")&.content
+          return unless filename&.match?(name_regex)
 
           version = get_version_from_filename(filename)
           return unless version_class.correct?(version)
@@ -173,10 +172,11 @@ module Dependabot
         end
 
         def build_python_requirement_from_link(link)
-          req_string = link.
-                       match(PYTHON_REQUIREMENT_REGEX)&.
-                       named_captures&.
-                       fetch("requirement")
+          req_string = Nokogiri::XML(link).
+                       at_css("a")&.
+                       attribute("data-requires-python")&.
+                       content
+
           return unless req_string
 
           requirement_class.new(CGI.unescapeHTML(req_string))
