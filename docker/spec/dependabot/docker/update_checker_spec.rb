@@ -380,6 +380,38 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it { is_expected.to eq("2.1.3-runtime") }
       end
 
+      context "with a paginated response" do
+        let(:pagination_headers) do
+          fixture("docker", "registry_pagination_headers", "next_link.json")
+        end
+        let(:end_pagination_headers) do
+          fixture("docker", "registry_pagination_headers", "no_next_link.json")
+        end
+        before do
+          stub_request(:get, repo_url + "tags/list").
+            and_return(
+              status: 200,
+              body: fixture("docker", "registry_tags", "dotnet_page_1.json"),
+              headers: JSON.parse(pagination_headers)
+            )
+          last = "ukD72mdD/mC8b5xV3susmJzzaTgp3hKwR9nRUW1yZZ6dLc5kfZtKLT2ICo63"\
+                 "WYvt2jq2VyIS3LWB%2Bo9HjGuiYQ6hARJz1jTFdW4jEMKPIg4kRwXypd7HXj"\
+                 "/SnA9iMm3YvNsd4LmPQrO4fpYZgnZZ8rzIIYqex6%2B3A3/mKcTsNKkKDV9V"\
+                 "R3ic6RJjYFCMOEk5/eqsfLaCDYEbtCNoxE2fBDwlzIl/W14f/F%2Bb%2BtQR"\
+                 "Gh3eUKE9nBJpVvAfibAEs215m4ePJm%2BNuVktVjHOYlRG3U03ekr1T7CPD1"\
+                 "Q%2B65wVYi0y2nCIl1/V40nkgG2WX5viYDxUuk3nEdnf55GUocnt38sDZzqB"\
+                 "nyglM9jvbxBzlO8="
+          stub_request(:get, repo_url + "tags/list?last=#{last}").
+            and_return(
+              status: 200,
+              body: fixture("docker", "registry_tags", "dotnet_page_2.json"),
+              headers: JSON.parse(end_pagination_headers)
+            )
+        end
+
+        it { is_expected.to eq("2.1.401-sdk") }
+      end
+
       context "when the latest tag 404s" do
         before do
           stub_request(:head, repo_url + "manifests/latest").
