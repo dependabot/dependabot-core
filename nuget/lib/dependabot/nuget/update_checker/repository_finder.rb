@@ -221,7 +221,7 @@ module Dependabot
         end
 
         def remove_wrapping_zero_width_chars(string)
-          string.
+          string.force_encoding("UTF-8").encode.
             gsub(/\A[\u200B-\u200D\uFEFF]/, "").
             gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
