@@ -1,3 +1,7 @@
+## v0.110.4, 29 June 2019
+
+- NuGet: Handle non-utf-8 encodings from registry
+
 ## v0.110.3, 29 June 2019
 
 - NuGet: Handle zero padding around registry responses
