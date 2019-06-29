@@ -86,6 +86,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "that is out-of-date" do
           let(:source) { { digest: "old_digest" } }
           it { is_expected.to be_truthy }
+
+          context "but the response doesn't include a new digest" do
+            let(:headers_response) do
+              fixture(
+                "docker",
+                "registry_manifest_headers",
+                "ubuntu_17.10.json"
+              ).gsub(/^\s*"docker_content_digest.*?,/m, "")
+            end
+
+            it { is_expected.to be_falsey }
+          end
         end
 
         context "that is up-to-date" do

@@ -92,8 +92,9 @@ module Dependabot
       def digest_up_to_date?
         dependency.requirements.all? do |req|
           next true unless req.fetch(:source)[:digest]
+          next true unless (new_digest = digest_of(dependency.version))
 
-          req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
+          req.fetch(:source).fetch(:digest) == new_digest
         end
       end
 
