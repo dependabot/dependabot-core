@@ -135,8 +135,9 @@ module Dependabot
             Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
           end.reverse + ["Directory.Build.props"]
 
-          path = possible_paths.uniq.
-                 find { |p| dependency_files.find { |f| f.name == p } }
+          path =
+            possible_paths.uniq.
+            find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
 
           dependency_files.find { |f| f.name == path }
         end
