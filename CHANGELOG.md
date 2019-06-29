@@ -1,3 +1,8 @@
+## v0.110.5, 29 June 2019
+
+- NuGet: Fetch build files case insensitively
+- NuGet: Fetch Directory.Build.targets files
+
 ## v0.110.4, 29 June 2019
 
 - NuGet: Handle non-utf-8 encodings from registry
