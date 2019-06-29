@@ -230,7 +230,8 @@ module Dependabot
             )
             return unless response.status == 200
 
-            JSON.parse(response.body).fetch("versions")
+            body = remove_wrapping_zero_width_chars(response.body)
+            JSON.parse(body).fetch("versions")
           end
         end
 
@@ -243,7 +244,8 @@ module Dependabot
           )
           return unless response.status == 200
 
-          JSON.parse(response.body).fetch("data").
+          body = remove_wrapping_zero_width_chars(response.body)
+          JSON.parse(body).fetch("data").
             find { |d| d.fetch("id").casecmp(sanitized_name).zero? }&.
             fetch("versions")&.
             map { |d| d.fetch("version") }
@@ -278,6 +280,12 @@ module Dependabot
 
         def requirement_class
           Nuget::Requirement
+        end
+
+        def remove_wrapping_zero_width_chars(string)
+          string.
+            gsub(/\A[\u200B-\u200D\uFEFF]/, "").
+            gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def excon_defaults

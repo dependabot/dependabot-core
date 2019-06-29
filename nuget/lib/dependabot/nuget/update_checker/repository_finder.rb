@@ -44,8 +44,9 @@ module Dependabot
           check_repo_reponse(response, repo_details)
           return unless response.status == 200
 
-          base_url = base_url_from_v3_metadata(JSON.parse(response.body))
-          search_url = search_url_from_v3_metadata(JSON.parse(response.body))
+          body = remove_wrapping_zero_width_chars(response.body)
+          base_url = base_url_from_v3_metadata(JSON.parse(body))
+          search_url = search_url_from_v3_metadata(JSON.parse(body))
 
           details = {
             repository_url: repo_details.fetch(:url),
@@ -217,6 +218,12 @@ module Dependabot
           end
 
           sources
+        end
+
+        def remove_wrapping_zero_width_chars(string)
+          string.
+            gsub(/\A[\u200B-\u200D\uFEFF]/, "").
+            gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
         def auth_header_for_token(token)

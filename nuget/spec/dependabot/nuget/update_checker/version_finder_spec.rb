@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/update_checker/version_finder"
@@ -55,9 +56,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     "?q=microsoft.extensions.dependencymodel&prerelease=true"
   end
   let(:version_class) { Dependabot::Nuget::Version }
-  let(:nuget_versions) do
-    fixture("nuget_responses", "versions.json")
-  end
+  let(:nuget_versions) { fixture("nuget_responses", "versions.json") }
   let(:nuget_search_results) do
     fixture("nuget_responses", "search_results.json")
   end
@@ -72,6 +71,14 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
   describe "#latest_version_details" do
     subject(:latest_version_details) { finder.latest_version_details }
     its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+
+    context "when the returned versions is prefixed with a zero-width char" do
+      let(:nuget_search_results) do
+        fixture("nuget_responses", "search_results_zero_width.json")
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
 
     context "when the user wants a pre-release" do
       let(:dependency_version) { "2.2.0-preview1-26216-03" }
