@@ -1,3 +1,7 @@
+## v0.110.3, 29 June 2019
+
+- NuGet: Handle zero padding around registry responses
+
 ## v0.110.2, 28 June 2019
 
 - Python: Use Nokogiri to parse simple index response
