@@ -27,6 +27,7 @@ module Dependabot
         fetched_files = []
         fetched_files += project_files
         fetched_files += directory_build_props_files
+        fetched_files += directory_build_targets_files
         fetched_files += imported_property_files
 
         fetched_files += packages_config_files
@@ -95,9 +96,9 @@ module Dependabot
       end
 
       def directory_build_props_files
-        return @directory_build_props_files if @directory_build_checked
+        return @directory_build_props_files if @directory_build_props_checked
 
-        @directory_build_checked = true
+        @directory_build_props_checked = true
         attempted_paths = []
         @directory_build_props_files = []
 
@@ -120,6 +121,36 @@ module Dependabot
         end
 
         @directory_build_props_files
+      end
+
+      def directory_build_targets_files
+        if @directory_build_targets_checked
+          return @directory_build_targets_files
+        end
+
+        @directory_build_targets_checked = true
+        attempted_paths = []
+        @directory_build_targets_files = []
+
+        # Don't need to insert "." here, because Directory.Build.targets files
+        # can only be used by project files (not packages.config ones)
+        project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
+          possible_paths = dir.split("/").map.with_index do |_, i|
+            base = dir.split("/").first(i + 1).join("/")
+            Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path
+          end.reverse + ["Directory.Build.targets"]
+
+          possible_paths.each do |path|
+            break if attempted_paths.include?(path)
+
+            attempted_paths << path
+            @directory_build_targets_files << fetch_file_from_host(path)
+          rescue Dependabot::DependencyFileNotFound
+            next
+          end
+        end
+
+        @directory_build_targets_files
       end
 
       def sln_project_files
@@ -192,7 +223,13 @@ module Dependabot
       def imported_property_files
         imported_property_files = []
 
-        [*project_files, *directory_build_props_files].each do |proj_file|
+        files = [
+          *project_files,
+          *directory_build_props_files,
+          *directory_build_targets_files
+        ]
+
+        files.each do |proj_file|
           previously_fetched_files = project_files + imported_property_files
           imported_property_files +=
             fetch_imported_property_files(

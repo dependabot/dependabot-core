@@ -26,6 +26,12 @@ module Dependabot
           )
 
           node_details ||=
+            find_property_in_directory_build_targets(
+              property: property_name,
+              callsite_file: callsite_file
+            )
+
+          node_details ||=
             find_property_in_directory_build_props(
               property: property_name,
               callsite_file: callsite_file
@@ -89,14 +95,37 @@ module Dependabot
           deep_find_prop_node(property: property, file: file)
         end
 
-        def find_property_in_directory_build_props(property:, callsite_file:)
-          file = buildfile_for_project(callsite_file)
+        def find_property_in_directory_build_targets(property:, callsite_file:)
+          file = build_targets_file_for_project(callsite_file)
           return unless file
 
           deep_find_prop_node(property: property, file: file)
         end
 
-        def buildfile_for_project(project_file)
+        def find_property_in_directory_build_props(property:, callsite_file:)
+          file = build_props_file_for_project(callsite_file)
+          return unless file
+
+          deep_find_prop_node(property: property, file: file)
+        end
+
+        def build_targets_file_for_project(project_file)
+          dir = File.dirname(project_file.name)
+
+          # Nuget walks up the directory structure looking for a
+          # Directory.Build.targets file
+          possible_paths = dir.split("/").map.with_index do |_, i|
+            base = dir.split("/").first(i + 1).join("/")
+            Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path
+          end.reverse + ["Directory.Build.targets"]
+
+          path = possible_paths.uniq.
+                 find { |p| dependency_files.find { |f| f.name == p } }
+
+          dependency_files.find { |f| f.name == path }
+        end
+
+        def build_props_file_for_project(project_file)
           dir = File.dirname(project_file.name)
 
           # Nuget walks up the directory structure looking for a

@@ -87,5 +87,39 @@ RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
       its([:file]) { is_expected.to eq("build/dependencies.props") }
       its([:root_property_name]) { is_expected.to eq("XunitPackageVersion") }
     end
+
+    context "from a directory.build.targets file" do
+      let(:files) { [file, build_file, imported_file] }
+
+      let(:file) do
+        Dependabot::DependencyFile.new(
+          name: "nested/my.csproj",
+          content: file_body
+        )
+      end
+      let(:file_body) { fixture("csproj", "property_version.csproj") }
+      let(:build_file) do
+        Dependabot::DependencyFile.new(
+          name: "Directory.Build.targets",
+          content: build_file_body
+        )
+      end
+      let(:build_file_body) { fixture("property_files", "imports") }
+      let(:imported_file) do
+        Dependabot::DependencyFile.new(
+          name: "build/dependencies.props",
+          content: imported_file_body
+        )
+      end
+      let(:imported_file_body) do
+        fixture("property_files", "dependency.props")
+      end
+
+      let(:property_name) { "XunitPackageVersion" }
+
+      its([:value]) { is_expected.to eq("2.3.1") }
+      its([:file]) { is_expected.to eq("build/dependencies.props") }
+      its([:root_property_name]) { is_expected.to eq("XunitPackageVersion") }
+    end
   end
 end
