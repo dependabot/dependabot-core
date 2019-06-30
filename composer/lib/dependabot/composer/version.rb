@@ -12,7 +12,7 @@ module Dependabot
     class Version < Gem::Version
       def initialize(version)
         @version_string = version.to_s
-        super(version.to_s.split(";").at(0))
+        super
       end
 
       def to_s

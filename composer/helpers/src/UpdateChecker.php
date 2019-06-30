@@ -16,7 +16,7 @@ class UpdateChecker
 
         $io = new ExceptionIO();
         $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $originalConfig = $config = $composer->getConfig();
+        $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
         foreach ($gitCredentials as &$cred) {
@@ -69,11 +69,6 @@ class UpdateChecker
             ->setRunScripts(false)
             ->setIgnorePlatformRequirements(false);
 
-        $install->run();
-
-        $install
-            ->setConfig($originalConfig)
-            ->setUpdateWhitelist(['lock']);
         $install->run();
 
         $installedPackages = $installationManager->getInstalledPackages();

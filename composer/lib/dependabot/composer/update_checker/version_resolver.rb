@@ -5,12 +5,22 @@ require "json"
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
+require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 
 module Dependabot
   module Composer
     class UpdateChecker
       class VersionResolver
+        class MissingExtensions < StandardError
+          attr_reader :extensions
+
+          def initialize(extensions)
+            @extensions = extensions
+            super
+          end
+        end
+
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
@@ -22,7 +32,7 @@ module Dependabot
           @dependency_files             = dependency_files
           @requirements_to_unlock       = requirements_to_unlock
           @latest_allowable_version     = latest_allowable_version
-          @composer_platform_extensions = []
+          @composer_platform_extensions = {}
         end
 
         def latest_resolvable_version
@@ -40,13 +50,13 @@ module Dependabot
           return if version.nil?
           return unless Composer::Version.correct?(version)
 
-          Composer::Version.new(Array[
-            version,
-            composer_platform_extensions.join(",")
-          ].join(";"))
-        rescue Dependabot::DependencyFileMissingExtension => e
-          composer_platform_extensions.push(*e.extensions)
-          fetch_latest_resolvable_version
+          Composer::Version.new(version)
+        rescue MissingExtensions => e
+          previous_extensions = composer_platform_extensions.dup
+          update_required_extensions(e.extensions)
+          raise if previous_extensions == composer_platform_extensions
+
+          retry
         end
 
         def fetch_latest_resolvable_version_string
@@ -91,23 +101,21 @@ module Dependabot
         def prepared_composer_json_content
           content = composer_file.content
 
-          content.gsub(
+          content = content.gsub(
             /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
             %("#{dependency.name}": "#{updated_version_requirement_string}")
           )
 
           json = JSON.parse(content)
 
-          composer_platform_extensions.each do |extension_with_version|
-            json["config"] = {} if json["config"].nil? == true
-            bool = json["config"].include? "platform"
-            json["config"]["platform"] = {} if bool == false
-            extension = extension_with_version.split("|").at(0)
-            extension_version = extension_with_version.split("|").at(1)
-            json["config"]["platform"][extension] = extension_version
+          composer_platform_extensions.each do |extension, requirements|
+            json["config"] ||= {}
+            json["config"]["platform"] ||= {}
+            json["config"]["platform"][extension] =
+              version_for_reqs(requirements)
           end
 
-          JSON.generate(json)
+          JSON.dump(json)
         end
 
         def updated_version_requirement_string
@@ -160,25 +168,16 @@ module Dependabot
           elsif error.message.start_with?("Could not parse version") ||
                 error.message.include?("does not allow connections to http://")
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
-          elsif error.message.include?("requested PHP extension")
-            extensions = error.message.scan(/\sext\-.*?\s/).map(&:strip).uniq
-            extensions_with_versions = error.message.scan(
-              /\sext\-.*? .*?\s/
-            ).map(&:strip).uniq
-            msg = "Dependabot's installed extensions didn't match those "\
-                  "required by your application.\n\n"\
-                  "Please add the following extensions to the platform "\
-                  "config in your composer.json to allow Dependabot to run: "\
-                  "#{extensions.join(', ')}.\n\n"\
-                  "The full error raised was:\n\n#{error.message}"
-            raise Dependabot::DependencyFileMissingExtension.new(
-              msg,
-              extensions_with_versions.map {
-                |string| string.split(" ").join("|").gsub("*", "0.0.1")
-              }
-            )
           elsif error.message.include?("package requires php") ||
-                error.message.include?("cannot require itself") ||
+                error.message.include?("requested PHP extension")
+            missing_extensions =
+              error.message.scan(/\sext\-.*? .*?\s|(?<=requires )php .*?\s/).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ")
+                { name: name, requirement: requirement }
+              end
+            raise MissingExtensions.new(missing_extensions)
+          elsif error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')
             raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.include?("No driver found to handle VCS") &&
@@ -230,6 +229,35 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+
+        def version_for_reqs(requirements)
+          req_array = requirements.map { |str| Composer::Requirement.new(str) }
+          potential_versions =
+            req_array.map do |req|
+              op, version = req.requirements.first
+              case op
+              when ">" then version.bump
+              when "<" then Composer::Version.new("0.0.1")
+              else version
+              end
+            end
+
+          version = potential_versions.
+                    find { |v| req_array.all? { |r| r.satisfied_by?(v) } }
+          raise "No matching version for #{requirements}!" unless version
+
+          version.to_s
+        end
+
+        def update_required_extensions(additional_extensions)
+          additional_extensions.each do |ext|
+            composer_platform_extensions[ext.fetch(:name)] ||= []
+            composer_platform_extensions[ext.fetch(:name)] +=
+              [ext.fetch(:requirement)]
+            composer_platform_extensions[ext.fetch(:name)] =
+              composer_platform_extensions[ext.fetch(:name)].uniq
+          end
+        end
 
         def php_helper_path
           NativeHelpers.composer_helper_path
