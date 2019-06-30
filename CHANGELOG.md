@@ -1,3 +1,7 @@
+## v0.110.7, 30 June 2019
+
+- Python: More robust exclusion of path and git dependencies
+
 ## v0.110.6, 30 June 2019
 
 - Terraform: Quietly ignore custom registries (don't raise)
