@@ -98,6 +98,19 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.3.8")) }
+
+      context "for a custom registry" do
+        let(:source) do
+          {
+            type: "registry",
+            registry_hostname: "app.terraform.io",
+            module_identifier: "hashicorp/consul/aws"
+          }
+        end
+
+        # See TODO on UpdateChecker on adding support for custom registries
+        it { is_expected.to be_nil }
+      end
     end
   end
 

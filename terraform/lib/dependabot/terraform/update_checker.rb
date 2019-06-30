@@ -79,7 +79,7 @@ module Dependabot
         identifier = dependency_source_details.fetch(:module_identifier)
 
         # TODO: Implement service discovery for custom registries
-        return unless hostname == "registry.terraform.io"
+        return [] unless hostname == "registry.terraform.io"
 
         url = "https://registry.terraform.io/v1/modules/"\
               "#{identifier}/versions"
