@@ -26,7 +26,7 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files += project_files
-        fetched_files += directory_build_props_files
+        fetched_files += directory_build_files
         fetched_files += imported_property_files
 
         fetched_files += packages_config_files
@@ -94,32 +94,47 @@ module Dependabot
         sln_files.map(&:name)
       end
 
-      def directory_build_props_files
-        return @directory_build_props_files if @directory_build_checked
+      def directory_build_files
+        return @directory_build_files if @directory_build_files_checked
 
-        @directory_build_checked = true
+        @directory_build_files_checked = true
         attempted_paths = []
-        @directory_build_props_files = []
+        @directory_build_files = []
 
         # Don't need to insert "." here, because Directory.Build.props files
         # can only be used by project files (not packages.config ones)
         project_files.map { |f| File.dirname(f.name) }.uniq.map do |dir|
-          possible_paths = dir.split("/").map.with_index do |_, i|
+          possible_paths = dir.split("/").flat_map.with_index do |_, i|
             base = dir.split("/").first(i + 1).join("/")
-            Pathname.new(base + "/Directory.Build.props").cleanpath.to_path
-          end.reverse + ["Directory.Build.props"]
+            possible_build_file_paths(base)
+          end.reverse
+
+          possible_paths += [
+            "Directory.Build.props",
+            "Directory.build.props",
+            "Directory.Build.targets",
+            "Directory.build.targets"
+          ]
 
           possible_paths.each do |path|
             break if attempted_paths.include?(path)
 
             attempted_paths << path
-            @directory_build_props_files << fetch_file_from_host(path)
-          rescue Dependabot::DependencyFileNotFound
-            next
+            file = fetch_file_if_present(path)
+            @directory_build_files << file if file
           end
         end
 
-        @directory_build_props_files
+        @directory_build_files
+      end
+
+      def possible_build_file_paths(base)
+        [
+          Pathname.new(base + "/Directory.Build.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.build.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path,
+          Pathname.new(base + "/Directory.build.targets").cleanpath.to_path
+        ]
       end
 
       def sln_project_files
@@ -192,7 +207,9 @@ module Dependabot
       def imported_property_files
         imported_property_files = []
 
-        [*project_files, *directory_build_props_files].each do |proj_file|
+        files = [*project_files, *directory_build_files]
+
+        files.each do |proj_file|
           previously_fetched_files = project_files + imported_property_files
           imported_property_files +=
             fetch_imported_property_files(

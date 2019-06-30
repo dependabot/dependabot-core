@@ -56,6 +56,7 @@ Bundler.setup
 
 require "optparse"
 require "json"
+require "byebug"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
@@ -189,7 +190,9 @@ files = cached_read("files") { fetcher.files }
 
 # Dump dependency files in tmp/githublogin@repo-name/dependency-files
 files.map do |f|
-  files_path = File.join("tmp", $repo_name.split("/"), "dependency-files", f.name)
+  branch_separator = $options[:branch] || ""
+  files_path = File.join("tmp", $repo_name.split("/"), "dependency-files",
+                         branch_separator, $options[:directory], f.name)
   files_dir = File.dirname(files_path)
   FileUtils.mkdir_p(files_dir) unless Dir.exist?(files_dir)
   File.write(files_path, f.content)

@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "PythonProjects"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Various small python projects."
+
+[tool.poetry.dependencies]
+python = "^3.7"
+requests = "2.18.0"
+
+[[tool.poetry.source]]
+name = "custom"
+url = "https://some.internal.registry.com/pypi/"

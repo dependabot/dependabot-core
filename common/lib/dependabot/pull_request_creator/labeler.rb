@@ -221,6 +221,7 @@ module Dependabot
           case source.provider
           when "github" then fetch_github_labels
           when "gitlab" then fetch_gitlab_labels
+          when "azure" then fetch_azure_labels
           else raise "Unsupported provider #{source.provider}"
           end
       end
@@ -251,10 +252,19 @@ module Dependabot
           map(&:name)
       end
 
+      def fetch_azure_labels
+        langauge_name =
+          self.class.label_details_for_package_manager(package_manager).
+          fetch(:name)
+
+        @labels = [*@labels, "dependencies", "security", langauge_name].uniq
+      end
+
       def create_dependencies_label
         case source.provider
         when "github" then create_github_dependencies_label
         when "gitlab" then create_gitlab_dependencies_label
+        when "azure" then @labels # Azure does not have centralised labels
         else raise "Unsupported provider #{source.provider}"
         end
       end
@@ -263,6 +273,7 @@ module Dependabot
         case source.provider
         when "github" then create_github_security_label
         when "gitlab" then create_gitlab_security_label
+        when "azure" then @labels # Azure does not have centralised labels
         else raise "Unsupported provider #{source.provider}"
         end
       end
@@ -271,6 +282,7 @@ module Dependabot
         case source.provider
         when "github" then create_github_language_label
         when "gitlab" then create_gitlab_language_label
+        when "azure" then @labels # Azure does not have centralised labels
         else raise "Unsupported provider #{source.provider}"
         end
       end

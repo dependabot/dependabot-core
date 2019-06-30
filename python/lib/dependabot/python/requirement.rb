@@ -126,7 +126,7 @@ module Dependabot
 
         req_string.strip.
           split(".").
-          first(req_string.split(".").index("*") + 1).
+          first(req_string.split(".").index { |s| s.include?("*") } + 1).
           join(".").
           gsub(/\*(?!$)/, "0").
           gsub(/\*$/, "0.a").

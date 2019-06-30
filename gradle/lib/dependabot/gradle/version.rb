@@ -46,6 +46,7 @@ module Dependabot
 
       def prerelease?
         tokens.any? do |token|
+          next true if token == "eap"
           next false unless NAMED_QUALIFIERS_HIERARCHY[token]
 
           NAMED_QUALIFIERS_HIERARCHY[token] < 6

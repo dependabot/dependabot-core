@@ -60,9 +60,9 @@ module Dependabot
           or_string_reqs = req_string.split(OR_SEPARATOR)
           or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
           numeric_or_string_reqs = or_string_reqs.
-                                   reject { |r| r.start_with?("dev-") }
+                                   reject { |r| r.strip.start_with?("dev-") }
           branch_or_string_reqs = or_string_reqs.
-                                  select { |r| r.start_with?("dev-") }
+                                  select { |r| r.strip.start_with?("dev-") }
 
           return req unless req_string.match?(/\d/)
           return req if numeric_or_string_reqs.none?
@@ -103,9 +103,9 @@ module Dependabot
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
           updated_requirement =
-            if reqs.any? { |r| r.start_with?("^") }
+            if reqs.any? { |r| r.strip.start_with?("^") }
               update_caret_requirement(current_requirement, or_separator)
-            elsif reqs.any? { |r| r.start_with?("~") }
+            elsif reqs.any? { |r| r.strip.start_with?("~") }
               update_tilda_requirement(current_requirement, or_separator)
             elsif reqs.any? { |r| r.include?("*") }
               update_wildcard_requirement(current_requirement, or_separator)
@@ -163,7 +163,7 @@ module Dependabot
 
         def update_caret_requirement(req_string, or_separator)
           caret_requirements =
-            req_string.split(SEPARATOR).select { |r| r.start_with?("^") }
+            req_string.split(SEPARATOR).select { |r| r.strip.start_with?("^") }
           version_parts = latest_resolvable_version.segments
 
           min_existing_precision =
@@ -181,7 +181,7 @@ module Dependabot
 
         def update_tilda_requirement(req_string, or_separator)
           tilda_requirements =
-            req_string.split(SEPARATOR).select { |r| r.start_with?("~") }
+            req_string.split(SEPARATOR).select { |r| r.strip.start_with?("~") }
           precision = tilda_requirements.map { |r| r.split(".").count }.min
 
           version_parts = latest_resolvable_version.segments.first(precision)

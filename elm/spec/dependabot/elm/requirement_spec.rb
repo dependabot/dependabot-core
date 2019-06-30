@@ -26,6 +26,11 @@ RSpec.describe Dependabot::Elm::Requirement do
         let(:requirement_string) { "1.0.0 <= v <= 2.0.0" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
       end
+
+      context "specified as a normal Ruby requirement" do
+        let(:requirement_string) { "<= 1.0" }
+        it { is_expected.to eq(Gem::Requirement.new("<= 1.0")) }
+      end
     end
 
     context "with exact requirement" do
@@ -57,9 +62,7 @@ RSpec.describe Dependabot::Elm::Requirement do
     end
 
     context "with a Elm::Version" do
-      let(:version) do
-        Dependabot::Elm::Version.new(version_string)
-      end
+      let(:version) { Dependabot::Elm::Version.new(version_string) }
 
       context "for the current version" do
         let(:version_string) { "1.0.0" }

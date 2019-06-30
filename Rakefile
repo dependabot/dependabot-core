@@ -75,12 +75,14 @@ namespace :gems do
     GEMSPECS.each do |gemspec_path|
       gem_name = File.basename(gemspec_path).sub(/\.gemspec$/, "")
       gem_path = "pkg/#{gem_name}-#{Dependabot::VERSION}.gem"
-      if rubygems_release_exists?(gem_name, Dependabot::VERSION)
-        puts "- Skipping #{gem_path} as it already exists on rubygems"
-      else
-        puts "> Releasing #{gem_path}"
-        attempts = 0
-        loop do
+
+      attempts = 0
+      loop do
+        if rubygems_release_exists?(gem_name, Dependabot::VERSION)
+          puts "- Skipping #{gem_path} as it already exists on rubygems"
+          break
+        else
+          puts "> Releasing #{gem_path}"
           attempts += 1
           sleep(2)
           begin

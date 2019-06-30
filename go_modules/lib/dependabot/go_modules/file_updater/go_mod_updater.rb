@@ -44,12 +44,20 @@ module Dependabot
           return nil unless go_sum
 
           # This needs to be run separately so we don't nest subprocess calls
-          updated_go_mod_content
+          prepared_go_mod_content
 
           @updated_go_sum_content ||=
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
-                File.write("go.mod", updated_go_mod_content)
+                # Create a fake empty module for each local module so that
+                # `go get -d` works, even if some modules have been `replace`d
+                # with a local module that we don't have access to.
+                local_replacements.each do |_, stub_path|
+                  Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+                  FileUtils.touch(File.join(stub_path, "go.mod"))
+                end
+
+                File.write("go.mod", prepared_go_mod_content)
                 File.write("go.sum", go_sum.content)
                 File.write("main.go", dummy_main_go)
 
@@ -68,13 +76,44 @@ module Dependabot
 
         RESOLVABILITY_ERROR_REGEXES = [
           /go: .*: git fetch .*: exit status 128/.freeze,
-          /go: verifying .*: checksum mismatch/.freeze,
-          /build .*: cannot find module for path/.freeze
+          /verifying .*: checksum mismatch/.freeze,
+          /build .*: cannot find module providing package/.freeze
         ].freeze
         MODULE_PATH_MISMATCH_REGEXES = [
           /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/
         ].freeze
+
+        def local_replacements
+          @local_replacements ||=
+            SharedHelpers.in_a_temporary_directory do |path|
+              File.write("go.mod", go_mod.content)
+
+              # Parse the go.mod to get a JSON representation of the replace
+              # directives
+              command = "go mod edit -json"
+              env = { "GO111MODULE" => "on" }
+              stdout, stderr, status = Open3.capture3(env, command)
+              handle_parser_error(path, stderr) unless status.success?
+
+              # Find all the local replacements, and return them with a stub
+              # path we can use in their place. Using generated paths is safer
+              # as it means we don't need to worry about references to parent
+              # directories, etc.
+              (JSON.parse(stdout)["Replace"] || []).
+                map { |r| r["New"]["Path"] }.
+                compact.
+                select { |p| p.start_with?(".") || p.start_with?("/") }.
+                map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+            end
+        end
+
+        def prepared_go_mod_content
+          content = updated_go_mod_content
+          local_replacements.reduce(content) do |body, (path, stub_path)|
+            body.sub(path, stub_path)
+          end
+        end
 
         def handle_subprocess_error(path, stderr)
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
@@ -95,12 +134,19 @@ module Dependabot
         end
 
         def dummy_main_go
-          lines = ["package main", "import ("]
+          # If we use `main` as the package name, running `go get -d` seems to
+          # invoke the build systems, which can cause problems. For instance,
+          # if the go.mod includes a module that doesn't have a top-level
+          # package, we have no way of working out the import path, so the
+          # build step fails.
+          #
+          # In due course, if we end up fetching the full repo, it might be
+          # good to switch back to `main` so we can surface more errors.
+          lines = ["package dummypkg", "import ("]
           dependencies.each do |dep|
             lines << "_ \"#{dep.name}\""
           end
           lines << ")"
-          lines << "func main() {}"
           lines.join("\n")
         end
 

@@ -778,6 +778,20 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
         end
 
+        context "and a monorepo using prefixed tags" do
+          let(:upload_pack_fixture) { "gatsby" }
+          let(:source) do
+            {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              branch: "master",
+              ref: "gatsby-transformer-sqip@2.0.39"
+            }
+          end
+
+          its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
+        end
+
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }

@@ -690,6 +690,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
+        context "and the git dependency is used internally" do
+          let(:gemfile_fixture_name) { "git_source_internal" }
+          let(:lockfile_fixture_name) { "git_source_internal.lock" }
+
+          it "doesn't update the git dependency's version" do
+            expect(file.content).to include("parallel (1.12.0)")
+          end
+        end
+
         context "and the git dependencies are in a weird order" do
           let(:lockfile_fixture_name) { "git_source_reordered.lock" }
 

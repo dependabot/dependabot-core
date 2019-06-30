@@ -302,7 +302,8 @@ module Dependabot
           raise unless e.message.include?("no matching version") ||
                        e.message.include?("failed to select a version") ||
                        e.message.include?("no matching package named") ||
-                       e.message.include?("failed to parse manifest")
+                       e.message.include?("failed to parse manifest") ||
+                       e.message.include?("failed to update submodule")
 
           false
         end

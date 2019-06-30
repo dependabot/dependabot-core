@@ -40,7 +40,7 @@ module Dependabot
       response = Excon.get(
         service_pack_uri(uri),
         idempotent: true,
-        **SharedHelpers.excon_defaults
+        **excon_defaults
       )
 
       return response.body if response.status == 200
@@ -108,7 +108,7 @@ module Dependabot
 
     def uri_with_auth(uri)
       bare_uri =
-        if uri.include?("git@") then uri.split("git@").last.sub(":", "/")
+        if uri.include?("git@") then uri.split("git@").last.sub(%r{:/?}, "/")
         else uri.sub(%r{.*?://}, "")
         end
       cred = credentials.select { |c| c["type"] == "git_source" }.
@@ -129,6 +129,11 @@ module Dependabot
 
     def sha_for_update_pack_line(line)
       line.split(" ").first.chars.last(40).join
+    end
+
+    def excon_defaults
+      # Some git hosts are slow when returning a large number of tags
+      SharedHelpers.excon_defaults.merge(read_timeout: 20)
     end
   end
 end

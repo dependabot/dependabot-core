@@ -53,10 +53,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .csproj" do
-      expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Nancy.csproj))
     end
@@ -81,7 +83,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
 
       it "fetches the NuGet.Config file" do
-        expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Nancy.csproj NuGet.Config))
       end
@@ -107,7 +108,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
 
       it "fetches the global.json file" do
-        expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Nancy.csproj global.json))
       end
@@ -132,7 +132,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
 
       it "fetches the imported file" do
-        expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Nancy.csproj commonprops.props))
       end
@@ -150,7 +149,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         end
 
         it "only fetches the imported file once" do
-          expect(file_fetcher_instance.files.count).to eq(2)
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(%w(Nancy.csproj commonprops.props))
         end
@@ -177,7 +175,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         end
 
         it "only fetches the imported file once" do
-          expect(file_fetcher_instance.files.count).to eq(3)
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(
               %w(Nancy.csproj commonprops.props commonprops2.props)
@@ -208,10 +205,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .vbproj" do
-      expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Nancy.vbproj))
     end
@@ -238,10 +237,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
     end
 
     it "fetches the .vbproj" do
-      expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Nancy.fsproj))
     end
@@ -280,7 +281,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
 
     it "fetches the packages.config" do
-      expect(file_fetcher_instance.files.count).to eq(2)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(NuGet.Config packages.config))
     end
@@ -344,15 +344,21 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           headers: { "content-type" => "application/json" }
         )
       stub_request(
-        :get, File.join(url, "src/GraphQL.Common/Directory.Build.props?ref=sha")
+        :get,
+        File.join(url, "src/GraphQL.Common?ref=sha")
       ).with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "src/Directory.Build.props?ref=sha")).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo_old.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "src?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
-      stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "Another.sln?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -363,7 +369,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
 
     it "fetches the files the .sln points to" do
-      expect(file_fetcher_instance.files.count).to eq(4)
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
           %w(
@@ -409,6 +414,10 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           :get, File.join(url, "src/Validator/Directory.Build.props?ref=sha")
         ).with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
+        stub_request(
+          :get, File.join(url, "src/Validator/Directory.Build.targets?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
         stub_request(:get, url + "src/Validator?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -427,7 +436,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
 
       it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.count).to eq(5)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
@@ -443,6 +451,14 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
     context "with a Directory.Build.props file" do
       before do
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_repo_with_sln_and_props.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, File.join(url, "src/Directory.Build.props?ref=sha")).
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -470,8 +486,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           )
       end
 
-      it "fetches the files the .sln points to" do
-        expect(file_fetcher_instance.files.count).to eq(7)
+      it "fetches the Directory.Build.props file" do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(
@@ -487,6 +502,61 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
     end
 
+    context "with a Directory.Build.targets file" do
+      before do
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_repo_with_sln_and_trgts.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, "src/Directory.Build.targets?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_directory_build_props.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get, File.join(url, "src/build/dependencies.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "src/build/sources.props?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_dotnet_csproj_basic.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.Config
+              src/GraphQL.Common/GraphQL.Common.csproj
+              src/GraphQL.Common/packages.config
+              src/src.props
+              src/Directory.Build.targets
+              src/build/dependencies.props
+              src/build/sources.props
+            )
+          )
+      end
+    end
+
     context "when one of the sln files isn't reachable" do
       before do
         stub_request(:get, File.join(url, "src/src.props?ref=sha")).
@@ -495,7 +565,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
 
       it "fetches the other files" do
-        expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(
             %w(

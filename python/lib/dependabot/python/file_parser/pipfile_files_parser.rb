@@ -47,7 +47,8 @@ module Dependabot
 
             parsed_pipfile[keys[:pipfile]].map do |dep_name, req|
               group = keys[:lockfile]
-              next unless req.is_a?(String) || req["version"]
+              next unless specifies_version?(req)
+              next if git_or_path_requirement?(req)
               next if pipfile_lock && !dependency_version(dep_name, req, group)
 
               dependencies <<
@@ -84,6 +85,7 @@ module Dependabot
                         when Hash then details["version"]
                         end
               next unless version
+              next if git_or_path_requirement?(details)
 
               dependencies <<
                 Dependency.new(
@@ -117,6 +119,18 @@ module Dependabot
           when String then obj.strip
           when Hash then obj["version"]
           end
+        end
+
+        def specifies_version?(req)
+          return true if req.is_a?(String)
+
+          req["version"]
+        end
+
+        def git_or_path_requirement?(req)
+          return false unless req.is_a?(Hash)
+
+          %w(git path).any? { |k| req.key?(k) }
         end
 
         # See https://www.python.org/dev/peps/pep-0503/#normalized-names

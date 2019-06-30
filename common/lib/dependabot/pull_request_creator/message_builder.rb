@@ -11,51 +11,32 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       require_relative "message_builder/issue_linker"
-
-      ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style
-                            test).freeze
-      ESLINT_PREFIXES  = %w(Breaking Build Chore Docs Fix New Update
-                            Upgrade).freeze
-      GITMOJI_PREFIXES = %w(alien ambulance apple arrow_down arrow_up art beers
-                            bento bookmark boom bug building_construction bulb
-                            busts_in_silhouette camera_flash card_file_box
-                            chart_with_upwards_trend checkered_flag
-                            children_crossing clown_face construction
-                            construction_worker egg fire globe_with_meridians
-                            green_apple green_heart hankey heavy_minus_sign
-                            heavy_plus_sign iphone lipstick lock loud_sound memo
-                            mute ok_hand package page_facing_up pencil2 penguin
-                            pushpin recycle rewind robot rocket rotating_light
-                            see_no_evil sparkles speech_balloon tada truck
-                            twisted_rightwards_arrows whale wheelchair
-                            white_check_mark wrench zap).freeze
-      GITHUB_REF_REGEX = %r{
-        (?:https?://)?
-        github\.com/[^/\s]+/[^/\s]+/
-        (?:issue|pull)s?/(?<number>\d+)
-      }x.freeze
+      require_relative "message_builder/link_and_mention_sanitizer"
+      require_relative "pr_name_prefixer"
 
       attr_reader :source, :dependencies, :files, :credentials,
-                  :pr_message_footer, :author_details, :vulnerabilities_fixed,
-                  :github_redirection_service
+                  :pr_message_footer, :commit_message_options,
+                  :vulnerabilities_fixed, :github_redirection_service
 
       def initialize(source:, dependencies:, files:, credentials:,
-                     pr_message_footer: nil, author_details: nil,
+                     pr_message_footer: nil, commit_message_options: {},
                      vulnerabilities_fixed: {}, github_redirection_service: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
         @credentials                = credentials
         @pr_message_footer          = pr_message_footer
-        @author_details             = author_details
+        @commit_message_options     = commit_message_options
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
       end
 
       def pr_name
-        return library_pr_name if library?
+        pr_name = pr_name_prefixer.pr_name_prefix
+        pr_name += library? ? library_pr_name : application_pr_name
+        return pr_name if files.first.directory == "/"
 
-        application_pr_name
+        pr_name + " in #{files.first.directory}"
       end
 
       def pr_message
@@ -71,6 +52,51 @@ module Dependabot
       end
 
       private
+
+      def library_pr_name
+        pr_name = "update "
+        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
+
+        pr_name +
+          if dependencies.count == 1
+            "#{dependencies.first.display_name} requirement "\
+            "from #{old_library_requirement(dependencies.first)} "\
+            "to #{new_library_requirement(dependencies.first)}"
+          else
+            names = dependencies.map(&:name)
+            "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+          end
+      end
+
+      # rubocop:disable Metrics/AbcSize
+      def application_pr_name
+        pr_name = "bump "
+        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
+
+        pr_name +
+          if dependencies.count == 1
+            dependency = dependencies.first
+            "#{dependency.display_name} from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          elsif updating_a_property?
+            dependency = dependencies.first
+            "#{property_name} from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          elsif updating_a_dependency_set?
+            dependency = dependencies.first
+            "#{dependency_set.fetch(:group)} dependency set "\
+            "from #{previous_version(dependency)} "\
+            "to #{new_version(dependency)}"
+          else
+            names = dependencies.map(&:name)
+            "#{names[0..-2].join(', ')} and #{names[-1]}"
+          end
+      end
+      # rubocop:enable Metrics/AbcSize
+
+      def pr_name_prefix
+        pr_name_prefixer.pr_name_prefix
+      end
 
       def commit_subject
         subject = pr_name.gsub("⬆️", ":arrow_up:").gsub("🔒", ":lock:")
@@ -101,148 +127,20 @@ module Dependabot
       end
 
       def signoff_message
-        return unless author_details.is_a?(Hash)
-        return unless author_details[:name] && author_details[:email]
+        signoff_details = commit_message_options[:signoff_details]
+        return unless signoff_details.is_a?(Hash)
+        return unless signoff_details[:name] && signoff_details[:email]
 
-        "Signed-off-by: #{author_details[:name]} <#{author_details[:email]}>"
+        "Signed-off-by: #{signoff_details[:name]} <#{signoff_details[:email]}>"
       end
 
       def on_behalf_of_message
-        return unless author_details.is_a?(Hash)
-        return unless author_details[:org_name] && author_details[:org_email]
+        signoff_details = commit_message_options[:signoff_details]
+        return unless signoff_details.is_a?(Hash)
+        return unless signoff_details[:org_name] && signoff_details[:org_email]
 
-        "On-behalf-of: @#{author_details[:org_name]} "\
-        "<#{author_details[:org_email]}>"
-      end
-
-      def library_pr_name
-        pr_name = pr_name_prefix
-
-        pr_name +=
-          if dependencies.count == 1
-            "#{dependencies.first.display_name} requirement "\
-            "from #{old_library_requirement(dependencies.first)} "\
-            "to #{new_library_requirement(dependencies.first)}"
-          else
-            names = dependencies.map(&:name)
-            "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
-          end
-
-        return pr_name if files.first.directory == "/"
-
-        pr_name + " in #{files.first.directory}"
-      end
-
-      # rubocop:disable Metrics/AbcSize
-      def application_pr_name
-        pr_name = pr_name_prefix
-
-        pr_name +=
-          if dependencies.count == 1
-            dependency = dependencies.first
-            "#{dependency.display_name} from #{previous_version(dependency)} "\
-            "to #{new_version(dependency)}"
-          elsif updating_a_property?
-            dependency = dependencies.first
-            "#{property_name} from #{previous_version(dependency)} "\
-            "to #{new_version(dependency)}"
-          elsif updating_a_dependency_set?
-            dependency = dependencies.first
-            "#{dependency_set.fetch(:group)} dependency set "\
-            "from #{previous_version(dependency)} "\
-            "to #{new_version(dependency)}"
-          else
-            names = dependencies.map(&:name)
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
-          end
-
-        return pr_name if files.first.directory == "/"
-
-        pr_name + " in #{files.first.directory}"
-      end
-      # rubocop:enable Metrics/AbcSize
-
-      def pr_name_prefix
-        prefix = commit_prefix.to_s
-        prefix += security_prefix if includes_security_fixes?
-        prefix + pr_name_first_word
-      end
-
-      def commit_prefix
-        # If there is a previous Dependabot commit, and it used a known style,
-        # use that as our model for subsequent commits
-        case last_dependabot_commit_style
-        when :gitmoji then "⬆️ "
-        when :conventional_prefix then "#{last_dependabot_commit_prefix}: "
-        when :conventional_prefix_with_scope
-          "#{last_dependabot_commit_prefix}(#{scope}): "
-        else
-          # Otherwise we need to detect the user's preferred style from the
-          # existing commits on their repo
-          build_commit_prefix_from_previous_commits
-        end
-      end
-
-      def security_prefix
-        return "🔒 " if commit_prefix == "⬆️ "
-
-        capitalize_first_word? ? "[Security] " : "[security] "
-      end
-
-      def pr_name_first_word
-        first_word = library? ? "update " : "bump "
-        capitalize_first_word? ? first_word.capitalize : first_word
-      end
-
-      def capitalize_first_word?
-        case last_dependabot_commit_style
-        when :gitmoji then true
-        when :conventional_prefix, :conventional_prefix_with_scope
-          last_dependabot_commit_message.match?(/: (\[Security\] )?(B|U)/)
-        else
-          if using_angular_commit_messages? || using_eslint_commit_messages?
-            prefixes = ANGULAR_PREFIXES + ESLINT_PREFIXES
-            semantic_msgs = recent_commit_messages.select do |message|
-              prefixes.any? { |pre| message.match?(/#{pre}[:(]/i) }
-            end
-
-            return true if semantic_msgs.all? { |m| m.match?(/:\s+\[?[A-Z]/) }
-            return false if semantic_msgs.all? { |m| m.match?(/:\s+\[?[a-z]/) }
-          end
-
-          !commit_prefix&.match(/^[a-z]/)
-        end
-      end
-
-      def build_commit_prefix_from_previous_commits
-        if using_angular_commit_messages?
-          "#{angular_commit_prefix}(#{scope}): "
-        elsif using_eslint_commit_messages?
-          # https://eslint.org/docs/developer-guide/contributing/pull-requests
-          "Upgrade: "
-        elsif using_gitmoji_commit_messages?
-          "⬆️ "
-        elsif using_prefixed_commit_messages?
-          "build(#{scope}): "
-        end
-      end
-
-      def scope
-        dependencies.any?(&:production?) ? "deps" : "deps-dev"
-      end
-
-      def last_dependabot_commit_style
-        return unless (msg = last_dependabot_commit_message)
-
-        return :gitmoji if msg.start_with?("⬆️")
-        return :conventional_prefix if msg.match?(/^(chore|build|upgrade):/i)
-        return unless msg.match?(/^(chore|build|upgrade)\(/i)
-
-        :conventional_prefix_with_scope
-      end
-
-      def last_dependabot_commit_prefix
-        last_dependabot_commit_message&.split(/[:(]/)&.first
+        "On-behalf-of: @#{signoff_details[:org_name]} "\
+        "<#{signoff_details[:org_email]}>"
       end
 
       def requirement_commit_message_intro
@@ -410,6 +308,7 @@ module Dependabot
         msg = ""
         fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Vulnerabilities fixed", body: msg)
       end
@@ -434,6 +333,7 @@ module Dependabot
           base_url: source_url(dep) + "/blob/HEAD/"
         )
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Release notes", body: msg)
       end
@@ -453,6 +353,7 @@ module Dependabot
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Changelog", body: msg)
       end
@@ -473,6 +374,7 @@ module Dependabot
         msg = link_issues(text: msg, dependency: dep)
         msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
         msg = sanitize_template_tags(msg)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Upgrade guide", body: msg)
       end
@@ -485,6 +387,7 @@ module Dependabot
         commits(dep).reverse.first(10).each do |commit|
           title = commit[:message].strip.split("\n").first
           title = title.slice(0..76) + "..." if title && title.length > 80
+          title = title.gsub(/(?<=[^\w.-])([_*`~])/, '\\1')
           sha = commit[:sha][0, 7]
           msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
         end
@@ -499,6 +402,7 @@ module Dependabot
             "- See full diff in [compare view](#{commits_url(dep)})\n"
           end
         msg = link_issues(text: msg, dependency: dep)
+        msg = sanitize_links_and_mentions(msg)
 
         build_details_tag(summary: "Commits", body: msg)
       end
@@ -513,9 +417,14 @@ module Dependabot
       end
 
       def build_details_tag(summary:, body:)
-        msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
-        msg += body
-        msg + "</details>"
+        # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
+        if source.provider == "azure"
+          "\n\##{summary}\n\n#{body}"
+        else
+          msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
+          msg += body
+          msg + "</details>"
+        end
       end
 
       def serialized_vulnerability_details(details)
@@ -617,6 +526,17 @@ module Dependabot
           new(dependency: dependency, credentials: credentials)
       end
 
+      def pr_name_prefixer
+        @pr_name_prefixer ||=
+          PrNamePrefixer.new(
+            source: source,
+            dependencies: dependencies,
+            credentials: credentials,
+            commit_message_options: commit_message_options,
+            security_fix: vulnerabilities_fixed.values.flatten.any?
+          )
+      end
+
       def previous_version(dependency)
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
           return previous_ref(dependency) if ref_changed?(dependency)
@@ -716,41 +636,9 @@ module Dependabot
       end
 
       def sanitize_links_and_mentions(text)
-        text = sanitize_mentions(text)
-        sanitize_links(text)
-      end
-
-      def sanitize_mentions(text)
-        text.gsub(%r{(?<![A-Za-z0-9`])@[\w][\w.-/]*}) do |mention|
-          next mention if mention.include?("/")
-
-          last_match = Regexp.last_match
-
-          sanitized_mention = mention.gsub("@", "@&#8203;")
-          if last_match.pre_match.chars.last == "[" &&
-             last_match.post_match.chars.first == "]"
-            sanitized_mention
-          else
-            "[#{sanitized_mention}](https://github.com/#{mention.tr('@', '')})"
-          end
-        end
-      end
-
-      def sanitize_links(text)
-        text.gsub(GITHUB_REF_REGEX) do |ref|
-          last_match = Regexp.last_match
-          previous_char = last_match.pre_match.chars.last
-          next_char = last_match.post_match.chars.first
-
-          sanitized_url =
-            ref.gsub("github.com", github_redirection_service || "github.com")
-          if (previous_char.nil? || previous_char.match?(/\s/)) &&
-             (next_char.nil? || next_char.match?(/\s/))
-            "[##{last_match.named_captures.fetch('number')}](#{sanitized_url})"
-          else
-            sanitized_url
-          end
-        end
+        LinkAndMentionSanitizer.
+          new(github_redirection_service: github_redirection_service).
+          sanitize_links_and_mentions(text: text)
       end
 
       def sanitize_template_tags(text)
@@ -781,190 +669,6 @@ module Dependabot
         return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
 
         Gem::Version.correct?(dependency.version)
-      end
-
-      def includes_security_fixes?
-        vulnerabilities_fixed.values.flatten.any?
-      end
-
-      def using_angular_commit_messages?
-        return false if recent_commit_messages.none?
-
-        angular_messages = recent_commit_messages.select do |message|
-          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
-        end
-
-        # Definitely not using Angular commits if < 30% match angular commits
-        if angular_messages.count.to_f / recent_commit_messages.count < 0.3
-          return false
-        end
-
-        eslint_only_pres = ESLINT_PREFIXES.map(&:downcase) - ANGULAR_PREFIXES
-        angular_only_pres = ANGULAR_PREFIXES - ESLINT_PREFIXES.map(&:downcase)
-
-        uses_eslint_only_pres =
-          recent_commit_messages.
-          any? { |m| eslint_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
-
-        uses_angular_only_pres =
-          recent_commit_messages.
-          any? { |m| angular_only_pres.any? { |pre| m.match?(/#{pre}[:(]/i) } }
-
-        # If using any angular-only prefixes, return true
-        # (i.e., we assume Angular over ESLint when both are present)
-        return true if uses_angular_only_pres
-        return false if uses_eslint_only_pres
-
-        true
-      end
-
-      def using_eslint_commit_messages?
-        return false if recent_commit_messages.none?
-
-        semantic_messages = recent_commit_messages.select do |message|
-          ESLINT_PREFIXES.any? { |pre| message.start_with?(/#{pre}[:(]/) }
-        end
-
-        semantic_messages.count.to_f / recent_commit_messages.count > 0.3
-      end
-
-      def using_prefixed_commit_messages?
-        return false if using_gitmoji_commit_messages?
-        return false if recent_commit_messages.none?
-
-        prefixed_messages = recent_commit_messages.select do |message|
-          message.start_with?(/[a-z][^\s]+:/)
-        end
-
-        prefixed_messages.count.to_f / recent_commit_messages.count > 0.3
-      end
-
-      def angular_commit_prefix
-        raise "Not using angular commits!" unless using_angular_commit_messages?
-
-        recent_commits_using_chore =
-          recent_commit_messages.
-          any? { |msg| msg.start_with?("chore", "Chore") }
-
-        recent_commits_using_build =
-          recent_commit_messages.
-          any? { |msg| msg.start_with?("build", "Build") }
-
-        commit_prefix =
-          if recent_commits_using_chore && !recent_commits_using_build
-            "chore"
-          else
-            "build"
-          end
-
-        if capitalize_angular_commit_prefix?
-          commit_prefix = commit_prefix.capitalize
-        end
-
-        commit_prefix
-      end
-
-      def capitalize_angular_commit_prefix?
-        semantic_messages = recent_commit_messages.select do |message|
-          ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
-        end
-
-        if semantic_messages.none?
-          return last_dependabot_commit_message&.match?(/^A-Z/)
-        end
-
-        capitalized_msgs = semantic_messages.select { |m| m.match?(/^[A-Z]/) }
-        capitalized_msgs.count.to_f / semantic_messages.count > 0.5
-      end
-
-      def using_gitmoji_commit_messages?
-        return false unless recent_commit_messages.any?
-
-        gitmoji_messages =
-          recent_commit_messages.
-          select { |m| GITMOJI_PREFIXES.any? { |pre| m.match?(/:#{pre}:/i) } }
-
-        gitmoji_messages.count / recent_commit_messages.count.to_f > 0.3
-      end
-
-      def recent_commit_messages
-        case source.provider
-        when "github" then recent_github_commit_messages
-        when "gitlab" then recent_gitlab_commit_messages
-        else raise "Unsupported provider: #{source.provider}"
-        end
-      end
-
-      def recent_github_commit_messages
-        recent_github_commits.
-          reject { |c| c.author&.type == "Bot" }.
-          reject { |c| c.commit&.message&.start_with?("Merge") }.
-          map(&:commit).
-          map(&:message).
-          compact.
-          map(&:strip)
-      end
-
-      def recent_gitlab_commit_messages
-        @recent_gitlab_commit_messages ||=
-          gitlab_client_for_source.commits(source.repo)
-
-        @recent_gitlab_commit_messages.
-          reject { |c| c.author_email == "support@dependabot.com" }.
-          reject { |c| c.message&.start_with?("merge !") }.
-          map(&:message).
-          compact.
-          map(&:strip)
-      end
-
-      def last_dependabot_commit_message
-        case source.provider
-        when "github" then last_github_dependabot_commit_message
-        when "gitlab" then last_gitlab_dependabot_commit_message
-        else raise "Unsupported provider: #{source.provider}"
-        end
-      end
-
-      def last_github_dependabot_commit_message
-        recent_github_commits.
-          reject { |c| c.commit&.message&.start_with?("Merge") }.
-          find { |c| c.commit.author&.name == "dependabot[bot]" }&.
-          commit&.
-          message&.
-          strip
-      end
-
-      def recent_github_commits
-        @recent_github_commits ||=
-          github_client_for_source.commits(source.repo, per_page: 100)
-      rescue Octokit::Conflict
-        @recent_github_commits ||= []
-      end
-
-      def last_gitlab_dependabot_commit_message
-        @recent_gitlab_commit_messages ||=
-          gitlab_client_for_source.commits(source.repo)
-
-        @recent_gitlab_commit_messages.
-          find { |c| c.author_email == "support@dependabot.com" }&.
-          message&.
-          strip
-      end
-
-      def github_client_for_source
-        @github_client_for_source ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def gitlab_client_for_source
-        @gitlab_client_for_source ||=
-          Dependabot::Clients::GitlabWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
       end
 
       def package_manager

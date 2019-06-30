@@ -120,5 +120,28 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(build.gradle gradle/dependencies.gradle))
     end
+
+    context "that can't be found" do
+      before do
+        stub_request(
+          :get,
+          File.join(url, "gradle/dependencies.gradle?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+
+        stub_request(:get, File.join(url, "gradle?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_with_settings.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
   end
 end

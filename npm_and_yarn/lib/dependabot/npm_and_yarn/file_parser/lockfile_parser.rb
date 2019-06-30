@@ -128,13 +128,20 @@ module Dependabot
             fetch("dependencies", {}).each do |name, details|
               next unless semver_version_for(details["version"])
 
-              dependency_set << Dependency.new(
+              dependency_args = {
                 name: name,
                 version: semver_version_for(details["version"]),
                 package_manager: "npm_and_yarn",
                 requirements: []
-              )
+              }
 
+              if details["bundled"]
+                dependency_args[:subdependency_metadata] = {
+                  npm_bundled: details["bundled"]
+                }
+              end
+
+              dependency_set << Dependency.new(dependency_args)
               dependency_set += recursively_fetch_npm_lock_dependencies(details)
             end
 

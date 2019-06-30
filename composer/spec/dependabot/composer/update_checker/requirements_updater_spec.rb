@@ -621,6 +621,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
             its([:requirement]) { is_expected.to eq("~2.4.1 || ~2.5.0") }
           end
 
+          context "with a leading space" do
+            let(:composer_json_req_string) { " ~2.4.1" }
+            its([:requirement]) { is_expected.to eq(" ~2.4.1 || ~2.5.0") }
+          end
+
           context "including a pre-release" do
             let(:composer_json_req_string) { "~2.5.1-rc1" }
             its([:requirement]) { is_expected.to eq("~2.5.1-rc1") }

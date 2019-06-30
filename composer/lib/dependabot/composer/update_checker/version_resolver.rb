@@ -118,6 +118,8 @@ module Dependabot
           JSON.dump(json)
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -145,8 +147,13 @@ module Dependabot
           # we won't be ignoring v2.x releases like we should be.
           return lower_bound unless latest_allowable_version
 
+          # If the original requirement is just a stability flag just use that
+          return lower_bound if lower_bound.strip.start_with?("@")
+
           lower_bound + ", <= #{latest_allowable_version}"
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize

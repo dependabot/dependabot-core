@@ -97,6 +97,10 @@ module Dependabot
         end
 
         def transitory_failure?(error)
+          return true if error.message.include?("404 Not Found")
+          return true if error.message.include?("timed out")
+          return true if error.message.include?("Temporary failure")
+
           error.message.include?("Content-Length mismatch")
         end
 

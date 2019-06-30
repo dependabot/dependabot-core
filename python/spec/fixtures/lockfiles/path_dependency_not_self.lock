@@ -36,7 +36,8 @@
         },
         "e1839a8": {
             "editable": true,
-            "path": "./mydep"
+            "path": "./mydep",
+            "version": "==0.0.0"
         },
         "idna": {
             "hashes": [

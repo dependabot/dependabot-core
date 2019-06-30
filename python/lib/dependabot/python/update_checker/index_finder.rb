@@ -21,7 +21,8 @@ module Dependabot
             config_variable_index_urls[:extra] +
             pipfile_index_urls[:extra] +
             requirement_file_index_urls[:extra] +
-            pip_conf_index_urls[:extra]
+            pip_conf_index_urls[:extra] +
+            pyproject_index_urls[:extra]
 
           extra_index_urls = extra_index_urls.map do |url|
             clean_check_and_remove_environment_variables(url)
@@ -45,6 +46,7 @@ module Dependabot
             pipfile_index_urls[:main] ||
             requirement_file_index_urls[:main] ||
             pip_conf_index_urls[:main] ||
+            pyproject_index_urls[:main] ||
             PYPI_BASE_URL
 
           return unless url
@@ -56,12 +58,16 @@ module Dependabot
           urls = { main: nil, extra: [] }
 
           requirements_files.each do |file|
-            if file.content.match?(/^--index-url\s([^\s]+)/)
+            if file.content.match?(/^--index-url\s+['"]?([^\s'"]+)['"]?/)
               urls[:main] =
-                file.content.match(/^--index-url\s([^\s]+)/).captures.first
+                file.content.match(/^--index-url\s+['"]?([^\s'"]+)['"]?/).
+                captures.first&.strip
             end
-            urls[:extra] += file.content.scan(/^--extra-index-url\s([^\s]+)/).
-                            flatten
+            urls[:extra] +=
+              file.content.
+              scan(/^--extra-index-url\s+['"]?([^\s'"]+)['"]?/).
+              flatten.
+              map(&:strip)
           end
 
           urls
@@ -94,6 +100,29 @@ module Dependabot
 
           pipfile_object["source"]&.each do |source|
             urls[:extra] << source.fetch("url") if source["url"]
+          end
+          urls[:extra] = urls[:extra].uniq
+
+          urls
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          urls
+        end
+
+        def pyproject_index_urls
+          urls = { main: nil, extra: [] }
+
+          return urls unless pyproject
+
+          sources =
+            TomlRB.parse(pyproject.content).dig("tool", "poetry", "source") ||
+            []
+
+          sources.each do |source|
+            if source["default"]
+              urls[:main] = source["url"]
+            else
+              urls[:extra] << source["url"]
+            end
           end
           urls[:extra] = urls[:extra].uniq
 
@@ -135,7 +164,9 @@ module Dependabot
             compact.
             map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
 
-          regexp = url.split(ENVIRONMENT_VARIABLE_REGEX).
+          regexp = url.
+                   sub(%r{(?<=://).+@}, "").
+                   split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
                    join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }

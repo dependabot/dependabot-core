@@ -4,5 +4,5 @@ version = "0.1.0"    # the current version, obeying semver
 authors = ["support@dependabot.com"]
 
 [dependencies]
-time = ""
+time = { version = "" }
 regex = ""

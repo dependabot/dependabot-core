@@ -20,6 +20,12 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
+        GIT_DEPENDENCY_UNREACHABLE_REGEX =
+          /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze
+        GIT_REFERENCE_NOT_FOUND_REGEX =
+          %r{"git checkout -q (?<tag>[^"]+)" .*/(?<name>.*?)(\\n'\]|$)}.
+          freeze
+
         attr_reader :dependency, :dependency_files, :credentials
 
         def initialize(dependency:, dependency_files:, credentials:)
@@ -88,6 +94,10 @@ module Dependabot
         end
         # rubocop:enable Metrics/MethodLength
 
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable
@@ -117,8 +127,24 @@ module Dependabot
             return nil
           end
 
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
+                  named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
+          end
+
+          if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                   named_captures.fetch("name")
+            raise GitDependencyReferenceNotFound, name
+          end
+
           raise
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
 
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a

@@ -196,6 +196,41 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
       end
     end
+
+    context "with a Azure DevOps source" do
+      let(:provider) { "azure" }
+      let(:repo) { "org/gocardless/_git/bump" }
+      let(:base_url) { "https://dev.azure.com/org/gocardless" }
+      let(:repo_url) { base_url + "/_apis/git/repositories/bump" }
+      let(:branch_url) { repo_url + "/stats/branches?name=master" }
+
+      before do
+        stub_request(:get, repo_url).
+          to_return(status: 200,
+                    body: fixture("azure", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url).
+          to_return(status: 200,
+                    body: fixture("azure", "master_branch.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
+
+      context "with a target branch" do
+        let(:branch) { "my_branch" }
+        let(:branch_url) { repo_url + "/stats/branches?name=my_branch" }
+
+        before do
+          stub_request(:get, branch_url).
+            to_return(status: 200,
+                      body: fixture("azure", "other_branch.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to eq("8c8376e9b2e943c2c72fac4b239876f377f0305b") }
+      end
+    end
   end
 
   describe "#files" do
@@ -849,6 +884,202 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:url) { repo_url + "/src/sha/app/requirements.txt" }
 
           it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+    end
+
+    context "with a Azure DevOps source" do
+      let(:provider) { "azure" }
+      let(:repo) { "org/gocardless/_git/bump" }
+      let(:base_url) { "https://dev.azure.com/org/gocardless" }
+      let(:repo_url) { base_url + "/_apis/git/repositories/bump" }
+      let(:url) do
+        repo_url + "/items?path=requirements.txt" \
+          "&versionDescriptor.version=sha&versionDescriptor.versionType=commit"
+      end
+
+      before do
+        stub_request(:get, url).
+          to_return(status: 200,
+                    body: fixture("azure", "gemspec_content"),
+                    headers: { "content-type" => "text/plain" })
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
+
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("required_rubygems_version") }
+      end
+
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(source: source, credentials: credentials)
+        end
+
+        context "that ends in a slash" do
+          let(:directory) { "app/" }
+          let(:url) do
+            repo_url + "/items?path=app/requirements.txt" \
+              "&versionDescriptor.version=sha" \
+              "&versionDescriptor.versionType=commit"
+          end
+
+          it "hits the right Azure DevOps URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that begins with a slash" do
+          let(:directory) { "/app" }
+          let(:url) do
+            repo_url + "/items?path=app/requirements.txt" \
+              "&versionDescriptor.version=sha" \
+              "&versionDescriptor.versionType=commit"
+          end
+
+          it "hits the right Azure DevOps URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that includes a slash" do
+          let(:directory) { "a/pp" }
+          let(:url) do
+            repo_url + "/items?path=a/pp/requirements.txt" \
+              "&versionDescriptor.version=sha" \
+              "&versionDescriptor.versionType=commit"
+          end
+
+          it "hits the right Azure DevOps URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+
+      context "when a dependency file can't be found" do
+        before do
+          stub_request(:get, url).
+            to_return(
+              status: 404,
+              body: fixture("bitbucket", "file_not_found.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/requirements.txt")
+            end
+        end
+      end
+
+      context "when fetching the file only if present" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files_in?(filenames)
+              filenames.include?("requirements.txt")
+            end
+
+            def self.required_files_message
+              "Repo must contain a requirements.txt."
+            end
+
+            private
+
+            def fetch_files
+              [fetch_file_if_present("requirements.txt")].compact
+            end
+          end
+        end
+
+        let(:repo_contents_tree_url) do
+          repo_url + "/items?path=/&versionDescriptor.version=sha" \
+            "&versionDescriptor.versionType=commit"
+        end
+        let(:repo_contents_url) do
+          repo_url + "/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a" \
+            "?recursive=false"
+        end
+        let(:repo_file_url) do
+          repo_url + "/items?path=requirements.txt" \
+            "&versionDescriptor.version=sha" \
+            "&versionDescriptor.versionType=commit"
+        end
+
+        before do
+          stub_request(:get, repo_contents_tree_url).
+            to_return(status: 200,
+                      body: fixture("azure", "business_folder.json"),
+                      headers: { "content-type" => "text/plain" })
+          stub_request(:get, repo_contents_url).
+            to_return(status: 200,
+                      body: fixture("azure", "business_files.json"),
+                      headers: { "content-type" => "application/json" })
+          stub_request(:get, repo_file_url).
+            to_return(status: 200,
+                      body: fixture("azure", "gemspec_content"),
+                      headers: { "content-type" => "text/plain" })
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("required_rubygems_version") }
+        end
+
+        context "that can't be found" do
+          before do
+            stub_request(:get, repo_contents_url).
+              to_return(status: 200,
+                        body: fixture("azure", "no_files.json"),
+                        headers: { "content-type" => "application/json" })
+          end
+
+          its(:length) { is_expected.to eq(0) }
+        end
+
+        context "with a directory" do
+          let(:directory) { "/app" }
+
+          let(:repo_contents_tree_url) do
+            repo_url + "/items?path=app&versionDescriptor.version=sha" \
+              "&versionDescriptor.versionType=commit"
+          end
+          let(:repo_contents_url) do
+            repo_url + "/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a" \
+              "?recursive=false"
+          end
+
+          before do
+            stub_request(:get, repo_contents_tree_url).
+              to_return(status: 200,
+                        body: fixture("azure", "business_folder.json"),
+                        headers: { "content-type" => "text/plain" })
+            stub_request(:get, repo_contents_url).
+              to_return(status: 200,
+                        body: fixture("azure", "no_files.json"),
+                        headers: { "content-type" => "application/json" })
+          end
+
+          let(:url) do
+            repo_url + "/items?path=app&versionDescriptor.version=sha" \
+              "&versionDescriptor.versionType=commit"
+          end
+
+          it "hits the right Azure DevOps URL" do
             files
             expect(WebMock).to have_requested(:get, url)
           end

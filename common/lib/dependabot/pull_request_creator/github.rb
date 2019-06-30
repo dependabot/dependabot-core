@@ -6,6 +6,7 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Github
@@ -65,9 +66,13 @@ module Dependabot
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable
-        raise "Unexpected git error!" if repo_exists?
+        raise(RepoNotFound, source.url) unless repo_exists?
 
-        raise RepoNotFound, source.url
+        retrying ||= false
+        raise "Unexpected git error!" if retrying
+
+        retrying = true
+        retry
       end
 
       def pull_request_exists?
@@ -165,11 +170,19 @@ module Dependabot
         else
           create_branch(commit)
         end
-      rescue Octokit::UnprocessableEntity
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message.include?("Reference update failed //")
+
         # A race condition may cause GitHub to fail here, in which case we retry
         retry_count ||= 0
         retry_count += 1
-        retry_count < 2 ? retry : raise
+        if retry_count > 10
+          raise "Repeatedly failed to create or update branch #{branch_name} "\
+                "with commit #{commit.sha}."
+        end
+
+        sleep(rand(1..1.99))
+        retry
       end
 
       def create_branch(commit)
@@ -319,3 +332,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

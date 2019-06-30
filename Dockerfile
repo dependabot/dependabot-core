@@ -44,6 +44,7 @@ RUN apt-get update \
       tk-dev \
       libxml2-dev \
       libxmlsec1-dev \
+      libgeos-dev \
       python3-enchant \
     && locale-gen en_US.UTF-8
 
@@ -101,7 +102,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.3 php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql \
+    && apt-get install -y php7.3 php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -109,7 +110,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | tar -xz -C /opt \
+RUN curl https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz | tar -xz -C /opt \
     && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/0.5.2/dep-linux-amd64 \
     && chmod +x /opt/go/bin/dep \
     && mkdir /opt/go/gopath

@@ -60,9 +60,9 @@ module Dependabot
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
           next nil if file_exists_in_submodule?(path)
+          next nil if path.include?("${")
 
-          # Experimental feature - raise an error for Dependabot team to review
-          raise "Script plugin not found: #{path}"
+          raise
         end.compact
       end
 

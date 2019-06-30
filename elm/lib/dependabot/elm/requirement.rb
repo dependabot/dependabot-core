@@ -6,12 +6,11 @@ require "dependabot/elm/version"
 module Dependabot
   module Elm
     class Requirement < Gem::Requirement
-      # Override the version pattern to allow local versions
-      PATTERN_RAW =
+      ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
         "(#{Elm::Version::VERSION_PATTERN})"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
-      EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/.freeze
+      ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/.freeze
+      ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/.freeze
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
@@ -19,72 +18,43 @@ module Dependabot
         [new(requirement_string)]
       end
 
-      # Override the parser to create Elm::Versions and return an
-      # array of parsed requirements
-      def self.parse(obj)
-        # If a version is given this is an equals requirement
-        if EXACT_PATTERN.match?(obj.to_s)
-          return [["=", Elm::Version.new(obj.to_s)]]
-        end
-
-        unless (matches = PATTERN.match(obj.to_s))
-          msg = "Illformed requirement #{obj.inspect}"
-          raise BadRequirementError, msg
-        end
-
-        # If the two versions specified are identical this is an equals
-        # requirement
-        if matches[1] == matches[4] && matches[3] == "<="
-          return [["=", Elm::Version.new(matches[4])]]
-        end
-
-        [
-          [matches[2].tr("<", ">"), Elm::Version.new(matches[1])],
-          [matches[3], Elm::Version.new(matches[4])]
-        ]
-      end
-
-      # Overwrite superclass method to use `flat_map`
       def initialize(*requirements)
-        if requirements.any?(&:nil?)
-          raise BadRequirementError, "Nil requirement not supported in Elm"
+        requirements = requirements.flatten.flat_map do |req_string|
+          if req_string.nil?
+            raise BadRequirementError, "Nil requirement not supported in Elm"
+          end
+
+          req_string.split(",").map do |r|
+            convert_elm_constraint_to_ruby_constraint(r)
+          end
         end
 
-        requirements = requirements.flatten
-        requirements.compact!
-        requirements.uniq!
-
-        if requirements.empty?
-          @requirements = [DefaultRequirement]
-        else
-          @requirements = requirements.flat_map { |r| self.class.parse(r) }
-          sort_requirements!
-        end
-      end
-
-      # Overwrite superclass method to use `flat_map`
-      def concat(new)
-        new = new.flatten
-        new.compact!
-        new.uniq!
-        new = new.flat_map { |r| self.class.parse(r) }
-
-        @requirements.concat new
-        sort_requirements!
-      end
-
-      def sort_requirements!
-        @requirements.sort! do |l, r|
-          comp = l.last <=> r.last # first, sort by the requirement's version
-          next comp unless comp.zero?
-
-          l.first <=> r.first # then, sort by the operator (for stability)
-        end
+        super(requirements)
       end
 
       def satisfied_by?(version)
         version = Elm::Version.new(version.to_s)
         super
+      end
+
+      private
+
+      # Override the parser to create Elm::Versions and return an
+      # array of parsed requirements
+      def convert_elm_constraint_to_ruby_constraint(obj)
+        # If a version is given this is an equals requirement
+        return obj if ELM_EXACT_PATTERN.match?(obj.to_s)
+
+        return obj unless (matches = ELM_PATTERN.match(obj.to_s))
+
+        # If the two versions specified are identical this is an equals
+        # requirement
+        return matches[4] if matches[1] == matches[4] && matches[3] == "<="
+
+        [
+          [matches[2].tr("<", ">"), matches[1]].join(" "),
+          [matches[3], matches[4]].join(" ")
+        ]
       end
     end
   end

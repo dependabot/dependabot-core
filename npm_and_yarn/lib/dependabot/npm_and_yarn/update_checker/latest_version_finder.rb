@@ -222,7 +222,7 @@ module Dependabot
 
               version_not_found = status == 404
               version_not_found && version_endpoint_working?
-            rescue Excon::Error::Timeout
+            rescue Excon::Error::Timeout, Excon::Error::Socket
               # Give the benefit of the doubt if the registry is playing up
               false
             end
@@ -243,7 +243,7 @@ module Dependabot
                 idempotent: true,
                 **SharedHelpers.excon_defaults
               ).status < 400
-            rescue Excon::Error::Timeout
+            rescue Excon::Error::Timeout, Excon::Error::Socket
               # Give the benefit of the doubt if the registry is playing up
               true
             end
@@ -259,7 +259,10 @@ module Dependabot
 
               check_npm_response(npm_response)
               JSON.parse(npm_response.body)
-            rescue JSON::ParserError, Excon::Error::Timeout, RegistryError => e
+            rescue JSON::ParserError,
+                   Excon::Error::Timeout,
+                   Excon::Error::Socket,
+                   RegistryError => e
               return if git_dependency?
 
               retry_count ||= 0
@@ -322,6 +325,7 @@ module Dependabot
         end
 
         def private_dependency_not_reachable?(npm_response)
+          return true if npm_response.body.start_with?(/user ".*?" is not a /)
           return false unless [401, 402, 403, 404].include?(npm_response.status)
 
           # Check whether this dependency is (likely to be) private

@@ -6,12 +6,13 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
 require "dependabot/docker/version"
+require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX = /(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
+      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
       VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
       VERSION_WITH_PFX_AND_SFX =
@@ -91,8 +92,9 @@ module Dependabot
       def digest_up_to_date?
         dependency.requirements.all? do |req|
           next true unless req.fetch(:source)[:digest]
+          next true unless (new_digest = digest_of(dependency.version))
 
-          req.fetch(:source).fetch(:digest) == digest_of(dependency.version)
+          req.fetch(:source).fetch(:digest) == new_digest
         end
       end
 
@@ -185,8 +187,9 @@ module Dependabot
       def tags_from_registry
         @tags_from_registry ||=
           begin
-            docker_registry_client.tags(docker_repo_name).fetch("tags")
-          rescue RestClient::Exceptions::Timeout, DockerRegistry2::NotFound
+            client = docker_registry_client
+            client.tags(docker_repo_name, auto_paginate: true).fetch("tags")
+          rescue *transient_docker_errors
             attempt ||= 1
             attempt += 1
             raise if attempt > 3
@@ -230,7 +233,14 @@ module Dependabot
       end
 
       def transient_docker_errors
-        [RestClient::Exceptions::Timeout, DockerRegistry2::NotFound]
+        [
+          RestClient::Exceptions::Timeout,
+          RestClient::ServerBrokeConnection,
+          RestClient::ServiceUnavailable,
+          RestClient::InternalServerError,
+          RestClient::BadGateway,
+          DockerRegistry2::NotFound
+        ]
       end
 
       def prefix_of(tag)

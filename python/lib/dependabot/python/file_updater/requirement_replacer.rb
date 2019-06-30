@@ -28,7 +28,9 @@ module Dependabot
               updated_dependency_declaration_string
             end
 
-          raise "Expected content to change!" if content == updated_content
+          unless old_requirement == new_requirement
+            raise "Expected content to change!" if content == updated_content
+          end
 
           updated_content
         end

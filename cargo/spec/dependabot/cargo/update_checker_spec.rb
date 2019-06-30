@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
@@ -208,7 +208,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         }
       end
 
-      it { is_expected.to eq("eda2c387d1f4368933ebd53b89850bcdf11f1560") }
+      it { is_expected.to eq("b7c73859eb0507d378b9d0a4d9ae2a0c653267f7") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           }
         end
 
-        it { is_expected.to eq("eda2c387d1f4368933ebd53b89850bcdf11f1560") }
+        it { is_expected.to eq("b7c73859eb0507d378b9d0a4d9ae2a0c653267f7") }
       end
     end
 
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-          with(basic_auth: ["x-access-token", "token"]).
+          with(basic_auth: %w(x-access-token token)).
           to_return(
             status: 200,
             body: fixture("git", "upload_packs", "utf8-ranges"),
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           )
       end
 
-      it { is_expected.to eq("eda2c387d1f4368933ebd53b89850bcdf11f1560") }
+      it { is_expected.to eq("b7c73859eb0507d378b9d0a4d9ae2a0c653267f7") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }

@@ -1,0 +1,25 @@
+{
+    "commit": {
+        "treeId": "9fea8a9fd1877daecde8f80137f9dfee6ec0b01a",
+        "commitId": "8c8376e9b2e943c2c72fac4b239876f377f0305b",
+        "author": {
+            "name": "Bob Jones",
+            "email": "Bob.Jones@org.com",
+            "date": "2019-06-11T20:21:23Z"
+        },
+        "committer": {
+            "name": "Bob Jones",
+            "email": "Bob.Jones@org.com",
+            "date": "2019-06-11T20:21:23Z"
+        },
+        "comment": "Added example file",
+        "parents": [
+            "aa6251347fad80f67dfcbff32dd3c0ae1bc926ca"
+        ],
+        "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/commits/9c8376e9b2e943c2c72fac4b239876f377f0305a"
+    },
+    "name": "master",
+    "aheadCount": 0,
+    "behindCount": 0,
+    "isBaseVersion": true
+}

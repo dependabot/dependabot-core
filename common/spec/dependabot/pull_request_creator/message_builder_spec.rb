@@ -14,7 +14,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       files: files,
       credentials: credentials,
       pr_message_footer: pr_message_footer,
-      author_details: author_details,
+      commit_message_options: { signoff_details: signoff_details },
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     }]
   end
   let(:pr_message_footer) { nil }
-  let(:author_details) { nil }
+  let(:signoff_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "- [`d2eb29b`](https://github.com/gocardless/business/commit/"\
     "d2eb29beda934c14220146c82f830de2edd63a25) "\
     "[12](https://github-redirect.dependabot.com/gocardless/business/"\
-    "issues/12) Remove SEPA calendar (replaced by TARGET)\n"\
+    "issues/12) Remove \_SEPA_ calendar (replaced by TARGET)\n"\
     "- See full diff in [compare view](https://github.com/gocardless/business/"\
     "compare/#{base}...#{head})\n"\
     "</details>\n"
@@ -433,7 +433,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
-          it { is_expected.to start_with("⬆️ 🔒 Bump business") }
+          it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
       end
     end
@@ -1471,7 +1471,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "with author details" do
-      let(:author_details) do
+      let(:signoff_details) do
         {
           email: "support@dependabot.com",
           name: "dependabot"
@@ -1530,7 +1530,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "with author details" do
-      let(:author_details) do
+      let(:signoff_details) do
         {
           email: "support@dependabot.com",
           name: "dependabot"
@@ -1543,7 +1543,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "that includes org details" do
-        let(:author_details) do
+        let(:signoff_details) do
           {
             email: "support@dependabot.com",
             name: "dependabot",
@@ -1574,7 +1574,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { "business": [{}] } }
-        it { is_expected.to start_with(":arrow_up: :lock: Bump ") }
+        it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end
   end

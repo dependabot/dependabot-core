@@ -192,6 +192,11 @@ module Dependabot
       end
 
       def workspace_dependency_paths_from_file(file)
+        if parsed_file(file)["workspace"] &&
+           !parsed_file(file)["workspace"].key?("members")
+          return path_dependency_paths_from_file(file)
+        end
+
         workspace_paths = parsed_file(file).dig("workspace", "members")
         return [] unless workspace_paths&.any?
 
@@ -201,9 +206,11 @@ module Dependabot
         end
 
         # Excluded paths, to be subtracted for the workspaces array
-        excluded_paths = parsed_file(file).dig("workspace", "excluded_paths")
+        excluded_paths =
+          (parsed_file(file).dig("workspace", "excluded_paths") || []) +
+          (parsed_file(file).dig("workspace", "exclude") || [])
 
-        (workspace_paths - (excluded_paths || [])).map do |path|
+        (workspace_paths - excluded_paths).map do |path|
           File.join(path, "Cargo.toml")
         end
       end

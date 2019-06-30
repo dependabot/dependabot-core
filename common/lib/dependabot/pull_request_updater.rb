@@ -4,6 +4,8 @@ require "dependabot/pull_request_updater/github"
 
 module Dependabot
   class PullRequestUpdater
+    class BranchProtected < StandardError; end
+
     attr_reader :source, :files, :base_commit, :old_commit, :credentials,
                 :pull_request_number, :author_details, :signature_key
 

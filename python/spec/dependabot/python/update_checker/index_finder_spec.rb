@@ -86,6 +86,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           expect(index_urls).
             to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
         end
+
+        context "with quotes" do
+          let(:requirements_fixture_name) { "custom_index_quotes.txt" }
+          let(:dependency_files) { [requirements_file] }
+
+          it "gets the right index URL" do
+            expect(index_urls).
+              to eq(["https://pypi.weasyldev.com/weasyl/source/+simple/"])
+          end
+        end
       end
 
       context "set in a Pipfile" do
@@ -96,6 +106,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
         context "that is unparseable" do
           let(:pipfile_fixture_name) { "unparseable" }
+
+          it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
+        end
+      end
+
+      context "set in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "private_source.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it { is_expected.to eq(["https://some.internal.registry.com/pypi/"]) }
+
+        context "that is unparseable" do
+          let(:pyproject_fixture_name) { "unparseable.toml" }
 
           it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
         end
@@ -199,6 +222,29 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
                 )
               end
             end
+
+            context "when the env variable is for basic auth details" do
+              let(:pip_conf_fixture_name) do
+                "extra_index_env_variable_basic_auth"
+              end
+
+              let(:credentials) do
+                [{
+                  "type" => "python_index",
+                  "index-url" => "https://pypi.weasyldev.com/source/+simple",
+                  "replaces-base" => false
+                }]
+              end
+
+              it "gets the right index URLs" do
+                expect(index_urls).to match_array(
+                  [
+                    "https://pypi.python.org/simple/",
+                    "https://pypi.weasyldev.com/source/+simple/"
+                  ]
+                )
+              end
+            end
           end
         end
       end
@@ -212,6 +258,33 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             [
               "https://pypi.python.org/simple/",
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
+            ]
+          )
+        end
+
+        context "with quotes" do
+          let(:requirements_fixture_name) { "extra_index_quotes.txt" }
+
+          it "gets the right index URLs" do
+            expect(index_urls).to match_array(
+              [
+                "https://pypi.python.org/simple/",
+                "https://cakebot.mycloudrepo.io/public/repositories/py/"
+              ]
+            )
+          end
+        end
+      end
+
+      context "set in a pyproject.toml file" do
+        let(:pyproject_fixture_name) { "extra_source.toml" }
+        let(:dependency_files) { [pyproject] }
+
+        it "gets the right index URLs" do
+          expect(index_urls).to match_array(
+            [
+              "https://pypi.python.org/simple/",
+              "https://some.internal.registry.com/pypi/"
             ]
           )
         end

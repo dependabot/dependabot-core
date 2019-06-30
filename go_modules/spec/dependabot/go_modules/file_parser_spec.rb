@@ -37,14 +37,14 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(5) }
+    its(:length) { is_expected.to eq(6) }
 
     describe "top level dependencies" do
       subject(:dependencies) do
         parser.parse.select(&:top_level?)
       end
 
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "a dependency that uses go modules" do
         subject(:dependency) do
@@ -202,6 +202,22 @@ RSpec.describe Dependabot::GoModules::FileParser do
             expect(error.file_path).to eq("/go.mod")
             expect(error.message).to match(/v0 or v1/)
           end
+      end
+    end
+
+    describe "a dependency replaced by a local override" do
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("=> github.com/rsc/qr v0.2.0", "=> ./foo/bar/baz")
+      end
+
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "rsc.io/qr" }
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("rsc.io/qr")
       end
     end
   end

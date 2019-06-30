@@ -31,7 +31,7 @@ module Dependabot
       ].freeze
       REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
         InstallationError RequirementsFileParseError InvalidMarker
-        InvalidRequirement ValueError
+        InvalidRequirement ValueError RecursionError
       ).freeze
 
       def parse

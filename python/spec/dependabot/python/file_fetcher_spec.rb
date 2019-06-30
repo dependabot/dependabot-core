@@ -132,21 +132,60 @@ RSpec.describe Dependabot::Python::FileFetcher do
         end
       end
 
+      context "that includes --no-binary" do
+        let(:requirements_fixture_name) { "requirements_with_no_binary.json" }
+
+        it "fetches the requirements.txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to eq(["requirements.txt"])
+        end
+      end
+
       context "and a todo.txt that is actually a requirements file" do
         before do
           stub_request(:get, url + "todo.txt?ref=sha").
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body: fixture("github", "requirements_content.json"),
+              body: fixture("github", todo_fixture_name),
               headers: { "content-type" => "application/json" }
             )
         end
+        let(:todo_fixture_name) { "requirements_content.json" }
 
         it "fetches the unexpectedly named file" do
           expect(file_fetcher_instance.files.count).to eq(2)
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(%w(todo.txt requirements.txt))
+        end
+
+        context "that includes comments" do
+          let(:todo_fixture_name) { "requirements_with_comments.json" }
+
+          it "fetches the unexpectedly named file" do
+            expect(file_fetcher_instance.files.count).to eq(2)
+            expect(file_fetcher_instance.files.map(&:name)).
+              to match_array(%w(todo.txt requirements.txt))
+          end
+        end
+      end
+
+      context "and a todo.txt can't be encoded to UTF-8" do
+        before do
+          stub_request(:get, url + "todo.txt?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_image.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the requirements.txt file" do
+          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to eq(["requirements.txt"])
         end
       end
     end

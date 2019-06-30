@@ -29,7 +29,7 @@ module Dependabot
               elsif dependencies.count > 1 && updating_a_dependency_set?
                 dependency_set.fetch(:group)
               else
-                dependencies.map(&:name).join("-and-").tr(":", "-")
+                dependencies.map(&:name).join("-and-").tr(":", "-").tr("@", "")
               end
 
             dep = dependencies.first

@@ -104,6 +104,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with an ignored hash requirement" do
+          let(:package_json_fixture_name) { "hash_requirement.json" }
+          let(:npm_lock_fixture_name) { "package-lock.json" }
+
+          its(:length) { is_expected.to eq(2) }
+        end
+
         context "that contains an empty version string for a sub-dep" do
           let(:npm_lock_fixture_name) { "empty_version.json" }
 
@@ -452,7 +459,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               }
               pack_url = git_url + "/info/refs?service=git-upload-pack"
               stub_request(:get, pack_url).
-                with(basic_auth: ["x-access-token", "token"]).
+                with(basic_auth: %w(x-access-token token)).
                 to_return(
                   status: 200,
                   body: fixture("git", "upload_packs", git_pack_fixture_name),
@@ -497,7 +504,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   git_url = "https://github.com/jonschlinkert/is-number.git"
                   pack_url = git_url + "/info/refs?service=git-upload-pack"
                   stub_request(:get, pack_url).
-                    with(basic_auth: ["x-access-token", "token"]).
+                    with(basic_auth: %w(x-access-token token)).
                     to_return(status: 404)
                 end
 

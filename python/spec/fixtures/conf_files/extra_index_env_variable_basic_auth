@@ -1,0 +1,2 @@
+[global]
+extra-index-url = https://${CREDENTIALS}@pypi.weasyldev.com/source/+simple/

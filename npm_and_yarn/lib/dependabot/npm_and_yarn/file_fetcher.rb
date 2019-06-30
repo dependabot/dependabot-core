@@ -147,11 +147,13 @@ module Dependabot
 
         package_lock_path_deps =
           parsed_package_lock.fetch("dependencies", []).to_a.
+          select { |_, v| v.is_a?(Hash) }.
           select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
           map { |k, v| [k, v.fetch("version")] }
 
         shrinkwrap_path_deps =
           parsed_shrinkwrap.fetch("dependencies", []).to_a.
+          select { |_, v| v.is_a?(Hash) }.
           select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
           map { |k, v| [k, v.fetch("version")] }
 
@@ -178,7 +180,7 @@ module Dependabot
         end
 
         dependency_objects.flat_map(&:to_a).
-          select { |_, v| v.start_with?(*path_dep_starts) }.
+          select { |_, v| v.is_a?(String) && v.start_with?(*path_dep_starts) }.
           map do |name, path|
             path = path.sub(/^file:/, "").sub(/^link:/, "")
             path = File.join(current_dir, path) unless current_dir.nil?
@@ -254,7 +256,7 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else raise "Unexpected workspace object"
+          else [] # Invalid lerna.json, which must not be in use
           end
 
         paths_array.flat_map do |path|

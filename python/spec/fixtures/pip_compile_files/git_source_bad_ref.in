@@ -1,0 +1,6 @@
+flaky
+pytest
+pytest-xdist
+mock
+Attrs
+-e git+https://github.com/sarugaku/pythonfinder.git@v15.1.2#egg=pythonfinder

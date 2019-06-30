@@ -114,9 +114,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       let(:npmrc_file) do
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: fixture("npmrc", npmrc_fixture_name)
+          content: npmrc_content
         )
       end
+      let(:npmrc_content) { fixture("npmrc", npmrc_fixture_name) }
       let(:npmrc_fixture_name) { "auth_token" }
 
       before do
@@ -131,6 +132,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       context "with an environment variable URL" do
         let(:npmrc_fixture_name) { "env_url" }
         it { is_expected.to eq("registry.npmjs.org") }
+      end
+
+      context "that includes a carriage return" do
+        let(:npmrc_content) do
+          "@dependabot:registry=https://npm.fury.io/dependabot/\r\n"\
+          "//npm.fury.io/dependabot/:_authToken=secret_token\r\n"
+        end
+        it { is_expected.to eq("npm.fury.io/dependabot") }
       end
     end
 

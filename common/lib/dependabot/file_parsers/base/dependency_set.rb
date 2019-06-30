@@ -60,6 +60,9 @@ module Dependabot
           dependencies.find { |d| d.name&.downcase == name&.downcase }
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def combined_dependency(old_dep, new_dep)
           package_manager = old_dep.package_manager
           v_cls = Utils.version_class_for_package_manager(package_manager)
@@ -75,13 +78,24 @@ module Dependabot
             else new_dep.version
             end
 
+          if old_dep.subdependency_metadata
+            subdependency_metadata = old_dep.subdependency_metadata.
+                                     merge(new_dep.subdependency_metadata || {})
+          elsif new_dep.subdependency_metadata
+            subdependency_metadata = new_dep.subdependency_metadata
+          end
+
           Dependency.new(
             name: old_dep.name,
             version: new_version,
             requirements: (old_dep.requirements + new_dep.requirements).uniq,
-            package_manager: package_manager
+            package_manager: package_manager,
+            subdependency_metadata: subdependency_metadata
           )
         end
+        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/AbcSize
       end
     end
   end

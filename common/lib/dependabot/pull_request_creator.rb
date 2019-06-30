@@ -4,6 +4,7 @@ require "dependabot/metadata_finders"
 
 module Dependabot
   class PullRequestCreator
+    require "dependabot/pull_request_creator/azure"
     require "dependabot/pull_request_creator/github"
     require "dependabot/pull_request_creator/gitlab"
     require "dependabot/pull_request_creator/message_builder"
@@ -16,7 +17,8 @@ module Dependabot
 
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_footer, :custom_labels,
-                :author_details, :signature_key, :vulnerabilities_fixed,
+                :author_details, :signature_key, :commit_message_options,
+                :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :github_redirection_service,
                 :custom_headers
@@ -24,6 +26,7 @@ module Dependabot
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
+                   commit_message_options: {},
                    reviewers: nil, assignees: nil, milestone: nil,
                    vulnerabilities_fixed: {}, branch_name_separator: "/",
                    branch_name_prefix: "dependabot",
@@ -38,6 +41,7 @@ module Dependabot
       @pr_message_footer          = pr_message_footer
       @author_details             = author_details
       @signature_key              = signature_key
+      @commit_message_options     = commit_message_options
       @custom_labels              = custom_labels
       @reviewers                  = reviewers
       @assignees                  = assignees
@@ -65,6 +69,7 @@ module Dependabot
       case source.provider
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
+      when "azure" then azure_creator.create
       else raise "Unsupported provider #{source.provider}"
       end
     end
@@ -117,6 +122,20 @@ module Dependabot
       )
     end
 
+    def azure_creator
+      Azure.new(
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        labeler: labeler
+      )
+    end
+
     def message_builder
       @message_builder ||
         MessageBuilder.new(
@@ -124,7 +143,7 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           credentials: credentials,
-          author_details: author_details,
+          commit_message_options: commit_message_options,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed,
           github_redirection_service: github_redirection_service

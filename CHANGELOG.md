@@ -1,3 +1,292 @@
+## v0.110.8, 30 June 2019
+
+- Strip @ from branch name
+
+## v0.110.7, 30 June 2019
+
+- Python: More robust exclusion of path and git dependencies
+
+## v0.110.6, 30 June 2019
+
+- Terraform: Quietly ignore custom registries (don't raise)
+- Python: Handle wildcards with trailing characters in requirement parser
+- Python: Bump cython from 0.29.10 to 0.29.11 in /python/helpers
+- Docker: Handle case where new digest can't be found
+
+## v0.110.5, 29 June 2019
+
+- NuGet: Fetch build files case insensitively
+- NuGet: Fetch Directory.Build.targets files
+
+## v0.110.4, 29 June 2019
+
+- NuGet: Handle non-utf-8 encodings from registry
+
+## v0.110.3, 29 June 2019
+
+- NuGet: Handle zero padding around registry responses
+
+## v0.110.2, 28 June 2019
+
+- Python: Use Nokogiri to parse simple index response
+
+## v0.110.1, 28 June 2019
+
+- Docker: Paginate through all tags when registry returns paginated response
+- Handle custom commit message prefixes for dev dependencies
+
+## v0.110.0, 27 June 2019
+
+- Implemented Azure client for file fetcher/pull request creator
+  (see #1211. Thanks @chris5287!)
+
+## v0.109.1, 26 June 2019
+
+- Ruby: Handle precision mismatch when updating ranges
+
+## v0.109.0, 26 June 2019
+
+- BREAKING: Allow commit_message_options to be passed to pull request creator.
+  This replaces the signoff_details argument. See #1227 for full details.
+
+## v0.108.25, 25 June 2019
+
+- Ruby: Handle unreleased git dependencies properly
+- Add tests for PrNamePrefixer
+
+## v0.108.24, 25 June 2019
+
+- Python: Handle multiline links in PyPI simple index response
+
+## v0.108.23, 25 June 2019
+
+- JS: Handle Excon::Error::Socket errors when fetching latest details
+- Raise helpful error for unexpected Bitbucket responses
+
+## v0.108.22, 24 June 2019
+
+- Composer: Handle stability flags in version updater
+- JS: Bump semver from 6.1.1 to 6.1.2 in /npm_and_yarn/helpers
+- PHP: Add php7.3-geoip to Dockerfile
+
+## v0.108.21, 23 June 2019
+
+- Add longer read timeout when fetching git metadata
+- PHP: Handle leading space in requirement strings
+- Python: Use --pre in pip-compile options if it was used previously
+- Go (modules): keep bumping pinned dependencies
+- Go (modules): don't update replace-pinned dependencies
+- Sanitize markdown in commit messages
+- Python: Handle a specified python version in LatestVersionFinder
+
+## v0.108.20, 18 June 2019
+
+- Python: Better backup parsing of setup.py files
+
+## v0.108.19, 18 June 2019
+
+- .NET: Handle multi-line sln declarations, and tighten regex. Fixes #520
+
+## v0.108.18, 14 June 2019
+
+- Python: Handle quotes around index URLs in requirement.txt files
+
+## v0.108.17, 14 June 2019
+
+- Npm: Ignore bundled sub-dependencies
+
+## v0.108.16, 14 June 2019
+
+- JS: Handle unexpected objects in package-lock.json when looking for path dependencies
+
+## v0.108.15, 13 June 2019
+
+- PHP: Add ext-imap to Dockerfile
+
+## v0.108.14, 12 June 2019
+
+- Python: Handle requirement files with spaces before their comments
+
+## v0.108.13, 12 June 2019
+
+- Gradle: Treat Early Access Programme (EAP) versions as pre-releases
+- Cargo: Handle implicit workspace declarations
+- Docker: Retry server errors
+- Composer: Bump composer/composer from 1.8.5 to 1.8.6
+
+## v0.108.12, 11 June 2019
+
+- Go (modules): handle replace directive in updater
+
+## v0.108.11, 11 June 2019
+
+- Python: Properly remove setup tools warning
+
+## v0.108.10, 10 June 2019
+
+- Go (modules): don't build during go get -d
+
+## v0.108.9, 10 June 2019
+
+- Bundler: Remove existing load paths before loading git dependency gemspecs
+- NuGet: Additional handling for timeouts from private registries
+
+## v0.108.8, 8 June 2019
+
+- Maven, Gradle: Special case display name for undescriptive artifact IDs
+- Make dependency display name configurable by package manager
+- JS: Ignore invalid lerna.json setups
+
+## v0.108.7, 7 June 2019
+
+- Docker: Support tag format with 'v' prefix
+- Python: Bump pip-tools from 3.7.0 to 3.8.0 in /python/helpers
+
+## v0.108.6, 6 June 2019
+
+- Go (modules): handle local module replacements
+
+## v0.108.5, 6 June 2019
+
+- JS: Sanitize escaped slashes in package names for issue details
+
+## v0.108.4, 6 June 2019
+
+- Sanitize each cascade separately, to ensure truncated codeblocks don't cause issues
+- Rust: Handle blank versions specified within a hash
+- Fix method name typo
+- Python: Raise an error for self-referential requirements files
+- Docker: Retry RestClient::ServerBrokeConnection
+
+## v0.108.3, 6 June 2019
+
+- Better error for debugging repeated branch creation failure
+- Bump js-yaml from 3.13.0 to 3.13.1 in /npm_and_yarn/helpers
+- Composer: Retry more transitory failure classes in LockfileUpdater
+
+## v0.108.2, 5 June 2019
+
+- Python: Handle flags in requirement file, and fetch constraints files better
+- Scope reference creation failure retries to a tighter error, and retry more
+- JS: Bump handlebars from 4.1.0 to 4.1.2 in /npm_and_yarn/helpers
+- Handle git URL that separate with :/
+- Ruby: Call uniq on unreachable git URIs
+
+## v0.108.1, 5 June 2019
+
+- Python: Handle files that can't be encoded to UTF-8
+- Improve file encoding in changelog fetching
+
+## v0.108.0, 5 June 2019
+
+- Pass signoff_details to MessageBuilder, not author_details
+- Put emoji tighter together when prefixing with multiple
+
+## v0.107.48, 4 June 2019
+
+- Better mention sanitizing (handle codeblocks)
+
+## v0.107.47, 4 June 2019
+
+- JS: Handle creds used by multiple scopes in npmrc builder
+- .NET: Handle v2 responses which don't specify a base
+- Add libgeos-dev to Dockerfile
+
+## v0.107.46, 4 June 2019
+
+- Python: Sanitize poetry files before adding more details
+- JS: Handle npmrc files with carriage returns in them
+
+## v0.107.45, 4 June 2019
+
+- Python: Correctly set Poetry sources from config variables (include a name)
+
+## v0.107.44, 4 June 2019
+
+- JS: Handle a bad body response from a custom registry
+
+## v0.107.43, 4 June 2019
+
+- Python: Raise helpful errors for unreachable git dependencies
+
+## v0.107.42, 3 June 2019
+
+- Go 1.12 support
+
+## v0.107.41, 3 June 2019
+
+- Handle deleted target branch when updating a PR
+
+## v0.107.40, 3 June 2019
+
+- If Bitbucket times out when getting commits, silence the error
+
+## v0.107.39, 3 June 2019
+
+- Add retries to Bitbucket client, and change initialize signature
+- Python: Bump cython from 0.29.9 to 0.29.10
+
+## v0.107.38, 1 June 2019
+
+- Dep: Pass a dummy ref and branch
+
+## v0.107.37, 1 June 2019
+
+- Keep existing tag prefix when looking for local_tag_for_latest_version
+- JS: Handle bad peer requirements
+
+## v0.107.36, 1 June 2019
+
+- Only consider first line when checking if commit prefixes should be capitalized
+- Don't rely on dependabot[bot] name
+
+## v0.107.35, 31 May 2019
+
+- Python: Allow unchanged files in RequirementReplacer if req is unchanged
+
+## v0.107.34, 31 May 2019
+
+- Handle 451s instead of 403s from GitHub for blocked repos
+
+## v0.107.33, 31 May 2019
+
+- Handle blocked repositories when fetching commits and release notes
+
+## v0.107.32, 31 May 2019
+
+- Raise a BranchProtected error for protected branches (rather than silencing)
+
+## v0.107.31, 31 May 2019
+
+- Handle failed attempts to update protected branches
+
+## v0.107.30, 31 May 2019
+
+- Handle Octokit::UnavailableForLegalReasons errors when attempting to fetch changelogs
+- Python: Remove private source checking from Pipenv and Poetry resolvers (done in LatestVersionFinder)
+- Python: Include pyproject source in IndexFinder
+- Python: Raise PrivateSourceTimedOut for timeouts in LatestVersionFinder
+
+## v0.107.29, 31 May 2019
+
+- Retry failures to fetch git repo in GitHub PR creator
+
+## v0.107.28, 31 May 2019
+
+- Cargo: Raise a resolvability error for submodule cloning issues
+- Elm: Allow normal Ruby requirements in Elm::Requirement class
+- Gradle: Raise DependencyFileNotFound error for missing dependency script plugins
+
+## v0.107.27, 30 May 2019
+
+- Python: Handle environment variables passed in place of basic auth details
+- JS: Protect against non-string versions in package.json
+
+## v0.107.26, 30 May 2019
+
+- Terraform: Handle sub-dir reference in querystring
+- Gradle: Ignore dependency script paths that need value interpolation
+
 ## v0.107.25, 29 May 2019
 
 - Python: Preserve operator spacing

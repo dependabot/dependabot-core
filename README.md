@@ -5,7 +5,8 @@
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise) and GitLab.
+for updating dependencies on GitHub (including GitHub Enterprise), GitLab and
+Azure DevOps.
 
 If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
@@ -28,8 +29,8 @@ Highlights include:
 In addition to this library, you may be interested in:
 
 - The [dependabot-script][dependabot-script] repo, which provides a collection
-  of scripts that use this library to update dependencies on GitHub Enterprise
-  or GitLab
+  of scripts that use this library to update dependencies on GitHub Enterprise,
+  GitLab or Azure DevOps
 - The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
 
 ## Setup

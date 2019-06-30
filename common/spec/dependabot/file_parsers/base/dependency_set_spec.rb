@@ -139,6 +139,73 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             )
         end
       end
+
+      context "and is idential, but with different subdependency_metadata" do
+        let(:existing_subdependency_metadata) { { npm_bundled: true } }
+        let(:subdependency_metadata) { { npm_bundled: false } }
+        let(:existing_dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.3",
+            requirements: [],
+            package_manager: "dummy",
+            subdependency_metadata: existing_subdependency_metadata
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.3",
+            requirements: [],
+            package_manager: "dummy",
+            subdependency_metadata: subdependency_metadata
+          )
+        end
+
+        it { is_expected.to be_a(described_class) }
+
+        it "has a single dependency with the merged subdependency_metadata" do
+          expect(subject.dependencies.count).to eq(1)
+          expect(subject.dependencies.first.subdependency_metadata).
+            to eq(
+              npm_bundled: false
+            )
+        end
+
+        context "when existing depedency has no subdependency_metadata" do
+          let(:existing_subdependency_metadata) { nil }
+
+          it "has a single dependency with the merged subdependency_metadata" do
+            expect(subject.dependencies.count).to eq(1)
+            expect(subject.dependencies.first.subdependency_metadata).
+              to eq(
+                npm_bundled: false
+              )
+          end
+        end
+
+        context "when depedency has no subdependency_metadata" do
+          let(:subdependency_metadata) { nil }
+
+          it "has a single dependency with the merged subdependency_metadata" do
+            expect(subject.dependencies.count).to eq(1)
+            expect(subject.dependencies.first.subdependency_metadata).
+              to eq(
+                npm_bundled: true
+              )
+          end
+        end
+
+        context "when neither have subdependency_metadata" do
+          let(:existing_subdependency_metadata) { nil }
+          let(:subdependency_metadata) { nil }
+
+          it "has a single dependency with no subdependency_metadata" do
+            expect(subject.dependencies.count).to eq(1)
+            expect(subject.dependencies.first.subdependency_metadata).to be_nil
+          end
+        end
+      end
     end
 
     context "with a non-dependency object" do

@@ -172,6 +172,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
               let(:gemfile_requirement_string) { ">= 1.0, < 1.4" }
               its([:requirement]) { is_expected.to eq(">= 1.0, < 1.6") }
 
+              context "with a precision mismatch" do
+                let(:gemfile_requirement_string) { ">= 1.0, < 1.4.2.2" }
+                its([:requirement]) { is_expected.to eq(">= 1.0, < 1.5.1") }
+              end
+
               context "which shouldn't be resolvable..." do
                 let(:gemfile_requirement_string) { ">= 2.0, < 2.4" }
 

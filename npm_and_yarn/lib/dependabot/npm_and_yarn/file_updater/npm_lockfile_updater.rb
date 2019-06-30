@@ -172,12 +172,13 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_npm_updater_error(error, lockfile)
-          if error.message.match?(MISSING_PACKAGE)
-            package_name =
-              error.message.match(MISSING_PACKAGE).
-              named_captures["package_req"].
-              gsub("%2f", "/")
-            handle_missing_package(package_name, error, lockfile)
+          error_message = error.message
+          if error_message.match?(MISSING_PACKAGE)
+            package_name = error_message.match(MISSING_PACKAGE).
+                           named_captures["package_req"]
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, lockfile)
           end
 
           # Invalid package: When the package.json doesn't include a name or
@@ -186,10 +187,10 @@ module Dependabot
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
           sub_dep_local_path_error = "does not contain a package.json file"
-          if error.message.match?(INVALID_PACKAGE) ||
-             error.message.start_with?("Invalid package name") ||
-             error.message.include?(sub_dep_local_path_error)
-            raise_resolvability_error(error, lockfile)
+          if error_message.match?(INVALID_PACKAGE) ||
+             error_message.start_with?("Invalid package name") ||
+             error_message.include?(sub_dep_local_path_error)
+            raise_resolvability_error(error_message, lockfile)
           end
 
           # TODO: Move this logic to the version resolver and check if a new
@@ -211,36 +212,36 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error.message.start_with?("No matching vers") &&
-             dependencies_in_error_message?(error.message) &&
+          if error_message.start_with?("No matching vers") &&
+             dependencies_in_error_message?(error_message) &&
              resolvable_before_update?(lockfile)
 
             # Raise a bespoke error so we can capture and ignore it if
             # we're trying to create a new PR (which will be created
             # successfully at a later date)
-            raise Dependabot::InconsistentRegistryResponse, error.message
+            raise Dependabot::InconsistentRegistryResponse, error_message
           end
 
-          if error.message.match?(FORBIDDEN_PACKAGE)
-            package_name =
-              error.message.match(FORBIDDEN_PACKAGE).
-              named_captures["package_req"].
-              gsub("%2f", "/")
-            handle_missing_package(package_name, error, lockfile)
+          if error_message.match?(FORBIDDEN_PACKAGE)
+            package_name = error_message.match(FORBIDDEN_PACKAGE).
+                           named_captures["package_req"]
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, lockfile)
           end
 
           # Some private registries return a 403 when the user is readonly
-          if error.message.match?(FORBIDDEN_PACKAGE_403)
-            package_name =
-              error.message.match(FORBIDDEN_PACKAGE_403).
-              named_captures["package_req"].
-              gsub("%2f", "/")
-            handle_missing_package(package_name, error, lockfile)
+          if error_message.match?(FORBIDDEN_PACKAGE_403)
+            package_name = error_message.match(FORBIDDEN_PACKAGE_403).
+                           named_captures["package_req"]
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, lockfile)
           end
 
-          if error.message.match?(UNREACHABLE_GIT)
+          if error_message.match?(UNREACHABLE_GIT)
             dependency_url =
-              error.message.match(UNREACHABLE_GIT).
+              error_message.match(UNREACHABLE_GIT).
               named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
@@ -253,17 +254,18 @@ module Dependabot
           # In this case we want to raise a more helpful error message asking
           # people to re-generate their lockfiles (Future feature idea: add a
           # way to click-to-fix the lockfile from the issue)
-          if error.message.include?("Cannot read property 'match' of ") &&
+          if error_message.include?("Cannot read property 'match' of ") &&
              !resolvable_before_update?(lockfile)
-            raise_missing_lockfile_version_resolvability_error(error, lockfile)
+            raise_missing_lockfile_version_resolvability_error(error_message,
+                                                               lockfile)
           end
 
-          if (error.message.start_with?("No matching vers", "404 Not Found") ||
-             error.message.include?("not match any file(s) known to git") ||
-             error.message.include?("Non-registry package missing package") ||
-             error.message.include?("Invalid tag name")) &&
+          if (error_message.start_with?("No matching vers", "404 Not Found") ||
+             error_message.include?("not match any file(s) known to git") ||
+             error_message.include?("Non-registry package missing package") ||
+             error_message.include?("Invalid tag name")) &&
              !resolvable_before_update?(lockfile)
-            raise_resolvability_error(error, lockfile)
+            raise_resolvability_error(error_message, lockfile)
           end
 
           raise error
@@ -273,14 +275,15 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
 
-        def raise_resolvability_error(error, lockfile)
+        def raise_resolvability_error(error_message, lockfile)
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in "\
-                "#{lockfile.path}:\n#{error.message}"
+                "#{lockfile.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_missing_lockfile_version_resolvability_error(error, lockfile)
+        def raise_missing_lockfile_version_resolvability_error(error_message,
+                                                               lockfile)
           lockfile_dir = Pathname.new(lockfile.name).dirname
           modules_path = lockfile_dir.join("node_modules")
           # Note: don't include the dependency names to prevent opening
@@ -289,7 +292,7 @@ module Dependabot
           #
           # ToDo: add an error ID to issues to make it easier to unique them
           msg = "Error whilst updating dependencies in #{lockfile.name}:\n"\
-                "#{error.message}\n\n"\
+                "#{error_message}\n\n"\
                 "It looks like your lockfile has some corrupt entries with "\
                 "missing versions and needs to be re-generated.\n"\
                 "You'll need to remove #{lockfile.name} and #{modules_path} "\
@@ -297,11 +300,11 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def handle_missing_package(package_name, error, lockfile)
+        def handle_missing_package(package_name, error_message, lockfile)
           missing_dep = lockfile_dependencies(lockfile).
                         find { |dep| dep.name == package_name }
 
-          raise_resolvability_error(error, lockfile) unless missing_dep
+          raise_resolvability_error(error_message, lockfile) unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -350,12 +353,12 @@ module Dependabot
             end
         end
 
-        def dependencies_in_error_message?(message)
+        def dependencies_in_error_message?(error_message)
           names = dependencies.map { |dep| dep.name.split("/").first }
           # Example foramt: No matching version found for
           # @dependabot/dummy-pkg-b@^1.3.0
           names.any? do |name|
-            message.match?(%r{#{Regexp.quote(name)}[\/@]})
+            error_message.match?(%r{#{Regexp.quote(name)}[\/@]})
           end
         end
 
@@ -403,10 +406,8 @@ module Dependabot
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 
-          types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
-
           json = JSON.parse(content)
-          types.each do |type|
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
             json.fetch(type, {}).each do |nm, _|
               updated_version = git_dependencies_to_lock.dig(nm, :version)
               next unless updated_version
@@ -460,6 +461,7 @@ module Dependabot
           package_files.each do |file|
             NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
               JSON.parse(file.content).fetch(t, {}).each do |_, requirement|
+                next unless requirement.is_a?(String)
                 next unless requirement.start_with?("git+ssh:")
 
                 req = requirement.split("#").first
@@ -566,6 +568,10 @@ module Dependabot
             gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
+        end
+
+        def sanitize_package_name(package_name)
+          package_name.gsub("%2f", "/").gsub("%2F", "/")
         end
 
         def package_locks

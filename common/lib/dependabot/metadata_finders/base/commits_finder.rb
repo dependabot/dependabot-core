@@ -2,7 +2,7 @@
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
-require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
@@ -184,7 +184,9 @@ module Dependabot
             new(url: source.url, credentials: credentials).
             tags.
             map(&:name)
-        rescue Dependabot::GitDependenciesNotReachable
+        rescue Dependabot::GitDependenciesNotReachable,
+               Octokit::ServiceUnavailable
+          # ServiceUnavailable normally means a DMCA takedown
           []
         end
 
@@ -266,7 +268,10 @@ module Dependabot
             end
         rescue Dependabot::Clients::Bitbucket::NotFound,
                Dependabot::Clients::Bitbucket::Unauthorized,
-               Dependabot::Clients::Bitbucket::Forbidden
+               Dependabot::Clients::Bitbucket::Forbidden,
+               Excon::Error::Server,
+               Excon::Error::Socket,
+               Excon::Error::Timeout
           []
         end
 
@@ -296,7 +301,7 @@ module Dependabot
         end
 
         def bitbucket_client
-          @bitbucket_client ||= Dependabot::Clients::Bitbucket.
+          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries.
                                 for_bitbucket_dot_org(credentials: credentials)
         end
 

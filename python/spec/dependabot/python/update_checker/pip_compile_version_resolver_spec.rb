@@ -238,6 +238,35 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
+    context "with a git source" do
+      context "for another dependency, that can't be reached" do
+        let(:manifest_fixture_name) { "git_source_unreachable.in" }
+        let(:dependency_files) { [manifest_file] }
+        let(:dependency_version) { nil }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls).
+                to eq(["https://github.com/greysteil/unreachable"])
+            end
+        end
+      end
+
+      context "for another dependency, that has a bad ref" do
+        let(:manifest_fixture_name) { "git_source_bad_ref.in" }
+        let(:dependency_files) { [manifest_file] }
+        let(:dependency_version) { nil }
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+              expect(err.dependency).to eq("pythonfinder")
+            end
+        end
+      end
+    end
+
     context "with a subdependency" do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.0.2" }

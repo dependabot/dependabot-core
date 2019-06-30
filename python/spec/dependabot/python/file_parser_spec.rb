@@ -157,6 +157,22 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
+    context "that requires itself" do
+      let(:files) { [requirements] }
+      let(:requirements_fixture_name) { "cascading.txt" }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "more_requirements.txt",
+          content: requirements_body
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "with an invalid value" do
       let(:requirements_fixture_name) { "invalid_value.txt" }
 
@@ -799,6 +815,35 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "==1.3.1",
+                file: "setup.py",
+                groups: ["install_requires"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+
+      context "with extras" do
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.py",
+            content: fixture("setup_files", "extras.py")
+          )
+        end
+
+        describe "a dependency with extras" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "requests" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==2.12.*",
                 file: "setup.py",
                 groups: ["install_requires"],
                 source: nil

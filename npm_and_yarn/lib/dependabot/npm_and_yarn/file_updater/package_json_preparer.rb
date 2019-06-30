@@ -72,6 +72,7 @@ module Dependabot
 
           NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
             JSON.parse(package_json_content).fetch(t, {}).each do |_, req|
+              next unless req.is_a?(String)
               next unless req.start_with?("git+ssh:")
 
               req = req.split("#").first

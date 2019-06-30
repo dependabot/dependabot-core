@@ -10,24 +10,11 @@ module Dependabot
       class Unauthorized < StandardError; end
       class Forbidden < StandardError; end
 
-      #######################
-      # Constructor methods #
-      #######################
-
-      def self.for_bitbucket_dot_org(credentials:)
-        credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == "bitbucket.org" }
-
-        new(credential)
-      end
-
       ##########
       # Client #
       ##########
 
-      def initialize(credentials)
+      def initialize(credentials:)
         @credentials = credentials
       end
 
@@ -88,6 +75,12 @@ module Dependabot
         raise Unauthorized if response.status == 401
         raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
+
+        if response.status >= 400
+          raise "Unhandled Bitbucket error!\n"\
+                "Status: #{response.status}\n"\
+                "Body: #{response.body}"
+        end
 
         response
       end

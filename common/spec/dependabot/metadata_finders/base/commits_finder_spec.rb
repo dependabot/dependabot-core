@@ -265,6 +265,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
     end
 
+    context "with a github repo that has a DMCA takedown notice" do
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 503,
+            body: fixture("github", "dmca_takedown.txt"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it { is_expected.to eq("https://github.com/gocardless/business/commits") }
+    end
+
     context "with a github repo and no tags found" do
       let(:upload_pack_fixture) { "no_tags" }
 
@@ -577,14 +592,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           is_expected.to eq(
             [
               {
-                message: "[12]() Remove SEPA calendar (replaced by TARGET)",
+                message: "[12]() Remove _SEPA_ calendar (replaced by TARGET)",
                 sha: "d2eb29beda934c14220146c82f830de2edd63a25",
                 html_url: "https://github.com/gocardless/business/commit/"\
                           "d2eb29beda934c14220146c82f830de2edd63a25"
               },
               {
                 message: "Merge pull request #8 from gocardless/"\
-                          "rename-sepa-to-ecb\n\nRemove SEPA calendar "\
+                          "rename-sepa-to-ecb\n\nRemove _SEPA_ calendar "\
                           "(replaced by TARGET)",
                 sha: "a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
                 html_url: "https://github.com/gocardless/business/commit/"\

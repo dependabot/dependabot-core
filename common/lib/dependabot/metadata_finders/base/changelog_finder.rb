@@ -5,7 +5,7 @@ require "pandoc-ruby"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
-require "dependabot/clients/bitbucket"
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
@@ -112,7 +112,7 @@ module Dependabot
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           @changelog_from_suggested_url = nil
         end
 
@@ -186,9 +186,7 @@ module Dependabot
 
           return unless @file_text[file.download_url].valid_encoding?
 
-          @file_text[file.download_url].
-            force_encoding("UTF-8").
-            encode.sub(/\n*\z/, "")
+          @file_text[file.download_url].sub(/\n*\z/, "")
         end
 
         def fetch_github_file(file)
@@ -202,11 +200,12 @@ module Dependabot
             file.download_url,
             idempotent: true,
             **SharedHelpers.excon_defaults
-          ).body
+          ).body.force_encoding("UTF-8").encode
         end
 
         def fetch_bitbucket_file(file)
-          bitbucket_client.get(file.download_url).body
+          bitbucket_client.get(file.download_url).body.
+            force_encoding("UTF-8").encode
         end
 
         def upgrade_guide
@@ -258,7 +257,7 @@ module Dependabot
           end
 
           files
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
 
@@ -358,7 +357,7 @@ module Dependabot
         end
 
         def bitbucket_client
-          @bitbucket_client ||= Dependabot::Clients::Bitbucket.
+          @bitbucket_client ||= Dependabot::Clients::BitbucketWithRetries.
                                 for_bitbucket_dot_org(credentials: credentials)
         end
 
