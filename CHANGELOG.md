@@ -1,3 +1,10 @@
+## v0.110.6, 30 June 2019
+
+- Terraform: Quietly ignore custom registries (don't raise)
+- Python: Handle wildcards with trailing characters in requirement parser
+- Python: Bump cython from 0.29.10 to 0.29.11 in /python/helpers
+- Docker: Handle case where new digest can't be found
+
 ## v0.110.5, 29 June 2019
 
 - NuGet: Fetch build files case insensitively
