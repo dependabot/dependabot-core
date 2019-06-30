@@ -11,12 +11,7 @@ class Updater
 {
     public static function update(array $args): array
     {
-        [$workingDirectory, $dependencyName, $dependencyVersionAndExtentions, $gitCredentials, $registryCredentials] = $args;
-        [$dependencyVersion, $extensionsString] = explode(';', $dependencyVersionAndExtentions);
-        $extensions = [];
-        if ($extensionsString !== null && strlen($extensionsString) > 0) {
-            $extensions = explode(',', $extensionsString);
-        }
+        [$workingDirectory, $dependencyName, $dependencyVersion, $gitCredentials, $registryCredentials] = $args;
 
         // Change working directory to the one provided, this ensures that we
         // install dependencies into the working dir, rather than a vendor folder
@@ -27,7 +22,6 @@ class Updater
         $io = new ExceptionIO();
         $composer = Factory::create($io);
         $config = $composer->getConfig();
-        $originalConfig = clone $config;
         $httpBasicCredentials = [];
 
         $pm = new DependabotPluginManager($io, $composer, null, false);
@@ -46,22 +40,6 @@ class Updater
                 'username' => $cred['username'],
                 'password' => $cred['password'],
             ];
-        }
-
-        if (count($extensions) > 0) {
-            $platform = [];
-            foreach ($extensions as $extension) {
-                [$extension, $version] = explode('|', $extension);
-                $platform[$extension] = $version;
-            }
-
-            $config->merge(
-                [
-                    'config' => [
-                        'platform' => $platform + $config->get('platform'),
-                    ],
-                ]
-            );
         }
 
         if ($httpBasicCredentials) {
@@ -99,12 +77,6 @@ class Updater
             ->setRunScripts(false)
             ->setIgnorePlatformRequirements(false);
 
-        $install->run();
-
-        $install
-            ->setConfig($originalConfig)
-            ->setUpdateWhitelist(['lock'])
-            ->setIgnorePlatformRequirements(true);
         $install->run();
 
         $result = [

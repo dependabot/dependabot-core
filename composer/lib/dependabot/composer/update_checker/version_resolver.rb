@@ -176,7 +176,7 @@ module Dependabot
                 name, requirement = extension_string.strip.split(" ")
                 { name: name, requirement: requirement }
               end
-            raise MissingExtensions.new(missing_extensions)
+            raise MissingExtensions, missing_extensions
           elsif error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')
             raise Dependabot::DependencyFileNotResolvable, error.message
