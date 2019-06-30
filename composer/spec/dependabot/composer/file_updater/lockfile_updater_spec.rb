@@ -111,6 +111,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       context "and an extension is specified that we don't have" do
         let(:manifest_fixture_name) { "missing_extension" }
+        let(:lockfile_fixture_name) { "missing_extension" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
@@ -134,6 +135,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
         it "has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
+          expect(updated_lockfile_content).
+            to include("\"platform-overrides\":{\"php\":\"5.6.4\"}")
         end
       end
     end

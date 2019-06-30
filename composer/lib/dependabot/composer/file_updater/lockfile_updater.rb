@@ -235,7 +235,8 @@ module Dependabot
 
         def post_process_lockfile(content)
           content = replace_patches(content)
-          replace_content_hash(content)
+          content = replace_content_hash(content)
+          replace_platform_overrides(content)
         end
 
         def replace_patches(updated_content)
@@ -280,6 +281,23 @@ module Dependabot
 
             content.gsub(existing_hash, content_hash)
           end
+        end
+
+        def replace_platform_overrides(content)
+          original_object = JSON.parse(lockfile.content)
+          original_overrides = original_object.fetch("platform-overrides", nil)
+
+          updated_object = JSON.parse(content)
+
+          if original_object.key?("platform-overrides")
+            updated_object["platform-overrides"] = original_overrides
+          else
+            updated_object.delete("platform-overrides")
+          end
+
+          JSON.pretty_generate(updated_object, indent: "    ").
+            gsub(/\[\n\n\s*\]/, "[]").
+            gsub(/\}\z/, "}\n")
         end
 
         def version_for_reqs(requirements)
