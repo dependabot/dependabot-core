@@ -1,3 +1,7 @@
+## v0.110.8, 30 June 2019
+
+- Strip @ from branch name
+
 ## v0.110.7, 30 June 2019
 
 - Python: More robust exclusion of path and git dependencies
