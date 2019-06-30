@@ -268,6 +268,23 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
+    context "with an @ in the name" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@storybook/addon-knobs",
+          version: "5.1.9",
+          previous_version: "5.0.11",
+          package_manager: "npm_and_yarn",
+          requirements: []
+        )
+      end
+
+      it "strips @ character" do
+        expect(new_branch_name).
+          to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
+      end
+    end
+
     context "with SHA-1 versions" do
       let(:dependency) do
         Dependabot::Dependency.new(
