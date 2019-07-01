@@ -44,6 +44,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory(base_directory) do
             File.write("composer.json", prepared_composer_json_content)
             File.write("composer.lock", lockfile.content) if lockfile
+            File.write("auth.json", auth_json.content) if auth_json
 
             run_update_checker
           end
@@ -219,6 +220,10 @@ module Dependabot
         def lockfile
           @lockfile ||=
             dependency_files.find { |f| f.name == "composer.lock" }
+        end
+
+        def auth_json
+          @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
         end
 
         def git_credentials

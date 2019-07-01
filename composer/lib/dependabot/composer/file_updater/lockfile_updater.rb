@@ -148,6 +148,7 @@ module Dependabot
 
           File.write("composer.json", locked_composer_json_content)
           File.write("composer.lock", lockfile.content)
+          File.write("auth.json", auth_json.content) if auth_json
         end
 
         def locked_composer_json_content
@@ -269,6 +270,10 @@ module Dependabot
         def lockfile
           @lockfile ||=
             dependency_files.find { |f| f.name == "composer.lock" }
+        end
+
+        def auth_json
+          @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
         end
 
         def path_dependencies

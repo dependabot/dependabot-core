@@ -276,6 +276,44 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             expect(WebMock).to have_requested(:get, gemfury_url)
           end
         end
+
+        context "in an auth.json file" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }]
+          end
+          let(:files) { [composer_file, lockfile, auth_json] }
+          let(:auth_json) do
+            Dependabot::DependencyFile.new(
+              content: fixture("auth_jsons", auth_json_fixture_name),
+              name: "auth.json"
+            )
+          end
+          let(:auth_json_fixture_name) { "gemfury.json" }
+
+          it "uses the credentials" do
+            finder.latest_version
+            expect(WebMock).
+              to have_requested(:get, gemfury_url).
+              with(basic_auth: %w(user pass))
+          end
+
+          context "that can't be parsed" do
+            let(:auth_json_fixture_name) { "unparseable.json" }
+
+            it "raises a helpful error" do
+              expect { finder.latest_version }.
+                to raise_error do |error|
+                  expect(error).to be_a(Dependabot::DependencyFileNotParseable)
+                  expect(error.file_name).to eq("auth.json")
+                end
+            end
+          end
+        end
       end
     end
 

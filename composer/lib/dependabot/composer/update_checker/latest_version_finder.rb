@@ -142,7 +142,23 @@ module Dependabot
         end
 
         def registry_credentials
-          credentials.select { |cred| cred["type"] == "composer_repository" }
+          credentials.select { |cred| cred["type"] == "composer_repository" } +
+            auth_json_credentials
+        end
+
+        def auth_json_credentials
+          return [] unless auth_json
+
+          parsed_auth_json = JSON.parse(auth_json.content)
+          parsed_auth_json.fetch("http-basic", {}).map do |reg, details|
+            {
+              "registry" => reg,
+              "username" => details["username"],
+              "password" => details["password"]
+            }
+          end
+        rescue JSON::ParserError
+          raise Dependabot::DependencyFileNotParseable, auth_json.path
         end
 
         def composer_file
@@ -151,6 +167,10 @@ module Dependabot
           raise "No composer.json!" unless composer_file
 
           composer_file
+        end
+
+        def auth_json
+          dependency_files.find { |f| f.name == "auth.json" }
         end
 
         def ignore_reqs
