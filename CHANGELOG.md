@@ -1,3 +1,7 @@
+## v0.110.11, 1 July 2019
+
+- Python: Treat != requirements as unfixable
+
 ## v0.110.10, 1 July 2019
 
 - Rust: Include user-agent when making requests to crates.io
