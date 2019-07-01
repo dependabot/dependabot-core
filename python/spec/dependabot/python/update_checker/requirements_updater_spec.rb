@@ -89,6 +89,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           it { is_expected.to eq(requirement_txt_req) }
         end
 
+        context "and a != req was specified" do
+          let(:requirement_txt_req_string) { "!= 1.3.0" }
+          it { is_expected.to eq(requirement_txt_req) }
+
+          context "for exactly the version being updated to" do
+            let(:requirement_txt_req_string) { "!=1.5.0" }
+            its([:requirement]) { is_expected.to eq(:unfixable) }
+          end
+        end
+
         context "and a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
           it { is_expected.to eq(requirement_txt_req) }

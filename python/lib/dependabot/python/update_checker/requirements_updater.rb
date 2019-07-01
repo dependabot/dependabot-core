@@ -5,7 +5,6 @@ require "dependabot/python/update_checker"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -252,9 +251,7 @@ module Dependabot
             case op = r.requirements.first.first
             when "<", "<="
               "<" + update_greatest_version(r.to_s, latest_resolvable_version)
-            when "!="
-              nil
-            when ">", ">="
+            when "!=", ">", ">="
               raise UnfixableRequirement
             else
               raise "Unexpected op for unsatisfied requirement: #{op}"
@@ -358,4 +355,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
