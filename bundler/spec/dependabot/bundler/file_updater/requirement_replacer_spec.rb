@@ -141,6 +141,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
       context "with a function requirement" do
         let(:content) { %(version = "1.0.0"\ngem "business", version) }
         it { is_expected.to eq(content) }
+
+        context "in an || condition" do
+          let(:content) do
+            %(version = "1.0.0"\ngem "business", ENV["a"] || version)
+          end
+          it { is_expected.to eq(content) }
+        end
       end
 
       context "with no requirement" do
