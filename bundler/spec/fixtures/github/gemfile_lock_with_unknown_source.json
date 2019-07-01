@@ -1,0 +1,18 @@
+{
+    "name": "Gemfile.lock",
+    "path": "Gemfile.lock",
+    "sha": "edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "size": 1538,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile.lock",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile.lock?token=ABF4KbxDYCwHdSJNkLzB_suWgDZl4os7ks5WD9kmwA%3D%3D",
+    "type": "file",
+    "content": "UExVR0lOIFNPVVJDRQogIHJlbW90ZTogczM6Ly9teS1nZW1zCiAgdHlwZTog\nYXdzLXMzCiAgc3BlY3M6CiAgICBhZGRyZXNzYWJsZSAoMi4zLjgpCgpHRU0K\nICByZW1vdGU6IGh0dHBzOi8vcnVieWdlbXMub3JnLwogIHNwZWNzOgogICAg\nYWRkcmVzc2FibGUgKDIuMy44KQogICAgYXdzLXNkay1jb3JlICgyLjAuNDgp\nCiAgICAgIGJ1aWxkZXIgKH4+IDMuMCkKICAgICAgam1lc3BhdGggKH4+IDEu\nMCkKICAgICAgbXVsdGlfanNvbiAofj4gMS4wKQogICAgYnVpbGRlciAoMy4y\nLjIpCiAgICBjZWxsdWxvaWQgKDAuMTYuMCkKICAgICAgdGltZXJzICh+PiA0\nLjAuMCkKICAgIGNyYWNrICgwLjQuMikKICAgICAgc2FmZV95YW1sICh+PiAx\nLjAuMCkKICAgIGRpZmYtbGNzICgxLjIuNSkKICAgIGRvdGVudiAoMi4wLjIp\nCiAgICBmYXJhZGF5ICgwLjkuMSkKICAgICAgbXVsdGlwYXJ0LXBvc3QgKD49\nIDEuMiwgPCAzKQogICAgZ2VtbmFzaXVtLXBhcnNlciAoMC4xLjkpCiAgICBo\naXRpbWVzICgxLjIuMykKICAgIGptZXNwYXRoICgxLjEuMykKICAgIG11bHRp\nX2pzb24gKDEuMTEuMikKICAgIG11bHRpcGFydC1wb3N0ICgyLjAuMCkKICAg\nIG9jdG9raXQgKDQuMS4xKQogICAgICBzYXd5ZXIgKH4+IDAuNi4wLCA+PSAw\nLjUuMykKICAgIHByaXVzICgxLjAuMCkKICAgIHJzcGVjICgzLjMuMCkKICAg\nICAgcnNwZWMtY29yZSAofj4gMy4zLjApCiAgICAgIHJzcGVjLWV4cGVjdGF0\naW9ucyAofj4gMy4zLjApCiAgICAgIHJzcGVjLW1vY2tzICh+PiAzLjMuMCkK\nICAgIHJzcGVjLWNvcmUgKDMuMy4yKQogICAgICByc3BlYy1zdXBwb3J0ICh+\nPiAzLjMuMCkKICAgIHJzcGVjLWV4cGVjdGF0aW9ucyAoMy4zLjEpCiAgICAg\nIGRpZmYtbGNzICg+PSAxLjIuMCwgPCAyLjApCiAgICAgIHJzcGVjLXN1cHBv\ncnQgKH4+IDMuMy4wKQogICAgcnNwZWMtaXRzICgxLjIuMCkKICAgICAgcnNw\nZWMtY29yZSAoPj0gMy4wLjApCiAgICAgIHJzcGVjLWV4cGVjdGF0aW9ucyAo\nPj0gMy4wLjApCiAgICByc3BlYy1tb2NrcyAoMy4zLjIpCiAgICAgIGRpZmYt\nbGNzICg+PSAxLjIuMCwgPCAyLjApCiAgICAgIHJzcGVjLXN1cHBvcnQgKH4+\nIDMuMy4wKQogICAgcnNwZWMtc3VwcG9ydCAoMy4zLjApCiAgICBzYWZlX3lh\nbWwgKDEuMC40KQogICAgc2F3eWVyICgwLjYuMCkKICAgICAgYWRkcmVzc2Fi\nbGUgKH4+IDIuMy41KQogICAgICBmYXJhZGF5ICh+PiAwLjgsIDwgMC4xMCkK\nICAgIHNob3J5dWtlbiAoMi4wLjApCiAgICAgIGF3cy1zZGstY29yZSAofj4g\nMi4wLjIxKQogICAgICBjZWxsdWxvaWQgKH4+IDAuMTYuMCkKICAgIHRpbWVy\ncyAoNC4wLjQpCiAgICAgIGhpdGltZXMKICAgIHdlYm1vY2sgKDEuMjEuMCkK\nICAgICAgYWRkcmVzc2FibGUgKD49IDIuMy42KQogICAgICBjcmFjayAoPj0g\nMC4zLjIpCgpQTEFURk9STVMKICBydWJ5CgpERVBFTkRFTkNJRVMKICBkb3Rl\nbnYKICBnZW1uYXNpdW0tcGFyc2VyICh+PiAwLjEuOSkKICBvY3Rva2l0ICh+\nPiA0LjEuMSkKICBwcml1cyAofj4gMS4wLjApCiAgcnNwZWMgKH4+IDMuMy4w\nKQogIHJzcGVjLWl0cyAofj4gMS4yLjApCiAgc2hvcnl1a2VuICh+PiAyLjAu\nMCkKICB3ZWJtb2NrICh+PiAxLjIxLjApCgpCVU5ETEVEIFdJVEgKICAgMS4x\nMC42\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile.lock?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/edeaffa7c969c7b0e64b9777333dc7112789770b",
+        "html": "https://github.com/gocardless/bump/blob/master/Gemfile.lock"
+    }
+}

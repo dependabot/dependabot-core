@@ -486,6 +486,22 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
       end
     end
+
+    context "that has a lockfile with an unknown plugin source" do
+      before do
+        stub_request(:get, url + "Gemfile.lock?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "gemfile_lock_with_unknown_source.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "quietly ignores the error" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+      end
+    end
   end
 
   context "with a child Gemfile" do

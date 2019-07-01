@@ -180,6 +180,10 @@ module Dependabot
         end
       rescue ::Bundler::LockfileError
         raise Dependabot::DependencyFileNotParseable, lockfile.path
+      rescue ::Bundler::Plugin::UnknownSourceError
+        # Quietly ignore plugin errors - we'll raise a better error during
+        # parsing
+        []
       end
 
       def child_gemfiles

@@ -363,6 +363,20 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
+    context "with a gem from a plugin gem source" do
+      let(:lockfile_fixture_name) { "specified_plugin_source.lock" }
+      let(:gemfile_fixture_name) { "specified_plugin_source" }
+
+      it "raises a helpful error" do
+        expect { parser.parse }.
+          to raise_error do |error|
+            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+            expect(error.message).
+              to include("No plugin sources available for aws-s3")
+          end
+      end
+    end
+
     context "with a gem from the default source, specified as a block" do
       let(:lockfile_fixture_name) { "block_source_rubygems.lock" }
       let(:gemfile_fixture_name) { "block_source_rubygems" }
