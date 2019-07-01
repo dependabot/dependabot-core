@@ -1,3 +1,7 @@
+## v0.110.12, 1 July 2019
+
+- Composer: Parse auth.json to fetch credentials
+
 ## v0.110.11, 1 July 2019
 
 - Python: Treat != requirements as unfixable
