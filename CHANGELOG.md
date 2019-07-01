@@ -1,3 +1,8 @@
+## v0.110.9, 1 July 2019
+
+- Ruby: Raise helpful error for plugin sources
+- Ruby: Skip requirements which include an or
+
 ## v0.110.8, 30 June 2019
 
 - Strip @ from branch name
