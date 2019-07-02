@@ -39,6 +39,7 @@ module Dependabot
           if @missing_sln_project_file_errors&.any?
             raise @missing_sln_project_file_errors.first
           end
+
           raise(
             Dependabot::DependencyFileNotFound,
             File.join(directory, "<anything>.(cs|vb|fs)proj")
