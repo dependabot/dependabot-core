@@ -186,8 +186,7 @@ module Dependabot
           new_version = latest_resolvable_version_with_no_unlock
           new_version && !new_version.to_s.start_with?(dependency.version)
         when :own
-          new_version = preferred_resolvable_version
-          new_version && !new_version.to_s.start_with?(dependency.version)
+          preferred_version_resolvable_with_unlock?
         when :all
           latest_version_resolvable_with_full_unlock?
         else raise "Unknown unlock level '#{requirements_to_unlock}'"
@@ -213,12 +212,24 @@ module Dependabot
           new_version = latest_resolvable_version_with_no_unlock
           new_version && new_version > version_class.new(dependency.version)
         when :own
-          new_version = preferred_resolvable_version
-          new_version && new_version > version_class.new(dependency.version)
+          preferred_version_resolvable_with_unlock?
         when :all
           latest_version_resolvable_with_full_unlock?
         else raise "Unknown unlock level '#{requirements_to_unlock}'"
         end
+      end
+
+      def preferred_version_resolvable_with_unlock?
+        new_version = preferred_resolvable_version
+        return false unless new_version
+
+        if existing_version_is_sha?
+          return false if new_version.to_s.start_with?(dependency.version)
+        elsif new_version <= version_class.new(dependency.version)
+          return false
+        end
+
+        updated_requirements.none? { |r| r[:requirement] == :unfixable }
       end
 
       def requirements_up_to_date?

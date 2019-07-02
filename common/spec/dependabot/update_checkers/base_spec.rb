@@ -322,6 +322,18 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
         it { is_expected.to be_falsey }
       end
+
+      context "but we don't know how to unlock the requirement" do
+        let(:updated_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: :unfixable,
+            groups: [],
+            source: nil
+          }]
+        end
+        it { is_expected.to be_falsey }
+      end
     end
 
     context "when the dependency is up-to-date" do
