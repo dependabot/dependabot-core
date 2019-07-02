@@ -4,6 +4,7 @@ require "open3"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/update_checker"
 require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
@@ -440,60 +441,42 @@ module Dependabot
         end
 
         def python_version
-          # TODO: Add better Python version detection using dependency versions
-          # (e.g., Django 2.x implies Python 3)
           @python_version ||=
             user_specified_python_version ||
-            python_version_matching_requirements ||
+            python_version_matching_imputed_requirements ||
             PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
         end
 
         def user_specified_python_version
-          file_version = python_version_file&.content&.strip
-          file_version ||= runtime_file_python_version
+          return unless python_requirement_parser.user_specified_requirement
 
-          return unless file_version
-          return unless pyenv_versions.include?("#{file_version}\n")
-
-          file_version
+          user_specified_requirement =
+            Dependabot::Python::Requirement.new(
+              python_requirement_parser.user_specified_requirement
+            )
+          python_version_matching([user_specified_requirement])
         end
 
-        def runtime_file_python_version
-          return unless runtime_file
-
-          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
+        def python_version_matching_imputed_requirements
+          compiled_file_python_requirement_markers =
+            python_requirement_parser.imputed_requirements.map do |r|
+              Dependabot::Python::Requirement.new(r)
+            end
+          python_version_matching(compiled_file_python_requirement_markers)
         end
 
-        def python_version_matching_requirements
+        def python_version_matching(requirements)
           PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
             version = Python::Version.new(version_string)
-            compiled_file_python_requirement_markers.all? do |req|
-              req.satisfied_by?(version)
-            end
+            requirements.all? { |req| req.satisfied_by?(version) }
           end
         end
 
-        def compiled_file_python_requirement_markers
-          @python_requirement_strings ||=
-            compiled_files.flat_map do |file|
-              file.content.lines.
-                select { |l| l.include?(";") && l.include?("python") }.
-                map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
-                compact.
-                map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
-                select do |r|
-                  requirement_class.new(r)
-                  true
-                rescue Gem::Requirement::BadRequirementError
-                  false
-                end
-            end
-
-          @python_requirement_strings.map { |r| requirement_class.new(r) }
-        end
-
-        def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
         end
 
         def pre_installed_python?(version)
@@ -514,18 +497,6 @@ module Dependabot
 
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
-        end
-
-        def python_version_file
-          dependency_files.find { |f| f.name == ".python-version" }
-        end
-
-        def runtime_file
-          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
-        end
-
-        def requirement_class
-          Python::Requirement
         end
       end
       # rubocop:enable Metrics/ClassLength
