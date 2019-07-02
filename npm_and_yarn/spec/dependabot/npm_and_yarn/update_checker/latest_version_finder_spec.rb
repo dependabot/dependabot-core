@@ -669,7 +669,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }.
-          to raise_error(described_class::RegistryError)
+          to raise_error do |err|
+            expect(err.class).to eq(described_class::RegistryError)
+            expect(err.status).to eq(404)
+          end
       end
 
       context "for a library dependency" do

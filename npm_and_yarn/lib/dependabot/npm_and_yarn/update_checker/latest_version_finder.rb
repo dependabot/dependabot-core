@@ -13,7 +13,14 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
-        class RegistryError < StandardError; end
+        class RegistryError < StandardError
+          attr_reader :status
+
+          def initialize(status, msg)
+            @status = status
+            super(msg)
+          end
+        end
 
         def initialize(dependency:, credentials:, dependency_files:,
                        ignored_versions:, security_advisories:)
@@ -314,7 +321,7 @@ module Dependabot
           return if status == 404 && dependency.version.nil?
 
           msg = "Got #{status} response with body #{npm_response.body}"
-          raise RegistryError, msg
+          raise RegistryError.new(status, msg)
         end
 
         def raise_npm_details_error(error)
