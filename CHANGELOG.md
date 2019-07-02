@@ -1,3 +1,9 @@
+## v0.110.14, 2 July 2019
+
+- .NET: Raise clearer file fetching error when a path in a .sln file can't be fetched
+- JS: Store status on registry errors
+- Python: Move Python version requirement detection into its own class
+
 ## v0.110.13, 2 July 2019
 
 - Don't treat dependencies where we can't update the requirement file as updatable
