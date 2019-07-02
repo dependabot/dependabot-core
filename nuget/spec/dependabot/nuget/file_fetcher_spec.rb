@@ -380,6 +380,28 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         )
     end
 
+    context "that can't be fetched" do
+      before do
+        stub_request(
+          :get,
+          File.join(url, "src/GraphQL.Common/GraphQL.Common.csproj?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(
+          :get,
+          File.join(url, "src/GraphQL.Common/packages.config?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("GraphQL.Common.csproj")
+          end
+      end
+    end
+
     context "that is nested in a src directory" do
       before do
         stub_request(:get, url + "?ref=sha").
