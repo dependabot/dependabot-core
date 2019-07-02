@@ -17,12 +17,12 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
-        # TODO: Parse setup.py and setup.cfg to get python requirement
         def user_specified_requirement
           pipfile_python_requirement ||
             pyproject_python_requirement ||
             python_version_file_version ||
-            runtime_file_python_version
+            runtime_file_python_version ||
+            setup_file_requirement
         end
 
         # TODO: Add better Python version detection using dependency versions
@@ -88,18 +88,12 @@ module Dependabot
           file_version
         end
 
-        def pipenv_python_requirement
-          pipfile_lock_python_version || pipfile_python_requirement
-        end
+        def setup_file_requirement
+          return unless setup_file
 
-        def pipfile_lock_python_version
-          return unless pipfile_lock
-
-          JSON.parse(pipfile_lock.content).dig(
-            "_meta",
-            "host-environment-markers",
-            "python_full_version"
-          )
+          setup_file.content.
+            match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)&.
+            named_captures&.fetch("req")&.strip
         end
 
         def pyenv_versions
@@ -140,12 +134,8 @@ module Dependabot
           dependency_files.find { |f| f.name == "pyproject.toml" }
         end
 
-        def setup_files
-          dependency_files.select { |f| f.name.end_with?("setup.py") }
-        end
-
-        def setup_cfg_files
-          dependency_files.select { |f| f.name.end_with?("setup.cfg") }
+        def setup_file
+          dependency_files.find { |f| f.name == "setup.py" }
         end
 
         def python_version_file
