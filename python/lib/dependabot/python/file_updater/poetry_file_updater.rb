@@ -6,10 +6,10 @@ require "dependabot/shared_helpers"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/python_versions"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileUpdater
@@ -232,17 +232,7 @@ module Dependabot
         end
 
         def python_version
-          pyproject_object = TomlRB.parse(prepared_pyproject)
-          poetry_object = pyproject_object.dig("tool", "poetry")
-
-          requirement =
-            poetry_object&.dig("dependencies", "python") ||
-            poetry_object&.dig("dev-dependencies", "python")
-
-          unless requirement
-            return python_version_file_version || runtime_file_python_version
-          end
-
+          requirement = user_specified_python_requirement
           requirements = Python::Requirement.requirements_array(requirement)
 
           PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
@@ -252,23 +242,15 @@ module Dependabot
           end
         end
 
-        def python_version_file_version
-          file_version = python_version_file&.content&.strip
-
-          return unless file_version
-          return unless pyenv_versions.include?("#{file_version}\n")
-
-          file_version
+        def user_specified_python_requirement
+          python_requirement_parser.user_specified_requirement
         end
 
-        def runtime_file_python_version
-          return unless runtime_file
-
-          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
-        end
-
-        def pyenv_versions
-          @pyenv_versions ||= run_poetry_command("pyenv install --list")
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
         end
 
         def pre_installed_python?(version)
@@ -335,16 +317,7 @@ module Dependabot
         def poetry_lock
           dependency_files.find { |f| f.name == "poetry.lock" }
         end
-
-        def python_version_file
-          dependency_files.find { |f| f.name == ".python-version" }
-        end
-
-        def runtime_file
-          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
-        end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

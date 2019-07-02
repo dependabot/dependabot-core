@@ -3,6 +3,7 @@
 require "toml-rb"
 require "open3"
 require "dependabot/python/requirement_parser"
+require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
@@ -385,37 +386,14 @@ module Dependabot
         end
 
         def user_specified_python_requirement
-          if pipfile_python_requirement&.match?(/^\d/)
-            return pipfile_python_requirement
-          end
-
-          python_version_file_version || runtime_file_python_version
+          python_requirement_parser.user_specified_requirement
         end
 
-        def python_version_file_version
-          file_version = python_version_file&.content&.strip
-
-          return unless file_version
-          return unless pyenv_versions.include?("#{file_version}\n")
-
-          file_version
-        end
-
-        def runtime_file_python_version
-          return unless runtime_file
-
-          runtime_file.content.match(/(?<=python-).*/)&.to_s&.strip
-        end
-
-        def pyenv_versions
-          @pyenv_versions ||= run_command("pyenv install --list")
-        end
-
-        def pipfile_python_requirement
-          parsed_pipfile = TomlRB.parse(pipfile.content)
-
-          parsed_pipfile.dig("requires", "python_full_version") ||
-            parsed_pipfile.dig("requires", "python_version")
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
         end
 
         def setup_cfg(file)
@@ -468,14 +446,6 @@ module Dependabot
 
         def requirements_files
           dependency_files.select { |f| f.name.end_with?(".txt") }
-        end
-
-        def python_version_file
-          dependency_files.find { |f| f.name == ".python-version" }
-        end
-
-        def runtime_file
-          dependency_files.find { |f| f.name.end_with?("runtime.txt") }
         end
 
         def pipenv_env_variables
