@@ -1,3 +1,9 @@
+## v0.110.13, 2 July 2019
+
+- Don't treat dependencies where we can't update the requirement file as updatable
+- JS: Bump npm from 6.9.0 to 6.9.2 in /npm_and_yarn/helpers
+- JS: Bump semver from 6.1.2 to 6.2.0 in /npm_and_yarn/helpers
+
 ## v0.110.12, 1 July 2019
 
 - Composer: Parse auth.json to fetch credentials
