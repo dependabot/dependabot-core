@@ -1,3 +1,9 @@
+## v0.110.15, 3 July 2019
+
+- Python: Add PipVersionResolver
+- Python: Parse setup.py python_requires lines
+- Fix rubocop
+
 ## v0.110.14, 2 July 2019
 
 - .NET: Raise clearer file fetching error when a path in a .sln file can't be fetched
