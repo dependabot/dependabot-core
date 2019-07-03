@@ -115,13 +115,43 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
-    context "without a Pipfile or pip-compile file" do
+    context "with a requirements file only" do
       let(:dependency_files) { [requirements_file] }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
         it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+      end
+
+      context "and a .python-version file" do
+        let(:dependency_files) { [requirements_file, python_version_file] }
+        let(:python_version_file) do
+          Dependabot::DependencyFile.new(
+            name: ".python-version",
+            content: python_version_content
+          )
+        end
+        let(:python_version_content) { "3.7.0\n" }
+        let(:pypi_response) { fixture("pypi_simple_response_django.html") }
+        let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+        let(:dependency_name) { "django" }
+        let(:dependency_version) { "1.2.4" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: "==1.2.4",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+
+        context "that disallows the latest version" do
+          let(:python_version_content) { "2.7.13\n" }
+          it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+        end
       end
     end
 

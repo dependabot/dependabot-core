@@ -16,6 +16,7 @@ module Dependabot
       require_relative "update_checker/poetry_version_resolver"
       require_relative "update_checker/pipenv_version_resolver"
       require_relative "update_checker/pip_compile_version_resolver"
+      require_relative "update_checker/pip_version_resolver"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/latest_version_finder"
 
@@ -45,10 +46,7 @@ module Dependabot
               requirement: unlocked_requirement_string
             )
           when :requirements
-            # pip doesn't (yet) do any dependency resolution, so if we don't
-            # have a Pipfile or a pip-compile file, we just return the latest
-            # version.
-            latest_version
+            pip_version_resolver.latest_resolvable_version
           else raise "Unexpected resolver type #{resolver_type}"
           end
       end
@@ -69,7 +67,7 @@ module Dependabot
               requirement: current_requirement_string
             )
           when :requirements
-            latest_pip_version_with_no_unlock
+            pip_version_resolver.latest_resolvable_version_with_no_unlock
           else raise "Unexpected resolver type #{resolver_type}"
           end
       end
@@ -121,7 +119,10 @@ module Dependabot
       def fetch_lowest_resolvable_security_fix_version
         fix_version = latest_version_finder.lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
-        return fix_version if resolver_type == :requirements
+
+        if resolver_type == :requirements
+          return pip_version_resolver.lowest_resolvable_security_fix_version
+        end
 
         resolver =
           case resolver_type
@@ -186,6 +187,16 @@ module Dependabot
         @poetry_version_resolver ||= PoetryVersionResolver.new(resolver_args)
       end
 
+      def pip_version_resolver
+        @pip_version_resolver ||= PipVersionResolver.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          security_advisories: security_advisories
+        )
+      end
+
       def resolver_args
         {
           dependency: dependency,
@@ -241,10 +252,6 @@ module Dependabot
 
       def fetch_latest_version
         latest_version_finder.latest_version
-      end
-
-      def latest_pip_version_with_no_unlock
-        latest_version_finder.latest_version_with_no_unlock
       end
 
       def latest_version_finder
