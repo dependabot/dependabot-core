@@ -4,45 +4,67 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/composer/file_updater"
 require "dependabot/composer/version"
+require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Composer
     class FileUpdater
       class LockfileUpdater
         require_relative "manifest_updater"
 
+        class MissingExtensions < StandardError
+          attr_reader :extensions
+
+          def initialize(extensions)
+            @extensions = extensions
+            super
+          end
+        end
+
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @composer_platform_extensions = {}
         end
 
         def updated_lockfile_content
+          @updated_lockfile_content ||= generate_updated_lockfile_content
+        rescue MissingExtensions => e
+          previous_extensions = composer_platform_extensions.dup
+          update_required_extensions(e.extensions)
+          raise if previous_extensions == composer_platform_extensions
+
+          retry
+        end
+
+        private
+
+        attr_reader :dependencies, :dependency_files, :credentials,
+                    :composer_platform_extensions
+
+        def generate_updated_lockfile_content
           base_directory = dependency_files.first.directory
-          @updated_lockfile_content ||=
-            SharedHelpers.in_a_temporary_directory(base_directory) do
-              write_temporary_dependency_files
+          SharedHelpers.in_a_temporary_directory(base_directory) do
+            write_temporary_dependency_files
 
-              updated_content = run_update_helper.fetch("composer.lock")
+            updated_content = run_update_helper.fetch("composer.lock")
 
-              updated_content = post_process_lockfile(updated_content)
-              if lockfile.content == updated_content
-                raise "Expected content to change!"
-              end
-
-              updated_content
+            updated_content = post_process_lockfile(updated_content)
+            if lockfile.content == updated_content
+              raise "Expected content to change!"
             end
+
+            updated_content
+          end
         rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0
           retry_count += 1
           retry if transitory_failure?(e) && retry_count <= 1
           handle_composer_errors(e)
         end
-
-        private
-
-        attr_reader :dependencies, :dependency_files, :credentials
 
         def dependency
           # For now, we'll only ever be updating a single dependency for PHP
@@ -87,6 +109,17 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
+          if error.message.include?("package requires php") ||
+             error.message.include?("requested PHP extension")
+            missing_extensions =
+              error.message.scan(/\sext\-.*? .*?\s|(?<=requires )php .*?\s/).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ")
+                { name: name, requirement: requirement }
+              end
+            raise MissingExtensions, missing_extensions
+          end
+
           if error.message.start_with?("Failed to execute git checkout")
             raise git_dependency_reference_error(error)
           end
@@ -152,8 +185,8 @@ module Dependabot
         end
 
         def locked_composer_json_content
-          dependencies.
-            reduce(updated_composer_json_content) do |content, dep|
+          tmp_content =
+            dependencies.reduce(updated_composer_json_content) do |content, dep|
               updated_req = dep.version
               next content unless Composer::Version.correct?(updated_req)
 
@@ -174,6 +207,17 @@ module Dependabot
                 declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
               end
             end
+
+          json = JSON.parse(tmp_content)
+
+          composer_platform_extensions.each do |extension, requirements|
+            json["config"] ||= {}
+            json["config"]["platform"] ||= {}
+            json["config"]["platform"][extension] =
+              version_for_reqs(requirements)
+          end
+
+          JSON.dump(json)
         end
 
         def git_dependency_reference_error(error)
@@ -192,7 +236,8 @@ module Dependabot
 
         def post_process_lockfile(content)
           content = replace_patches(content)
-          replace_content_hash(content)
+          content = replace_content_hash(content)
+          replace_platform_overrides(content)
         end
 
         def replace_patches(updated_content)
@@ -236,6 +281,52 @@ module Dependabot
               )
 
             content.gsub(existing_hash, content_hash)
+          end
+        end
+
+        def replace_platform_overrides(content)
+          original_object = JSON.parse(lockfile.content)
+          original_overrides = original_object.fetch("platform-overrides", nil)
+
+          updated_object = JSON.parse(content)
+
+          if original_object.key?("platform-overrides")
+            updated_object["platform-overrides"] = original_overrides
+          else
+            updated_object.delete("platform-overrides")
+          end
+
+          JSON.pretty_generate(updated_object, indent: "    ").
+            gsub(/\[\n\n\s*\]/, "[]").
+            gsub(/\}\z/, "}\n")
+        end
+
+        def version_for_reqs(requirements)
+          req_array = requirements.map { |str| Composer::Requirement.new(str) }
+          potential_versions =
+            req_array.map do |req|
+              op, version = req.requirements.first
+              case op
+              when ">" then version.bump
+              when "<" then Composer::Version.new("0.0.1")
+              else version
+              end
+            end
+
+          version = potential_versions.
+                    find { |v| req_array.all? { |r| r.satisfied_by?(v) } }
+          raise "No matching version for #{requirements}!" unless version
+
+          version.to_s
+        end
+
+        def update_required_extensions(additional_extensions)
+          additional_extensions.each do |ext|
+            composer_platform_extensions[ext.fetch(:name)] ||= []
+            composer_platform_extensions[ext.fetch(:name)] +=
+              [ext.fetch(:requirement)]
+            composer_platform_extensions[ext.fetch(:name)] =
+              composer_platform_extensions[ext.fetch(:name)].uniq
           end
         end
 
@@ -284,3 +375,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

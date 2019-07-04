@@ -105,8 +105,38 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
 
         it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
+        end
+      end
+
+      context "and an extension is specified that we don't have" do
+        let(:manifest_fixture_name) { "missing_extension" }
+        let(:lockfile_fixture_name) { "missing_extension" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "illuminate/support",
+            version: "5.4.36",
+            requirements: [{
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }],
+            previous_version: "5.2.7",
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "^5.2.0",
+              groups: ["runtime"],
+              source: nil
+            }],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v5.4.36\"")
           expect(updated_lockfile_content).
-            to include("\"version\":\"v5.4.36\"")
+            to include("\"platform-overrides\":{\"php\":\"5.6.4\"}")
         end
       end
     end
