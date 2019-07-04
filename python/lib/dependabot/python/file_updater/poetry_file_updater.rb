@@ -232,18 +232,15 @@ module Dependabot
         end
 
         def python_version
-          requirement = user_specified_python_requirement
-          requirements = Python::Requirement.requirements_array(requirement)
+          requirements = python_requirement_parser.user_specified_requirements
+          requirements = requirements.
+                         map { |r| Python::Requirement.requirements_array(r) }
 
           PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
-            requirements.any? do |r|
-              r.satisfied_by?(Python::Version.new(version))
+            requirements.all? do |reqs|
+              reqs.any? { |r| r.satisfied_by?(Python::Version.new(version)) }
             end
           end
-        end
-
-        def user_specified_python_requirement
-          python_requirement_parser.user_specified_requirement
         end
 
         def python_requirement_parser

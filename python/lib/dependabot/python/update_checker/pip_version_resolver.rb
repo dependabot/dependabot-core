@@ -54,13 +54,14 @@ module Dependabot
         end
 
         def user_specified_python_version
-          return unless python_requirement_parser.user_specified_requirement
+          unless python_requirement_parser.user_specified_requirements.any?
+            return
+          end
 
-          user_specified_requirement =
-            Dependabot::Python::Requirement.new(
-              python_requirement_parser.user_specified_requirement
-            )
-          python_version_matching([user_specified_requirement])
+          user_specified_requirements =
+            python_requirement_parser.user_specified_requirements.
+            map { |r| Python::Requirement.requirements_array(r) }
+          python_version_matching(user_specified_requirements)
         end
 
         def python_version_matching_imputed_requirements
@@ -74,7 +75,11 @@ module Dependabot
         def python_version_matching(requirements)
           PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
             version = Python::Version.new(version_string)
-            requirements.all? { |req| req.satisfied_by?(version) }
+            requirements.all? do |req|
+              next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
+
+              req.satisfied_by?(version)
+            end
           end
         end
 

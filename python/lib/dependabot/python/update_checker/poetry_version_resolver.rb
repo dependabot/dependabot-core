@@ -189,11 +189,26 @@ module Dependabot
         end
 
         def python_version
-          requirement = user_specified_python_requirement
-          requirements = Python::Requirement.requirements_array(requirement)
+          requirements = python_requirement_parser.user_specified_requirements
+          requirements = requirements.
+                         map { |r| Python::Requirement.requirements_array(r) }
+
+          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
+            requirements.all? do |reqs|
+              reqs.any? { |r| r.satisfied_by?(Python::Version.new(version)) }
+            end
+          end
+        end
+
+        def python_version
+          requirements = python_requirement_parser.user_specified_requirements
+          requirements = requirements.
+                         map { |r| Python::Requirement.requirements_array(r) }
 
           version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
-            requirements.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
+            requirements.all? do |reqs|
+              reqs.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
+            end
           end
           return version if version
 
@@ -202,10 +217,6 @@ module Dependabot
                 "following Python versions are supported in Dependabot: "\
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
-        end
-
-        def user_specified_python_requirement
-          python_requirement_parser.user_specified_requirement
         end
 
         def python_requirement_parser

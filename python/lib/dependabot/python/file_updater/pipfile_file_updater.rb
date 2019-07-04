@@ -386,7 +386,7 @@ module Dependabot
         end
 
         def user_specified_python_requirement
-          python_requirement_parser.user_specified_requirement
+          python_requirement_parser.user_specified_requirements.first
         end
 
         def python_requirement_parser

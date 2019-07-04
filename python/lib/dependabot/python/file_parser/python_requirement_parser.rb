@@ -17,12 +17,14 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
-        def user_specified_requirement
-          pipfile_python_requirement ||
-            pyproject_python_requirement ||
-            python_version_file_version ||
-            runtime_file_python_version ||
+        def user_specified_requirements
+          [
+            pipfile_python_requirement,
+            pyproject_python_requirement,
+            python_version_file_version,
+            runtime_file_python_version,
             setup_file_requirement
+          ].compact
         end
 
         # TODO: Add better Python version detection using dependency versions
