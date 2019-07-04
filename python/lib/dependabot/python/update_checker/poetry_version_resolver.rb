@@ -193,18 +193,6 @@ module Dependabot
           requirements = requirements.
                          map { |r| Python::Requirement.requirements_array(r) }
 
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version|
-            requirements.all? do |reqs|
-              reqs.any? { |r| r.satisfied_by?(Python::Version.new(version)) }
-            end
-          end
-        end
-
-        def python_version
-          requirements = python_requirement_parser.user_specified_requirements
-          requirements = requirements.
-                         map { |r| Python::Requirement.requirements_array(r) }
-
           version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
             requirements.all? do |reqs|
               reqs.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
