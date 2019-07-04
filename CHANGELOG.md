@@ -1,3 +1,7 @@
+## v0.110.16, 4 July 2019
+
+- JS: Bump npm from 6.9.2 to 6.10.0 in /npm_and_yarn/helpers
+
 ## v0.110.15, 3 July 2019
 
 - Python: Add PipVersionResolver
