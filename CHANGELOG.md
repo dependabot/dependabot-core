@@ -1,3 +1,9 @@
+## v0.110.17, 4 July 2019
+
+- Python: Handle unparseable python_requires values in setup.py
+- Handle commit messages that are just a newline
+- Python: Better Python requirement parsing
+
 ## v0.110.16, 4 July 2019
 
 - JS: Bump npm from 6.9.2 to 6.10.0 in /npm_and_yarn/helpers
