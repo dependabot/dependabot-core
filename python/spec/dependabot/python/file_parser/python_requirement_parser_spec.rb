@@ -47,6 +47,11 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
         let(:fixture_name) { "setup.py" }
         it { is_expected.to eq([]) }
       end
+
+      context "that has a requirement we can't parse" do
+        let(:fixture_name) { "unparseable_python_requires.py" }
+        it { is_expected.to eq([]) }
+      end
     end
   end
 end

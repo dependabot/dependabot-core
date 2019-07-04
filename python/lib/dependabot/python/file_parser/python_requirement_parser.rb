@@ -93,9 +93,14 @@ module Dependabot
         def setup_file_requirement
           return unless setup_file
 
-          setup_file.content.
-            match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)&.
-            named_captures&.fetch("req")&.strip
+          req = setup_file.content.
+                match(/python_requires\s*=\s*['"](?<req>[^'"]+)['"]/)&.
+                named_captures&.fetch("req")&.strip
+
+          requirement_class.new(req)
+          req
+        rescue Gem::Requirement::BadRequirementError
+          nil
         end
 
         def pyenv_versions
