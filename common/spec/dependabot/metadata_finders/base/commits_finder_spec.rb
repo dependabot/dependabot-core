@@ -612,6 +612,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                           "0bfb8c3f0d2701abf9248185beeb8adf643374f6"
               },
               {
+                message: "\n",
+                sha: "5555535ff2aa9d7ce0403d7fd4aa010d94723076",
+                html_url: "https://github.com/gocardless/business/commit/"\
+                          "5555535ff2aa9d7ce0403d7fd4aa010d94723076"
+              },
+              {
                 message: "Allow custom calendars",
                 sha: "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076",
                 html_url: "https://github.com/gocardless/business/commit/"\

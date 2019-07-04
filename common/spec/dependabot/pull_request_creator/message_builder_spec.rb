@@ -66,6 +66,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
 
+  # rubocop:disable Metrics/MethodLength
   def commits_details(base:, head:)
     "<details>\n"\
     "<summary>Commits</summary>\n\n"\
@@ -77,6 +78,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "gocardless/business/issues/9)] Allow custom calendars\n"\
     "- [`1c72c35`](https://github.com/gocardless/business/commit/"\
     "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076) Allow custom calendars\n"\
+    "- [`5555535`](https://github.com/gocardless/business/commit/"\
+    "5555535ff2aa9d7ce0403d7fd4aa010d94723076) \n"\
     "- [`0bfb8c3`](https://github.com/gocardless/business/commit/"\
     "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing: [#5]"\
     "(https://github-redirect.dependabot.com/my/repo/pull/5)\n"\
@@ -92,6 +95,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "compare/#{base}...#{head})\n"\
     "</details>\n"
   end
+  # rubocop:enable Metrics/MethodLength
 
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
