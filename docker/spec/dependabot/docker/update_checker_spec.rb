@@ -155,6 +155,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when there are also date-like versions" do
+      let(:tags_fixture_name) { "windows-servercore.json" }
+      let(:version) { "10.0.16299.1087" }
+
+      it { is_expected.to eq("10.0.18362.175") }
+
+      context "and we're using one" do
+        let(:version) { "1803" }
+        it { is_expected.to eq("1903") }
+      end
+    end
+
     context "when there is a latest tag" do
       let(:tags_fixture_name) { "ubuntu.json" }
       let(:headers_response) do

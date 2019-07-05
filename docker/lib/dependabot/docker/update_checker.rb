@@ -12,7 +12,8 @@ require "dependabot/docker/utils/credentials_finder"
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[a-z0-9]+)*)/i.freeze
+      VERSION_REGEX =
+        /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
       VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
       VERSION_WITH_PFX_AND_SFX =
@@ -130,11 +131,13 @@ module Dependabot
       def comparable_tags_from_registry
         original_prefix = prefix_of(dependency.version)
         original_suffix = suffix_of(dependency.version)
+        original_format = format_of(dependency.version)
 
         tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
           select { |tag| prefix_of(tag) == original_prefix }.
           select { |tag| suffix_of(tag) == original_suffix }.
+          select { |tag| format_of(tag) == original_format }.
           reject { |tag| commit_sha_suffix?(tag) }
       end
 
@@ -251,8 +254,19 @@ module Dependabot
         tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
+      def format_of(tag)
+        version = numeric_version_from(tag)
+
+        return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
+        return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+
+        :normal
+      end
+
       def prerelease?(tag)
-        return true if numeric_version_from(tag).match?(/[a-zA-Z]/)
+        if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
+          return true
+        end
 
         # If we're dealing with a numeric version we can compare it against
         # the digest for the `latest` tag.
