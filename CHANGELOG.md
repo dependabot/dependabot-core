@@ -1,3 +1,9 @@
+## v0.111.0, 5 July 2019
+
+- PHP: Composer missing extension support
+- Python: Fix typo
+- Python: Bump poetry from 0.12.16 to 0.12.17 in /python/helpers
+
 ## v0.110.17, 4 July 2019
 
 - Python: Handle unparseable python_requires values in setup.py
