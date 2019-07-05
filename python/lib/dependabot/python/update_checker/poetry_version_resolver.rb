@@ -200,8 +200,8 @@ module Dependabot
           end
           return version if version
 
-          msg = "Dependabot detected the following Python requirement "\
-                "for your project: '#{requirement}'.\n\nCurrently, the "\
+          msg = "Dependabot detected the following Python requirements "\
+                "for your project: '#{requirements}'.\n\nCurrently, the "\
                 "following Python versions are supported in Dependabot: "\
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
