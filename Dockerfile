@@ -67,7 +67,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.11 && cd - \
+    && cd /usr/local/.pyenv && git checkout v1.2.12 && cd - \
     && pyenv install 3.7.3 \
     && pyenv install 2.7.16 \
     && pyenv global 3.7.3
@@ -125,7 +125,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.1/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.2/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
@@ -133,13 +133,9 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.33.0
-# RUSTUP_USE_CURL is necessary because rustup <=1.17.0 doesn't support proxy
-# authentication. We can remove it once something later than 1.17.0 is out as
-# https://github.com/rust-lang/rustup.rs/pull/1746 should have fixed the issue.
+# Install Rust 1.36.0
 ENV RUSTUP_HOME=/opt/rust \
-    PATH="${PATH}:/opt/rust/bin" \
-    RUSTUP_USE_CURL=1
+    PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 
