@@ -12,11 +12,11 @@ require "dependabot/docker/utils/credentials_finder"
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[a-zA-Z0-9]+)*)/.freeze
-      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/.freeze
-      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/.freeze
+      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[a-z0-9]+)*)/i.freeze
+      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
+      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
       VERSION_WITH_PFX_AND_SFX =
-        /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/.
+        /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i.
         freeze
       NAME_WITH_VERSION =
         /
