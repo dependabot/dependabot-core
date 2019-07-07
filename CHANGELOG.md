@@ -1,3 +1,11 @@
+## v0.111.1, 7 July 2019
+
+- Sanitize `gh-` links (i.e., handle lowercase)
+- Python: Bump cython from 0.29.11 to 0.29.12 in /python/helpers
+- Docker: Handle versions with a KB prefix (imperfectly...)
+- Docker: Allow uppercase prefixes and suffixes
+- Update Pyenv, Elixir and Rust versions
+
 ## v0.111.0, 5 July 2019
 
 - PHP: Composer missing extension support
