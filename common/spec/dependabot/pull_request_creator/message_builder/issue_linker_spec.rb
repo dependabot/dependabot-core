@@ -63,5 +63,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::IssueLinker do
           to eq("This is a [GH-19](https://github.com/a/b/issues/19) link")
       end
     end
+
+    context "with a gh-12 link" do
+      let(:text) { "This is a gh-19 link" }
+
+      it "links the issue" do
+        expect(link_issues).
+          to eq("This is a [gh-19](https://github.com/a/b/issues/19) link")
+      end
+    end
   end
 end
