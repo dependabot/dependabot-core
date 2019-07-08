@@ -1,3 +1,7 @@
+## v0.111.3, 8 July 2019
+
+- Fix typo
+
 ## v0.111.2, 8 July 2019
 
 - Mark fetched symlinks as symlinks, and update the target when updating
