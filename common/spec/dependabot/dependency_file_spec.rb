@@ -66,6 +66,44 @@ RSpec.describe Dependabot::DependencyFile do
     end
   end
 
+  describe "#to_h" do
+    subject { file.to_h }
+
+    context "with a non-symlink" do
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false
+        )
+      end
+    end
+
+    context "with a symlink" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          type: "symlink",
+          symlink_target: "nested/Gemfile"
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "symlink",
+          "support_file" => false,
+          "symlink_target" => "nested/Gemfile"
+        )
+      end
+    end
+  end
+
   describe "#==" do
     context "when two dependency files are equal" do
       let(:file1) { described_class.new(name: "Gemfile", content: "a") }

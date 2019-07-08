@@ -196,6 +196,38 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "with a symlink" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "manifesto",
+            type: "symlink",
+            content: "codes",
+            symlink_target: "nested/manifesto"
+          )
+        ]
+      end
+
+      it "pushes a commit to GitHub" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [{
+                   path: "nested/manifesto",
+                   mode: "100644",
+                   type: "blob",
+                   content: "codes"
+                 }]
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/git/commits")
+      end
+    end
+
     context "when the repo doesn't exist" do
       before do
         stub_request(:get, repo_api_url).

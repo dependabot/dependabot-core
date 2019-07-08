@@ -156,6 +156,38 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
     end
 
+    context "with a symlink" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "manifesto",
+            type: "symlink",
+            content: "codes",
+            symlink_target: "nested/manifesto"
+          )
+        ]
+      end
+
+      it "pushes a commit to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [{
+                   path: "nested/manifesto",
+                   mode: "100644",
+                   type: "blob",
+                   content: "codes"
+                 }]
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
     it "has the right commit message" do
       updater.update
 

@@ -83,12 +83,14 @@ module Dependabot
 
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
+        type = @linked_paths.key?(path) ? "symlink" : type
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
-          content: _fetch_file_content(path, fetch_submodules: fetch_submodules)
+          content: content
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
@@ -327,6 +329,7 @@ module Dependabot
         raise Octokit::NotFound if tmp.is_a?(Array)
 
         if tmp.type == "symlink"
+          @linked_paths[path] = tmp.target
           tmp = github_client.contents(
             repo,
             path: tmp.target,

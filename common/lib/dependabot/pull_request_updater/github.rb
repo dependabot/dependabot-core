@@ -124,9 +124,9 @@ module Dependabot
 
       def create_tree
         file_trees = files.map do |file|
-          if file.type == "file"
+          if %w(file symlink).include?(file.type)
             {
-              path: file.path.sub(%r{^/}, ""),
+              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
               mode: "100644",
               type: "blob",
               content: file.content

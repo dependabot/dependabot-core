@@ -97,11 +97,19 @@ module Dependabot
         end
 
         actions = files.map do |file|
-          {
-            action: "update",
-            file_path: file.path,
-            content: file.content
-          }
+          if file.type == "symlink"
+            {
+              action: "update",
+              file_path: file.symlink_target,
+              content: file.content
+            }
+          else
+            {
+              action: "update",
+              file_path: file.path,
+              content: file.content
+            }
+          end
         end
 
         gitlab_client_for_source.create_commit(
