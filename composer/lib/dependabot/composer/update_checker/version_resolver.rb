@@ -239,9 +239,11 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
 
         def version_for_reqs(requirements)
-          req_array = requirements.map { |str| Composer::Requirement.new(str) }
+          req_arrays =
+            requirements.
+            map { |str| Composer::Requirement.requirements_array(str) }
           potential_versions =
-            req_array.map do |req|
+            req_arrays.flatten.map do |req|
               op, version = req.requirements.first
               case op
               when ">" then version.bump
@@ -250,8 +252,11 @@ module Dependabot
               end
             end
 
-          version = potential_versions.
-                    find { |v| req_array.all? { |r| r.satisfied_by?(v) } }
+          version =
+            potential_versions.
+            find do |v|
+              req_arrays.any? { |reqs| reqs.all? { |r| r.satisfied_by?(v) } }
+            end
           raise "No matching version for #{requirements}!" unless version
 
           version.to_s
