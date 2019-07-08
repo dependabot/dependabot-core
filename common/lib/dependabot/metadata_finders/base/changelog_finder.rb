@@ -137,16 +137,22 @@ module Dependabot
             reject { |f| f.size > 1_000_000 }.
             reject { |f| f.size < 100 }
 
+          select_best_changelog(files)
+        end
+
+        def select_best_changelog(files)
           CHANGELOG_NAMES.each do |name|
             candidates = files.select { |f| f.name =~ /#{name}/i }
             file = candidates.first if candidates.one?
             file ||=
               candidates.find do |f|
                 candidates -= [f] && next if fetch_file_text(f).nil?
-                ChangelogPruner.new(
+                pruner = ChangelogPruner.new(
                   dependency: dependency,
                   changelog_text: fetch_file_text(f)
-                ).includes_new_version?
+                )
+                pruner.includes_new_version? ||
+                  pruner.includes_previous_version?
               end
             file ||= candidates.max_by(&:size)
             return file if file
