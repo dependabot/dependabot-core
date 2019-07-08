@@ -1,3 +1,10 @@
+## v0.111.2, 8 July 2019
+
+- Mark fetched symlinks as symlinks, and update the target when updating
+- Maven/Gradle: Make version classes consistent
+- Look for previous version in changelogs as well as new version
+- Composer: Handle PHP requirements with an OR condition
+
 ## v0.111.1, 7 July 2019
 
 - Sanitize `gh-` links (i.e., handle lowercase)
