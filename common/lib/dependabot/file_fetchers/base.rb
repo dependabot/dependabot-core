@@ -84,13 +84,14 @@ module Dependabot
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = @linked_paths.key?(path) ? "symlink" : type
+        type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
-          content: content
+          content: content,
+          symlink_target: @linked_paths.dig(path.gsub(%r{^/}, ""), :path)
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
@@ -323,16 +324,22 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
       def _fetch_file_content_from_github(path, repo, commit)
         tmp = github_client.contents(repo, path: path, ref: commit)
 
         raise Octokit::NotFound if tmp.is_a?(Array)
 
         if tmp.type == "symlink"
-          @linked_paths[path] = tmp.target
+          @linked_paths[path] = {
+            repo: repo,
+            provider: "github",
+            commit: commit,
+            path: Pathname.new(tmp.target).cleanpath.to_path
+          }
           tmp = github_client.contents(
             repo,
-            path: tmp.target,
+            path: Pathname.new(tmp.target).cleanpath.to_path,
             ref: commit
           )
         end
@@ -354,6 +361,7 @@ module Dependabot
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
 
       def default_branch_for_repo
         @default_branch_for_repo ||= client_for_provider.
