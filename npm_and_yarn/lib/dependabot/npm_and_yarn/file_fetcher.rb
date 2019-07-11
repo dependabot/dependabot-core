@@ -171,9 +171,14 @@ module Dependabot
         current_dir = nil if current_dir == ""
         path_dep_starts = %w(file: / ./ ../ ~/ link:.)
 
-        dependency_objects =
-          JSON.parse(file.content).
-          values_at(*NpmAndYarn::FileParser::DEPENDENCY_TYPES).compact
+        # Fetch yarn "file:" path "resolutions" so that we can resolve the
+        # lockfile. This pattern seems to be used to replace a sub-dependency
+        # with a local mock version.
+        dependency_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES +
+                           ["resolutions"]
+        dependency_objects = JSON.parse(file.content).
+                             values_at(*dependency_types).
+                             compact
 
         unless dependency_objects.all? { |o| o.is_a?(Hash) }
           raise Dependabot::DependencyFileNotParseable, file.path
