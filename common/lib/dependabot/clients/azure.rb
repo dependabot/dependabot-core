@@ -123,7 +123,8 @@ module Dependabot
         JSON.parse(response.body).fetch("value")
       end
 
-      def create_commit(branch_name, base_commit, commit_message, files)
+      def create_commit(branch_name, base_commit, commit_message, files,
+                        author_details)
         content = {
           refUpdates: [
             { name: "refs/heads/" + branch_name, oldObjectId: base_commit }
@@ -131,6 +132,7 @@ module Dependabot
           commits: [
             {
               comment: commit_message,
+              author: author_details,
               changes: files.map do |file|
                 {
                   changeType: "edit",
@@ -141,7 +143,7 @@ module Dependabot
                   }
                 }
               end
-            }
+            }.compact
           ]
         }
 
@@ -152,7 +154,8 @@ module Dependabot
 
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels)
-        # Azure DevOps only support descriptions up to 4000 characters (https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html)
+        # Azure DevOps only support descriptions up to 4000 characters
+        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         azure_max_length = 3999
         if pr_description.length > azure_max_length
           truncated_msg = "...\n\n_Description has been truncated_"

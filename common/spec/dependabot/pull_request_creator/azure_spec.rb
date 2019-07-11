@@ -16,6 +16,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       commit_message: commit_message,
       pr_description: pr_description,
       pr_name: pr_name,
+      author_details: author_details,
       labeler: labeler
     )
   end
@@ -41,12 +42,9 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:approvers) { nil }
   let(:assignee) { nil }
   let(:milestone) { nil }
-  let(:dep_source) do
-    Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
-  end
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
-      source: dep_source,
+      source: source,
       credentials: credentials,
       custom_labels: custom_labels,
       includes_security_fixes: false,
@@ -61,7 +59,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       name: "business",
       version: "1.5.0",
       previous_version: "1.4.0",
-      package_manager: "bundler",
+      package_manager: "dummy",
       requirements: [],
       previous_requirements: []
     )
@@ -104,24 +102,64 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
     stub_request(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
       to_return(status: 200,
                 headers: json_header)
-
-    # dependency lookups
-    stub_request(
-      :get,
-      "https://api.github.com/repos/gocardless/bump/labels?per_page=100"
-    ).to_return(status: 200,
-                body: fixture("gitlab", "labels_with_dependencies.json"),
-                headers: json_header)
   end
 
   describe "#create" do
-    it "pushes a commit to GitLab and creates a pull request" do
+    it "pushes a commit to Azure and creates a pull request" do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0")
+        to(
+          have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
+            with do |req|
+              json_body = JSON.parse(req.body)
+              expect(json_body.fetch("commits").count).to eq(1)
+              expect(json_body.fetch("commits").first.keys).
+                to_not include("author")
+            end
+        )
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+    end
+
+    context "with author details provided" do
+      let(:author_details) do
+        { email: "support@dependabot.com", name: "dependabot" }
+      end
+
+      it "includes the author details in the commit" do
+        creator.create
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
+              with do |req|
+                json_body = JSON.parse(req.body)
+                expect(json_body.fetch("commits").count).to eq(1)
+                expect(json_body.fetch("commits").first.fetch("author")).
+                  to eq(author_details.transform_keys(&:to_s))
+              end
+          )
+      end
+
+      context "but are an empty hash" do
+        let(:author_details) { {} }
+
+        it "does not include the author details in the commit" do
+          creator.create
+
+          expect(WebMock).
+            to(
+              have_requested(:post, "#{repo_api_url}/pushes?api-version=5.0").
+                with do |req|
+                  json_body = JSON.parse(req.body)
+                  expect(json_body.fetch("commits").count).to eq(1)
+                  expect(json_body.fetch("commits").first.keys).
+                    to_not include("author")
+                end
+            )
+        end
+      end
     end
 
     context "when the branch already exists" do
@@ -151,73 +189,24 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           )
         end
 
-        context "and the commit doesn't already exists on that branch" do
-          before do
-            stub_request(
-              :get,
-              "#{repo_api_url}/commits?" \
-                "searchCriteria.itemVersion.version=" + branch_name
-            ).to_return(status: 200,
-                        body: fixture("azure", "commits_with_existing.json"),
-                        headers: json_header)
-          end
+        it "creates a commit and pull request with the right details" do
+          expect(creator.create).to_not be_nil
 
-          it "creates a commit and pull request with the right details" do
-            expect(creator.create).to_not be_nil
-
-            expect(WebMock).
-              to have_requested(
-                :post,
-                "#{repo_api_url}/pushes?api-version=5.0"
-              )
-            expect(WebMock).
-              to have_requested(
-                :post,
-                "#{repo_api_url}/pullrequests?api-version=5.0"
-              )
-          end
-        end
-
-        context "and a commit already exists on that branch" do
-          before do
-            stub_request(
-              :get,
-              "#{repo_api_url}/commits?" \
-                "searchCriteria.itemVersion.version=" + branch_name
-            ).to_return(
-              status: 200,
-              body: fixture("azure", "commits_with_existing.json"),
-              headers: json_header
+          expect(WebMock).
+            to have_requested(
+              :post,
+              "#{repo_api_url}/pushes?api-version=5.0"
             )
-          end
-
-          it "creates a pull request but not a commit" do
-            expect(creator.create).to_not be_nil
-
-            expect(WebMock).
-              to have_requested(
-                :post,
-                "#{repo_api_url}/pushes?api-version=5.0"
-              )
-            expect(WebMock).
-              to have_requested(
-                :post,
-                "#{repo_api_url}/pullrequests?api-version=5.0"
-              )
-          end
+          expect(WebMock).
+            to have_requested(
+              :post,
+              "#{repo_api_url}/pullrequests?api-version=5.0"
+            )
         end
       end
 
       context "and a pull request to this branch already exists" do
         before do
-          stub_request(
-            :get,
-            "#{repo_api_url}/commits?" \
-              "searchCriteria.itemVersion.version=" + branch_name
-          ).to_return(status: 200,
-                      body: fixture("azure", "commits_with_existing.json"),
-                      headers: json_header)
-
           stub_request(
             :get,
             "#{repo_api_url}/pullrequests?searchCriteria.status=all" \

@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Clients::Azure do
     described_class.for_source(source: source, credentials: credentials)
   end
 
-  describe ".fetch_commit" do
+  describe "#fetch_commit" do
     subject { client.fetch_commit(nil, branch) }
 
     context "when response is 200" do
@@ -47,6 +47,65 @@ RSpec.describe Dependabot::Clients::Azure do
 
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
+  describe "#create_commit" do
+    subject(:create_commit) do
+      client.create_commit(
+        "master",
+        "base-sha",
+        "Commit message",
+        [],
+        author_details
+      )
+    end
+
+    let(:commit_url) { repo_url + "/pushes?api-version=5.0" }
+
+    before do
+      stub_request(:post, commit_url).
+        with(basic_auth: [username, password]).
+        to_return(status: 200)
+    end
+
+    context "when author_details is nil" do
+      let(:author_details) { nil }
+      it "pushes commit without author property" do
+        create_commit
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_url}/pushes?api-version=5.0").
+              with do |req|
+                json_body = JSON.parse(req.body)
+                expect(json_body.fetch("commits").count).to eq(1)
+                expect(json_body.fetch("commits").first.keys).
+                  to_not include("author")
+              end
+          )
+      end
+    end
+
+    context "when author_details contains name and email" do
+      let(:author_details) do
+        { email: "support@dependabot.com", name: "dependabot" }
+      end
+
+      it "pushes commit with author property containing name and email" do
+        create_commit
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_url}/pushes?api-version=5.0").
+              with do |req|
+                json_body = JSON.parse(req.body)
+                expect(json_body.fetch("commits").count).to eq(1)
+                expect(json_body.fetch("commits").first.fetch("author")).
+                  to eq(author_details.transform_keys(&:to_s))
+              end
+          )
       end
     end
   end

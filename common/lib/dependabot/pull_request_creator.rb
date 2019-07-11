@@ -132,6 +132,7 @@ module Dependabot
         commit_message: message_builder.commit_message,
         pr_description: message_builder.pr_message,
         pr_name: message_builder.pr_name,
+        author_details: author_details,
         labeler: labeler
       )
     end
