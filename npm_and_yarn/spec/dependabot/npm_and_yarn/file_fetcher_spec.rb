@@ -474,6 +474,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with a path dependency in a yarn resolution" do
+    before do
+      stub_request(:get, File.join(url, "package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github",
+                        "package_json_with_yarn_resolution_file_content.json"),
+          headers: json_header
+        )
+    end
+
+    context "that has a fetchable path" do
+      before do
+        file_url = File.join(url, "mocks/sprintf-js/package.json?ref=sha")
+        stub_request(:get, file_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches package.json from path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("mocks/sprintf-js/package.json")
+        path_file = file_fetcher_instance.files.
+                    find { |f| f.name == "mocks/sprintf-js/package.json" }
+        expect(path_file.support_file?).to eq(true)
+      end
+    end
+  end
+
   context "with a lerna.json file" do
     before do
       stub_request(:get, url + "?ref=sha").
