@@ -507,6 +507,65 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(path_file.support_file?).to eq(true)
       end
     end
+
+    context "that has an unfetchable path" do
+      before do
+        file_url = File.join(url, "mocks/sprintf-js/package.json?ref=sha")
+        stub_request(:get, file_url).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, File.join(url, "mocks/sprintf-js?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(:get, File.join(url, "mocks?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
+
+      context "when the path dep doesn't appear in the lockfile" do
+        it "raises a PathDependenciesNotReachable error with details" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(
+              Dependabot::PathDependenciesNotReachable,
+              "The following path based dependencies could not be retrieved: " \
+              "sprintf-js"
+            )
+        end
+      end
+
+      context "when the path dep does appear in the lockfile" do
+        before do
+          stub_request(:get, url + "?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_js_yarn.json"),
+              headers: json_header
+            )
+          stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(status: 404)
+          stub_request(:get, File.join(url, "yarn.lock?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "yarn_lock_with_path_content.json"),
+              headers: json_header
+            )
+        end
+
+        it "builds an imitation path dependency" do
+          expect(file_fetcher_instance.files.map(&:name)).to match_array(
+            %w(package.json yarn.lock mocks/sprintf-js/package.json)
+          )
+          path_file = file_fetcher_instance.files.
+                      find { |f| f.name == "mocks/sprintf-js/package.json" }
+          expect(path_file.support_file?).to eq(true)
+          expect(path_file.content).
+            to eq("{\"name\":\"sprintf-js\",\"version\":\"0.0.0\"}")
+        end
+      end
+    end
   end
 
   context "with a lerna.json file" do
