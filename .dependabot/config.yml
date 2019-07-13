@@ -23,6 +23,6 @@ update_configs:
     directory: "/python/helpers"
     update_schedule: "live"
 
-  - package_manager: "go_modules"
+  - package_manager: "go:modules"
     directory: "/go_modules/helpers"
     update_schedule: "daily"
