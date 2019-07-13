@@ -172,6 +172,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             commit_message: "Commit msg",
             pr_description: "PR msg",
             pr_name: "PR name",
+            author_details: author_details,
             labeler: instance_of(described_class::Labeler)
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)

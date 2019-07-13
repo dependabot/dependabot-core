@@ -8,11 +8,11 @@ module Dependabot
     class Azure
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :commit_message, :pr_description, :pr_name,
-                  :labeler
+                  :author_details, :labeler
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     labeler:)
+                     author_details:, labeler:)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -21,13 +21,16 @@ module Dependabot
         @commit_message = commit_message
         @pr_description = pr_description
         @pr_name        = pr_name
+        @author_details = author_details
         @labeler        = labeler
       end
 
       def create
         return if branch_exists? && pull_request_exists?
 
-        create_commit unless branch_exists? && commit_exists?
+        # For Azure we create or update a branch in the same request as creating
+        # a commit (so we don't need create or update branch logic here)
+        create_commit
 
         create_pull_request
       end
@@ -43,18 +46,11 @@ module Dependabot
       end
 
       def branch_exists?
-        @branch_ref ||=
-          azure_client_for_source.branch(branch_name)
+        @branch_ref ||= azure_client_for_source.branch(branch_name)
 
         @branch_ref
       rescue ::Azure::Error::NotFound
         false
-      end
-
-      def commit_exists?
-        @commits ||=
-          azure_client_for_source.commits(branch_name)
-        commit_message.start_with?(@commits.first.fetch("comment"))
       end
 
       def pull_request_exists?
@@ -65,11 +61,15 @@ module Dependabot
       end
 
       def create_commit
+        author = author_details&.slice(:name, :email, :date)
+        author = nil unless author&.any?
+
         azure_client_for_source.create_commit(
           branch_name,
           base_commit,
           commit_message,
-          files
+          files,
+          author
         )
       end
 
