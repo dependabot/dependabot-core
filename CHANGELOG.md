@@ -1,3 +1,8 @@
+## v0.111.5, 13 July 2019
+
+- Cascade author details to Azure commit
+- JS: Bump npm from 6.10.0 to 6.10.1 in /npm_and_yarn/helpers
+
 ## v0.111.4, 11 July 2019
 
 - JS: Fetch yarn file path resolutions from manifest
