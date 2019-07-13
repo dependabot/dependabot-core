@@ -1,3 +1,7 @@
+## v0.111.6, 13 July 2019
+
+- Go (modules): bump masterminds/vcs to v1.13.1 to fix Go bitbucket support
+
 ## v0.111.5, 13 July 2019
 
 - Cascade author details to Azure commit
