@@ -139,10 +139,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@dependabot/yarn-lib@^1.16.0":
-  version "1.16.0"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.16.0.tgz#5c5f8d48706f60f90f5dbc48d7036f82a5fb4ad4"
-  integrity sha512-TufgpxY7IDeBfmzhXc/b71Oz56/nwq0+w0Y4dOkNC+XVEa3SJwW8kmyJxWWyFwoUwBZKZhT2wCTqCogtlhZLAw==
+"@dependabot/yarn-lib@^1.17.3":
+  version "1.17.3"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.17.3.tgz#69213a7ef3854d9d89e3ab58fb5f18ab80f582c9"
+  integrity sha512-jzkoR/bW/VtrYPuMxxhhPSS5oEAwBijDVcz2E887RIf9csFHIJPqOJ0PVPBzhU0FJbGLlKSStvjbJMiHPe/zHg==
   dependencies:
     "@zkochan/cmd-shim" "^3.1.0"
     babel-runtime "^6.26.0"
@@ -166,6 +166,7 @@
     is-builtin-module "^2.0.0"
     is-ci "^1.0.10"
     is-webpack-bundle "^1.0.0"
+    js-yaml "^3.13.1"
     leven "^2.0.0"
     loud-rejection "^1.2.0"
     micromatch "^2.3.11"
@@ -1155,12 +1156,7 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-commander@^2.9.0:
-  version "2.19.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-2.19.0.tgz#f6198aa84e5b83c46054b94ddedbfed5ee9ff12a"
-  integrity sha512-6tvAOO+D6OENvRAh524Dh9jcfKTYDQAqvqezbCW82xj5X0pSrcpxtvRKHLG0yBY6SD7PSDrJaj+0AiOcKVd1Xg==
-
-commander@~2.20.0:
+commander@^2.9.0, commander@~2.20.0:
   version "2.20.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.0.tgz#d58bb2b5c1ee8f87b0d340027e9e94e222c5a422"
   integrity sha512-7j2y+40w61zy6YC2iRNpUe/NwhNyoXrYpHMrSunaMG64nRnaf96zO/KMQR4OyN/UnE5KLyEBnKHd4aG3rskjpQ==
