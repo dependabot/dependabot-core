@@ -388,6 +388,12 @@ module Dependabot
             updated_content = updated_content.gsub(new_req, req)
           end
 
+          # Enforce https for most common hostnames
+          updated_content = updated_content.gsub(
+            %r{http://(.*?(?:yarnpkg\.com|npmjs\.org|npmjs\.com))/},
+            'https://\1/'
+          )
+
           if remove_integrity_lines?
             updated_content = remove_integrity_lines(updated_content)
           end

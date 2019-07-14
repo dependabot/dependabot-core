@@ -2497,6 +2497,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when there were http:// entries in the lockfile" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:yarn_lock_fixture_name) { "http.lock" }
+
+        it "updates the files" do
+          expect(updated_yarn_lock.content).
+            to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
+          expect(updated_yarn_lock.content).
+            to include("https://registry.yarnpkg.com/etag/-/etag-1.7.0.tgz")
+        end
+      end
+
       context "when there's a duplicate indirect dependency" do
         let(:manifest_fixture_name) { "duplicate_indirect_dependency.json" }
         let(:yarn_lock_fixture_name) { "duplicate_indirect_dependency.lock" }
