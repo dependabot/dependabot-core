@@ -79,7 +79,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contain bad lockfile" do
         let(:yarn_lockfile_content) do
-          "{ something: else }"
+          "{ something: else"
         end
 
         it "raises a DependencyFileNotParseable error" do
