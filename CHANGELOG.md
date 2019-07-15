@@ -1,3 +1,7 @@
+## v0.111.9, 15 July 2019
+
+- Better library definition in PullRequestCreator
+
 ## v0.111.8, 15 July 2019
 
 - Gradle: Handle dependency names that can't be converted to XPaths
