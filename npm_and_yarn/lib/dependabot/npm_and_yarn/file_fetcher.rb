@@ -7,6 +7,7 @@ require "dependabot/npm_and_yarn/file_parser"
 
 module Dependabot
   module NpmAndYarn
+    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -164,6 +165,7 @@ module Dependabot
         ].uniq
       end
 
+      # rubocop:disable Metrics/AbcSize
       def path_dependency_details_from_manifest(file)
         return [] unless file.name.end_with?("package.json")
 
@@ -171,20 +173,23 @@ module Dependabot
         current_dir = nil if current_dir == ""
         path_dep_starts = %w(file: / ./ ../ ~/ link:.)
 
-        # Fetch yarn "file:" path "resolutions" so that we can resolve the
-        # lockfile. This pattern seems to be used to replace a sub-dependency
-        # with a local mock version.
-        dependency_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES +
-                           ["resolutions"]
-        dependency_objects = JSON.parse(file.content).
-                             values_at(*dependency_types).
-                             compact
+        dep_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
+        parsed_manifest = JSON.parse(file.content)
+        dependency_objects = parsed_manifest.values_at(*dep_types).compact
+        # Fetch yarn "file:" path "resolutions" so the lockfile can be resolved
+        resolution_objects = parsed_manifest.values_at("resolutions").compact
+        manifest_objects = dependency_objects + resolution_objects
 
-        unless dependency_objects.all? { |o| o.is_a?(Hash) }
+        unless manifest_objects.all? { |o| o.is_a?(Hash) }
           raise Dependabot::DependencyFileNotParseable, file.path
         end
 
-        dependency_objects.flat_map(&:to_a).
+        resolution_deps = resolution_objects.flat_map(&:to_a).
+                          map do |path, value|
+                            convert_dependency_path_to_name(path, value)
+                          end
+
+        (dependency_objects.flat_map(&:to_a) + resolution_deps).
           select { |_, v| v.is_a?(String) && v.start_with?(*path_dep_starts) }.
           map do |name, path|
             path = path.sub(/^file:/, "").sub(/^link:/, "")
@@ -193,6 +198,17 @@ module Dependabot
           end
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, file.path
+      end
+      # rubocop:enable Metrics/AbcSize
+
+      # Re-write the glob name to the targeted dependency name (which is used
+      # in the lockfile), for example "parent-pacakge/**/sub-dep/target-dep" >
+      # "target-dep"
+      def convert_dependency_path_to_name(path, value)
+        # Picking the last two parts that might include a scope
+        parts = path.split("/").last(2)
+        parts.shift if parts.count == 2 && !parts.first.start_with?("@")
+        [parts.join("/"), value]
       end
 
       def fetch_workspace_package_jsons
@@ -273,6 +289,7 @@ module Dependabot
         end
       end
 
+      # Only expands globs one level deep, so path/**/* gets expanded to path/
       def expanded_paths(path)
         ignored_paths = path.scan(/!\((.*?)\)/).flatten
 
@@ -338,6 +355,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
