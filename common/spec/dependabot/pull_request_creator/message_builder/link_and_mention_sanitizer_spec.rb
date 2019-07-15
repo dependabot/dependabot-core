@@ -23,6 +23,17 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           to eq("Great work [@&#8203;greysteil](https://github.com/greysteil)!")
       end
 
+      context "that includes a dash" do
+        let(:text) { "Great work @greysteil-work!" }
+
+        it "sanitizes the text" do
+          expect(sanitize_links_and_mentions).to eq(
+            "Great work [@&#8203;greysteil-work]"\
+            "(https://github.com/greysteil-work)!"
+          )
+        end
+      end
+
       context "that is in brackets" do
         let(:text) { "The team (by @greysteil) etc." }
 

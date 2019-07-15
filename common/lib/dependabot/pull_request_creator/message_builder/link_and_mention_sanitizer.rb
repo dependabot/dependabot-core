@@ -6,9 +6,10 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class LinkAndMentionSanitizer
+        GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i.freeze
         GITHUB_REF_REGEX = %r{
           (?:https?://)?
-          github\.com/[^/\s]+/[^/\s]+/
+          github\.com/#{GITHUB_USERNAME}/[^/\s]+/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
 
@@ -49,7 +50,7 @@ module Dependabot
         private
 
         def sanitize_mentions(text)
-          text.gsub(%r{(?<![A-Za-z0-9`~])@[\w][\w.-/]*}) do |mention|
+          text.gsub(/(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/) do |mention|
             next mention if mention.include?("/")
 
             last_match = Regexp.last_match
