@@ -40,7 +40,12 @@ module Dependabot
       end
 
       def pr_message
-        commit_message_intro + metadata_cascades + prefixed_pr_message_footer
+        # TODO: pr_message_options.cascade_metadata (true)
+        # TODO: pr_message_options.prefixed_pr_message_footer (nil)
+
+        commit_message_intro + metadata_links + prefixed_pr_message_footer
+
+        #commit_message_intro + metadata_cascades + prefixed_pr_message_footer
       end
 
       def commit_message
