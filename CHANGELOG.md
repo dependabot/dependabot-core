@@ -1,3 +1,9 @@
+## v0.111.8, 15 July 2019
+
+- Gradle: Handle dependency names that can't be converted to XPaths
+- Maven: Fetch modules listed in profiles
+- Handle @-mentions that include a hyphen
+
 ## v0.111.7, 14 July 2019
 
 - Docker: Insist on updated docker_registry2 to fix Artifactory bug
