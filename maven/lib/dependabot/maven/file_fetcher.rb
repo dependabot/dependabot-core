@@ -7,7 +7,8 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Maven
     class FileFetcher < Dependabot::FileFetchers::Base
-      MODULE_SELECTOR = "project > modules > module"
+      MODULE_SELECTOR = "project > modules > module, "\
+                        "profile > modules > module"
 
       def self.required_files_in?(filenames)
         (%w(pom.xml) - filenames).empty?
@@ -60,14 +61,15 @@ module Dependabot
           next [] if fetched_filenames.include?(path)
 
           child_pom = fetch_file_from_host(path)
-          fetched_filenames += [child_pom.name]
-          [
+          fetched_files = [
             child_pom,
             recursively_fetch_child_poms(
               child_pom,
-              fetched_filenames: fetched_filenames
+              fetched_filenames: fetched_filenames + [child_pom.name]
             )
           ].flatten
+          fetched_filenames += [child_pom.name] + fetched_files.map(&:name)
+          fetched_files
         rescue Dependabot::DependencyFileNotFound
           raise unless fetch_file_from_host(path, fetch_submodules: true)
 

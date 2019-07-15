@@ -9,10 +9,17 @@
     <name>My Fantastic Project (tm)</name>
     <version>1.0.0-SNAPSHOT</version>
     <modules>
-        <module>util</module>
         <module>./business-app</module>
         <module>legacy/pom.xml</module>
     </modules>
+    <profiles>
+        <profile>
+            <id>multi-module</id>
+            <modules>
+                <module>util</module>
+            </modules>
+        </profile>
+    </profiles>
     <packaging>pom</packaging>
 
     <description>A sample Maven multi-module project</description>
