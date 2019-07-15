@@ -662,7 +662,7 @@ module Dependabot
       def library?
         return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
 
-        dependencies.none?(&:appears_in_lockfile?)
+        dependencies.any? { |d| !d.appears_in_lockfile? }
       end
 
       def switching_from_ref_to_release?(dependency)

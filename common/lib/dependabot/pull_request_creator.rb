@@ -178,7 +178,7 @@ module Dependabot
     def library?
       return true if files.any? { |file| file.name.end_with?(".gemspec") }
 
-      dependencies.none?(&:appears_in_lockfile?)
+      dependencies.any? { |d| !d.appears_in_lockfile? }
     end
 
     def includes_security_fixes?

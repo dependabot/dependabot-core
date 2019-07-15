@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     described_class.new(
       source: source,
       base_commit: base_commit,
-      dependencies: [dependency],
+      dependencies: dependencies,
       files: files,
       credentials: credentials,
       custom_labels: custom_labels,
@@ -23,6 +23,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     )
   end
 
+  let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "business",
@@ -97,6 +98,80 @@ RSpec.describe Dependabot::PullRequestCreator do
 
       it "errors out on initialization" do
         expect { creator }.to raise_error(/must have a/)
+      end
+
+      context "when the requirements have changed" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            package_manager: "bundler",
+            requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "Gemfile",
+              requirement: "~> 1.3.0",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+
+        let(:dummy_creator) { instance_double(described_class::Github) }
+
+        it "delegates to PullRequestCreator::Github with correct params" do
+          expect(described_class::Github).
+            to receive(:new).and_return(dummy_creator)
+          expect(dummy_creator).to receive(:create)
+          creator.create
+        end
+
+        context "with multiple dependencies" do
+          let(:dependencies) { [dependency, dependency] }
+          let(:dummy_creator) { instance_double(described_class::Github) }
+
+          it "delegates to PullRequestCreator::Github with correct params" do
+            expect(described_class::Github).
+              to receive(:new).and_return(dummy_creator)
+            expect(dummy_creator).to receive(:create)
+            creator.create
+          end
+
+          context "one of which has a previous version, the other not" do
+            let(:dependencies) { [dependency, dependency_with_lock] }
+            let(:dependency_with_lock) do
+              Dependabot::Dependency.new(
+                name: "business",
+                version: "1.5.0",
+                previous_version: "1.4.0",
+                package_manager: "bundler",
+                requirements: [{
+                  file: "Gemfile",
+                  requirement: "~> 1.5.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "Gemfile",
+                  requirement: "~> 1.4.0",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            end
+
+            it "delegates to PullRequestCreator::Github with correct params" do
+              expect(described_class::Github).
+                to receive(:new).and_return(dummy_creator)
+              expect(dummy_creator).to receive(:create)
+              creator.create
+            end
+          end
+        end
       end
     end
 
