@@ -50,8 +50,8 @@ module Dependabot
         private
 
         def sanitize_mentions(text)
-          text.gsub(/(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/) do |mention|
-            next mention if mention.include?("/")
+          text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|
+            next mention if mention.end_with?("/")
 
             last_match = Regexp.last_match
 

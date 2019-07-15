@@ -34,6 +34,11 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
       end
 
+      context "that includes a slash" do
+        let(:text) { "Great work on @greysteil/repo!" }
+        it { is_expected.to eq(text) }
+      end
+
       context "that is in brackets" do
         let(:text) { "The team (by @greysteil) etc." }
 
