@@ -272,6 +272,29 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:source_url]) { is_expected.to eq("https://maven.google.com") }
       end
 
+      context "with a name that can't be an xpath" do
+        let(:dependency_name) { "com.google.guava:guava~bad" }
+        let(:jcenter_metadata_url) do
+          "https://jcenter.bintray.com/"\
+          "com/google/guava/guava~bad/maven-metadata.xml"
+        end
+        let(:magnusja_metadata_url) do
+          "https://dl.bintray.com/magnusja/maven/"\
+          "com/google/guava/guava~bad/maven-metadata.xml"
+        end
+        let(:google_metadata_url) do
+          "https://maven.google.com/"\
+          "com/google/guava/group-index.xml"
+        end
+
+        before do
+          stub_request(:get, google_metadata_url).
+            to_return(status: 404, body: "")
+        end
+
+        it { is_expected.to eq([]) }
+      end
+
       context "when the details come from a non-google repo" do
         before do
           stub_request(:get, jcenter_metadata_url).

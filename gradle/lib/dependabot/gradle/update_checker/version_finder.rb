@@ -156,6 +156,8 @@ module Dependabot
             select { |v| version_class.correct?(v) }.
             map { |v| version_class.new(v) }.
             map { |version| { version: version, source_url: url } }
+        rescue Nokogiri::XML::XPath::SyntaxError
+          nil
         end
 
         def dependency_metadata(repository_url)
