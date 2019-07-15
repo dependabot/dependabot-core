@@ -1,3 +1,7 @@
+## v0.111.10, 15 July 2019
+
+- JS: Fix yarn file path resolutions when manifest is missing
+
 ## v0.111.9, 15 July 2019
 
 - Better library definition in PullRequestCreator
