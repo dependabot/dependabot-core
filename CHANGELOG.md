@@ -1,3 +1,8 @@
+## v0.111.11, 16 July 2019
+
+- Yarn: Add support for missing `link:` path dependencies which exist in the lockfile
+- Update rubocop requirement from ~> 0.72.0 to ~> 0.73.0 in /common
+
 ## v0.111.10, 15 July 2019
 
 - JS: Fix yarn file path resolutions when manifest is missing
