@@ -95,6 +95,29 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it { is_expected.to eq("https://github.com/spotify/luigi") }
       end
 
+      context "with the creds using an email address and basic auth" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "python_index",
+            "index-url" => "https://user@mail.co:password@pypi.posrip.com/pypi/"
+          }]
+        end
+
+        before do
+          private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
+          stub_request(:get, private_url).
+            with(basic_auth: %w(user@mail.co password)).
+            to_return(status: 200, body: pypi_response)
+        end
+
+        it { is_expected.to eq("https://github.com/spotify/luigi") }
+      end
+
       context "that isn't used" do
         before do
           private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"

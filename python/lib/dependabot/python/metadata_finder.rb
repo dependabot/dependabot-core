@@ -130,11 +130,7 @@ module Dependabot
         return @pypi_listing = {} if dependency.version.include?("+")
 
         possible_listing_urls.each do |url|
-          response = Excon.get(
-            url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          response = fetch_authed_url(url)
           next unless response.status == 200
 
           @pypi_listing = JSON.parse(response.body)
@@ -144,6 +140,23 @@ module Dependabot
         end
 
         @pypi_listing = {} # No listing found
+      end
+
+      def fetch_authed_url(url)
+        if url.match(%r{(.*)://(.*?):(.*)@([^@]+)$}) &&
+           Regexp.last_match.captures[1].include?("@")
+          protocol, user, pass, url = Regexp.last_match.captures
+
+          Excon.get(
+            "#{protocol}://#{url}",
+            user: user,
+            password: pass,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+        else
+          Excon.get(url, idempotent: true, **SharedHelpers.excon_defaults)
+        end
       end
 
       def possible_listing_urls
