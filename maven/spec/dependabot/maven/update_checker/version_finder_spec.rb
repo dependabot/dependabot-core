@@ -368,6 +368,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a dependency name that needs URI encoding" do
+      let(:dependency_name) { "bad com.google.guava:guava" }
+
+      its(:count) { is_expected.to eq(0) }
+    end
+
     context "with a custom repository" do
       let(:pom_fixture_name) { "custom_repositories_pom.xml" }
 

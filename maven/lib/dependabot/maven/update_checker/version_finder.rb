@@ -170,6 +170,8 @@ module Dependabot
               )
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
+            rescue URI::InvalidURIError
+              Nokogiri::XML("")
             rescue Excon::Error::Socket, Excon::Error::Timeout
               raise if central_repo_urls.include?(repository_details["url"])
 
