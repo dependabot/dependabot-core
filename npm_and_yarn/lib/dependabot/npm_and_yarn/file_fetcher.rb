@@ -11,6 +11,17 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
+      # Npm always prefixes file paths in the lockfile "version" with "file:"
+      # even when a naked path is used (e.g. "../dep")
+      NPM_PATH_DEPENDENCY_STARTS = %w(file:).freeze
+      # "link:" is only supported by Yarn but is interchangeable with "file:"
+      # when it specifies a path. Only include Yarn "link:"'s that start with a
+      # path and ignore symlinked package names that have been registered with
+      # "yarn link", e.g. "link:react"
+      PATH_DEPENDENCY_STARTS =
+        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
+      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
+
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
       end
@@ -113,7 +124,7 @@ module Dependabot
         unfetchable_deps = []
 
         path_dependency_details(fetched_files).each do |name, path|
-          path = path.sub(/^file:/, "").sub(/^link:/, "")
+          path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
           filename = File.join(path, "package.json")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
@@ -144,19 +155,12 @@ module Dependabot
             path_dependency_details_from_manifest(file)
         end
 
-        path_starts = %w(file: link:.)
-
-        package_lock_path_deps =
-          parsed_package_lock.fetch("dependencies", []).to_a.
-          select { |_, v| v.is_a?(Hash) }.
-          select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
-          map { |k, v| [k, v.fetch("version")] }
-
-        shrinkwrap_path_deps =
-          parsed_shrinkwrap.fetch("dependencies", []).to_a.
-          select { |_, v| v.is_a?(Hash) }.
-          select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
-          map { |k, v| [k, v.fetch("version")] }
+        package_lock_path_deps = path_dependency_details_from_npm_lockfile(
+          parsed_package_lock
+        )
+        shrinkwrap_path_deps = path_dependency_details_from_npm_lockfile(
+          parsed_shrinkwrap
+        )
 
         [
           *package_json_path_deps,
@@ -171,7 +175,6 @@ module Dependabot
 
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
-        path_dep_starts = %w(file: / ./ ../ ~/ link:.)
 
         dep_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
         parsed_manifest = JSON.parse(file.content)
@@ -189,10 +192,11 @@ module Dependabot
                             convert_dependency_path_to_name(path, value)
                           end
 
+        path_starts = PATH_DEPENDENCY_STARTS
         (dependency_objects.flat_map(&:to_a) + resolution_deps).
-          select { |_, v| v.is_a?(String) && v.start_with?(*path_dep_starts) }.
+          select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
           map do |name, path|
-            path = path.sub(/^file:/, "").sub(/^link:/, "")
+            path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
           end
@@ -200,6 +204,14 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, file.path
       end
       # rubocop:enable Metrics/AbcSize
+
+      def path_dependency_details_from_npm_lockfile(parsed_lockfile)
+        path_starts = NPM_PATH_DEPENDENCY_STARTS
+        parsed_lockfile.fetch("dependencies", []).to_a.
+          select { |_, v| v.is_a?(Hash) }.
+          select { |_, v| v.fetch("version", "").start_with?(*path_starts) }.
+          map { |k, v| [k, v.fetch("version")] }
+      end
 
       # Re-write the glob name to the targeted dependency name (which is used
       # in the lockfile), for example "parent-pacakge/**/sub-dep/target-dep" >

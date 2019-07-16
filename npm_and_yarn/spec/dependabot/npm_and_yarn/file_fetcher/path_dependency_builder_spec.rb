@@ -134,6 +134,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
             }.to_json)
         end
       end
+
+      context "for a symlinked dependency" do
+        let(:yarn_lock_fixture_name) { "symlinked_dependency.lock" }
+
+        it "builds an imitation path dependency" do
+          expect(dependency_file).to be_a(Dependabot::DependencyFile)
+          expect(dependency_file.name).to eq("deps/etag/package.json")
+          expect(dependency_file.support_file?).to eq(true)
+          expect(dependency_file.content).
+            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
+        end
+      end
     end
   end
 end
