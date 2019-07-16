@@ -14,6 +14,8 @@ module Dependabot
 
     def upload_pack
       @upload_pack ||= fetch_upload_pack_for(url)
+    rescue Octokit::ClientError
+      raise Dependabot::GitDependenciesNotReachable, [url]
     end
 
     def tags
@@ -37,27 +39,19 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
-      response = Excon.get(
-        service_pack_uri(uri),
-        idempotent: true,
-        **excon_defaults
-      )
-
+      response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
 
-      if response.status >= 500 && uri.match?(KNOWN_HOSTS)
-        unless uri.match?(/github\.com/i)
-          raise "Server error at #{uri}: #{response.body}"
-        end
-
-        case response.status
-        when 500 then raise Octokit::InternalServerError
-        when 501 then raise Octokit::NotImplemented
-        when 502 then raise Octokit::BadGateway
-        when 503 then raise Octokit::ServiceUnavailable
-        else raise Octokit::ServerError
-        end
+      unless uri.match?(KNOWN_HOSTS)
+        raise Dependabot::GitDependenciesNotReachable, [uri]
       end
+
+      if response.status < 400
+        raise "Unexpected response: #{response.status} - #{response.body}"
+      end
+
+      raise Octokit::Error.from_response(response) if uri.match?(/github\.com/i)
+      raise "Server error at #{uri}: #{response.body}" if response.status >= 500
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
@@ -71,6 +65,14 @@ module Dependabot
     end
     # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity
+
+    def fetch_raw_upload_pack_for(uri)
+      Excon.get(
+        service_pack_uri(uri),
+        idempotent: true,
+        **excon_defaults
+      )
+    end
 
     def tags_for_upload_pack(upload_pack)
       peeled_lines = []

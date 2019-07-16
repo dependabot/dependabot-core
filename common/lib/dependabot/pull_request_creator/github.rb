@@ -65,7 +65,8 @@ module Dependabot
 
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
-      rescue Dependabot::GitDependenciesNotReachable
+      rescue Dependabot::GitDependenciesNotReachable => e
+        raise e.cause if e.cause&.message&.include?("is disabled")
         raise(RepoNotFound, source.url) unless repo_exists?
 
         retrying ||= false
@@ -311,24 +312,27 @@ module Dependabot
         ).signature
       end
 
-      def handle_error(error)
-        case error
+      # rubocop:disable Metrics/CyclomaticComplexity
+      def handle_error(err)
+        case err
         when Octokit::Forbidden
-          raise error unless error.message.include?("Repository was archived")
+          raise RepoDisabled, err.message if err.message.include?("disabled")
+          raise RepoArchived, err.message if err.message.include?("archived")
 
-          raise RepoArchived, error.message
+          raise err
         when Octokit::NotFound
-          raise error if repo_exists?
+          raise err if repo_exists?
 
-          raise RepoNotFound, error.message
+          raise RepoNotFound, err.message
         when Octokit::UnprocessableEntity
-          raise error unless error.message.include?("no history in common")
+          raise err unless err.message.include?("no history in common")
 
-          raise NoHistoryInCommon, error.message
+          raise NoHistoryInCommon, err.message
         else
-          raise error
+          raise err
         end
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end

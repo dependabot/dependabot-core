@@ -249,27 +249,42 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect { creator.create }.
           to raise_error(Dependabot::PullRequestCreator::RepoNotFound)
       end
+    end
 
-      context "when the repo does exist but we got a 404" do
-        before do
-          stub_request(:get, repo_api_url).
-            to_return(status: 200,
-                      body: fixture("github", "bump_repo.json"),
-                      headers: json_header)
-          stub_request(:post, "#{repo_api_url}/git/trees").
-            to_return(status: 404,
-                      body: fixture("github", "not_found.json"),
-                      headers: json_header)
+    context "when the repo exists but we got a 404" do
+      before do
+        stub_request(:get, repo_api_url).
+          to_return(status: 200,
+                    body: fixture("github", "bump_repo.json"),
+                    headers: json_header)
 
-          service_pack_url =
-            "https://github.com/gocardless/bump.git/info/refs"\
-            "?service=git-upload-pack"
-          stub_request(:get, service_pack_url).to_return(status: 404)
-        end
+        service_pack_url =
+          "https://github.com/gocardless/bump.git/info/refs"\
+          "?service=git-upload-pack"
+        stub_request(:get, service_pack_url).to_return(status: 404)
+      end
 
-        it "raises a normal error" do
-          expect { creator.create }.to raise_error("Unexpected git error!")
-        end
+      it "raises a normal error" do
+        expect { creator.create }.to raise_error("Unexpected git error!")
+      end
+    end
+
+    context "when the repo exists but is disabled" do
+      before do
+        service_pack_url =
+          "https://github.com/gocardless/bump.git/info/refs"\
+          "?service=git-upload-pack"
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 403,
+            body: "Account `gocardless' is disabled. Please ask the owner to "\
+                  "check their account."
+          )
+      end
+
+      it "raises a helpful error" do
+        expect { creator.create }.
+          to raise_error(Dependabot::PullRequestCreator::RepoDisabled)
       end
     end
 

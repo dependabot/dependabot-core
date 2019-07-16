@@ -13,6 +13,7 @@ module Dependabot
 
     class RepoNotFound < StandardError; end
     class RepoArchived < StandardError; end
+    class RepoDisabled < StandardError; end
     class NoHistoryInCommon < StandardError; end
 
     attr_reader :source, :dependencies, :files, :base_commit,
