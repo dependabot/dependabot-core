@@ -1,3 +1,8 @@
+## v0.111.14, 17 July 2019
+
+- Python: Handle authed URLs which include an `@` in metadata finder
+- Maven: Handle bad URIs in VersionFinder
+
 ## v0.111.13, 16 July 2019
 
 - .NET: Ignore .sln files that can't be encoded to UTF-8
