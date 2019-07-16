@@ -1,3 +1,8 @@
+## v0.111.13, 16 July 2019
+
+- .NET: Ignore .sln files that can't be encoded to UTF-8
+- Handle disabled repos in PullRequestCreator::Github
+
 ## v0.111.12, 16 July 2019
 
 - Bundler: Replace JSON.parse lines in gemspec
