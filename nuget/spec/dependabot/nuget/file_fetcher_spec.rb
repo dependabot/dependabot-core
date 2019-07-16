@@ -402,6 +402,32 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       end
     end
 
+    context "that can't be encoded to UTF-8" do
+      before do
+        stub_request(:get, File.join(url, "FSharp.sln?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_image.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "Another.sln?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_image.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("<anything>.(cs|vb|fs)proj")
+          end
+      end
+    end
+
     context "that is nested in a src directory" do
       before do
         stub_request(:get, url + "?ref=sha").

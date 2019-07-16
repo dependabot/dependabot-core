@@ -167,9 +167,10 @@ module Dependabot
       def sln_files
         return unless sln_file_names
 
-        @sln_files ||= sln_file_names.map do |sln_file_name|
-          fetch_file_from_host(sln_file_name)
-        end
+        @sln_files ||=
+          sln_file_names.
+          map { |sln_file_name| fetch_file_from_host(sln_file_name) }.
+          select { |file| file.content.valid_encoding? }
       end
 
       def csproj_file
