@@ -139,7 +139,7 @@ module Dependabot
             return ['"', '"'] if requirement_nodes.none?
 
             case requirement_nodes.first.type
-            when :str, :dstr
+            when :str, :dstr, :sym
               [
                 requirement_nodes.first.loc.begin.source,
                 requirement_nodes.first.loc.end.source
@@ -157,7 +157,7 @@ module Dependabot
 
             req_string =
               case requirement_nodes.first.type
-              when :str, :dstr
+              when :str, :dstr, :sym
                 requirement_nodes.first.loc.expression.source
               else
                 requirement_nodes.first.children.first.loc.expression.source
@@ -174,7 +174,7 @@ module Dependabot
 
             req_string =
               case requirement_nodes.first.type
-              when :str, :dstr
+              when :str, :dstr, :sym
                 requirement_nodes.first.loc.expression.source
               else
                 requirement_nodes.first.children.first.loc.expression.source

@@ -51,6 +51,11 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
 
+      context "when the declaration uses a symbol" do
+        let(:content) { %(gem "business", :"~> 1.0", require: true) }
+        it { is_expected.to include(%(gem "business", :"~> 1.5.0", require:)) }
+      end
+
       context "when the declaration changes from one to many requirements" do
         let(:dependency_name) { "devise" }
         let(:updated_requirement) { ">=3.2, <5.0" }
