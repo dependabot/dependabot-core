@@ -64,6 +64,23 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       end
     end
 
+    context "with a JSON.parse line" do
+      let(:content) do
+        %(pkg = JSON.parse(File.read("something").strip)\ncode = "req")
+      end
+      it { is_expected.to eq(%(pkg = { "version" => "1.5.0" }\ncode = "req")) }
+
+      context "that uses File.readlines" do
+        let(:content) do
+          %(version = File.readlines("something").grep(/\S+/)\ncode = "require")
+        end
+        it do
+          is_expected.
+            to eq(%(version = ["1.5.0"].grep(/\S+/)\ncode = "require"))
+        end
+      end
+    end
+
     context "with a Find.find line" do
       let(:content) do
         %(Find.find("lib", "whatever")\ncode = "require")

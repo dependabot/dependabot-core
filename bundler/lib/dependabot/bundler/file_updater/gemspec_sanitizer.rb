@@ -69,6 +69,9 @@ module Dependabot
             # Replace any `File.read(...)` calls with a dummy string
             replace_file_reads(node)
 
+            # Replace any `JSON.parse(...)` calls with a dummy hash
+            replace_json_parses(node)
+
             # Remove the arguments from any `Find.find(...)` calls
             remove_find_dot_find_args(node)
 
@@ -193,6 +196,23 @@ module Dependabot
             node.children[1] == :readlines
           end
 
+          def replace_json_parses(node)
+            return unless node.is_a?(Parser::AST::Node)
+            return if node.children[1] == :version=
+            return replace_json_parse(node) if node_parses_json?(node)
+
+            node.children.each { |child| replace_json_parses(child) }
+          end
+
+          def node_parses_json?(node)
+            return false unless node.is_a?(Parser::AST::Node)
+            return false unless node.children.first.is_a?(Parser::AST::Node)
+            return false unless node.children.first&.type == :const
+            return false unless node.children.first.children.last == :JSON
+
+            node.children[1] == :parse
+          end
+
           def remove_find_dot_find_args(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -296,6 +316,13 @@ module Dependabot
 
           def replace_file_read(node)
             replace(node.loc.expression, %("#{replacement_version}"))
+          end
+
+          def replace_json_parse(node)
+            replace(
+              node.loc.expression,
+              %({ "version" => "#{replacement_version}" })
+            )
           end
 
           def replace_file_readlines(node)
