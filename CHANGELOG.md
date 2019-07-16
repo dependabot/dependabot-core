@@ -1,3 +1,7 @@
+## v0.111.12, 16 July 2019
+
+- Bundler: Replace JSON.parse lines in gemspec
+
 ## v0.111.11, 16 July 2019
 
 - Yarn: Add support for missing `link:` path dependencies which exist in the lockfile
