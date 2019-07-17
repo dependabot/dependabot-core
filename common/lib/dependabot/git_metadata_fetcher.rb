@@ -50,7 +50,12 @@ module Dependabot
         raise "Unexpected response: #{response.status} - #{response.body}"
       end
 
-      raise Octokit::Error.from_response(response) if uri.match?(/github\.com/i)
+      if uri.match?(/github\.com/i)
+        response = response.data
+        response[:response_headers] = response[:headers]
+        raise Octokit::Error.from_response(response)
+      end
+
       raise "Server error at #{uri}: #{response.body}" if response.status >= 500
 
       raise Dependabot::GitDependenciesNotReachable, [uri]

@@ -69,6 +69,15 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         end
       end
 
+      context "but GitHub returns a 401" do
+        before { stub_request(:get, service_pack_url).to_return(status: 401) }
+
+        it "raises a helpful error" do
+          expect { tags }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+
       context "but GitHub returns a 500" do
         before { stub_request(:get, service_pack_url).to_return(status: 500) }
 
