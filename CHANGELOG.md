@@ -1,3 +1,8 @@
+## v0.111.15, 17 July 2019
+
+- Handle 401s from GitHub in GitMetadataFetcher
+- Bundler: Handle symbols being used for requirements
+
 ## v0.111.14, 17 July 2019
 
 - Python: Handle authed URLs which include an `@` in metadata finder
