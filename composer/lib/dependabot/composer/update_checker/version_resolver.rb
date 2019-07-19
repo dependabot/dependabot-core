@@ -32,7 +32,7 @@ module Dependabot
           @dependency_files             = dependency_files
           @requirements_to_unlock       = requirements_to_unlock
           @latest_allowable_version     = latest_allowable_version
-          @composer_platform_extensions = {}
+          @composer_platform_extensions = initial_platform
         end
 
         def latest_resolvable_version
@@ -274,6 +274,17 @@ module Dependabot
 
         def php_helper_path
           NativeHelpers.composer_helper_path
+        end
+
+        def initial_platform
+          return {} unless parsed_composer_file["type"] == "library"
+          return {} unless parsed_composer_file.dig("require", "php")
+
+          { "php" => [parsed_composer_file.dig("require", "php")] }
+        end
+
+        def parsed_composer_file
+          JSON.parse(composer_file.content)
         end
 
         def composer_file

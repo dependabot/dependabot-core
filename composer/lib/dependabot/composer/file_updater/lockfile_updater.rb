@@ -27,7 +27,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @composer_platform_extensions = {}
+          @composer_platform_extensions = initial_platform
         end
 
         def updated_lockfile_content
@@ -351,6 +351,17 @@ module Dependabot
           credentials.
             select { |cred| cred.fetch("type") == "composer_repository" }.
             select { |cred| cred["password"] }
+        end
+
+        def initial_platform
+          return {} unless parsed_composer_json["type"] == "library"
+          return {} unless parsed_composer_json.dig("require", "php")
+
+          { "php" => [parsed_composer_json.dig("require", "php")] }
+        end
+
+        def parsed_composer_json
+          JSON.parse(composer_json.content)
         end
 
         def composer_json

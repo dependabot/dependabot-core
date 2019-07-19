@@ -322,6 +322,28 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).
           to include("22bde7b048a33c702d9737fc1446234fff9b1363")
       end
+
+      context "and is limited by a library's PHP version" do
+        let(:manifest_fixture_name) { "php_specified_in_library" }
+        let(:lockfile_fixture_name) { "php_specified_in_library" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "doctrine/inflector",
+            version: "1.1.0",
+            previous_version: "1.0",
+            requirements: [],
+            previous_requirements: [],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v1.1.0\"")
+          expect(updated_lockfile_content).
+            to include("90b2128806bfde671b6952ab8bea493942c1fdae")
+        end
+      end
     end
 
     context "with a private registry" do
