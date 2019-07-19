@@ -192,6 +192,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
         end
 
+        context "when updating a python-2 only dep" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "futures",
+              version: "3.3.0",
+              previous_version: "3.2.0",
+              package_manager: "pip",
+              requirements: [{
+                requirement: "==3.3.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }],
+              previous_requirements: [{
+                requirement: "==3.2.0",
+                file: "Pipfile",
+                source: nil,
+                groups: ["default"]
+              }]
+            )
+          end
+
+          it "updates both files correctly" do
+            expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+          end
+        end
+
         context "due to a version in the lockfile" do
           let(:pipfile_fixture_name) { "required_python_implicit_2" }
           let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }

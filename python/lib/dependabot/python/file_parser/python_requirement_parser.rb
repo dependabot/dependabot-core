@@ -36,12 +36,7 @@ module Dependabot
               map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
               compact.
               map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
-              select do |r|
-                requirement_class.new(r)
-                true
-              rescue Gem::Requirement::BadRequirementError
-                false
-              end
+              select { |r| valid_requirement?(r) }
           end
         end
 
@@ -127,6 +122,13 @@ module Dependabot
 
         def requirement_class
           Dependabot::Python::Requirement
+        end
+
+        def valid_requirement?(req_string)
+          requirement_class.new(req_string)
+          true
+        rescue Gem::Requirement::BadRequirementError
+          false
         end
 
         def pipfile

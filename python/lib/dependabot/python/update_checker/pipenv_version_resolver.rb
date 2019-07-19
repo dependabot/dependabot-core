@@ -464,6 +464,7 @@ module Dependabot
         def may_be_using_wrong_python_version?(error_message)
           return false if user_specified_python_requirement
           return true if error_message.include?("UnsupportedPythonVersion")
+          return true if error_message.include?("at matches #{dependency.name}")
 
           error_message.include?('Command "python setup.py egg_info" failed')
         end

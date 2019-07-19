@@ -264,6 +264,22 @@ RSpec.describe namespace::PipenvVersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("3.8.1")) }
 
+        context "when updating a python-2 only dep" do
+          let(:dependency_name) { "futures" }
+          let(:dependency_version) { "3.2.0" }
+          let(:dependency_requirements) do
+            [{
+              file: "Pipfile",
+              requirement: "==3.2.0",
+              groups: ["default"],
+              source: nil
+            }]
+          end
+          let(:updated_requirement) { ">= 3.2.0, <= 3.3.0" }
+
+          it { is_expected.to be >= Gem::Version.new("3.3.0") }
+        end
+
         context "due to a version in the lockfile" do
           let(:pipfile_fixture_name) { "required_python_implicit_2" }
           let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }
