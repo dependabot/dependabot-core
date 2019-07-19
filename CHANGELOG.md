@@ -1,3 +1,7 @@
+## v0.111.18, 19 July 2019
+
+- Properly catch pandoc timeouts
+
 ## v0.111.17, 19 July 2019
 
 - Catch pandoc timeouts
