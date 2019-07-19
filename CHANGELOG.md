@@ -1,3 +1,7 @@
+## v0.111.20, 19 July 2019
+
+- Python: Check using Python 2 when updating fails due to an issue with dep being updated
+
 ## v0.111.19, 19 July 2019
 
 - PHP: Use lower bound of library PHP requirement when resolving
