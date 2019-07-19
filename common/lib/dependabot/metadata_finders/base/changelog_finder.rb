@@ -49,7 +49,8 @@ module Dependabot
               pruned_text,
               from: :rst,
               to: :markdown,
-              wrap: :none
+              wrap: :none,
+              timeout: 10
             )
           rescue Errno::ENOENT => e
             raise unless e.message == "No such file or directory - pandoc"
