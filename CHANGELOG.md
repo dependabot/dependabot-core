@@ -1,3 +1,7 @@
+## v0.111.17, 19 July 2019
+
+- Catch pandoc timeouts
+
 ## v0.111.16, 19 July 2019
 
 - Time out calls to pandoc after 10 seconds
