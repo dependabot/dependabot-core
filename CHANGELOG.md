@@ -1,3 +1,8 @@
+## v0.111.16, 19 July 2019
+
+- Time out calls to pandoc after 10 seconds
+- Python: Bump pip-tools from 3.8.0 to 3.9.0 in /python/helpers
+
 ## v0.111.15, 17 July 2019
 
 - Handle 401s from GitHub in GitMetadataFetcher
