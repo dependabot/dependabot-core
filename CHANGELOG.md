@@ -1,3 +1,7 @@
+## v0.111.19, 19 July 2019
+
+- PHP: Use lower bound of library PHP requirement when resolving
+
 ## v0.111.18, 19 July 2019
 
 - Properly catch pandoc timeouts
