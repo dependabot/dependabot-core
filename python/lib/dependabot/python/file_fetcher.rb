@@ -362,7 +362,7 @@ module Dependabot
           scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
-          reject { |p| p.include?("://") }
+          reject { |p| p.include?("://") || p.include?("git@") }
 
         uneditable_reqs + editable_reqs
       end
