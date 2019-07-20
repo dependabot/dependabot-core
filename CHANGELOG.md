@@ -1,3 +1,7 @@
+## v0.111.21, 20 July 2019
+
+- Python: Handle git@ URLs in FileFetcher
+
 ## v0.111.20, 19 July 2019
 
 - Python: Check using Python 2 when updating fails due to an issue with dep being updated
