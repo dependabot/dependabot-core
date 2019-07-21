@@ -363,7 +363,7 @@ module Dependabot
 
           php_requirements = [
             parsed_composer_file.dig("require", "php"),
-            parsed_composer_file.dig("require-dev", "php"),
+            parsed_composer_file.dig("require-dev", "php")
           ].compact
           return {} if php_requirements.empty?
 
