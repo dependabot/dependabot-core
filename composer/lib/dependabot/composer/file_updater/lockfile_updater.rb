@@ -359,11 +359,11 @@ module Dependabot
         end
 
         def initial_platform
-          return {} unless parsed_composer_file["type"] == "library"
+          return {} unless parsed_composer_json["type"] == "library"
 
           php_requirements = [
-            parsed_composer_file.dig("require", "php"),
-            parsed_composer_file.dig("require-dev", "php")
+            parsed_composer_json.dig("require", "php"),
+            parsed_composer_json.dig("require-dev", "php")
           ].compact
           return {} if php_requirements.empty?
 
