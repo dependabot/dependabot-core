@@ -255,7 +255,7 @@ module Dependabot
           version =
             potential_versions.
             find do |v|
-              req_arrays.any? { |reqs| reqs.all? { |r| r.satisfied_by?(v) } }
+              req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
           raise "No matching version for #{requirements}!" unless version
 
@@ -278,6 +278,10 @@ module Dependabot
 
         def initial_platform
           return {} unless parsed_composer_file["type"] == "library"
+
+          # Note: We *don't* include the require-dev PHP version in our initial
+          # platform. If we fail to resolve with the PHP version specified in
+          # `require` then it will be picked up in a subsequent iteration.
           return {} unless parsed_composer_file.dig("require", "php")
 
           { "php" => [parsed_composer_file.dig("require", "php")] }
