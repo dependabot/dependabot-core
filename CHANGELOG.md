@@ -1,3 +1,10 @@
+## v0.111.22, 21 July 2019
+
+- Fix typo
+- Fix rubocop
+- Composer: Fix conversion of requirements to version when handling missing extensions
+- Update test
+
 ## v0.111.21, 20 July 2019
 
 - Python: Handle git@ URLs in FileFetcher
