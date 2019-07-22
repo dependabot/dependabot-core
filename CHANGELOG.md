@@ -1,3 +1,8 @@
+## v0.111.24, 22 July 2019
+
+- Python: Correctly check for hashes when freezing versions in a pyproject.toml
+- Don't pluralize security fixes if there is only one
+
 ## v0.111.23, 22 July 2019
 
 - Yarn: Use npmjs.org as registry if explicitly specified in .yarnrc
