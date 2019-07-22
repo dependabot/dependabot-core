@@ -13,9 +13,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     )
   end
   let(:lockfile) { nil }
-  let(:pyproject_content) do
-    fixture("pyproject_files", "pyproject.toml")
-  end
+  let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
+  let(:pyproject_fixture_name) { "pyproject.toml" }
 
   describe "#replace_sources" do
     subject(:replace_sources) { preparer.replace_sources(credentials) }
@@ -108,6 +107,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("geopy = \"1.14.0\"\n") }
       it { is_expected.to include("hypothesis = \"3.57.0\"\n") }
       it { is_expected.to include("python = \"^3.6 || ^3.7\"\n") }
+
+      context "with extras" do
+        let(:pyproject_fixture_name) { "extras.toml" }
+        let(:pyproject_lock_fixture_name) { "extras.lock" }
+
+        it "preserves details of the extras" do
+          expect(freeze_top_level_dependencies_except).to include(
+            "[tool.poetry.dependencies.celery]\n"\
+            "extras = [\"redis\"]\n"\
+            "version = \"4.3.0\"\n"
+          )
+        end
+      end
     end
 
     context "with a dependency to except" do

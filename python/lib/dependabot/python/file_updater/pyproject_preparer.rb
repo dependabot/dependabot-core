@@ -56,7 +56,7 @@ module Dependabot
                   "git" => locked_details&.dig("source", "url"),
                   "rev" => locked_details&.dig("source", "reference")
                 }
-              elsif poetry_object[dep_name].is_a?(Hash)
+              elsif poetry_object[key][dep_name].is_a?(Hash)
                 poetry_object[key][dep_name]["version"] = locked_version
               else
                 poetry_object[key][dep_name] = locked_version
