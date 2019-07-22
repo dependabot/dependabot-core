@@ -27,10 +27,9 @@ module Dependabot
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_footer: nil, custom_labels: nil,
                    author_details: nil, signature_key: nil,
-                   commit_message_options: {},
+                   commit_message_options: {}, vulnerabilities_fixed: {},
                    reviewers: nil, assignees: nil, milestone: nil,
-                   vulnerabilities_fixed: {}, branch_name_separator: "/",
-                   branch_name_prefix: "dependabot",
+                   branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: "github-redirect.dependabot.com",
                    custom_headers: nil)
