@@ -13,7 +13,7 @@ module Dependabot
         NPM_GLOBAL_REGISTRY_REGEX =
           /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
         YARN_GLOBAL_REGISTRY_REGEX =
-          /^registry\s+['"](?<registry>.*)['"]/.freeze
+          /^(?:--)?registry\s+['"](?<registry>.*)['"]/.freeze
 
         def initialize(dependency:, credentials:, npmrc_file: nil,
                        yarnrc_file: nil)

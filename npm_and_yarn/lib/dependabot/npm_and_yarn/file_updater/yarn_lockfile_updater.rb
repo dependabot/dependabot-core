@@ -295,6 +295,7 @@ module Dependabot
           write_lockfiles
 
           File.write(".npmrc", npmrc_content)
+          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
 
           package_files.each do |file|
             path = file.name
@@ -428,10 +429,8 @@ module Dependabot
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
-            npmrc_file: dependency_files.
-                        find { |f| f.name.end_with?(".npmrc") },
-            yarnrc_file: dependency_files.
-                         find { |f| f.name.end_with?(".yarnrc") }
+            npmrc_file: npmrc_file,
+            yarnrc_file: yarnrc_file
           ).registry
 
           # Sanitize Gemfury URLs
@@ -442,9 +441,7 @@ module Dependabot
         end
 
         def central_registry?(registry)
-          NpmAndYarn::FileParser::CENTRAL_REGISTRIES.any? do |r|
-            r.include?(registry)
-          end
+          FileParser::CENTRAL_REGISTRIES.any? { |r| r.include?(registry) }
         end
 
         def raise_resolvability_error(error_message, yarn_lock)
@@ -490,6 +487,26 @@ module Dependabot
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
+        def yarnrc_specifies_npm_reg?
+          return false unless yarnrc_file
+
+          regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
+          yarnrc_global_registry =
+            yarnrc_file.content.
+            lines.find { |line| line.match?(regex) }&.
+            match(regex)&.
+            named_captures&.
+            fetch("registry")
+
+          return false unless yarnrc_global_registry
+
+          yarnrc_global_registry.include?("registry.npmjs.org")
+        end
+
+        def yarnrc_content
+          'registry "https://registry.npmjs.org"'
+        end
+
         def sanitized_package_json_content(content)
           updated_content =
             content.
@@ -514,6 +531,14 @@ module Dependabot
 
         def package_files
           dependency_files.select { |f| f.name.end_with?("package.json") }
+        end
+
+        def yarnrc_file
+          dependency_files.find { |f| f.name == ".yarnrc" }
+        end
+
+        def npmrc_file
+          dependency_files.find { |f| f.name == ".npmrc" }
         end
       end
     end

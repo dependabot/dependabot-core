@@ -2509,6 +2509,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when the npm registry was explicitly specified" do
+        let(:manifest_fixture_name) { "package.json" }
+        let(:yarn_lock_fixture_name) { "npm_global_registry.lock" }
+        let(:yarnrc) do
+          Dependabot::DependencyFile.new(
+            name: ".yarnrc",
+            content: '--registry "https://registry.npmjs.org"'
+          )
+        end
+        let(:files) { [package_json, yarn_lock, yarnrc] }
+
+        it "keeps the preference for the npm registry" do
+          expect(updated_yarn_lock.content).
+            to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
+          expect(updated_yarn_lock.content).to include(
+            "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.2"
+          )
+        end
+      end
+
       context "when there's a duplicate indirect dependency" do
         let(:manifest_fixture_name) { "duplicate_indirect_dependency.json" }
         let(:yarn_lock_fixture_name) { "duplicate_indirect_dependency.lock" }
