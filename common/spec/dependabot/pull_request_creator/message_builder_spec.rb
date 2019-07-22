@@ -1049,7 +1049,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           expect(pr_message).
             to start_with(
               "Bumps [business](https://github.com/gocardless/business) "\
-              "from 1.4.0 to 1.5.0. **This update includes security fixes.**\n"\
+              "from 1.4.0 to 1.5.0. **This update includes a security fix.**\n"\
               "<details>\n"\
               "<summary>Vulnerabilities fixed</summary>\n\n"\
               "> **Serious vulnerability**\n"\

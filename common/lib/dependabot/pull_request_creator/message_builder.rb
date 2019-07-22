@@ -178,7 +178,9 @@ module Dependabot
           msg += " This release includes the previously tagged commit."
         end
 
-        if vulnerabilities_fixed[dependency.name]&.any?
+        if vulnerabilities_fixed[dependency.name]&.one?
+          msg += " **This update includes a security fix.**"
+        elsif vulnerabilities_fixed[dependency.name]&.any?
           msg += " **This update includes security fixes.**"
         end
 
@@ -275,16 +277,20 @@ module Dependabot
       end
 
       def metadata_cascades
-        if dependencies.count == 1
+        if dependencies.one?
           return metadata_cascades_for_dep(dependencies.first)
         end
 
         dependencies.map do |dep|
           msg = "\n\nUpdates `#{dep.display_name}` from "\
                 "#{previous_version(dep)} to #{new_version(dep)}"
-          if vulnerabilities_fixed[dep.name]&.any?
-            msg += ". **This update includes security fixes.**"
+
+          if vulnerabilities_fixed[dep.name]&.one?
+            msg += " **This update includes a security fix.**"
+          elsif vulnerabilities_fixed[dep.name]&.any?
+            msg += " **This update includes security fixes.**"
           end
+
           msg + metadata_cascades_for_dep(dep)
         end.join
       end
