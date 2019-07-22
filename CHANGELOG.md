@@ -1,3 +1,7 @@
+## v0.111.23, 22 July 2019
+
+- Yarn: Use npmjs.org as registry if explicitly specified in .yarnrc
+
 ## v0.111.22, 21 July 2019
 
 - Composer: Fix conversion of requirements to version when handling missing extensions
