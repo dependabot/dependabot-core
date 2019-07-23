@@ -1,3 +1,10 @@
+## v0.111.25, 23 July 2019
+
+- Add new Dependency.name_normaliser_for_package_manager method, and implement
+  for Python
+- Python: Consider whether a version has been yanked in LatestVersionFinder
+- Bundler: Stop using --full-index, since artifactory issue is now fixed
+
 ## v0.111.24, 22 July 2019
 
 - Python: Correctly check for hashes when freezing versions in a pyproject.toml
