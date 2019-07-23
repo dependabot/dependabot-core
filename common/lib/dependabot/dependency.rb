@@ -6,6 +6,7 @@ module Dependabot
   class Dependency
     @production_checks = {}
     @display_name_builders = {}
+    @name_normalisers = {}
 
     def self.production_check_for_package_manager(package_manager)
       production_check = @production_checks[package_manager]
@@ -24,6 +25,14 @@ module Dependabot
 
     def self.register_display_name_builder(package_manager, name_builder)
       @display_name_builders[package_manager] = name_builder
+    end
+
+    def self.name_normaliser_for_package_manager(package_manager)
+      @name_normalisers[package_manager] || ->(name) { name }
+    end
+
+    def self.register_name_normaliser(package_manager, name_builder)
+      @name_normalisers[package_manager] = name_builder
     end
 
     attr_reader :name, :version, :requirements, :package_manager,

@@ -69,6 +69,16 @@ RSpec.describe Dependabot::Dependency do
     end
   end
 
+  describe ".name_normaliser_for_package_manager" do
+    subject(:name_normaliser) do
+      described_class.name_normaliser_for_package_manager("dep")
+    end
+
+    it "is an identity operator by default" do
+      expect(name_normaliser.call("name")).to eq("name")
+    end
+  end
+
   describe "#==" do
     let(:args) do
       {

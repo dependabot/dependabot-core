@@ -4,6 +4,7 @@ require "cgi"
 require "excon"
 require "nokogiri"
 
+require "dependabot/dependency"
 require "dependabot/python/update_checker"
 require "dependabot/shared_helpers"
 require "dependabot/python/authed_url_builder"
@@ -220,9 +221,8 @@ module Dependabot
           ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name
-          dependency.name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def name_regex

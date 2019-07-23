@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
@@ -165,9 +166,8 @@ module Dependabot
           dec.to_s.strip
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def requirements_match(req1, req2)

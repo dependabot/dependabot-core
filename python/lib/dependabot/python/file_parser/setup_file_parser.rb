@@ -163,9 +163,8 @@ module Dependabot
           0
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalised_name(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def setup_file

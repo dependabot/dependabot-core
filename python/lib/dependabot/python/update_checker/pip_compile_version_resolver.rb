@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser"
@@ -343,9 +344,8 @@ module Dependabot
           ).updated_content
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def clean_error_message(message)

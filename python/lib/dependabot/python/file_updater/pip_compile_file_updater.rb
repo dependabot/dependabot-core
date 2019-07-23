@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser/python_requirement_parser"
@@ -483,9 +484,8 @@ module Dependabot
           matches.any? { |m| normalise(m[:name]) == dependency.name }
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         # If the files we need to update require one another then we need to

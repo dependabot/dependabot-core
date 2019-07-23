@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
@@ -324,9 +325,8 @@ module Dependabot
           )
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
       end
     end

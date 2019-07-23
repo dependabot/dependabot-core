@@ -97,9 +97,8 @@ module Dependabot
           raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def parsed_pyproject

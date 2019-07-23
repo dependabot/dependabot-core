@@ -2,6 +2,7 @@
 
 require "toml-rb"
 
+require "dependabot/dependency"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/authed_url_builder"
@@ -77,9 +78,8 @@ module Dependabot
             find { |d| d["name"] == normalise(dep_name) }
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/#normalized-names
         def normalise(name)
-          name.downcase.gsub(/[-_.]+/, "-")
+          Dependency.name_normaliser_for_package_manager("pip").call(name)
         end
 
         def pyproject_sources

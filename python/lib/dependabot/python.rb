@@ -25,3 +25,9 @@ Dependabot::Dependency.register_production_check(
     groups.include?("dependencies")
   end
 )
+
+# See https://www.python.org/dev/peps/pep-0503/#normalized-names
+Dependabot::Dependency.register_name_normaliser(
+  "pip",
+  ->(name) { name.downcase.gsub(/[-_.]+/, "-") }
+)
