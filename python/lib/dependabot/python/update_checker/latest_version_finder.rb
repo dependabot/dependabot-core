@@ -222,7 +222,9 @@ module Dependabot
         end
 
         def normalised_name
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          Dependency.
+            name_normaliser_for_package_manager("pip").
+            call(dependency.name)
         end
 
         def name_regex
