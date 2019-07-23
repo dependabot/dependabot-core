@@ -45,6 +45,7 @@ module Dependabot
 
         def fetch_latest_version(python_version:)
           versions = available_versions
+          versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
@@ -53,6 +54,7 @@ module Dependabot
 
         def fetch_latest_version_with_no_unlock(python_version:)
           versions = available_versions
+          versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
@@ -62,12 +64,17 @@ module Dependabot
 
         def fetch_lowest_security_fix_version(python_version:)
           versions = available_versions
+          versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
           versions = filter_vulnerable_versions(versions)
           versions = filter_lower_versions(versions)
           versions.min
+        end
+
+        def filter_yanked_versions(versions_array)
+          versions_array.reject { |details| details.fetch(:yanked) }
         end
 
         def filter_unsupported_versions(versions_array, python_version)
@@ -160,7 +167,8 @@ module Dependabot
 
           {
             version: version_class.new(version),
-            python_requirement: build_python_requirement_from_link(link)
+            python_requirement: build_python_requirement_from_link(link),
+            yanked: link&.include?("data-yanked")
           }
         end
 
