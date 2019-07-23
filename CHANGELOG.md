@@ -1,3 +1,7 @@
+## v0.111.26, 23 July 2019
+
+- Python: Fix typo
+
 ## v0.111.25, 23 July 2019
 
 - Add new Dependency.name_normaliser_for_package_manager method, and implement
