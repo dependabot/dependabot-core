@@ -9,6 +9,7 @@ require "dependabot/python/file_updater"
 require "dependabot/python/metadata_finder"
 require "dependabot/python/requirement"
 require "dependabot/python/version"
+require "dependabot/python/name_normaliser"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler.
@@ -29,5 +30,5 @@ Dependabot::Dependency.register_production_check(
 # See https://www.python.org/dev/peps/pep-0503/#normalized-names
 Dependabot::Dependency.register_name_normaliser(
   "pip",
-  ->(name) { name.downcase.gsub(/[-_.]+/, "-") }
+  ->(name) { NameNormaliser.normalise(name) }
 )

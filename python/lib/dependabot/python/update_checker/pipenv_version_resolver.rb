@@ -13,6 +13,7 @@ require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/update_checker"
 require "dependabot/python/python_versions"
 require "dependabot/python/native_helpers"
+require "dependabot/python/name_normaliser"
 require "dependabot/python/version"
 
 # rubocop:disable Metrics/ClassLength
@@ -481,7 +482,7 @@ module Dependabot
         end
 
         def normalise(name)
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          NameNormaliser.normalise(name)
         end
 
         def pipfile

@@ -65,6 +65,18 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
     it { is_expected.to eq(Gem::Version.new("18.1.0")) }
 
+    context "with a mismatch in filename" do
+      let(:generated_fixture_name) { "pip_compile_unpinned_renamed.txt" }
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test-funky.txt",
+          content: fixture("requirements", generated_fixture_name)
+        )
+      end
+
+      it { is_expected.to eq(Gem::Version.new("18.1.0")) }
+    end
+
     context "with an upper bound" do
       let(:manifest_fixture_name) { "bounded.in" }
       let(:generated_fixture_name) { "pip_compile_bounded.txt" }

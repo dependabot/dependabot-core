@@ -10,6 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/python/requirement"
 require "dependabot/python/requirement_parser"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -288,7 +289,7 @@ module Dependabot
       end
 
       def normalised_name(name)
-        Dependency.name_normaliser_for_package_manager("pip").call(name)
+        NameNormaliser.normalise(name)
       end
 
       def pipfile
@@ -318,5 +319,4 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("pip", Dependabot::Python::UpdateChecker)
+Dependabot::UpdateCheckers.register("pip", Dependabot::Python::UpdateChecker)

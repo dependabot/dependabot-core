@@ -82,6 +82,25 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       expect(updated_files.first.content).to_not include("--hash=sha")
     end
 
+    context "with a mismatch in filename" do
+      let(:generated_fixture_name) { "pip_compile_unpinned_renamed.txt" }
+      let(:generated_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/test-funky.txt",
+          content: fixture("requirements", generated_fixture_name)
+        )
+      end
+
+      it "updates the requirements.txt" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("attrs==18.1.0")
+        expect(updated_files.first.content).
+          to include("pbr==4.0.2                # via mock")
+        expect(updated_files.first.content).to include("# This file is autogen")
+        expect(updated_files.first.content).to_not include("--hash=sha")
+      end
+    end
+
     context "with a custom header" do
       let(:generated_fixture_name) { "pip_compile_custom_header.txt" }
 

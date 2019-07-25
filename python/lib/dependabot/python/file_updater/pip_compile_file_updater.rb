@@ -9,6 +9,7 @@ require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -422,15 +423,13 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          current_requirements_file_name = filename.sub(/\.in$/, ".txt")
+          requirements_file = compiled_file_for_filename(filename)
+          return "--build-isolation" unless requirements_file
 
-          requirements_file =
-            dependency_files.
-            find { |f| f.name == current_requirements_file_name }
-
-          return unless requirements_file
-
-          options = ["--build-isolation"]
+          options = [
+            "--build-isolation",
+            "--output-file=#{requirements_file.name}"
+          ]
 
           if requirements_file.content.include?("--hash=sha")
             options << "--generate-hashes"
@@ -464,14 +463,29 @@ module Dependabot
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
-              compiled_file = dependency_files.
-                              find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
+              compiled_file = compiled_file_for_filename(fn)
               compiled_file_includes_dependency?(compiled_file)
             end
 
           filenames = [*files_from_reqs, *files_from_compiled_files].uniq
 
           order_filenames_for_compilation(filenames)
+        end
+
+        def compiled_file_for_filename(filename)
+          compiled_file =
+            compiled_files.
+            find { |f| f.content.match?(output_file_regex(filename)) }
+
+          compiled_file ||=
+            compiled_files.
+            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+
+          compiled_file
+        end
+
+        def output_file_regex(filename)
+          "--output-file[=\s]+.*\s#{Regexp.escape(filename)}\s*$"
         end
 
         def compiled_file_includes_dependency?(compiled_file)
@@ -485,7 +499,7 @@ module Dependabot
         end
 
         def normalise(name)
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          NameNormaliser.normalise(name)
         end
 
         # If the files we need to update require one another then we need to

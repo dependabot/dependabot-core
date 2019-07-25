@@ -10,6 +10,7 @@ require "dependabot/python/python_versions"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -291,7 +292,7 @@ module Dependabot
         end
 
         def normalise(name)
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          NameNormaliser.normalise(name)
         end
 
         def pyproject

@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/errors"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -134,7 +135,7 @@ module Dependabot
         end
 
         def normalised_name(name)
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          NameNormaliser.normalise(name)
         end
 
         def parsed_pipfile

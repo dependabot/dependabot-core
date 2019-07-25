@@ -13,6 +13,7 @@ require "dependabot/python/version"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -74,14 +75,15 @@ module Dependabot
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
                     "pyenv exec pip-compile --allow-unsafe "\
-                     "--build-isolation -P #{dependency.name} #{filename}"
+                     "#{pip_compile_options(filename)} -P #{dependency.name} "\
+                     "#{filename}"
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   write_original_manifest_files unless dependency.top_level?
                   run_pip_compile_command(
                     "pyenv exec pip-compile --allow-unsafe "\
-                     "--build-isolation #{filename}"
+                     "#{pip_compile_options(filename)} #{filename}"
                   )
                 end
 
@@ -194,6 +196,16 @@ module Dependabot
               process_exit_value: process.to_s
             }
           )
+        end
+
+        def pip_compile_options(filename)
+          requirements_file = compiled_file_for_filename(filename)
+          return "--build-isolation" unless requirements_file
+
+          [
+            "--build-isolation",
+            "--output-file=#{requirements_file.name}"
+          ].join(" ")
         end
 
         def run_pip_compile_command(command)
@@ -345,7 +357,7 @@ module Dependabot
         end
 
         def normalise(name)
-          Dependency.name_normaliser_for_package_manager("pip").call(name)
+          NameNormaliser.normalise(name)
         end
 
         def clean_error_message(message)
@@ -367,14 +379,29 @@ module Dependabot
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
-              compiled_file = dependency_files.
-                              find { |f| f.name == fn.gsub(/\.in$/, ".txt") }
+              compiled_file = compiled_file_for_filename(fn)
               compiled_file_includes_dependency?(compiled_file)
             end
 
           filenames = [*files_from_reqs, *files_from_compiled_files].uniq
 
           order_filenames_for_compilation(filenames)
+        end
+
+        def compiled_file_for_filename(filename)
+          compiled_file =
+            compiled_files.
+            find { |f| f.content.match?(output_file_regex(filename)) }
+
+          compiled_file ||=
+            compiled_files.
+            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+
+          compiled_file
+        end
+
+        def output_file_regex(filename)
+          "--output-file[=\s]+.*\s#{Regexp.escape(filename)}\s*$"
         end
 
         def compiled_file_includes_dependency?(compiled_file)

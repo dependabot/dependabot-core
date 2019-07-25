@@ -173,5 +173,4 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("pip", Dependabot::Python::MetadataFinder)
+Dependabot::MetadataFinders.register("pip", Dependabot::Python::MetadataFinder)

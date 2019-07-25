@@ -766,6 +766,21 @@ RSpec.describe Dependabot::Python::FileParser do
           end
         end
       end
+
+      context "with a mismatching name" do
+        let(:generated_file) do
+          Dependabot::DependencyFile.new(
+            name: "requirements/test-funky.txt",
+            content: fixture("requirements", generated_fixture_name)
+          )
+        end
+        let(:generated_fixture_name) { "pip_compile_unpinned_renamed.txt" }
+
+        describe "top level dependencies" do
+          subject(:dependencies) { parser.parse.select(&:top_level?) }
+          its(:length) { is_expected.to eq(5) }
+        end
+      end
     end
 
     context "with a setup.py" do

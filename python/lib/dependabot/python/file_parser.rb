@@ -9,6 +9,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/requirement"
 require "dependabot/errors"
 require "dependabot/python/native_helpers"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -137,6 +138,9 @@ module Dependabot
         return false unless pip_compile_files.any?
         return false unless filename.end_with?(".txt")
 
+        file = dependency_files.find { |f| f.name == filename }
+        return true if file&.content&.match?(output_file_regex(filename))
+
         basename = filename.gsub(/\.txt$/, "")
         pip_compile_files.any? { |f| f.name == basename + ".in" }
       end
@@ -181,9 +185,8 @@ module Dependabot
           end
       end
 
-      # See https://www.python.org/dev/peps/pep-0503/#normalized-names
       def normalised_name(name)
-        Dependency.name_normaliser_for_package_manager("pip").call(name)
+        NameNormaliser.normalise(name)
       end
 
       def check_required_files
@@ -213,6 +216,10 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, pyproject.path
       end
 
+      def output_file_regex(filename)
+        "--output-file[=\s]+#{Regexp.escape(filename)}(?:\s|$)"
+      end
+
       def pyproject
         @pyproject ||= get_original_file("pyproject.toml")
       end
@@ -237,5 +244,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("pip", Dependabot::Python::FileParser)
+Dependabot::FileParsers.register("pip", Dependabot::Python::FileParser)

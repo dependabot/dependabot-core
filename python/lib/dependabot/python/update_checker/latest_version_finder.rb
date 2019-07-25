@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/python/update_checker"
 require "dependabot/shared_helpers"
 require "dependabot/python/authed_url_builder"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -222,9 +223,7 @@ module Dependabot
         end
 
         def normalised_name
-          Dependency.
-            name_normaliser_for_package_manager("pip").
-            call(dependency.name)
+          NameNormaliser.normalise(dependency.name)
         end
 
         def name_regex
