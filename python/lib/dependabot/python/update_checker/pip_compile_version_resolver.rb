@@ -24,9 +24,9 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /Command "git clone -q (?<url>[^\s]+).*" failed/.freeze
+          /command: git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{"git checkout -q (?<tag>[^"]+)" .*/(?<name>.*?)(\\n'\]|$)}.
+          %r{git checkout -q (?<tag>[^\n]+)\n[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
 
         attr_reader :dependency, :dependency_files, :credentials
@@ -117,11 +117,11 @@ module Dependabot
             check_original_requirements_resolvable
           end
 
-          if error.message.include?('Command "python setup.py egg_info') &&
-             error.message.match?(/#{Regexp.quote(dependency.name)}/i)
+          if error.message.include?('Command "python setup.py egg_info') ||
+             error.message.include?("exit status 1: python setup.py egg_info")
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
-            return nil
+            return if check_original_requirements_resolvable
           end
 
           if error.message.include?("Could not find a version ") &&
@@ -137,6 +137,7 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
+          puts error.message
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
