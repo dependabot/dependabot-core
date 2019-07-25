@@ -262,7 +262,8 @@ module Dependabot
         end
 
         def error_certainly_bad_python_version?(message)
-          unless message.include?('Command "python setup.py egg_info" failed')
+          unless message.include?('"python setup.py egg_info" failed') ||
+                 message.include?("exit status 1: python setup.py egg_info")
             return false
           end
 
@@ -273,7 +274,8 @@ module Dependabot
           return true if message.include?("not find a version that satisfies")
           return true if message.include?("No matching distribution found")
 
-          message.include?('Command "python setup.py egg_info" failed')
+          message.include?('Command "python setup.py egg_info" failed') ||
+            message.include?("exit status 1: python setup.py egg_info")
         end
 
         def write_temporary_dependency_files(updated_req: nil,

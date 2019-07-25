@@ -204,7 +204,8 @@ module Dependabot
         def error_suggests_bad_python_version?(message)
           return true if message.include?("not find a version that satisfies")
 
-          message.include?('Command "python setup.py egg_info" failed')
+          message.include?('Command "python setup.py egg_info" failed') ||
+            message.include?("exit status 1: python setup.py egg_info")
         end
 
         def write_updated_dependency_files
