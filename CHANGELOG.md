@@ -1,3 +1,11 @@
+## v0.111.28, 25 July 2019
+
+- Python: Update error message parsing for new pip version
+- Python: Bump pip-tools from 3.9.0 to 4.0.0 in /python/helpers
+- Python: Bump pip from 19.1.1 to 19.2.1 in /python/helpers
+- Python: Handle pip-compiled files with specified names (when included in header)
+- Composer: Better selection of valid versions from requirements
+
 ## v0.111.27, 24 July 2019
 
 - JS: Bump semver from 6.2.0 to 6.3.0 in /npm_and_yarn/helpers
