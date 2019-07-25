@@ -469,7 +469,7 @@ module Dependabot
           return true if error_message.include?("at matches #{dependency.name}")
 
           error_message.include?('Command "python setup.py egg_info" failed') ||
-            message.include?("exit status 1: python setup.py egg_info")
+            error_message.include?("exit status 1: python setup.py egg_info")
         end
 
         def pipenv_env_variables
