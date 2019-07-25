@@ -133,8 +133,8 @@ module Dependabot
                 reject { |req_string| req_string.start_with?("<") }.
                 select { |req_string| req_string.match?(VERSION_REGEX) }.
                 map { |req_string| req_string.match(VERSION_REGEX) }.
-                select { |version| Gem::Version.correct?(version) }.
-                max_by { |version| Gem::Version.new(version) }
+                select { |version| requirement_valid?(">= #{version}") }.
+                max_by { |version| Composer::Version.new(version) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -303,6 +303,13 @@ module Dependabot
 
         def auth_json
           @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
+        end
+
+        def requirement_valid?(req_string)
+          Composer::Requirement.requirements_array(req_string)
+          true
+        rescue Gem::Requirement::BadRequirementError
+          false
         end
 
         def git_credentials
