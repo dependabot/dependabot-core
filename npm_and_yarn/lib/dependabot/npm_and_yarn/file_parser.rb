@@ -26,7 +26,7 @@ module Dependabot
         https://registry.yarnpkg.com
       ).freeze
       GIT_URL_REGEX = %r{
-        (?:^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
+        (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
         (?<username>[a-z0-9-]+)/
         (?<repo>[a-z0-9_.-]+)
         (
@@ -255,9 +255,20 @@ module Dependabot
 
       def git_source_for(requirement)
         details = requirement.match(GIT_URL_REGEX).named_captures
+        url =
+          if details.fetch("git_prefix").include?("://")
+            requirement.split("#").first
+          elsif details.fetch("git_prefix").include?("bitbucket")
+            "https://bitbucket.org/#{details['username']}/#{details['repo']}"
+          elsif details.fetch("git_prefix").include?("gitlab")
+            "https://gitlab.com/#{details['username']}/#{details['repo']}"
+          else
+            "https://github.com/#{details['username']}/#{details['repo']}"
+          end
+
         {
           type: "git",
-          url: "https://github.com/#{details['username']}/#{details['repo']}",
+          url: url,
           branch: nil,
           ref: details["ref"] || "master"
         }
