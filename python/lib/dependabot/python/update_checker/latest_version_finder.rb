@@ -162,7 +162,7 @@ module Dependabot
         def version_details_from_link(link)
           doc = Nokogiri::XML(link)
           filename = doc.at_css("a")&.content
-          url = doc.at_css("a")&.attributes&.fetch("href")&.value
+          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
           return unless filename&.match?(name_regex) || url&.match?(name_regex)
 
           version = get_version_from_filename(filename)
