@@ -1103,7 +1103,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     groups: ["devDependencies"],
                     source: {
                       type: "git",
-                      url: "git+https://username:password@github.com/"\
+                      url: "https://username:password@github.com/"\
                            "jonschlinkert/is-number.git",
                       branch: nil,
                       ref: "master"
