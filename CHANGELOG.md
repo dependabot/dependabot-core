@@ -1,3 +1,8 @@
+## v0.111.34, 26 July 2019
+
+- Python: Handle link tags without a href
+- Bump cython from 0.29.12 to 0.29.13 in /python/helpers
+
 ## v0.111.33, 26 July 2019
 
 - Don't map all git dependencies to GitHub
