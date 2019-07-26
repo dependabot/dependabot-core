@@ -1,3 +1,7 @@
+## v0.111.35, 26 July 2019
+
+- JS: Better git URL parsing
+
 ## v0.111.34, 26 July 2019
 
 - Python: Handle link tags without a href
