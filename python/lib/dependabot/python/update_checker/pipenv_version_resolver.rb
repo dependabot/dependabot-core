@@ -31,9 +31,9 @@ module Dependabot
       # still better than nothing, though.
       class PipenvVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /command: git clone -q (?<url>[^\s]+).* /.freeze
+          /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n]+)\n[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
+          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
@@ -168,6 +168,7 @@ module Dependabot
             return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
+          puts error.message
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")

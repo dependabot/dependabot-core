@@ -24,9 +24,9 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /command: git clone -q (?<url>[^\s]+).* /.freeze
+          /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n]+)\n[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
+          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
 
         attr_reader :dependency, :dependency_files, :credentials
@@ -137,7 +137,6 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
-          puts error.message
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
