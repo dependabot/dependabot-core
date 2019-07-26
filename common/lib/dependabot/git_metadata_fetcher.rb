@@ -72,8 +72,10 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
 
     def fetch_raw_upload_pack_for(uri)
+      url = service_pack_uri(uri)
+      url = url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
       Excon.get(
-        service_pack_uri(uri),
+        url,
         idempotent: true,
         **excon_defaults
       )

@@ -124,6 +124,19 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
           its(:count) { is_expected.to eq(14) }
         end
+
+        context "when there is a github.com credential with an @ in the user" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token@github.com",
+              "password" => "token"
+            }]
+          end
+
+          its(:count) { is_expected.to eq(14) }
+        end
       end
     end
 
