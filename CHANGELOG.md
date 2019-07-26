@@ -1,3 +1,7 @@
+## v0.111.32, 26 July 2019
+
+- Don't use semver labels if a skip-release label exists
+
 ## v0.111.31, 26 July 2019
 
 - Python: Handle devpi index requirements (package name in URL, must request
