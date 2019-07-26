@@ -48,7 +48,7 @@ module Dependabot
         [
           *default_labels_for_pr,
           includes_security_fixes? ? security_label : nil,
-          semver_labels_exist? ? semver_label : nil,
+          label_update_type? ? semver_label : nil,
           automerge_candidate? ? automerge_label : nil
         ].compact.uniq
       end
@@ -191,7 +191,13 @@ module Dependabot
         labels.find { |l| l.match?(/security/i) }
       end
 
-      def semver_labels_exist?
+      def label_update_type?
+        # If a `skip-release` label exists then this repo is likely to be using
+        # an auto-releasing service (like auto). We don't want to hijack that
+        # service's labels.
+        return false if labels.map(&:downcase).include?("skip-release")
+
+        # Otherwise, check whether labels exist for each update type
         (%w(major minor patch) - labels.map(&:downcase)).empty?
       end
 
