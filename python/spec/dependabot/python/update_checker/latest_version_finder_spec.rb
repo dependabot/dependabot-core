@@ -7,7 +7,9 @@ require "dependabot/python/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
-    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+    stub_request(:get, pypi_url).
+      with(headers: { "Accept" => "text/html" }).
+      to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi_simple_response.html") }
@@ -106,6 +108,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     context "when the PyPI response includes zipped files" do
       let(:pypi_response) { fixture("pypi_simple_response_zip.html") }
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
+    context "when the pypi link responds with devpi-style" do
+      let(:pypi_response) { fixture("pypi_simple_response_devpi.html") }
+      let(:dependency_version) { "0.9.0" }
+
+      it { is_expected.to eq(Gem::Version.new("0.10.2")) }
     end
 
     context "when the latest versions have been yanked" do

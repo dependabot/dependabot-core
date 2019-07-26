@@ -162,7 +162,8 @@ module Dependabot
         def version_details_from_link(link)
           doc = Nokogiri::XML(link)
           filename = doc.at_css("a")&.content
-          return unless filename&.match?(name_regex)
+          url = doc.at_css("a")&.attributes&.fetch("href")&.value
+          return unless filename&.match?(name_regex) || url&.match?(name_regex)
 
           version = get_version_from_filename(filename)
           return unless version_class.correct?(version)
@@ -206,6 +207,7 @@ module Dependabot
           Excon.get(
             index_url + normalised_name + "/",
             idempotent: true,
+            headers: { "Accept" => "text/html" },
             **SharedHelpers.excon_defaults
           )
         end
@@ -214,6 +216,7 @@ module Dependabot
           Excon.get(
             index_url,
             idempotent: true,
+            headers: { "Accept" => "text/html" },
             **SharedHelpers.excon_defaults
           )
         end
