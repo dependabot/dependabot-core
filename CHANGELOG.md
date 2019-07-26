@@ -1,3 +1,7 @@
+## v0.111.30, 26 July 2019
+
+- Python: Use namespace when using NameNormaliser
+
 ## v0.111.29, 26 July 2019
 
 - Python: Regex updates for new pip version
