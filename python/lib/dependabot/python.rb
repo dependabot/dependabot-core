@@ -30,5 +30,5 @@ Dependabot::Dependency.register_production_check(
 # See https://www.python.org/dev/peps/pep-0503/#normalized-names
 Dependabot::Dependency.register_name_normaliser(
   "pip",
-  ->(name) { NameNormaliser.normalise(name) }
+  ->(name) { Dependabot::Python::NameNormaliser.normalise(name) }
 )
