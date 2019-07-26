@@ -1,3 +1,7 @@
+## v0.111.29, 26 July 2019
+
+- Python: Regex updates for new pip version
+
 ## v0.111.28, 25 July 2019
 
 - Python: Update error message parsing for new pip version
