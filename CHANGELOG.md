@@ -1,3 +1,8 @@
+## v0.111.33, 26 July 2019
+
+- Don't map all git dependencies to GitHub
+- Handle credentials with an `@` in the username in GitMetadataFetcher
+
 ## v0.111.32, 26 July 2019
 
 - Don't use semver labels if a skip-release label exists
