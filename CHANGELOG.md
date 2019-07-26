@@ -1,3 +1,8 @@
+## v0.111.31, 26 July 2019
+
+- Python: Handle devpi index requirements (package name in URL, must request
+  text/html)
+
 ## v0.111.30, 26 July 2019
 
 - Python: Use namespace when using NameNormaliser
@@ -11,7 +16,8 @@
 - Python: Update error message parsing for new pip version
 - Python: Bump pip-tools from 3.9.0 to 4.0.0 in /python/helpers
 - Python: Bump pip from 19.1.1 to 19.2.1 in /python/helpers
-- Python: Handle pip-compiled files with specified names (when included in header)
+- Python: Handle pip-compiled files with specified names (when included in
+  header)
 - Composer: Better selection of valid versions from requirements
 
 ## v0.111.27, 24 July 2019
@@ -41,7 +47,8 @@
 
 ## v0.111.22, 21 July 2019
 
-- Composer: Fix conversion of requirements to version when handling missing extensions
+- Composer: Fix conversion of requirements to version when handling missing
+  extensions
 
 ## v0.111.21, 20 July 2019
 
@@ -49,7 +56,8 @@
 
 ## v0.111.20, 19 July 2019
 
-- Python: Check using Python 2 when updating fails due to an issue with dep being updated
+- Python: Check using Python 2 when updating fails due to an issue with dep
+  being updated
 
 ## v0.111.19, 19 July 2019
 
@@ -89,7 +97,8 @@
 
 ## v0.111.11, 16 July 2019
 
-- Yarn: Add support for missing `link:` path dependencies which exist in the lockfile
+- Yarn: Add support for missing `link:` path dependencies which exist in the
+  lockfile
 - Update rubocop requirement from ~> 0.72.0 to ~> 0.73.0 in /common
 
 ## v0.111.10, 15 July 2019
