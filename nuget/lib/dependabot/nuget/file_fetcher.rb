@@ -30,7 +30,7 @@ module Dependabot
         fetched_files += imported_property_files
 
         fetched_files += packages_config_files
-        fetched_files << nuget_config if nuget_config
+        fetched_files += nuget_config_files
         fetched_files << global_json if global_json
 
         fetched_files = fetched_files.uniq
@@ -197,14 +197,19 @@ module Dependabot
           end
       end
 
-      def nuget_config
-        @nuget_config ||=
-          begin
-            file = repo_contents.
+      def nuget_config_files
+        return @nuget_config_files if @nuget_config_files
+
+        candidate_paths =
+          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+        @nuget_config_files ||=
+          candidate_paths.map do |dir|
+            file = repo_contents(dir: dir).
                    find { |f| f.name.casecmp("nuget.config").zero? }
-            file = fetch_file_from_host(file.name) if file
+            file = fetch_file_from_host(File.join(dir, file.name)) if file
             file&.tap { |f| f.support_file = true }
-          end
+          end.compact
       end
 
       def global_json

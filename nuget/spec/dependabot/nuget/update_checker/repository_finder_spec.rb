@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
     described_class.new(
       dependency: dependency,
       credentials: credentials,
-      config_file: config_file
+      config_files: [config_file].compact
     )
   end
   let(:config_file) { nil }

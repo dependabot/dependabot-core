@@ -261,13 +261,13 @@ module Dependabot
             RepositoryFinder.new(
               dependency: dependency,
               credentials: credentials,
-              config_file: nuget_config
+              config_files: nuget_configs
             ).dependency_urls
         end
 
-        def nuget_config
-          @nuget_config ||=
-            dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+        def nuget_configs
+          @nuget_configs ||=
+            dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
         end
 
         def sanitized_name

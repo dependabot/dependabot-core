@@ -336,6 +336,15 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
                         "contents_dotnet_csproj_with_parent_import.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(
+        :get,
+        File.join(url, "src/GraphQL.Common/NuGet.Config?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_config.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, File.join(url, "src/src.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -375,6 +384,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
             NuGet.Config
             src/GraphQL.Common/GraphQL.Common.csproj
             src/GraphQL.Common/packages.config
+            src/GraphQL.Common/NuGet.Config
             src/src.props
           )
         )
@@ -490,6 +500,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
               src/GraphQL.Common/packages.config
+              src/GraphQL.Common/NuGet.Config
               src/Validator/Validator.csproj
               src/src.props
             )
@@ -541,6 +552,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
               src/GraphQL.Common/packages.config
+              src/GraphQL.Common/NuGet.Config
               src/src.props
               src/Directory.Build.props
               src/build/dependencies.props
@@ -596,6 +608,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
               src/GraphQL.Common/packages.config
+              src/GraphQL.Common/NuGet.Config
               src/src.props
               src/Directory.Build.targets
               src/build/dependencies.props
@@ -619,6 +632,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               NuGet.Config
               src/GraphQL.Common/GraphQL.Common.csproj
               src/GraphQL.Common/packages.config
+              src/GraphQL.Common/NuGet.Config
             )
           )
       end

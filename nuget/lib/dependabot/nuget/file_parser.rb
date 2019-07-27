@@ -75,11 +75,12 @@ module Dependabot
         dependency_files -
           project_files -
           packages_config_files -
-          [nuget_config, global_json]
+          nuget_configs -
+          [global_json]
       end
 
-      def nuget_config
-        dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+      def nuget_configs
+        dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
       end
 
       def global_json

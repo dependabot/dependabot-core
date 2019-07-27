@@ -12,10 +12,10 @@ module Dependabot
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
 
-        def initialize(dependency:, credentials:, config_file: nil)
+        def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
           @credentials = credentials
-          @config_file = config_file
+          @config_files = config_files
         end
 
         def dependency_urls
@@ -24,7 +24,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :config_file
+        attr_reader :dependency, :credentials, :config_files
 
         def find_dependency_urls
           @find_dependency_urls ||=
@@ -143,10 +143,11 @@ module Dependabot
             map { |c| { url: c.fetch("url"), token: c["token"] } }
         end
 
-        # rubocop:disable Metrics/AbcSize
         def config_file_repositories
-          return [] unless config_file
+          config_files.flat_map { |file| repos_from_config_file(file) }
+        end
 
+        def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
           sources =
@@ -173,7 +174,6 @@ module Dependabot
 
           sources
         end
-        # rubocop:enable Metrics/AbcSize
 
         def default_repository_details
           {
