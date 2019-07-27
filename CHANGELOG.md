@@ -1,3 +1,8 @@
+## v0.111.36, 27 July 2019
+
+- .NET: Better pre-release comparison
+- .NET: Fetch all nuget.config files
+
 ## v0.111.35, 26 July 2019
 
 - JS: Better git URL parsing
