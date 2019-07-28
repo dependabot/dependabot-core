@@ -1,3 +1,7 @@
+## v0.111.37, 28 July 2019
+
+- Elixir: Bump elixir version to 1.9.1 in Dockerfile
+
 ## v0.111.36, 27 July 2019
 
 - .NET: Better pre-release comparison
