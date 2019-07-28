@@ -125,7 +125,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.2/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.9.1/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
