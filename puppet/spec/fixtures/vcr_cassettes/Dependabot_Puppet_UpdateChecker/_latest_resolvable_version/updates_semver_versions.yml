@@ -1,0 +1,334 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://forgeapi.puppet.com/v3/modules/puppetlabs-dsc?exclude_fields=readme,license
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - excon/0.65.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx
+      Date:
+      - Mon, 29 Jul 2019 18:32:28 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '25422'
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, must-revalidate
+      Last-Modified:
+      - Thu, 25 Apr 2019 16:48:27 GMT
+      Etag:
+      - '"0ec816f1500f6eab4c6ed3c1b3f7e4e8"'
+      X-Node:
+      - forgenext-app07-prod
+      X-Revision:
+      - 81b41a9a
+      Vary:
+      - Origin,Accept-Encoding
+      X-Content-Type-Options:
+      - nosniff
+      X-App-Server:
+      - forgeapi/forgeapi-forgenext-app07-prod.ops.puppetlabs.net
+      X-Lb-Server:
+      - forgenext-lb02-prod.ops.puppetlabs.net
+      X-Uuid:
+      - 47AC2309:CD4B_0AE00633:01BB_5D3F3BBC_1CDD7FAE:6BC9
+    body:
+      encoding: ASCII-8BIT
+      string: |-
+        {
+          "uri": "/v3/modules/puppetlabs-dsc",
+          "slug": "puppetlabs-dsc",
+          "name": "dsc",
+          "downloads": 404562,
+          "created_at": "2015-09-02 08:45:26 -0700",
+          "updated_at": "2019-04-25 09:48:27 -0700",
+          "deprecated_at": null,
+          "deprecated_for": null,
+          "superseded_by": null,
+          "supported": false,
+          "endorsement": "supported",
+          "module_group": "base",
+          "owner": {
+            "uri": "/v3/users/puppetlabs",
+            "slug": "puppetlabs",
+            "username": "puppetlabs",
+            "gravatar_id": "fdd009b7c1ec96e088b389f773e87aec"
+          },
+          "current_release": {
+            "uri": "/v3/releases/puppetlabs-dsc-1.9.2",
+            "slug": "puppetlabs-dsc-1.9.2",
+            "module": {
+              "uri": "/v3/modules/puppetlabs-dsc",
+              "slug": "puppetlabs-dsc",
+              "name": "dsc",
+              "deprecated_at": null,
+              "owner": {
+                "uri": "/v3/users/puppetlabs",
+                "slug": "puppetlabs",
+                "username": "puppetlabs",
+                "gravatar_id": "fdd009b7c1ec96e088b389f773e87aec"
+              }
+            },
+            "version": "1.9.2",
+            "metadata": {
+              "name": "puppetlabs-dsc",
+              "version": "1.9.2",
+              "author": "Puppet Inc",
+              "summary": "PowerShell Desired State Configuration (DSC)",
+              "license": "Apache-2.0",
+              "source": "https://github.com/puppetlabs/puppetlabs-dsc",
+              "project_page": "https://github.com/puppetlabs/puppetlabs-dsc",
+              "issues_url": "https://tickets.puppet.com/browse/MODULES",
+              "dependencies": [
+                {
+                  "name": "puppetlabs/reboot",
+                  "version_requirement": ">= 1.2.1 < 3.0.0"
+                }
+              ],
+              "data_provider": null,
+              "operatingsystem_support": [
+                {
+                  "operatingsystem": "windows",
+                  "operatingsystemrelease": [
+                    "Server 2008 R2",
+                    "Server 2012",
+                    "Server 2012 R2",
+                    "Server 2016",
+                    "Server 2019",
+                    "7",
+                    "8.1",
+                    "10"
+                  ]
+                }
+              ],
+              "requirements": [
+                {
+                  "name": "puppet",
+                  "version_requirement": ">= 4.7.0 < 7.0.0"
+                }
+              ],
+              "tags": [
+                "powershell",
+                "desired-state-configuration",
+                "dsc"
+              ],
+              "pdk-version": "1.8.0",
+              "template-url": "https://github.com/puppetlabs/pdk-templates.git",
+              "template-ref": "heads/master-0-g7281db5"
+            },
+            "tags": [
+              "powershell",
+              "dsc",
+              "desired-state-configuration"
+            ],
+            "supported": false,
+            "pdk": true,
+            "validation_score": 100,
+            "file_uri": "/v3/files/puppetlabs-dsc-1.9.2.tar.gz",
+            "file_size": 3189038,
+            "file_md5": "ea2045ef928af919a1db2d8ef981b43b",
+            "file_sha256": "c2483e3a3d5553e584661406a26c054b07b41269e6d1d5229e9769e3fde88485",
+            "downloads": 4438,
+            "changelog": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).\n\n## [Unreleased]\n\n## [1.9.2] - 2019-04-24\n\n### Fixed\n\n- Ensure sensitive values are redacted in debug output and `psdscrunascredential` does not break ([MODULES-8856](https://tickets.puppetlabs.com/browse/MODULES-8856)) - thank you, [@Gerben Welter](https://github.com/GerbenWelter)!\n\n## [1.9.1] - 2019-04-23\n\n### Fixed\n- Ensure sensitive values are redacted in debug output ([MODULES-8856](https://tickets.puppetlabs.com/browse/MODULES-8856))\n\n## [1.9.0] - 2019-04-02\n\n### Added\n\n- Document support for Windows 2019 ([MODULES-7689](https://tickets.puppetlabs.com/browse/MODULES-7689))\n- 2019 DSC Resource Update ([MODULES-8450](https://tickets.puppetlabs.com/browse/MODULES-8450))\n\n### Fixed\n\n- Fix HQRM DSC Resource Structure ([MODULES-7689](https://tickets.puppetlabs.com/browse/MODULES-7689))\n- Fix build process for untagged DSC Resources ([MODULES-8389](https://tickets.puppetlabs.com/browse/MODULES-8389))\n\n## [1.8.0] - 2019-01-15\n\n### Added\n\n- Added small example exec for updating execution policy via contribution by [nekototori](https://github.com/Nekototori)\n\n### Fixed\n\n- Ensure that using sensitive values in DSC resource declarations functions when the master and agent are different major versions ([MODULES-8172](https://tickets.puppetlabs.com/browse/MODULES-8172))\n\n## [1.7.0] - 2018-10-10\n\n### Added\n\n- Added Beaker Testmode Switcher ([MODULES-6742](https://tickets.puppetlabs.com/browse/MODULES-6742))\n- Added support for Puppet 6 ([MODULES-7832](https://tickets.puppetlabs.com/browse/MODULES-7832))\n\n### Fixed\n\n- Fix broken type files ([MODULES-7462](https://tickets.puppetlabs.com/browse/MODULES-7462))\n\n### Changed\n\n- Converted module to PDK format ([MODULES-7399](https://tickets.puppetlabs.com/browse/MODULES-7399))\n\n## [1.6.0] - 2018-05-09\n\n### Added\n\n- Added documentation on the LCM RefreshMode setting ([MODULES-6640](https://tickets.puppetlabs.com/browse/MODULES-6640))\n- Added Windows 2016 to metadata ([MODULES-4271](https://tickets.puppetlabs.com/browse/MODULES-4271))\n\n### Fixed\n\n- Fixed DSC Resource Module Version parsing error ([MODULES-7055](https://tickets.puppetlabs.com/browse/MODULES-7055))\n- Fixed case sensitive file name psd1 resolver ([MODULES-7063](https://tickets.puppetlabs.com/browse/MODULES-7063))\n- Fixed pining HQ DSC Resources ([MODULES-6694](https://tickets.puppetlabs.com/browse/MODULES-6694))\n- Fixed starting pipes on Windows 2008R2 ([MODULES-6929](https://tickets.puppetlabs.com/browse/MODULES-6929))\n\n### Changed\n\n- Updated SharePointDsc to 2.2.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated SqlServerDsc to 11.1.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated xActiveDirectory to 2.18.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated xComputerManagement to 4.1.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated xFailOverCluster to 1.10.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated xNetworking to 5.6.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Updated xPSDesiredStateConfiguration to 8.1.0.0  ([MODULES-7057](https://tickets.puppetlabs.com/browse/MODULES-7057))\n- Bumped the puppetlabs-reboot module dependancy to reflect that the new version is 2.0.0 ([MODULES-6678](https://tickets.puppetlabs.com/browse/MODULES-6678))\n\n## [1.5.0] - 2018-02-19\n\n### Adds\n\n- **BREAKING**: Update SqlServerDsc to 11.0.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update OfficeOnlineServerDsc to 1.2.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update SecurityPolicyDsc to 2.2.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update SharePointDsc to 2.1.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update StorageDsc to 4.0.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update SystemLocaleDsc to 1.2.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xActiveDirectory to 2.17.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xAdcsDeployment to 1.4.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xCertificate to 4.2.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xComputerManagement to 4.0.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xDatabase to 1.7.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xDnsServer to 1.9.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xExchange to 1.19.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xFailOverCluster to 1.9.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xHyper-V to 3.11.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Pinned xPowerShellExecutionPolicy to 1.1.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xPSDesiredStateConfiguration to 8.0.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xNetworking to 5.5.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xRemoteDesktopSessionHost to 1.5.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xSharePoint to 2.1.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xTimeZone to 1.7.0.0 ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- Update xSQLServer ([MODULES-5689](https://tickets.puppetlabs.com/browse/MODULES-5689))\n- Update xSQLServer ([MODULES-5431](https://tickets.puppetlabs.com/browse/MODULES-5431))\n\n### Fixes\n\n- Fixed including HQ DSC Resources in dsc_resource_tags.yml\n- Correctly ignore PSDscResources in build process\n- Remove warning for MSFT_WaitFor DSC Resources\n- Fix parsing DSC Resource manifest files ([MODULES-5590](https://tickets.puppetlabs.com/browse/MODULES-5590))\n\n### Removed\n\n- **BREAKING**: Removed xSQLServer ([MODULES-6592](https://tickets.puppetlabs.com/browse/MODULES-6592))\n- **BREAKING**: Removed powershell and stdlib module dependencies ([MODULES-5548](https://tickets.puppetlabs.com/browse/MODULES-5548))\n\n## [1.4.1] - 2018-01-05\n\n### Added\n\n- Allow users to specify passwords in a `MSFT_Credential` as [Sensitive](https://puppet.com/docs/puppet/latest/lang_data_sensitive.html) strings ([MODULES-5743](https://tickets.puppetlabs.com/browse/MODULES-5743))\n\n### Fixed\n\n- Increased the timeout for opening PowerShell from 10 to 30 seconds to prevent erroneous failures ([MODULES-4748](https://tickets.puppetlabs.com/browse/MODULES-4748))\n- Prevented the PowerShell manager from creating zombie processes ([MODULES-4748](https://tickets.puppetlabs.com/browse/MODULES-4748))\n\n## [1.4.0] - 2017-08-30\n\n### Added\n\n- Included July 2017 DSC Resource Kit release ([MODULES-5534](https://tickets.puppet.com/browse/MODULES-5534))\n- Included August 2017 DSC Resource Kit release ([MODULES-5536](https://tickets.puppet.com/browse/MODULES-5536))\n- Updated metadata for Puppet 4 and Puppet 5 ([MODULES-4840](https://tickets.puppetlabs.com/browse/MODULES-4840), [MODULES-5144](https://tickets.puppetlabs.com/browse/MODULES-5144))\n\n### Changed\n\n- Restricted WMF version to 5.0 RTM or above ([MODULES-2770](https://tickets.puppetlabs.com/browse/MODULES-2770))\n\n### Deprecated\n\n- Add `dsc::lcm_config` class deprecation warning ([MODULES-3409](https://tickets.puppetlabs.com/browse/MODULES-3409))\n\n### Fixed\n\n- Updated documentation for the latest WMF 5.1 links\n- Fixed Global Variable warning message ([MODULES-5224](https://tickets.puppetlabs.com/browse/MODULES-5224))\n- Fixed PowerShellManager template path ([MODULES-5228](https://tickets.puppetlabs.com/browse/MODULES-5228))\n- Moved vendored resources test ([MODULES-2980](https://tickets.puppetlabs.com/browse/MODULES-2980))\n\n## [1.3.1] 2017-08-25\n\n### Fixed\n\n- Fix: Extraneous vendor content in puppetlabs-dsc-1.3.0.tar.gz ([MODULES-5380](https://tickets.puppetlabs.com/browse/MODULES-5380))\n\n## [1.3.0] - 2017-04-27\n\n### Added\n\n- Include January 2017 DSC Resource Kit release ([MODULES-4371](https://tickets.puppet.com/browse/MODULES-4371))\n- Include March 2017 DSC Resource Kit release ([MODULES-4371](https://tickets.puppet.com/browse/MODULES-4371))\n- Update Build README with better instructions ([MODULES-4128](https://tickets.puppet.com/browse/MODULES-4128))\n- Update README with troubleshooting help ([MODULES-4128](https://tickets.puppet.com/browse/MODULES-4128))\n- Update support PowerShell 5.1 ([MODULES-3977](https://tickets.puppet.com/browse/MODULES-3977))\n- Include April 2017 DSC Resource Kit release ([MODULES-4747](https://tickets.puppet.com/browse/MODULES-4747))\n\n### Fixed\n\n- Fix building custom DSC Resources ([MODULES-4201](https://tickets.puppet.com/browse/MODULES-4201))\n- Add known issue with `dsc_file` to README ([MODULES-3178](https://tickets.puppet.com/browse/MODULES-3178))\n- Fix DSC repository name case ([MODULES-4430](https://tickets.puppet.com/browse/MODULES-4430))\n- Module manifest parser does not handle double quotes ([MODULES-4422](https://tickets.puppet.com/browse/MODULES-4422))\n- Update error message on older PowerShell versions ([MODULES-4014](https://tickets.puppet.com/browse/MODULES-4014))\n- Add facade rake tasks for use in CI and Test Tiering ([MODULES-4667](https://tickets.puppet.com/browse/MODULES-4667))\n- Fix integration test failing due to pre-existing reboot condition\n\n## [1.2.0] - 2016-11-10\n\n### Added\n\n- Add psDscRunAsCredential Support ([FM-5671](https://tickets.puppet.com/browse/MODULES-5671))\n- Include September DSC Resource Kit release ([MODULES-3983](https://tickets.puppet.com/browse/MODULES-3983))\n- Include November DSC Resource Kit release ([MODULES-4059](https://tickets.puppet.com/browse/MODULES-4059))\n\n### Fixed\n\n- Fix WaitForAll blacklist test ([MODULES-3764](https://tickets.puppet.com/browse/MODULES-3764))\n- Update travis/appveyor with Ruby 2.3 ([MODULES-3775](https://tickets.puppet.com/browse/MODULES-3775))\n- Support new MS supported Official DSC Resources ([MODULES-3683](https://tickets.puppet.com/browse/MODULES-3683))\n- Fix maxpath issues ([MODULES-3683](https://tickets.puppet.com/browse/MODULES-3683))\n\n## [1.1.0] - 2016-08-08\n\n### Added\n\n- Nano Server Compatibility ([MODULES-3343](https://tickets.puppet.com/browse/MODULES-3343))\n- Better tracking of DSC Resource version with `dsc_resource_release_tags.yml` file ([MODULES-3228](https://tickets.puppet.com/browse/MODULES-3228))([MODULES-3674](https://tickets.puppet.com/browse/MODULES-3674))\n- Revendored DSC Resources as of 26th July 2016\n\n### Fixed\n\n- Tests failing on PE 3.8.x because master_manipluator is pinned ([MODULES-2772](https://tickets.puppet.com/browse/MODULES-2772))\n- Improve the DSC Build import process ([FM-4661](https://tickets.puppet.com/browse/FM-4661))\n- Tests failing due to RSpec 3+ compatibility ([FM-4915](https://tickets.puppet.com/browse/FM-4915))\n- Remove unnecessary files from module build\n- Simplify 'Ensure' Property Handling ([MODULES-3133](https://tickets.puppet.com/browse/MODULES-3133))\n- Upgrade MOF Parser for UTF8-BOMs ([MODULES-3133](https://tickets.puppet.com/browse/MODULES-3133))\n- Update links for WM5 Production release\n- Increase execution timeout ([MODULES-3342](https://tickets.puppet.com/browse/MODULES-3342))\n- Fix acceptance tests for MySQL DSC resource ([MODULES-3431](https://tickets.puppet.com/browse/MODULES-3431))\n- Update documentation with Module Version strategy ([MODULES-3491](https://tickets.puppet.com/browse/MODULES-3491))\n\n## [1.0.1] - 2016-03-17\n\n### Fixed\n\n- The tar file format for the module has been changed to work around a bug in the Puppet module tool ([PUP-5994](https://tickets.puppet.com/browse/PUP-5994)). When installing the module on Windows with the Puppet module tool command `puppet module install puppetlab-dsc`, all files present in the tar.gz archive are not properly copied to the module directory. This is due to a bug in the module tool that is fixed as part of ([PUP-5994](https://tickets.puppet.com/browse/PUP-5994)) and ships in the Puppet Enterprise 3.8.7, puppet-agent 1.4.0, or newer installers.  To enable existing Windows agents to properly install the module, it was necessary to repack the module in a different manner to work around this problem.\n\n## [1.0.0] - 2016-01-19\n\n### Added\n\n- Reuse PowerShell instance for increased performance ([MODULES-2709](https://tickets.puppet.com/browse/MODULES-2709))\n- Support PSCredentials, KeyValuePair and other arbitrary EmbeddedInstance MOF Classes ([MODULES-2178](https://tickets.puppet.com/browse/MODULES-2178))\n- Update DSC Modules to latest available as of November 15, 2015. (Commit [84a467c](https://github.com/PowerShell/DscResources/tree/84a467c30379a57202bed721d259a517a138290c) of [PowerShell/DscResources](https://github.com/PowerShell/DscResources/))\n- Propagate DSC resource 'RebootRequired' status via Puppet notify, enabling DSC resources to trigger a system reboot ([MODULES-2641](https://tickets.puppet.com/browse/MODULES-2641))\n\n### Fixed\n\n- Module dependencies are incompatible with Puppet 3.x ([MODULES-2514](https://tickets.puppet.com/browse/MODULES-2514))\n- Only allow module to run on PowerShell v5 ([MODULES-2521](https://tickets.puppet.com/browse/MODULES-2521))\n- Setting LCM Mode to \"Pull\" Causes crash ([MODULES-2485](https://tickets.puppet.com/browse/MODULES-2485))\n- Empty password for PSCredential causes crash ([MODULES-2615](https://tickets.puppet.com/browse/MODULES-2615))\n- Module doesn't properly handle signed integers ([MODULES-2759](https://tickets.puppet.com/browse/MODULES-2759))\n- Package resource fails when ReturnCode is specified ([MODULES-2562](https://tickets.puppet.com/browse/MODULES-2562))\n- Symlinking vendored modules causes duplicate errors if the same version of one of the modules is already installed ([MODULES-2837](https://tickets.puppet.com/browse/MODULES-2837))\n\n### Removed\n\n- Remove LCM Refresh Mode Disabled Requirement ([MODULES-2575](https://tickets.puppet.com/browse/MODULES-2575))\n- Remove Unsupported DSC Resource Types xChrome, xDscDiagnostics, xFireFox, xSafeHarbor, xSecurity, MSFT_WaitForAll, MSFT_WaitForAny and MSFT_WaitForSome ([MODULES-2244](https://tickets.puppet.com/browse/MODULES-2244)).\n- Further reduce the module size by removing unnecessary files ([MODULES-2777](https://tickets.puppet.com/browse/MODULES-2777))\n\n## [0.8.1] - 2015-09-02\n\n### Summary\n\n### Changed\n\n- Update WMF 5 links to production preview\n\n### Fixed\n\n- Fix links in metadata.json\n\n## [0.8.0] - 2015-09-02\n\n### Added\n\n- Use WMF 5 instead of WMF 4 to take advantage of a much faster and more direct Invoke-DscResource over Start-DscConfiguration ([MODULES-1960](https://tickets.puppet.com/browse/MODULES-1960))\n- Use latest DSC Resources from the PowerShell Gallery.\n- Allow setting the LCM RefreshMode as a defined type. ([MODULES-2243](https://tickets.puppet.com/browse/MODULES-2243))\n- Commit generated types / specs ([MODULES-1956](https://tickets.puppet.com/browse/MODULES-1956))\n- Vendor resource kit files and ensure on PSModulePath so user doesn't need to install all of the resources ([MODULES-2175](https://tickets.puppet.com/browse/MODULES-2175))\n\n### Fixed\n\n- Fix `dsc_ensure => absent` ([MODULES-2267](https://tickets.puppet.com/browse/MODULES-2267))\n- Use original MOF gem for building types ([MODULES-1957](https://tickets.puppet.com/browse/MODULES-1957))\n- Call PowerShell with arguments ([MODULES-2182](https://tickets.puppet.com/browse/MODULES-2182))\n- Manage DSC resources without ensure ([MODULES-2257](https://tickets.puppet.com/browse/MODULES-2257))\n- Mixing quotes causes crash ([MODULES-2442](https://tickets.puppet.com/browse/MODULES-2242))\n- Uint8 type generation ([MODULES-2481](https://tickets.puppet.com/browse/MODULES-2481))\n- Ensure Puppet 4 compatibility ([MODULES-2299](https://tickets.puppet.com/browse/MODULES-2299))\n\n## [0.1.1] - 2014-09-19 (msutter)\n\n### Added\n\n- add linting\n- rewrite for encoding issues\n- fix doc typo\n\n### Fixed\n\n- fix import of base resource 'file'\n- fix dsc File resource\n- remove includeallfeature attribute from IIS role\n\n## [0.1.0] - 2014-09-15 (msutter)\n\n### Summary\n\nInitial release to provide user the ability to manage PowerShell DSC resources with Puppet.\n",
+            "reference": null,
+            "tasks": [
+
+            ],
+            "created_at": "2019-04-25 09:48:27 -0700",
+            "updated_at": "2019-07-03 15:46:16 -0700",
+            "deleted_at": null,
+            "deleted_for": null
+          },
+          "releases": [
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.9.2",
+              "slug": "puppetlabs-dsc-1.9.2",
+              "version": "1.9.2",
+              "supported": false,
+              "created_at": "2019-04-25 09:48:27 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.9.2.tar.gz",
+              "file_size": 3189038
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.9.1",
+              "slug": "puppetlabs-dsc-1.9.1",
+              "version": "1.9.1",
+              "supported": false,
+              "created_at": "2019-04-22 14:32:59 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.9.1.tar.gz",
+              "file_size": 3188892
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.9.0",
+              "slug": "puppetlabs-dsc-1.9.0",
+              "version": "1.9.0",
+              "supported": false,
+              "created_at": "2019-04-03 07:39:27 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.9.0.tar.gz",
+              "file_size": 3188578
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.8.0",
+              "slug": "puppetlabs-dsc-1.8.0",
+              "version": "1.8.0",
+              "supported": false,
+              "created_at": "2019-01-15 13:46:01 -0800",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.8.0.tar.gz",
+              "file_size": 2802874
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.7.0",
+              "slug": "puppetlabs-dsc-1.7.0",
+              "version": "1.7.0",
+              "supported": false,
+              "created_at": "2018-10-11 18:34:29 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.7.0.tar.gz",
+              "file_size": 2800792
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.6.0",
+              "slug": "puppetlabs-dsc-1.6.0",
+              "version": "1.6.0",
+              "supported": false,
+              "created_at": "2018-05-09 12:18:39 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.6.0.tar.gz",
+              "file_size": 2800452
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.5.0",
+              "slug": "puppetlabs-dsc-1.5.0",
+              "version": "1.5.0",
+              "supported": false,
+              "created_at": "2018-02-20 13:17:19 -0800",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.5.0.tar.gz",
+              "file_size": 2792184
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.4.1",
+              "slug": "puppetlabs-dsc-1.4.1",
+              "version": "1.4.1",
+              "supported": false,
+              "created_at": "2018-01-05 10:34:13 -0800",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.4.1.tar.gz",
+              "file_size": 1229841
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.4.0",
+              "slug": "puppetlabs-dsc-1.4.0",
+              "version": "1.4.0",
+              "supported": false,
+              "created_at": "2017-08-30 10:22:31 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.4.0.tar.gz",
+              "file_size": 1229528
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.3.1",
+              "slug": "puppetlabs-dsc-1.3.1",
+              "version": "1.3.1",
+              "supported": false,
+              "created_at": "2017-08-25 16:01:05 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.3.1.tar.gz",
+              "file_size": 1154487
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.3.0",
+              "slug": "puppetlabs-dsc-1.3.0",
+              "version": "1.3.0",
+              "supported": false,
+              "created_at": "2017-04-27 17:26:59 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.3.0.tar.gz",
+              "file_size": 1406824
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.2.0",
+              "slug": "puppetlabs-dsc-1.2.0",
+              "version": "1.2.0",
+              "supported": false,
+              "created_at": "2016-11-10 11:27:47 -0800",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.2.0.tar.gz",
+              "file_size": 1026855
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.1.0",
+              "slug": "puppetlabs-dsc-1.1.0",
+              "version": "1.1.0",
+              "supported": false,
+              "created_at": "2016-08-08 11:55:46 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.1.0.tar.gz",
+              "file_size": 953657
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.0.1",
+              "slug": "puppetlabs-dsc-1.0.1",
+              "version": "1.0.1",
+              "supported": false,
+              "created_at": "2016-03-17 17:39:45 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.0.1.tar.gz",
+              "file_size": 1782187
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-1.0.0",
+              "slug": "puppetlabs-dsc-1.0.0",
+              "version": "1.0.0",
+              "supported": false,
+              "created_at": "2016-01-19 11:00:48 -0800",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-1.0.0.tar.gz",
+              "file_size": 1792946
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-0.8.1",
+              "slug": "puppetlabs-dsc-0.8.1",
+              "version": "0.8.1",
+              "supported": false,
+              "created_at": "2015-09-02 10:58:29 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-0.8.1.tar.gz",
+              "file_size": 7499494
+            },
+            {
+              "uri": "/v3/releases/puppetlabs-dsc-0.8.0",
+              "slug": "puppetlabs-dsc-0.8.0",
+              "version": "0.8.0",
+              "supported": false,
+              "created_at": "2015-09-02 08:45:26 -0700",
+              "deleted_at": null,
+              "file_uri": "/v3/files/puppetlabs-dsc-0.8.0.tar.gz",
+              "file_size": 7499971
+            }
+          ],
+          "feedback_score": 88,
+          "homepage_url": "https://github.com/puppetlabs/puppetlabs-dsc",
+          "issues_url": "https://tickets.puppet.com/browse/MODULES"
+        }
+    http_version: 
+  recorded_at: Mon, 29 Jul 2019 18:32:25 GMT
+recorded_with: VCR 5.0.0
