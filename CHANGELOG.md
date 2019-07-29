@@ -1,3 +1,7 @@
+## v0.111.38, 29 July 2019
+
+- JS: Ignore git dependencies locked to a non-commit version
+
 ## v0.111.37, 28 July 2019
 
 - Elixir: Bump elixir version to 1.9.1 in Dockerfile
