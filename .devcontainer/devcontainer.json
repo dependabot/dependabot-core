@@ -1,0 +1,7 @@
+{
+  "name": "dependabot",
+  "image": "dependabot/dependabot-core:latest",
+  "extensions": [
+    "rebornix.ruby"
+  ]
+}
