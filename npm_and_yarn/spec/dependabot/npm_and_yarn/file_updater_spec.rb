@@ -2080,7 +2080,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "when a git src depednency doesn't have a valid package.json" do
+      context "when a git src dependency doesn't have a valid package.json" do
         let(:manifest_fixture_name) { "git_missing_version.json" }
         let(:npm_lock_fixture_name) { "git_missing_version.json" }
         let(:yarn_lock_fixture_name) { "git_missing_version.lock" }
