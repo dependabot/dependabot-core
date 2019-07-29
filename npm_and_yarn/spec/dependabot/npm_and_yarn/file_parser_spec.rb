@@ -412,6 +412,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 }]
               )
             end
+
+            context "when the lockfile has a branch for the version" do
+              let(:npm_lock_fixture_name) do
+                "git_dependency_branch_version.json"
+              end
+
+              it "is excluded" do
+                expect(top_level_dependencies.map(&:name)).
+                  to_not include("is-number")
+              end
+            end
           end
         end
 

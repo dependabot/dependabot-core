@@ -177,17 +177,18 @@ module Dependabot
           requirement: requirement,
           manifest_name: manifest_name
         )
-        lock_version = lockfile_details&.fetch("version", nil)
-        lock_res = lockfile_details&.fetch("resolved", nil)
 
-        return lock_version.split("#").last if lock_version&.include?("#")
-        return lock_res.split("#").last if lock_res&.include?("#")
+        [
+          lockfile_details&.fetch("version", nil)&.split("#")&.last,
+          lockfile_details&.fetch("resolved", nil)&.split("#")&.last,
+          lockfile_details&.fetch("resolved", nil)&.split("/")&.last
+        ].find { |str| commit_sha?(str) }
+      end
 
-        if lock_res && lock_res.split("/").last.match?(/^[0-9a-f]{40}$/)
-          return lock_res.split("/").last
-        end
+      def commit_sha?(string)
+        return false unless string.is_a?(String)
 
-        nil
+        string.match?(/^[0-9a-f]{40}$/)
       end
 
       def version_from_git_revision(requirement, git_revision)
