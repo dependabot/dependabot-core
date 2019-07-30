@@ -3,7 +3,6 @@ root = true
 
 [*]
 indent_size = 2
-translate_tabs_to_spaces = true
 indent_style = space
 end_of_line = lf
 charset = utf-8
