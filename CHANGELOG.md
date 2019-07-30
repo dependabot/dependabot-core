@@ -1,3 +1,8 @@
+## v0.111.39, 30 July 2019
+
+- JS: Fix git URL parsing edge case
+- Add missing pip support to dry-run
+
 ## v0.111.38, 29 July 2019
 
 - JS: Ignore git dependencies locked to a non-commit version
