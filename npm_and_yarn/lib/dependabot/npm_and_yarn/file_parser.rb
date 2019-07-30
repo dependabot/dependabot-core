@@ -256,22 +256,21 @@ module Dependabot
 
       def git_source_for(requirement)
         details = requirement.match(GIT_URL_REGEX).named_captures
-        bare_url =
-          if details.fetch("git_prefix").include?("git@")
-            requirement.split("git@").last.sub(%r{:/?}, "/").split("#").first
-          elsif details.fetch("git_prefix").include?("://")
-            requirement.sub(%r{.*?://}, "").split("#").first
-          elsif details.fetch("git_prefix").include?("bitbucket")
-            "bitbucket.org/#{details['username']}/#{details['repo']}"
-          elsif details.fetch("git_prefix").include?("gitlab")
-            "gitlab.com/#{details['username']}/#{details['repo']}"
-          else
-            "github.com/#{details['username']}/#{details['repo']}"
-          end
+        prefix = details.fetch("git_prefix")
+
+        host = if prefix.include?("git@") || prefix.include?("://")
+                 prefix.split("git@").last.
+                   sub(%r{.*?://}, "").
+                   sub(%r{[:/]$}, "").
+                   split("#").first
+               elsif prefix.include?("bitbucket") then "bitbucket.org"
+               elsif prefix.include?("gitlab") then "gitlab.com"
+               else "github.com"
+               end
 
         {
           type: "git",
-          url: "https://#{bare_url}",
+          url: "https://#{host}/#{details['username']}/#{details['repo']}",
           branch: nil,
           ref: details["ref"] || "master"
         }

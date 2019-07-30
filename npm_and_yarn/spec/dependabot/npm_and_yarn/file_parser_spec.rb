@@ -1123,6 +1123,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 )
               end
             end
+
+            context "specified with https and a colon (supported by npm)" do
+              let(:package_json_fixture_name) do
+                "git_dependency_with_auth_2.json"
+              end
+              let(:files) { [package_json] }
+
+              describe "the git dependency" do
+                subject { top_level_dependencies.last }
+
+                its(:requirements) do
+                  is_expected.to eq(
+                    [{
+                      requirement: nil,
+                      file: "package.json",
+                      groups: ["devDependencies"],
+                      source: {
+                        type: "git",
+                        url: "https://username:password@github.com/"\
+                             "jonschlinkert/is-number.git",
+                        branch: nil,
+                        ref: "master"
+                      }
+                    }]
+                  )
+                end
+              end
+            end
           end
         end
 
