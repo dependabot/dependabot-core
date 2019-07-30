@@ -9,7 +9,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Dependabot\\PHP\\": "src/"
+            "Dependabot\\Composer\\": "src/"
         }
     },
     "scripts": {
