@@ -1,3 +1,8 @@
+## v0.111.40, 31 July 2019
+
+- Go (modules): switch to gomodules-extracted@v1.1.0
+- Remove invalid .editorconfig file
+
 ## v0.111.39, 30 July 2019
 
 - JS: Fix git URL parsing edge case
