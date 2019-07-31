@@ -88,8 +88,8 @@ module Dependabot
           @internal_dependency_poms = {}
           dependency_files.each do |pom|
             doc = Nokogiri::XML(pom.content)
-            group_id    = doc.at_css("project > groupId") ||
-                          doc.at_css("project > parent > groupId")
+            group_id = doc.at_css("project > groupId") ||
+                       doc.at_css("project > parent > groupId")
             artifact_id = doc.at_css("project > artifactId")
 
             next unless group_id && artifact_id
