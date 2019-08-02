@@ -144,6 +144,11 @@ RSpec.describe Dependabot::Nuget::Version do
         let(:other_version) { described_class.new("1.1.0") }
         it { is_expected.to eq(-1) }
 
+        context "and this version is a blank version" do
+          let(:version_version) { described_class.new("") }
+          it { is_expected.to eq(-1) }
+        end
+
         context "with an easy pre-release" do
           let(:version_version) { "3.0.0-alpha" }
           let(:other_string) { "3.0.0-beta" }
@@ -164,6 +169,11 @@ RSpec.describe Dependabot::Nuget::Version do
 
           it { is_expected.to eq(-1) }
         end
+      end
+
+      context "that is a blank version" do
+        let(:other_version) { described_class.new("") }
+        it { is_expected.to eq(1) }
       end
     end
   end

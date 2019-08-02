@@ -50,8 +50,8 @@ module Dependabot
       end
 
       def compare_release(other)
-        release_str = @version_string.split("-").first.split("+").first || ""
-        other_release_str = other.to_s.split("-").first.split("+").first || ""
+        release_str = @version_string.split("-").first&.split("+")&.first || ""
+        other_release_str = other.to_s.split("-").first&.split("+")&.first || ""
 
         Gem::Version.new(release_str).<=>(Gem::Version.new(other_release_str))
       end
