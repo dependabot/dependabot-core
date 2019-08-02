@@ -1,3 +1,7 @@
+## v0.111.42, 2 August 2019
+
+- .NET: Handle blank strings when comparing versions
+
 ## v0.111.41, 2 August 2019
 
 - Handle Python homepage URLs that create a redirect loop
