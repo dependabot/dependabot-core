@@ -225,6 +225,22 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           to have_requested(:get, "http://initd.org/psycopg/").once
       end
 
+      context "and the homepage does an infinite redirect" do
+        let(:redirect_url) { "http://initd.org/Psycopg/" }
+
+        before do
+          stub_request(:get, "http://initd.org/psycopg/").
+            to_return(status: 302, headers: { "Location" => redirect_url })
+          stub_request(:get, redirect_url).
+            to_return(
+              status: 302,
+              headers: { "Location" => "http://initd.org/psycopg/" }
+            )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
       context "but there are details on the home page" do
         before do
           stub_request(:get, "http://initd.org/psycopg/").

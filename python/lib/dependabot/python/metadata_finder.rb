@@ -116,7 +116,8 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
-          rescue Excon::Error::Timeout, Excon::Error::Socket, ArgumentError
+          rescue Excon::Error::Timeout, Excon::Error::Socket,
+                 ArgumentError, SystemStackError
             nil
           end
 
