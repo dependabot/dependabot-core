@@ -59,7 +59,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def compare_prerelease_part(other)
-        release_str = @version_string.split("-").first.split("+").first || ""
+        release_str = @version_string.split("-").first&.split("+")&.first || ""
         prerelease_string = @version_string.
                             sub(release_str, "").
                             sub("-", "").
@@ -67,7 +67,7 @@ module Dependabot
                             first
         prerelease_string = nil if prerelease_string == ""
 
-        other_release_str = other.to_s.split("-").first.split("+").first || ""
+        other_release_str = other.to_s.split("-").first&.split("+")&.first || ""
         other_prerelease_string = other.to_s.
                                   sub(other_release_str, "").
                                   sub("-", "").
