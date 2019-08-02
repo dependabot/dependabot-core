@@ -1,3 +1,8 @@
+## v0.111.43, 2 August 2019
+
+- .NET:  Move blank version handling
+- PHP: Bump composer/composer from 1.8.6 to 1.9.0
+
 ## v0.111.42, 2 August 2019
 
 - .NET: Handle blank strings when comparing versions
