@@ -1,3 +1,8 @@
+## v0.111.41, 2 August 2019
+
+- Handle Python homepage URLs that create a redirect loop
+- Handle "could not add requested reviewers" errors
+
 ## v0.111.40, 31 July 2019
 
 - Go (modules): switch to gomodules-extracted@v1.1.0
