@@ -1,3 +1,10 @@
+## v0.111.45, 4 August 2019
+
+- JS: Include details of whether a sub-dependency is production or not
+- Bundler: Detect whether subdependencies are production or not
+- Validate subdependency_metadata format
+- Store subdependency_metadata as an array of hashes (not a hash)
+
 ## v0.111.44, 3 August 2019
 
 - Raise Octokit::Unauthorized from PullRequestCreator::GitHub if service pack 401s
