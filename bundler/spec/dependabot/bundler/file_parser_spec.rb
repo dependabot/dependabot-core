@@ -583,6 +583,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it "includes details of each sub-dependency" do
           expect(dependencies.reject(&:top_level?).count).to eq(23)
+
+          diff_lcs = dependencies.find { |d| d.name == "diff-lcs" }
+          expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
+
+          addressable = dependencies.find { |d| d.name == "addressable" }
+          expect(addressable.subdependency_metadata).
+            to eq([{ production: true }])
         end
 
         describe "a runtime gemspec dependency" do

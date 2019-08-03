@@ -106,7 +106,13 @@ module Dependabot
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
               requirements: [],
-              package_manager: "bundler"
+              package_manager: "bundler",
+              subdependency_metadata:
+                if production_dependency_names.include?(dependency.name)
+                  [{ production: true }]
+                else
+                  [{ production: false }]
+                end
             )
         end
 
@@ -279,6 +285,36 @@ module Dependabot
           ::Bundler::LockfileParser.new(sanitized_lockfile_content)
       end
 
+      def production_dependency_names
+        @production_dependency_names ||=
+          (gemfile_dependencies + gemspec_dependencies).dependencies.
+          select { |dep| production?(dep) }.
+          flat_map { |dep| expanded_dependency_names(dep) }.
+          uniq
+      end
+
+      def expanded_dependency_names(dep)
+        spec = parsed_lockfile.specs.find { |s| s.name == dep.name }
+        return [dep.name] unless spec
+
+        [
+          dep.name,
+          *spec.dependencies.flat_map { |d| expanded_dependency_names(d) }
+        ]
+      end
+
+      def production?(dependency)
+        groups = dependency.requirements.
+                 flat_map { |r| r.fetch(:groups) }.
+                 map(&:to_s)
+
+        return true if groups.empty?
+        return true if groups.include?("runtime")
+        return true if groups.include?("default")
+
+        groups.any? { |g| g.include?("prod") }
+      end
+
       def sanitized_lockfile_content
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")
@@ -300,5 +336,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.
-  register("bundler", Dependabot::Bundler::FileParser)
+Dependabot::FileParsers.register("bundler", Dependabot::Bundler::FileParser)
