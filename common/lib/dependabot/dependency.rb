@@ -41,7 +41,7 @@ module Dependabot
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: nil)
+                   subdependency_metadata: [])
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -49,7 +49,9 @@ module Dependabot
       @previous_requirements =
         previous_requirements&.map { |req| symbolize_keys(req) }
       @package_manager = package_manager
-      @subdependency_metadata = subdependency_metadata unless top_level?
+      unless top_level? || subdependency_metadata == []
+        @subdependency_metadata = subdependency_metadata
+      end
 
       check_values
     end

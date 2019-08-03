@@ -144,7 +144,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:npm_lockfile_fixture_name) { "bundled_sub_dependency.json" }
         subject { dependencies.find { |d| d.name == "tar" } }
 
-        its(:subdependency_metadata) { is_expected.to eq(npm_bundled: true) }
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ npm_bundled: true }])
+        end
       end
     end
 

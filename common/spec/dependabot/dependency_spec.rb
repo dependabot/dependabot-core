@@ -190,7 +190,7 @@ RSpec.describe Dependabot::Dependency do
           name: "dep",
           requirements: [],
           package_manager: "dummy",
-          subdependency_metadata: { npm_bundled: true }
+          subdependency_metadata: [{ npm_bundled: true }]
         }
       end
 
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Dependency do
           "name" => "dep",
           "package_manager" => "dummy",
           "requirements" => [],
-          "subdependency_metadata" => { npm_bundled: true }
+          "subdependency_metadata" => [{ npm_bundled: true }]
         }
         is_expected.to eq(expected)
       end
@@ -216,11 +216,11 @@ RSpec.describe Dependabot::Dependency do
         name: "dep",
         requirements: [],
         package_manager: "dummy",
-        subdependency_metadata: { npm_bundled: true }
+        subdependency_metadata: [{ npm_bundled: true }]
       }
     end
 
-    it { is_expected.to eq(npm_bundled: true) }
+    it { is_expected.to eq([{ npm_bundled: true }]) }
 
     context "when top level" do
       let(:dependency_args) do
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::Dependency do
           requirements:
             [{ file: "a.rb", requirement: "1", groups: [], source: nil }],
           package_manager: "dummy",
-          subdependency_metadata: { npm_bundled: true }
+          subdependency_metadata: [{ npm_bundled: true }]
         }
       end
 

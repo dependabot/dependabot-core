@@ -171,7 +171,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
             version: "4.4.1",
             requirements: [],
             package_manager: "npm_and_yarn",
-            subdependency_metadata: { npm_bundled: true }
+            subdependency_metadata: [{ npm_bundled: true }]
           )
         end
 
