@@ -67,6 +67,7 @@ module Dependabot
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
         raise e.cause if e.cause&.message&.include?("is disabled")
+        raise e.cause if e.cause.is_a?(Octokit::Unauthorized)
         raise(RepoNotFound, source.url) unless repo_exists?
 
         retrying ||= false

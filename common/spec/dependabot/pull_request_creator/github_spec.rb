@@ -251,6 +251,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "when we got a 401" do
+      before do
+        service_pack_url =
+          "https://github.com/gocardless/bump.git/info/refs"\
+          "?service=git-upload-pack"
+        stub_request(:get, service_pack_url).to_return(status: 401)
+      end
+
+      it "raises a normal error" do
+        expect { creator.create }.to raise_error(Octokit::Unauthorized)
+      end
+    end
+
     context "when the repo exists but we got a 404" do
       before do
         stub_request(:get, repo_api_url).
