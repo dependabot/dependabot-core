@@ -1,3 +1,7 @@
+## v0.111.44, 3 August 2019
+
+- Raise Octokit::Unauthorized from PullRequestCreator::GitHub if service pack 401s
+
 ## v0.111.43, 2 August 2019
 
 - .NET:  Move blank version handling
