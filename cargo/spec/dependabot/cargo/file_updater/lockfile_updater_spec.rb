@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         let(:dependency_name) { "utf8-ranges" }
         let(:dependency_version) do
-          "b7c73859eb0507d378b9d0a4d9ae2a0c653267f7"
+          "8d38a931b7e34f9da339c058cbbca6ded624ea58"
         end
         let(:dependency_previous_version) do
           "83141b376b93484341c68fbca3ca110ae5cd2708"
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content).
-            to include("utf8-ranges#b7c73859eb0507d378b9d0a4d9ae2a0c653267f7")
+            to include("utf8-ranges#8d38a931b7e34f9da339c058cbbca6ded624ea58")
         end
 
         context "with an ssh URl" do
@@ -226,12 +226,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           it "updates the dependency version in the lockfile" do
             expect(updated_lockfile_content).
               to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
-                         "b7c73859eb0507d378b9d0a4d9ae2a0c653267f7")
+                         "8d38a931b7e34f9da339c058cbbca6ded624ea58")
             expect(updated_lockfile_content).to_not include("git+https://")
 
             expect(updated_lockfile_content).to include(
               "[metadata]\n"\
-              '"checksum utf8-ranges 1.0.3 (git+ssh://git@github.com/'\
+              '"checksum utf8-ranges 1.0.4 (git+ssh://git@github.com/'\
               "BurntSushi/utf8-ranges)\" = \"<none>\"\n"\
               '"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/'\
               "dependabot-fixtures/utf8-ranges)\" = \"<none>\""
