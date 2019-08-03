@@ -136,9 +136,13 @@ module Dependabot
               }
 
               if details["bundled"]
-                dependency_args[:subdependency_metadata] = [{
-                  npm_bundled: details["bundled"]
-                }]
+                dependency_args[:subdependency_metadata] =
+                  [{ npm_bundled: details["bundled"] }]
+              end
+
+              if details["dev"]
+                dependency_args[:subdependency_metadata] =
+                  [{ production: !details["dev"] }]
               end
 
               dependency_set << Dependency.new(dependency_args)

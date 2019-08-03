@@ -93,14 +93,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
     context "for npm lockfiles" do
       let(:dependency_files) { [npm_lockfile] }
+      let(:npm_lockfile_fixture_name) { "multiple_updates.json" }
 
       it "parses the dependencies" do
-        expect(dependencies.map(&:name)).to contain_exactly("etag")
+        expect(dependencies.map(&:name)).to contain_exactly("etag", "is-number")
       end
 
       it "doesn't include subdependency_metadata for unbundled dependencies" do
         dep = dependencies.find { |d| d.name == "etag" }
         expect(dep.subdependency_metadata).to be_nil
+      end
+
+      context "with a dev dependency" do
+        let(:npm_lockfile_fixture_name) { "only_dev_dependencies.json" }
+
+        it "includes subdependency_metadata for development dependency" do
+          dep = dependencies.find { |d| d.name == "etag" }
+          expect(dep.subdependency_metadata).to eq([{ production: false }])
+        end
       end
 
       context "that contain multiple dependencies" do
