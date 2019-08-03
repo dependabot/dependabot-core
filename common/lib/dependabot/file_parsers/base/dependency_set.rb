@@ -61,6 +61,8 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def combined_dependency(old_dep, new_dep)
           package_manager = old_dep.package_manager
           v_cls = Utils.version_class_for_package_manager(package_manager)
@@ -90,6 +92,8 @@ module Dependabot
           )
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end
