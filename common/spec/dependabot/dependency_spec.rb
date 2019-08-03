@@ -124,6 +124,19 @@ RSpec.describe Dependabot::Dependency do
       end
 
       it { is_expected.to eq(true) }
+
+      context "with subdependency metadata" do
+        let(:dependency_args) do
+          {
+            name: "dep",
+            requirements: [],
+            package_manager: package_manager,
+            subdependency_metadata: [{ production: false }]
+          }
+        end
+
+        it { is_expected.to eq(false) }
+      end
     end
   end
 
