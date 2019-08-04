@@ -93,7 +93,8 @@ module Dependabot
                   name: dep_name,
                   version: version&.gsub(/^===?/, ""),
                   requirements: [],
-                  package_manager: "pip"
+                  package_manager: "pip",
+                  subdependency_metadata: [{ production: key != "develop" }]
                 )
             end
           end
