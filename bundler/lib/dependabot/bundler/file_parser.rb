@@ -107,12 +107,9 @@ module Dependabot
               version: dependency_version(dependency.name)&.to_s,
               requirements: [],
               package_manager: "bundler",
-              subdependency_metadata:
-                if production_dependency_names.include?(dependency.name)
-                  [{ production: true }]
-                else
-                  [{ production: false }]
-                end
+              subdependency_metadata: [{
+                production: production_dep_names.include?(dependency.name)
+              }]
             )
         end
 
@@ -285,8 +282,8 @@ module Dependabot
           ::Bundler::LockfileParser.new(sanitized_lockfile_content)
       end
 
-      def production_dependency_names
-        @production_dependency_names ||=
+      def production_dep_names
+        @production_dep_names ||=
           (gemfile_dependencies + gemspec_dependencies).dependencies.
           select { |dep| production?(dep) }.
           flat_map { |dep| expanded_dependency_names(dep) }.
