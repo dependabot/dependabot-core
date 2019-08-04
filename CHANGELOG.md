@@ -1,3 +1,10 @@
+## v0.111.46, 4 August 2019
+
+- Python: Distinguish between dev and prod sub-dependencies (Poetry)
+- Python: Distinguish between dev and prod sub-dependencies (Pipenv)
+- PHP: Distinguish between production and development subdependencies
+- Bundler: Simplify parser logic for subdependency_metadata
+
 ## v0.111.45, 4 August 2019
 
 - JS: Include details of whether a sub-dependency is production or not
