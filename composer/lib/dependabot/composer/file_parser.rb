@@ -78,7 +78,8 @@ module Dependabot
 
         return dependencies unless lockfile
 
-        DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
+        DEPENDENCY_GROUP_KEYS.each do |h|
+          key = h.fetch(:lockfile)
           next unless parsed_lockfile[key]
 
           parsed_lockfile[key].each do |details|
@@ -94,7 +95,10 @@ module Dependabot
                 name: name,
                 version: version,
                 requirements: [],
-                package_manager: "composer"
+                package_manager: "composer",
+                subdependency_metadata: [{
+                  production: h.fetch(:group) != "development"
+                }]
               )
           end
         end

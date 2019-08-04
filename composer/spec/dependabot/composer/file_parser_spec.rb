@@ -122,6 +122,40 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with subdependencies" do
+      let(:composer_json_fixture_name) { "development_subdependencies" }
+      let(:lockfile_fixture_name) { "development_subdependencies" }
+
+      its(:length) { is_expected.to eq(16) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+        its(:length) { is_expected.to eq(2) }
+      end
+
+      describe "a production subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "symfony/polyfill-ctype" }
+        end
+
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("1.11.0")
+          expect(subdep.subdependency_metadata).to eq([{ production: true }])
+        end
+      end
+
+      describe "a development subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "phpunit/php-token-stream" }
+        end
+
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("3.1.0")
+          expect(subdep.subdependency_metadata).to eq([{ production: false }])
+        end
+      end
+    end
+
     context "with a version with a 'v' prefix" do
       let(:lockfile_fixture_name) { "v_prefix" }
 
