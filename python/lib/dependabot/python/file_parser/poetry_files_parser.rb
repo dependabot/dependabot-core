@@ -76,7 +76,10 @@ module Dependabot
                 name: normalise(details.fetch("name")),
                 version: details.fetch("version"),
                 requirements: [],
-                package_manager: "pip"
+                package_manager: "pip",
+                subdependency_metadata: [{
+                  production: details["category"] != "dev"
+                }]
               )
           end
 
