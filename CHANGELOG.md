@@ -1,3 +1,8 @@
+## v0.111.47, 5 August 2019
+
+- Rust: Ignore error in workspaces with clashing native dependencies
+- Ignore merged PRs in PullRequestCreator::GitHub
+
 ## v0.111.46, 4 August 2019
 
 - Python: Distinguish between dev and prod sub-dependencies (Poetry)
