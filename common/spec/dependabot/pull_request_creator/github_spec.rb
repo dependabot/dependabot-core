@@ -413,9 +413,42 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "returns nil" do
           expect(creator.create).to be_nil
+          expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
+        end
 
-          expect(WebMock).
-            to_not have_requested(:post, "#{repo_api_url}/pulls")
+        context "but is merged" do
+          before do
+            url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
+                  "&state=all"
+            stub_request(:get, url).to_return(
+              status: 200,
+              body: "[{ \"merged\": true }]",
+              headers: json_header
+            )
+            stub_request(
+              :patch,
+              "#{repo_api_url}/git/refs/heads/#{branch_name}"
+            ).to_return(
+              status: 200,
+              body: fixture("github", "update_ref.json"),
+              headers: json_header
+            )
+          end
+
+          it "creates a PR" do
+            creator.create
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/pulls").
+              with(
+                body: {
+                  base: "master",
+                  head: "dependabot/bundler/business-1.5.0",
+                  title: "PR name",
+                  body: "PR msg"
+                }
+              )
+          end
         end
       end
     end
