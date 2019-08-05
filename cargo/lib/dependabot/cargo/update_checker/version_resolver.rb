@@ -219,6 +219,14 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
+          if workspace_native_library_update_error?(error.message)
+            # This happens when we're updating one part of a workspace which
+            # triggers an update of a subdependency that uses a native library,
+            # whilst leaving another part of the workspace using an older
+            # version. Ideally we would prevent the subdependency update.
+            return nil
+          end
+
           if git_dependency? && error.message.include?("no matching package")
             # This happens when updating a git dependency whose version has
             # changed from a release to a pre-release version
@@ -306,6 +314,19 @@ module Dependabot
                        e.message.include?("failed to update submodule")
 
           false
+        end
+
+        def workspace_native_library_update_error?(message)
+          return unless message.include?("native library")
+
+          library_count = prepared_manifest_files.count do |file|
+            package_name = TomlRB.parse(file.content).dig("package", "name")
+            next false unless package_name
+
+            message.include?("depended on by `#{package_name} ")
+          end
+
+          library_count >= 2
         end
 
         def write_manifest_files(prepared: true)
