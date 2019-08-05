@@ -77,28 +77,35 @@ module Dependabot
         retry
       end
 
+      # Existing pull requests with this branch name that are open or closed.
+      # Note: we ignore *merged* pull requests for the branch name as we want
+      # to recreate them if the dependency version has regressed.
       def pull_request_exists?
-        github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "all"
-        ).any?
-      rescue Octokit::InternalServerError
-        # A GitHub bug sometimes means adding `state: all` causes problems.
-        # In that case, fall back to making two separate requests.
-        open_prs = github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "open"
-        )
+        pull_requests =
+          begin
+            github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "all"
+            )
+          rescue Octokit::InternalServerError
+            # A GitHub bug sometimes means adding `state: all` causes problems.
+            # In that case, fall back to making two separate requests.
+            open_prs = github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "open"
+            )
 
-        closed_prs = github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "closed"
-        )
+            closed_prs = github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "closed"
+            )
+            [*open_prs, *closed_prs]
+          end
 
-        [*open_prs, *closed_prs].any?
+        pull_requests.reject(&:merged).any?
       end
 
       def repo_exists?
