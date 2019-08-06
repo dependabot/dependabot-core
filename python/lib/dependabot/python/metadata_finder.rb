@@ -117,7 +117,7 @@ module Dependabot
               **SharedHelpers.excon_defaults
             )
           rescue Excon::Error::Timeout, Excon::Error::Socket,
-                 ArgumentError, SystemStackError
+                 Excon::Error::TooManyRedirects, ArgumentError
             nil
           end
 
