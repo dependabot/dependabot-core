@@ -262,6 +262,8 @@ module Dependabot
         end
 
         def error_certainly_bad_python_version?(message)
+          return true if message.include?("UnsupportedPythonVersion")
+
           unless message.include?('"python setup.py egg_info" failed') ||
                  message.include?("exit status 1: python setup.py egg_info")
             return false
