@@ -1,3 +1,9 @@
+## v0.111.50, 6 August 2019
+
+- Retry PR creation for unexpected 422s
+- JS: Bump npm from 6.10.2 to 6.10.3 in /npm_and_yarn/helpers
+- Update Excon requirement
+
 ## v0.111.49, 6 August 2019
 
 - Bundler: Sanitize out date from gemspecs
