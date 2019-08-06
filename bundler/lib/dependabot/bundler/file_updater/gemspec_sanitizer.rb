@@ -13,6 +13,7 @@ module Dependabot
           email=
           executables=
           extra_rdoc_files=
+          date=
           homepage=
           license=
           licenses=
