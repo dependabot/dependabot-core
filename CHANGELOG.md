@@ -1,3 +1,8 @@
+## v0.111.49, 6 August 2019
+
+- Bundler: Sanitize out date from gemspecs
+- Python: Handle UnsupportedPythonVersion errors in pip-compile
+
 ## v0.111.48, 6 August 2019
 
 - .NET: Treat blank versions the same as missing versions
