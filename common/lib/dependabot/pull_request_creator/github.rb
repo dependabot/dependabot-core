@@ -289,7 +289,16 @@ module Dependabot
           headers: custom_headers || {}
         )
       rescue Octokit::UnprocessableEntity => e
-        handle_pr_creation_error(e)
+        return handle_pr_creation_error(e) if e.message.include?("field:")
+
+        # Sometimes PR creation fails with no details (presumably because the
+        # details are internal). It doesn't hurt to retry in these cases, in
+        # case the cause is a race.
+        retrying_pr_creation ||= false
+        raise if retrying_pr_creation
+
+        retrying_pr_creation = true
+        retry
       end
 
       def handle_pr_creation_error(error)
