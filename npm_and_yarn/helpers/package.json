@@ -11,7 +11,7 @@
   "dependencies": {
     "@dependabot/yarn-lib": "^1.17.3",
     "detect-indent": "^6.0.0",
-    "npm": "^6.10.2",
+    "npm": "^6.10.3",
     "semver": "^6.3.0"
   },
   "devDependencies": {
