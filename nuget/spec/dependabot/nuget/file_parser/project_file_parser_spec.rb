@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
     describe "the dependencies" do
       subject(:dependencies) { dependency_set.dependencies }
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }

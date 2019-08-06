@@ -120,10 +120,13 @@ module Dependabot
 
         def get_node_version_value(node)
           attribute = "Version"
-          node.attribute(attribute)&.value&.strip ||
+          value =
+            node.attribute(attribute)&.value&.strip ||
             node.at_xpath("./#{attribute}")&.content&.strip ||
             node.attribute(attribute.downcase)&.value&.strip ||
             node.at_xpath("./#{attribute.downcase}")&.content&.strip
+
+          value == "" ? nil : value
         end
 
         def evaluated_value(value, project_file)
