@@ -393,6 +393,56 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a laravel nova" do
+      let(:manifest_fixture_name) { "laravel_nova" }
+      let(:lockfile_fixture_name) { "laravel_nova" }
+      before { `composer clear-cache --quiet` }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "laravel/nova",
+          version: "2.0.9",
+          previous_version: "2.0.7",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "nova.laravel.com",
+            "username" => "username",
+            "password" => "password"
+          }]
+        end
+
+        it "raises a helpful errors" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to be_a Dependabot::PrivateSourceAuthenticationFailure
+            expect(error.source).to eq("nova.laravel.com")
+          end
+        end
+      end
+    end
+
     context "when another dependency has git source with a bad reference" do
       let(:lockfile_fixture_name) { "git_source_bad_ref" }
       let(:manifest_fixture_name) { "git_source_bad_ref" }

@@ -124,6 +124,12 @@ module Dependabot
             raise git_dependency_reference_error(error)
           end
 
+          # Special case for Laravel Nova, which will fall back to attempting
+          # to close a private repo if given invalid (or no) credentials
+          if error.message.include?("github.com/laravel/nova.git")
+            raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
+          end
+
           if error.message.start_with?("Failed to execute git clone")
             dependency_url =
               error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).

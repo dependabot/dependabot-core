@@ -163,6 +163,12 @@ module Dependabot
         def handle_composer_errors(error)
           sanitized_message = remove_url_credentials(error.message)
 
+          # Special case for Laravel Nova, which will fall back to attempting
+          # to close a private repo if given invalid (or no) credentials
+          if error.message.include?("github.com/laravel/nova.git")
+            raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
+          end
+
           if error.message.start_with?("Failed to execute git clone")
             dependency_url =
               error.message.match(/--mirror '(?<url>.*?)'/).
