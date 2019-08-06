@@ -1,3 +1,7 @@
+## v0.111.48, 6 August 2019
+
+- .NET: Treat blank versions the same as missing versions
+
 ## v0.111.47, 5 August 2019
 
 - Rust: Ignore error in workspaces with clashing native dependencies
