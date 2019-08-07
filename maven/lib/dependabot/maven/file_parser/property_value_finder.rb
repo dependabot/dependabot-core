@@ -142,7 +142,7 @@ module Dependabot
 
             return dependency_file
           rescue Excon::Error::Socket, Excon::Error::Timeout,
-                 URI::InvalidURIError
+                 Excon::Error::TooManyRedirects, URI::InvalidURIError
             nil
           end
 
