@@ -170,7 +170,8 @@ module Dependabot
                 **SharedHelpers.excon_defaults
               )
               Nokogiri::XML(response.body)
-            rescue Excon::Error::Socket, Excon::Error::Timeout
+            rescue Excon::Error::Socket, Excon::Error::Timeout,
+                   Excon::Error::TooManyRedirects
               namespace = Gradle::FileParser::RepositoriesFinder
               central = namespace::CENTRAL_REPO_URL
               raise if repository_url == central
