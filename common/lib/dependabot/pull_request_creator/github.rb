@@ -289,7 +289,7 @@ module Dependabot
           headers: custom_headers || {}
         )
       rescue Octokit::UnprocessableEntity => e
-        return handle_pr_creation_error(e) if e.message.include?("field:")
+        return handle_pr_creation_error(e) if e.message.include? "Error summary"
 
         # Sometimes PR creation fails with no details (presumably because the
         # details are internal). It doesn't hurt to retry in these cases, in

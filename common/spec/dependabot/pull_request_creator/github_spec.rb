@@ -416,6 +416,34 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
+        context "but isn't initially returned (a race)" do
+          before do
+            url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
+                  "&state=all"
+            stub_request(:get, url).
+              to_return(status: 200, body: "[]", headers: json_header)
+            stub_request(
+              :patch,
+              "#{repo_api_url}/git/refs/heads/#{branch_name}"
+            ).to_return(
+              status: 200,
+              body: fixture("github", "update_ref.json"),
+              headers: json_header
+            )
+            stub_request(:post, "#{repo_api_url}/pulls").
+              to_return(
+                status: 422,
+                body: fixture("github", "pull_request_already_exists.json"),
+                headers: json_header
+              )
+          end
+
+          it "returns nil" do
+            expect(creator.create).to be_nil
+            expect(WebMock).to have_requested(:post, "#{repo_api_url}/pulls")
+          end
+        end
+
         context "but is merged" do
           before do
             url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
