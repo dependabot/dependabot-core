@@ -1,3 +1,9 @@
+## v0.111.51, 7 August 2019
+
+- Gradle: Handle redirect loops
+- Maven: Handle redirect loops
+- Composer: Add special case for bad nova.laravel.com credentials
+
 ## v0.111.50, 6 August 2019
 
 - Retry PR creation for unexpected 422s
