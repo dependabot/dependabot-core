@@ -118,6 +118,32 @@ module Dependabot
       def create_commit
         tree = create_tree
 
+        begin
+          github_client_for_source.create_commit(
+            source.repo,
+            commit_message,
+            tree.sha,
+            base_commit,
+            commit_options(tree)
+          )
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.message == "Tree SHA does not exist"
+
+          # Sometimes a race condition on GitHub's side means we get an error
+          # here. No harm in retrying if we do.
+          raise_or_increment_retry_counter(counter: @commit_creation, limit: 3)
+          sleep(rand(1..1.99))
+          retry
+        end
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message == "Tree SHA does not exist"
+
+        raise_or_increment_retry_counter(counter: @tree_creation, limit: 1)
+        sleep(rand(1..1.99))
+        retry
+      end
+
+      def commit_options(tree)
         options = author_details&.any? ? { author: author_details } : {}
 
         if options[:author]&.any? && signature_key
@@ -125,26 +151,7 @@ module Dependabot
           options[:signature] = commit_signature(tree, options[:author])
         end
 
-        begin
-          github_client_for_source.create_commit(
-            source.repo,
-            commit_message,
-            tree.sha,
-            base_commit,
-            options
-          )
-        rescue Octokit::UnprocessableEntity => e
-          raise unless e.message == "Tree SHA does not exist"
-
-          # Sometimes a race condition on GitHub's side means we get an error
-          # here. No harm in retrying if we do.
-          retry_count ||= 0
-          retry_count += 1
-          raise if retry_count > 10
-
-          sleep(rand(1..1.99))
-          retry
-        end
+        options
       end
 
       def create_tree
@@ -334,6 +341,12 @@ module Dependabot
           parent_sha: base_commit,
           signature_key: signature_key
         ).signature
+      end
+
+      def raise_or_increment_retry_counter(counter:, limit:)
+        counter ||= 0
+        counter += 1
+        raise if counter > limit
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
