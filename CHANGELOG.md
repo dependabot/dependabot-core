@@ -1,3 +1,7 @@
+## v0.111.53, 7 August 2019
+
+- Retry tree creation if we're persistently failing to create a commit for it
+
 ## v0.111.52, 7 August 2019
 
 - Better check that pull request creation errors have details
