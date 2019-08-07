@@ -1,3 +1,8 @@
+## v0.111.52, 7 August 2019
+
+- Better check that pull request creation errors have details
+- Python: Better error message in pip-compile for bad Python version
+
 ## v0.111.51, 7 August 2019
 
 - Gradle: Handle redirect loops
