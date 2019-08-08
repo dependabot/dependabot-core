@@ -677,6 +677,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           let(:current_version) { "0.9.3" }
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
+
+        context "that has a .specification" do
+          let(:dependency_files) { [gemfile, lockfile, specification] }
+          let(:gemfile_fixture_name) { "path_source_statesman" }
+          let(:lockfile_fixture_name) { "path_source_statesman.lock" }
+          let(:specification) do
+            Dependabot::DependencyFile.new(
+              content: fixture("ruby", "specifications", "statesman"),
+              name: "vendor/gems/statesman-4.1.1/.specification",
+              support_file: true
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.13.0")) }
+        end
       end
     end
 

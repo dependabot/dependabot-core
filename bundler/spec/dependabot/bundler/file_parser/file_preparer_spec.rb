@@ -66,5 +66,21 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
 
       its(:content) { is_expected.to eq(ruby_version.content) }
     end
+
+    describe "the updated .specification file" do
+      subject do
+        prepared_dependency_files.find { |f| f.name == ".specification" }
+      end
+
+      let(:dependency_files) { [gemfile, lockfile, specification] }
+      let(:specification) do
+        Dependabot::DependencyFile.new(
+          content: fixture("ruby", "specifications", "statesman"),
+          name: ".specification"
+        )
+      end
+
+      its(:content) { is_expected.to eq(specification.content) }
+    end
   end
 end

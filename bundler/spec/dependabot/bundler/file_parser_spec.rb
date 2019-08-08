@@ -334,6 +334,22 @@ RSpec.describe Dependabot::Bundler::FileParser do
         expect(sub_dep.requirements).to eq([])
         expect(sub_dep.top_level?).to eq(false)
       end
+
+      context "that comes from a .specification file" do
+        let(:files) { [gemfile, lockfile, specification] }
+        let(:specification) do
+          Dependabot::DependencyFile.new(
+            name: "plugins/example/.specification",
+            content: fixture("ruby", "specifications", "statesman"),
+            support_file: true
+          )
+        end
+
+        it "includes the path dependency" do
+          path_dep = dependencies.find { |dep| dep.name == "example" }
+          expect(path_dep.requirements).to eq(expected_requirements)
+        end
+      end
     end
 
     context "with a gem from a private gem source" do

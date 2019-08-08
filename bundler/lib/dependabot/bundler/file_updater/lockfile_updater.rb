@@ -247,6 +247,12 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, sanitized_gemspec_content(file.content))
           end
+
+          specification_files.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(path, file.content)
+          end
         end
 
         def write_imported_ruby_files
@@ -403,12 +409,17 @@ module Dependabot
           @evaled_gemfiles ||=
             dependency_files.
             reject { |f| f.name.end_with?(".gemspec") }.
+            reject { |f| f.name.end_with?(".specification") }.
             reject { |f| f.name.end_with?(".lock") }.
             reject { |f| f.name.end_with?(".ruby-version") }.
             reject { |f| f.name == "Gemfile" }.
             reject { |f| f.name == "gems.rb" }.
             reject { |f| f.name == "gems.locked" }.
             reject(&:support_file?)
+        end
+
+        def specification_files
+          dependency_files.select { |f| f.name.end_with?(".specification") }
         end
 
         def git_dependency?(dep)
