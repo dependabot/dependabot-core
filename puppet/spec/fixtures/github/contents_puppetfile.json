@@ -1,0 +1,18 @@
+{
+  "name": "Puppetfile",
+  "path": "Puppetfile",
+  "sha": "5e2a5643f349e2b2e425374df90e19397ab470a0",
+  "size": 680,
+  "url": "https://api.github.com/repos/jpogran/control-repo/contents/Puppetfile?ref=production",
+  "html_url": "https://github.com/jpogran/control-repo/blob/production/Puppetfile",
+  "git_url": "https://api.github.com/repos/jpogran/control-repo/git/blobs/5e2a5643f349e2b2e425374df90e19397ab470a0",
+  "download_url": "https://raw.githubusercontent.com/jpogran/control-repo/production/Puppetfile",
+  "type": "file",
+  "content": "Zm9yZ2UgImh0dHA6Ly9mb3JnZS5wdXBwZXRsYWJzLmNvbSIKCiMgTW9kdWxl\ncyBmcm9tIHRoZSBQdXBwZXQgRm9yZ2UKIyBWZXJzaW9ucyBzaG91bGQgYmUg\ndXBkYXRlZCB0byBiZSB0aGUgbGF0ZXN0IGF0IHRoZSB0aW1lIHlvdSBzdGFy\ndAojbW9kICJwdXBwZXRsYWJzL2luaWZpbGUiLCAgICAgJzEuNS4wJwojbW9k\nICJwdXBwZXRsYWJzL3N0ZGxpYiIsICAgICAgJzQuMTEuMCcKI21vZCAicHVw\ncGV0bGFicy9jb25jYXQiLCAgICAgICcyLjEuMCcKbW9kICJwdXBwZXRsYWJz\nL2RzYyIsICcxLjQuMCcKCm1vZCAicHVwcGV0L3dpbmRvd3NmZWF0dXJlIiwg\nJzIuMC4wJwoKIyBNb2R1bGVzIGZyb20gR2l0CiMgRXhhbXBsZXM6IGh0dHBz\nOi8vZ2l0aHViLmNvbS9wdXBwZXRsYWJzL3IxMGsvYmxvYi9tYXN0ZXIvZG9j\nL3B1cHBldGZpbGUubWtkI2V4YW1wbGVzCiNtb2QgJ2FwYWNoZScsCiMgIDpn\naXQgICAgPT4gJ2h0dHBzOi8vZ2l0aHViLmNvbS9wdXBwZXRsYWJzL3B1cHBl\ndGxhYnMtYXBhY2hlJywKIyAgOmNvbW1pdCA9PiAnODM0MDEwNzkwNTNkY2Ex\nMWQ2MTk0NWJkOWJlZWY5ZWNmNzU3NmNiZicKCiNtb2QgJ2FwYWNoZScsCiMg\nIDpnaXQgICAgPT4gJ2h0dHBzOi8vZ2l0aHViLmNvbS9wdXBwZXRsYWJzL3B1\ncHBldGxhYnMtYXBhY2hlJywKIyAgOmJyYW5jaCA9PiAnZG9jc19leHBlcmlt\nZW50Jwo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/jpogran/control-repo/contents/Puppetfile?ref=production",
+    "git": "https://api.github.com/repos/jpogran/control-repo/git/blobs/5e2a5643f349e2b2e425374df90e19397ab470a0",
+    "html": "https://github.com/jpogran/control-repo/blob/production/Puppetfile"
+  }
+}

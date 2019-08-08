@@ -15,25 +15,17 @@ module Dependabot
       end
 
       private
+
       def fetch_files
-        unless puppet_file
-          raise(
-            Dependabot::DependencyFileNotFound,
-              File.join(directory, "Puppetfile")
-          )
-        end
-
         fetched_files = [puppet_file]
-
         fetched_files
       end
 
       def puppet_file
-        @puppet_file ||= fetch_file_if_present("Puppetfile")
+        @puppet_file ||= fetch_file_from_host("Puppetfile")
       end
     end
   end
 end
 
-Dependabot::FileFetchers.
-  register("puppet", Dependabot::Puppet::FileFetcher)
+Dependabot::FileFetchers.register("puppet", Dependabot::Puppet::FileFetcher)
