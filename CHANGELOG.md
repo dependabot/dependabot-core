@@ -1,3 +1,8 @@
+## v0.111.55, 8 August 2019
+
+- PHP: Stricter regex for finding missing extensions and PHP versions
+- Bundler: Tighter check on source being Rubygems
+
 ## v0.111.54, 8 August 2019
 
 - Terraform: Handle registry dependencies that specify a sub-directory
