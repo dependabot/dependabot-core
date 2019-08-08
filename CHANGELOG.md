@@ -1,3 +1,8 @@
+## v0.111.56, 9 August 2019
+
+- Bundler: Handle path dependencies that use a .specification file
+- Maven: Improve dot separator regex to fix XML searching bug
+
 ## v0.111.55, 8 August 2019
 
 - PHP: Stricter regex for finding missing extensions and PHP versions
