@@ -1,3 +1,7 @@
+## v0.111.54, 8 August 2019
+
+- Terraform: Handle registry dependencies that specify a sub-directory
+
 ## v0.111.53, 7 August 2019
 
 - Retry tree creation if we're persistently failing to create a commit for it
