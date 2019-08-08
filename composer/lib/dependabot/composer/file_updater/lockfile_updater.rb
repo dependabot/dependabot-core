@@ -23,6 +23,9 @@ module Dependabot
           end
         end
 
+        MISSING_PLATFORM_REQ_REGEX =
+          /\sext\-.*? .*?\s(?=[^\d])|(?<=requires )php .*?\s(?=[^\d])/.freeze
+
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
@@ -112,9 +115,9 @@ module Dependabot
           if error.message.include?("package requires php") ||
              error.message.include?("requested PHP extension")
             missing_extensions =
-              error.message.scan(/\sext\-.*? .*?\s|(?<=requires )php .*?\s/).
+              error.message.scan(MISSING_PLATFORM_REQ_REGEX).
               map do |extension_string|
-                name, requirement = extension_string.strip.split(" ")
+                name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions

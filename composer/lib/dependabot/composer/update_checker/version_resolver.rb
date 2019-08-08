@@ -21,6 +21,8 @@ module Dependabot
           end
         end
 
+        MISSING_PLATFORM_REQ_REGEX =
+          /\sext\-.*? .*?\s(?=[^\d])|(?<=requires )php .*?\s(?=[^\d])/.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
@@ -185,9 +187,9 @@ module Dependabot
           elsif error.message.include?("package requires php") ||
                 error.message.include?("requested PHP extension")
             missing_extensions =
-              error.message.scan(/\sext\-.*? .*?\s|(?<=requires )php .*?\s/).
+              error.message.scan(MISSING_PLATFORM_REQ_REGEX).
               map do |extension_string|
-                name, requirement = extension_string.strip.split(" ")
+                name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
