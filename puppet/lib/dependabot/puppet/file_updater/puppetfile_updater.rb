@@ -58,7 +58,8 @@ module Dependabot
           RequirementReplacer.new(
             dependency: dependency,
             updated_requirement: updated_requirement,
-            previous_requirement: previous_requirement
+            previous_requirement: previous_requirement,
+            insert_if_bare: !updated_requirement.nil?
           ).rewrite(content)
         end
 
@@ -72,13 +73,13 @@ module Dependabot
         def remove_git_source?(dependency)
           old_puppetfile_req =
             dependency.previous_requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| %w(Puppetfile).include?(f[:file]) }
 
           return false unless old_puppetfile_req&.dig(:source, :type) == "git"
 
           new_puppetfile_req =
             dependency.requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| %w(Puppetfile).include?(f[:file]) }
 
           new_puppetfile_req[:source].nil?
         end
@@ -86,7 +87,7 @@ module Dependabot
         def update_git_pin?(dependency)
           new_puppetfile_req =
             dependency.requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| %w(Puppetfile).include?(f[:file]) }
           return false unless new_puppetfile_req&.dig(:source, :type) == "git"
 
           # If the new requirement is a git dependency with a ref then there's
