@@ -14,39 +14,39 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_files = []
-        updated_content = dependency_files[0].content.dup
+        updated_content = puppet_file.content.dup
 
-        # require 'pry';binding.pry
-        dependencies.each do |dependency|
-          # require 'pry';binding.pry
+        dependencies.each do |dep|
           updated_content = update_content(
             updated_content,
-            dependency.name.gsub('-', '/'),
-            dependency.previous_version,
-            dependency.version
+            dep.name.gsub('-', '/'),
+            dep.previous_version,
+            dep.version
           )
-
         end
-        # require 'pry';binding.pry
 
-        updated_files << updated_file(
-          file: puppet_file,
-          content: updated_content
-        )
+        raise "Puppetfile unchanged!" if updated_content == puppet_file.content
 
-        raise "No files changed!" if updated_files.none?
-
-        updated_files
+        [updated_file(file: puppet_file, content: updated_content)]
       end
 
       private
-      def update_content(content, module_name, previous_version, new_version)
-        old_version_regex  = %r{^mod ['\"]#{module_name}['\"],\s*['\"]#{previous_version}['\"]$}i
-        new_version_string = "mod \"#{module_name}\", '#{new_version}'"
 
-        updated_content = content.gsub(old_version_regex, new_version_string)
-        updated_content
+      def update_content(content, module_name, previous_version, new_version)
+        escaped_previous_version = Regexp.escape(previous_version)
+
+        old_version_regex =
+          /
+            ^mod\s+['"]#{Regexp.escape(module_name)}['"],\s*
+            ['"]#{escaped_previous_version}['"]$
+          /mxi
+
+        updated_content = content.gsub(old_version_regex) do |declaration|
+          declaration.sub(
+            /(?<=['"])#{escaped_previous_version}(?=['"])/,
+            new_version
+          )
+        end
       end
 
       def check_required_files
@@ -60,5 +60,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-  register("puppet", Dependabot::Puppet::FileUpdater)
+Dependabot::FileUpdaters.register("puppet", Dependabot::Puppet::FileUpdater)
