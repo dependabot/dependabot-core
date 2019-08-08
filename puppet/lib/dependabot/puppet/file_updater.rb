@@ -7,6 +7,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Puppet
     class FileUpdater < Dependabot::FileUpdaters::Base
+      require_relative "file_updater/puppetfile_updater"
+
       def self.updated_files_regex
         [
           /^Puppetfile$/,
@@ -14,47 +16,34 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_content = puppet_file.content.dup
+        updated_files = []
 
-        dependencies.each do |dep|
-          updated_content = update_content(
-            updated_content,
-            dep.name.gsub('-', '/'),
-            dep.previous_version,
-            dep.version
-          )
+        if puppetfile && file_changed?(puppetfile)
+          updated_files <<
+            updated_file(
+              file: puppetfile,
+              content: updated_puppetfile_content(puppetfile)
+            )
         end
 
-        raise "Puppetfile unchanged!" if updated_content == puppet_file.content
-
-        [updated_file(file: puppet_file, content: updated_content)]
+        updated_files
       end
 
       private
 
-      def update_content(content, module_name, previous_version, new_version)
-        escaped_previous_version = Regexp.escape(previous_version)
-
-        old_version_regex =
-          /
-            ^mod\s+['"]#{Regexp.escape(module_name)}['"],\s*
-            ['"]#{escaped_previous_version}['"]$
-          /mxi
-
-        updated_content = content.gsub(old_version_regex) do |declaration|
-          declaration.sub(
-            /(?<=['"])#{escaped_previous_version}(?=['"])/,
-            new_version
-          )
-        end
+      def updated_puppetfile_content(file)
+        PuppetfileUpdater.new(
+          dependencies: dependencies,
+          puppetfile: file
+        ).updated_puppetfile_content
       end
 
       def check_required_files
-        raise "No Puppetfile!" unless puppet_file
+        raise "No Puppetfile!" unless puppetfile
       end
 
-      def puppet_file
-        @puppet_file ||= get_original_file("Puppetfile")
+      def puppetfile
+        @puppetfile ||= get_original_file("Puppetfile")
       end
     end
   end

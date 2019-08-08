@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Puppet::FileUpdater do
       name: "puppet/windowsfeature",
       version: "3.2.0",
       requirements: [{
-        file: "Pupeptfile",
+        file: "Puppetfile",
         requirement: "3.2.0",
         groups: [],
         source: {
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Puppet::FileUpdater do
       }],
       previous_version: "2.0.0",
       previous_requirements: [{
-        file: "Pupeptfile",
+        file: "Puppetfile",
         requirement: "2.0.0",
         groups: [],
         source: {
