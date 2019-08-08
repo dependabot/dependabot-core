@@ -919,6 +919,23 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               not_to include Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
           end
 
+          context "as a .specification" do
+            let(:dependency_files) { [gemfile, lockfile, specification] }
+            let(:gemfile_fixture_name) { "path_source_statesman" }
+            let(:lockfile_fixture_name) { "path_source_statesman.lock" }
+            let(:specification) do
+              Dependabot::DependencyFile.new(
+                content: fixture("ruby", "specifications", "statesman"),
+                name: "vendor/gems/statesman-4.1.1/.specification",
+                support_file: true
+              )
+            end
+
+            it "updates the gem just fine" do
+              expect(file.content).to include "business (1.5.0)"
+            end
+          end
+
           context "that requires other files" do
             let(:gemspec_body) do
               fixture("ruby", "gemspecs", "no_overlap_with_require")

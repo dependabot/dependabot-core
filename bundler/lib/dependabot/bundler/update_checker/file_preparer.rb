@@ -89,7 +89,12 @@ module Dependabot
           end
 
           # No editing required for lockfile or Ruby version file
-          files += [lockfile, ruby_version_file, *imported_ruby_files].compact
+          files += [
+            lockfile,
+            ruby_version_file,
+            *imported_ruby_files,
+            *specification_files
+          ].compact
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
@@ -119,6 +124,7 @@ module Dependabot
         def evaled_gemfiles
           dependency_files.
             reject { |f| f.name.end_with?(".gemspec") }.
+            reject { |f| f.name.end_with?(".specification") }.
             reject { |f| f.name.end_with?(".lock") }.
             reject { |f| f.name.end_with?(".ruby-version") }.
             reject { |f| f.name == "Gemfile" }.
@@ -129,6 +135,10 @@ module Dependabot
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
+        end
+
+        def specification_files
+          dependency_files.select { |f| f.name.end_with?(".specification") }
         end
 
         def top_level_gemspecs

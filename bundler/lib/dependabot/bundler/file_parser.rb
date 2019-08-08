@@ -265,6 +265,7 @@ module Dependabot
       def evaled_gemfiles
         dependency_files.
           reject { |f| f.name.end_with?(".gemspec") }.
+          reject { |f| f.name.end_with?(".specification") }.
           reject { |f| f.name.end_with?(".lock") }.
           reject { |f| f.name.end_with?(".ruby-version") }.
           reject { |f| f.name == "Gemfile" }.
