@@ -11,16 +11,21 @@ RSpec.describe Dependabot::Puppet::UpdateChecker do
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "puppetlabs-dsc",
-      version: "1.4.0",
-      package_manager: "puppet",
-      requirements: [{
-        file: "Puppetfile",
-        requirement: "1.4.0",
-        source: { type: "default", source: "puppetlabs/dsc" },
-        groups: []
-      }]
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "puppet"
     )
+  end
+  let(:dependency_name) { "puppetlabs-dsc" }
+  let(:dependency_version) { "1.4.0" }
+  let(:dependency_requirements) do
+    [{
+      file: "Puppetfile",
+      requirement: "1.4.0",
+      source: nil,
+      groups: []
+    }]
   end
   let(:dependency_files) do
     [
@@ -87,6 +92,79 @@ RSpec.describe Dependabot::Puppet::UpdateChecker do
 
       expect(checker.latest_version).to eq("latest")
     end
+
+    context "with a git dependency" do
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
+      let(:dependency_requirements) do
+        [{
+          file: "Puppetfile",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: nil,
+            ref: nil
+          }
+        }]
+      end
+
+      before do
+        git_url = "https://github.com/BurntSushi/utf8-ranges.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: %w(x-access-token token)).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "utf8-ranges"),
+            headers: git_header
+          )
+      end
+
+      it { is_expected.to eq("47afd3c09c6583afdf4083fc9644f6f64172c8f8") }
+
+      context "with a version-like tag" do
+        let(:dependency_version) { "d5094c7e9456f2965dec20de671094a98c6929c2" }
+        let(:dependency_requirements) do
+          [{
+            file: "Puppetfile",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: "0.1.3"
+            }
+          }]
+        end
+
+        # The SHA of the next version tag
+        it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
+      end
+
+      context "with a non-version tag" do
+        let(:dependency_version) { "gitsha" }
+        let(:dependency_requirements) do
+          [{
+            file: "Puppetfile",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: "something"
+            }
+          }]
+        end
+
+        it { is_expected.to eq(dependency_version) }
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -95,6 +173,91 @@ RSpec.describe Dependabot::Puppet::UpdateChecker do
     it "just proxies to the #latest_version method" do
       allow(checker).to receive(:latest_version).and_return("latest")
       expect(checker.latest_resolvable_version).to eq("latest")
+    end
+  end
+
+  describe "#updated_requirements" do
+    subject(:updated_requirements) { checker.updated_requirements }
+
+    it "updates the requirement to the latest version" do
+      allow(checker).to receive(:latest_version).
+        and_return(Dependabot::Puppet::Version.new("1.9.2"))
+
+      expect(checker.updated_requirements).
+        to eq(
+          [{
+            file: "Puppetfile",
+            requirement: "1.9.2",
+            source: nil,
+            groups: []
+          }]
+        )
+    end
+
+    context "with a git dependency" do
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
+      let(:dependency_requirements) do
+        [{
+          file: "Puppetfile",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: nil,
+            ref: nil
+          }
+        }]
+      end
+
+      before do
+        git_url = "https://github.com/BurntSushi/utf8-ranges.git"
+        git_header = {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+        stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
+          with(basic_auth: %w(x-access-token token)).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "utf8-ranges"),
+            headers: git_header
+          )
+      end
+
+      context "with a version-like tag" do
+        let(:dependency_version) { "d5094c7e9456f2965dec20de671094a98c6929c2" }
+        let(:dependency_requirements) do
+          [{
+            file: "Puppetfile",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/BurntSushi/utf8-ranges",
+              branch: nil,
+              ref: "0.1.3"
+            }
+          }]
+        end
+
+        it "updates the requirement to the latest tag" do
+          expect(checker.updated_requirements).
+            to eq(
+              [{
+                file: "Puppetfile",
+                requirement: nil,
+                groups: [],
+                source: {
+                  type: "git",
+                  url: "https://github.com/BurntSushi/utf8-ranges",
+                  branch: nil,
+                  ref: "1.0.0"
+                }
+              }]
+            )
+        end
+      end
     end
   end
 end
