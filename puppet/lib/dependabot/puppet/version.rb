@@ -9,5 +9,4 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_version_class("puppet", Dependabot::Puppet::Version)
+Dependabot::Utils.register_version_class("puppet", Dependabot::Puppet::Version)
