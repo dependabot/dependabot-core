@@ -34,39 +34,6 @@ RSpec.describe Dependabot::Puppet::FileUpdater::GitSourceRemover do
       end
     end
 
-    context "with non-git tags at the start" do
-      let(:content) do
-        %(mod "puppetlabs/dsc", "1.0.0", require: false, git: "git_url")
-      end
-      it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0", require: false)) }
-    end
-
-    context "with non-git tags at the end" do
-      let(:content) do
-        %(mod "puppetlabs/dsc", "1.0.0", git: "git_url", require: false)
-      end
-      it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0", require: false)) }
-    end
-
-    context "with non-git tags on a subsequent line" do
-      let(:content) do
-        %(mod "puppetlabs/dsc", "1.0.0", git: "git_url",\nrequire: false)
-      end
-      it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0", require: false)) }
-    end
-
-    context "with git tags on a subsequent line" do
-      let(:content) do
-        %(mod "puppetlabs/dsc", "1.0.0", require: false,\ngit: "git_url")
-      end
-      it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0", require: false)) }
-    end
-
-    context "with a custom tag" do
-      let(:content) { %(mod "puppetlabs/dsc", "1.0.0", github: "git_url") }
-      it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0")) }
-    end
-
     context "with a comment" do
       let(:content) { %(mod "puppetlabs/dsc", "1.0.0", git: "git_url" # My gem) }
       it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0" # My gem)) }

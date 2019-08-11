@@ -206,39 +206,12 @@ RSpec.describe Dependabot::Puppet::FileUpdater::PuppetfileUpdater do
           it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.8.0")) }
         end
 
-        context "with non-git args at the start" do
-          let(:puppetfile_body) do
-            %(mod "puppetlabs/dsc", "1.0.0", require: false, git: "git_url")
-          end
-          it do
-            is_expected.to eq(%(mod "puppetlabs/dsc", "1.8.0", require: false))
-          end
-        end
-
-        context "with non-git args at the end" do
-          let(:puppetfile_body) do
-            %(mod "puppetlabs/dsc", "1.0.0", git: "git_url", require: false)
-          end
-          it do
-            is_expected.to eq(%(mod "puppetlabs/dsc", "1.8.0", require: false))
-          end
-        end
-
-        context "with non-git args on a subsequent line" do
-          let(:puppetfile_body) do
-            %(mod("puppetlabs/dsc", "1.0.0", git: "git_url",\nrequire: false))
-          end
-          it do
-            is_expected.to eq(%(mod("puppetlabs/dsc", "1.8.0", require: false)))
-          end
-        end
-
         context "with git args on a subsequent line" do
           let(:puppetfile_body) do
-            %(mod "puppetlabs/dsc", '1.0.0', require: false,\ngit: "git_url")
+            %(mod "puppetlabs/dsc", '1.0.0', \ngit: "git_url")
           end
           it do
-            is_expected.to eq(%(mod "puppetlabs/dsc", '1.8.0', require: false))
+            is_expected.to eq(%(mod "puppetlabs/dsc", '1.8.0'))
           end
         end
 
