@@ -35,7 +35,9 @@ RSpec.describe Dependabot::Puppet::FileUpdater::GitSourceRemover do
     end
 
     context "with a comment" do
-      let(:content) { %(mod "puppetlabs/dsc", "1.0.0", git: "git_url" # My gem) }
+      let(:content) do
+        %(mod "puppetlabs/dsc", "1.0.0", git: "git_url" # My gem)
+      end
       it { is_expected.to eq(%(mod "puppetlabs/dsc", "1.0.0" # My gem)) }
     end
   end

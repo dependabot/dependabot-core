@@ -127,7 +127,7 @@
       "version": "1.9.2",
       "supported": false,
       "created_at": "2019-04-25 09:48:27 -0700",
-      "deleted_at": null,
+      "deleted_at": "2019-04-26 09:48:27 -0700",
       "file_uri": "/v3/files/puppetlabs-dsc-1.9.2.tar.gz",
       "file_size": 3189038
     },
@@ -147,7 +147,7 @@
       "version": "1.9.0",
       "supported": false,
       "created_at": "2019-04-03 07:39:27 -0700",
-      "deleted_at": null,
+      "deleted_at": "2019-04-26 09:48:27 -0700",
       "file_uri": "/v3/files/puppetlabs-dsc-1.9.0.tar.gz",
       "file_size": 3188578
     },

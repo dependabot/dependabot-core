@@ -98,9 +98,9 @@ RSpec.describe Dependabot::Puppet::FileUpdater do
     it "updates the Puppetfile correctly" do
       updated_puppetfile = updated_files.find { |f| f.name == "Puppetfile" }
       expect(updated_puppetfile.content).
-        to include(%{mod "puppetlabs/dsc", '1.9.0'\n})
+        to include(%(mod "puppetlabs/dsc", '1.9.0'\n))
       expect(updated_puppetfile.content).
-        to include(%{mod "puppet/windowsfeature",  "3.2.0"\n})
+        to include(%(mod "puppet/windowsfeature",  "3.2.0"\n))
     end
   end
 end

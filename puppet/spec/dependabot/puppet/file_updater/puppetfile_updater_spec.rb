@@ -112,9 +112,9 @@ RSpec.describe Dependabot::Puppet::FileUpdater::PuppetfileUpdater do
 
       it "updates both dependencies" do
         expect(updated_puppetfile_content).
-          to include(%{mod "puppetlabs/dsc", '1.9.0'\n})
+          to include(%(mod "puppetlabs/dsc", '1.9.0'\n))
         expect(updated_puppetfile_content).
-          to include(%{mod "puppet/windowsfeature",  "3.2.0"\n})
+          to include(%(mod "puppet/windowsfeature",  "3.2.0"\n))
       end
     end
 

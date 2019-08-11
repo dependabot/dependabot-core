@@ -10,9 +10,7 @@ module Dependabot
       require_relative "file_updater/puppetfile_updater"
 
       def self.updated_files_regex
-        [
-          /^Puppetfile$/,
-        ]
+        [/^Puppetfile$/]
       end
 
       def updated_dependency_files
