@@ -22,7 +22,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       labeler: labeler,
       reviewers: reviewers,
       assignees: assignees,
-      milestone: milestone
+      milestone: milestone,
+      require_up_to_date_base: require_up_to_date_base
     )
   end
 
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:reviewers) { nil }
   let(:assignees) { nil }
   let(:milestone) { nil }
+  let(:require_up_to_date_base) { false }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -462,6 +464,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               headers: json_header
             )
           end
+          let(:base_commit) { "basecommitsha" }
 
           it "creates a PR" do
             creator.create
@@ -476,6 +479,35 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   body: "PR msg"
                 }
               )
+          end
+
+          context "when `require_up_to_date_base` is true" do
+            let(:require_up_to_date_base) { true }
+
+            it "does not create a PR" do
+              expect(creator.create).to be_nil
+              expect(WebMock).
+                to_not have_requested(:post, "#{repo_api_url}/pulls")
+            end
+
+            context "and the commit we're branching off of is up-to-date" do
+              let(:base_commit) { "7bb4e41ce5164074a0920d5b5770d196b4d90104" }
+
+              it "creates a PR" do
+                creator.create
+
+                expect(WebMock).
+                  to have_requested(:post, "#{repo_api_url}/pulls").
+                  with(
+                    body: {
+                      base: "master",
+                      head: "dependabot/bundler/business-1.5.0",
+                      title: "PR name",
+                      body: "PR msg"
+                    }
+                  )
+              end
+            end
           end
         end
       end

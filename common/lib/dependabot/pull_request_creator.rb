@@ -32,7 +32,7 @@ module Dependabot
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: "github-redirect.dependabot.com",
-                   custom_headers: nil)
+                   custom_headers: nil, require_up_to_date_base: false)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -53,6 +53,7 @@ module Dependabot
       @automerge_candidate        = automerge_candidate
       @github_redirection_service = github_redirection_service
       @custom_headers             = custom_headers
+      @require_up_to_date_base    = require_up_to_date_base
 
       check_dependencies_have_previous_version
     end
@@ -84,6 +85,10 @@ module Dependabot
       @automerge_candidate
     end
 
+    def require_up_to_date_base?
+      @require_up_to_date_base
+    end
+
     def github_creator
       Github.new(
         source: source,
@@ -100,7 +105,8 @@ module Dependabot
         reviewers: reviewers,
         assignees: assignees,
         milestone: milestone,
-        custom_headers: custom_headers
+        custom_headers: custom_headers,
+        require_up_to_date_base: require_up_to_date_base?
       )
     end
 

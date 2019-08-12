@@ -18,49 +18,39 @@ module Dependabot
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, signature_key:, custom_headers:,
-                     labeler:, reviewers:, assignees:, milestone:)
-        @source         = source
-        @branch_name    = branch_name
-        @base_commit    = base_commit
-        @credentials    = credentials
-        @files          = files
-        @commit_message = commit_message
-        @pr_description = pr_description
-        @pr_name        = pr_name
-        @author_details = author_details
-        @signature_key  = signature_key
-        @custom_headers = custom_headers
-        @labeler        = labeler
-        @reviewers      = reviewers
-        @assignees      = assignees
-        @milestone      = milestone
+                     labeler:, reviewers:, assignees:, milestone:,
+                     require_up_to_date_base:)
+        @source                  = source
+        @branch_name             = branch_name
+        @base_commit             = base_commit
+        @credentials             = credentials
+        @files                   = files
+        @commit_message          = commit_message
+        @pr_description          = pr_description
+        @pr_name                 = pr_name
+        @author_details          = author_details
+        @signature_key           = signature_key
+        @custom_headers          = custom_headers
+        @labeler                 = labeler
+        @reviewers               = reviewers
+        @assignees               = assignees
+        @milestone               = milestone
+        @require_up_to_date_base = require_up_to_date_base
       end
 
       def create
-        return if branch_exists?(branch_name) && pull_request_exists?
+        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
+        return if require_up_to_date_base? && !base_commit_is_up_to_date?
 
-        commit = create_commit
-        branch = create_or_update_branch(commit)
-        return unless branch
-
-        pull_request = create_pull_request
-        return unless pull_request
-
-        annotate_pull_request(pull_request)
-
-        pull_request
+        create_annotated_pull_request
       rescue Octokit::Error => e
         handle_error(e)
       end
 
       private
 
-      def github_client_for_source
-        @github_client_for_source ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
+      def require_up_to_date_base?
+        @require_up_to_date_base
       end
 
       def branch_exists?(name)
@@ -77,11 +67,12 @@ module Dependabot
         retry
       end
 
-      # Existing pull requests with this branch name that are open or closed.
-      # Note: we ignore *merged* pull requests for the branch name as we want
-      # to recreate them if the dependency version has regressed.
-      def pull_request_exists?
-        pull_requests =
+      def unmerged_pull_request_exists?
+        pull_requests_for_branch.reject(&:merged).any?
+      end
+
+      def pull_requests_for_branch
+        @pull_requests_for_branch ||=
           begin
             github_client_for_source.pull_requests(
               source.repo,
@@ -104,8 +95,23 @@ module Dependabot
             )
             [*open_prs, *closed_prs]
           end
+      end
 
-        pull_requests.reject(&:merged).any?
+      def base_commit_is_up_to_date?
+        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
+      end
+
+      def create_annotated_pull_request
+        commit = create_commit
+        branch = create_or_update_branch(commit)
+        return unless branch
+
+        pull_request = create_pull_request
+        return unless pull_request
+
+        annotate_pull_request(pull_request)
+
+        pull_request
       end
 
       def repo_exists?
@@ -289,7 +295,7 @@ module Dependabot
       def create_pull_request
         github_client_for_source.create_pull_request(
           source.repo,
-          source.branch || default_branch,
+          target_branch,
           branch_name,
           pr_name,
           pr_description,
@@ -320,6 +326,10 @@ module Dependabot
         raise
       end
 
+      def target_branch
+        source.branch || default_branch
+      end
+
       def default_branch
         @default_branch ||=
           github_client_for_source.repository(source.repo).default_branch
@@ -347,6 +357,14 @@ module Dependabot
         counter ||= 0
         counter += 1
         raise if counter > limit
+      end
+
+      def github_client_for_source
+        @github_client_for_source ||=
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
