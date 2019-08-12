@@ -37,7 +37,9 @@ module Dependabot
       end
 
       def create
-        return if branch_exists?(branch_name) && pull_request_exists?
+        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
+        return if branch_exists?(branch_name) && merged_pull_request_exists? &&
+                  !base_commit_is_head?
 
         commit = create_commit
         branch = create_or_update_branch(commit)
@@ -77,11 +79,16 @@ module Dependabot
         retry
       end
 
-      # Existing pull requests with this branch name that are open or closed.
-      # Note: we ignore *merged* pull requests for the branch name as we want
-      # to recreate them if the dependency version has regressed.
-      def pull_request_exists?
-        pull_requests =
+      def unmerged_pull_request_exists?
+        pull_requests_for_branch.reject(&:merged).any?
+      end
+
+      def merged_pull_request_exists?
+        pull_requests_for_branch.select(&:merged).any?
+      end
+
+      def pull_requests_for_branch
+        @pull_requests_for_branch ||=
           begin
             github_client_for_source.pull_requests(
               source.repo,
@@ -104,8 +111,10 @@ module Dependabot
             )
             [*open_prs, *closed_prs]
           end
+      end
 
-        pull_requests.reject(&:merged).any?
+      def base_commit_is_head?
+        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
       end
 
       def repo_exists?
@@ -289,7 +298,7 @@ module Dependabot
       def create_pull_request
         github_client_for_source.create_pull_request(
           source.repo,
-          source.branch || default_branch,
+          target_branch,
           branch_name,
           pr_name,
           pr_description,
@@ -318,6 +327,10 @@ module Dependabot
                   !branch_exists?(source.branch)
 
         raise
+      end
+
+      def target_branch
+        source.branch || default_branch
       end
 
       def default_branch
