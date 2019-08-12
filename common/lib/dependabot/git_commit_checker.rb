@@ -59,16 +59,9 @@ module Dependabot
     def head_commit_for_current_branch
       return dependency.version if pinned?
 
-      branch_ref = ref_or_branch ? "refs/heads/#{ref_or_branch}" : "HEAD"
-
-      # Remove the opening clause of the upload pack as this isn't always
-      # followed by a line break. When it isn't (e.g., with Bitbucket) it causes
-      # problems for our `sha_for_update_pack_line` logic
-      line = local_upload_pack.
-             gsub(/.*git-upload-pack/, "").
-             lines.find { |l| l.include?(" #{branch_ref}") }
-
-      return sha_for_update_pack_line(line) if line
+      ref = ref_or_branch || "HEAD"
+      sha = local_repo_git_metadata_fetcher.head_commit_for_ref(ref)
+      return sha if sha
 
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
@@ -330,10 +323,6 @@ module Dependabot
       return @requirement_class if @requirement_class
 
       Utils.requirement_class_for_package_manager(dependency.package_manager)
-    end
-
-    def sha_for_update_pack_line(line)
-      line.split(" ").first.chars.last(40).join
     end
 
     def local_repo_git_metadata_fetcher
