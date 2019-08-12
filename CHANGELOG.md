@@ -1,3 +1,8 @@
+## v0.111.57, 12 August 2019
+
+- Python: Update Python versions
+- Python: Bump pip from 19.2.1 to 19.2.2 in /python/helpers
+
 ## v0.111.56, 9 August 2019
 
 - Bundler: Handle path dependencies that use a .specification file
