@@ -21,15 +21,26 @@ module Dependabot
     def tags
       return [] unless upload_pack
 
-      @tags ||= tags_for_upload_pack(upload_pack)
+      @tags ||= tags_for_upload_pack
     end
 
     def ref_names
-      @ref_names ||=
-        upload_pack.lines.
-        select { |l| l.split(" ")[-1].start_with?("refs/tags", "refs/heads") }.
-        map { |line| line.split(%r{ refs/(tags|heads)/}).last.strip }.
-        reject { |l| l.end_with?("^{}") }
+      refs_for_upload_pack.map(&:name)
+    end
+
+    def head_commit_for_ref(ref)
+      if ref == "HEAD"
+        # Remove the opening clause of the upload pack as this isn't always
+        # followed by a line break. When it isn't (e.g., with Bitbucket) it
+        # causes problems for our `sha_for_update_pack_line` logic
+        line = upload_pack.gsub(/.*git-upload-pack/, "").
+               lines.find { |l| l.include?(" HEAD") }
+        return sha_for_update_pack_line(line) if line
+      end
+
+      refs_for_upload_pack.
+        find { |r| r.name == ref }&.
+        commit_sha
     end
 
     private
@@ -81,28 +92,50 @@ module Dependabot
       )
     end
 
-    def tags_for_upload_pack(upload_pack)
+    def tags_for_upload_pack
+      refs_for_upload_pack.
+        select { |ref| ref.ref_type == :tag }.
+        map do |ref|
+          OpenStruct.new(
+            name: ref.name,
+            tag_sha: ref.ref_sha,
+            commit_sha: ref.commit_sha
+          )
+        end
+    end
+
+    def refs_for_upload_pack
+      @refs_for_upload_pack ||= parse_refs_for_upload_pack
+    end
+
+    def parse_refs_for_upload_pack
       peeled_lines = []
 
       result = upload_pack.lines.each_with_object({}) do |line, res|
-        next unless line.split(" ").last.start_with?("refs/tags")
+        full_ref_name = line.split(" ").last
+        next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
         peeled_lines << line && next if line.strip.end_with?("^{}")
 
-        tag_name = line.split(" refs/tags/").last.strip
+        ref_name = full_ref_name.sub(%r{^refs/(tags|heads)/}, "").strip
         sha = sha_for_update_pack_line(line)
 
-        res[tag_name] =
-          OpenStruct.new(name: tag_name, tag_sha: sha, commit_sha: sha)
+        res[ref_name] = OpenStruct.new(
+          name: ref_name,
+          ref_sha: sha,
+          ref_type: full_ref_name.start_with?("refs/tags") ? :tag : :head,
+          commit_sha: sha
+        )
       end
 
-      # Loop through the peeled lines, updating the commit_sha for any matching
-      # tags in our results hash
+      # Loop through the peeled lines, updating the commit_sha for any
+      # matching tags in our results hash
       peeled_lines.each do |line|
-        tag_name = line.split(" refs/tags/").last.strip.gsub(/\^{}$/, "")
-        next unless result[tag_name]
+        ref_name = line.split(%r{ refs/(tags|heads)/}).
+                   last.strip.gsub(/\^{}$/, "")
+        next unless result[ref_name]
 
-        result[tag_name].commit_sha = sha_for_update_pack_line(line)
+        result[ref_name].commit_sha = sha_for_update_pack_line(line)
       end
 
       result.values
