@@ -130,6 +130,16 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a library that uses a dev branch" do
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:manifest_fixture_name) { "dev_branch" }
+      let(:string_req) { "dev-1.x" }
+      let(:dependency_version) { nil }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.24.0")) }
+    end
+
     context "with a local VCS source" do
       let(:manifest_fixture_name) { "local_vcs_source" }
       let(:dependency_files) { [manifest] }
