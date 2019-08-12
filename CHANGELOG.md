@@ -1,3 +1,9 @@
+## v0.111.58, 12 August 2019
+
+- .NET: Add Directory.Build.props regex to FileUpdater.updated_files_regex
+- Add `require_up_to_date_base` filter to PullRequestCreator
+- Expose GitMetadataFinder#head_commit_for_ref method
+
 ## v0.111.57, 12 August 2019
 
 - Python: Update Python versions
