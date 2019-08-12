@@ -1,3 +1,7 @@
+## v0.111.59, 12 August 2019
+
+- Composer: Parse ranges with a wildcard as invalid
+
 ## v0.111.58, 12 August 2019
 
 - .NET: Add Directory.Build.props regex to FileUpdater.updated_files_regex
