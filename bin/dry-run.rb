@@ -175,6 +175,60 @@ def cached_read(name)
   data
 end
 
+def cached_dependency_files_read
+  branch = $options[:branch] || ""
+  dir = $options[:directory]
+  cache_manifest_path = File.join("dry-run", $repo_name.split("/"), branch, dir, "cache-manifest.json")
+  cache_dir = File.dirname(cache_manifest_path)
+  FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+
+  cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
+  cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
+
+  all_files_cached = cached_dependency_files && cached_dependency_files.all? do |file|
+    File.exist?(File.join(cache_dir, file["name"]))
+  end
+
+  if all_files_cached && $options[:cache_steps].include?("files")
+    puts "=> reading dependency files from cache: ./#{cache_dir}"
+    cached_dependency_files.map do |file|
+      file_content = File.read(File.join(cache_dir, file["name"]))
+      Dependabot::DependencyFile.new(
+        name: file["name"],
+        content: file_content,
+        directory: file["directory"] || "/",
+        support_file: file["support_file"] || false,
+        symlink_target: file["symlink_target"] || nil,
+        type: file["type"] || "file"
+      )
+    end
+  else
+    if $options[:cache_steps].include?("files")
+      puts "=> failed to read all dependency files from cache manifest: ./#{cache_manifest_path}"
+    end
+    puts "=> fetching dependency files"
+    data = yield
+    puts "=> dumping fetched dependency files: ./#{cache_dir}"
+    manifest_data = data.map do |file|
+      {
+        name: file.name,
+        directory: file.directory,
+        symlink_target: file.symlink_target,
+        support_file: file.support_file,
+        type: file.type
+      }
+    end
+    File.write(cache_manifest_path, JSON.pretty_generate(manifest_data))
+    data.map do |file|
+      files_path = File.join(cache_dir, file.name)
+      files_dir = File.dirname(files_path)
+      FileUtils.mkdir_p(files_dir) unless Dir.exist?(files_dir)
+      File.write(files_path, file.content)
+    end
+    data
+  end
+end
+
 source = Dependabot::Source.new(
   provider: "github",
   repo: $repo_name,
@@ -182,22 +236,10 @@ source = Dependabot::Source.new(
   branch: $options[:branch]
 )
 
-# Fetch the dependency files
-puts "=> fetching dependency files"
-
-fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-          new(source: source, credentials: $options[:credentials])
-
-files = cached_read("files") { fetcher.files }
-
-# Dump dependency files in tmp/githublogin@repo-name/dependency-files
-files.map do |f|
-  branch_separator = $options[:branch] || ""
-  files_path = File.join("tmp", $repo_name.split("/"), "dependency-files",
-                         branch_separator, $options[:directory], f.name)
-  files_dir = File.dirname(files_path)
-  FileUtils.mkdir_p(files_dir) unless Dir.exist?(files_dir)
-  File.write(files_path, f.content)
+files = cached_dependency_files_read do
+  fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
+    new(source: source, credentials: $options[:credentials])
+  fetcher.files
 end
 
 # Parse the dependency files
