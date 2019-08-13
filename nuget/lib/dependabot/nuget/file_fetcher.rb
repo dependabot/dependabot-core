@@ -32,6 +32,7 @@ module Dependabot
         fetched_files += packages_config_files
         fetched_files += nuget_config_files
         fetched_files << global_json if global_json
+        fetched_files << packages_props if packages_props
 
         fetched_files = fetched_files.uniq
 
@@ -214,6 +215,10 @@ module Dependabot
 
       def global_json
         @global_json ||= fetch_file_if_present("global.json")
+      end
+
+      def packages_props
+        @packages_props ||= fetch_file_if_present("Packages.props")
       end
 
       def imported_property_files
