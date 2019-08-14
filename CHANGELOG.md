@@ -1,3 +1,8 @@
+## v0.112.2, 14 August 2019
+
+- PHP: Raise a Dependabot::DependencyFileNotResolvable error in some VersionResolver cases
+- Better commit messages when updating a git tag without a lockfile
+
 ## v0.112.1, 14 August 2019
 
 - Add github_actions as a gem everywhere
