@@ -402,6 +402,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a version conflict in the current files" do
+      let(:files) { [composer_file, lockfile] }
       let(:manifest_fixture_name) { "version_conflict" }
       let(:dependency_name) { "monolog/monolog" }
       let(:dependency_version) { "2.1.5" }
@@ -415,9 +416,19 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
+
+      context "and there is no lockfile" do
+        let(:files) { [composer_file] }
+
+        it "raises a resolvability error" do
+          expect { latest_resolvable_version }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
     end
 
     context "with an update that can't resolve" do
+      let(:files) { [composer_file, lockfile] }
       let(:manifest_fixture_name) { "version_conflict_on_update" }
       let(:lockfile_fixture_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
@@ -432,6 +443,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
+
+      context "and there is no lockfile" do
+        let(:files) { [composer_file] }
+
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a dependency with a git source" do
