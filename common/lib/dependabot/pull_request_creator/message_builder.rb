@@ -543,22 +543,28 @@ module Dependabot
           )
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def previous_version(dependency)
+        # If we don't have a previous version, we *may* still be able to figure
+        # one out if a ref was provided and has been changed (in which case the
+        # previous ref was essentially the version).
+        if dependency.previous_version.nil?
+          return ref_changed?(dependency) ? previous_ref(dependency) : nil
+        end
+
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
           return previous_ref(dependency) if ref_changed?(dependency)
 
           "`#{dependency.previous_version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
-          digest =
-            dependency.previous_requirements.
-            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-            compact.first
+          digest = docker_digest_from_reqs(dependency.previous_requirements)
           "`#{digest.split(':').last[0..6]}`"
         else
           dependency.previous_version
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
@@ -567,14 +573,17 @@ module Dependabot
           "`#{dependency.version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
-          digest =
-            dependency.requirements.
-            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-            compact.first
+          digest = docker_digest_from_reqs(dependency.requirements)
           "`#{digest.split(':').last[0..6]}`"
         else
           dependency.version
         end
+      end
+
+      def docker_digest_from_reqs(requirements)
+        requirements.
+          map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+          compact.first
       end
 
       def previous_ref(dependency)
@@ -668,11 +677,14 @@ module Dependabot
       def library?
         return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
 
-        dependencies.any? { |d| !d.appears_in_lockfile? }
+        dependencies.any? { |d| previous_version(d).nil? }
       end
 
       def switching_from_ref_to_release?(dependency)
-        return false unless dependency.previous_version.match?(/^[0-9a-f]{40}$/)
+        unless dependency.previous_version&.match?(/^[0-9a-f]{40}$/) ||
+               dependency.previous_version.nil? && previous_ref(dependency)
+          return false
+        end
 
         Gem::Version.correct?(dependency.version)
       end

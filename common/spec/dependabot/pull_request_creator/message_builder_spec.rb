@@ -747,7 +747,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           Dependabot::Dependency.new(
             name: "business",
             version: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2",
-            previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+            previous_version: previous_version,
             package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
@@ -771,6 +771,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             }]
           )
         end
+        let(:previous_version) { "2468a02a6230e59ed1232d95d1ad3ef157195b03" }
         let(:new_ref) { nil }
         let(:old_ref) { nil }
 
@@ -833,6 +834,41 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<br />"
               )
           end
+
+          context "with no previous version" do
+            let(:previous_version) { nil }
+
+            before do
+              stub_request(:get, "#{business_repo_url}/commits?sha=v1.0.0").
+                to_return(
+                  status: 200,
+                  body: fixture("github", "commits-business-1.3.0.json"),
+                  headers: json_header
+                )
+            end
+
+            it "has the right text" do
+              commits_details = commits_details(
+                base: "v1.0.0",
+                head: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
+              )
+              expect(pr_message).
+                to eq(
+                  "Bumps [business](https://github.com/gocardless/business) "\
+                  "from v1.0.0 to v1.1.0.\n"\
+                  "<details>\n"\
+                  "<summary>Changelog</summary>\n\n"\
+                  "*Sourced from [business's changelog](https://github.com/"\
+                  "gocardless/business/blob/master/CHANGELOG.md).*\n\n"\
+                  "> ## 1.1.0 - September 30, 2014\n"\
+                  "> \n"\
+                  "> - Add 2015 holiday definitions\n"\
+                  "</details>\n"\
+                  "#{commits_details}"\
+                  "<br />"
+                )
+            end
+          end
         end
       end
 
@@ -841,7 +877,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           Dependabot::Dependency.new(
             name: "business",
             version: "1.5.0",
-            previous_version: "2468a02a6230e59ed1232d95d1ad3ef157195b03",
+            previous_version: previous_version,
             package_manager: "dummy",
             requirements: [{
               file: "Gemfile",
@@ -860,6 +896,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             }]
           )
         end
+        let(:previous_version) { "2468a02a6230e59ed1232d95d1ad3ef157195b03" }
 
         before do
           stub_request(
@@ -925,6 +962,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{commits_details}"\
               "<br />"
             )
+        end
+
+        context "without a previous version" do
+          let(:previous_version) { nil }
+
+          it "has the right text" do
+            expect(pr_message).to include(
+              "Updates the requirements on "\
+              "[business](https://github.com/gocardless/business) to permit "\
+              "the latest version."
+            )
+          end
         end
       end
 
