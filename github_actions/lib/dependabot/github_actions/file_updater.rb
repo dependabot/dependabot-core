@@ -8,7 +8,7 @@ module Dependabot
   module GithubActions
     class FileUpdater < Dependabot::FileUpdaters::Base
       def self.updated_files_regex
-        [%r{\.github/workflows/.+\.ya?ml}]
+        [%r{\.github/workflows/.+\.ya?ml$}]
       end
 
       def updated_dependency_files

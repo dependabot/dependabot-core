@@ -7,7 +7,7 @@ module Dependabot
   module GithubActions
     class FileFetcher < Dependabot::FileFetchers::Base
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(%r{\.github/workflows/.+\.ya?ml}) }
+        filenames.any? { |f| f == ".github" }
       end
 
       def self.required_files_message
