@@ -39,6 +39,10 @@ RUN mkdir -p /home/dependabot/dependabot-core/git_submodules
 COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec /home/dependabot/dependabot-core/git_submodules/
 RUN cd git_submodules && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/github_actions
+COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec /home/dependabot/dependabot-core/github_actions/
+RUN cd github_actions && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/python
 COPY python/Gemfile python/dependabot-python.gemspec /home/dependabot/dependabot-core/python/
 RUN cd python && bundle install
