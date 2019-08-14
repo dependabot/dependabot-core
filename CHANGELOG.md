@@ -1,3 +1,8 @@
+## v0.112.0, 14 August 2019
+
+- Update dry run to cache editable dependency files
+- Add support for updating GitHub Action workflow files
+
 ## v0.111.59, 12 August 2019
 
 - Composer: Parse ranges with a wildcard as invalid
