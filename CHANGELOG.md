@@ -1,3 +1,7 @@
+## v0.112.1, 14 August 2019
+
+- Add github_actions as a gem everywhere
+
 ## v0.112.0, 14 August 2019
 
 - Update dry run to cache editable dependency files
