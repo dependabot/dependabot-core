@@ -8,6 +8,7 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Composer
     class UpdateChecker
@@ -101,13 +102,15 @@ module Dependabot
           end
         end
 
-        def prepared_composer_json_content
+        def prepared_composer_json_content(unlock_requirement: true)
           content = composer_file.content
 
-          content = content.gsub(
-            /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
-            %("#{dependency.name}": "#{updated_version_requirement_string}")
-          )
+          if unlock_requirement
+            content = content.gsub(
+              /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
+              %("#{dependency.name}": "#{updated_version_requirement_string}")
+            )
+          end
 
           json = JSON.parse(content)
 
@@ -203,10 +206,14 @@ module Dependabot
                   "setup.\n\nThe underlying error was:\n\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.include?("requirements could not be resolved")
-            # We should raise a Dependabot::DependencyFileNotResolvable error
-            # here, but can't confidently distinguish between cases where we
-            # can't install and cases where we can't update. For now, we
-            # therefore just ignore the dependency.
+            # If there's no lockfile, there's no difference between running
+            # `composer install` and `composer update`, so we can easily check
+            # whether the existing requirements are resolvable for an install
+            check_original_requirements_resolvable unless lockfile
+
+            # If there *is* a lockfile we can't confidently distinguish between
+            # cases where we can't install and cases where we can't update. For
+            # now, we therefore just ignore the dependency.
             nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")
@@ -245,6 +252,24 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+
+        def check_original_requirements_resolvable
+          base_directory = dependency_files.first.directory
+          SharedHelpers.in_a_temporary_directory(base_directory) do
+            File.write(
+              "composer.json",
+              prepared_composer_json_content(unlock_requirement: false)
+            )
+            File.write("composer.lock", lockfile.content) if lockfile
+            File.write("auth.json", auth_json.content) if auth_json
+
+            run_update_checker
+          end
+
+          true
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
+        end
 
         def version_for_reqs(requirements)
           req_arrays =
@@ -339,3 +364,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
