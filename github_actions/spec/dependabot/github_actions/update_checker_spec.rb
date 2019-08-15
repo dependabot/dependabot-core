@@ -82,6 +82,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1.1.0" }
         it { is_expected.to be_falsey }
       end
+
+      context "that is different but up-to-date" do
+        let(:upload_pack_fixture) { "checkout" }
+        let(:reference) { "v1" }
+        it { is_expected.to be_falsey }
+      end
+
+      context "that is not version-like" do
+        let(:upload_pack_fixture) { "reactive" }
+        let(:reference) { "refassm-blog-post" }
+        it { is_expected.to be_falsey }
+      end
     end
   end
 

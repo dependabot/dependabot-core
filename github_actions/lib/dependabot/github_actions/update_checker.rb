@@ -24,6 +24,10 @@ module Dependabot
       end
 
       def updated_requirements
+        if updated_source == dependency_source_details
+          return dependency.requirements
+        end
+
         dependency.requirements.map { |req| req.merge(source: updated_source) }
       end
 
@@ -53,9 +57,10 @@ module Dependabot
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
-        if git_commit_checker.pinned_ref_looks_like_version?
+        if git_commit_checker.pinned_ref_looks_like_version? &&
+           git_commit_checker.local_tag_for_latest_version
           latest_tag = git_commit_checker.local_tag_for_latest_version
-          return latest_tag&.fetch(:commit_sha) || dependency.version
+          return latest_tag.fetch(:commit_sha)
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -71,8 +76,8 @@ module Dependabot
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           git_commit_checker.local_tag_for_latest_version
-          new_tag = git_commit_checker.local_tag_for_latest_version
+           (new_tag = git_commit_checker.local_tag_for_latest_version) &&
+           new_tag.fetch(:commit_sha) != current_commit
           return dependency_source_details.merge(ref: new_tag.fetch(:tag))
         end
 
@@ -96,6 +101,10 @@ module Dependabot
         # will happen if we have multiple git sources with difference references
         # specified. In that case it's fine to update them all.
         sources.first
+      end
+
+      def current_commit
+        git_commit_checker.head_commit_for_current_branch
       end
 
       def git_dependency?
