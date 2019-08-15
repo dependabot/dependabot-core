@@ -151,6 +151,21 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           to eq("python_version < '3.0'")
       end
 
+      context "that comes from a Poetry file and includes || logic" do
+        let(:pipfile_fixture_name) { "exact_version" }
+        let(:dependency_files) { [pipfile, lockfile, pyproject] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "pyproject.toml")
+          )
+        end
+
+        it "updates both files correctly" do
+          expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+        end
+      end
+
       context "and includes a .python-version file" do
         let(:dependency_files) { [pipfile, lockfile, python_version_file] }
         let(:python_version_file) do
