@@ -1,3 +1,7 @@
+## v0.112.4, 15 August 2019
+
+- JS: Add failing test for dependencies with latest
+
 ## v0.112.3, 15 August 2019
 
 - JS: Better sanitization of {{ variable }} text in package.json files
