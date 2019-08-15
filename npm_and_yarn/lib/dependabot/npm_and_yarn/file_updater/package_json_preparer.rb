@@ -52,7 +52,7 @@ module Dependabot
 
         def remove_invalid_characters(content)
           content.
-            gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
+            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
         end
