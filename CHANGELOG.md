@@ -1,3 +1,9 @@
+## v0.112.3, 15 August 2019
+
+- JS: Better sanitization of {{ variable }} text in package.json files
+- Composer: Handle php-64bit requirements
+- PHP: Handle loosely specified PHP versions for libraries better
+
 ## v0.112.2, 14 August 2019
 
 - PHP: Raise a Dependabot::DependencyFileNotResolvable error in some VersionResolver cases
