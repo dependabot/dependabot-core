@@ -268,6 +268,17 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          if e.message.include?("requires php") ||
+             e.message.include?("requested PHP extension")
+            missing_extensions =
+              e.message.scan(MISSING_PLATFORM_REQ_REGEX).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ", 2)
+                { name: name, requirement: requirement }
+              end
+            raise MissingExtensions, missing_extensions
+          end
+
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
 

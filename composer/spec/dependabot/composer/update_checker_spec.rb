@@ -448,6 +448,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         let(:files) { [composer_file] }
 
         it { is_expected.to be_nil }
+
+        context "and the conflict comes from a loose PHP version" do
+          let(:manifest_fixture_name) { "version_conflict_library" }
+          let(:files) { [composer_file] }
+
+          it { is_expected.to be_nil }
+        end
       end
     end
 
