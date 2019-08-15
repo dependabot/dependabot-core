@@ -200,6 +200,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           end
         end
       end
+
+      context "when an odd version of PHP is specified" do
+        let(:manifest_fixture_name) { "odd_php_specified" }
+        let(:dependency_name) { "illuminate/support" }
+        let(:dependency_version) { "5.2.7" }
+        let(:requirements) do
+          [{
+            file: "composer.json",
+            requirement: "^5.2.0",
+            groups: ["runtime"],
+            source: nil
+          }]
+        end
+
+        it { is_expected.to be >= Gem::Version.new("5.2.45") }
+      end
     end
 
     context "with a dev dependency" do

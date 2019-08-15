@@ -23,7 +23,10 @@ module Dependabot
         end
 
         MISSING_PLATFORM_REQ_REGEX =
-          /\sext\-.*? .*?\s(?=[^\d])|(?<=requires )php .*?\s(?=[^\d])/.freeze
+          /
+            \sext\-.*?\s.*?\s(?=[^\d])|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=[^\d])
+          /x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
