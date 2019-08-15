@@ -687,6 +687,18 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         it { is_expected.to eq(true) }
       end
+
+      context "that is just v1" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "v1"
+          }
+        end
+        it { is_expected.to eq(true) }
+      end
     end
 
     context "with a non-version pin" do

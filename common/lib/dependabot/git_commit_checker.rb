@@ -14,7 +14,13 @@ require "dependabot/git_metadata_fetcher"
 
 module Dependabot
   class GitCommitChecker
-    VERSION_REGEX = /(?<version>[0-9]+\.[0-9]+(?:\.[a-zA-Z0-9\-]+)*)$/.freeze
+    VERSION_REGEX = /
+      (?<version>
+        (?<=^v)[0-9]+(?:\-[a-z0-9]+)?
+        |
+        [0-9]+\.[0-9]+(?:\.[a-z0-9\-]+)*
+      )$
+    /ix.freeze
 
     def initialize(dependency:, credentials:, ignored_versions: [],
                    requirement_class: nil, version_class: nil)
@@ -233,8 +239,8 @@ module Dependabot
     def matches_existing_prefix?(tag)
       return true unless ref_or_branch&.match?(VERSION_REGEX)
 
-      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/, "") ==
-        tag.gsub(VERSION_REGEX, "").gsub(/v$/, "")
+      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
+        tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
     end
 
     def listing_source_url
