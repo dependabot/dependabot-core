@@ -382,6 +382,7 @@ module Dependabot
             # git dependencies, otherwise npm will (unhelpfully) update them
             updated_content = lock_git_deps(updated_content)
             updated_content = replace_ssh_sources(updated_content)
+            updated_content = lock_deps_with_latest_reqs(updated_content)
 
             updated_content = sanitized_package_json_content(updated_content)
             File.write(file.name, updated_content)
@@ -440,6 +441,24 @@ module Dependabot
             end
           end
           @git_dependencies_to_lock
+        end
+
+        # When a package.json version requirement is set to `latest`, npm will
+        # always try to update these dependencies when doing an `npm install`,
+        # regardless of lockfile version. Prevent any unrelated updates by
+        # changing the version requirement to `*` while updating the lockfile.
+        def lock_deps_with_latest_reqs(content)
+          json = JSON.parse(content)
+
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
+            json.fetch(type, {}).each do |nm, requirement|
+              next unless requirement == "latest"
+
+              json[type][nm] = "*"
+            end
+          end
+
+          json.to_json
         end
 
         def replace_ssh_sources(content)
