@@ -219,6 +219,19 @@ RSpec.describe namespace::PipenvVersionResolver do
       let(:lockfile_fixture_name) { "required_python.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
+      context "that comes from a Poetry file and includes || logic" do
+        let(:pipfile_fixture_name) { "exact_version" }
+        let(:dependency_files) { [pipfile, pyproject] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "pyproject.toml")
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      end
+
       context "that is invalid" do
         let(:pipfile_fixture_name) { "required_python_invalid" }
 
