@@ -1,3 +1,10 @@
+## v0.112.5, 15 August 2019
+
+- GitHub: Only update version tag if commit SHA has changed
+- Look up a commit in GitCommitChecker#head_commit_for_current_branch if no version
+- Better VERSION_REGEX for git commit checker
+- Python: Handle arrays of Python requirements (from pyproject.toml) in PipenvVersionResolver
+
 ## v0.112.4, 15 August 2019
 
 - JS: Add failing test for dependencies with latest
