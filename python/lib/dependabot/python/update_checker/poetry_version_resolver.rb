@@ -26,7 +26,7 @@ module Dependabot
           /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
           freeze
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /Command '\['git', 'clone', '(?<url>.+?)'.* exit status 128/.
+          /'\['git',\s+'clone',\s+'(?<url>.+?)'.*\s+exit\s+status\s+128/m.
           freeze
 
         attr_reader :dependency, :dependency_files, :credentials
