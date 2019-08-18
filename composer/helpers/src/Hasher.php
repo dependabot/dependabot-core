@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dependabot\Composer;
 
 use Composer\Factory;
+use Composer\Package\Locker;
 
 class Hasher
 {
@@ -18,6 +19,6 @@ class Hasher
         $composer = Factory::create($io, $config);
         $locker = $composer->getLocker();
 
-        return $locker->getContentHash(file_get_contents($config));
+        return Locker::getContentHash(file_get_contents($config));
     }
 }
