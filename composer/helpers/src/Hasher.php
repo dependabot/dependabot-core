@@ -12,10 +12,12 @@ class Hasher
     {
         [$workingDirectory] = $args;
 
+        $config = $workingDirectory . '/composer.json';
+
         $io = new ExceptionIO();
-        $composer = Factory::create($io, $workingDirectory . '/composer.json');
+        $composer = Factory::create($io, $config);
         $locker = $composer->getLocker();
 
-        return $locker->getContentHash(file_get_contents(Factory::getComposerFile()));
+        return $locker->getContentHash(file_get_contents($config));
     }
 }
