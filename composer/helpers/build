@@ -10,5 +10,7 @@ fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cd "$helpers_dir"
+
+composer validate --no-check-publish
 composer install
 composer run lint -- --dry-run
