@@ -18,14 +18,14 @@ return PhpCsFixer\Config::create()
         'no_useless_else' => true,
         'no_useless_return' => true,
         'ordered_imports' => true,
-        'phpdoc_align' => false,
-        'phpdoc_order' => true,
         'php_unit_construct' => true,
         'php_unit_dedicate_assert' => true,
+        'phpdoc_align' => false,
+        'phpdoc_order' => true,
         'single_line_comment_style' => true,
         'ternary_to_null_coalescing' => true,
-        'yoda_style' => false,
         'void_return' => true,
+        'yoda_style' => false,
     ])
     ->setFinder($finder)
     ->setUsingCache(true)
