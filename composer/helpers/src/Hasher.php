@@ -8,7 +8,7 @@ use Composer\Package\Locker;
 
 class Hasher
 {
-    public static function getContentHash(array $args): ?string
+    public static function getContentHash(array $args): string
     {
         [$workingDirectory] = $args;
 
