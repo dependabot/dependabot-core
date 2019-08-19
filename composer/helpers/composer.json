@@ -14,7 +14,7 @@
     },
     "scripts": {
         "lint": [
-            "php-cs-fixer fix"
+            "php-cs-fixer fix --diff --verbose"
         ]
     },
     "config": {
