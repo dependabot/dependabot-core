@@ -72,7 +72,7 @@ class UpdateChecker
 
         $installedPackages = $installationManager->getInstalledPackages();
 
-        $updatedPackage = current(array_filter($installedPackages, function (PackageInterface $package) use ($dependencyName) {
+        $updatedPackage = current(array_filter($installedPackages, static function (PackageInterface $package) use ($dependencyName) {
             return $package->getName() == $dependencyName;
         }));
 
