@@ -47,6 +47,7 @@ class UpdateChecker
         }
 
         $installationManager = new DependabotInstallationManager();
+
         $install = new Installer(
             $io,
             $config,
@@ -91,6 +92,7 @@ class UpdateChecker
                 return null;
             }
         }
+
         foreach ($installedPackages as $package) {
             foreach ($package->getReplaces() as $link) {
                 if ($link->getTarget() === $dependencyName) {
@@ -105,6 +107,7 @@ class UpdateChecker
                 return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
             }
         }
+
         foreach ($installedPackages as $package) {
             foreach ($package->getProvides() as $link) {
                 if ($link->getTarget() === $dependencyName) {
