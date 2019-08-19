@@ -19,17 +19,17 @@ class UpdateChecker
         $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
-        foreach ($gitCredentials as $cred) {
-            $httpBasicCredentials[$cred['host']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
+        foreach ($gitCredentials as $credentials) {
+            $httpBasicCredentials[$credentials['host']] = [
+                'username' => $credentials['username'],
+                'password' => $credentials['password'],
             ];
         }
 
-        foreach ($registryCredentials as $cred) {
-            $httpBasicCredentials[$cred['registry']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
+        foreach ($registryCredentials as $credentials) {
+            $httpBasicCredentials[$credentials['registry']] = [
+                'username' => $credentials['username'],
+                'password' => $credentials['password'],
             ];
         }
 
