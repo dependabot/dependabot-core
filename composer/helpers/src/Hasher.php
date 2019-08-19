@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace Dependabot\Composer;
 
-use Composer\Factory;
+use Composer\Package\Locker;
 
 class Hasher
 {
-    public static function getContentHash(array $args): ?string
+    public static function getContentHash(array $args): string
     {
         [$workingDirectory] = $args;
 
-        $io = new ExceptionIO();
-        $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $locker = $composer->getLocker();
+        $config = $workingDirectory . '/composer.json';
 
-        return $locker->getContentHash(file_get_contents(Factory::getComposerFile()));
+        return Locker::getContentHash(file_get_contents($config));
     }
 }
