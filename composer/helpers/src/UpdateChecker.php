@@ -14,9 +14,6 @@ class UpdateChecker
     {
         [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
-        $io = new ExceptionIO();
-        $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
         foreach ($gitCredentials as $credentials) {
@@ -32,6 +29,12 @@ class UpdateChecker
                 'password' => $credentials['password'],
             ];
         }
+
+        $io = new ExceptionIO();
+
+        $composer = Factory::create($io, $workingDirectory . '/composer.json');
+
+        $config = $composer->getConfig();
 
         if (0 < count($httpBasicCredentials)) {
             $config->merge([
