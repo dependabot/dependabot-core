@@ -34,13 +34,12 @@ class UpdateChecker
         }
 
         if (0 < count($httpBasicCredentials)) {
-            $config->merge(
-                [
-                    'config' => [
-                        'http-basic' => $httpBasicCredentials,
-                    ],
-                ]
-            );
+            $config->merge([
+                'config' => [
+                    'http-basic' => $httpBasicCredentials,
+                ],
+            ]);
+
             $io->loadConfiguration($config);
         }
 
