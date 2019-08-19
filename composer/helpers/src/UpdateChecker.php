@@ -73,7 +73,7 @@ class UpdateChecker
         $installedPackages = $installationManager->getInstalledPackages();
 
         $updatedPackage = current(array_filter($installedPackages, static function (PackageInterface $package) use ($dependencyName) {
-            return $package->getName() == $dependencyName;
+            return $package->getName() === $dependencyName;
         }));
 
         // We found the package in the list of updated packages. Return its version.
@@ -84,13 +84,13 @@ class UpdateChecker
         // We didn't find the package in the list of updated packages. Check if
         // it was replaced by another package (in which case we can ignore).
         foreach ($composer->getPackage()->getReplaces() as $link) {
-            if ($link->getTarget() == $dependencyName) {
+            if ($link->getTarget() === $dependencyName) {
                 return null;
             }
         }
         foreach ($installedPackages as $package) {
             foreach ($package->getReplaces() as $link) {
-                if ($link->getTarget() == $dependencyName) {
+                if ($link->getTarget() === $dependencyName) {
                     return null;
                 }
             }
@@ -98,13 +98,13 @@ class UpdateChecker
 
         // Similarly, check if the package was provided by any other package.
         foreach ($composer->getPackage()->getProvides() as $link) {
-            if ($link->getTarget() == $dependencyName) {
+            if ($link->getTarget() === $dependencyName) {
                 return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
             }
         }
         foreach ($installedPackages as $package) {
             foreach ($package->getProvides() as $link) {
-                if ($link->getTarget() == $dependencyName) {
+                if ($link->getTarget() === $dependencyName) {
                     return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
                 }
             }
