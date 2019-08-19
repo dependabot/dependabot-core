@@ -33,7 +33,7 @@ class UpdateChecker
             ];
         }
 
-        if ($httpBasicCredentials) {
+        if (0 < count($httpBasicCredentials)) {
             $config->merge(
                 [
                     'config' => [
@@ -78,7 +78,7 @@ class UpdateChecker
         }));
 
         // We found the package in the list of updated packages. Return its version.
-        if ($updatedPackage) {
+        if ($updatedPackage instanceof PackageInterface) {
             return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
         }
 
