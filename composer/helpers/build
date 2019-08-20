@@ -14,3 +14,4 @@ cd "$helpers_dir"
 composer validate --no-check-publish
 composer install
 composer run lint -- --dry-run
+composer run stan

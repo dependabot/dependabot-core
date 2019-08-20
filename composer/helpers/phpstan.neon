@@ -1,0 +1,7 @@
+includes:
+	- vendor/phpstan/phpstan/conf/config.level5.neon
+
+parameters:
+	inferPrivatePropertyTypeFromConstructor: true
+	paths:
+		- src
