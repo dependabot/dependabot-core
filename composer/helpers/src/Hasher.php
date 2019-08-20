@@ -8,12 +8,28 @@ use Composer\Package\Locker;
 
 class Hasher
 {
+    /**
+     * @param array $args
+     *
+     * @throws \RuntimeException
+     *
+     * @return string
+     */
     public static function getContentHash(array $args): string
     {
         [$workingDirectory] = $args;
 
         $config = $workingDirectory . '/composer.json';
 
-        return Locker::getContentHash(file_get_contents($config));
+        $contents = file_get_contents($config);
+
+        if (!is_string($contents)) {
+            throw new \RuntimeException(sprintf(
+                'Failed to load contents of "%s".',
+                $config
+            ));
+        }
+
+        return Locker::getContentHash($contents);
     }
 }
