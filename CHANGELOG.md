@@ -1,3 +1,9 @@
+## v0.112.6, 20 August 2019
+
+- Bump Rust version in Dockerfile
+- Composer: Several internal improvements courtesy of @localheinz
+- Python: Better GIT_DEPENDENCY_UNREACHABLE_REGEX for Poetry
+
 ## v0.112.5, 15 August 2019
 
 - GitHub: Only update version tag if commit SHA has changed
