@@ -7,6 +7,7 @@ require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
+require "dependabot/composer/file_parser"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -107,14 +108,20 @@ module Dependabot
 
         def prepared_composer_json_content(unlock_requirement: true)
           content = composer_file.content
+          content = unlock_dep_being_updated(content) if unlock_requirement
+          content = lock_git_dependencies(content) if lockfile
+          content = add_temporary_platform_extensions(content)
+          content
+        end
 
-          if unlock_requirement
-            content = content.gsub(
-              /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
-              %("#{dependency.name}": "#{updated_version_requirement_string}")
-            )
-          end
+        def unlock_dep_being_updated(content)
+          content.gsub(
+            /"#{Regexp.escape(dependency.name)}"\s*:\s*".*"/,
+            %("#{dependency.name}": "#{updated_version_requirement_string}")
+          )
+        end
 
+        def add_temporary_platform_extensions(content)
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
@@ -122,6 +129,27 @@ module Dependabot
             json["config"]["platform"] ||= {}
             json["config"]["platform"][extension] =
               version_for_reqs(requirements)
+          end
+
+          JSON.dump(json)
+        end
+
+        def lock_git_dependencies(content)
+          json = JSON.parse(content)
+
+          FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless json[keys[:manifest]]
+
+            json[keys[:manifest]].each do |name, req|
+              next unless req.start_with?("dev-")
+              next if req.include?("#")
+
+              commit_sha = parsed_lockfile.
+                           fetch(keys[:lockfile], []).
+                           find { |d| d["name"] == name }&.
+                           dig("source", "reference")
+              json[keys[:manifest]][name] = req + "##{commit_sha}"
+            end
           end
 
           JSON.dump(json)
@@ -335,7 +363,11 @@ module Dependabot
         end
 
         def parsed_composer_file
-          JSON.parse(composer_file.content)
+          @parsed_composer_file ||= JSON.parse(composer_file.content)
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
 
         def composer_file

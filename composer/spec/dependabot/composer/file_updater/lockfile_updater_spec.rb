@@ -476,6 +476,44 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when another dependency has git source with a bad commit" do
+      let(:manifest_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source_bad_commit" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.6.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.6.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "updates the lockfile correctly" do
+        # Updates the commit SHA of the git dependency (because we have to)
+        expect(updated_lockfile_content).
+          to include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
+        expect(updated_lockfile_content).to include('"version":"dev-example"')
+
+        # Updates the specified dependency
+        expect(updated_lockfile_content).
+          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
+        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+      end
+    end
+
     context "with a git source using no-api" do
       let(:manifest_fixture_name) { "git_source_no_api" }
       let(:lockfile_fixture_name) { "git_source_no_api" }
@@ -501,7 +539,22 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it { is_expected.to_not include('"support": {') }
+      it "updates the lockfile correctly" do
+        # Doesn't update the commit SHA of the git dependency
+        expect(updated_lockfile_content).
+          to include('"5267b03b1e4861c4657ede17a88f13ef479db482"')
+        expect(updated_lockfile_content).
+          to_not include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
+        expect(updated_lockfile_content).to include('"version":"dev-example"')
+
+        # Does update the specified dependency
+        expect(updated_lockfile_content).
+          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
+        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+
+        # Cleans up the additions we made
+        expect(updated_lockfile_content).to_not include('"support": {')
+      end
     end
 
     context "when another dependency has an unreachable git source" do

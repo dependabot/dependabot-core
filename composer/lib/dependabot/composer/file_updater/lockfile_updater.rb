@@ -2,6 +2,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/composer/file_parser"
 require "dependabot/composer/file_updater"
 require "dependabot/composer/version"
 require "dependabot/composer/requirement"
@@ -69,6 +70,11 @@ module Dependabot
           retry_count ||= 0
           retry_count += 1
           retry if transitory_failure?(e) && retry_count <= 1
+          if locked_git_dep_error?(e) && retry_count <= 1
+            @lock_git_deps = false
+            retry
+          end
+
           handle_composer_errors(e)
         end
 
@@ -108,6 +114,10 @@ module Dependabot
           return true if error.message.include?("Temporary failure")
 
           error.message.include?("Content-Length mismatch")
+        end
+
+        def locked_git_dep_error?(error)
+          error.message.start_with?("Could not authenticate against")
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -197,36 +207,66 @@ module Dependabot
         end
 
         def locked_composer_json_content
-          tmp_content =
-            dependencies.reduce(updated_composer_json_content) do |content, dep|
-              updated_req = dep.version
-              next content unless Composer::Version.correct?(updated_req)
+          content = updated_composer_json_content
+          content = lock_dependencies_being_updated(content)
+          content = lock_git_dependencies(content) if @lock_git_deps != false
+          content = add_temporary_platform_extensions(content)
+          content
+        end
 
-              old_req =
-                dep.requirements.find { |r| r[:file] == "composer.json" }&.
-                fetch(:requirement)
-
-              # When updating a subdep there won't be an old requirement
-              next content unless old_req
-
-              regex =
-                /
-                  "#{Regexp.escape(dep.name)}"\s*:\s*
-                  "#{Regexp.escape(old_req)}"
-                /x
-
-              content.gsub(regex) do |declaration|
-                declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
-              end
-            end
-
-          json = JSON.parse(tmp_content)
+        def add_temporary_platform_extensions(content)
+          json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
             json["config"]["platform"][extension] =
               version_for_reqs(requirements)
+          end
+
+          JSON.dump(json)
+        end
+
+        def lock_dependencies_being_updated(original_content)
+          dependencies.reduce(original_content) do |content, dep|
+            updated_req = dep.version
+            next content unless Composer::Version.correct?(updated_req)
+
+            old_req =
+              dep.requirements.find { |r| r[:file] == "composer.json" }&.
+              fetch(:requirement)
+
+            # When updating a subdep there won't be an old requirement
+            next content unless old_req
+
+            regex =
+              /
+                "#{Regexp.escape(dep.name)}"\s*:\s*
+                "#{Regexp.escape(old_req)}"
+              /x
+
+            content.gsub(regex) do |declaration|
+              declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+            end
+          end
+        end
+
+        def lock_git_dependencies(content)
+          json = JSON.parse(content)
+
+          FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless json[keys[:manifest]]
+
+            json[keys[:manifest]].each do |name, req|
+              next unless req.start_with?("dev-")
+              next if req.include?("#")
+
+              commit_sha = parsed_lockfile.
+                           fetch(keys[:lockfile], []).
+                           find { |d| d["name"] == name }&.
+                           dig("source", "reference")
+              json[keys[:manifest]][name] = req + "##{commit_sha}"
+            end
           end
 
           JSON.dump(json)
@@ -383,7 +423,11 @@ module Dependabot
         end
 
         def parsed_composer_json
-          JSON.parse(composer_json.content)
+          @parsed_composer_json ||= JSON.parse(composer_json.content)
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
 
         def composer_json
