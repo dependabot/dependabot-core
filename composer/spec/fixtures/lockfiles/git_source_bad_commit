@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "4b48347a640c7fb76051180008933c87",
+    "content-hash": "487e925ea7a1432a4eb8ace699e73ef1",
     "packages": [
         {
             "name": "monolog/monolog",
             "version": "dev-example",
             "source": {
                 "type": "git",
-                "url": "https://github.com/dependabot/monolog",
-                "reference": "5267b03b1e4861c4657ede17a88f13ef479db482"
+                "url": "https://github.com/dependabot/monolog.git",
+                "reference": "bad7b03b1e4861c4657ede17a88f13ef479db482"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dependabot/monolog/zipball/5267b03b1e4861c4657ede17a88f13ef479db482",
-                "reference": "5267b03b1e4861c4657ede17a88f13ef479db482",
+                "url": "https://api.github.com/repos/dependabot/monolog/zipball/bad7b03b1e4861c4657ede17a88f13ef479db482",
+                "reference": "bad7b03b1e4861c4657ede17a88f13ef479db482",
                 "shasum": ""
             },
             "require": {
@@ -40,7 +40,10 @@
                 "log",
                 "logging"
             ],
-            "time": "2011-08-25T20:42:58+00:00"
+            "support": {
+                "source": "https://github.com/dependabot/monolog/tree/1.0.1"
+            },
+            "time": "2011-08-25 20:42:58"
         },
         {
             "name": "symfony/polyfill-mbstring",

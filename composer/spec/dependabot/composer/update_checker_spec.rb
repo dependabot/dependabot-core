@@ -410,10 +410,21 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+      let(:ignored_versions) { [">= 2.8.0"] }
 
-      it "is between 2.0.0 and 3.0.0" do
-        expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
-        expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
+      it "is the highest resolvable version" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
+      end
+
+      context "where the blocking dependency is a git dependency" do
+        let(:manifest_fixture_name) { "git_source_conflict_at_latest" }
+        let(:lockfile_fixture_name) { "git_source_conflict_at_latest" }
+
+        pending "is the highest resolvable version" do
+          # It would be nice if this worked, but currently Composer ignores
+          # resolvability requirements for git dependencies.
+          expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
+        end
       end
     end
 
@@ -492,6 +503,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         end
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
+
+        context "with a bad commit" do
+          let(:lockfile_fixture_name) { "git_source_bad_commit" }
+
+          # Alternatively, this could raise an error. Either behaviour would be
+          # fine - the below is just what we get with Composer at the moment.
+          it { is_expected.to be >= Gem::Version.new("1.3.0") }
+        end
 
         context "with a git URL" do
           let(:manifest_fixture_name) { "git_source_git_url" }
