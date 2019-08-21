@@ -1,3 +1,7 @@
+## v0.112.9, 21 August 2019
+
+- Bump npm from 6.10.3 to 6.11.1 in /npm_and_yarn/helpers
+
 ## v0.112.8, 21 August 2019
 
 - Composer: Treat stability flag requirements as default requirement
