@@ -12,6 +12,7 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
 
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /
@@ -56,6 +57,15 @@ module Dependabot
       return false unless pinned?
 
       dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
+    end
+
+    def pinned_ref_looks_like_commit_sha?
+      return false unless pinned?
+
+      ref = dependency_source_details.fetch(:ref)
+      return false unless ref.match?(/^[0-9a-f]{6,40}$/)
+
+      local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
 
     def branch_or_ref_in_release?(version)
@@ -352,3 +362,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
