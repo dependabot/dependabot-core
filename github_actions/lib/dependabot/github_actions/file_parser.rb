@@ -9,6 +9,7 @@ require "dependabot/errors"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
+# https://help.github.com/en/articles/workflow-syntax-for-github-actions#example-using-versioned-actions
 module Dependabot
   module GithubActions
     class FileParser < Dependabot::FileParsers::Base

@@ -83,6 +83,71 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       its(:content) { is_expected.to include "actions/setup-node@v1.1.0\n" }
       its(:content) { is_expected.to_not include "actions/setup-node@master" }
       its(:content) { is_expected.to include "actions/checkout@master\n" }
+
+      context "with a path" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_monorepo.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/aws",
+            version: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
+            previous_version: nil,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/aws",
+                ref: "v1.1.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/aws/ec2@master" }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/aws",
+                ref: "v1.1.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/aws@master" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/aws",
+                ref: "master",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/aws/ec2@master" }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/aws",
+                ref: "master",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/aws@master" }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        its(:content) { is_expected.to include "actions/aws/ec2@v1.1.0\n" }
+        its(:content) { is_expected.to include "actions/aws@v1.1.0\n" }
+        its(:content) { is_expected.to_not include "actions/aws/ec2@master" }
+        its(:content) { is_expected.to include "actions/checkout@master\n" }
+      end
     end
   end
 end

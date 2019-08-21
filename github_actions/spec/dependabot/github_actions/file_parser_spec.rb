@@ -59,6 +59,48 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with a path" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo.yml" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/aws",
+              ref: "master",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/aws/ec2@master" }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/aws",
+              ref: "master",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/aws@master" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/aws")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a bad Ruby object" do
       let(:workflow_file_fixture_name) { "bad_ruby_object.yml" }
 
