@@ -1,3 +1,7 @@
+## v0.112.8, 21 August 2019
+
+- Composer: Treat stability flag requirements as default requirement
+
 ## v0.112.7, 21 August 2019
 
 - Composer: Don't update the commit SHA for git dependencies when doing other updates
