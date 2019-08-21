@@ -94,6 +94,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "refassm-blog-post" }
         it { is_expected.to be_falsey }
       end
+
+      context "that is a git commit SHA" do
+        let(:upload_pack_fixture) { "setup-node" }
+        let(:reference) { "1c24df3" }
+        it { is_expected.to be_falsey }
+      end
     end
   end
 
@@ -109,6 +115,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:reference) { "v1.0.1" }
       it { is_expected.to eq("5273d0df9c603edc4284ac8402cf650b4f1f6686") }
     end
+
+    context "given a git commit SHA" do
+      let(:reference) { "1c24df3" }
+      it { is_expected.to be_falsey }
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -123,6 +134,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
+      it { is_expected.to eq(dependency.requirements) }
+    end
+
+    context "given a git commit SHA" do
+      let(:reference) { "1c24df3" }
       it { is_expected.to eq(dependency.requirements) }
     end
 
