@@ -1,11 +1,17 @@
 version: 1
-
 update_configs:
+  # Update your Gemfile (& lockfiles) as soon as
+  # new versions are published to the RubyGems registry
   - package_manager: "ruby:bundler"
-    directory: "/common"
+    directory: "/"
     update_schedule: "live"
+
+    # Apply default reviewer and label to created
+    # pull requests
     default_reviewers:
-    - greysteil
+      - "github-username"
+    default_labels:
+      - "label-name"
 
   - package_manager: "php:composer"
     directory: "/composer/helpers"
