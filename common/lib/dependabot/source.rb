@@ -29,11 +29,16 @@ module Dependabot
       (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
     }x.freeze
 
+    CODECOMMIT_SOURCE = %r{
+      (?<provider>codecommit)
+    }x.freeze
+
     SOURCE_REGEX = /
       (?:#{GITHUB_SOURCE})|
       (?:#{GITLAB_SOURCE})|
       (?:#{BITBUCKET_SOURCE})|
-      (?:#{AZURE_SOURCE})
+      (?:#{AZURE_SOURCE}) |
+      (?:#{CODECOMMIT_SOURCE})
     /x.freeze
 
     attr_accessor :provider, :repo, :directory, :branch, :hostname,
@@ -54,7 +59,7 @@ module Dependabot
 
     def initialize(provider:, repo:, directory: nil, branch: nil, hostname: nil,
                    api_endpoint: nil)
-      if hostname.nil? ^ api_endpoint.nil?
+      if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
               "provider's defaults."
@@ -87,6 +92,8 @@ module Dependabot
         url + "/" + path
       when "azure"
         url + "?path=#{directory}"
+      when "codecommit"
+        nil
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
@@ -116,6 +123,7 @@ module Dependabot
       when "bitbucket" then "bitbucket.org"
       when "gitlab" then "gitlab.com"
       when "azure" then "dev.azure.com"
+      when "codecommit" then "us-east-1"
       else raise "Unexpected provider '#{provider}'"
       end
     end
@@ -126,8 +134,10 @@ module Dependabot
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
       when "gitlab" then "https://gitlab.com/api/v4"
       when "azure" then "https://dev.azure.com/"
+      when "codecommit" then "us-east-1"
       else raise "Unexpected provider '#{provider}'"
       end
     end
+
   end
 end
