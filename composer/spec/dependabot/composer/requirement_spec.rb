@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Composer::Requirement do
       it { is_expected.to eq(described_class.new(">=1.0.0")) }
     end
 
+    context "with just a stability constraint" do
+      let(:requirement_string) { "@dev" }
+      it { is_expected.to eq(described_class.new(">= 0")) }
+    end
+
     context "with an alias" do
       let(:requirement_string) { ">=whatever as 1.0.0" }
       it { is_expected.to eq(described_class.new(">=1.0.0")) }

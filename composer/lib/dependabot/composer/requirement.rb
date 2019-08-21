@@ -11,6 +11,8 @@ module Dependabot
 
       def self.parse(obj)
         new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
+        return DefaultRequirement if new_obj == ""
+
         super(new_obj)
       end
 
