@@ -11,7 +11,12 @@ module Dependabot
       def look_up_source
         info = dependency.requirements.map { |r| r[:source] }.compact.first
 
-        url = info[:url] || info.fetch("url")
+        url =
+          if info.nil?
+            "https://github.com/#{dependency.name}"
+          else
+            info[:url] || info.fetch("url")
+          end
         Source.from_url(url)
       end
     end

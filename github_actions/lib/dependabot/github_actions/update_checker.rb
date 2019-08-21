@@ -63,13 +63,23 @@ module Dependabot
           return latest_tag.fetch(:commit_sha)
         end
 
+        # If the dependency is pinned to a commit SHA and the latest
+        # version-like tag includes that commit then we want to update to that
+        # version-like tag. We return a version (not a commit SHA) so that we
+        # get nice behaviour in PullRequestCreator::MessageBuilder
+        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
+           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
+           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
+          return latest_tag.fetch(:version)
+        end
+
         # If the dependency is pinned to a tag that doesn't look like a
-        # version then there's nothing we can do.
-        #
-        # TODO: Treat refs that look like SHAs differently
+        # version or a commit SHA then there's nothing we can do.
         dependency.version
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def updated_source
         # TODO: Support Docker sources
         return dependency_source_details unless git_dependency?
@@ -81,9 +91,18 @@ module Dependabot
           return dependency_source_details.merge(ref: new_tag.fetch(:tag))
         end
 
+        # Update the git tag if updating a pinned commit
+        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
+           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
+           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
+          return dependency_source_details.merge(ref: latest_tag.fetch(:tag))
+        end
+
         # Otherwise return the original source
         dependency_source_details
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_source_details
         sources =

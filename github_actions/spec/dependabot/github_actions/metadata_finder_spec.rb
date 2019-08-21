@@ -56,5 +56,18 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/actions/checkout") }
     end
+
+    context "for a subdependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: nil,
+          requirements: [],
+          package_manager: "github_actions"
+        )
+      end
+
+      it { is_expected.to eq("https://github.com/actions/checkout") }
+    end
   end
 end

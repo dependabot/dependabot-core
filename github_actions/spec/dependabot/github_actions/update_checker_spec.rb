@@ -98,7 +98,31 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "that is a git commit SHA" do
         let(:upload_pack_fixture) { "setup-node" }
         let(:reference) { "1c24df3" }
-        it { is_expected.to be_falsey }
+
+        let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
+        let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+        before do
+          stub_request(:get, comparison_url).
+            to_return(
+              status: 200,
+              body: comparison_response,
+              headers: { "Content-Type" => "application/json" }
+            )
+        end
+
+        context "when the specified reference is not in the latest release" do
+          let(:comparison_response) do
+            fixture("github", "commit_compare_diverged.json")
+          end
+          it { is_expected.to be_falsey }
+        end
+
+        context "when the specified ref is included in the latest release" do
+          let(:comparison_response) do
+            fixture("github", "commit_compare_behind.json")
+          end
+          it { is_expected.to be_truthy }
+        end
       end
     end
   end
@@ -114,11 +138,46 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     context "given a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
       it { is_expected.to eq("5273d0df9c603edc4284ac8402cf650b4f1f6686") }
+
+      context "and the latest version is being ignored" do
+        let(:ignored_versions) { [">= 1.1.0"] }
+        it { is_expected.to eq("fc9ff49b90869a686df00e922af871c12215986a") }
+      end
     end
 
     context "given a git commit SHA" do
       let(:reference) { "1c24df3" }
-      it { is_expected.to be_falsey }
+
+      let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
+      let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+      before do
+        stub_request(:get, comparison_url).
+          to_return(
+            status: 200,
+            body: comparison_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      context "when the specified reference is not in the latest release" do
+        let(:comparison_response) do
+          fixture("github", "commit_compare_diverged.json")
+        end
+        it { is_expected.to be_nil }
+      end
+
+      context "when the specified ref is included in the latest release" do
+        let(:comparison_response) do
+          fixture("github", "commit_compare_behind.json")
+        end
+        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+
+        context "and the latest version is being ignored" do
+          let(:ignored_versions) { [">= 1.1.0"] }
+          let(:comparison_url) { repo_url + "/compare/v1.0.4...1c24df3" }
+          it { is_expected.to eq(Gem::Version.new("1.0.4")) }
+        end
+      end
     end
   end
 
@@ -139,7 +198,67 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a git commit SHA" do
       let(:reference) { "1c24df3" }
-      it { is_expected.to eq(dependency.requirements) }
+
+      let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
+      let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+      before do
+        stub_request(:get, comparison_url).
+          to_return(
+            status: 200,
+            body: comparison_response,
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      context "when the specified reference is not in the latest release" do
+        let(:comparison_response) do
+          fixture("github", "commit_compare_diverged.json")
+        end
+        it { is_expected.to eq(dependency.requirements) }
+      end
+
+      context "when the specified ref is included in the latest release" do
+        let(:comparison_response) do
+          fixture("github", "commit_compare_behind.json")
+        end
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v1.1.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+
+        it { is_expected.to eq(expected_requirements) }
+
+        context "and the latest version is being ignored" do
+          let(:ignored_versions) { [">= 1.1.0"] }
+          let(:comparison_url) { repo_url + "/compare/v1.0.4...1c24df3" }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/setup-node",
+                ref: "v1.0.4",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/setup-node@master" }
+            }]
+          end
+
+          it { is_expected.to eq(expected_requirements) }
+        end
+      end
     end
 
     context "given a dependency with a tag reference" do
@@ -160,6 +279,26 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it { is_expected.to eq(expected_requirements) }
+
+      context "and the latest version is being ignored" do
+        let(:ignored_versions) { [">= 1.1.0"] }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v1.0.4",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+
+        it { is_expected.to eq(expected_requirements) }
+      end
     end
   end
 end
