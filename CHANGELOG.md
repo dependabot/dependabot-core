@@ -1,3 +1,8 @@
+## v0.112.7, 21 August 2019
+
+- Composer: Don't update the commit SHA for git dependencies when doing other updates
+- Update JS subdependencies
+
 ## v0.112.6, 20 August 2019
 
 - Bump Rust version in Dockerfile
