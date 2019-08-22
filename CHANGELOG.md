@@ -1,3 +1,7 @@
+## v0.112.11, 22 August 2019
+
+- Yarn: Ignore dependencies with npm registry alias in the name (`alias@npm:package`)
+
 ## v0.112.10, 22 August 2019
 
 - Handle git dependencies that pin to a tag in ReleaseFinder
