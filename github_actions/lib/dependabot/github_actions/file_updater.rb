@@ -64,8 +64,12 @@ module Dependabot
             old_declaration.
             gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
 
-          updated_content = updated_content.
-                            gsub(old_declaration, new_declaration)
+          updated_content =
+            updated_content.
+            gsub(
+              /(?<=\W)#{Regexp.escape(old_declaration)}(?=\W)/,
+              new_declaration
+            )
         end
 
         updated_content
