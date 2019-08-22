@@ -103,6 +103,13 @@ module Dependabot
         return if ignore_requirement?(requirement)
         return if workspace_package_names.include?(name)
 
+        # TODO: Handle aliased packages:
+        # https://github.com/dependabot/dependabot-core/pull/1115
+        #
+        # Ignore dependencies with an alias in the name (only supported by Yarn)
+        # Example: "my-fetch-factory@npm:fetch-factory"
+        return if aliased_package_name?(name)
+
         Dependency.new(
           name: name,
           version: version,
@@ -124,7 +131,8 @@ module Dependabot
         return true if local_path?(requirement)
         return true if non_git_url?(requirement)
 
-        # TODO: Handle aliased packages
+        # TODO: Handle aliased packages:
+        # https://github.com/dependabot/dependabot-core/pull/1115
         alias_package?(requirement)
       end
 
@@ -148,6 +156,10 @@ module Dependabot
         return false unless git_url?(requirement)
 
         !requirement.match(GIT_URL_REGEX).named_captures.fetch("semver").nil?
+      end
+
+      def aliased_package_name?(name)
+        name.include?("@npm:")
       end
 
       def workspace_package_names

@@ -1003,6 +1003,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
+        context "with an aliased dependency name (only supported by yarn)" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_fixture_name) { "aliased_dependency_name.json" }
+          let(:yarn_lock_fixture_name) { "aliased_dependency_name.lock" }
+
+          it "doesn't include the aliased dependency" do
+            expect(top_level_dependencies.length).to eq(1)
+            expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+            expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+          end
+        end
+
         context "with a git dependency" do
           let(:files) { [package_json, lockfile] }
           let(:package_json_fixture_name) { "git_dependency.json" }
