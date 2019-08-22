@@ -1,3 +1,9 @@
+## v0.112.10, 22 August 2019
+
+- Handle git dependencies that pin to a tag in ReleaseFinder
+- GitHub Actions: Update commit SHA pins to version pins when possible
+- Add GitCommitChecker#pinned_ref_looks_like_commit_sha? method
+
 ## v0.112.9, 21 August 2019
 
 - Bump npm from 6.10.3 to 6.11.1 in /npm_and_yarn/helpers
