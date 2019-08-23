@@ -286,7 +286,7 @@ module Dependabot
           def replace_constant(node)
             case node.children.last&.type
             when :str, :int then nil # no-op
-            when :const, :send, :lvar, :if
+            when :float, :const, :send, :lvar, :if
               replace(
                 node.children.last.loc.expression,
                 %("#{replacement_version}")

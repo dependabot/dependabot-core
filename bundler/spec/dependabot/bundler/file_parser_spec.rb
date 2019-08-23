@@ -526,6 +526,26 @@ RSpec.describe Dependabot::Bundler::FileParser do
               }]
             )
         end
+
+        context "with a gemspec with a float version number" do
+          let(:files) { [gemspec, gemfile] }
+
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              name: "version_as_float.gemspec",
+              content: gemspec_content
+            )
+          end
+          let(:gemspec_content) do
+            fixture("ruby", "gemspecs", "version_as_float")
+          end
+          let(:gemfile_fixture_name) { "imports_gemspec" }
+
+          it "doesn't include the gemspec dependency (i.e., itself" do
+            expect(dependencies.map(&:name)).
+              to match_array(%w(business statesman))
+          end
+        end
       end
 
       context "with an unparseable git dep that also appears in the gemspec" do
