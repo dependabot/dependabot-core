@@ -46,31 +46,36 @@ module Dependabot
             if lockfile
               version = dependency_version(name: name, type: keys[:group])
 
-              # Ignore dependencies which appear in the composer.json but not
-              # the composer.lock.
-              next if version.nil?
-
-              # Ignore dependency versions which are non-numeric, since they
+              # Ignore dependency versions which don't appear in the
+              # composer.lock or are non-numeric and not a git SHA, since they
               # can't be compared later in the process.
-              next unless version.match?(/^\d/)
+              next unless version&.match?(/^\d/) ||
+                          version&.match?(/^[0-9a-f]{40}$/)
             end
 
-            dependencies <<
-              Dependency.new(
-                name: name,
-                version: dependency_version(name: name, type: keys[:group]),
-                requirements: [{
-                  requirement: req,
-                  file: "composer.json",
-                  source: dependency_source(name: name, type: keys[:group]),
-                  groups: [keys[:group]]
-                }],
-                package_manager: "composer"
-              )
+            dependencies << build_manifest_dependency(name, req, keys)
           end
         end
 
         dependencies
+      end
+
+      def build_manifest_dependency(name, req, keys)
+        Dependency.new(
+          name: name,
+          version: dependency_version(name: name, type: keys[:group]),
+          requirements: [{
+            requirement: req,
+            file: "composer.json",
+            source: dependency_source(
+              name: name,
+              type: keys[:group],
+              requirement: req
+            ),
+            groups: [keys[:group]]
+          }],
+          package_manager: "composer"
+        )
       end
 
       def lockfile_dependencies
@@ -88,7 +93,8 @@ module Dependabot
 
             version = details["version"]&.to_s&.sub(/^v?/, "")
             next if version.nil?
-            next unless version.match?(/^\d/)
+            next unless version.match?(/^\d/) ||
+                        version.match?(/^[0-9a-f]{40}$/)
 
             dependencies <<
               Dependency.new(
@@ -111,13 +117,21 @@ module Dependabot
 
         key = lockfile_key(type)
 
-        parsed_lockfile.
+        version =
+          parsed_lockfile.
           fetch(key, []).
           find { |d| d["name"] == name }&.
           fetch("version")&.to_s&.sub(/^v?/, "")
+
+        return version unless version&.start_with?("dev-")
+
+        parsed_lockfile.
+          fetch(key, []).
+          find { |d| d["name"] == name }&.
+          dig("source", "reference")
       end
 
-      def dependency_source(name:, type:)
+      def dependency_source(name:, type:, requirement:)
         return unless lockfile
 
         key = lockfile_key(type)
@@ -131,10 +145,17 @@ module Dependabot
 
         return unless package.dig("source", "type") == "git"
 
-        {
+        details = {
           type: "git",
           url: package.dig("source", "url")
         }
+
+        return details unless requirement.start_with?("dev-")
+
+        details.merge(
+          branch: requirement.sub(/^dev-/, "").split("#").first,
+          ref: nil
+        )
       end
 
       def lockfile_key(type)

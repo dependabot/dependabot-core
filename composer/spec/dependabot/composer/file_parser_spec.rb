@@ -164,11 +164,37 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a non-numeric version" do
+    context "with a git dependency" do
+      let(:composer_json_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source" }
 
-      it "skips the dependency" do
-        expect(dependencies.length).to eq(1)
+      it "includes the dependency" do
+        expect(dependencies.length).to eq(2)
+      end
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("monolog/monolog") }
+        its(:version) do
+          is_expected.to eq("5267b03b1e4861c4657ede17a88f13ef479db482")
+        end
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: "dev-example",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "https://github.com/dependabot/monolog.git",
+                branch: "example",
+                ref: nil
+              }
+            }]
+          )
+        end
       end
     end
 
@@ -262,6 +288,32 @@ RSpec.describe Dependabot::Composer::FileParser do
       context "with the PHP version specified" do
         let(:composer_json_fixture_name) { "php_specified" }
         its(:length) { is_expected.to eq(2) }
+      end
+
+      context "with a git dependency" do
+        let(:composer_json_fixture_name) { "git_source" }
+
+        it "includes the dependency" do
+          expect(dependencies.length).to eq(2)
+        end
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("monolog/monolog") }
+          its(:version) { is_expected.to be_nil }
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "dev-example",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
 

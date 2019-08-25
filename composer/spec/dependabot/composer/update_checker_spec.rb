@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       context "that is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
-        let(:current_version) { "1.0.1" }
+        let(:dependency_version) { "1.0.1" }
         let(:requirements) do
           [{
             requirement: "1.0.*",
@@ -129,6 +129,45 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it { is_expected.to be_nil }
       end
+    end
+
+    context "with a git dependency" do
+      let(:files) { [composer_file, lockfile] }
+      let(:manifest_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source" }
+
+      let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
+      let(:requirements) do
+        [{
+          requirement: "dev-example",
+          file: "composer.json",
+          groups: ["runtime"],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot/monolog.git",
+            branch: "example",
+            ref: nil
+          }
+        }]
+      end
+
+      let(:service_pack_url) do
+        "https://github.com/dependabot/monolog.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "monolog" }
+
+      it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }
     end
   end
 
@@ -245,7 +284,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
       context "that is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
-        let(:current_version) { "1.0.1" }
+        let(:dependency_version) { "1.0.1" }
         let(:requirements) do
           [{
             requirement: "1.0.*",
@@ -488,7 +527,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a dependency with a git source" do
       let(:manifest_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source" }
-      it { is_expected.to be >= Gem::Version.new("1.22.1") }
+
+      let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
+      let(:requirements) do
+        [{
+          requirement: "dev-example",
+          file: "composer.json",
+          groups: ["runtime"],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot/monolog.git",
+            branch: "example"
+          }
+        }]
+      end
+
+      it { is_expected.to be_nil }
 
       context "that is not the gem we're checking" do
         let(:dependency_name) { "symfony/polyfill-mbstring" }
@@ -628,6 +682,33 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         ]
       end
       it { is_expected.to eq(Gem::Version.new("1.16.0")) }
+    end
+  end
+
+  describe "#latest_resolvable_version_with_no_unlock" do
+    subject(:latest_resolvable_version_with_no_unlock) do
+      checker.latest_resolvable_version_with_no_unlock
+    end
+
+    context "with a dependency with a git source" do
+      let(:manifest_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source" }
+
+      let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
+      let(:requirements) do
+        [{
+          requirement: "dev-example",
+          file: "composer.json",
+          groups: ["runtime"],
+          source: {
+            type: "git",
+            url: "https://github.com/dependabot/monolog.git",
+            branch: "example"
+          }
+        }]
+      end
+
+      it { is_expected.to be_nil }
     end
   end
 
