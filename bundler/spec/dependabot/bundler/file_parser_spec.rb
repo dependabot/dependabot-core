@@ -541,7 +541,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           end
           let(:gemfile_fixture_name) { "imports_gemspec" }
 
-          it "doesn't include the gemspec dependency (i.e., itself" do
+          it "includes the gemspec dependency" do
             expect(dependencies.map(&:name)).
               to match_array(%w(business statesman))
           end
