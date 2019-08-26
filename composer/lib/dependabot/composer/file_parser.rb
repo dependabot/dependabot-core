@@ -38,7 +38,7 @@ module Dependabot
         dependencies = DependencySet.new
 
         DEPENDENCY_GROUP_KEYS.each do |keys|
-          next unless parsed_composer_json[keys[:manifest]]
+          next unless parsed_composer_json[keys[:manifest]].is_a?(Hash)
 
           parsed_composer_json[keys[:manifest]].each do |name, req|
             next unless package?(name)
@@ -78,39 +78,45 @@ module Dependabot
         )
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def lockfile_dependencies
         dependencies = DependencySet.new
 
         return dependencies unless lockfile
 
-        DEPENDENCY_GROUP_KEYS.each do |h|
-          key = h.fetch(:lockfile)
-          next unless parsed_lockfile[key]
+        DEPENDENCY_GROUP_KEYS.each do |keys|
+          key = keys.fetch(:lockfile)
+          next unless parsed_lockfile[key].is_a?(Array)
 
           parsed_lockfile[key].each do |details|
             name = details["name"]
-            next unless name.is_a?(String)
-            next unless package?(name)
+            next unless name.is_a?(String) && package?(name)
 
             version = details["version"]&.to_s&.sub(/^v?/, "")
-            next unless name.is_a?(String)
+            next unless version.is_a?(String)
             next unless version.match?(/^\d/) ||
                         version.match?(/^[0-9a-f]{40}$/)
 
-            dependencies <<
-              Dependency.new(
-                name: name,
-                version: version,
-                requirements: [],
-                package_manager: "composer",
-                subdependency_metadata: [{
-                  production: h.fetch(:group) != "development"
-                }]
-              )
+            dependencies << build_lockfile_dependency(name, version, keys)
           end
         end
 
         dependencies
+      end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      def build_lockfile_dependency(name, version, keys)
+        Dependency.new(
+          name: name,
+          version: version,
+          requirements: [],
+          package_manager: "composer",
+          subdependency_metadata: [{
+            production: keys.fetch(:group) != "development"
+          }]
+        )
       end
 
       def dependency_version(name:, type:)
