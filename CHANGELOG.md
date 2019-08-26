@@ -1,3 +1,11 @@
+## v0.112.12, 26 August 2019
+
+- Update Golang and Dep versions
+- Composer: Parse git dependencies (ignore them in the update checker)
+- Python: Bump pip from 19.2.2 to 19.2.3 in /python/helpers
+- JS: Bump npm from 6.11.1 to 6.11.2 in /npm_and_yarn/helpers
+- GitHub Actions: More precise file updating
+
 ## v0.112.11, 22 August 2019
 
 - Yarn: Ignore dependencies with npm registry alias in the name (`alias@npm:package`)
