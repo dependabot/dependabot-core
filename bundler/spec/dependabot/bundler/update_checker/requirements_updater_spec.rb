@@ -27,7 +27,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
     {
       file: "some.gemspec",
       requirement: gemspec_requirement_string,
-      groups: gemspec_groups
+      groups: gemspec_groups,
+      source: nil
     }
   end
   let(:gemfile_requirement_string) { "~> 1.4.0" }
@@ -431,16 +432,38 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
       it "updates both files" do
         expect(updated_requirements).to match_array(
-          [
-            {
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "some.gemspec",
+            requirement: ">= 1.0, < 1.9",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      context "and an updated source" do
+        let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+
+        it "updates both files" do
+          expect(updated_requirements).to match_array(
+            [{
               file: "Gemfile",
               requirement: "~> 1.5.0",
               groups: [],
-              source: nil
-            },
-            { file: "some.gemspec", requirement: ">= 1.0, < 1.9", groups: [] }
-          ]
-        )
+              source: { type: "git", ref: "v1.5.0" }
+            }, {
+              file: "some.gemspec",
+              requirement: ">= 1.0, < 1.9",
+              groups: [],
+              source: { type: "git", ref: "v1.5.0" }
+            }]
+          )
+        end
       end
     end
   end

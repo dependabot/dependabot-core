@@ -127,6 +127,7 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def update_gemspec_requirement(req)
+          req = req.merge(source: updated_source)
           return req unless latest_version && latest_resolvable_version
 
           requirements =
