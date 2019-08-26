@@ -84,6 +84,23 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
+    context "with an application using a >= PHP constraint" do
+      let(:manifest_fixture_name) { "php_specified" }
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+
+      context "the minimum version of which is invalid" do
+        let(:dependency_version) { "4.2.0" }
+        let(:string_req) { "4.2.0" }
+
+        it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
+      end
+    end
+
     context "updating a subdependency that's not required anymore" do
       let(:manifest_fixture_name) { "exact_version" }
       let(:lockfile_fixture_name) { "version_conflict_at_latest" }

@@ -219,7 +219,8 @@ module Dependabot
                 error.message.include?("does not allow connections to http://")
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.include?("package requires php") ||
-                error.message.include?("requested PHP extension")
+                error.message.include?("requested PHP extension") ||
+                !library? && error.message.match?(MISSING_PLATFORM_REQ_REGEX)
             missing_extensions =
               error.message.scan(MISSING_PLATFORM_REQ_REGEX).
               map do |extension_string|
@@ -283,6 +284,10 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+
+        def library?
+          parsed_composer_file["type"] == "library"
+        end
 
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
@@ -352,14 +357,23 @@ module Dependabot
         end
 
         def initial_platform
-          return {} unless parsed_composer_file["type"] == "library"
+          platform_php = parsed_composer_file.dig("config", "platform", "php")
+
+          platform = {}
+          if platform_php.is_a?(String) && requirement_valid?(platform_php)
+            platform["php"] = [platform_php]
+          end
 
           # Note: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          return {} unless parsed_composer_file.dig("require", "php")
+          requirement_php = parsed_composer_file.dig("require", "php")
+          return platform unless requirement_php.is_a?(String)
+          return platform unless requirement_valid?(requirement_php)
 
-          { "php" => [parsed_composer_file.dig("require", "php")] }
+          platform["php"] ||= []
+          platform["php"] << requirement_php
+          platform
         end
 
         def parsed_composer_file

@@ -126,7 +126,8 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
           if error.message.include?("package requires php") ||
-             error.message.include?("requested PHP extension")
+             error.message.include?("requested PHP extension") ||
+             !library? && error.message.match?(MISSING_PLATFORM_REQ_REGEX)
             missing_extensions =
               error.message.scan(MISSING_PLATFORM_REQ_REGEX).
               map do |extension_string|
@@ -193,6 +194,10 @@ module Dependabot
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def library?
+          parsed_composer_json["type"] == "library"
+        end
 
         def write_temporary_dependency_files
           path_dependencies.each do |file|
@@ -411,15 +416,30 @@ module Dependabot
         end
 
         def initial_platform
-          return {} unless parsed_composer_json["type"] == "library"
+          platform_php = parsed_composer_json.dig("config", "platform", "php")
 
-          php_requirements = [
-            parsed_composer_json.dig("require", "php"),
-            parsed_composer_json.dig("require-dev", "php")
-          ].compact
-          return {} if php_requirements.empty?
+          platform = {}
+          if platform_php.is_a?(String) && requirement_valid?(platform_php)
+            platform["php"] = [platform_php]
+          end
 
-          { "php" => php_requirements }
+          # Note: We *don't* include the require-dev PHP version in our initial
+          # platform. If we fail to resolve with the PHP version specified in
+          # `require` then it will be picked up in a subsequent iteration.
+          requirement_php = parsed_composer_json.dig("require", "php")
+          return platform unless requirement_php.is_a?(String)
+          return platform unless requirement_valid?(requirement_php)
+
+          platform["php"] ||= []
+          platform["php"] << requirement_php
+          platform
+        end
+
+        def requirement_valid?(req_string)
+          Composer::Requirement.requirements_array(req_string)
+          true
+        rescue Gem::Requirement::BadRequirementError
+          false
         end
 
         def parsed_composer_json

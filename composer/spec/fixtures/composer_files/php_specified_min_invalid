@@ -1,7 +1,7 @@
 {
     "require": {
         "php": ">=5.6.0",
-        "phpdocumentor/reflection-docblock": "2.0.4",
+        "phpdocumentor/reflection-docblock": "4.2.0",
         "illuminate/support": "^5.2.0"
     }
 }
