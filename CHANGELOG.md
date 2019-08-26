@@ -1,3 +1,10 @@
+## v0.112.13, 26 August 2019
+
+- Composer: More lockfile parsing robustness
+- PHP: Handle doctored lockfile in FileParser
+- Bundler: Update source for gemspec requirements when updating for Gemfile ones
+- Switch back to npm v6.10.3
+
 ## v0.112.12, 26 August 2019
 
 - Update Golang and Dep versions
