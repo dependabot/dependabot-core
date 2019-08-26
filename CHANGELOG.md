@@ -1,3 +1,9 @@
+## v0.112.14, 26 August 2019
+
+- Composer: Try to use lowest possible PHP version when updating requirements
+- Python: Bump pip-tools from 4.0.0 to 4.1.0 in /python/helpers
+- Bundler: Handle gemspec with a float version number
+
 ## v0.112.13, 26 August 2019
 
 - Composer: More lockfile parsing robustness
