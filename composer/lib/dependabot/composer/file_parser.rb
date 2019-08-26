@@ -89,10 +89,11 @@ module Dependabot
 
           parsed_lockfile[key].each do |details|
             name = details["name"]
+            next unless name.is_a?(String)
             next unless package?(name)
 
             version = details["version"]&.to_s&.sub(/^v?/, "")
-            next if version.nil?
+            next unless name.is_a?(String)
             next unless version.match?(/^\d/) ||
                         version.match?(/^[0-9a-f]{40}$/)
 

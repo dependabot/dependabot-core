@@ -65,6 +65,11 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with doctored entries" do
+      let(:lockfile_fixture_name) { "doctored" }
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with an integer version" do
       let(:composer_json_fixture_name) { "integer_version" }
       let(:lockfile_fixture_name) { "integer_version" }
