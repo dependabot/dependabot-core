@@ -105,6 +105,15 @@ $ bin/dry-run.rb go_modules rsc/quote
 ...
 ```
 
+## Releasing
+
+Triggering the jobs that will push the new gems is done by the following the steps below.
+
+- Ensure you have the latest merged changes:  `git checkout master` and `git pull`
+- Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
+- Edit the `CHANGELOG` file and remove any entries that aren't needed
+- Run the commands that were output by running `bin/bump-version.rb patch`
+
 ## Architecture
 
 Dependabot Core is a collection of Ruby packages (gems), which contain the
