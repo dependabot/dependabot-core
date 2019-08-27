@@ -24,10 +24,15 @@ module Dependabot
           end
         end
 
-        MISSING_PLATFORM_REQ_REGEX =
+        MISSING_EXPLICIT_PLATFORM_REQ_REGEX =
           /
-            \sext\-[^\s]+\s.*?\s(?=->|is|but)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->|is|but)
+            (?<=PHP\sextension\s)ext\-[^\s]+\s.*?\s(?=is|but)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=but)
+          /x.freeze
+        MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
+          /
+            \sext\-[^\s]+\s.*?\s(?=->)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->)
           /x.freeze
 
         def initialize(dependencies:, dependency_files:, credentials:)
@@ -125,16 +130,33 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
-          if error.message.include?("package requires php") ||
-             error.message.include?("requested PHP extension") ||
-             !library? && error.message.match?(MISSING_PLATFORM_REQ_REGEX)
+          if error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+            # These errors occur when platform requirements declared explicitly
+            # in the composer.json aren't met.
             missing_extensions =
-              error.message.scan(MISSING_PLATFORM_REQ_REGEX).
+              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
               map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
+          elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
+                !library? &&
+                !initial_platform.empty? &&
+                implicit_platform_reqs_satisfiable?(error.message)
+            missing_extensions =
+              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ", 2)
+                { name: name, requirement: requirement }
+              end
+
+            missing_extension = missing_extensions.find do |hash|
+              existing_reqs = composer_platform_extensions[hash[:name]] || []
+              version_for_reqs(existing_reqs + [hash[:requirement]])
+            end
+
+            raise MissingExtensions, [missing_extension]
           end
 
           if error.message.start_with?("Failed to execute git checkout")
@@ -197,6 +219,20 @@ module Dependabot
 
         def library?
           parsed_composer_json["type"] == "library"
+        end
+
+        def implicit_platform_reqs_satisfiable?(message)
+          missing_extensions =
+            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+            map do |extension_string|
+              name, requirement = extension_string.strip.split(" ", 2)
+              { name: name, requirement: requirement }
+            end
+
+          missing_extensions.any? do |hash|
+            existing_reqs = composer_platform_extensions[hash[:name]] || []
+            version_for_reqs(existing_reqs + [hash[:requirement]])
+          end
         end
 
         def write_temporary_dependency_files

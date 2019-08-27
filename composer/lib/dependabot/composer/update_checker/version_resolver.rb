@@ -23,10 +23,15 @@ module Dependabot
           end
         end
 
-        MISSING_PLATFORM_REQ_REGEX =
+        MISSING_EXPLICIT_PLATFORM_REQ_REGEX =
           /
-            \sext\-[^\s]+\s.*?\s(?=->|is|but)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->|is|but)
+            (?<=PHP\sextension\s)ext\-[^\s]+\s.*?\s(?=is|but)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=but)
+          /x.freeze
+        MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
+          /
+            \sext\-[^\s]+\s.*?\s(?=->)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->)
           /x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
@@ -125,6 +130,10 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
+            unless version_for_reqs(requirements)
+              raise "No matching version for #{requirements}!"
+            end
+
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
             json["config"]["platform"][extension] =
@@ -218,16 +227,33 @@ module Dependabot
           elsif error.message.start_with?("Could not parse version") ||
                 error.message.include?("does not allow connections to http://")
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
-          elsif error.message.include?("package requires php") ||
-                error.message.include?("requested PHP extension") ||
-                !library? && error.message.match?(MISSING_PLATFORM_REQ_REGEX)
+          elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+            # These errors occur when platform requirements declared explicitly
+            # in the composer.json aren't met.
             missing_extensions =
-              error.message.scan(MISSING_PLATFORM_REQ_REGEX).
+              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
               map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
+          elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
+                !library? &&
+                !initial_platform.empty? &&
+                implicit_platform_reqs_satisfiable?(error.message)
+            missing_extensions =
+              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ", 2)
+                { name: name, requirement: requirement }
+              end
+
+            missing_extension = missing_extensions.find do |hash|
+              existing_reqs = composer_platform_extensions[hash[:name]] || []
+              version_for_reqs(existing_reqs + [hash[:requirement]])
+            end
+
+            raise MissingExtensions, [missing_extension]
           elsif error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')
             raise Dependabot::DependencyFileNotResolvable, error.message
@@ -289,6 +315,23 @@ module Dependabot
           parsed_composer_file["type"] == "library"
         end
 
+        def implicit_platform_reqs_satisfiable?(message)
+          missing_extensions =
+            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+            map do |extension_string|
+              name, requirement = extension_string.strip.split(" ", 2)
+              { name: name, requirement: requirement }
+            end
+
+          missing_extensions.any? do |hash|
+            existing_reqs = composer_platform_extensions[hash[:name]] || []
+            version_for_reqs(existing_reqs + [hash[:requirement]])
+          end
+        end
+
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/PerceivedComplexity
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
@@ -304,10 +347,18 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.include?("requires php") ||
-             e.message.include?("requested PHP extension")
+          if e.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             missing_extensions =
-              e.message.scan(MISSING_PLATFORM_REQ_REGEX).
+              e.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ", 2)
+                { name: name, requirement: requirement }
+              end
+            raise MissingExtensions, missing_extensions
+          elsif e.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
+                implicit_platform_reqs_satisfiable?(e.message)
+            missing_extensions =
+              e.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
               map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
@@ -317,6 +368,9 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def version_for_reqs(requirements)
           req_arrays =
@@ -337,7 +391,7 @@ module Dependabot
             find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
-          raise "No matching version for #{requirements}!" unless version
+          return unless version
 
           version.to_s
         end

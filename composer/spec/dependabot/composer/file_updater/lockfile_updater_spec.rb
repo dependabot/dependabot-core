@@ -138,6 +138,35 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "with an application using a ^ PHP constraint" do
+        let(:manifest_fixture_name) { "php_specified_min_invalid" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phpdocumentor/reflection-docblock",
+            version: "3.3.2",
+            requirements: [{
+              file: "composer.json",
+              requirement: "3.3.2",
+              groups: ["runtime"],
+              source: nil
+            }],
+            previous_version: "2.0.4",
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "2.0.4",
+              groups: ["runtime"],
+              source: nil
+            }],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"3.3.2\"")
+        end
+      end
+
       context "and an extension is specified that we don't have" do
         let(:manifest_fixture_name) { "missing_extension" }
         let(:lockfile_fixture_name) { "missing_extension" }
