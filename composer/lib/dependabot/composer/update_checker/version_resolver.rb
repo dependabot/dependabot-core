@@ -25,8 +25,8 @@ module Dependabot
 
         MISSING_PLATFORM_REQ_REGEX =
           /
-            \sext\-.*?\s.*?\s(?=[^\d])|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=[^\d])
+            \sext\-[^\s]+\s.*?\s(?=->|is|but)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->|is|but)
           /x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =

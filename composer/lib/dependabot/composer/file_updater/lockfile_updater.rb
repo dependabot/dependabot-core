@@ -26,8 +26,8 @@ module Dependabot
 
         MISSING_PLATFORM_REQ_REGEX =
           /
-            \sext\-.*?\s.*?\s(?=[^\d])|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=[^\d])
+            \sext\-[^\s]+\s.*?\s(?=->|is|but)|
+            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->|is|but)
           /x.freeze
 
         def initialize(dependencies:, dependency_files:, credentials:)
