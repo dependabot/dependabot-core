@@ -1,3 +1,7 @@
+## v0.112.17, 27 August 2019
+
+- Composer: Remove alias when determining git dependency branch
+
 ## v0.112.16, 27 August 2019
 
 - Composer: Tigher regex for missing platform requirements
