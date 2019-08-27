@@ -200,6 +200,26 @@ RSpec.describe Dependabot::Composer::FileParser do
             }]
           )
         end
+
+        context "specified as an alias" do
+          let(:composer_json_fixture_name) { "git_source_alias" }
+
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "dev-example as 1.0.2",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/dependabot/monolog.git",
+                  branch: "example",
+                  ref: nil
+                }
+              }]
+            )
+          end
+        end
       end
     end
 

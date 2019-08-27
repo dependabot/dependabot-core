@@ -159,10 +159,11 @@ module Dependabot
 
         return details unless requirement.start_with?("dev-")
 
-        details.merge(
-          branch: requirement.sub(/^dev-/, "").split("#").first,
-          ref: nil
-        )
+        branch = requirement.
+                 sub(/^dev-/, "").
+                 sub(/\s+as\s.*/, "").
+                 split("#").first
+        details.merge(branch: branch, ref: nil)
       end
 
       def lockfile_key(type)
