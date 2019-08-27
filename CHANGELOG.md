@@ -1,3 +1,8 @@
+## v0.112.15, 27 August 2019
+
+- Bundler: Don't update  gemspec requirements
+- Bundler: Raise a runtime error if no files change in file updater
+
 ## v0.112.14, 26 August 2019
 
 - Composer: Try to use lowest possible PHP version when updating requirements
