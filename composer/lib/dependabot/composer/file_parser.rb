@@ -157,13 +157,27 @@ module Dependabot
           url: package.dig("source", "url")
         }
 
-        return details unless requirement.start_with?("dev-")
+        version =
+          parsed_lockfile.
+          fetch(key, []).
+          find { |d| d["name"] == name }&.
+          fetch("version")&.to_s&.sub(/^v?/, "")
 
-        branch = requirement.
-                 sub(/^dev-/, "").
-                 sub(/\s+as\s.*/, "").
-                 split("#").first
-        details.merge(branch: branch, ref: nil)
+        if requirement.start_with?("dev-")
+          branch = requirement.
+                   sub(/^dev-/, "").
+                   sub(/\s+as\s.*/, "").
+                   split("#").first
+          details.merge(branch: branch, ref: nil)
+        elsif version&.start_with?("dev-")
+          branch = version.
+                   sub(/^dev-/, "").
+                   sub(/\s+as\s.*/, "").
+                   split("#").first
+          details.merge(branch: branch, ref: nil)
+        else
+          details
+        end
       end
 
       def lockfile_key(type)

@@ -220,6 +220,29 @@ RSpec.describe Dependabot::Composer::FileParser do
             )
           end
         end
+
+        context "due to a stability flag" do
+          subject { dependencies.last }
+
+          let(:composer_json_fixture_name) { "git_source_transitive" }
+          let(:lockfile_fixture_name) { "git_source_transitive" }
+
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "1.*@dev",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/php-fig/log.git",
+                  branch: "master",
+                  ref: nil
+                }
+              }]
+            )
+          end
+        end
       end
     end
 
