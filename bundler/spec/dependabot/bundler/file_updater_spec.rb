@@ -1257,7 +1257,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               package_manager: "bundler"
             )
           end
-          it { is_expected.to be_nil }
+
+          it "raises an error" do
+            expect { updated_files }.to raise_error("No files have changed!")
+          end
         end
 
         its(:content) do
