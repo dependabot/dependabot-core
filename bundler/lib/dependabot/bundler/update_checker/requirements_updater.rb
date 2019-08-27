@@ -126,6 +126,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def update_gemspec_requirement(req)
           req = req.merge(source: updated_source) if req.fetch(:source)
           return req unless latest_version && latest_resolvable_version
@@ -152,6 +153,7 @@ module Dependabot
           req.merge(requirement: :unfixable)
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def requirement_satisfied?(req, groups)
           if groups == ["development"]
