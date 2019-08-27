@@ -1,3 +1,7 @@
+## v0.112.18, 27 August 2019
+
+- Composer: Smarter selection of implicit PHP requirements for applications
+
 ## v0.112.17, 27 August 2019
 
 - Composer: Remove alias when determining git dependency branch
