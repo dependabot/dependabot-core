@@ -122,48 +122,51 @@ module Dependabot
       def dependency_version(name:, type:)
         return unless lockfile
 
-        key = lockfile_key(type)
+        package = lockfile_details(name: name, type: type)
+        return unless package
 
-        version =
-          parsed_lockfile.
-          fetch(key, []).
-          find { |d| d["name"] == name }&.
-          fetch("version")&.to_s&.sub(/^v?/, "")
-
+        version = package.fetch("version")&.to_s&.sub(/^v?/, "")
         return version unless version&.start_with?("dev-")
 
-        parsed_lockfile.
-          fetch(key, []).
-          find { |d| d["name"] == name }&.
-          dig("source", "reference")
+        package.dig("source", "reference")
       end
 
       def dependency_source(name:, type:, requirement:)
         return unless lockfile
 
-        key = lockfile_key(type)
-        package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
+        package_details = lockfile_details(name: name, type: type)
+        return unless package_details
 
-        return unless package
-
-        if package["source"].nil? && package.dig("dist", "type") == "path"
+        if package_details["source"].nil? &&
+           package_details.dig("dist", "type") == "path"
           return { type: "path" }
         end
 
-        return unless package.dig("source", "type") == "git"
+        git_dependency_details(package_details, requirement)
+      end
 
-        details = {
-          type: "git",
-          url: package.dig("source", "url")
-        }
+      def git_dependency_details(package_details, requirement)
+        return unless package_details.dig("source", "type") == "git"
 
-        return details unless requirement.start_with?("dev-")
+        branch =
+          if requirement.start_with?("dev-")
+            requirement.
+              sub(/^dev-/, "").
+              sub(/\s+as\s.*/, "").
+              split("#").first
+          elsif package_details.fetch("version")&.to_s&.start_with?("dev-")
+            package_details.fetch("version")&.to_s&.sub(/^dev-/, "")
+          end
 
-        branch = requirement.
-                 sub(/^dev-/, "").
-                 sub(/\s+as\s.*/, "").
-                 split("#").first
+        details = { type: "git", url: package_details.dig("source", "url") }
+        return details unless branch
+
         details.merge(branch: branch, ref: nil)
+      end
+
+      def lockfile_details(name:, type:)
+        key = lockfile_key(type)
+        parsed_lockfile.fetch(key, []).find { |d| d["name"] == name }
       end
 
       def lockfile_key(type)

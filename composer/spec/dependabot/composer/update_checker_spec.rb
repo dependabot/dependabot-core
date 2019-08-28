@@ -558,6 +558,26 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
 
+        context "with a stability flag" do
+          let(:manifest_fixture_name) { "git_source_transitive" }
+          let(:lockfile_fixture_name) { "git_source_transitive" }
+          let(:requirements) do
+            [{
+              requirement: "1.*@dev",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "https://github.com/php-fig/log.git",
+                branch: "master",
+                ref: nil
+              }
+            }]
+          end
+
+          it { is_expected.to be_nil }
+        end
+
         context "with a bad commit" do
           let(:lockfile_fixture_name) { "git_source_bad_commit" }
 

@@ -1,0 +1,12 @@
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/dependabot/monolog"
+        }
+    ],
+    "require": {
+        "monolog/monolog": "dev-unstable",
+        "psr/log": "1.*@dev"
+    }
+}

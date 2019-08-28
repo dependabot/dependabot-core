@@ -124,9 +124,9 @@ module Dependabot
         dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
       end
 
+      # To be a true git dependency, it must have a branch.
       def git_dependency?
-        dependency.requirements.
-          any? { |r| r.fetch(:requirement)&.start_with?("dev-") }
+        dependency.requirements.any? { |r| r.dig(:source, :branch) }
       end
 
       def composer_file
