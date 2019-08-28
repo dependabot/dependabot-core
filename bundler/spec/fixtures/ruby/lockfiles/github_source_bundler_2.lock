@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/gocardless/business.git
+  remote: https://github.com/gocardless/business.git
   revision: d31e445215b5af70c1604715d97dd953e868380e
   specs:
     business (1.10.0)
@@ -17,4 +17,4 @@ DEPENDENCIES
   statesman (~> 1.2.0)
 
 BUNDLED WITH
-   1.16.0.pre.3
+   2.0.2
