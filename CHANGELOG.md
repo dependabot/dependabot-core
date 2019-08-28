@@ -1,3 +1,7 @@
+## v0.112.20, 28 August 2019
+
+- Bundler: Mimic Bundler 2.x default of using HTTPS for GitHub dependencies
+
 ## v0.112.19, 28 August 2019
 
 - Composer: Refactor FileParser
