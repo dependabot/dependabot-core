@@ -1,3 +1,9 @@
+## v0.112.19, 28 August 2019
+
+- Composer: Refactor FileParser
+- Composer: Support stability flags in parser and update checker
+- Composer: Raise phpstan level from 5 to 6
+
 ## v0.112.18, 27 August 2019
 
 - Composer: Smarter selection of implicit PHP requirements for applications
