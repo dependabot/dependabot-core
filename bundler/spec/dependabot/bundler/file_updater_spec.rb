@@ -690,6 +690,32 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
+        context "that specifies the dependency using github:" do
+          let(:gemfile_fixture_name) { "github_source" }
+          let(:lockfile_fixture_name) { "github_source_bundler_2.lock" }
+
+          it "doesn't update the git dependencies" do
+            old_lock = lockfile_body.split(/^/)
+            new_lock = file.content.split(/^/)
+
+            original_remote_line =
+              old_lock.find { |l| l.include?("gocardless/business") }
+            original_revision_line =
+              old_lock[old_lock.find_index(original_remote_line) + 1]
+
+            new_remote_line =
+              new_lock.find { |l| l.include?("gocardless/business") }
+
+            new_revision_line =
+              new_lock[new_lock.find_index(original_remote_line) + 1]
+
+            expect(new_remote_line).to eq(original_remote_line)
+            expect(new_revision_line).to eq(original_revision_line)
+            expect(new_lock.index(new_remote_line)).
+              to eq(old_lock.index(original_remote_line))
+          end
+        end
+
         context "and the git dependency is used internally" do
           let(:gemfile_fixture_name) { "git_source_internal" }
           let(:lockfile_fixture_name) { "git_source_internal.lock" }
