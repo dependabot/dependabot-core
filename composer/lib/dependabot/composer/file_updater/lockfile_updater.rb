@@ -31,7 +31,7 @@ module Dependabot
           /x.freeze
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           /
-            \sext\-[^\s]+\s.*?\s(?=->)|
+            (?<!with|for|by)\sext\-[^\s]+\s.*?\s(?=->)|
             (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->)
           /x.freeze
 
