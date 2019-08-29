@@ -65,6 +65,7 @@ module Dependabot
 
         if req_string.empty? then ">= 0"
         elsif req_string.start_with?("~>") then req_string
+        elsif req_string.start_with?("=") then req_string.gsub(/^=*/, "")
         elsif req_string.start_with?("~") then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
         elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
