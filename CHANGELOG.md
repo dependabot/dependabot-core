@@ -1,3 +1,8 @@
+## v0.112.21, 29 August 2019
+
+- Composer: Tighter regex on installation requirements
+- JS: Handle leading equals signs
+
 ## v0.112.20, 28 August 2019
 
 - Bundler: Mimic Bundler 2.x default of using HTTPS for GitHub dependencies
