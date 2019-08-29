@@ -230,11 +230,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "token" => "my_other_token"
               }]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token\n"\
                       "//npm.fury.io/dep/:_authToken=my_other_token")
+            end
+
+            context "with an irrelevant package-lock.json" do
+              let(:dependency_files) { [package_json, yarn_lock, package_lock] }
+              let(:npm_lock_fixture_name) { "no_dependencies.json" }
+
+              it "adds auth details, and scopes them correctly" do
+                expect(npmrc_content).
+                  to eq(
+                    "@dependabot:registry=https://npm.fury.io/dependabot/\n"\
+                    "//npm.fury.io/dependabot/:_authToken=my_token\n"\
+                    "//npm.fury.io/dep/:_authToken=my_other_token"
+                  )
+              end
             end
           end
         end

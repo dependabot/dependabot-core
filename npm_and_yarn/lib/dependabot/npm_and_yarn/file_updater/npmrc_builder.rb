@@ -77,14 +77,22 @@ module Dependabot
         end
 
         def dependency_urls
+          return @dependency_urls if defined?(@dependency_urls)
+
+          @dependency_urls = []
           if package_lock
-            parsed_package_lock.fetch("dependencies", {}).
+            @dependency_urls +=
+              parsed_package_lock.fetch("dependencies", {}).
               map { |_, details| details["resolved"] }.compact.
               select { |url| url.is_a?(String) }.
               reject { |url| url.start_with?("git") }
-          elsif yarn_lock
-            yarn_lock.content.scan(/ resolved "(.*?)"/).flatten
           end
+          if yarn_lock
+            @dependency_urls +=
+              yarn_lock.content.scan(/ resolved "(.*?)"/).flatten
+          end
+
+          @dependency_urls
         end
 
         def complete_npmrc_from_credentials
