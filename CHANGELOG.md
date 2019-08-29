@@ -1,3 +1,7 @@
+## v0.112.22, 29 August 2019
+
+- JS: Use all dependency URLs when building a .npmrc (don't prefer one lockfile format)
+
 ## v0.112.21, 29 August 2019
 
 - Composer: Tighter regex on installation requirements
