@@ -1,3 +1,7 @@
+## v0.112.23, 30 August 2019
+
+- Handle trailing dots when creating branch names
+
 ## v0.112.22, 29 August 2019
 
 - JS: Use all dependency URLs when building a .npmrc (don't prefer one lockfile format)
