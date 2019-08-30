@@ -91,19 +91,42 @@ RSpec.describe Dependabot::Python::FileParser do
     end
 
     context "with markers" do
-      let(:requirements_fixture_name) { "markers.txt" }
-      its(:length) { is_expected.to eq(1) }
+      context "that include a < in the marker" do
+        let(:requirements_fixture_name) { "markers.txt" }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
+        it "parses only the >= marker" do
+          expect(dependencies.length).to eq(1)
 
-        it "has the right details" do
+          dependency = dependencies.first
+
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("distro")
           expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "that include a < in the requirement" do
+        let(:requirements_fixture_name) { "markers_2.txt" }
+
+        it "parses only the >= marker" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("cryptography")
+          expect(dependency.version).to eq("2.7")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==2.7",
               file: "requirements.txt",
               groups: ["dependencies"],
               source: nil
