@@ -123,7 +123,9 @@ module Dependabot
 
         latest_tag =
           candidate_tags.
-          max_by { |tag| version_class.new(numeric_version_from(tag)) }
+          max_by do |tag|
+            [version_class.new(numeric_version_from(tag)), tag.length]
+          end
 
         latest_tag || dependency.version
       end

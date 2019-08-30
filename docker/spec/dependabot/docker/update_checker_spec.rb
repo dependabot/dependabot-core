@@ -150,6 +150,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when versions at different specificities look equal" do
+      let(:dependency_name) { "ruby" }
+      let(:version) { "2.4.0-slim" }
+      let(:tags_fixture_name) { "ruby_25.json" }
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("2.5.0-slim") }
+    end
+
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 17.10"] }
       it { is_expected.to eq("17.04") }
