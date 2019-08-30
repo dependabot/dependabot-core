@@ -43,7 +43,9 @@ module Dependabot
             end
           end
 
-        branch_name = File.join(prefixes, @name).gsub(%r{/\.}, "/dot-")
+        branch_name = File.join(prefixes, @name).
+                      gsub(%r{/\.}, "/dot-").
+                      gsub(%r{/\.}, "/dot-")
 
         # Some users need branch names without slashes
         branch_name.gsub("/", separator)
@@ -114,7 +116,8 @@ module Dependabot
           gsub(">", "gt-").
           gsub("<", "lt-").
           gsub("*", "star").
-          gsub(",", "-and-")
+          gsub(",", "-and-").
+          sub(/\.$/, "")
       end
 
       def new_version(dependency)

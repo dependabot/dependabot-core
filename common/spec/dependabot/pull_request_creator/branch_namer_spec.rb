@@ -20,14 +20,19 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     Dependabot::Dependency.new(
       name: "business",
       version: "1.5.0",
-      previous_version: "1.4.0",
+      previous_version: previous_version,
       package_manager: "dummy",
-      requirements:
-        [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }],
-      previous_requirements:
-        [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+      requirements: requirements,
+      previous_requirements: previous_requirements
     )
   end
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
+  end
+  let(:previous_requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
+  let(:previous_version) { "1.4.0" }
   let(:files) { [gemfile] }
   let(:target_branch) { nil }
 
@@ -282,6 +287,26 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       it "strips @ character" do
         expect(new_branch_name).
           to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
+      end
+    end
+
+    context "with a requirement only" do
+      let(:previous_version) { nil }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: requirement_string,
+          groups: [],
+          source: nil
+        }]
+      end
+      let(:requirement_string) { "~> 1.5.0" }
+
+      it { is_expected.to eq("dependabot/dummy/business-tw-1.5.0") }
+
+      context "that has a trailing dot" do
+        let(:requirement_string) { "^7." }
+        it { is_expected.to eq("dependabot/dummy/business-tw-7") }
       end
     end
 
