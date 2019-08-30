@@ -1,3 +1,7 @@
+## v0.112.24, 30 August 2019
+
+- Docker: Use most specific version for .0 releases
+
 ## v0.112.23, 30 August 2019
 
 - Handle trailing dots when creating branch names
