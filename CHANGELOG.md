@@ -1,3 +1,8 @@
+## v0.112.25, 30 August 2019
+
+- Python: Update marker handling to ignore deps with a < in the requirement
+- Composer: Fix tests and enforce latest_allowable_version for stability-flag versions
+
 ## v0.112.24, 30 August 2019
 
 - Docker: Use most specific version for .0 releases
