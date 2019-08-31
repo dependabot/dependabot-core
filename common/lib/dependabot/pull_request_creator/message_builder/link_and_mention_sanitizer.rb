@@ -9,7 +9,7 @@ module Dependabot
         GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i.freeze
         GITHUB_REF_REGEX = %r{
           (?:https?://)?
-          github\.com/#{GITHUB_USERNAME}/[^/\s]+/
+          github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
 
@@ -76,7 +76,9 @@ module Dependabot
               ref.gsub("github.com", github_redirection_service || "github.com")
             if (previous_char.nil? || previous_char.match?(/\s/)) &&
                (next_char.nil? || next_char.match?(/\s/))
-              "[##{last_match.named_captures.fetch('number')}]"\
+              number = last_match.named_captures.fetch('number')
+              repo = last_match.named_captures.fetch('repo')
+              "[#{repo}##{number}]"\
               "(#{sanitized_url})"
             else
               sanitized_url

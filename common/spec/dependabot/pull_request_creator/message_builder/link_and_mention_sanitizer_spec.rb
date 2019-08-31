@@ -95,5 +95,15 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       let(:text) { "Contact support@dependabot.com for details" }
       it { is_expected.to eq(text) }
     end
+
+    context "with a GitHub link" do
+      let(:text) { "Check out https://github.com/my/repo/issues/5" }
+
+      it do
+        is_expected.to eq(
+          "Check out [my/repo#5](https://github-redirect.com/my/repo/issues/5)"
+        )
+      end
+    end
   end
 end
