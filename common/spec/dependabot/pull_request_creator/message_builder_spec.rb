@@ -81,7 +81,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "- [`5555535`](https://github.com/gocardless/business/commit/"\
     "5555535ff2aa9d7ce0403d7fd4aa010d94723076) \n"\
     "- [`0bfb8c3`](https://github.com/gocardless/business/commit/"\
-    "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing: [#5]"\
+    "0bfb8c3f0d2701abf9248185beeb8adf643374f6) Spacing: [my/repo#5]"\
     "(https://github-redirect.dependabot.com/my/repo/pull/5)\n"\
     "- [`a5970da`](https://github.com/gocardless/business/commit/"\
     "a5970daf0b824e4c3974e57474b6cf9e39a11d0f) "\
