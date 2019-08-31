@@ -1,3 +1,7 @@
+## v0.112.26, 31 August 2019
+
+- Sanitize issue/PR references that specify a repo
+
 ## v0.112.25, 30 August 2019
 
 - Python: Update marker handling to ignore deps with a < in the requirement
