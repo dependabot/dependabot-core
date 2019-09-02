@@ -558,6 +558,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it { is_expected.to be >= Gem::Version.new("1.3.0") }
 
+        context "with an alias" do
+          let(:manifest_fixture_name) { "git_source_alias" }
+          it { is_expected.to be >= Gem::Version.new("1.3.0") }
+        end
+
         context "with a stability flag" do
           let(:manifest_fixture_name) { "git_source_transitive" }
           let(:lockfile_fixture_name) { "git_source_transitive" }

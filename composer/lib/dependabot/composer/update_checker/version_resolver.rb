@@ -157,7 +157,9 @@ module Dependabot
                            fetch(keys[:lockfile], []).
                            find { |d| d["name"] == name }&.
                            dig("source", "reference")
-              json[keys[:manifest]][name] = req + "##{commit_sha}"
+              updated_req_parts = req.split(" ")
+              updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
+              json[keys[:manifest]][name] = updated_req_parts.join(" ")
             end
           end
 
