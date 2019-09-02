@@ -1,3 +1,7 @@
+## v0.112.30, 2 September 2019
+
+- Python: Pass index URLs to pip-compile as arguments
+
 ## v0.112.29, 2 September 2019
 
 - .NET: Include default source unless a config file clears it
