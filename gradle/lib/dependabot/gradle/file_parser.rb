@@ -4,6 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/gradle/version"
 
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
@@ -184,6 +185,7 @@ module Dependabot
         # If we can't evaluate a property they we won't be able to
         # update this dependency
         return if "#{dependency_name}:#{version}".match?(PROPERTY_REGEX)
+        return unless Gradle::Version.correct?(version)
 
         Dependency.new(
           name: dependency_name,
