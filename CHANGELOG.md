@@ -1,3 +1,7 @@
+## v0.112.27, 2 September 2019
+
+- Cargo: Better check for globs in workspace paths
+
 ## v0.112.26, 31 August 2019
 
 - Sanitize issue/PR references that specify a repo
