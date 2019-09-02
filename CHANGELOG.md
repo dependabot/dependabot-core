@@ -1,3 +1,9 @@
+## v0.112.32, 3 September 2019
+
+- PHP: Fix SHA pinning for git dependencies with an alias
+- Ruby: Update Ruby versions
+- Gradle: Exclude dependencies that don't have a valid version
+
 ## v0.112.31, 2 September 2019
 
 - Rust: Remove default-run specification before running version resolution
