@@ -1,3 +1,7 @@
+## v0.112.31, 2 September 2019
+
+- Rust: Remove default-run specification before running version resolution
+
 ## v0.112.30, 2 September 2019
 
 - Python: Pass index URLs to pip-compile as arguments
