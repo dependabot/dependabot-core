@@ -202,7 +202,7 @@ module Dependabot
 
         # Expand any workspace paths that specify a `*`
         workspace_paths = workspace_paths.flat_map do |path|
-          path.end_with?("*") ? expand_workspaces(path) : [path]
+          path.include?("*") ? expand_workspaces(path) : [path]
         end
 
         # Excluded paths, to be subtracted for the workspaces array
