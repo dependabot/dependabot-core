@@ -10,6 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -425,13 +426,22 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          requirements_file = compiled_file_for_filename(filename)
-          return "--build-isolation" unless requirements_file
+          options = ["--build-isolation"]
+          options += pip_compile_index_options
 
-          options = [
-            "--build-isolation",
-            "--output-file=#{requirements_file.name}"
-          ]
+          if (requirements_file = compiled_file_for_filename(filename))
+            options += pip_compile_options_from_compiled_file(requirements_file)
+          end
+
+          options.join(" ")
+        end
+
+        def pip_compile_options_from_compiled_file(requirements_file)
+          options = []
+
+          unless requirements_file.content.include?("index-url http")
+            options << "--no-index"
+          end
 
           if requirements_file.content.include?("--hash=sha")
             options << "--generate-hashes"
@@ -450,7 +460,21 @@ module Dependabot
           end
 
           options << "--pre" if requirements_file.content.include?("--pre")
-          options.join(" ")
+          options
+        end
+
+        def pip_compile_index_options
+          credentials.
+            select { |cred| cred["type"] == "python_index" }.
+            map do |cred|
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+
+              if cred["replaces-base"]
+                "--index-url=#{authed_url}"
+              else
+                "--extra-index-url=#{authed_url}"
+              end
+            end
         end
 
         def includes_unsafe_packages?(content)

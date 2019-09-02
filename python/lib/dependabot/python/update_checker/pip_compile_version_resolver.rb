@@ -14,6 +14,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -199,13 +200,28 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          requirements_file = compiled_file_for_filename(filename)
-          return "--build-isolation" unless requirements_file
+          options = ["--build-isolation"]
+          options += pip_compile_index_options
 
-          [
-            "--build-isolation",
-            "--output-file=#{requirements_file.name}"
-          ].join(" ")
+          if (requirements_file = compiled_file_for_filename(filename))
+            options << "--output-file=#{requirements_file.name}"
+          end
+
+          options.join(" ")
+        end
+
+        def pip_compile_index_options
+          credentials.
+            select { |cred| cred["type"] == "python_index" }.
+            map do |cred|
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+
+              if cred["replaces-base"]
+                "--index-url=#{authed_url}"
+              else
+                "--extra-index-url=#{authed_url}"
+              end
+            end
         end
 
         def run_pip_compile_command(command)
