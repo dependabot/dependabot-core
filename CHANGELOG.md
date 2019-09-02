@@ -1,3 +1,7 @@
+## v0.112.29, 2 September 2019
+
+- .NET: Include default source unless a config file clears it
+
 ## v0.112.28, 2 September 2019
 
 - Comment on created PRs that we are unable to assign reviewers to
