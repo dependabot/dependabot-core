@@ -437,7 +437,7 @@ module Dependabot
         end
 
         def pip_compile_options_from_compiled_file(requirements_file)
-          options = []
+          options = ["--output-file=#{requirements_file.name}"]
 
           unless requirements_file.content.include?("index-url http")
             options << "--no-index"
