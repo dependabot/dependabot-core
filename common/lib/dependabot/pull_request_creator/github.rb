@@ -258,7 +258,10 @@ module Dependabot
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => e
-        return if invalid_reviewer?(e.message)
+        if invalid_reviewer?(e.message)
+          comment_with_invalid_reviewer(pull_request, e.message)
+          return
+        end
 
         raise
       end
@@ -269,6 +272,36 @@ module Dependabot
         return true if message.include?("Could not add requested reviewers")
 
         false
+      end
+
+      def comment_with_invalid_reviewer(pull_request, message)
+        reviewers_hash =
+          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+        reviewers = []
+        reviewers += reviewers_hash[:reviewers] || []
+        reviewers += (reviewers_hash[:team_reviewers] || []).
+                     map { |rv| "#{source.repo.split('/').first}/#{rv}" }
+
+        reviewers_string =
+          if reviewers.count == 1
+            "`@#{reviewers.first}`"
+          else
+            names = reviewers.map { |rv| "`@#{rv}`" }
+            "#{names[0..-2].join(', ')} and #{names[-1]}"
+          end
+
+        msg = "Dependabot tried to add #{reviewers_string} as "
+        msg += reviewers.count > 1 ? "reviewers" : "a reviewer"
+        msg += " to this PR, but received the following error from GitHub:\n\n"\
+               "```\n" \
+               "#{message}\n"\
+               "```"
+
+        github_client_for_source.add_comment(
+          source.repo,
+          pull_request.number,
+          msg
+        )
       end
 
       def add_assignees_to_pull_request(pull_request)

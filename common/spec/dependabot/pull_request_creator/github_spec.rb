@@ -823,9 +823,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     context "when a reviewer has been requested" do
       let(:reviewers) { { "reviewers" => ["greysteil"] } }
       before do
-        stub_request(
-          :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
-        ).to_return(status: 200,
+        stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers").
+          to_return(status: 200,
                     body: fixture("github", "create_pr.json"),
                     headers: json_header)
       end
@@ -837,6 +836,41 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           to have_requested(
             :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
           ).with(body: { reviewers: ["greysteil"], team_reviewers: [] }.to_json)
+      end
+
+      context "that can't be added" do
+        before do
+          stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers").
+            to_return(status: 422,
+                      body: fixture("github", "add_reviewer_error.json"),
+                      headers: json_header)
+          stub_request(:post, "#{repo_api_url}/issues/1347/comments")
+        end
+        let(:expected_comment_body) do
+          "Dependabot tried to add `@greysteil` as a reviewer to this PR, "\
+          "but received the following error from GitHub:\n\n"\
+          "```\n"\
+          "POST https://api.github.com/repos/gocardless/bump/pulls"\
+          "/1347/requested_reviewers: 422 - Reviews may only be requested "\
+          "from collaborators. One or more of the users or teams you "\
+          "specified is not a collaborator of the example/repo repository. "\
+          "// See: https://developer.github.com/v3/pulls/review_requests/"\
+          "#create-a-review-request\n"\
+          "```"
+        end
+
+        it "comments on the PR with details of the failure" do
+          creator.create
+
+          expect(WebMock).to have_requested(
+            :post,
+            "#{repo_api_url}/pulls/1347/requested_reviewers"
+          )
+          expect(WebMock).to have_requested(
+            :post,
+            "#{repo_api_url}/issues/1347/comments"
+          ).with(body: { body: expected_comment_body }.to_json)
+        end
       end
     end
 
