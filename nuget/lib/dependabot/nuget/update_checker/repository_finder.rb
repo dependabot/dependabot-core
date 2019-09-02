@@ -147,6 +147,7 @@ module Dependabot
           config_files.flat_map { |file| repos_from_config_file(file) }
         end
 
+        # rubocop:disable Metrics/AbcSize
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -162,6 +163,10 @@ module Dependabot
               }
             end
 
+          unless doc.css("configuration > packageSources > clear").any?
+            sources << { url: DEFAULT_REPOSITORY_URL, key: nil }
+          end
+
           sources.reject! do |s|
             known_urls = credential_repositories.map { |cr| cr.fetch(:url) }
             known_urls.include?(s.fetch(:url))
@@ -174,6 +179,7 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/AbcSize
 
         def default_repository_details
           {
