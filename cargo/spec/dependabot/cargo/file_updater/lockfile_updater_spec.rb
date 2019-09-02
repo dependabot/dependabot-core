@@ -111,6 +111,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "with a default-run specified" do
+        let(:manifest_fixture_name) { "default_run" }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "time"\nversion = "0.1.40"))
+        end
+      end
+
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         let(:lockfile_fixture_name) { "target_dependency" }

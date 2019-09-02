@@ -95,6 +95,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
+    context "with a default-run specified" do
+      let(:manifest_fixture_name) { "default_run" }
+      let(:lockfile_fixture_name) { "bare_version_specified" }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
     context "with a target-specific dependency" do
       let(:manifest_fixture_name) { "target_dependency" }
       let(:lockfile_fixture_name) { "target_dependency" }

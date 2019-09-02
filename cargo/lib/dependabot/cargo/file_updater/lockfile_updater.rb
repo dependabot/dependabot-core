@@ -197,6 +197,7 @@ module Dependabot
           content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
+          content = remove_default_run_specification(content)
           content
         end
 
@@ -262,6 +263,14 @@ module Dependabot
         def remove_binary_specifications(content)
           parsed_manifest = TomlRB.parse(content)
           parsed_manifest.delete("bin")
+          TomlRB.dump(parsed_manifest)
+        end
+
+        def remove_default_run_specification(content)
+          parsed_manifest = TomlRB.parse(content)
+          if parsed_manifest.dig("package", "default-run")
+            parsed_manifest["package"].delete("default-run")
+          end
           TomlRB.dump(parsed_manifest)
         end
 

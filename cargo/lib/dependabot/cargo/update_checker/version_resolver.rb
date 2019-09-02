@@ -371,6 +371,10 @@ module Dependabot
 
           object.delete("bin")
 
+          if object.dig("package", "default-run")
+            object["package"].delete("default-run")
+          end
+
           package_name = object.dig("package", "name")
           return TomlRB.dump(object) unless package_name&.match?(/[\{\}]/)
 
