@@ -14,37 +14,40 @@ class UpdateChecker
     {
         [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
-        $io = new ExceptionIO();
-        $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
-        foreach ($gitCredentials as &$cred) {
-            $httpBasicCredentials[$cred['host']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
+        foreach ($gitCredentials as $credentials) {
+            $httpBasicCredentials[$credentials['host']] = [
+                'username' => $credentials['username'],
+                'password' => $credentials['password'],
             ];
         }
 
-        foreach ($registryCredentials as &$cred) {
-            $httpBasicCredentials[$cred['registry']] = [
-                'username' => $cred['username'],
-                'password' => $cred['password'],
+        foreach ($registryCredentials as $credentials) {
+            $httpBasicCredentials[$credentials['registry']] = [
+                'username' => $credentials['username'],
+                'password' => $credentials['password'],
             ];
         }
 
-        if ($httpBasicCredentials) {
-            $config->merge(
-                [
-                    'config' => [
-                        'http-basic' => $httpBasicCredentials,
-                    ],
-                ]
-            );
+        $io = new ExceptionIO();
+
+        $composer = Factory::create($io, $workingDirectory . '/composer.json');
+
+        $config = $composer->getConfig();
+
+        if (0 < count($httpBasicCredentials)) {
+            $config->merge([
+                'config' => [
+                    'http-basic' => $httpBasicCredentials,
+                ],
+            ]);
+
             $io->loadConfiguration($config);
         }
 
         $installationManager = new DependabotInstallationManager();
+
         $install = new Installer(
             $io,
             $config,
@@ -73,25 +76,26 @@ class UpdateChecker
 
         $installedPackages = $installationManager->getInstalledPackages();
 
-        $updatedPackage = current(array_filter($installedPackages, function (PackageInterface $package) use ($dependencyName) {
-            return $package->getName() == $dependencyName;
+        $updatedPackage = current(array_filter($installedPackages, static function (PackageInterface $package) use ($dependencyName): bool {
+            return $package->getName() === $dependencyName;
         }));
 
         // We found the package in the list of updated packages. Return its version.
-        if ($updatedPackage) {
+        if ($updatedPackage instanceof PackageInterface) {
             return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
         }
 
         // We didn't find the package in the list of updated packages. Check if
         // it was replaced by another package (in which case we can ignore).
         foreach ($composer->getPackage()->getReplaces() as $link) {
-            if ($link->getTarget() == $dependencyName) {
+            if ($link->getTarget() === $dependencyName) {
                 return null;
             }
         }
+
         foreach ($installedPackages as $package) {
             foreach ($package->getReplaces() as $link) {
-                if ($link->getTarget() == $dependencyName) {
+                if ($link->getTarget() === $dependencyName) {
                     return null;
                 }
             }
@@ -99,13 +103,14 @@ class UpdateChecker
 
         // Similarly, check if the package was provided by any other package.
         foreach ($composer->getPackage()->getProvides() as $link) {
-            if ($link->getTarget() == $dependencyName) {
+            if ($link->getTarget() === $dependencyName) {
                 return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
             }
         }
+
         foreach ($installedPackages as $package) {
             foreach ($package->getProvides() as $link) {
-                if ($link->getTarget() == $dependencyName) {
+                if ($link->getTarget() === $dependencyName) {
                     return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
                 }
             }
