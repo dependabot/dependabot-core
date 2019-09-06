@@ -433,8 +433,6 @@ module Dependabot
             yarnrc_file: yarnrc_file
           ).registry
 
-          # Sanitize Gemfury URLs
-          reg = reg.gsub(%r{(?<=\.fury\.io)/.*}, "")
           return if central_registry?(reg) && !package_name.start_with?("@")
 
           raise PrivateSourceAuthenticationFailure, reg
