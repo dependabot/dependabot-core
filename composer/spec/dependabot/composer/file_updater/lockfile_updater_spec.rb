@@ -270,11 +270,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           )
         end
 
-        it "runs just fine (we get a 400 here because our key is wrong)" do
+        it "runs just fine (we get a 404 here because our key is wrong)" do
           expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).
-              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-            expect(error.message).to include("400 Bad Request")
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include("404 Not Found")
           end
         end
       end

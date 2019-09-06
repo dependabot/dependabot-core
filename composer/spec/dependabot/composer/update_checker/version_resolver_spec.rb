@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "1.0.2" }
       let(:requirements_to_unlock) { :none }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.24.0")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.0")) }
     end
 
     context "with a library that requires itself" do
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:string_req) { "dev-1.x" }
       let(:dependency_version) { nil }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.24.0")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.0")) }
     end
 
     context "with a local VCS source" do
