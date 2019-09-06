@@ -1831,7 +1831,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to raise_error do |error|
                   expect(error).
                     to be_a(Dependabot::PrivateSourceAuthenticationFailure)
-                  expect(error.source).to eq("npm-proxy.fury.io")
+                  expect(error.source).to eq("npm-proxy.fury.io/dependabot")
                 end
             end
 
