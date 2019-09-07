@@ -168,23 +168,28 @@ module Dependabot
       end
 
       def commit_message
-        @commit_message ||=
+        # Take the commit message from the old commit
+        commit_being_updated.message
+      end
+
+      def commit_being_updated
+        @commit_being_updated ||=
           if pull_request.commits == 1
             github_client_for_source.
-              git_commit(source.repo, pull_request.head.sha).
-              message
+              git_commit(source.repo, pull_request.head.sha)
           else
             author_name = author_details&.fetch(:name, nil) || "dependabot"
             commits =
               github_client_for_source.
-              pull_request_commits(source.repo, pull_request_number)
+              pull_request_commits(source.repo, pull_request_number).
+              reverse
 
             commit =
               commits.find { |c| c.sha == old_commit } ||
               commits.find { |c| c.commit.author.name.include?(author_name) } ||
               commits.first
 
-            commit.commit.message
+            commit.commit
           end
       end
 
