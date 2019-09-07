@@ -1,3 +1,13 @@
+## v0.112.33, 7 September 2019
+
+- .NET: Add support for GlobalPackageReference, Packages.props and using Update
+  in addition to Include (thanks @david-driscoll)
+- Reverse commit order when looking for most recent Dependabot commit
+- Python: Bump hashin from 0.14.5 to 0.14.6 in /python/helpers
+- Prioritise `changes` files over `history` files when looking for a changelog
+- Sanitize gemfury URLs globally
+- Composer: Helper cleanup (thanks @localheinz)
+
 ## v0.112.32, 3 September 2019
 
 - PHP: Fix SHA pinning for git dependencies with an alias
