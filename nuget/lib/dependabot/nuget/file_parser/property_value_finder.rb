@@ -37,6 +37,9 @@ module Dependabot
               callsite_file: callsite_file
             )
 
+          node_details ||=
+            find_property_in_packages_props(property: property_name)
+
           return unless node_details
           return node_details unless node_details[:value] =~ PROPERTY_REGEX
 
@@ -109,6 +112,13 @@ module Dependabot
           deep_find_prop_node(property: property, file: file)
         end
 
+        def find_property_in_packages_props(property:)
+          file = packages_props_file
+          return unless file
+
+          deep_find_prop_node(property: property, file: file)
+        end
+
         def build_targets_file_for_project(project_file)
           dir = File.dirname(project_file.name)
 
@@ -140,6 +150,10 @@ module Dependabot
             find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
 
           dependency_files.find { |f| f.name == path }
+        end
+
+        def packages_props_file
+          dependency_files.find { |f| f.name.casecmp("Packages.props").zero? }
         end
 
         def property_xpath(property_name)
