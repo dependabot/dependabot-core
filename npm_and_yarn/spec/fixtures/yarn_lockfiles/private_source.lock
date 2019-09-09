@@ -19,3 +19,9 @@ chalk@^2.0.0:
   resolved "https://artifactory01.mydomain.com/artifactory/api/npm/my-repo/@dependabot/pack-core/-/pack-core-2.0.14.tgz#1f706dee727679b4aad32ce4433dfe5fe41d96b6"
   dependencies:
     "@dependabot/etag" "^2.0.0"
+
+"@dependabot/pack-core-2@^2.0.1", "@dependabot/pack-core-2@^2.0.2":
+  version "2.0.14"
+  resolved "https://dl.bintray.com//dependabot/npm-private/@dependabot/pack-core-2/-/@dependabot/pack-core-2.0.14.tgz#6ac9c6bb19010ba93efcb0241b3c70d7bf794a7a"
+  dependencies:
+    "@dependabot/etag" "^2.0.0"

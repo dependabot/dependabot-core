@@ -199,7 +199,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:npm_lock_fixture_name) { "private_source.json" }
 
-          its(:length) { is_expected.to eq(4) }
+          its(:length) { is_expected.to eq(5) }
 
           describe "the first private dependency" do
             subject { top_level_dependencies[1] }
@@ -335,6 +335,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   )
                 end
               end
+            end
+          end
+
+          describe "the bintray dependency" do
+            subject { top_level_dependencies[4] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("@dependabot/pack-core-2") }
+            its(:version) { is_expected.to eq("2.0.14") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://api.bintray.com/npm/dependabot/npm-private"
+                  }
+                }]
+              )
             end
           end
         end
@@ -917,7 +938,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:yarn_lock_fixture_name) { "private_source.lock" }
 
-          its(:length) { is_expected.to eq(4) }
+          its(:length) { is_expected.to eq(5) }
 
           describe "the second dependency" do
             subject { top_level_dependencies[1] }

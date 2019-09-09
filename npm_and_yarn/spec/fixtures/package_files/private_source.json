@@ -22,6 +22,7 @@
     },
     "devDependencies": {
       "@dependabot/etag": "^1.0.0",
-      "@dependabot/pack-core": "^2.0.1"
+      "@dependabot/pack-core": "^2.0.1",
+      "@dependabot/pack-core-2": "^2.0.1"
     }
 }
