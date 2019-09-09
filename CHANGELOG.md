@@ -1,3 +1,7 @@
+## v0.112.34, 9 September 2019
+
+- Don't comment on cases where a GitHub bug prevents us adding a team reviewer
+
 ## v0.112.33, 7 September 2019
 
 - .NET: Add support for GlobalPackageReference, Packages.props and using Update
