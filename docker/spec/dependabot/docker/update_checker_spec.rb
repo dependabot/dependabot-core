@@ -68,6 +68,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
+    context "given a purely numeric version" do
+      let(:version) { "1234567890" }
+      it { is_expected.to be_truthy }
+    end
+
     context "given a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_falsey }

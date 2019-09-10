@@ -157,7 +157,7 @@ module Dependabot
         # which case we'll use that to find the latest version)
         return false unless tag.match?(/(^|\-)[0-9a-f]{7,}$/)
 
-        !tag.match?(/(^|\-)20[0-1]\d{5}$/)
+        !tag.match?(/(^|\-)\d+$/)
       end
 
       def version_of_latest_tag
@@ -261,6 +261,7 @@ module Dependabot
 
         return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+        return :build_num if version.match?(/^\d+$/)
 
         :normal
       end
