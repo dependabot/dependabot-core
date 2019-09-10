@@ -1,3 +1,9 @@
+## v0.112.36, 10 September 2019
+
+- Composer: Tighten platform extensions regex
+- JS: Parse dependency on pkg.github.com registry more sensibly
+- Python: import setuptools for access to both find_packages() and setup() (thanks @cclauss!)
+
 ## v0.112.35, 10 September 2019
 
 - Add details of error to the "Unexpected git error!" message
