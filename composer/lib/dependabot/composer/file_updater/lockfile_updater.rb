@@ -25,15 +25,15 @@ module Dependabot
         end
 
         MISSING_EXPLICIT_PLATFORM_REQ_REGEX =
-          /
-            (?<=PHP\sextension\s)ext\-[^\s]+\s.*?\s(?=is|but)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=but)
-          /x.freeze
+          %r{
+            (?<=PHP\sextension\s)ext\-[^\s/]+\s.*?\s(?=is|but)|
+            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=but)
+          }x.freeze
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
-          /
-            (?<!with|for|by)\sext\-[^\s]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->)
-          /x.freeze
+          %r{
+            (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
+            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
+          }x.freeze
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies

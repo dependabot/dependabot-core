@@ -24,15 +24,15 @@ module Dependabot
         end
 
         MISSING_EXPLICIT_PLATFORM_REQ_REGEX =
-          /
-            (?<=PHP\sextension\s)ext\-[^\s]+\s.*?\s(?=is|but)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=but)
-          /x.freeze
+          %r{
+            (?<=PHP\sextension\s)ext\-[^\s\/]+\s.*?\s(?=is|but)|
+            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=but)
+          }x.freeze
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
-          /
-            (?<!with|for|by)\sext\-[^\s]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s]+)?\s.*?\s(?=->)
-          /x.freeze
+          %r{
+            (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
+            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)
+          }x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
