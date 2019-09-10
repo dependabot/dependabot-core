@@ -1,4 +1,4 @@
-name: Python package
+name: Python package 
 
 on: [pull_request, push]
 
