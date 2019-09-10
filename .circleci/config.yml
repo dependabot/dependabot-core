@@ -132,7 +132,11 @@ jobs:
             - ~/dependabot-core/npm_and_yarn/helpers/node_modules
 
       # Run code formatting linters
-      - run: cd npm_and_yarn/helpers && yarn lint
+      - run: |
+          python3 -m pip install flake8
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          cd npm_and_yarn/helpers
+          yarn lint
 
       # Run tests
       - store_test_results:
