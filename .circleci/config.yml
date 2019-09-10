@@ -134,11 +134,7 @@ jobs:
       # Run code formatting linters
       - run: |
           apt-get -y install python3-pip
-          pip3 --version || true
-          pip2 --version || true
-          pip --version || true
-          pip3 install --user flake8 || true
-          pip install --user flake8
+          pip3 install flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           cd npm_and_yarn/helpers
           yarn lint
