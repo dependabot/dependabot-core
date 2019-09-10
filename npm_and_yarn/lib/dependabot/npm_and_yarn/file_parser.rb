@@ -254,7 +254,7 @@ module Dependabot
         return unless resolved_url
         return unless resolved_url.start_with?("http")
         return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
-        return if resolved_url.include?("github")
+        return if resolved_url.match?(/(?<!pkg\.)github/)
 
         private_registry_source_for(resolved_url, name)
       end
