@@ -133,7 +133,13 @@ jobs:
 
       # Run code formatting linters
       - run: |
-          python3 -m pip || wget -qO- https://bootstrap.pypa.io/get-pip.py | sudo -H python3
+          python3 -m ensurepip || true
+          apt-get install python3-pip || true
+          python3 -m pip || wget -qO- https://bootstrap.pypa.io/get-pip.py | sudo -H python3 || true
+          pip3 --version || true
+          pip2 --version || true
+          pip --version || true
+          pip3 install --user flake8 || true
           pip install --user flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           cd npm_and_yarn/helpers
