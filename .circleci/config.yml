@@ -133,9 +133,7 @@ jobs:
 
       # Run code formatting linters
       - run: |
-          python3 -m ensurepip || true
-          apt-get install python3-pip || true
-          python3 -m pip || wget -qO- https://bootstrap.pypa.io/get-pip.py | sudo -H python3 || true
+          apt-get -y install python3-pip
           pip3 --version || true
           pip2 --version || true
           pip --version || true
