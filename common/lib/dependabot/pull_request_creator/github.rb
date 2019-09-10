@@ -61,7 +61,9 @@ module Dependabot
         raise(RepoNotFound, source.url) unless repo_exists?
 
         retrying ||= false
-        raise "Unexpected git error!" if retrying
+
+        msg = "Unexpected git error!\n\n#{e.cause&.class}: #{e.cause&.message}"
+        raise msg if retrying
 
         retrying = true
         retry
