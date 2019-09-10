@@ -76,6 +76,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         it { is_expected.to eq("npm.fury.io/dependabot") }
 
+        context "but returns HTML" do
+          before do
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 200, body: "<html>Hello!</html>")
+          end
+
+          it { is_expected.to eq("registry.npmjs.org") }
+        end
+
         context "but doesn't include auth" do
           let(:credentials) do
             [{

@@ -16,7 +16,8 @@ module Dependabot
           /^packages\.config$/i,
           /^global\.json$/i,
           /^Directory\.Build\.props$/i,
-          /^Directory\.Build\.targets$/i
+          /^Directory\.Build\.targets$/i,
+          /^Packages\.props$/i
         ]
       end
 

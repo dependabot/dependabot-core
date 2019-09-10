@@ -280,7 +280,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
 
       it "raises a normal error" do
-        expect { creator.create }.to raise_error("Unexpected git error!")
+        expect { creator.create }.to raise_error(/Unexpected git error!/)
       end
     end
 

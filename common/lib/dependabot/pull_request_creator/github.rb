@@ -61,7 +61,9 @@ module Dependabot
         raise(RepoNotFound, source.url) unless repo_exists?
 
         retrying ||= false
-        raise "Unexpected git error!" if retrying
+
+        msg = "Unexpected git error!\n\n#{e.cause&.class}: #{e.cause&.message}"
+        raise msg if retrying
 
         retrying = true
         retry
@@ -258,6 +260,9 @@ module Dependabot
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => e
+        # Special case GitHub bug for team reviewers
+        return if e.message.include?("Could not resolve to a node")
+
         if invalid_reviewer?(e.message)
           comment_with_invalid_reviewer(pull_request, e.message)
           return

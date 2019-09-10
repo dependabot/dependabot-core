@@ -92,7 +92,13 @@ module Dependabot
               yarn_lock.content.scan(/ resolved "(.*?)"/).flatten
           end
 
-          @dependency_urls
+          # The registry URL for Bintray goes into the lockfile in a
+          # modified format, so we modify it back before checking against
+          # our credentials
+          @dependency_urls =
+            @dependency_urls.map do |url|
+              url.gsub("dl.bintray.com//", "api.bintray.com/npm/")
+            end
         end
 
         def complete_npmrc_from_credentials

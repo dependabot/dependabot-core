@@ -254,7 +254,7 @@ module Dependabot
         return unless resolved_url
         return unless resolved_url.start_with?("http")
         return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
-        return if resolved_url.include?("github")
+        return if resolved_url.match?(/(?<!pkg\.)github/)
 
         private_registry_source_for(resolved_url, name)
       end
@@ -294,8 +294,9 @@ module Dependabot
             # Gemfury format
             resolved_url.split("/~/").first
           elsif resolved_url.include?("/#{name}/-/#{name}")
-            # MyGet format
-            resolved_url.split("/#{name}/-/#{name}").first
+            # MyGet / Bintray format
+            resolved_url.split("/#{name}/-/#{name}").first.
+              gsub("dl.bintray.com//", "api.bintray.com/npm/")
           elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first

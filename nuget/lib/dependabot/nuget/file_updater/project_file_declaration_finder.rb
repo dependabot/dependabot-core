@@ -11,6 +11,8 @@ module Dependabot
           %r{
             <PackageReference [^>]*?/>|
             <PackageReference [^>]*?[^/]>.*?</PackageReference>|
+            <GlobalPackageReference [^>]*?/>|
+            <GlobalPackageReference [^>]*?[^/]>.*?</GlobalPackageReference>|
             <Dependency [^>]*?/>|
             <Dependency [^>]*?[^/]>.*?</Dependency>|
             <DevelopmentDependency [^>]*?/>|
@@ -39,16 +41,23 @@ module Dependabot
 
         private
 
+        def get_element_from_node(node)
+          node.at_xpath("/PackageReference") ||
+            node.at_xpath("/GlobalPackageReference") ||
+            node.at_xpath("/Dependency") ||
+            node.at_xpath("/DevelopmentDependency")
+        end
+
         def fetch_declaration_strings
           deep_find_declarations(declaring_file.content).select do |nd|
             node = Nokogiri::XML(nd)
             node.remove_namespaces!
-            node = node.at_xpath("/PackageReference") ||
-                   node.at_xpath("/Dependency") ||
-                   node.at_xpath("/DevelopmentDependency")
+            node = get_element_from_node(node)
 
             node_name = node.attribute("Include")&.value&.strip ||
-                        node.at_xpath("./Include")&.content&.strip
+                        node.at_xpath("./Include")&.content&.strip ||
+                        node.attribute("Update")&.value&.strip ||
+                        node.at_xpath("./Update")&.content&.strip
             next false unless node_name&.downcase == dependency_name&.downcase
 
             node_requirement = get_node_version_value(node)
