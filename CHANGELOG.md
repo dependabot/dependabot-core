@@ -1,3 +1,9 @@
+## v0.112.35, 10 September 2019
+
+- Add details of error to the "Unexpected git error!" message
+- JS: Ignore user-specified registries that don't return JSON
+- Handle bintray private registries
+
 ## v0.112.34, 9 September 2019
 
 - Don't comment on cases where a GitHub bug prevents us adding a team reviewer
