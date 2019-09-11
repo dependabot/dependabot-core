@@ -1240,7 +1240,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
       end
-
     end
 
     context "with an interesting filename" do

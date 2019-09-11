@@ -329,7 +329,7 @@ module Dependabot
         @recent_codecommit_commit_messages.commits.
           reject { |c| c.author.email == dependabot_email }.
           reject { |c| c.message&.start_with?("Merge") }.
-          map { |c| c.message }.
+          map(&:message).
           compact.
           map(&:strip)
       end
