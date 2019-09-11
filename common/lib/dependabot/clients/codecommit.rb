@@ -63,11 +63,13 @@ module Dependabot
       end
 
       def fetch_file_contents(repo, commit, path)
-        @cc_client.get_file(
-          repository_name: repo,
-          commit_specifier: commit,
-          file_path: path
-        ).file_content
+          @cc_client.get_file(
+            repository_name: repo,
+            commit_specifier: commit,
+            file_path: path
+          ).file_content
+        rescue Aws::CodeCommit::Errors::FileDoesNotExistException
+          raise NotFound
       end
 
       def branch(branch_name)

@@ -21,8 +21,7 @@ module Dependabot
         Gitlab::Error::NotFound,
         Dependabot::Clients::Azure::NotFound,
         Dependabot::Clients::Bitbucket::NotFound,
-        Dependabot::Clients::CodeCommit::NotFound,
-        Aws::CodeCommit::Errors::FileDoesNotExistException
+        Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
       def self.required_files_in?(_filename_array)
