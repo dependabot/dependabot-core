@@ -1,3 +1,8 @@
+## v0.112.37, 11 September 2019
+
+- Python: Stricter marker ignoring
+- Docker: Add support for docker images with build num as tags (thanks @tscolari!)
+
 ## v0.112.36, 10 September 2019
 
 - Composer: Tighten platform extensions regex
