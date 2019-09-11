@@ -121,9 +121,10 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
+        return true if dep["markers"].include?("<")
         return false if dep["markers"].include?(">")
 
-        dep["markers"].include?("<") || dep["requirement"]&.include?("<")
+        dep["requirement"]&.include?("<")
       end
 
       def setup_file_dependencies
