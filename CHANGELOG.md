@@ -1,3 +1,7 @@
+## v0.113.0, 13 September 2019
+
+- Add support for AWS codecommit
+
 ## v0.112.37, 11 September 2019
 
 - Python: Stricter marker ignoring
