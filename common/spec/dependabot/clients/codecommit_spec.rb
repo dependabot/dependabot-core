@@ -15,7 +15,14 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       "password" => "AWS_SECRET_ACCESS_KEY"
     }]
   end
-  let(:source) { Dependabot::Source.from_url("codecommit") }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "codecommit",
+      repo: "",
+      directory: "/",
+      branch: "master"
+    )
+  end
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
   end
