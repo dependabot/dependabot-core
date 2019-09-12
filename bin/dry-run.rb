@@ -272,6 +272,9 @@ dependencies.each do |dep|
 
   puts " => checking for updates"
   updated_deps = cached_read("updates") do
+    puts  " => latest version from registry is #{checker.latest_version}"
+    puts  " => latest resolvable version is #{checker.latest_resolvable_version}"
+
     requirements_to_unlock =
       if !checker.requirements_unlocked_or_can_be?
         if checker.can_update?(requirements_to_unlock: :none) then :none
