@@ -4,6 +4,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/azure"
+require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -19,7 +20,8 @@ module Dependabot
         Octokit::NotFound,
         Gitlab::Error::NotFound,
         Dependabot::Clients::Azure::NotFound,
-        Dependabot::Clients::Bitbucket::NotFound
+        Dependabot::Clients::Bitbucket::NotFound,
+        Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
       def self.required_files_in?(_filename_array)
@@ -153,6 +155,8 @@ module Dependabot
           _azure_repo_contents(path, commit)
         when "bitbucket"
           _bitbucket_repo_contents(repo, path, commit)
+        when "codecommit"
+          _codecommit_repo_contents(repo, path, commit)
         else raise "Unsupported provider '#{provider}'."
         end
       end
@@ -263,6 +267,23 @@ module Dependabot
         end
       end
 
+      def _codecommit_repo_contents(repo, path, commit)
+        response = codecommit_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
+
+        response.files.map do |file|
+          OpenStruct.new(
+            name: file.absolute_path,
+            path: file.absolute_path,
+            type: "file",
+            size: 0 # file size would require new api call per file..
+          )
+        end
+      end
+
       def _full_specification_for(path, fetch_submodules:)
         if fetch_submodules && _linked_dir_for(path)
           linked_dir_details = @linked_paths[_linked_dir_for(path)]
@@ -319,6 +340,8 @@ module Dependabot
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
           bitbucket_client.fetch_file_contents(repo, commit, path)
+        when "codecommit"
+          codecommit_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -400,6 +423,7 @@ module Dependabot
         when "gitlab" then gitlab_client
         when "azure" then azure_client
         when "bitbucket" then bitbucket_client
+        when "codecommit" then codecommit_client
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -432,6 +456,12 @@ module Dependabot
         @bitbucket_client ||=
           Dependabot::Clients::BitbucketWithRetries.
           for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def codecommit_client
+        @codecommit_client ||=
+          Dependabot::Clients::CodeCommit.
+          for_source(source: source, credentials: credentials)
       end
     end
   end

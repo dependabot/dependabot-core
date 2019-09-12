@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require "aws-sdk-codecommit"
 require "octokit"
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
+require "dependabot/clients/codecommit"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
@@ -22,9 +24,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
     [{
       "type" => "git_source",
       "host" => "github.com",
+      "region" => "us-east-1",
       "username" => "x-access-token",
       "password" => "token"
     }]
+  end
+  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+  before do
+    allow_any_instance_of(
+      Dependabot::Clients::CodeCommit
+    ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   let(:child_class) do
@@ -194,6 +203,43 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
+      end
+    end
+
+    context "with a CodeCommit source" do
+      let(:provider) { "codecommit" }
+      let(:repo) { "gocardless" }
+
+      before do
+        stubbed_cc_client.
+          stub_responses(
+            :get_branch,
+            branch:
+              {
+                branch_name: "master",
+                commit_id: "9c8376e9b2e943c2c72fac4b239876f377f0305a"
+              }
+          )
+      end
+
+      it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
+
+      context "with a traget branch" do
+        let(:branch) { "my_branch" }
+
+        before do
+          stubbed_cc_client.
+            stub_responses(
+              :get_branch,
+              branch:
+                {
+                  branch_name: "my_branch",
+                  commit_id: "8c8376e9b2e943c2c72fac4b239876f377f0305b"
+                }
+            )
+        end
+
+        it { is_expected.to eq("8c8376e9b2e943c2c72fac4b239876f377f0305b") }
       end
     end
 
@@ -1086,6 +1132,119 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "hits the right Azure DevOps URL" do
             files
             expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+    end
+
+    context "with a CodeCommit source" do
+      let(:provider) { "codecommit" }
+      let(:repo) { "gocardless" }
+
+      before do
+        stubbed_cc_client.
+          stub_responses(
+            :get_file,
+            commit_id: "9c8376e9b2e943c2c72fac4b239876f377f0305a",
+            blob_id: "123",
+            file_path: "",
+            file_mode: "NORMAL",
+            file_size: 0,
+            file_content: fixture("codecommit", "gemspec_content")
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
+
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("required_rubygems_version") }
+      end
+
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(source: source, credentials: credentials)
+        end
+
+        context "that ends in a slash" do
+          before do
+            stubbed_cc_client.
+              stub_responses(
+                :get_file,
+                commit_id: "",
+                blob_id: "",
+                file_path: "app/requirements.txt",
+                file_mode: "NORMAL",
+                file_size: 0,
+                file_content: "foo"
+              )
+          end
+          let(:directory) { "app/" }
+
+          it "gets the file" do
+            files
+            expect { subject }.to_not raise_error
+          end
+        end
+
+        context "that beings with a slash" do
+          before do
+            stubbed_cc_client.
+              stub_responses(
+                :get_file,
+                commit_id: "",
+                blob_id: "",
+                file_path: "/app/requirements.txt",
+                file_mode: "NORMAL",
+                file_size: 0,
+                file_content: "foo"
+              )
+          end
+          let(:directory) { "/app" }
+
+          it "gets the file" do
+            files
+            expect { subject }.to_not raise_error
+          end
+        end
+
+        context "that includes a slash" do
+          before do
+            stubbed_cc_client.
+              stub_responses(
+                :get_file,
+                commit_id: "",
+                blob_id: "",
+                file_path: "a/pp/requirements.txt",
+                file_mode: "NORMAL",
+                file_size: 0,
+                file_content: "foo"
+              )
+          end
+          let(:directory) { "a/pp" }
+
+          it "gets the file" do
+            files
+            expect { subject }.to_not raise_error
+          end
+        end
+      end
+
+      context "when a dependency file can't be found" do
+        before do
+          stubbed_cc_client.
+            stub_responses(
+              :get_file,
+              "FileDoesNotExistException"
+            )
+        end
+
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
