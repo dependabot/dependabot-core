@@ -65,10 +65,6 @@ module Dependabot
         raise unless e.message.include?("Repository is empty")
       end
 
-      def stub_responses(*args)
-        client_for_provider.stub_responses(*args)
-      end
-
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)

@@ -424,6 +424,7 @@ module Dependabot
 
       def build_details_tag(summary:, body:)
         # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
+        # CodeCommit does not support the <details> tag (no url available)
         if source.provider == ("azure" || "codecommit")
           "\n\##{summary}\n\n#{body}"
         else

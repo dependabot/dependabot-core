@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require "aws-sdk-codecommit"
 require "octokit"
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
+require "dependabot/clients/codecommit"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
@@ -26,6 +28,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
       "username" => "x-access-token",
       "password" => "token"
     }]
+  end
+  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+  before do
+    allow_any_instance_of(
+      Dependabot::Clients::CodeCommit
+    ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   let(:child_class) do
@@ -203,7 +211,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:repo) { "gocardless" }
 
       before do
-        file_fetcher_instance.
+        stubbed_cc_client.
           stub_responses(
             :get_branch,
             branch:
@@ -220,7 +228,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:branch) { "my_branch" }
 
         before do
-          file_fetcher_instance.
+          stubbed_cc_client.
             stub_responses(
               :get_branch,
               branch:
@@ -1134,7 +1142,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:repo) { "gocardless" }
 
       before do
-        file_fetcher_instance.
+        stubbed_cc_client.
           stub_responses(
             :get_file,
             commit_id: "9c8376e9b2e943c2c72fac4b239876f377f0305a",
@@ -1162,7 +1170,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that ends in a slash" do
           before do
-            file_fetcher_instance.
+            stubbed_cc_client.
               stub_responses(
                 :get_file,
                 commit_id: "",
@@ -1183,7 +1191,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that beings with a slash" do
           before do
-            file_fetcher_instance.
+            stubbed_cc_client.
               stub_responses(
                 :get_file,
                 commit_id: "",
@@ -1204,7 +1212,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "that includes a slash" do
           before do
-            file_fetcher_instance.
+            stubbed_cc_client.
               stub_responses(
                 :get_file,
                 commit_id: "",
@@ -1226,7 +1234,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file can't be found" do
         before do
-          file_fetcher_instance.
+          stubbed_cc_client.
             stub_responses(
               :get_file,
               "FileDoesNotExistException"

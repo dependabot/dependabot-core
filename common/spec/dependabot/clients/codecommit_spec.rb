@@ -23,8 +23,14 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       branch: "master"
     )
   end
+  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
+  end
+  before do
+    allow_any_instance_of(
+      Dependabot::Clients::CodeCommit
+    ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#fetch_commit" do
@@ -32,7 +38,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
 
     context "when a response is returned" do
       before do
-        client.
+        stubbed_cc_client.
           stub_responses(
             :get_branch,
             branch:
@@ -50,7 +56,10 @@ RSpec.describe Dependabot::Clients::CodeCommit do
 
     context "when the target branch does not exist" do
       before do
-        client.stub_responses(:get_branch, "BranchDoesNotExistException")
+        stubbed_cc_client.stub_responses(
+          :get_branch,
+          "BranchDoesNotExistException"
+        )
       end
 
       it "raises a helpful error" do

@@ -33,20 +33,15 @@ module Dependabot
         )
       end
 
-      def stub_responses(*args)
-        @cc_client = Aws::CodeCommit::Client.new(stub_responses: true)
-        @cc_client.stub_responses(*args)
-      end
-
       def fetch_commit(repo, branch)
-        @cc_client.get_branch(
+        cc_client.get_branch(
           branch_name: branch,
           repository_name: repo
         ).branch.commit_id
       end
 
       def fetch_default_branch(repo)
-        @cc_client.get_repository(
+        cc_client.get_repository(
           repository_name: repo
         ).repository_metadata.default_branch
       end
@@ -55,7 +50,7 @@ module Dependabot
         actual_path = path
         actual_path = "/" if path.to_s.empty?
 
-        @cc_client.get_folder(
+        cc_client.get_folder(
           repository_name: repo,
           commit_specifier: commit,
           folder_path: actual_path
@@ -63,7 +58,7 @@ module Dependabot
       end
 
       def fetch_file_contents(repo, commit, path)
-        @cc_client.get_file(
+        cc_client.get_file(
           repository_name: repo,
           commit_specifier: commit,
           file_path: path
@@ -73,7 +68,7 @@ module Dependabot
       end
 
       def branch(branch_name)
-        @cc_client.get_branch(
+        cc_client.get_branch(
           repository_name: source.unscoped_repo,
           branch_name: branch_name
         )
@@ -155,7 +150,7 @@ module Dependabot
       end
 
       def create_branch(repo, branch_name, commit_id)
-        @cc_client.create_branch(
+        cc_client.create_branch(
           repository_name: repo,
           branch_name: branch_name,
           commit_id: commit_id
@@ -164,7 +159,7 @@ module Dependabot
 
       def create_commit(branch_name, author_name, base_commit, commit_message,
                         files)
-        @cc_client.create_commit(
+        cc_client.create_commit(
           repository_name: source.unscoped_repo,
           branch_name: branch_name,
           parent_commit_id: base_commit,
@@ -182,7 +177,7 @@ module Dependabot
 
       def create_pull_request(pr_name, target_branch, source_branch,
                               pr_description)
-        @cc_client.create_pull_request(
+        cc_client.create_pull_request(
           title: pr_name,
           description: pr_description,
           targets: [
@@ -197,6 +192,7 @@ module Dependabot
 
       attr_reader :credentials
       attr_reader :source
+      attr_reader :cc_client
     end
   end
 end
