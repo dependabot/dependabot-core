@@ -93,6 +93,9 @@ $options = {
   dependency_name: nil,
   branch: nil,
   cache_steps: [],
+  write: false,
+  lockfile_only: false,
+  requirements_update_strategy: nil
 }
 
 if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
@@ -125,8 +128,23 @@ option_parse = OptionParser.new do |opts|
     $options[:dependency_name] = value
   end
 
-  opts.on("--cache STEPS", "Cache e.g. files, dependencies, updates") do |value|
+  opts.on("--cache STEPS", "Cache e.g. files, dependencies") do |value|
     $options[:cache_steps].concat(value.split(",").map(&:strip))
+  end
+
+  opts.on("--write", "Write the update to the cache directory") do |value|
+    $options[:write] = true
+  end
+
+  opts.on("--lockfile-only", "Only update the lockfile") do |value|
+    $options[:lockfile_only] = value
+  end
+
+  opts_req_description = "Options: auto, widen_ranges, bump_versions or "\
+                         "bump_versions_if_necessary"
+  opts.on("--requirements-update-strategy", opts_req_description) do |value|
+    value = nil if value == "auto"
+    $options[:requirements_update_strategy] = value
   end
 end
 
@@ -177,11 +195,15 @@ def cached_read(name)
   data
 end
 
-def cached_dependency_files_read
+def dependency_files_cache_dir
   branch = $options[:branch] || ""
   dir = $options[:directory]
-  cache_manifest_path = File.join("dry-run", $repo_name.split("/"), branch, dir, "cache-manifest.json")
-  cache_dir = File.dirname(cache_manifest_path)
+  File.join("dry-run", $repo_name.split("/"), branch, dir)
+end
+
+def cached_dependency_files_read
+  cache_dir = dependency_files_cache_dir
+  cache_manifest_path = File.join(cache_dir, "cache-manifest.json")
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
   cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
@@ -206,7 +228,8 @@ def cached_dependency_files_read
     end
   else
     if $options[:cache_steps].include?("files")
-      puts "=> failed to read all dependency files from cache manifest: ./#{cache_manifest_path}"
+      puts "=> failed to read all dependency files from cache manifest: "\
+           "./#{cache_manifest_path}"
     end
     puts "=> fetching dependency files"
     data = yield
@@ -227,6 +250,11 @@ def cached_dependency_files_read
       FileUtils.mkdir_p(files_dir) unless Dir.exist?(files_dir)
       File.write(files_path, file.content)
     end
+    # Initialize a git repo so that changed files can be diffed
+    FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
+    Dir.chdir(cache_dir) do
+      system("git init . && git add . && git commit --allow-empty -m 'Init'")
+    end
     data
   end
 end
@@ -238,7 +266,7 @@ source = Dependabot::Source.new(
   branch: $options[:branch]
 )
 
-files = cached_dependency_files_read do
+$files = cached_dependency_files_read do
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
     new(source: source, credentials: $options[:credentials])
   fetcher.files
@@ -247,7 +275,7 @@ end
 # Parse the dependency files
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
-  dependency_files: files,
+  dependency_files: $files,
   source: source,
   credentials: $options[:credentials]
 )
@@ -260,65 +288,113 @@ else
   dependencies.select! { |d| d.name == $options[:dependency_name] }
 end
 
+def update_checker_for(dependency)
+  Dependabot::UpdateCheckers.for_package_manager($package_manager).new(
+    dependency: dependency,
+    dependency_files: $files,
+    credentials: $options[:credentials],
+    requirements_update_strategy: $options[:requirements_update_strategy],
+  )
+end
+
+def peer_dependencies_can_update?(checker, reqs_to_unlock)
+  checker.updated_dependencies(requirements_to_unlock: reqs_to_unlock).
+    reject { |dep| dep.name == checker.dependency.name }.
+    any? do |dep|
+      original_peer_dep = ::Dependabot::Dependency.new(
+        name: dep.name,
+        version: dep.previous_version,
+        requirements: dep.previous_requirements,
+        package_manager: dep.package_manager,
+      )
+      update_checker_for(original_peer_dep).
+        can_update?(requirements_to_unlock: :own)
+    end
+end
+
+def file_updater_for(dependencies)
+  Dependabot::FileUpdaters.for_package_manager($package_manager).new(
+    dependencies: dependencies,
+    dependency_files: $files,
+    credentials: $options[:credentials]
+  )
+end
+
+def generate_dependency_files_for(updated_dependencies)
+  if updated_dependencies.count == 1
+    updated_dependency = updated_dependencies.first
+    puts " => updating #{updated_dependency.name} from " \
+         "#{updated_dependency.previous_version} to " \
+         "#{updated_dependency.version}"
+  else
+    dependency_names = updated_dependencies.map(&:name)
+    puts " => updating #{dependency_names.join(', ')}"
+  end
+
+  updater = file_updater_for(updated_dependencies)
+  updater.updated_dependency_files
+end
+
 puts "=> updating #{dependencies.count} dependencies"
 
 dependencies.each do |dep|
   puts "\n=== #{dep.name} (#{dep.version})"
-  checker = Dependabot::UpdateCheckers.for_package_manager($package_manager).new(
-    dependency: dep,
-    dependency_files: files,
-    credentials: $options[:credentials]
-  )
+  checker = update_checker_for(dep)
 
   puts " => checking for updates"
-  updated_deps = cached_read("updates") do
-    puts  " => latest version from registry is #{checker.latest_version}"
-    puts  " => latest resolvable version is #{checker.latest_resolvable_version}"
+  puts " => latest version from registry is #{checker.latest_version}"
+  puts " => latest resolvable version is #{checker.latest_resolvable_version}"
 
-    requirements_to_unlock =
-      if !checker.requirements_unlocked_or_can_be?
-        if checker.can_update?(requirements_to_unlock: :none) then :none
-        else :update_not_possible
-        end
-      elsif checker.can_update?(requirements_to_unlock: :own) then :own
-      elsif checker.can_update?(requirements_to_unlock: :all) then :all
-      else :update_not_possible
-      end
-
-    puts " => requirements to unlock #{requirements_to_unlock}"
-
-    if requirements_to_unlock == :update_not_possible
-      []
-    else
-      checker.updated_dependencies(
-        requirements_to_unlock: requirements_to_unlock
-      )
-    end
-  end
-
-  updated_deps.select! do |d|
-    next true if d.version != d.previous_version
-    d.requirements != d.previous_requirements
-  end
-
-  if updated_deps.empty?
-    puts "    (no update available)"
+  if checker.up_to_date?
+    puts "    (no update needed)"
     next
   end
 
-  new_dep = updated_deps.find { |d| d.name == dep.name }
-  puts " => updating to #{new_dep.version}"
+  requirements_to_unlock =
+    if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
+      if checker.can_update?(requirements_to_unlock: :none) then :none
+      else :update_not_possible
+      end
+    elsif checker.can_update?(requirements_to_unlock: :own) then :own
+    elsif checker.can_update?(requirements_to_unlock: :all) then :all
+    else :update_not_possible
+    end
 
-  # Generate updated dependency files
-  updater = Dependabot::FileUpdaters.for_package_manager($package_manager).new(
-    dependencies: updated_deps,
-    dependency_files: files,
-    credentials: $options[:credentials]
+  puts " => requirements to unlock: #{requirements_to_unlock}"
+
+  if requirements_to_unlock == :update_not_possible
+    puts "    (no update possible)"
+    next
+  end
+
+  updated_deps = checker.updated_dependencies(
+    requirements_to_unlock: requirements_to_unlock
   )
 
-  updated_files = updater.updated_dependency_files
+  if peer_dependencies_can_update?(checker, requirements_to_unlock)
+    puts "    (no update possible, peer dependency can be updated)"
+    next
+  end
+
+  updated_files = generate_dependency_files_for(updated_deps)
+  # Currently unused but used to create pull requests (from the updater)
+  updated_deps = updated_deps.reject do |d|
+    next false if d.name == checker.dependency.name
+    next true if d.requirements == d.previous_requirements
+
+    d.version == d.previous_version
+  end
+
+  if $options[:write]
+    updated_files.each do |updated_file|
+      path = File.join(dependency_files_cache_dir, updated_file.name)
+      puts " => writing updated file ./#{path}"
+      File.write(path, updated_file.content)
+    end
+  end
+
   updated_files.each do |updated_file|
-    original_file = files.find { |f| f.name == updated_file.name }
+    original_file = $files.find { |f| f.name == updated_file.name }
     show_diff(original_file, updated_file)
   end
 end
