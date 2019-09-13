@@ -13,7 +13,27 @@ if [ ! -d "$install_dir/bin" ]; then
 fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-github_url="https://github.com/kvz/json2hcl"
-url="${github_url}/releases/download/v0.0.6/json2hcl_v0.0.6_${os}_amd64"
-wget -O "$install_dir/bin/json2hcl" "$url"
-chmod +x "$install_dir/bin/json2hcl"
+processor=$(uname -m)
+
+case "${processor}" in
+  x86_64      )   processor=amd64;;
+  arm*        )   processor=arm;;
+  *           )   processor=386;;
+esac
+
+github_url="https://github.com"
+
+download_release () {
+  github_url=$1
+  repo=$2
+  release=$3
+  binary_name=$4
+
+  url="${github_url}/${repo}/releases/download/${release}/${binary_name}_${release}_${os}_${processor}"
+  wget -O "$install_dir/bin/${binary_name}" "$url"
+  chmod +x "$install_dir/bin/${binary_name}"
+}
+
+download_release "${github_url}" "kvz/json2hcl" "v0.0.6" "json2hcl" # for tf 0.11
+download_release "${github_url}" "userhas404d/hcl2json" "v0.1.3" "hcl2json" # for terragurnt
+go get -v github.com/hashicorp/terraform-config-inspect # for tf 0.12

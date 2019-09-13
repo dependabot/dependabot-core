@@ -13,39 +13,64 @@ require "dependabot/errors"
 
 module Dependabot
   module Terraform
+    # rubocop:disable Metrics/ClassLength
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
 
       def parse
-        dependency_set = DependencySet.new
+        @dependency_set = DependencySet.new
 
         terraform_files.each do |file|
-          modules = parsed_file(file).fetch("module", []).map(&:first)
-          modules.each do |name, details|
-            dependency_set << build_terraform_dependency(file, name, details)
-          end
+          parse_terraform_file(file)
         end
 
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terragrunt", []).first || {}
-          modules = modules.fetch("terraform", [])
-          modules.each do |details|
-            next unless details["source"]
-
-            dependency_set << build_terragrunt_dependency(file, details)
-          end
+          parse_terragrunt_file(file)
         end
 
-        dependency_set.dependencies
+        terragrunt_legacy_files.each do |file|
+          parse_terragrunt_legacy_file(file)
+        end
+
+        @dependency_set.dependencies
       end
 
       private
 
-      def build_terraform_dependency(file, name, details)
-        details = details.first
+      def parse_terraform_file(file)
+        parsed_file = parsed_file(file)
+        modules = parsed_file.fetch("module", []).map(&:first)
+        modules = parsed_file.fetch("module_calls") if modules.empty?
+        modules.each do |name, details|
+          @dependency_set << build_terraform_dependency(file, name, details)
+        end
+      end
 
+      def parse_terragrunt_file(file)
+        modules = parsed_file(file)
+        modules.each do |details|
+          details.each do |sub_detail|
+            next unless sub_detail.is_a?(Hash)
+
+            @dependency_set << build_terragrunt_dependency(file, sub_detail)
+          end
+        end
+      end
+
+      def parse_terragrunt_legacy_file(file)
+        modules = parsed_file(file).fetch("terragrunt", []).first || {}
+        modules = modules.fetch("terraform", [])
+        modules.each do |details|
+          next unless details["source"]
+
+          @dependency_set << build_terragrunt_dependency(file, details)
+        end
+      end
+
+      def build_terraform_dependency(file, name, details)
+        details = details.first if details.is_a?(Array)
         source = source_from(details)
         dep_name =
           source[:type] == "registry" ? source[:module_identifier] : name
@@ -54,7 +79,6 @@ module Dependabot
           if source[:type] == "git" then version_from_ref(source[:ref])
           elsif version_req&.match?(/^\d/) then version_req
           end
-
         Dependency.new(
           name: dep_name,
           version: version,
@@ -78,7 +102,6 @@ module Dependabot
           end
 
         version = version_from_ref(source[:ref])
-
         Dependency.new(
           name: dep_name,
           version: version,
@@ -218,13 +241,43 @@ module Dependabot
 
       def parsed_file(file)
         @parsed_buildfile ||= {}
+        # handle terragrunt's new format
+        if file.name.include? ".hcl"
+          parsed_file_helper(
+            file,
+            "#{terraform_parser_path('hcl2json')} tmp.tf"
+          )
+        end
+        # handle terraform 0.11 and 0.12
+        begin
+          parsed_file_helper(
+            file,
+            "#{terraform_parser_path('json2hcl')} -reverse < tmp.tf"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          @msg = "hcl2json: " + e.message.strip + "\n"
+          begin
+            parsed_file_helper(
+              file,
+              # terraform-config-inspect only works when provided a directory
+              "terraform-config-inspect --json .",
+              # specifying $GOPATH/bin:$PATH here doesn't seem to work..
+              "PATH" => "/opt/go/gopath/bin:$PATH"
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            @msg << "terraform-config-inspect: " + e.message.strip
+            raise Dependabot::DependencyFileNotParseable.new(file.path, @msg)
+          end
+        end
+      end
+
+      def parsed_file_helper(file, command, env = { "PATH" => "$PATH" })
         @parsed_buildfile[file.name] ||=
           SharedHelpers.in_a_temporary_directory do
             File.write("tmp.tf", file.content)
 
-            command = "#{terraform_parser_path} -reverse < tmp.tf"
             start = Time.now
-            stdout, stderr, process = Open3.capture3(command)
+            stdout, stderr, process = Open3.capture3(env, command)
             time_taken = Time.now - start
 
             unless process.success?
@@ -237,17 +290,13 @@ module Dependabot
                 }
               )
             end
-
             JSON.parse(stdout)
           end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        msg = e.message.strip
-        raise Dependabot::DependencyFileNotParseable.new(file.path, msg)
       end
 
-      def terraform_parser_path
+      def terraform_parser_path(binary)
         helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
-        Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
+        Pathname.new(File.join(helper_bin_dir, binary)).cleanpath.to_path
       end
 
       def native_helpers_root
@@ -260,11 +309,19 @@ module Dependabot
       end
 
       def terragrunt_files
+        dependency_files.select { |f| f.name.end_with?(".hcl") }
+      end
+
+      def terragrunt_legacy_files
         dependency_files.select { |f| f.name.end_with?(".tfvars") }
       end
 
       def check_required_files
-        return if [*terraform_files, *terragrunt_files].any?
+        return if [
+          *terraform_files,
+          *terragrunt_files,
+          *terragrunt_legacy_files
+        ].any?
 
         raise "No Terraform configuration file!"
       end
@@ -274,3 +331,5 @@ end
 
 Dependabot::FileParsers.
   register("terraform", Dependabot::Terraform::FileParser)
+
+# rubocop:enable Metrics/ClassLength

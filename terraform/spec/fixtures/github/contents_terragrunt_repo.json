@@ -1,18 +1,20 @@
 [
   {
-    "name": "terraform.tfvars",
-    "path": "prod/us-east-1/prod/webserver-cluster/terraform.tfvars",
-    "sha": "e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
-    "size": 1464,
-    "url": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/contents/prod/us-east-1/prod/webserver-cluster/terraform.tfvars?ref=master",
-    "html_url": "https://github.com/gruntwork-io/terragrunt-infrastructure-live-example/blob/master/prod/us-east-1/prod/webserver-cluster/terraform.tfvars",
-    "git_url": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/git/blobs/e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
-    "download_url": "https://raw.githubusercontent.com/gruntwork-io/terragrunt-infrastructure-live-example/master/prod/us-east-1/prod/webserver-cluster/terraform.tfvars",
+    "name": "terragrunt.hcl",
+    "path": "prod/us-east-1/prod/webserver-cluster/terragrunt.hcl",
+    "sha": "bbccf40fc2eed569f1f71c862560bd52d7547b72",
+    "size": 721,
+    "url": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/contents/prod/us-east-1/prod/webserver-cluster/terragrunt.hcl?ref=master",
+    "html_url": "https://github.com/gruntwork-io/terragrunt-infrastructure-live-example/blob/master/prod/us-east-1/prod/webserver-cluster/terragrunt.hcl",
+    "git_url": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/git/blobs/bbccf40fc2eed569f1f71c862560bd52d7547b72",
+    "download_url": "https://raw.githubusercontent.com/gruntwork-io/terragrunt-infrastructure-live-example/master/prod/us-east-1/prod/webserver-cluster/terragrunt.hcl",
     "type": "file",
+    "content": "IyBUZXJyYWdydW50IHdpbGwgY29weSB0aGUgVGVycmFmb3JtIGNvbmZpZ3Vy\nYXRpb25zIHNwZWNpZmllZCBieSB0aGUgc291cmNlIHBhcmFtZXRlciwgYWxv\nbmcgd2l0aCBhbnkgZmlsZXMgaW4gdGhlCiMgd29ya2luZyBkaXJlY3Rvcnks\nIGludG8gYSB0ZW1wb3JhcnkgZm9sZGVyLCBhbmQgZXhlY3V0ZSB5b3VyIFRl\ncnJhZm9ybSBjb21tYW5kcyBpbiB0aGF0IGZvbGRlci4KdGVycmFmb3JtIHsK\nICBzb3VyY2UgPSAiZ2l0OjpnaXRAZ2l0aHViLmNvbTpncnVudHdvcmstaW8v\ndGVycmFncnVudC1pbmZyYXN0cnVjdHVyZS1tb2R1bGVzLWV4YW1wbGUuZ2l0\nLy9hc2ctZWxiLXNlcnZpY2U/cmVmPXYwLjEuMCIKfQoKIyBJbmNsdWRlIGFs\nbCBzZXR0aW5ncyBmcm9tIHRoZSByb290IHRlcnJhZ3J1bnQuaGNsIGZpbGUK\naW5jbHVkZSB7CiAgcGF0aCA9IGZpbmRfaW5fcGFyZW50X2ZvbGRlcnMoKQp9\nCgojIFRoZXNlIGFyZSB0aGUgdmFyaWFibGVzIHdlIGhhdmUgdG8gcGFzcyBp\nbiB0byB1c2UgdGhlIG1vZHVsZSBzcGVjaWZpZWQgaW4gdGhlIHRlcnJhZ3J1\nbnQgY29uZmlndXJhdGlvbiBhYm92ZQppbnB1dHMgPSB7CiAgbmFtZSAgICAg\nICAgICA9ICJ3ZWJzZXJ2ZXItZXhhbXBsZS1wcm9kIgogIGluc3RhbmNlX3R5\ncGUgPSAidDIubWVkaXVtIgoKICBtaW5fc2l6ZSA9IDMKICBtYXhfc2l6ZSA9\nIDMKCiAgc2VydmVyX3BvcnQgPSA4MDgwCiAgZWxiX3BvcnQgICAgPSA4MAp9\nCg==\n",
+    "encoding": "base64",
     "_links": {
-      "self": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/contents/prod/us-east-1/prod/webserver-cluster/terraform.tfvars?ref=master",
-      "git": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/git/blobs/e3cf573ae962cbfa23be5543e51b1bf3cd14c69c",
-      "html": "https://github.com/gruntwork-io/terragrunt-infrastructure-live-example/blob/master/prod/us-east-1/prod/webserver-cluster/terraform.tfvars"
+      "self": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/contents/prod/us-east-1/prod/webserver-cluster/terragrunt.hcl?ref=master",
+      "git": "https://api.github.com/repos/gruntwork-io/terragrunt-infrastructure-live-example/git/blobs/bbccf40fc2eed569f1f71c862560bd52d7547b72",
+      "html": "https://github.com/gruntwork-io/terragrunt-infrastructure-live-example/blob/master/prod/us-east-1/prod/webserver-cluster/terragrunt.hcl"
     }
   }
 ]

@@ -14,7 +14,11 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
 
-        [*terraform_files, *terragrunt_files].each do |file|
+        [
+          *terraform_files,
+          *terragrunt_files,
+          *terragrunt_legacy_files
+        ].each do |file|
           next unless file_changed?(file)
 
           updated_content = updated_terraform_file_content(file)
@@ -92,11 +96,19 @@ module Dependabot
       end
 
       def terragrunt_files
+        dependency_files.select { |f| f.name.end_with?(".hcl") }
+      end
+
+      def terragrunt_legacy_files
         dependency_files.select { |f| f.name.end_with?(".tfvars") }
       end
 
       def check_required_files
-        return if [*terraform_files, *terragrunt_files].any?
+        return if [
+          *terraform_files,
+          *terragrunt_files,
+          *terragrunt_legacy_files
+        ].any?
 
         raise "No Terraform configuration file!"
       end
@@ -114,6 +126,7 @@ module Dependabot
         # For terragrunt dependencies there's not a lot we can base the
         # regex on. Just look for declarations within a `terraform` block
         return /terraform\s*\{(?:(?!^\}).)*/m if filename.end_with?(".tfvars")
+        return /terraform\s*\{(?:(?!^\}).)*/m if filename.end_with?(".hcl")
 
         # For modules we can do better - filter for module blocks that use the
         # name of the dependency
