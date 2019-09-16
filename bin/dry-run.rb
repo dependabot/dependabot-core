@@ -142,7 +142,7 @@ option_parse = OptionParser.new do |opts|
 
   opts_req_description = "Options: auto, widen_ranges, bump_versions or "\
                          "bump_versions_if_necessary"
-  opts.on("--requirements-update-strategy", opts_req_description) do |value|
+  opts.on("--requirements-update-strategy STRATEGY", opts_req_description) do |value|
     value = nil if value == "auto"
     $options[:requirements_update_strategy] = value
   end
@@ -361,6 +361,10 @@ dependencies.each do |dep|
     end
 
   puts " => requirements to unlock: #{requirements_to_unlock}"
+
+  if checker.respond_to?(:requirements_update_strategy)
+    puts " => requirements update strategy: #{checker.requirements_update_strategy}"
+  end
 
   if requirements_to_unlock == :update_not_possible
     puts "    (no update possible)"
