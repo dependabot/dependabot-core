@@ -135,6 +135,8 @@ jobs:
       - run: cd npm_and_yarn/helpers && yarn lint
 
       # Run tests
+      - run: cd npm_and_yarn/helpers && yarn test
+
       - store_test_results:
           path: ~/rspec
       - store_artifacts:

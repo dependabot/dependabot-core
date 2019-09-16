@@ -1,43 +1,55 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
+const rimraf = require("rimraf");
 const nock = require("nock");
-const {
-  updateDependencyFiles,
-  updateVersionPattern
-} = require("../../lib/yarn/updater");
+const { updateDependencyFiles } = require("../../lib/yarn/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {
   let tempDir;
   beforeEach(() => {
     nock("https://registry.yarnpkg.com")
+      .persist()
       .get("/left-pad")
-      .reply(200, helpers.loadFixture("yarnpkg-left-pad.json"));
+      .replyWithFile(
+        200,
+        path.join(__dirname, "fixtures", "yarnpkg-left-pad.json"),
+        {
+          "Content-Type": "application/json"
+        }
+      );
     nock("https://registry.yarnpkg.com")
+      .persist()
       .get("/is-positive")
-      .reply(200, helpers.loadFixture("yarnpkg-is-positive.json"));
+      .replyWithFile(
+        200,
+        path.join(__dirname, "fixtures", "yarnpkg-is-positive.json"),
+        {
+          "Content-Type": "application/json"
+        }
+      );
 
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => fs.rmdirSync(tempDir));
+  afterEach(() => rimraf.sync(tempDir));
 
-  async function copyDependencies(sourceDir, destDir) {
+  function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`
     );
-    await fs.copyFile(srcPackageJson, `${destDir}/package.json`);
+    fs.copyFileSync(srcPackageJson, `${destDir}/package.json`);
 
     const srcYarnLock = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/yarn.lock`
     );
-    await fs.copyFile(srcYarnLock, `${destDir}/yarn.lock`);
+    fs.copyFileSync(srcYarnLock, `${destDir}/yarn.lock`);
   }
 
   it("generates an updated yarn.lock", async () => {
-    await copyDependencies("original", tempDir);
+    copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, [
       {
@@ -52,7 +64,7 @@ describe("updater", () => {
   });
 
   it("doesn't modify existing version comments", async () => {
-    await copyDependencies("with-version-comments", tempDir);
+    copyDependencies("with-version-comments", tempDir);
 
     const result = await updateDependencyFiles(tempDir, [
       {
@@ -66,7 +78,7 @@ describe("updater", () => {
   });
 
   it("doesn't add version comments if they're not already there", async () => {
-    await copyDependencies("original", tempDir);
+    copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, [
       {
@@ -80,7 +92,7 @@ describe("updater", () => {
   });
 
   it("doesn't show an interactive prompt when resolution fails", async () => {
-    await copyDependencies("original", tempDir);
+    copyDependencies("original", tempDir);
 
     expect.assertions(1);
     try {
