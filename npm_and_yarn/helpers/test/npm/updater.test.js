@@ -23,6 +23,17 @@ describe("updater", () => {
         }
       );
 
+    nock("https://registry.npmjs.org")
+      .persist()
+      .get("/left-pad/-/left-pad-1.1.3.tgz")
+      .replyWithFile(
+        200,
+        path.join(__dirname, "fixtures", "left-pad-1.1.3.tgz"),
+        {
+          "Content-Type": "application/octet-stream"
+        }
+      );
+
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
   afterEach(() => rimraf.sync(tempDir));
