@@ -56,6 +56,8 @@ module Dependabot
       end
 
       def commit
+        return source.commit if source.commit
+
         branch = target_branch || default_branch_for_repo
 
         @commit ||= client_for_provider.fetch_commit(repo, branch)

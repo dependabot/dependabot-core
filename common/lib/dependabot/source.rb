@@ -36,8 +36,8 @@ module Dependabot
       (?:#{AZURE_SOURCE})
     /x.freeze
 
-    attr_accessor :provider, :repo, :directory, :branch, :hostname,
-                  :api_endpoint
+    attr_accessor :provider, :repo, :directory, :branch, :commit,
+                  :hostname, :api_endpoint
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -52,8 +52,8 @@ module Dependabot
       )
     end
 
-    def initialize(provider:, repo:, directory: nil, branch: nil, hostname: nil,
-                   api_endpoint: nil)
+    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
+                   hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
@@ -65,6 +65,7 @@ module Dependabot
       @repo = repo
       @directory = directory
       @branch = branch
+      @commit = commit
       @hostname = hostname || default_hostname(provider)
       @api_endpoint = api_endpoint || default_api_endpoint(provider)
     end

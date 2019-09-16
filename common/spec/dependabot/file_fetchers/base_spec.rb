@@ -13,13 +13,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
       provider: provider,
       repo: repo,
       directory: directory,
-      branch: branch
+      branch: branch,
+      commit: source_commit
     )
   end
   let(:provider) { "github" }
   let(:repo) { "gocardless/bump" }
   let(:directory) { "/" }
   let(:branch) { nil }
+  let(:source_commit) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -276,6 +278,13 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it { is_expected.to eq("8c8376e9b2e943c2c72fac4b239876f377f0305b") }
       end
+    end
+
+    # Note: only used locally when testing against specific commits
+    context "with a source commit" do
+      let(:source_commit) { "0e8b8c801024c811d434660f8cf09809f9eb9540" }
+
+      it { is_expected.to eq("0e8b8c801024c811d434660f8cf09809f9eb9540") }
     end
   end
 
