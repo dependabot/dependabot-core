@@ -95,7 +95,8 @@ $options = {
   cache_steps: [],
   write: false,
   lockfile_only: false,
-  requirements_update_strategy: nil
+  requirements_update_strategy: nil,
+  commit: nil
 }
 
 if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
@@ -145,6 +146,10 @@ option_parse = OptionParser.new do |opts|
   opts.on("--requirements-update-strategy STRATEGY", opts_req_description) do |value|
     value = nil if value == "auto"
     $options[:requirements_update_strategy] = value
+  end
+
+  opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
+    $options[:commit] = value
   end
 end
 
@@ -263,7 +268,8 @@ source = Dependabot::Source.new(
   provider: "github",
   repo: $repo_name,
   directory: $options[:directory],
-  branch: $options[:branch]
+  branch: $options[:branch],
+  commit: $options[:commit]
 )
 
 $files = cached_dependency_files_read do
