@@ -1,3 +1,9 @@
+## v0.113.1, 17 September 2019
+
+- Bump nock from 10.0.6 to 11.3.4 in /npm_and_yarn/helpers
+- Bump eslint from 6.3.0 to 6.4.0 in /npm_and_yarn/helpers
+- Dry run script: add options and improve logging
+
 ## v0.113.0, 13 September 2019
 
 - Add support for AWS codecommit
