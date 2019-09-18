@@ -208,7 +208,7 @@ end
 
 def cached_dependency_files_read
   cache_dir = dependency_files_cache_dir
-  cache_manifest_path = File.join(cache_dir, "cache-manifest.json")
+  cache_manifest_path = File.join(cache_dir, "cache-manifest-#{$package_manager}.json")
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
   cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
