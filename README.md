@@ -73,7 +73,7 @@ $ docker build -f Dockerfile.development -t dependabot/dependabot-core . # This 
 
 Once you have the base Docker image, you can build and run the development
 container using the `docker-dev-shell` script. The script will automatically
-build the container if it's not present, and can be forced to rebuild with the
+build the container if it's not present and can be forced to rebuild with the
 `--rebuild` flag. The image includes all dependencies, and the script runs the
 image, mounting the local copy of Dependabot Core so changes made locally will
 be reflected inside the container. This means you can continue to use your
