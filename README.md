@@ -77,7 +77,7 @@ build the container if it's not present and can be forced to rebuild with the
 `--rebuild` flag. The image includes all dependencies, and the script runs the
 image, mounting the local copy of Dependabot Core so changes made locally will
 be reflected inside the container. This means you can continue to use your
-editor of choice, while running the tests inside the container.
+editor of choice while running the tests inside the container.
 
 ```shell
 $ bin/docker-dev-shell
