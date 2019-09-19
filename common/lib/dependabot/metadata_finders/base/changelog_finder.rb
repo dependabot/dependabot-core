@@ -18,7 +18,8 @@ module Dependabot
         require_relative "commits_finder"
 
         # Earlier entries are preferred
-        CHANGELOG_NAMES = %w(changelog news changes history release).freeze
+        CHANGELOG_NAMES = %w(changelog news changes history release
+                             releases).freeze
 
         attr_reader :source, :dependency, :credentials, :suggested_changelog_url
 
