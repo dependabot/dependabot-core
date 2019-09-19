@@ -164,7 +164,7 @@ stealing our business then we'd be keeping it under lock and key.
 
 Dependabot Core is public because we're more interested in it having an
 impact than we are in making a buck from it. We'd love you to use
-[Dependabot][dependabot], so that we can continue to develop it, but if you want
+[Dependabot][dependabot] so that we can continue to develop it, but if you want
 to build and host your own version then this library should make doing so a
 *lot* easier.
 
