@@ -144,7 +144,7 @@ classes:
 | `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/version.rb) for an example. |
 | `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/requirement.rb) for an example. |
 
-The high level flow looks like this:
+The high-level flow looks like this:
 
 <p align="center">
   <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/package-manager-architecture.svg" alt="Dependabot architecture">
