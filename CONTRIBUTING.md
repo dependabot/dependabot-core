@@ -12,7 +12,7 @@
 ## Feedback workflow
 
  * Go right ahead and [create an issue](https://github.com/dependabot/dependabot-core/issues), whatever it is. There are no stupid questions, no required formats, and we're always happy to help, whatever it is!
- * If you'd rather talk to us in private you can email us on [support@dependabot.com](mailto:support@dependabot.com).
+ * If you'd rather talk to us in private you can email us at [support@dependabot.com](mailto:support@dependabot.com).
 
 ## Contribution workflow
 
