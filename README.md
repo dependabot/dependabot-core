@@ -176,7 +176,7 @@ We use the License Zero Prosperity Public License, which essentially enshrines
 the following:
 - If you would like to use Dependabot Core in a non-commercial capacity, such as
   to host a bot at your workplace, then we give you full permission to do so. In
-  fact, we'd love you to, and will help and support you however we can.
+  fact, we'd love you to and will help and support you however we can.
 - If you would like to add Dependabot's functionality to your for-profit
   company's offering then we DO NOT give you permission to use Dependabot Core
   to do so. Please contact us directly to discuss a partnership or licensing
