@@ -121,7 +121,7 @@ logic for updating dependencies in several languages.
 
 ### `dependabot-common`
 
-The `common` package contains all general-purpose / shared functionality. For
+The `common` package contains all general-purpose/shared functionality. For
 instance the code for creating pull requests via GitHub's API lives here, as
 does most of the logic for handling Git dependencies (as most languages support
 Git dependencies in one way or another). There are also base classes defined for
