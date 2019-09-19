@@ -117,7 +117,7 @@ Triggering the jobs that will push the new gems is done by the following the ste
 ## Architecture
 
 Dependabot Core is a collection of Ruby packages (gems), which contain the
-logic for updating dependencies in a number of languages.
+logic for updating dependencies in several languages.
 
 ### `dependabot-common`
 
