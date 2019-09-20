@@ -2156,7 +2156,7 @@
 
 - JS: Handle subdependencies that import a git dependency properly
 - Add PHP extensions to dockerfile
-- Refactor JS file udpaters into separate classes
+- Refactor JS file updaters into separate classes
 - Bump npm from 6.2.0 to 6.3.0
 
 ## v0.63.26, 1 August 2018
