@@ -505,7 +505,7 @@
 ## v0.111.7, 14 July 2019
 
 - Docker: Insist on updated docker_registry2 to fix Artifactory bug
-- Yarn: Enfore https for most common hostnames
+- Yarn: Enforce https for most common hostnames
 - Yarn: Bump @dependabot/yarn-lib from 1.16.0 to 1.17.3 in /npm_and_yarn/helpers
 
 ## v0.111.6, 13 July 2019
