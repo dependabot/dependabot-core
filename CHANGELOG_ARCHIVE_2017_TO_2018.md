@@ -5057,7 +5057,7 @@
 
 ## v0.40.18, 26 December 2017
 
-- Python: Handle simple index etries with spaces in filenames
+- Python: Handle simple index entries with spaces in filenames
 - JS: Only request registry index once during update check
 - PHP: Handle stability flags in requirements updater
 
