@@ -2106,7 +2106,7 @@
 
 ## v0.64.9, 6 August 2018
 
-- PHP: Always write PHP errors on shotdown
+- PHP: Always write PHP errors on shutdown
 
 ## v0.64.8, 6 August 2018
 
