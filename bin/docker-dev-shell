@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE_NAME="dependabot/dependabot-core-development"
+IMAGE_NAME="${IMAGE_NAME:=dependabot/dependabot-core-development}"
 DOCKERFILE="Dockerfile.development"
 HELP=false
 REBUILD=false
@@ -41,6 +41,20 @@ elif [ "$REBUILD" = "true" ]; then
   build_image
 else
   echo "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
+fi
+
+DOCKER_OPTS=()
+if [ -n "$HTTP_PROXY" ]; then
+  DOCKER_OPTS+=(-e "http_proxy=$HTTP_PROXY")
+  DOCKER_OPTS+=(-e "HTTP_PROXY=$HTTP_PROXY")
+fi
+if [ -n "$HTTPS_PROXY" ]; then
+  DOCKER_OPTS+=(-e "https_proxy=$HTTPS_PROXY")
+  DOCKER_OPTS+=(-e "HTTPS_PROXY=$HTTPS_PROXY")
+fi
+
+if [ -n "$DOCKER_NETWORK" ]; then
+  DOCKER_OPTS+=(--network "$DOCKER_NETWORK")
 fi
 
 CONTAINER_ARGS=("bash")
@@ -126,5 +140,6 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
   -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
+  "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
