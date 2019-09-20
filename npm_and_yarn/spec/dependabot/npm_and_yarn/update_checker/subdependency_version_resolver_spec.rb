@@ -88,7 +88,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
     context "with an invalid package.json" do
       let(:dependency_files) { [package_json, npm_lock] }
 
-      let(:manifest_fixture_name) { "non_existant_dependency.json" }
+      let(:manifest_fixture_name) { "nonexistent_dependency.json" }
       let(:npm_lock_fixture_name) { "subdependency_update.json" }
 
       let(:dependency) do

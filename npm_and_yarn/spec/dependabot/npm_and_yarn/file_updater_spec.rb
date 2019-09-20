@@ -1902,7 +1902,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "because we're updating to a non-existant version" do
+      context "because we're updating to a nonexistent version" do
         let(:yarn_lock_fixture_name) { "yarn.lock" }
         let(:npm_lock_fixture_name) { "package-lock.json" }
         let(:manifest_fixture_name) { "package.json" }
@@ -1925,7 +1925,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a dependency that can't be found" do
-        let(:manifest_fixture_name) { "non_existant_dependency.json" }
+        let(:manifest_fixture_name) { "nonexistent_dependency.json" }
         let(:npm_lock_fixture_name) { "yanked_version.json" }
         let(:yarn_lock_fixture_name) { "yanked_version.lock" }
 

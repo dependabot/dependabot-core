@@ -917,7 +917,7 @@
 
 ## v0.74.15, 28 October 2018
 
-- Elixir: Ignore non-existant apps_path
+- Elixir: Ignore nonexistent apps_path
 - JS: Consider global registry in RegistryFinder
 - JS: Handle timeout errors from private registries in FileUpdater
 - JS: Fall back to global registry, rather than registry.npmjs.org, in
@@ -1889,7 +1889,7 @@
 
 ## v0.67.6, 22 August 2018
 
-- Docker: Handle non-existant directories
+- Docker: Handle nonexistent directories
 
 ## v0.67.5, 21 August 2018
 
@@ -2564,7 +2564,7 @@
 
 ## v0.61.41, 28 June 2018
 
-- PHP: Handle composer.json files that ask for non-existant path dependency
+- PHP: Handle composer.json files that ask for nonexistent path dependency
   repos but don't need them
 
 ## v0.61.40, 28 June 2018
@@ -3927,7 +3927,7 @@
 
 ## v0.53.12, 5 April 2018
 
-- JS: Handle non-existant dependencies
+- JS: Handle nonexistent dependencies
 
 ## v0.53.11, 5 April 2018
 
@@ -6025,7 +6025,7 @@
 
 ## v0.19.5, 25 September 2017
 
-- Handle non-existant git branches for Ruby dependencies
+- Handle nonexistent git branches for Ruby dependencies
 
 ## v0.19.4, 23 September 2017
 

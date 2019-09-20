@@ -228,7 +228,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
 
       context "that doesn't exist" do
-        let(:ref) { "non-existant" }
+        let(:ref) { "nonexistent" }
         it { is_expected.to be_nil }
       end
 
