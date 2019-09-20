@@ -45,7 +45,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
         second = lockfile.find do |o|
           o.first == "sprintf-js@file:./mocks/sprintf-js"
         end
-        # Share same version reqirement
+        # Share same version requirement
         expect(first.last).to equal(second.last)
         expect(lockfile.map(&:first)).to contain_exactly(
           "argparse@^1.0.7", "esprima@^4.0.0", "js-yaml@^3.13.1",
