@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             let(:dependency_name) { "alias" }
             let(:string_req) { "0.1.12" }
 
-            it "doesn' update the requirement" do
+            it "doesn't update the requirement" do
               expect(prepared_manifest_file.content).
                 to include(
                   "[dependencies.alias]\n"\
