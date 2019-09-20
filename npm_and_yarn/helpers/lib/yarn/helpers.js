@@ -13,7 +13,7 @@ function isString(value) {
 // Usually, calling Add.init() would execute a series of steps: resolve, fetch,
 // link, run lifecycle scripts, cleanup, then save new manifest (package.json).
 // We only care about the first and last steps: resolve, then save the new
-// manifest. Fotunately, overriding bailout() gives us an opportunity to skip
+// manifest. Fortunately, overriding bailout() gives us an opportunity to skip
 // over the intermediate steps in a relatively painless fashion.
 class LightweightAdd extends Add {
   // This method is called by init() at the end of the resolve step, and is
