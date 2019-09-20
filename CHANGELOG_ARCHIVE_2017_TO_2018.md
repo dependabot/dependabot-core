@@ -5146,7 +5146,7 @@
 
 ## v0.39.24, 21 December 2017
 
-- Use semanic prefix for Dependabot PR names (when appropriate)
+- Use semantic prefix for Dependabot PR names (when appropriate)
 
 ## v0.39.23, 21 December 2017
 
