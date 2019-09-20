@@ -155,7 +155,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         it { is_expected.to eq(Gem::Version.new("5.2.1")) }
       end
 
-      context "when sub-dependnecy is bundled" do
+      context "when sub-dependency is bundled" do
         let(:manifest_fixture_name) { "bundled_sub_dependency.json" }
         let(:npm_lock_fixture_name) { "bundled_sub_dependency.json" }
 

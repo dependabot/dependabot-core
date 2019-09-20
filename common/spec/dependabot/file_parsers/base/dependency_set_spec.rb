@@ -170,7 +170,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             to eq([{ npm_bundled: true }, { npm_bundled: false }])
         end
 
-        context "when existing depedency has no subdependency_metadata" do
+        context "when existing dependency has no subdependency_metadata" do
           let(:existing_subdependency_metadata) { nil }
 
           it "has a single dependency with the merged subdependency_metadata" do
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           end
         end
 
-        context "when depedency has no subdependency_metadata" do
+        context "when dependency has no subdependency_metadata" do
           let(:subdependency_metadata) { [] }
 
           it "has a single dependency with the merged subdependency_metadata" do
