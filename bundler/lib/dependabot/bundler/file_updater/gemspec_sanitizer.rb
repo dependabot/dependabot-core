@@ -60,11 +60,11 @@ module Dependabot
             replace_version_assignments(node)
 
             # Replace the `s.files= ...` assignment with a blank array, as
-            # occassionally a File.open(..).readlines pattern is used
+            # occasionally a File.open(..).readlines pattern is used
             replace_file_assignments(node)
 
             # Replace the `s.require_path= ...` assignment, as
-            # occassionally a Dir['lib'] pattern is used
+            # occasionally a Dir['lib'] pattern is used
             replace_require_paths_assignments(node)
 
             # Replace any `File.read(...)` calls with a dummy string
