@@ -1514,7 +1514,7 @@
 
 - Ruby: Include protocol when raising PrivateSourceAuthenticationFailure errors
 - Elixir: Pass empty string token to elixir helper
-- JS: Better regsitry uniq-ing
+- JS: Better registry uniq-ing
 
 ## v0.98.50, 29 March 2019
 
