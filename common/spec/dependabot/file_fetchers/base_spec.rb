@@ -226,7 +226,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
 
-      context "with a traget branch" do
+      context "with a target branch" do
         let(:branch) { "my_branch" }
 
         before do
