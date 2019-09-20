@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Source do
       its(:directory) { is_expected.to eq("dir") }
     end
 
-    context "with an Azue DevOps URL" do
+    context "with an Azure DevOps URL" do
       let(:url) { "https://dev.azure.com/greysteil/_git/dependabot-test?path" }
       its(:provider) { is_expected.to eq("azure") }
       its(:repo) { is_expected.to eq("greysteil/_git/dependabot-test") }

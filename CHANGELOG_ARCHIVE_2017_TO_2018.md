@@ -898,7 +898,7 @@
 
 ## v0.74.19, 30 October 2018
 
-- Add Azuze as a known source
+- Add Azure as a known source
 - Rust: Handle yanked versions in UpdateChecker when not using a lockfile
 
 ## v0.74.18, 29 October 2018
