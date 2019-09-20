@@ -213,7 +213,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_name) { "public_suffix" }
         let(:requirement_string) { ">= 0" }
 
-        # The latest version of public_suffic is 2.0.5, but requires Ruby 2.0.0
+        # The latest version of public_suffix is 2.0.5, but requires Ruby 2.0.0
         # or greater.
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
 
