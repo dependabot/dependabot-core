@@ -132,8 +132,8 @@ module Dependabot
           # would break Python version compatibility the update is blocked
           return if error.message.include?("support the following Python")
 
-          # If any kind of other error is now occuring as a result of our change
-          # then we want to hear about it
+          # If any kind of other error is now occurring as a result of our
+          # change then we want to hear about it
           raise
         end
 
