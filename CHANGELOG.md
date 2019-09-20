@@ -2269,7 +2269,7 @@
 
 ## v0.94.2, 2 February 2019
 
-- Add class attribute_reader to Labler
+- Add class attribute_reader to Labeler
 - Ruby: Move bundler monkey patches
 - Python: Bump cython from 0.29.3 to 0.29.4 in /python/helpers
 
