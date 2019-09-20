@@ -488,7 +488,7 @@ module Dependabot
           ).npmrc_content
         end
 
-        # Top level dependecies are required in the peer dep checker
+        # Top level dependencies are required in the peer dep checker
         # to fetch the manifests for all top level deps which may contain
         # "peerDependency" requirements
         def top_level_dependencies

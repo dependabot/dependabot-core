@@ -17,7 +17,7 @@ function isString(value) {
 // over the intermediate steps in a relatively painless fashion.
 class LightweightAdd extends Add {
   // This method is called by init() at the end of the resolve step, and is
-  // responsible for checking if any dependnecies need to be updated locally.
+  // responsible for checking if any dependencies need to be updated locally.
   // If everything is up to date, it'll save a new lockfile and return true,
   // which causes init() to skip over the next few steps (fetching and
   // installing packages). If there are packages that need updating, it'll
