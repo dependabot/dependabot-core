@@ -126,7 +126,7 @@ module Dependabot
 
         def error_due_to_restrictive_upper_bound?(error)
           # We see this when the dependency doesn't appear in the lockfile and
-          # has an overly restricture upper bound that we've added, either due
+          # has an overly restrictive upper bound that we've added, either due
           # to an ignore condition or us missing that a pre-release is required
           # (as another dependency places a pre-release requirement on the dep)
           return false if dependency.appears_in_lockfile?
