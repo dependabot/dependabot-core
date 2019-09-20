@@ -449,7 +449,7 @@
 
 - Bump poetry from 0.12.9 to 0.12.10
 - Use latest Pipenv commit and remove workaround
-- npm: ingore platform and engine checks on install
+- npm: ignore platform and engine checks on install
 - Python: Fetch path dependencies listed in Pipfile
 - Python: Mark fetched path dependencies as support files
 
