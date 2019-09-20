@@ -140,7 +140,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         end
       end
 
-      context "and is idential, but with different subdependency_metadata" do
+      context "and is identical, but with different subdependency_metadata" do
         let(:existing_subdependency_metadata) { [{ npm_bundled: true }] }
         let(:subdependency_metadata) { [{ npm_bundled: false }] }
         let(:existing_dependency) do

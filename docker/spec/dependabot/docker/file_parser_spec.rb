@@ -447,7 +447,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are idential" do
+      context "that are identical" do
         let(:dockerfile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
