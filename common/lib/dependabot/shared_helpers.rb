@@ -170,7 +170,7 @@ module Dependabot
     def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
-      # an wrapper binary that only allows non-mutative commands. Without this,
+      # a wrapper binary that only allows non-mutative commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
       credential_helper_path =
         File.join(__dir__, "../../bin/git-credential-store-immutable")
