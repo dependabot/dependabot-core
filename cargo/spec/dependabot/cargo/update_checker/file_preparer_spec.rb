@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
                 to include('regex = ">= 0.1.41, <= 1.6.0"')
             end
 
-            context "taht is lower than the current lower bound" do
+            context "that is lower than the current lower bound" do
               let(:latest_allowable_version) { Gem::Version.new("0.1.0") }
 
               it "updates the requirement" do
