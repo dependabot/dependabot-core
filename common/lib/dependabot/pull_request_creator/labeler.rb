@@ -94,7 +94,7 @@ module Dependabot
       def update_type
         return unless dependencies.any?(&:previous_version)
 
-        precison = dependencies.map do |dep|
+        precision = dependencies.map do |dep|
           new_version_parts = version(dep).split(".")
           old_version_parts = previous_version(dep)&.split(".") || []
           all_parts = new_version_parts.first(3) + old_version_parts.first(3)
@@ -105,7 +105,7 @@ module Dependabot
           3
         end.min
 
-        case precison
+        case precision
         when 0 then "non-semver"
         when 1 then "major"
         when 2 then "minor"
