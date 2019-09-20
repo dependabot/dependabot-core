@@ -96,7 +96,7 @@
 ## v0.85.2, 15 December 2018
 
 - Switch Ruby RequirementsUpdater logic to use an update strategy, which can be
-  provided as either `bump_verions` or `bump_versions_if_necessary`
+  provided as either `bump_versions` or `bump_versions_if_necessary`
 
 ## v0.85.1, 15 December 2018
 
