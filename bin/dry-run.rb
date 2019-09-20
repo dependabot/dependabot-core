@@ -256,9 +256,13 @@ def cached_dependency_files_read
       File.write(files_path, file.content)
     end
     # Initialize a git repo so that changed files can be diffed
-    FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
-    Dir.chdir(cache_dir) do
-      system("git init . && git add . && git commit --allow-empty -m 'Init'")
+    if $options[:write]
+      if File.exist?(".gitignore")
+        FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
+      end
+      Dir.chdir(cache_dir) do
+        system("git init . && git add . && git commit --allow-empty -m 'Init'")
+      end
     end
     data
   end
