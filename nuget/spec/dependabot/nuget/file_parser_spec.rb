@@ -258,7 +258,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("System.WebCralwer")
+          expect(dependency.name).to eq("System.WebCrawler")
           expect(dependency.version).to eq("1.1.1")
           expect(dependency.requirements).to eq(
             [{

@@ -9,6 +9,6 @@
     <PackageReference Update="System.Lycos" Version="$(SystemSearchEngineVersion)" />
     <PackageReference Update="System.AskJeeves" Version="2.2.2" />
     <PackageReference Update="System.Google" Version="$(SystemSearchEngineVersion)" />
-    <PackageReference Update="System.WebCralwer" Version="1.1.1" />
+    <PackageReference Update="System.WebCrawler" Version="1.1.1" />
   </ItemGroup>
 </Project>
