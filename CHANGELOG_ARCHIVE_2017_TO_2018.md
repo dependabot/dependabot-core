@@ -3633,7 +3633,7 @@
 - Java: Better MetadataFinder CSS paths
 - Java: Support use of custom repositories in UpdateChecker
 - Java: Use main registry URL directly, not search API
-- Java: Add commments for FileParser, and add extensions to list of updatable
+- Java: Add comments for FileParser, and add extensions to list of updatable
   dependencies
 - Elixir: Clean up requirement class
 
