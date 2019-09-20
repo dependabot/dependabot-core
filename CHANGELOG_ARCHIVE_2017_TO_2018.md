@@ -6139,7 +6139,7 @@
 
 ## v0.16.15, 2 September 2017
 
-- Handle non-numberic Python versions better (ignore them instead of erroring)
+- Handle non-numeric Python versions better (ignore them instead of erroring)
 
 ## v0.16.14, 1 September 2017
 
@@ -6338,7 +6338,7 @@
 ## v0.12.1, 5 August 2017
 
 - Handle 404s from Rubygems in UpdateChecker
-- Skip PHP dependencies with non-numberic versions during file parsing
+- Skip PHP dependencies with non-numeric versions during file parsing
 
 ## v0.12.0, 4 August 2017
 

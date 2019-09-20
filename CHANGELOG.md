@@ -1919,7 +1919,7 @@
 
 ## v0.95.64, 25 February 2019
 
-- JS: Return a version instance from UpdateChecker#latest_resolvable_version_with_no_unlock when version is numberic
+- JS: Return a version instance from UpdateChecker#latest_resolvable_version_with_no_unlock when version is numeric
 
 ## v0.95.63, 25 February 2019
 
