@@ -55,7 +55,7 @@ module Dependabot
           branch_name,
           source.branch || default_branch,
           pr_description
-          # codecommit doesn't support PR lables
+          # codecommit doesn't support PR labels
         )
         return unless pull_request
 
