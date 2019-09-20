@@ -1051,7 +1051,7 @@
 
 - Add longer sleep when creating a commit fails
 - Python: Bump pip from 19.1 to 19.1.1 in /python/helpers
-- Raise error for unprocessible branch names
+- Raise error for unprocessable branch names
 
 ## v0.106.34, 6 May 2019
 
