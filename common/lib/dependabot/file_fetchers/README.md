@@ -60,6 +60,6 @@ fetcher.
 File fetchers tend to get complicated when the file requirements for an update
 to run are non-trivial - for example, for Ruby we could accept
 [`Gemfile`, `Gemfile.lock`] or [`Gemfile`, `example.gemspec`],
-but not just [`Gemfile.lock`]. When adding a new lanugage, it's normally easiest
+but not just [`Gemfile.lock`]. When adding a new language, it's normally easiest
 to pick a single case and implement it for all the update steps (parsing, update
 checking, etc.). You can then return and add other cases later.
