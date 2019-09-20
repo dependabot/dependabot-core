@@ -355,7 +355,7 @@ module Dependabot
 
         def dependencies_in_error_message?(error_message)
           names = dependencies.map { |dep| dep.name.split("/").first }
-          # Example foramt: No matching version found for
+          # Example format: No matching version found for
           # @dependabot/dummy-pkg-b@^1.3.0
           names.any? do |name|
             error_message.match?(%r{#{Regexp.quote(name)}[\/@]})
