@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5",
+            content: "SOME_CONSTANT = 5",
             directory: directory
           )
         end
