@@ -326,8 +326,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     end
 
     context "when multiple dockerfiles to be updated" do
-      let(:files) { [dockerfile, dockefile2] }
-      let(:dockefile2) do
+      let(:files) { [dockerfile, dockerfile2] }
+      let(:dockerfile2) do
         Dependabot::DependencyFile.new(
           name: "custom-name",
           content: dockerfile_body2
