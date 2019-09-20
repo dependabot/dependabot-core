@@ -160,7 +160,7 @@
 
 ## v0.112.16, 27 August 2019
 
-- Composer: Tigher regex for missing platform requirements
+- Composer: Tighter regex for missing platform requirements
 
 ## v0.112.15, 27 August 2019
 
