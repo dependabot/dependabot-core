@@ -4936,7 +4936,7 @@
 
 ## v0.42.15, 14 January 2018
 
-- JS: Update git dependencies specifed with a GitHub format
+- JS: Update git dependencies specified with a GitHub format
 
 ## v0.42.14, 11 January 2018
 
