@@ -214,7 +214,7 @@ module Dependabot
       end
 
       # Re-write the glob name to the targeted dependency name (which is used
-      # in the lockfile), for example "parent-pacakge/**/sub-dep/target-dep" >
+      # in the lockfile), for example "parent-package/**/sub-dep/target-dep" >
       # "target-dep"
       def convert_dependency_path_to_name(path, value)
         # Picking the last two parts that might include a scope
