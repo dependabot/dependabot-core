@@ -1552,7 +1552,7 @@
 ## v0.71.9, 12 September 2018
 
 - .NET: Handle .nuproj file dependency declarations
-- Gradle: Use regex to parse setttings.gradle
+- Gradle: Use regex to parse settings.gradle
 
 ## v0.71.8, 12 September 2018
 
