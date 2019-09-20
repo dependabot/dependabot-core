@@ -17,8 +17,8 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          api_endpoint: "https://my.private.insance/api/v3/",
-          hostname: "my.private.insance"
+          api_endpoint: "https://my.private.instance/api/v3/",
+          hostname: "my.private.instance"
         }
       end
 
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          hostname: "my.private.insance"
+          hostname: "my.private.instance"
         }
       end
 
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          api_endpoint: "https://my.private.insance/api/v3/"
+          api_endpoint: "https://my.private.instance/api/v3/"
         }
       end
 
