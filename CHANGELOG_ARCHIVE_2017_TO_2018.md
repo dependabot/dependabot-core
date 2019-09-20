@@ -2007,7 +2007,7 @@
 
 ## v0.66.12, 14 August 2018
 
-- Python: Add poetry files to rebase triggereing regexes
+- Python: Add poetry files to rebase triggering regexes
 
 ## v0.66.11, 14 August 2018
 
