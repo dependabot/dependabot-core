@@ -177,7 +177,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           stub_request(:get, url).to_return(status: 401, body: "")
         end
 
-        # Since this registry is declared at the global registry, in the absense
+        # Since this registry is declared at the global registry, in the absence
         # of other information we should still us it (and *not* flaa back to
         # registry.npmjs.org)
         it { is_expected.to eq("npm-proxy.fury.io/password/dependabot") }
