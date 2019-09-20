@@ -5836,7 +5836,7 @@
 
 - Add temporary ignore for private npm organisation hosted dependencies in
   UpdateChecker. Once we support passing credentials we'll be able to bump
-  these, but for now we just supress them
+  these, but for now we just suppress them
 
 ## v0.24.0, 17 October 2017
 
@@ -6015,7 +6015,7 @@
 
 ## v0.19.7, 25 September 2017
 
-- Supress Ruby VersionConflict exceptions caused by an update to a git
+- Suppress Ruby VersionConflict exceptions caused by an update to a git
   dependency (since the version conflict is only caused by the attempted
   update, not by anything wrong with the underlying Gemfile/Gemfile.lock)
 
