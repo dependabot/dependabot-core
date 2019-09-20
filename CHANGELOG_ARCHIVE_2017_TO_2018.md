@@ -3802,7 +3802,7 @@
 
 ## v0.54.1, 12 April 2018
 
-- Python: Add version resovler for Pipenv
+- Python: Add version resolver for Pipenv
 
 ## v0.54.0, 12 April 2018
 
