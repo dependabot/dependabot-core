@@ -11,26 +11,17 @@ module Dependabot
       # Constructor methods #
       #######################
 
-      def self.for_source(source:, credentials:)
-        credential =
-          credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["region"] == source.hostname }
-
-        new(source, credential)
+      def self.for_source(source:)
+        new(source)
       end
 
       ##########
       # Client #
       ##########
 
-      def initialize(source, credentials)
+      def initialize(source)
         @source = source
-        @cc_client = Aws::CodeCommit::Client.new(
-          access_key_id: credentials&.fetch("username"),
-          secret_access_key: credentials&.fetch("password"),
-          region: credentials&.fetch("region")
-        )
+        @cc_client = Aws::CodeCommit::Client.new
       end
 
       def fetch_commit(repo, branch)

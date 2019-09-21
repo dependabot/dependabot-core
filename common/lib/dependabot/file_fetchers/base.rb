@@ -463,7 +463,7 @@ module Dependabot
       def codecommit_client
         @codecommit_client ||=
           Dependabot::Clients::CodeCommit.
-          for_source(source: source, credentials: credentials)
+          for_source(source: source)
       end
     end
   end

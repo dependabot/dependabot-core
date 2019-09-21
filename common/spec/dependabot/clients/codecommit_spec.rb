@@ -4,17 +4,11 @@ require "aws-sdk-codecommit"
 require "spec_helper"
 require "dependabot/clients/codecommit"
 
+ENV["AWS_REGION"] = "us-east-1"
+
 RSpec.describe Dependabot::Clients::CodeCommit do
   let(:branch) { "master" }
   let(:repo) { "gocardless" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "region" => "us-east-1",
-      "username" => "AWS_ACCESS_KEY_ID",
-      "password" => "AWS_SECRET_ACCESS_KEY"
-    }]
-  end
   let(:source) do
     Dependabot::Source.new(
       provider: "codecommit",
@@ -25,7 +19,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
   let(:client) do
-    described_class.for_source(source: source, credentials: credentials)
+    described_class.for_source(source: source)
   end
   before do
     allow_any_instance_of(

@@ -7,6 +7,8 @@ require "dependabot/source"
 require "dependabot/file_fetchers/base"
 require "dependabot/clients/codecommit"
 
+ENV["AWS_REGION"] = "us-east-1"
+
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
     Dependabot::Source.new(
