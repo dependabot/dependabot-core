@@ -3,7 +3,6 @@
 require "toml-rb"
 
 require "dependabot/shared_helpers"
-require "dependabot/dependency_file"
 require "dependabot/cocoapods/file_updater"
 require "dependabot/cocoapods/update_checker"
 
@@ -89,8 +88,6 @@ module Dependabot
               )
 
               analyzer.installation_options.integrate_targets = false
-              pods = @dependencies.map(&:name)
-              analyzer.update = { pods: pods }
               analyzer.config.silent = true
               analyzer.update_repositories
 

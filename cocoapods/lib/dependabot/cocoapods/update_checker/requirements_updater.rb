@@ -50,7 +50,7 @@ module Dependabot
           end
 
           new_req = req[:requirement].gsub(/<=?/, "~>")
-          new_req.sub!(Gemnasium::Parser::Patterns::VERSION) do |old_version|
+          new_req.sub!(VERSION) do |old_version|
             at_same_precision(latest_resolvable_version, old_version)
           end
 

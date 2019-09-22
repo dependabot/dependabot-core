@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_file"
 require "dependabot/cocoapods/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -149,7 +150,7 @@ RSpec.describe Dependabot::CocoaPods::UpdateChecker do
     context "with a Podfile and a Podfile.lock" do
       it "delegates to CocoaPods::RequirementsUpdater with the right params" do
         expect(
-          Dependabot::UpdateCheckers::Cocoa::CocoaPods::RequirementsUpdater
+          Dependabot::CocoaPods::UpdateChecker::RequirementsUpdater
         ).to receive(:new).with(
           requirements: requirements,
           existing_version: "3.0.0",

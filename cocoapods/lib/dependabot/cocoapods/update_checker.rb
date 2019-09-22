@@ -104,7 +104,7 @@ module Dependabot
         original_pod_declaration_string = Regexp.last_match.to_s
         updated_pod_declaration_string =
           original_pod_declaration_string.
-          sub(/,[ \t]*#{Gemnasium::Parser::Patterns::REQUIREMENTS}/, "")
+          sub(/,[ \t]*#{Dependabot::CocoaPods::FileUpdater::REQUIREMENTS}/, "")
 
         podfile_content.gsub(
           original_pod_declaration_string,

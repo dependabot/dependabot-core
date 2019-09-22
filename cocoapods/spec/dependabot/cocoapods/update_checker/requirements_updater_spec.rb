@@ -3,7 +3,7 @@
 require "spec_helper"
 require "dependabot/cocoapods/update_checker/requirements_updater"
 
-klass = RSpec.describe Dependabot::CocoaPods::UpdateChecker::RequirementsUpdater
+klass = Dependabot::CocoaPods::UpdateChecker::RequirementsUpdater
 RSpec.describe klass do
   let(:updater) do
     described_class.new(
