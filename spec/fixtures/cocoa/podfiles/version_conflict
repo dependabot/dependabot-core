@@ -1,0 +1,11 @@
+platform :ios, '9.0'
+use_frameworks!
+
+def core_pods
+  pod 'Alamofire', '~> 3.5.0'
+  pod 'AlamofireImage', '~> 2.5.0'
+end
+
+target 'MyApp' do
+  core_pods
+end
