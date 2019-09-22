@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"
 
@@ -23,6 +24,7 @@ module Dependabot
             @latest_version = Gem::Version.new(latest_version) if latest_version
 
             return unless latest_resolvable_version
+
             @latest_resolvable_version =
               Gem::Version.new(latest_resolvable_version)
           end

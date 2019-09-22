@@ -1,8 +1,9 @@
 # frozen_string_literal: true
+
 require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
-require "dependabot/metadata_finders/cocoa/cocoa_pods"
+require "dependabot/metadata_finders/cocoa/cocoapods"
 require_relative "../shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::MetadataFinders::Cocoa::CocoaPods do

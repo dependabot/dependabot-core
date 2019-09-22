@@ -1,7 +1,8 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/file_parsers/cocoa/cocoa_pods"
+require "dependabot/file_parsers/cocoa/cocoapods"
 require_relative "../shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::FileParsers::Cocoa::CocoaPods do

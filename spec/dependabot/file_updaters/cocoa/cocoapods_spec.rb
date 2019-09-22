@@ -1,8 +1,9 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/cocoa/cocoa_pods"
+require "dependabot/file_updaters/cocoa/cocoapods"
 require_relative "../shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
@@ -16,8 +17,13 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
   let(:updater) do
     described_class.new(
       dependency_files: [podfile, lockfile],
-      dependency: dependency,
-      github_access_token: "token"
+      dependencies: dependency,
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
     )
   end
   let(:podfile) do
@@ -36,11 +42,13 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
       requirements: [{
         requirement: "~> 4.0.0",
         file: "Podfile",
+        source: nil,
         groups: []
       }],
       previous_requirements: [{
         requirement: "~> 3.0.0",
         file: "Podfile",
+        source: nil,
         groups: []
       }],
       package_manager: "cocoapods"
@@ -116,11 +124,13 @@ RSpec.describe Dependabot::FileUpdaters::Cocoa::CocoaPods do
             requirements: [{
               requirement: "~> 6.0.0",
               file: "Podfile",
+              source: nil,
               groups: []
             }],
             previous_requirements: [{
               requirement: "~> 3.0.0",
               file: "Podfile",
+              source: nil,
               groups: []
             }],
             package_manager: "cocoapods"

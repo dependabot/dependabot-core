@@ -1,11 +1,12 @@
 # frozen_string_literal: true
+
 require "cocoapods"
 require "gemnasium/parser"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/file_updaters/cocoa/cocoa_pods"
-require "dependabot/update_checkers/cocoa/cocoa_pods/requirements_updater"
+require "dependabot/file_updaters/cocoa/cocoapods"
+require "dependabot/update_checkers/cocoa/cocoapods/requirements_updater"
 
 module Dependabot
   module UpdateCheckers
@@ -73,24 +74,24 @@ module Dependabot
         def lockfile
           lockfile = dependency_files.find { |f| f.name == "Podfile.lock" }
           raise "No Podfile.lock!" unless lockfile
+
           lockfile
         end
 
         def podfile
           podfile = dependency_files.find { |f| f.name == "Podfile" }
           raise "No Podfile!" unless podfile
+
           podfile
         end
 
         def podfile_for_update_check
           content = remove_dependency_requirement(podfile.content)
-          content = replace_ssh_links_with_https(content)
-          prepend_git_auth_details(content)
+          replace_ssh_links_with_https(content)
         end
 
         def lockfile_for_update_check
-          content = replace_ssh_links_with_https(lockfile.content)
-          prepend_git_auth_details(content)
+          replace_ssh_links_with_https(lockfile.content)
         end
 
         # Replace the original pod requirements with nothing, to fully "unlock"
@@ -115,14 +116,6 @@ module Dependabot
 
         def replace_ssh_links_with_https(content)
           content.gsub("git@github.com:", "https://github.com/")
-        end
-
-        # TODO: replace this with a setting in CocoaPods, like we do for Bundler
-        def prepend_git_auth_details(content)
-          content.gsub(
-            "https://github.com/",
-            "https://x-access-token:#{github_access_token}@github.com/"
-          )
         end
       end
     end

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/update_checkers/cocoa/cocoa_pods"
+require "dependabot/update_checkers/cocoa/cocoapods"
 require_relative "../shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::UpdateCheckers::Cocoa::CocoaPods do

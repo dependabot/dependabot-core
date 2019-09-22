@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "cocoapods-core"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
@@ -19,6 +20,7 @@ module Dependabot
               requirements: [{
                 requirement: dependency.requirement.to_s,
                 groups: [],
+                source: nil,
                 file: "Podfile"
               }],
               package_manager: "cocoapods"
@@ -27,8 +29,6 @@ module Dependabot
         end
 
         private
-
-        attr_reader :podfile, :lockfile
 
         def check_required_files
           raise "No Podfile!" unless podfile

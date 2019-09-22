@@ -1,6 +1,7 @@
 # frozen_string_literal: true
+
 require "spec_helper"
-require "dependabot/update_checkers/cocoa/cocoa_pods/requirements_updater"
+require "dependabot/update_checkers/cocoa/cocoapods/requirements_updater"
 
 klass = Dependabot::UpdateCheckers::Cocoa::CocoaPods::RequirementsUpdater
 RSpec.describe klass do

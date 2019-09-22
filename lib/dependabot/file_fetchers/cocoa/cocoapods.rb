@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "dependabot/file_fetchers/base"
 
 module Dependabot
@@ -23,11 +24,11 @@ module Dependabot
         end
 
         def podfile
-          @podfile ||= fetch_file_from_github("Podfile")
+          @podfile ||= fetch_file_from_host("Podfile")
         end
 
         def lockfile
-          @lockfile ||= fetch_file_from_github("Podfile.lock")
+          @lockfile ||= fetch_file_from_host("Podfile.lock")
         end
       end
     end
