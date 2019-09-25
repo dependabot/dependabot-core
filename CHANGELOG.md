@@ -1,3 +1,12 @@
+## v0.113.2, 25 September 2019
+
+- Dependencies: Make gpgme an optional dependency
+- Dev env: Allow a few options to be provided to the dev shell
+- Dev env: Mount .rubocop.yml in the docker dev shell
+- Dry-run: Only git init when writing output
+- Dry run: support multiple package managers when caching files
+- Dry run: add --commit option to fetch from
+
 ## v0.113.1, 17 September 2019
 
 - Bump nock from 10.0.6 to 11.3.4 in /npm_and_yarn/helpers
