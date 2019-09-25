@@ -23,7 +23,8 @@ module Dependabot
         begin
           require "gpgme"
         rescue LoadError
-          raise LoadError, "Please install `gpgme` to enable commit signatures"
+          raise LoadError, "Please add `gpgme` to your Gemfile or gemspec " \
+                           "enable commit signatures"
         end
 
         email = author_details[:email]
