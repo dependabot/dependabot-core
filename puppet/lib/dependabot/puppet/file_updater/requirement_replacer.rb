@@ -28,7 +28,6 @@ module Dependabot
             updated_requirement: updated_requirement,
             insert_if_bare: insert_if_bare?
           ).rewrite(buffer, ast)
-
           update_comment_spacing_if_required(content, updated_content)
         end
 
@@ -122,7 +121,7 @@ module Dependabot
           def declares_targeted_module?(node)
             return false unless declaration_methods.include?(node.children[1])
 
-            node.children[2].children.first == dependency.name
+            node.children[2].children.first == dependency.name.gsub('-', '/')
           end
 
           def extract_quote_characters_from(requirement_nodes)
