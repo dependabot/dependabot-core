@@ -153,12 +153,8 @@ module Dependabot
         end
 
         def semver_version_for(version_string)
-          return unless version_string
           return if version_string == ""
-          return if version_string.include?("://")
-          return if version_string.include?("file:")
-          return if version_string.include?("link:")
-          return if version_string.include?("#")
+          return unless version_class.correct?(version_string)
 
           version_string
         end
@@ -215,6 +211,10 @@ module Dependabot
           @shrinkwraps ||=
             dependency_files.
             select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+        end
+
+        def version_class
+          NpmAndYarn::Version
         end
       end
     end

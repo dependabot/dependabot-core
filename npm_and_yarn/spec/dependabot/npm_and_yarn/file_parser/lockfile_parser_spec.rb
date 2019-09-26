@@ -134,7 +134,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       context "that contains a version requirement string" do
         let(:npm_lockfile_fixture_name) { "invalid_version_requirement.json" }
         subject { dependencies.find { |d| d.name == "etag" } }
-        its(:version) { is_expected.to eq(nil) }
+        it { is_expected.to eq(nil) }
       end
 
       context "that has URL versions (i.e., is from a bad version of npm)" do
