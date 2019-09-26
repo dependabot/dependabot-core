@@ -84,9 +84,9 @@
 			},
 			"dependencies": {
 				"acorn": {
-					"version": "6.2.0",
-					"resolved": "https://registry.npmjs.org/acorn/-/acorn-6.2.0.tgz",
-					"integrity": "sha512-8oe72N3WPMjA+2zVG71Ia0nXZ8DpQH+QyyHO+p06jT8eg8FGG3FbcUIi8KziHlAfheJQZeoqbvq1mQSQHXKYLw==",
+					"version": "6.3.0",
+					"resolved": "https://registry.npmjs.org/acorn/-/acorn-6.3.0.tgz",
+					"integrity": "sha512-/czfa8BwS88b9gWQVhc8eknunSA2DoJpJyTQkhheIf5E48u1N0R4q/YxxsAeqRrmK9TQ/uYfgLDfZo91UlANIA==",
 					"dev": true
 				}
 			}
