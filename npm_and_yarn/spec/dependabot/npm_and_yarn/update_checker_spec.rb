@@ -599,6 +599,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "#latest_resolvable_previous_version" do
+    subject { checker.latest_resolvable_previous_version }
+
+    it "delegates to VersionResolver" do
+      dummy_version_resolver =
+        instance_double(described_class::VersionResolver)
+
+      expect(described_class::VersionResolver).
+        to receive(:new).
+        with(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          latest_version_finder: described_class::LatestVersionFinder,
+          latest_allowable_version: Gem::Version.new("1.7.0")
+        ).and_return(dummy_version_resolver)
+      expect(dummy_version_resolver).
+        to receive(:latest_resolvable_previous_version).
+        and_return(Gem::Version.new("1.7.0"))
+
+      expect(checker.latest_resolvable_previous_version).
+        to eq(Gem::Version.new("1.7.0"))
+    end
+  end
+
   describe "#updated_requirements" do
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -944,6 +969,81 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.updated_requirements).
           to eq(dependency_requirements)
       end
+    end
+  end
+
+  context "#updated_dependencies_after_full_unlock" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: dependency_version,
+        requirements: dependency_requirements,
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        file: "package.json",
+        requirement: "^1.0.0",
+        groups: [],
+        source: nil
+      }]
+    end
+
+    it "delegates to the VersionResolver" do
+      dummy_version_resolver =
+        instance_double(described_class::VersionResolver)
+
+      expect(described_class::VersionResolver).
+        to receive(:new).
+        with(
+          dependency: dependency,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          latest_version_finder: described_class::LatestVersionFinder,
+          latest_allowable_version: Gem::Version.new("1.7.0")
+        ).and_return(dummy_version_resolver)
+      expect(dummy_version_resolver).
+        to receive(:dependency_updates_from_full_unlock).
+        and_return(
+          [{
+            dependency: Dependabot::Dependency.new(
+              name: "etag",
+              version: nil,
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.6.0",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("1.7.0"),
+            previous_version: nil
+          }]
+        )
+
+      expect(checker.send(:updated_dependencies_after_full_unlock).first).
+        to eq(
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "1.7.0",
+            package_manager: "npm_and_yarn",
+            previous_version: nil,
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.7.0",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^1.6.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        )
     end
   end
 end
