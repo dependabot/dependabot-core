@@ -73,6 +73,11 @@ RSpec.describe Dependabot::Gradle::Version do
       it { is_expected.to eq(false) }
     end
 
+    context "with a pre-release" do
+      let(:version_string) { "2.10.0.pr3" }
+      it { is_expected.to eq(true) }
+    end
+
     context "with a release" do
       let(:version_string) { "1.0.0" }
       it { is_expected.to eq(false) }
