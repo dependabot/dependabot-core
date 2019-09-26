@@ -370,7 +370,7 @@ RSpec.describe namespace::PipenvVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls).
-                to eq(["https://github.com/greysteil/django.git"])
+                to eq(["https://github.com/user/django.git"])
             end
         end
       end
