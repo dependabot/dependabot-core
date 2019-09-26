@@ -1,3 +1,8 @@
+## v0.113.3, 26 September 2019
+
+- Gradle: Support pre-release syntax 1.0.0pr
+- Update security vulnerability disclosure to GitHub Bug Bounty program
+
 ## v0.113.2, 25 September 2019
 
 - Dependencies: Make gpgme an optional dependency
