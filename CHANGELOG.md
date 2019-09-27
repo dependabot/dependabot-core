@@ -1,3 +1,8 @@
+## v0.113.4, 27 September 2019
+
+- JS: Find previous version when no lockfile
+- JS: Handle malformed lockfile version
+
 ## v0.113.3, 26 September 2019
 
 - Gradle: Support pre-release syntax 1.0.0pr
