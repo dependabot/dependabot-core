@@ -54,6 +54,10 @@ module Dependabot
         latest_version_finder.latest_version_with_no_unlock
       end
 
+      def latest_resolvable_previous_version
+        version_resolver.latest_resolvable_previous_version
+      end
+
       def updated_requirements
         resolvable_version =
           if preferred_resolvable_version.is_a?(version_class)
@@ -104,17 +108,19 @@ module Dependabot
 
       def build_updated_dependency(update_details)
         original_dep = update_details.fetch(:dependency)
+        version = update_details.fetch(:version).to_s
+        previous_version = update_details.fetch(:previous_version)&.to_s
 
         Dependency.new(
           name: original_dep.name,
-          version: update_details.fetch(:version).to_s,
+          version: version,
           requirements: RequirementsUpdater.new(
             requirements: original_dep.requirements,
             updated_source: original_dep == dependency ? updated_source : nil,
-            latest_resolvable_version: update_details[:version].to_s,
+            latest_resolvable_version: version,
             update_strategy: requirements_update_strategy
           ).updated_requirements,
-          previous_version: original_dep.version,
+          previous_version: previous_version,
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager
         )
