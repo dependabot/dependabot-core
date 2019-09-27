@@ -153,6 +153,10 @@ module Dependabot
         end
 
         def semver_version_for(version_string)
+          # The next two lines are to guard against improperly formatted
+          # versions in a lockfile, such as an empty string or additional
+          # characters. NPM/yarn fixes these when running an update, so we can
+          # safely ignore these versions.
           return if version_string == ""
           return unless version_class.correct?(version_string)
 
