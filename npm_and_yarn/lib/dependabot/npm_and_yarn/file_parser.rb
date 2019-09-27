@@ -216,7 +216,7 @@ module Dependabot
 
           version = t.name.match(Dependabot::GitCommitChecker::VERSION_REGEX).
                     named_captures.fetch("version")
-          next unless NpmAndYarn::Version.correct?(version)
+          next unless version_class.correct?(version)
 
           return version
         end
@@ -233,11 +233,10 @@ module Dependabot
           manifest_name: manifest_name
         )&.fetch("version", nil)
 
-        return unless lock_version
-        return if lock_version.include?("://")
-        return if lock_version.include?("file:")
-        return if lock_version.include?("link:")
-        return if lock_version.include?("#")
+        # This line is to guard against improperly formatted versions in a
+        # lockfile, such as additional characters. NPM/yarn fixes these when
+        # running an update, so we can safely ignore these versions.
+        return unless version_class.correct?(lock_version)
 
         lock_version
       end
@@ -336,6 +335,10 @@ module Dependabot
               *sub_packages
             ].compact
           end
+      end
+
+      def version_class
+        NpmAndYarn::Version
       end
     end
   end

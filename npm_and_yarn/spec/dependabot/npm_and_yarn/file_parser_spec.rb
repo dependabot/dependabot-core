@@ -117,6 +117,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:length) { is_expected.to eq(2) }
         end
 
+        context "that contains a version requirement string" do
+          let(:npm_lock_fixture_name) { "invalid_version_requirement.json" }
+          subject { dependencies.find { |d| d.name == "etag" } }
+          it { is_expected.to eq(nil) }
+        end
+
         context "that has URL versions (i.e., is from a bad version of npm)" do
           let(:package_json_fixture_name) { "url_versions.json" }
           let(:npm_lock_fixture_name) { "url_versions.json" }
