@@ -1,3 +1,7 @@
+## v0.113.5, 30 September 2019
+
+- JS: Fix cases where previous version the latest
+
 ## v0.113.4, 27 September 2019
 
 - JS: Find previous version when no lockfile
