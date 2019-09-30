@@ -25,9 +25,7 @@ RSpec.describe Dependabot::Python::FileParser do
       content: requirements_body
     )
   end
-  let(:requirements_body) do
-    fixture("requirements", requirements_fixture_name)
-  end
+  let(:requirements_body) { fixture("requirements", requirements_fixture_name) }
   let(:requirements_fixture_name) { "version_specified.txt" }
 
   describe "parse" do
@@ -514,6 +512,32 @@ RSpec.describe Dependabot::Python::FileParser do
             }]
           )
         end
+      end
+
+      context "in a nested requirements file" do
+        let(:files) { [requirements, child_requirements, setup_file] }
+        let(:requirements) do
+          Dependabot::DependencyFile.new(
+            name: "requirements.txt",
+            content: fixture("requirements", "cascading_nested.txt")
+          )
+        end
+        let(:child_requirements) do
+          Dependabot::DependencyFile.new(
+            name: "nested/more_requirements.txt",
+            content: fixture("requirements", "with_setup_path.txt")
+          )
+        end
+        let(:setup_file) do
+          Dependabot::DependencyFile.new(
+            name: "nested/setup.py",
+            content: fixture("setup_files", "small_needs_sanitizing.py")
+          )
+        end
+
+        # Note that the path dependency *isn't* parsed (because it's a manifest
+        # for a path dependency, not for *this* project)
+        its(:length) { is_expected.to eq(2) }
       end
 
       context "with a parse_requirements statement" do
