@@ -172,8 +172,6 @@ module Dependabot
                       map(&:name).map(&:to_s)
           allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
-          raise if allowed_new_unlocks.none?
-
           # Unlock any sub-dependencies that Bundler reports caused the
           # conflict
           potentials_deps =
@@ -183,15 +181,10 @@ module Dependabot
               tree.find { |req| allowed_new_unlocks.include?(req.name) }
             end.compact.map(&:name)
 
-          # If there are specific dependencies we can unlock, unlock them
-          if potentials_deps.any?
-            return dependencies_to_unlock.append(*potentials_deps)
-          end
+          # If there's nothing more we can unlock, give up
+          raise if potentials_deps.none?
 
-          # Fall back to unlocking *all* sub-dependencies. This is required
-          # because Bundler's VersionConflict objects don't include enough
-          # information to chart the full path through all conflicts unwound
-          dependencies_to_unlock.append(*allowed_new_unlocks)
+          dependencies_to_unlock.append(*potentials_deps)
         end
 
         def build_definition(dependencies_to_unlock)
