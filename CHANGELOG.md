@@ -1,3 +1,9 @@
+## v0.113.6, 30 September 2019
+
+- Bundler: Fall back to unlocking all sub-dependencies in lockfile updater
+- Python: Fetch path dependency files relative to directory they're required in
+- Python: Handle nested path dependencies during parsing
+
 ## v0.113.5, 30 September 2019
 
 - JS: Handle cases where the resolved previous version is the latest version
