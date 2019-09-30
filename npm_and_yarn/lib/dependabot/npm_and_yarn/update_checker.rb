@@ -54,8 +54,8 @@ module Dependabot
         latest_version_finder.latest_version_with_no_unlock
       end
 
-      def latest_resolvable_previous_version
-        version_resolver.latest_resolvable_previous_version
+      def latest_resolvable_previous_version(updated_version)
+        version_resolver.latest_resolvable_previous_version(updated_version)
       end
 
       def updated_requirements

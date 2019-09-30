@@ -1142,7 +1142,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:dependency_files) { [package_json] }
       let(:manifest_fixture_name) { "exact_version_requirements.json" }
       subject do
-        resolver.latest_resolvable_previous_version
+        resolver.latest_resolvable_previous_version(latest_allowable_version)
       end
 
       describe "when version requirement is exact" do
@@ -1381,6 +1381,38 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.7.1")) }
+      end
+
+      context "when the resolved previous version is the same as the updated" do
+        let(:latest_allowable_version) { Gem::Version.new("0.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/chalk"
+        end
+        let(:response) do
+          fixture("npm_responses", "chalk.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to be_nil }
       end
     end
   end

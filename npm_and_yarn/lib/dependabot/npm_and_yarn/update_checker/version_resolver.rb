@@ -73,10 +73,11 @@ module Dependabot
           true
         end
 
-        def latest_resolvable_previous_version
-          resolve_latest_previous_version(dependency)
+        def latest_resolvable_previous_version(updated_version)
+          resolve_latest_previous_version(dependency, updated_version)
         end
 
+        # rubocop:disable Metrics/MethodLength
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           if part_of_tightly_locked_monorepo?
@@ -87,7 +88,9 @@ module Dependabot
           updates = [{
             dependency: dependency,
             version: latest_allowable_version,
-            previous_version: latest_resolvable_previous_version
+            previous_version: latest_resolvable_previous_version(
+              latest_allowable_version
+            )
           }]
           newly_broken_peer_reqs_on_dep.each do |peer_req|
             dep_name = peer_req.fetch(:requiring_dep_name)
@@ -104,11 +107,14 @@ module Dependabot
             updates << {
               dependency: dep,
               version: updated_version,
-              previous_version: resolve_latest_previous_version(dep)
+              previous_version: resolve_latest_previous_version(
+                dep, updated_version
+              )
             }
           end
           updates.uniq
         end
+        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -126,7 +132,7 @@ module Dependabot
             )
         end
 
-        def resolve_latest_previous_version(dep)
+        def resolve_latest_previous_version(dep, updated_version)
           if dep.version && version_class.correct?(dep.version)
             return version_class.new(dep.version)
           end
@@ -143,11 +149,19 @@ module Dependabot
             # requirements. This matches the logic when combining the same
             # dependency in DependencySet from multiple manifest files where we
             # pick the lowest version from the duplicates.
-            reqs.flat_map do |req|
+            latest_previous_version = reqs.flat_map do |req|
               relevant_versions.select do |version|
                 req.any? { |r| r.satisfied_by?(version) }
               end.max
             end.min
+
+            # Handle cases where the latest resolvable previous version is the
+            # latest version. This often happens if you don't have lockfiles and
+            # have requirements update strategy set to bump_versions, where an
+            # update might go from ^1.1.1 to ^1.1.2 (both resolve to 1.1.2).
+            return if updated_version == latest_previous_version
+
+            latest_previous_version
           end
         end
 
@@ -188,7 +202,9 @@ module Dependabot
             updates << {
               dependency: dep,
               version: updated_version,
-              previous_version: resolve_latest_previous_version(dep)
+              previous_version: resolve_latest_previous_version(
+                dep, updated_version
+              )
             }
           end
 
