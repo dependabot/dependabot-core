@@ -139,10 +139,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@dependabot/yarn-lib@^1.17.3":
-  version "1.17.3"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.17.3.tgz#69213a7ef3854d9d89e3ab58fb5f18ab80f582c9"
-  integrity sha512-jzkoR/bW/VtrYPuMxxhhPSS5oEAwBijDVcz2E887RIf9csFHIJPqOJ0PVPBzhU0FJbGLlKSStvjbJMiHPe/zHg==
+"@dependabot/yarn-lib@^1.19.0":
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.19.0.tgz#86b1613f3c96f1f3653681cc1c25a7e76287af1a"
+  integrity sha512-V8rYneupSJpEcTIs0NI9AIvhPrP1oQ8Xb900crD9dsZLH3CGyum7SLQYniauuJ2i8JsFRyC5EXUGP8rGyQVG4A==
   dependencies:
     "@zkochan/cmd-shim" "^3.1.0"
     babel-runtime "^6.26.0"
