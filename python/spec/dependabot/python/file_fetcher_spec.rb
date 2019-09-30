@@ -860,16 +860,16 @@ RSpec.describe Dependabot::Python::FileFetcher do
               with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: 200,
-                body: fixture(
-                  "github", "requirements_with_self_reference.json"
-                ),
+                body: fixture("github", "requirements_content.json"),
                 headers: { "content-type" => "application/json" }
               )
             stub_request(:get, url + "no_dot/more_requirements.txt?ref=sha").
               with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: 200,
-                body: fixture("github", "requirements_content.json"),
+                body: fixture(
+                  "github", "requirements_with_self_reference.json"
+                ),
                 headers: { "content-type" => "application/json" }
               )
             stub_request(:get, url + "comment_more_requirements.txt?ref=sha").
@@ -879,12 +879,30 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "requirements_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+
+            stub_request(:get, url + "no_dot?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 200, body: repo_contents, headers: json_header)
+            stub_request(:get, url + "no_dot/setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
+            stub_request(:get, url + "no_dot/setup.cfg?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 404,
+                body: fixture("github", "setup_content.json"),
+                headers: { "content-type" => "application/json" }
+              )
           end
 
           it "fetches the setup.py" do
             expect(file_fetcher_instance.files.count).to eq(5)
             expect(file_fetcher_instance.files.map(&:name)).
-              to include("setup.py")
+              to include("no_dot/setup.py")
           end
         end
 
