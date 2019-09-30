@@ -1,11 +1,12 @@
 ## v0.113.5, 30 September 2019
 
-- JS: Fix cases where previous version the latest
+- JS: Handle cases where the resolved previous version is the latest version
 
 ## v0.113.4, 27 September 2019
 
-- JS: Find previous version when no lockfile
-- JS: Handle malformed lockfile version
+- JS: Resolve the previous version from the version requirements when there is
+  no lockfile
+- JS: Handle malformed lockfile versions
 
 ## v0.113.3, 26 September 2019
 
