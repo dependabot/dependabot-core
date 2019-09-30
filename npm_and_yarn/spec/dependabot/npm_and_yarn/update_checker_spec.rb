@@ -600,7 +600,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_resolvable_previous_version" do
-    subject { checker.latest_resolvable_previous_version }
+    let(:updated_version) { Gem::Version.new("1.7.0") }
+    subject(:latest_resolvable_previous_version) do
+      checker.latest_resolvable_previous_version(updated_version)
+    end
 
     it "delegates to VersionResolver" do
       dummy_version_resolver =
@@ -613,14 +616,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           dependency_files: dependency_files,
           latest_version_finder: described_class::LatestVersionFinder,
-          latest_allowable_version: Gem::Version.new("1.7.0")
+          latest_allowable_version: updated_version
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver).
         to receive(:latest_resolvable_previous_version).
-        and_return(Gem::Version.new("1.7.0"))
+        with(updated_version).
+        and_return(Gem::Version.new("1.6.0"))
 
-      expect(checker.latest_resolvable_previous_version).
-        to eq(Gem::Version.new("1.7.0"))
+      expect(latest_resolvable_previous_version).
+        to eq(Gem::Version.new("1.6.0"))
     end
   end
 

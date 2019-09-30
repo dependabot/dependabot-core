@@ -84,7 +84,7 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def latest_resolvable_previous_version
+      def latest_resolvable_previous_version(_updated_version)
         dependency.version
       end
 
@@ -128,22 +128,28 @@ module Dependabot
       end
 
       def updated_dependency_without_unlock
+        version = latest_resolvable_version_with_no_unlock.to_s
+        previous_version = latest_resolvable_previous_version(version)&.to_s
+
         Dependency.new(
           name: dependency.name,
-          version: latest_resolvable_version_with_no_unlock.to_s,
+          version: version,
           requirements: dependency.requirements,
-          previous_version: latest_resolvable_previous_version&.to_s,
+          previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager
         )
       end
 
       def updated_dependency_with_own_req_unlock
+        version = preferred_resolvable_version.to_s
+        previous_version = latest_resolvable_previous_version(version)&.to_s
+
         Dependency.new(
           name: dependency.name,
-          version: preferred_resolvable_version.to_s,
+          version: version,
           requirements: updated_requirements,
-          previous_version: latest_resolvable_previous_version&.to_s,
+          previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager
         )
