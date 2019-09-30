@@ -181,8 +181,15 @@ module Dependabot
           each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            File.write(path, remove_imports(file.content))
           end
+      end
+
+      def remove_imports(content)
+        content.lines.
+          reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }.
+          reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }.
+          join
       end
 
       def normalised_name(name)
