@@ -1,3 +1,9 @@
+## v0.113.7, 1 October 2019
+
+- Bump eslint from 6.5.0 to 6.5.1 in /npm_and_yarn/helpers
+- Bump rubocop requirement from ~> 0.74.0 to ~> 0.75.0 in /common
+- Bump @dependabot/yarn-lib from 1.17.3 to 1.19.0 in /npm_and_yarn/helpers
+
 ## v0.113.6, 30 September 2019
 
 - Bundler: Fall back to unlocking all sub-dependencies in lockfile updater
