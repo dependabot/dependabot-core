@@ -120,6 +120,7 @@ module Dependabot
       # rubocop:disable Metrics/LineLength
       # rubocop:disable Style/ParallelAssignment
       # rubocop:disable Style/RedundantReturn
+      # rubocop:disable Style/IfUnlessModifier
       def old_comp(other)
         return unless Gem::Version === other
         return 0 if @version == other._version || canonical_segments == other.canonical_segments
@@ -152,6 +153,7 @@ module Dependabot
       # rubocop:enable Metrics/LineLength
       # rubocop:enable Style/ParallelAssignment
       # rubocop:enable Style/RedundantReturn
+      # rubocop:enable Style/IfUnlessModifier
     end
   end
 end
