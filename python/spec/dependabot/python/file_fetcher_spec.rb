@@ -890,19 +890,12 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
-            stub_request(:get, url + "no_dot/setup.cfg?ref=sha").
-              with(headers: { "Authorization" => "token token" }).
-              to_return(
-                status: 404,
-                body: fixture("github", "setup_content.json"),
-                headers: { "content-type" => "application/json" }
-              )
           end
 
-          it "fetches the setup.py" do
+          it "fetches the setup.py (does not look in the nested directory)" do
             expect(file_fetcher_instance.files.count).to eq(5)
             expect(file_fetcher_instance.files.map(&:name)).
-              to include("no_dot/setup.py")
+              to include("setup.py")
           end
         end
 

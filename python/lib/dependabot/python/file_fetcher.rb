@@ -364,12 +364,7 @@ module Dependabot
           map(&:strip).
           reject { |p| p.include?("://") || p.include?("git@") }
 
-        current_dir = File.dirname(req_file.name)
-
-        (uneditable_reqs + editable_reqs).map do |path|
-          path = File.join(current_dir, path) unless current_dir == "."
-          Pathname.new(path).cleanpath.to_path
-        end
+        uneditable_reqs + editable_reqs
       end
 
       def pipfile_path_setup_file_paths
