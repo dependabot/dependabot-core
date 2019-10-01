@@ -364,10 +364,15 @@ module Dependabot
           map(&:strip).
           reject { |p| p.include?("://") || p.include?("git@") }
 
+        uneditable_reqs + editable_reqs
+
         current_dir = File.dirname(req_file.name)
 
         (uneditable_reqs + editable_reqs).map do |path|
-          path = File.join(current_dir, path) unless current_dir == "."
+          if current_dir != "." && path != "."
+            path = File.join(current_dir, path)
+          end
+
           Pathname.new(path).cleanpath.to_path
         end
       end
