@@ -107,7 +107,7 @@ $ bin/dry-run.rb go_modules rsc/quote
 
 ## Releasing
 
-Triggering the jobs that will push the new gems is done by the following the steps below.
+Triggering the jobs that will push the new gems is done by following the steps below.
 
 - Ensure you have the latest merged changes:  `git checkout master` and `git pull`
 - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
