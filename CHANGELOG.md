@@ -1,3 +1,7 @@
+## v0.113.8, 2 October 2019
+
+- Python: Revert file fetching change
+
 ## v0.113.7, 1 October 2019
 
 - Bump eslint from 6.5.0 to 6.5.1 in /npm_and_yarn/helpers
