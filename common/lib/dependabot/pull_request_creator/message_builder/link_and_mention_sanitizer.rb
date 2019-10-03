@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
@@ -12,18 +13,9 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-
-        # Note that we're being deliberately careful about not matching
-        # different length strings of what look like code block quotes. By
-        # doing so we err on the side of sanitizing, which is *much* better
-        # than accidentally not sanitizing.
-        #
-        # rubocop:disable Style/RegexpLiteral
-        CODEBLOCK_REGEX = %r{
-          (?=[\s]`{3}[^`])|(?=[\s]`{3}\Z)|(?=\A`{3}[^`])|
-          (?=[\s]~{3}[^~])|(?=[\s]~{3}\Z)|(?=\A~{3}[^~])
-        }x.freeze
-        # rubocop:enable Style/RegexpLiteral
+        CODEBLOCK_REGEX = /```|~~~/.freeze
+        # End of string
+        EOS_REGEX = /\z/.freeze
 
         attr_reader :github_redirection_service
 
@@ -33,18 +25,20 @@ module Dependabot
 
         def sanitize_links_and_mentions(text:)
           # We don't want to sanitize any links or mentions that are contained
-          # within code blocks, so we split the text on "```"
-          snippets = text.split(CODEBLOCK_REGEX)
-          if snippets.first&.start_with?(CODEBLOCK_REGEX)
-            snippets = ["", *snippets]
+          # within code blocks, so we split the text on "```" or "~~~"
+          lines = []
+          scan = StringScanner.new(text)
+          until scan.eos?
+            line = scan.scan_until(CODEBLOCK_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            delimiter = line.match(CODEBLOCK_REGEX)&.to_s
+            unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
+              line = sanitize_mentions(line)
+              line = sanitize_links(line)
+            end
+            lines << line
           end
-
-          snippets.map.with_index do |snippet, index|
-            next snippet if index.odd?
-
-            snippet = sanitize_mentions(snippet)
-            sanitize_links(snippet)
-          end.join
+          lines.join
         end
 
         private

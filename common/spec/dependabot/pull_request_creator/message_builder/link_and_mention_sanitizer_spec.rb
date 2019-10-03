@@ -50,8 +50,13 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
       end
 
-      context "that appears in code quotes" do
+      context "that appears in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
+        it { is_expected.to eq(text) }
+      end
+
+      context "that appears in double tick code quotes" do
+        let(:text) { "Great work ``@greysteil``!" }
         it { is_expected.to eq(text) }
       end
 
@@ -78,17 +83,73 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
             )
           end
         end
+
+        context "with a mention before and after" do
+          let(:text) do
+            "```@command```\nThanks to @feelepxyz```@other``` @escape"
+          end
+
+          it "sanitizes the mention" do
+            expect(sanitize_links_and_mentions).to eq(
+              "```@command```\nThanks to [@&#8203;feelepxyz]"\
+              "(https://github.com/feelepxyz)"\
+              "```@other``` [@&#8203;escape](https://github.com/escape)"
+            )
+          end
+        end
+
+        context "with two code blocks and mention after" do
+          let(:text) { "```@command ```\n``` @test``` @feelepxyz" }
+
+          it "sanitizes the mention" do
+            expect(sanitize_links_and_mentions).to eq(
+              "```@command ```\n``` @test``` "\
+              "[@&#8203;feelepxyz](https://github.com/feelepxyz)"
+            )
+          end
+        end
+
+        context "with mixed syntax code blocks" do
+          let(:text) { "```@command ```\n~~~ @test~~~ @feelepxyz" }
+
+          it "sanitizes the mention" do
+            expect(sanitize_links_and_mentions).to eq(
+              "```@command ```\n~~~ @test~~~ [@&#8203;feelepxyz](https://github.com/feelepxyz)"
+            )
+          end
+        end
+
+        context "with a dangling code block" do
+          let(:text) { "@command ``` @feelepxyz" }
+
+          it "sanitizes the mention" do
+            expect(sanitize_links_and_mentions).to eq(
+              "[@&#8203;command](https://github.com/command) ``` "\
+              "[@&#8203;feelepxyz](https://github.com/feelepxyz)"
+            )
+          end
+        end
       end
 
       context "that is formatted suprisingly" do
         let(:text) { "```````\nThis is an @mention!" }
 
-        it "sanitizes the text" do
+        it "sanitizes the mention" do
           expect(sanitize_links_and_mentions).to eq(
             "```````\nThis is an [@&#8203;mention](https://github.com/mention)!"
           )
         end
       end
+    end
+
+    context "with empty text" do
+      let(:text) { "" }
+      it { is_expected.to eq(text) }
+    end
+
+    context "with ending newline" do
+      let(:text) { "Changelog 2.0\n" }
+      it { is_expected.to eq(text) }
     end
 
     context "with an email" do
