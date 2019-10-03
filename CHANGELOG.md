@@ -1,3 +1,8 @@
+## v0.113.9, 3 October 2019
+
+- Improve @mention sanitizer for compact code blocks
+- JS: Handle GitHub shorthand links in MetadataFinder
+
 ## v0.113.8, 2 October 2019
 
 - Python: Revert file fetching change
