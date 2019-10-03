@@ -49,12 +49,18 @@ RSpec.describe Dependabot::FileUpdaters::Base do
 
     context "when the required file is present" do
       let(:files) { [gemfile] }
-      it { is_expected.to_not raise_error }
+
+      it "doesn't raise" do
+        expect { updater_instance }.to_not raise_error
+      end
     end
 
     context "when the required file is missing" do
       let(:files) { [] }
-      it { is_expected.to raise_error(/No Gemfile/) }
+
+      it "raises" do
+        expect { updater_instance }.to raise_error(/No Gemfile/)
+      end
     end
   end
 
