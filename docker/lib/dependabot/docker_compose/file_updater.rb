@@ -6,14 +6,14 @@ require "dependabot/errors"
 require "dependabot/common/file_updater_helper"
 
 module Dependabot
-  module Docker
+  module DockerCompose
     class FileUpdater < Dependabot::FileUpdaters::Base
       include Dependabot::Docker::FileUpdaterHelper
 
-      FROM_REGEX = /FROM/i.freeze
+      IMAGE_REGEX = /image:\s*/.freeze
 
       def self.updated_files_regex
-        [/dockerfile/i]
+        [/docker-compose\.yml/i]
       end
 
       def updated_dependency_files
@@ -25,7 +25,7 @@ module Dependabot
           updated_files <<
             updated_file(
               file: file,
-              content: updated_dockerfile_content(file)
+              content: updated_dockercompose_file_content(file)
             )
         end
 
@@ -38,7 +38,8 @@ module Dependabot
       private
 
       def dependency
-        # Dockerfiles will only ever be updating a single dependency
+        # docker-compose.yml files will only ever be updating
+        # a single dependency
         dependencies.first
       end
 
@@ -46,10 +47,10 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No docker-compose.yml file!"
       end
 
-      def updated_dockerfile_content(file)
+      def updated_dockercompose_file_content(file)
         updated_content =
           if specified_with_digest?(file)
             update_digest_and_tag(file)
@@ -63,16 +64,19 @@ module Dependabot
       end
 
       def digest_and_tag_regex(digest)
-        /^#{FROM_REGEX}\s+.*@#{digest}/
+        /^\s*#{IMAGE_REGEX}\s+.*@#{digest}/
       end
 
       def tag_regex(declaration)
         escaped_declaration = Regexp.escape(declaration)
 
-        %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+        %r{^\s*#{IMAGE_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
       end
     end
   end
 end
 
-Dependabot::FileUpdaters.register("docker", Dependabot::Docker::FileUpdater)
+Dependabot::FileUpdaters.register(
+  "docker_compose",
+  Dependabot::DockerCompose::FileUpdater
+)

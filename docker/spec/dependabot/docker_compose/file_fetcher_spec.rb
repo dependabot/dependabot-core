@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/docker/file_fetcher"
+require "dependabot/docker_compose/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::Docker::FileFetcher do
+RSpec.describe Dependabot::DockerCompose::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
-  context "with a Dockerfile" do
+  context "with a docker-compose.yml file" do
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -41,27 +41,27 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           headers: { "content-type" => "application/json" }
         )
 
-      stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: dockerfile_fixture,
+          body: composefile_fixture,
           headers: { "content-type" => "application/json" }
         )
     end
 
-    let(:dockerfile_fixture) do
-      fixture("github", "contents_dockerfile.json")
+    let(:composefile_fixture) do
+      fixture("github", "contents_docker-compose.json")
     end
 
-    it "fetches the Dockerfile" do
+    it "fetches the docker-compose.yml file" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Dockerfile))
+        to match_array(%w(docker-compose.yml))
     end
 
     context "that has an invalid encoding" do
-      let(:dockerfile_fixture) { fixture("github", "contents_image.json") }
+      let(:composefile_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
         expect { file_fetcher_instance.files }.
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
   end
 
-  context "with multiple Dockerfiles" do
+  context "with docker-compose.yml override file" do
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -79,47 +79,48 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: fixture("github", "contents_docker_repo_multiple.json"),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: dockerfile_fixture,
+          body: composefile_fixture,
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, File.join(url, "Dockerfile-base?ref=sha")).
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: dockerfile_2_fixture,
+          body: composefile_2_fixture,
           headers: { "content-type" => "application/json" }
         )
     end
 
-    let(:dockerfile_fixture) do
-      fixture("github", "contents_dockerfile.json")
+    let(:composefile_fixture) do
+      fixture("github", "contents_docker-compose.json")
     end
-    let(:dockerfile_2_fixture) do
-      fixture("github", "contents_dockerfile.json")
+    let(:composefile_2_fixture) do
+      fixture("github", "contents_docker-compose.json")
     end
 
-    it "fetches both Dockerfiles" do
+    it "fetches both docker-compose.yml files" do
       expect(file_fetcher_instance.files.count).to eq(2)
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Dockerfile Dockerfile-base))
+        to match_array(%w(docker-compose.yml docker-compose.override.yml))
     end
 
     context "one of which has an invalid encoding" do
-      let(:dockerfile_2_fixture) { fixture("github", "contents_image.json") }
+      let(:composefile_2_fixture) { fixture("github", "contents_image.json") }
 
-      it "fetches the first Dockerfile, and ignores the invalid one" do
+      it "fetches the first docker-compose.yml file, "\
+         "and ignores the invalid one" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Dockerfile))
+          to match_array(%w(docker-compose.yml))
       end
     end
   end
 
-  context "with a custom named Dockerfile" do
+  context "with a custom named docker-compose.yml file" do
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
@@ -129,27 +130,27 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           headers: { "content-type" => "application/json" }
         )
 
-      stub_request(:get, File.join(url, "Dockerfile-base?ref=sha")).
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_dockerfile.json"),
+          body: fixture("github", "contents_docker-compose.json"),
           headers: { "content-type" => "application/json" }
         )
     end
 
-    it "fetches the Dockerfile" do
+    it "fetches the docker-compose.override.yml file" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(Dockerfile-base))
+        to match_array(%w(docker-compose.override.yml))
     end
   end
 
   context "with a directory that doesn't exist" do
-    let(:directory) { "/nonexistent" }
+    let(:directory) { "/non/existant" }
 
     before do
-      stub_request(:get, url + "nonexistent?ref=sha").
+      stub_request(:get, url + "non/existant?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 404,
