@@ -72,7 +72,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         )
     end
 
-    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:dockerfile_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
 
     it "fetches the Dockerfile" do
       expect(file_fetcher_instance.files.count).to eq(1)
@@ -122,8 +124,12 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         )
     end
 
-    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
-    let(:dockerfile_2_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:dockerfile_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
+    let(:dockerfile_2_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
 
     it "fetches both Dockerfiles" do
       expect(file_fetcher_instance.files.count).to eq(3)

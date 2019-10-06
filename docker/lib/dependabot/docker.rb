@@ -11,6 +11,8 @@ require "dependabot/docker/metadata_finder"
 require "dependabot/docker/requirement"
 require "dependabot/docker/version"
 
+require_relative "docker_compose"
+
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
   .register_label_details("docker", name: "docker", colour: "21ceff")
