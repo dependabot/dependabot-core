@@ -81,7 +81,8 @@ module Dependabot
         ].freeze
         MODULE_PATH_MISMATCH_REGEXES = [
           /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/
+          /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
+          /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
         def local_replacements
