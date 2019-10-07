@@ -18,7 +18,7 @@
     "eslint": "^6.5.1",
     "eslint-plugin-prettier": "^3.1.1",
     "jest": "^24.9.0",
-    "nock": "^11.3.5",
+    "nock": "^11.3.6",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0"
   }
