@@ -144,14 +144,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     end
 
     context "with a git source" do
-      let(:buildfile_fixture_name) { "shortform_build.gradle" }
-
-      subject(:dependency) do
-        dependencies.find do |dep|
-          dep.name == "com.github.heremaps:oksse"
-        end
-      end
-
       let(:dependency_requirements) do
         [{
           requirement: nil,
@@ -161,16 +153,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             type: "git",
             url: "https://github.com/jonschlinkert/is-number.git",
             branch: nil
-            # ref: "master"
           }
         }]
-        let(:dependency_name) { "com.github.heremaps:oksse" }
-        let(:dependency_version) { "af885e2e890b9ef0875edd2b117305119ee5bdc5" }
-
-        it { is_expected.to eq(
-          version_class.new("af885e2e890b9ef0875edd2b117305119ee5bdc5")
-          ) }
       end
+      let(:dependency_name) { "com.github.heremaps:oksse" }
+      let(:dependency_version) { "af885e2e890b9ef0875edd2b117305119ee5bdc5" }
+
+      it { is_expected.to be_nil }
     end
   end
 
