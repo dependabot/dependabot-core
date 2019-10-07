@@ -34,7 +34,8 @@ dependencies {
     compile 'com.github.jeremyh:jBCrypt:master-SNAPSHOT'
     compile 'com.github.salomonbrys.kotson:kotson:2.5.0'
     compile 'mysql:mysql-connector-java:5.1.6'
-
+    compile "com.github.heremaps:oksse:be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
+    
 }
 
 jar {
