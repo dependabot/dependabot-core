@@ -1,3 +1,7 @@
+## v0.113.10, 7 October 2019
+
+- Upgrade Go to 1.13.1
+
 ## v0.113.9, 3 October 2019
 
 - Improve @mention sanitizer for compact code blocks
