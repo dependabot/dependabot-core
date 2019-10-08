@@ -40,9 +40,13 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             File.write("go.mod", go_mod.content)
 
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
-              env: { "GO111MODULE" => "on" },
+              env: env,
               function: "getUpdatedVersion",
               args: {
                 dependency: {
