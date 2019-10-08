@@ -146,12 +146,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "with a git source" do
       let(:dependency_requirements) do
         [{
+          file: "build.gradle",
           requirement: nil,
-          file: "package.json",
-          groups: ["devDependencies"],
+          groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/jonschlinkert/is-number.git",
+            url: "https://github.com/heremaps/oksse.git",
             branch: nil
           }
         }]
