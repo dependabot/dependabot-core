@@ -109,6 +109,35 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           end
         end
 
+        context "with mentions inside a complex code fence" do
+          let(:text) do
+            "Take a look at this code: ```` @not-a-mention "\
+            "```@not-a-mention``` ````"
+          end
+
+          it "sanitizes the text without touching the code fence" do
+            expect(sanitize_links_and_mentions).to eq(
+              "Take a look at this code: ```` @not-a-mention "\
+              "```@not-a-mention``` ````"
+            )
+          end
+
+          context "and a real mention after" do
+            let(:text) do
+              "Take a look at this code: ```` @not-a-mention "\
+              "```@not-a-mention``` ```` This is a @mention!"
+            end
+
+            it "sanitizes the text without touching the code fence" do
+              expect(sanitize_links_and_mentions).to eq(
+                "Take a look at this code: ```` @not-a-mention "\
+                "```@not-a-mention``` ```` "\
+                "This is a [@&#8203;mention](https://github.com/mention)!"
+              )
+            end
+          end
+        end
+
         context "with mixed syntax code blocks" do
           let(:text) { "```@command ```\n~~~ @test~~~ @feelepxyz" }
 
@@ -132,11 +161,11 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       end
 
       context "that is formatted suprisingly" do
-        let(:text) { "```````\nThis is an @mention!" }
+        let(:text) { "```````\nThis is a @mention!" }
 
         it "sanitizes the mention" do
           expect(sanitize_links_and_mentions).to eq(
-            "```````\nThis is an [@&#8203;mention](https://github.com/mention)!"
+            "```````\nThis is a [@&#8203;mention](https://github.com/mention)!"
           )
         end
       end
