@@ -29,7 +29,7 @@ if (function_exists('ini_set')) {
 
     $memoryLimit = trim(ini_get('memory_limit'));
     // Increase memory_limit if it is lower than 1900MB
-    if ($memoryLimit != -1 && $inBytes($memoryLimit) < 1024 * 1024 * 1900) {
+    if ($memoryLimit !== '-1' && $inBytes($memoryLimit) < 1024 * 1024 * 1900) {
         @ini_set('memory_limit', '1900M');
     }
 
