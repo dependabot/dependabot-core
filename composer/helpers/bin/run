@@ -13,18 +13,18 @@ $request = json_decode(file_get_contents('php://stdin'), true);
 
 // Increase the default memory limit the same way Composer does (but clearer)
 if (function_exists('ini_set')) {
-    $memoryInBytes = static function ($value) {
-        $unit = strtolower(substr($value, -1, 1));
-        $value = (int) $value;
+    $memoryInBytes = static function ($memoryLimit) {
+        $unit = strtolower(substr($memoryLimit, -1, 1));
+        $memoryLimit = (int) $memoryLimit;
         if ($unit == 'g') {
-            $value *= (1024 * 1024 * 1024);
+            $memoryLimit *= (1024 * 1024 * 1024);
         } elseif ($unit == 'm') {
-            $value *= (1024 * 1024);
+            $memoryLimit *= (1024 * 1024);
         } elseif ($unit == 'k') {
-            $value *= 1024;
+            $memoryLimit *= 1024;
         }
 
-        return $value;
+        return $memoryLimit;
     };
 
     $memoryLimit = trim(ini_get('memory_limit'));
