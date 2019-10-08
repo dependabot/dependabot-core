@@ -1,3 +1,7 @@
+## v0.113.11, 8 October 2019
+
+- Disable the Go module proxy
+
 ## v0.113.10, 7 October 2019
 
 - Upgrade Go to 1.13.1
