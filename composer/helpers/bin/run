@@ -13,7 +13,7 @@ $request = json_decode(file_get_contents('php://stdin'), true);
 
 // Increase the default memory limit the same way Composer does (but clearer)
 if (function_exists('ini_set')) {
-    $memoryInBytes = static function (string $memoryLimit): int {
+    $inBytes = static function (string $memoryLimit): int {
         $unit = strtolower(substr($memoryLimit, -1, 1));
         $memoryLimit = (int) $memoryLimit;
         if ($unit == 'g') {
@@ -29,7 +29,7 @@ if (function_exists('ini_set')) {
 
     $memoryLimit = trim(ini_get('memory_limit'));
     // Increase memory_limit if it is lower than 1900MB
-    if ($memoryLimit != -1 && $memoryInBytes($memoryLimit) < 1024 * 1024 * 1900) {
+    if ($memoryLimit != -1 && $inBytes($memoryLimit) < 1024 * 1024 * 1900) {
         @ini_set('memory_limit', '1900M');
     }
 
@@ -37,7 +37,7 @@ if (function_exists('ini_set')) {
     if ($memoryLimit = getenv('COMPOSER_MEMORY_LIMIT')) {
         @ini_set('memory_limit', $memoryLimit);
     }
-    unset($memoryInBytes, $memoryLimit);
+    unset($inBytes, $memoryLimit);
 }
 
 date_default_timezone_set('Europe/London');
