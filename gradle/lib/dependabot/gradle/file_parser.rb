@@ -168,6 +168,7 @@ module Dependabot
           fetch("value")
       end
 
+      # rubocop:disable Metrics/MethodLength
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
         group   = evaluated_value(details_hash[:group], buildfile)
         name    = evaluated_value(details_hash[:name], buildfile)
@@ -202,6 +203,7 @@ module Dependabot
           package_manager: "gradle"
         )
       end
+      # rubocop:enable Metrics/MethodLength
 
       def source_from(group, name, version)
         return nil unless group&.start_with?("com.github")
