@@ -47,7 +47,7 @@ RSpec.describe Dependabot::FileParsers::Base do
     context "when the required file is missing" do
       let(:files) { [] }
 
-      it "doesn't raise" do
+      it "raises" do
         expect { parser_instance }.to raise_error(/No Gemfile/)
       end
     end
