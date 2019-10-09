@@ -1,3 +1,8 @@
+## v0.113.12, 9 October 2019
+
+- Gradle: Support updates that use git dependencies
+- Improve @mention sanitizer for verbatim backticks in code fences
+
 ## v0.113.11, 8 October 2019
 
 - Disable the Go module proxy
