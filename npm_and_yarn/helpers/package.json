@@ -9,7 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@dependabot/yarn-lib": "^1.19.0",
+    "@dependabot/yarn-lib": "^1.19.1",
     "detect-indent": "^6.0.0",
     "npm": "6.10.3",
     "semver": "^6.3.0"
