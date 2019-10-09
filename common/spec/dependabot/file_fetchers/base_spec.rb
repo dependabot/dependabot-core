@@ -12,6 +12,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     Dependabot::Source.new(
       provider: provider,
       repo: repo,
+      organization: organization,
       directory: directory,
       branch: branch,
       commit: source_commit
@@ -19,6 +20,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
   end
   let(:provider) { "github" }
   let(:repo) { "gocardless/bump" }
+  let(:organization) { nil }
   let(:directory) { "/" }
   let(:branch) { nil }
   let(:source_commit) { nil }
@@ -201,6 +203,51 @@ RSpec.describe Dependabot::FileFetchers::Base do
           stub_request(:get, branch_url).
             to_return(status: 200,
                       body: fixture("bitbucket", "other_branch.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        it { is_expected.to eq("4c2ea65f2eb932c438557cb6ec29b984794c6108") }
+      end
+    end
+
+    context "with a Bitbucket Server source" do
+      let(:provider) { "bitbucket_server" }
+      let(:base_url) { "https://bitbucket.com/rest/api/1.0" }
+      let(:repo_url) { base_url + "/projects/gocardless/repos/bump" }
+      let(:repo)     { "/projects/gocardless/repos/bump" }
+      let(:branch_url) { repo_url + "/branches/default" }
+      let(:commits_url) { repo_url + "/commits?limit=1&start=0&until=master" }
+      let(:organization) { "gocardless" }
+
+      before do
+        stub_request(:get, repo_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket_server", "bump_repo.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, branch_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket_server", "default_branch.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, commits_url).
+          to_return(status: 200,
+                    body: fixture("bitbucket_server",
+                                  "default_branch_commits.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      it { is_expected.to eq("e3dbee27a25edf6ce99854f0c2683afa7ef352a0") }
+
+      context "with a target branch" do
+        let(:branch) { "my_branch" }
+        let(:commits_url) do
+          repo_url + "/commits?limit=1&start=0&until=#{branch}"
+        end
+
+        before do
+          stub_request(:get, commits_url).
+            to_return(status: 200,
+                      body: fixture("bitbucket_server",
+                                    "other_branch_commits.json"),
                       headers: { "content-type" => "application/json" })
         end
 
@@ -945,6 +992,152 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it "hits the right GitHub URL" do
             files
             expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+    end
+
+    context "with a Bitbucket Server source" do
+      let(:provider) { "bitbucket_server" }
+      let(:repo)     { "/projects/gocardless/repos/bump" }
+      let(:organization) { "gocardless" }
+      let(:base_url) { "https://bitbucket.com/rest/api/1.0" }
+      let(:repo_url) { base_url + repo }
+
+      let(:branch_url) { repo_url + "/branches/default" }
+      let(:url) { repo_url + "/raw/requirements.txt?at=sha" }
+
+      before do
+        stub_request(:get, url).
+          to_return(status: 200,
+                    body: fixture("bitbucket_server", "gemspec_content"),
+                    headers: { "content-type" => "text/plain" })
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the file" do
+        subject { files.find { |file| file.name == "requirements.txt" } }
+
+        it { is_expected.to be_a(Dependabot::DependencyFile) }
+        its(:content) { is_expected.to include("required_rubygems_version") }
+      end
+
+      context "with a directory specified" do
+        let(:file_fetcher_instance) do
+          child_class.new(source: source, credentials: credentials)
+        end
+
+        context "that ends in a slash" do
+          let(:directory) { "app/" }
+          let(:url) { repo_url + "/raw/app/requirements.txt?at=sha" }
+
+          it "hits the right Bitbucket Server URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that begins with a slash" do
+          let(:directory) { "/app" }
+          let(:url) { repo_url + "/raw/app/requirements.txt?at=sha" }
+
+          it "hits the right Bitbucket Server URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+
+        context "that includes a slash" do
+          let(:directory) { "a/pp" }
+          let(:url) { repo_url + "/raw/a/pp/requirements.txt?at=sha" }
+
+          it "hits the right Bitbucket Server URL" do
+            files
+            expect(WebMock).to have_requested(:get, url)
+          end
+        end
+      end
+
+      context "when a dependency file can't be found" do
+        before do
+          stub_request(:get, url).
+            to_return(
+              status: 404,
+              body: fixture("bitbucket_server", "file_not_found.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a custom error" do
+          expect { file_fetcher_instance.files }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/requirements.txt")
+            end
+        end
+      end
+
+      context "when fetching the file only if present" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files_in?(filenames)
+              filenames.include?("requirements.txt")
+            end
+
+            def self.required_files_message
+              "Repo must contain a requirements.txt."
+            end
+
+            private
+
+            def fetch_files
+              [fetch_file_if_present("requirements.txt")].compact
+            end
+          end
+        end
+
+        let(:repo_contents_url) do
+          "https://bitbucket.com/rest/api/1.0" + repo +
+            "/browse/?at=sha&limit=100"
+        end
+
+        before do
+          stub_request(:get, repo_contents_url).
+            to_return(status: 200,
+                      body: fixture("bitbucket_server", "business_files.json"),
+                      headers: { "content-type" => "application/json" })
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("required_rubygems_version") }
+        end
+
+        context "that can't be found" do
+          before do
+            stub_request(:get, repo_contents_url).
+              to_return(status: 200,
+                        body: fixture("bitbucket_server", "no_files.json"),
+                        headers: { "content-type" => "application/json" })
+          end
+
+          its(:length) { is_expected.to eq(0) }
+        end
+
+        context "with a directory" do
+          let(:directory) { "/app" }
+          let(:repo_contents_url) do
+            "https://bitbucket.com/rest/api/1.0" \
+            "#{repo}/browse/app?at=sha&limit=100"
+          end
+
+          it "hits the right GitHub URL" do
+            files
+            expect(WebMock).to have_requested(:get, repo_contents_url)
           end
         end
       end

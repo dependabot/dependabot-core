@@ -5,6 +5,7 @@ require "dependabot/metadata_finders"
 module Dependabot
   class PullRequestCreator
     require "dependabot/pull_request_creator/azure"
+    require "dependabot/pull_request_creator/bitbucket_server"
     require "dependabot/pull_request_creator/codecommit"
     require "dependabot/pull_request_creator/github"
     require "dependabot/pull_request_creator/gitlab"
@@ -73,6 +74,7 @@ module Dependabot
       when "gitlab" then gitlab_creator.create
       when "azure" then azure_creator.create
       when "codecommit" then codecommit_creator.create
+      when "bitbucket_server" then bitbucket_server_creator.create
       else raise "Unsupported provider #{source.provider}"
       end
     end
@@ -158,6 +160,20 @@ module Dependabot
         author_details: author_details,
         labeler: labeler,
         require_up_to_date_base: require_up_to_date_base?
+      )
+    end
+
+    def bitbucket_server_creator
+      BitbucketServer.new(
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        reviewers: reviewers
       )
     end
 

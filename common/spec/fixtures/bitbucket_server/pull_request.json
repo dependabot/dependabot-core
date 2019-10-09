@@ -1,0 +1,18 @@
+{
+  "size": 1,
+  "limit": 25,
+  "isLastPage": true,
+  "values": [
+    {
+      "id": 584,
+      "version": 0,
+      "title": "Title",
+      "state": "OPEN",
+      "open": true,
+      "closed": false,
+      "createdDate": 1570455137000,
+      "updatedDate": 1570455137000
+    }
+  ],
+  "start": 0
+}

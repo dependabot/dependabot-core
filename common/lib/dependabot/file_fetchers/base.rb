@@ -7,6 +7,7 @@ require "dependabot/clients/azure"
 require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
+require "dependabot/clients/bitbucket_server"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/shared_helpers"
 
@@ -21,6 +22,7 @@ module Dependabot
         Gitlab::Error::NotFound,
         Dependabot::Clients::Azure::NotFound,
         Dependabot::Clients::Bitbucket::NotFound,
+        Dependabot::Clients::BitbucketServer::NotFound,
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
@@ -157,6 +159,8 @@ module Dependabot
           _azure_repo_contents(path, commit)
         when "bitbucket"
           _bitbucket_repo_contents(repo, path, commit)
+        when "bitbucket_server"
+          _bitbucket_server_repo_contents(repo, path, commit)
         when "codecommit"
           _codecommit_repo_contents(repo, path, commit)
         else raise "Unsupported provider '#{provider}'."
@@ -269,6 +273,29 @@ module Dependabot
         end
       end
 
+      def _bitbucket_server_repo_contents(repo, path, commit)
+        response = bitbucket_server_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
+
+        response.map do |file|
+          type = case file.fetch("type")
+                 when "FILE" then "file"
+                 when "DIRECTORY" then "dir"
+                 else file.fetch("type")
+                 end
+
+          OpenStruct.new(
+            name: File.basename(file.fetch("path")),
+            path: file.fetch("path"),
+            type: type,
+            size: file.fetch("size", 0)
+          )
+        end
+      end
+
       def _codecommit_repo_contents(repo, path, commit)
         response = codecommit_client.fetch_repo_contents(
           repo,
@@ -342,6 +369,8 @@ module Dependabot
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
           bitbucket_client.fetch_file_contents(repo, commit, path)
+        when "bitbucket_server"
+          bitbucket_server_client.fetch_file_contents(repo, commit, path)
         when "codecommit"
           codecommit_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
@@ -425,6 +454,7 @@ module Dependabot
         when "gitlab" then gitlab_client
         when "azure" then azure_client
         when "bitbucket" then bitbucket_client
+        when "bitbucket_server" then bitbucket_server_client
         when "codecommit" then codecommit_client
         else raise "Unsupported provider '#{source.provider}'."
         end
@@ -458,6 +488,12 @@ module Dependabot
         @bitbucket_client ||=
           Dependabot::Clients::BitbucketWithRetries.
           for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def bitbucket_server_client
+        @bitbucket_server_client ||=
+          Dependabot::Clients::BitbucketServer.
+          for_source(source: source, credentials: credentials)
       end
 
       def codecommit_client
