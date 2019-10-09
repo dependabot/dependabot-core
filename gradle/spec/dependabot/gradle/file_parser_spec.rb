@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
     context "specified in short form" do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
-      its(:length) { is_expected.to eq(8) }
+      its(:length) { is_expected.to eq(9) }
 
       it "handles packaging types" do
         expect(dependencies.map(&:name)).
@@ -87,6 +87,37 @@ RSpec.describe Dependabot::Gradle::FileParser do
               groups: [],
               source: nil,
               metadata: { property_name: "kotlin_version" }
+            }]
+          )
+        end
+      end
+
+      describe "the git dependency" do
+        subject(:dependency) do
+          dependencies.find do |dep|
+            dep.name == "com.github.heremaps:oksse"
+          end
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("com.github.heremaps:oksse")
+          expect(dependency.version).to eq(
+            "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
+          )
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7",
+              file: "build.gradle",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/heremaps/oksse",
+                branch: nil,
+                ref: "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
+              },
+              metadata: nil
             }]
           )
         end
