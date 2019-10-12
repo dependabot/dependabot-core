@@ -67,11 +67,11 @@ ARG USER_GID=$USER_UID
 ARG USERNAME=dependabot
 
 RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
-    useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
-RUN chown -R "${USERNAME}":"${USERNAME}" \
-  /usr/local/.pyenv \
-  /opt/go/gopath \
-  /opt/rust/
+    useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}" && \
+    chown -R ${USER_UID}:${USER_GID} \
+          /usr/local/.pyenv \
+          /opt/go/gopath \
+          /opt/rust/
 USER $USERNAME
 
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
@@ -86,8 +86,8 @@ ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
     BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 
-COPY --from=build --chown=${USERNAME}:${USERNAME} ${CODE_DIR}/ .
-COPY --from=build --chown=${USERNAME}:${USERNAME} ${BUNDLE_PATH}/ ${BUNDLE_PATH}
+COPY --from=build --chown=${USER_UID}:${USER_GID} ${CODE_DIR}/ .
+COPY --from=build --chown=${USER_UID}:${USER_GID} ${BUNDLE_PATH}/ ${BUNDLE_PATH}
 
 # Make omnibus gems available to bundler in root directory
 RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
