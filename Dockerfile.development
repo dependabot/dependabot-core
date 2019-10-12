@@ -1,62 +1,17 @@
-FROM dependabot/dependabot-core
+FROM dependabot/dependabot-core AS build
 
-# Temporarily switch to root user in order to install packages
-USER root
-
-# Add debugging tools
-RUN apt-get update && apt-get install -y vim strace ltrace gdb
-
-# This Dockerfile adds a non-root 'dependabot' user. However, for Linux,
-# this user's GID/UID must match your local user UID/GID to avoid permission issues
-# with bind mounts. Update USER_UID / USER_GID if yours is not 1000.
-# USER_UID should be the value of $UID from the host environment and
-# USER_GID the value of `id -g`.
-# See https://aka.ms/vscode-remote/containers/non-root-user for details.
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
 ARG USERNAME=dependabot
-
-RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
-    useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
-RUN chown -R "${USERNAME}":"${USERNAME}" \
-  /usr/local/.pyenv \
-  /opt/go/gopath \
-  /opt/rust/
-USER $USERNAME
-
 ARG CODE_DIR=/home/$USERNAME/dependabot-core
-
-RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
-    echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
-
-RUN mkdir -p ${CODE_DIR}/common/lib/dependabot
-WORKDIR ${CODE_DIR}
 
 ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
     BUNDLE_BIN=".bundle/binstubs"
-ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
+
+RUN mkdir -p ${CODE_DIR}
+WORKDIR ${CODE_DIR}
 
 COPY common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
 RUN cd common && bundle install
-
-RUN mkdir -p ${CODE_DIR}/bundler \
-             ${CODE_DIR}/cargo \
-             ${CODE_DIR}/composer \
-             ${CODE_DIR}/dep \
-             ${CODE_DIR}/docker \
-             ${CODE_DIR}/elm \
-             ${CODE_DIR}/git_submodules \
-             ${CODE_DIR}/github_actions \
-             ${CODE_DIR}/go_modules \
-             ${CODE_DIR}/gradle \
-             ${CODE_DIR}/hex \
-             ${CODE_DIR}/maven \
-             ${CODE_DIR}/npm_and_yarn \
-             ${CODE_DIR}/nuget \
-             ${CODE_DIR}/omnibus \
-             ${CODE_DIR}/python \
-             ${CODE_DIR}/terraform
 
 COPY bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
@@ -89,6 +44,50 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     done
 
 RUN cd omnibus && bundle install
+
+#--------------------------------------------------------------
+
+FROM dependabot/dependabot-core
+
+# Temporarily switch to root user in order to install packages
+USER root
+
+# Add debugging tools
+RUN apt-get update && apt-get install -y vim strace ltrace gdb
+
+# This Dockerfile adds a non-root 'dependabot' user. However, for Linux,
+# this user's GID/UID must match your local user UID/GID to avoid permission issues
+# with bind mounts. Update USER_UID / USER_GID if yours is not 1000.
+# USER_UID should be the value of $UID from the host environment and
+# USER_GID the value of `id -g`.
+# See https://aka.ms/vscode-remote/containers/non-root-user for details.
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ARG USERNAME=dependabot
+
+RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
+    useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
+RUN chown -R "${USERNAME}":"${USERNAME}" \
+  /usr/local/.pyenv \
+  /opt/go/gopath \
+  /opt/rust/
+USER $USERNAME
+
+RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
+    echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
+
+ARG CODE_DIR=/home/$USERNAME/dependabot-core
+
+RUN mkdir -p ${CODE_DIR}
+WORKDIR ${CODE_DIR}
+
+ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
+    BUNDLE_BIN=".bundle/binstubs"
+ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
+
+COPY --from=build --chown=${USERNAME}:${USERNAME} ${CODE_DIR}/ .
+COPY --from=build --chown=${USERNAME}:${USERNAME} ${BUNDLE_PATH}/ ${BUNDLE_PATH}
+
 # Make omnibus gems available to bundler in root directory
 RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
 

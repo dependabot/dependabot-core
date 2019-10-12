@@ -62,84 +62,33 @@ if [ "$#" -gt "0" ]; then
   CONTAINER_ARGS=("$@")
 fi
 
+function add_volume() {
+  local fname=$1
+  local dir=$2
+  local target=$3
+  if [ -e "$dir/$fname" ]; then
+    echo "-v" "$dir/$fname:$target/$fname"
+  fi
+}
+
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot/dependabot-core"
+VOLUME_ARGS=()
+# Search for Gemfiles in any 2nd-level folders, and add volumes linking relevant files
+for gemfile in $PWD/*/Gemfile; do
+  pm_dir="$(dirname $gemfile)"
+  dirname="$(basename $pm_dir)"
+  target="$CODE_DIR/$dirname"
+  VOLUME_ARGS+=( $(add_volume 'Gemfile' $pm_dir $target)
+                 $(add_volume "dependabot-$dirname.gemspec" $pm_dir $target)
+                 $(add_volume 'lib' $pm_dir $target)
+                 $(add_volume 'spec' $pm_dir $target) )
+done
 docker run --rm -ti \
-  -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
-  -v "$(pwd)/bin:$CODE_DIR/bin" \
-  -v "$(pwd)/common/Gemfile:$CODE_DIR/common/Gemfile" \
-  -v "$(pwd)/common/dependabot-common.gemspec:$CODE_DIR/common/dependabot-common.gemspec" \
-  -v "$(pwd)/common/bin:$CODE_DIR/common/bin" \
-  -v "$(pwd)/common/lib:$CODE_DIR/common/lib" \
-  -v "$(pwd)/common/spec:$CODE_DIR/common/spec" \
-  -v "$(pwd)/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
-  -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
-  -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
-  -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
-  -v "$(pwd)/elm/Gemfile:$CODE_DIR/elm/Gemfile" \
-  -v "$(pwd)/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \
-  -v "$(pwd)/elm/lib:$CODE_DIR/elm/lib" \
-  -v "$(pwd)/elm/spec:$CODE_DIR/elm/spec" \
-  -v "$(pwd)/docker/Gemfile:$CODE_DIR/docker/Gemfile" \
-  -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
-  -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
-  -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
-  -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
-  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
-  -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
-  -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
-  -v "$(pwd)/github_actions/Gemfile:$CODE_DIR/github_actions/Gemfile" \
-  -v "$(pwd)/github_actions/dependabot-github_actions.gemspec:$CODE_DIR/github_actions/dependabot-core.gemspec" \
-  -v "$(pwd)/github_actions/lib:$CODE_DIR/github_actions/lib" \
-  -v "$(pwd)/github_actions/spec:$CODE_DIR/github_actions/spec" \
-  -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
-  -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
-  -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
-  -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
-  -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
-  -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-core.gemspec" \
-  -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
-  -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
-  -v "$(pwd)/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
-  -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-core.gemspec" \
-  -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
-  -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
-  -v "$(pwd)/gradle/Gemfile:$CODE_DIR/gradle/Gemfile" \
-  -v "$(pwd)/gradle/dependabot-gradle.gemspec:$CODE_DIR/gradle/dependabot-gradle.gemspec" \
-  -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
-  -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
-  -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
-  -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
-  -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
-  -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
-  -v "$(pwd)/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
-  -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-core.gemspec" \
-  -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
-  -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \
-  -v "$(pwd)/dep/Gemfile:$CODE_DIR/dep/Gemfile" \
-  -v "$(pwd)/dep/dependabot-dep.gemspec:$CODE_DIR/dep/dependabot-dep.gemspec" \
-  -v "$(pwd)/dep/lib:$CODE_DIR/dep/lib" \
-  -v "$(pwd)/dep/spec:$CODE_DIR/dep/spec" \
-  -v "$(pwd)/go_modules/Gemfile:$CODE_DIR/go_modules/Gemfile" \
-  -v "$(pwd)/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
-  -v "$(pwd)/go_modules/lib:$CODE_DIR/go_modules/lib" \
-  -v "$(pwd)/go_modules/spec:$CODE_DIR/go_modules/spec" \
-  -v "$(pwd)/npm_and_yarn/Gemfile:$CODE_DIR/npm_and_yarn/Gemfile" \
-  -v "$(pwd)/npm_and_yarn/dependabot-npm_and_yarn.gemspec:$CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec" \
-  -v "$(pwd)/npm_and_yarn/lib:$CODE_DIR/npm_and_yarn/lib" \
-  -v "$(pwd)/npm_and_yarn/spec:$CODE_DIR/npm_and_yarn/spec" \
-  -v "$(pwd)/composer/Gemfile:$CODE_DIR/composer/Gemfile" \
-  -v "$(pwd)/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
-  -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
-  -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
-  -v "$(pwd)/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
-  -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
-  -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
-  -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
-  -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
-  -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
-  -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
-  -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
+  -v "$PWD/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
+  -v "$PWD/bin:$CODE_DIR/bin" \
+  -v "$PWD/common/bin:$CODE_DIR/common/bin" \
+  "${VOLUME_ARGS[@]}" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

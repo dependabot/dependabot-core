@@ -1,6 +1,37 @@
-/.bundle
-/.git
-/tmp/
-/helpers
-/spec
-gitignored
+# Start by removing everything from the context
+*
+
+# Add back helpers
+!composer/helpers
+!dep/helpers
+!go_modules/helpers
+go_modules/helpers/install-dir
+!hex/helpers
+!npm_and_yarn/helpers
+npm_and_yarn/helpers/install-dir
+npm_and_yarn/helpers/node_modules
+!python/helpers
+!terraform/helpers
+terraform/helpers/install-dir
+
+# Add Gemfiles and gemspec files
+!*/Gemfile
+!common/dependabot-common.gemspec
+!common/lib/dependabot/version.rb
+!bundler/dependabot-bundler.gemspec
+!cargo/dependabot-cargo.gemspec
+!composer/dependabot-composer.gemspec
+!dep/dependabot-dep.gemspec
+!docker/dependabot-docker.gemspec
+!elm/dependabot-elm.gemspec
+!git_submodules/dependabot-git_submodules.gemspec
+!github_actions/dependabot-github_actions.gemspec
+!go_modules/dependabot-go_modules.gemspec
+!gradle/dependabot-gradle.gemspec
+!hex/dependabot-hex.gemspec
+!maven/dependabot-maven.gemspec
+!npm_and_yarn/dependabot-npm_and_yarn.gemspec
+!nuget/dependabot-nuget.gemspec
+!omnibus/dependabot-omnibus.gemspec
+!python/dependabot-python.gemspec
+!terraform/dependabot-terraform.gemspec
