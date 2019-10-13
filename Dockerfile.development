@@ -53,7 +53,8 @@ FROM dependabot/dependabot-core
 USER root
 
 # Add debugging tools
-RUN apt-get update && apt-get install -y vim strace ltrace gdb
+RUN apt-get update && apt-get install -y --no-install-recommends vim strace ltrace gdb && \
+    rm -rf /var/lib/apt/lists/*
 
 # This Dockerfile adds a non-root 'dependabot' user. However, for Linux,
 # this user's GID/UID must match your local user UID/GID to avoid permission issues

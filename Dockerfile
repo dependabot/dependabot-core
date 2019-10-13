@@ -46,6 +46,7 @@ RUN apt-get update \
       libxmlsec1-dev \
       libgeos-dev \
       python3-enchant \
+    && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8
 
 
@@ -56,7 +57,8 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
     && apt-get update \
-    && apt-get install -y ruby2.6 ruby2.6-dev \
+    && apt-get install -y --no-install-recommends ruby2.6 ruby2.6-dev \
+    && rm -rf /var/lib/apt/lists/* \
     && gem update --system 3.0.3 \
     && gem install bundler -v 1.17.3 --no-document
 
@@ -77,10 +79,11 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
 
 # Install Node 10.0 and Yarn
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
-    && apt-get install -y nodejs \
+    && apt-get install -y --no-install-recommends nodejs \
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update && apt-get install -y yarn
+    && apt-get update && apt-get install -y --no-install-recommends yarn \
+    && rm -rf /var/lib/apt/lists/*
 
 
 ### ELM
@@ -102,7 +105,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.3 php7.3-cli php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
+    && apt-get install -y --no-install-recommends php7.3 php7.3-cli php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
+    && rm -rf /var/lib/apt/lists/* \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -124,7 +128,8 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
-    && apt-get install -y esl-erlang \
+    && apt-get install -y --no-install-recommends esl-erlang \
+    && rm -rf /var/lib/apt/lists/* \
     && wget https://github.com/elixir-lang/elixir/releases/download/v1.9.1/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
