@@ -1,3 +1,7 @@
+## v0.113.13, 16 October 2019
+
+- JS: Fix bug where previous version was equal to the new version
+
 ## v0.113.12, 9 October 2019
 
 - Gradle: Support updates that use git dependencies
