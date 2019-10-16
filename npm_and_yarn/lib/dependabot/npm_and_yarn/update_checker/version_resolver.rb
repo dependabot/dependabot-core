@@ -159,7 +159,7 @@ module Dependabot
             # latest version. This often happens if you don't have lockfiles and
             # have requirements update strategy set to bump_versions, where an
             # update might go from ^1.1.1 to ^1.1.2 (both resolve to 1.1.2).
-            return if updated_version == latest_previous_version
+            return if updated_version.to_s == latest_previous_version.to_s
 
             latest_previous_version
           end
