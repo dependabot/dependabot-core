@@ -1,3 +1,7 @@
+## v0.113.14, 17 October 2019
+
+- JS: Fix missing previous version when the version is a git sha
+
 ## v0.113.13, 16 October 2019
 
 - JS: Fix bug where previous version was equal to the new version
