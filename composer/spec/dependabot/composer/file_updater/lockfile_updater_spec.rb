@@ -252,6 +252,17 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "that hasn't been provided as a query param" do
+        let(:manifest_fixture_name) { "env_variable_params" }
+
+        it "raises a MissingEnvironmentVariable error" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.environment_variable).to eq("ACF_PRO_KEY")
+          end
+        end
+      end
+
       context "that has been provided" do
         let(:updater) do
           described_class.new(

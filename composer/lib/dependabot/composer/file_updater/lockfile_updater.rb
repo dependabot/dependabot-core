@@ -183,7 +183,8 @@ module Dependabot
             raise GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("Could not find a key for ACF PRO")
+          if error.message.start_with?("Could not find a key for ACF PRO") ||
+             error.message.include?("'ACF_PRO_KEY' is not set")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
           end
 
