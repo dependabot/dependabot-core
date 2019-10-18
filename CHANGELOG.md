@@ -1,3 +1,7 @@
+## v0.113.15, 18 October 2019
+
+- Add whatsnew to changelog names
+
 ## v0.113.14, 17 October 2019
 
 - JS: Fix missing previous version when the version is a git sha
