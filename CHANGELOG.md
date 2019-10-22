@@ -181,7 +181,7 @@
 
 ## v0.112.16, 27 August 2019
 
-- Composer: Tigher regex for missing platform requirements
+- Composer: Tighter regex for missing platform requirements
 
 ## v0.112.15, 27 August 2019
 
@@ -526,7 +526,7 @@
 ## v0.111.7, 14 July 2019
 
 - Docker: Insist on updated docker_registry2 to fix Artifactory bug
-- Yarn: Enfore https for most common hostnames
+- Yarn: Enforce https for most common hostnames
 - Yarn: Bump @dependabot/yarn-lib from 1.16.0 to 1.17.3 in /npm_and_yarn/helpers
 
 ## v0.111.6, 13 July 2019
@@ -1072,7 +1072,7 @@
 
 - Add longer sleep when creating a commit fails
 - Python: Bump pip from 19.1 to 19.1.1 in /python/helpers
-- Raise error for unprocessible branch names
+- Raise error for unprocessable branch names
 
 ## v0.106.34, 6 May 2019
 
@@ -1198,7 +1198,7 @@
 ## v0.106.8, 24 April 2019
 
 - NPM: Handle private registry error '403 Fobidden'
-- JS: Handle git dependenices with file-path sub-dependencies
+- JS: Handle git dependencies with file-path sub-dependencies
 
 ## v0.106.7, 24 April 2019
 
@@ -1344,7 +1344,7 @@
 
 ## v0.102.1, 12 April 2019
 
-- JS: Don't assume we can upgrade sub-dependencies to a secure verison
+- JS: Don't assume we can upgrade sub-dependencies to a secure version
 
 ## v0.102.0, 12 April 2019
 
@@ -1535,7 +1535,7 @@
 
 - Ruby: Include protocol when raising PrivateSourceAuthenticationFailure errors
 - Elixir: Pass empty string token to elixir helper
-- JS: Better regsitry uniq-ing
+- JS: Better registry uniq-ing
 
 ## v0.98.50, 29 March 2019
 
@@ -1656,7 +1656,7 @@
 ## v0.98.24, 21 March 2019
 
 - Ruby: Update list of latest rubies
-- Python: Narmalise dependency names when looking for them in poetry lockfile
+- Python: Normalise dependency names when looking for them in poetry lockfile
 - Do two retries when attempting to fetch git metadata
 - Maven: Handle case where declaration_pom_name isn't found
 
@@ -1940,7 +1940,7 @@
 
 ## v0.95.64, 25 February 2019
 
-- JS: Return a version instance from UpdateChecker#latest_resolvable_version_with_no_unlock when version is numberic
+- JS: Return a version instance from UpdateChecker#latest_resolvable_version_with_no_unlock when version is numeric
 
 ## v0.95.63, 25 February 2019
 
@@ -2290,7 +2290,7 @@
 
 ## v0.94.2, 2 February 2019
 
-- Add class attribute_reader to Labler
+- Add class attribute_reader to Labeler
 - Ruby: Move bundler monkey patches
 - Python: Bump cython from 0.29.3 to 0.29.4 in /python/helpers
 
@@ -2427,7 +2427,7 @@
 
 ## v0.92.0, 21 January 2019
 
-- .NET, Elixir and Pythnon: Better handling of version with build/local part
+- .NET, Elixir and Python: Better handling of version with build/local part
 - JS: Simplify npm_and_yarn helpers to yarn workspaces
 - JS: Bump npm from 6.5.0 to 6.6.0 in /npm_and_yarn/helpers/npm
 - JS: Handle sub-dep version resolution errors

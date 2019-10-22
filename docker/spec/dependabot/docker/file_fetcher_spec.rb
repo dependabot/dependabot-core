@@ -140,10 +140,10 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   end
 
   context "with a directory that doesn't exist" do
-    let(:directory) { "/non/existant" }
+    let(:directory) { "/nonexistent" }
 
     before do
-      stub_request(:get, url + "non/existant?ref=sha").
+      stub_request(:get, url + "nonexistent?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 404,

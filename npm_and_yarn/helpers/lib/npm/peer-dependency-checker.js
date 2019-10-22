@@ -61,7 +61,7 @@ async function checkPeerDependencies(
   // need to explicitly tell npm to fetch all manifests by specifying the
   // existing dependency name and version in npm install
 
-  // For exampele, if we have "react@15.6.2" and "react-dom@15.6.2" installed
+  // For example, if we have "react@15.6.2" and "react-dom@15.6.2" installed
   // and we want to install react@16.6.0, we need get the existing version of
   // react-dom and pass this to npm install along with the new version react,
   // this way npm fetches the manifest for react-dom and determines that we

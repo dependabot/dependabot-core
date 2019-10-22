@@ -96,7 +96,7 @@
 ## v0.85.2, 15 December 2018
 
 - Switch Ruby RequirementsUpdater logic to use an update strategy, which can be
-  provided as either `bump_verions` or `bump_versions_if_necessary`
+  provided as either `bump_versions` or `bump_versions_if_necessary`
 
 ## v0.85.1, 15 December 2018
 
@@ -449,7 +449,7 @@
 
 - Bump poetry from 0.12.9 to 0.12.10
 - Use latest Pipenv commit and remove workaround
-- npm: ingore platform and engine checks on install
+- npm: ignore platform and engine checks on install
 - Python: Fetch path dependencies listed in Pipfile
 - Python: Mark fetched path dependencies as support files
 
@@ -527,7 +527,7 @@
 
 ## v0.75.70, 20 November 2018
 
-- Python: Install all requirments for different python versions
+- Python: Install all requirements for different python versions
 
 ## v0.75.69, 20 November 2018
 
@@ -898,7 +898,7 @@
 
 ## v0.74.19, 30 October 2018
 
-- Add Azuze as a known source
+- Add Azure as a known source
 - Rust: Handle yanked versions in UpdateChecker when not using a lockfile
 
 ## v0.74.18, 29 October 2018
@@ -917,7 +917,7 @@
 
 ## v0.74.15, 28 October 2018
 
-- Elixir: Ignore non-existant apps_path
+- Elixir: Ignore nonexistent apps_path
 - JS: Consider global registry in RegistryFinder
 - JS: Handle timeout errors from private registries in FileUpdater
 - JS: Fall back to global registry, rather than registry.npmjs.org, in
@@ -1067,7 +1067,7 @@
 
 ## v0.73.72, 20 October 2018
 
-- Java: Trim v-prefices from version strings when comparing
+- Java: Trim v-prefixes from version strings when comparing
 - JS: Handle 401s in same way as 403s when updating npm lockfiles
 
 ## v0.73.71, 20 October 2018
@@ -1552,7 +1552,7 @@
 ## v0.71.9, 12 September 2018
 
 - .NET: Handle .nuproj file dependency declarations
-- Gradle: Use regex to parse setttings.gradle
+- Gradle: Use regex to parse settings.gradle
 
 ## v0.71.8, 12 September 2018
 
@@ -1889,7 +1889,7 @@
 
 ## v0.67.6, 22 August 2018
 
-- Docker: Handle non-existant directories
+- Docker: Handle nonexistent directories
 
 ## v0.67.5, 21 August 2018
 
@@ -1924,7 +1924,7 @@
 
 ## v0.66.29, 20 August 2018
 
-- Docker: Raise PrivateSourceAuthenticationFailure error for private registies
+- Docker: Raise PrivateSourceAuthenticationFailure error for private registries
   on dockerhub
 
 ## v0.66.28, 20 August 2018
@@ -2007,7 +2007,7 @@
 
 ## v0.66.12, 14 August 2018
 
-- Python: Add poetry files to rebase triggereing regexes
+- Python: Add poetry files to rebase triggering regexes
 
 ## v0.66.11, 14 August 2018
 
@@ -2106,11 +2106,11 @@
 
 ## v0.64.9, 6 August 2018
 
-- PHP: Always write PHP errors on shotdown
+- PHP: Always write PHP errors on shutdown
 
 ## v0.64.8, 6 August 2018
 
-- PHP: Better error text for composer plugic clashes
+- PHP: Better error text for composer plugin clashes
 
 ## v0.64.7, 6 August 2018
 
@@ -2156,7 +2156,7 @@
 
 - JS: Handle subdependencies that import a git dependency properly
 - Add PHP extensions to dockerfile
-- Refactor JS file udpaters into separate classes
+- Refactor JS file updaters into separate classes
 - Bump npm from 6.2.0 to 6.3.0
 
 ## v0.63.26, 1 August 2018
@@ -2564,7 +2564,7 @@
 
 ## v0.61.41, 28 June 2018
 
-- PHP: Handle composer.json files that ask for non-existant path dependency
+- PHP: Handle composer.json files that ask for nonexistent path dependency
   repos but don't need them
 
 ## v0.61.40, 28 June 2018
@@ -2737,7 +2737,7 @@
 
 ## v0.61.4, 15 June 2018
 
-- Python: Handle version ranges separted by commas in Python::Requirement
+- Python: Handle version ranges separated by commas in Python::Requirement
 - PHP: Handle unparseable composer.json files
 
 ## v0.61.3, 14 June 2018
@@ -2809,7 +2809,7 @@
 
 ## v0.59.52, 07 June 2018
 
-- Ignore unprocessible entity errors when adding labels (work around GitHub bug)
+- Ignore unprocessable entity errors when adding labels (work around GitHub bug)
 
 ## v0.59.51, 06 June 2018
 
@@ -3633,7 +3633,7 @@
 - Java: Better MetadataFinder CSS paths
 - Java: Support use of custom repositories in UpdateChecker
 - Java: Use main registry URL directly, not search API
-- Java: Add commments for FileParser, and add extensions to list of updatable
+- Java: Add comments for FileParser, and add extensions to list of updatable
   dependencies
 - Elixir: Clean up requirement class
 
@@ -3729,7 +3729,7 @@
 
 ## v0.54.17, 16 April 2018
 
-- Ruby: Handle resolution error caused by Ruby's CompactIndex ocassionally
+- Ruby: Handle resolution error caused by Ruby's CompactIndex occasionally
   being unavailable
 
 ## v0.54.16, 16 April 2018
@@ -3802,7 +3802,7 @@
 
 ## v0.54.1, 12 April 2018
 
-- Python: Add version resovler for Pipenv
+- Python: Add version resolver for Pipenv
 
 ## v0.54.0, 12 April 2018
 
@@ -3927,7 +3927,7 @@
 
 ## v0.53.12, 5 April 2018
 
-- JS: Handle non-existant dependencies
+- JS: Handle nonexistent dependencies
 
 ## v0.53.11, 5 April 2018
 
@@ -4555,7 +4555,7 @@
 ## v0.48.13, 28 February 2018
 
 - PHP: Include subdependencies in parser output
-- Python: Use Pipenv's new --keep-outdated option insted of freezing Pipfile
+- Python: Use Pipenv's new --keep-outdated option instead of freezing Pipfile
 
 ## v0.48.12, 27 February 2018
 
@@ -4720,7 +4720,7 @@
 ## v0.45.5, 7 February 2018
 
 - Add GitLab support to FileFetcher base methods
-- Support GitLab in submodules FileFetcher. All FileFetchers therefor now
+- Support GitLab in submodules FileFetcher. All FileFetchers therefore now
   support GitLab
 
 ## v0.45.4, 6 February 2018
@@ -4936,7 +4936,7 @@
 
 ## v0.42.15, 14 January 2018
 
-- JS: Update git dependencies specifed with a GitHub format
+- JS: Update git dependencies specified with a GitHub format
 
 ## v0.42.14, 11 January 2018
 
@@ -5057,7 +5057,7 @@
 
 ## v0.40.18, 26 December 2017
 
-- Python: Handle simple index etries with spaces in filenames
+- Python: Handle simple index entries with spaces in filenames
 - JS: Only request registry index once during update check
 - PHP: Handle stability flags in requirements updater
 
@@ -5146,7 +5146,7 @@
 
 ## v0.39.24, 21 December 2017
 
-- Use semanic prefix for Dependabot PR names (when appropriate)
+- Use semantic prefix for Dependabot PR names (when appropriate)
 
 ## v0.39.23, 21 December 2017
 
@@ -5308,7 +5308,7 @@
 
 ## v0.36.28, 12 December 2017
 
-- PHP: Handle dependendencies with capitals (especially PEAR dependencies)
+- PHP: Handle dependencies with capitals (especially PEAR dependencies)
 
 ## v0.36.27, 12 December 2017
 
@@ -5836,7 +5836,7 @@
 
 - Add temporary ignore for private npm organisation hosted dependencies in
   UpdateChecker. Once we support passing credentials we'll be able to bump
-  these, but for now we just supress them
+  these, but for now we just suppress them
 
 ## v0.24.0, 17 October 2017
 
@@ -6015,7 +6015,7 @@
 
 ## v0.19.7, 25 September 2017
 
-- Supress Ruby VersionConflict exceptions caused by an update to a git
+- Suppress Ruby VersionConflict exceptions caused by an update to a git
   dependency (since the version conflict is only caused by the attempted
   update, not by anything wrong with the underlying Gemfile/Gemfile.lock)
 
@@ -6025,7 +6025,7 @@
 
 ## v0.19.5, 25 September 2017
 
-- Handle non-existant git branches for Ruby dependencies
+- Handle nonexistent git branches for Ruby dependencies
 
 ## v0.19.4, 23 September 2017
 
@@ -6139,7 +6139,7 @@
 
 ## v0.16.15, 2 September 2017
 
-- Handle non-numberic Python versions better (ignore them instead of erroring)
+- Handle non-numeric Python versions better (ignore them instead of erroring)
 
 ## v0.16.14, 1 September 2017
 
@@ -6338,7 +6338,7 @@
 ## v0.12.1, 5 August 2017
 
 - Handle 404s from Rubygems in UpdateChecker
-- Skip PHP dependencies with non-numberic versions during file parsing
+- Skip PHP dependencies with non-numeric versions during file parsing
 
 ## v0.12.0, 4 August 2017
 

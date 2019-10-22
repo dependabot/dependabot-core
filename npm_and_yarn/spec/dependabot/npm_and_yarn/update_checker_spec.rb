@@ -245,7 +245,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         context "that doesn't exist" do
-          let(:ref) { "non-existant" }
+          let(:ref) { "nonexistent" }
           let(:req) { nil }
 
           it "fetches the latest SHA-1 hash of the head of the branch" do

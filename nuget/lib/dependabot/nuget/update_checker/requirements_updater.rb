@@ -59,12 +59,12 @@ module Dependabot
           return req_string if req_string == "*"
 
           precision = req_string.split("*").first.split(/\.|\-/).count
-          wilcard_section = req_string.partition(/(?=[.\-]\*)/).last
+          wildcard_section = req_string.partition(/(?=[.\-]\*)/).last
 
           version_parts = latest_version.segments.first(precision)
           version = version_parts.join(".")
 
-          version + wilcard_section
+          version + wildcard_section
         end
 
         def updated_source

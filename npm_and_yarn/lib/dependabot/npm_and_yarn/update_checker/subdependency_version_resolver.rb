@@ -225,7 +225,7 @@ module Dependabot
         # `bundledDependencies`.
         #
         # For example, fsevents < 2 bundles node-pre-gyp meaning all it's
-        # sub-dependnecies get bundled into the release tarball at publish time
+        # sub-dependencies get bundled into the release tarball at publish time
         # so you always get the same sub-dependency versions if you re-install a
         # specific version of fsevents.
         #

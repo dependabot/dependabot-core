@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Elm::FileParser do
         end
       end
 
-      describe "the parsed dependenency details" do
+      describe "the parsed dependency details" do
         subject(:dependency) do
           dependencies.find { |d| d.name == dependency_name }
         end
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Elm::FileParser do
           its(:length) { is_expected.to eq(10) }
         end
 
-        describe "the parsed dependenency details" do
+        describe "the parsed dependency details" do
           subject(:dependency) do
             dependencies.find { |d| d.name == dependency_name }
           end

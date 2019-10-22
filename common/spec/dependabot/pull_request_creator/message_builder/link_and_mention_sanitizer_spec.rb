@@ -160,7 +160,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
       end
 
-      context "that is formatted suprisingly" do
+      context "that is formatted surprisingly" do
         let(:text) { "```````\nThis is a @mention!" }
 
         it "sanitizes the mention" do
