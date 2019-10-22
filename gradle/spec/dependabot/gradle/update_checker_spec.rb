@@ -142,6 +142,25 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
     end
+
+    context "with a git source" do
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/heremaps/oksse.git",
+            branch: nil
+          }
+        }]
+      end
+      let(:dependency_name) { "com.github.heremaps:oksse" }
+      let(:dependency_version) { "af885e2e890b9ef0875edd2b117305119ee5bdc5" }
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#latest_resolvable_version" do

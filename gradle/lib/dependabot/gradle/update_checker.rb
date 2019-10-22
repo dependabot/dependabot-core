@@ -12,6 +12,8 @@ module Dependabot
       require_relative "update_checker/multi_dependency_updater"
 
       def latest_version
+        return if git_dependency?
+
         latest_version_details&.fetch(:version)
       end
 
@@ -21,6 +23,7 @@ module Dependabot
         #
         # The above is hard. Currently we just return the latest version and
         # hope (hence this package manager is in beta!)
+        return if git_dependency?
         return nil if version_comes_from_multi_dependency_property?
         return nil if version_comes_from_dependency_set?
 
@@ -28,6 +31,7 @@ module Dependabot
       end
 
       def lowest_resolvable_security_fix_version
+        return if git_dependency?
         return nil if version_comes_from_multi_dependency_property?
         return nil if version_comes_from_dependency_set?
 
@@ -123,6 +127,18 @@ module Dependabot
             dependency_files: dependency_files,
             target_version_details: latest_version_details,
             ignored_versions: ignored_versions
+          )
+      end
+
+      def git_dependency?
+        git_commit_checker.git_dependency?
+      end
+
+      def git_commit_checker
+        @git_commit_checker ||=
+          GitCommitChecker.new(
+            dependency: dependency,
+            credentials: credentials
           )
       end
 

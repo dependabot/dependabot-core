@@ -81,7 +81,11 @@ module Dependabot
 
               command = "go mod edit -print > /dev/null"
               command += " && go list -m -json all"
-              env = { "GO111MODULE" => "on" }
+
+              # Turn off the module proxy for now, as it's causing issues with
+              # private git dependencies
+              env = { "GOPRIVATE" => "*" }
+
               stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
               stdout
@@ -105,7 +109,11 @@ module Dependabot
             # Parse the go.mod to get a JSON representation of the replace
             # directives
             command = "go mod edit -json"
-            env = { "GO111MODULE" => "on" }
+
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
             stdout, stderr, status = Open3.capture3(env, command)
             handle_parser_error(path, stderr) unless status.success?
 

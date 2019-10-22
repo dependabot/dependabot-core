@@ -17,6 +17,10 @@ module Dependabot
         end
 
         def updated_go_mod_content
+          # Turn off the module proxy for now, as it's causing issues with
+          # private git dependencies
+          env = { "GOPRIVATE" => "*" }
+
           @updated_go_mod_content ||=
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
@@ -32,7 +36,7 @@ module Dependabot
 
                 SharedHelpers.run_helper_subprocess(
                   command: NativeHelpers.helper_path,
-                  env: { "GO111MODULE" => "on" },
+                  env: env,
                   function: "updateDependencyFile",
                   args: { dependencies: deps }
                 )
@@ -61,7 +65,10 @@ module Dependabot
                 File.write("go.sum", go_sum.content)
                 File.write("main.go", dummy_main_go)
 
-                env = { "GO111MODULE" => "on" }
+                # Turn off the module proxy for now, as it's causing issues
+                # with private git dependencies
+                env = { "GOPRIVATE" => "*" }
+
                 _, stderr, status = Open3.capture3(env, "go get -d")
                 unless status.success?
                   handle_subprocess_error(go_sum.path, stderr)
@@ -93,7 +100,11 @@ module Dependabot
               # Parse the go.mod to get a JSON representation of the replace
               # directives
               command = "go mod edit -json"
-              env = { "GO111MODULE" => "on" }
+
+              # Turn off the module proxy for now, as it's causing issues with
+              # private git dependencies
+              env = { "GOPRIVATE" => "*" }
+
               stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
 

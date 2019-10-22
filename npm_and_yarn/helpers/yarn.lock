@@ -139,10 +139,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@dependabot/yarn-lib@^1.19.0":
-  version "1.19.0"
-  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.19.0.tgz#86b1613f3c96f1f3653681cc1c25a7e76287af1a"
-  integrity sha512-V8rYneupSJpEcTIs0NI9AIvhPrP1oQ8Xb900crD9dsZLH3CGyum7SLQYniauuJ2i8JsFRyC5EXUGP8rGyQVG4A==
+"@dependabot/yarn-lib@^1.19.1":
+  version "1.19.1"
+  resolved "https://registry.yarnpkg.com/@dependabot/yarn-lib/-/yarn-lib-1.19.1.tgz#99cb97d8abc9318d903e7b2206b3d3036837f057"
+  integrity sha512-gSGhWFLe2z0VvwUdmD+xApkI0hIqmBsS0nhKT95TbN6/95eef4mS4RR60nh7YCnEspFpaW5xKdi+5THgVD9CbQ==
   dependencies:
     "@zkochan/cmd-shim" "^3.1.0"
     babel-runtime "^6.26.0"
@@ -4063,10 +4063,10 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-nock@^11.3.6:
-  version "11.3.6"
-  resolved "https://registry.yarnpkg.com/nock/-/nock-11.3.6.tgz#cd87eb47ed9755d6d1e04dee1d56722267cb3283"
-  integrity sha512-54MSX4qeRnhwQQ2PSHlHc6pM6zNf7Dq9ni0BTFTurnDbUUssXl2Jy3E95ffaE8rZ/W/FWa9VSfzWDDnbdAsoTg==
+nock@^11.4.0:
+  version "11.4.0"
+  resolved "https://registry.yarnpkg.com/nock/-/nock-11.4.0.tgz#68c2f9cf533f13ecb1a43e956823dbfba5593d17"
+  integrity sha512-UrVEbEAvhyDoUttrS0fv3znhZ5nEJvlxqgmrC6Gb2Mf9cFci65RMK17e6EjDDQB57g5iwZw1TFnVvyeL0eUlhQ==
   dependencies:
     chai "^4.1.2"
     debug "^4.1.0"

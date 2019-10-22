@@ -133,9 +133,7 @@ module Dependabot
         end
 
         def resolve_latest_previous_version(dep, updated_version)
-          if dep.version && version_class.correct?(dep.version)
-            return version_class.new(dep.version)
-          end
+          return dep.version if dep.version
 
           @resolve_latest_previous_version ||= {}
           @resolve_latest_previous_version[dep] ||= begin
@@ -153,13 +151,13 @@ module Dependabot
               relevant_versions.select do |version|
                 req.any? { |r| r.satisfied_by?(version) }
               end.max
-            end.min
+            end.min&.to_s
 
             # Handle cases where the latest resolvable previous version is the
             # latest version. This often happens if you don't have lockfiles and
             # have requirements update strategy set to bump_versions, where an
             # update might go from ^1.1.1 to ^1.1.2 (both resolve to 1.1.2).
-            return if updated_version == latest_previous_version
+            return if updated_version.to_s == latest_previous_version
 
             latest_previous_version
           end

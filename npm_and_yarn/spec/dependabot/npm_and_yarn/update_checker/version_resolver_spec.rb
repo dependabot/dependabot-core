@@ -872,7 +872,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   }]
                 ),
                 version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
-                previous_version: Dependabot::NpmAndYarn::Version.new("2.5.20")
+                previous_version: "2.5.20"
               }, {
                 dependency: Dependabot::Dependency.new(
                   name: "vue-template-compiler",
@@ -886,7 +886,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   }]
                 ),
                 version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
-                previous_version: Dependabot::NpmAndYarn::Version.new("2.5.20")
+                previous_version: "2.5.20"
               }]
             )
         end
@@ -928,7 +928,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.2.0")
+              previous_version: "15.2.0"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -942,7 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.2.0")
+              previous_version: "15.2.0"
             }]
           )
       end
@@ -997,7 +997,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.6.2")
+              previous_version: "15.6.2"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -1011,7 +1011,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.6.2")
+              previous_version: "15.6.2"
             }]
           )
       end
@@ -1075,7 +1075,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.6.2")
+              previous_version: "15.6.2"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -1094,7 +1094,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: Dependabot::NpmAndYarn::Version.new("15.6.2")
+              previous_version: "15.6.2"
             }]
           )
       end
@@ -1135,7 +1135,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           to_return(status: 200, body: "{}")
       end
 
-      it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.3.0")) }
+      it { is_expected.to eq("0.3.0") }
     end
 
     context "#latest_resolvable_previous_version" do
@@ -1174,7 +1174,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             to_return(status: 200, body: "{}")
         end
 
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.3.0")) }
+        it { is_expected.to eq("0.3.0") }
       end
 
       describe "when version requirement is missing a patch" do
@@ -1206,7 +1206,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             to_return(status: 200, body: "{}")
         end
 
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("15.3.2")) }
+        it { is_expected.to eq("15.3.2") }
       end
 
       describe "with multiple version requirements" do
@@ -1244,7 +1244,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it "picks the lowest requirements max version" do
-          is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.14.9"))
+          is_expected.to eq("0.14.9")
         end
       end
 
@@ -1277,7 +1277,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             to_return(status: 200, body: "{}")
         end
 
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
+        it { is_expected.to eq("1.7.0") }
       end
 
       describe "when all versions are deprecated" do
@@ -1309,7 +1309,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             to_return(status: 200, body: "{}")
         end
 
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("1.7.0")) }
+        it { is_expected.to eq("1.7.0") }
       end
 
       skip "when the requirement allows a newer deprecated version" do
@@ -1348,7 +1348,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         #   version is available (0.7.0 in this case)
         # - yarn doesn't ignore deprecated versions and installs whatever is
         #   newest (0.7.1 in this case)
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.7.0")) }
+        it { is_expected.to eq("0.7.0") }
       end
 
       describe "when current version requirement is deprecated" do
@@ -1380,7 +1380,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             to_return(status: 200, body: "{}")
         end
 
-        it { is_expected.to eq(Dependabot::NpmAndYarn::Version.new("0.7.1")) }
+        it { is_expected.to eq("0.7.1") }
       end
 
       context "when the resolved previous version is the same as the updated" do
@@ -1413,6 +1413,48 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to be_nil }
+
+        context "when the updated version is a string" do
+          let(:latest_allowable_version) { "0.3.0" }
+
+          it { is_expected.to be_nil }
+        end
+      end
+
+      context "when the dependency has a previous version" do
+        let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: "0.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+        it { is_expected.to eq("0.2.0") }
+      end
+
+      context "when the previous version is a git sha" do
+        let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: "9ec4acec6abd23f9b23e33b1171e50d41953f00d",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+        it { is_expected.to eq("9ec4acec6abd23f9b23e33b1171e50d41953f00d") }
       end
     end
   end

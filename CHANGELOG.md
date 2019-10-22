@@ -1,3 +1,24 @@
+## v0.113.15, 18 October 2019
+
+- Add whatsnew to changelog names
+
+## v0.113.14, 17 October 2019
+
+- JS: Fix missing previous version when the version is a git sha
+
+## v0.113.13, 16 October 2019
+
+- JS: Fix bug where previous version was equal to the new version
+
+## v0.113.12, 9 October 2019
+
+- Gradle: Support updates that use git dependencies
+- Improve @mention sanitizer for verbatim backticks in code fences
+
+## v0.113.11, 8 October 2019
+
+- Disable the Go module proxy
+
 ## v0.113.10, 7 October 2019
 
 - Upgrade Go to 1.13.1
