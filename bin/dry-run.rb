@@ -99,7 +99,7 @@ $options = {
   commit: nil
 }
 
-if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
   $options[:credentials] << {
     "type" => "git_source",
     "host" => "github.com",
