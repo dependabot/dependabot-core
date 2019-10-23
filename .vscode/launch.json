@@ -11,9 +11,6 @@
       "program": "${workspaceRoot}/bin/dry-run.rb",
       "cwd": "${workspaceRoot}",
       "useBundler": true,
-      "env": {
-        "LOCAL_GITHUB_ACCESS_TOKEN": ""
-      },
       "args": [
         "${input:package_manager}",
         "${input:repository}"

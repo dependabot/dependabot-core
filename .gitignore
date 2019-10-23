@@ -9,7 +9,9 @@ vendor
 .DS_Store
 *.pyc
 *git.store
-.vscode/
+/.vscode/
+/.vscode-server/
+/.vscode-server-insiders/
 .byebug_history
 /terraform/helpers/install-dir
 /go_modules/helpers/install-dir

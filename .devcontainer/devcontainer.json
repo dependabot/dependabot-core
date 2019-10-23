@@ -6,8 +6,11 @@
 
   "runArgs": [
     "-u", "dependabot",
+    "-e", "LOCAL_GITHUB_ACCESS_TOKEN=${env:LOCAL_GITHUB_ACCESS_TOKEN}",
+    "-e", "LOCAL_CONFIG_VARIABLES=${env:LOCAL_CONFIG_VARIABLES}",
 
     "-v", "${localWorkspaceFolder}/.vscode:/home/dependabot/dependabot-core/.vscode",
+    "-v", "${localWorkspaceFolder}/.vscode-server:/home/dependabot/.vscode-server",
     "-v", "${localWorkspaceFolder}/.gitignore:/home/dependabot/dependabot-core/.gitignore",
     "-v", "${localWorkspaceFolder}/.rubocop.yml:/home/dependabot/dependabot-core/.rubocop.yml",
     "-v", "${localWorkspaceFolder}/bin:/home/dependabot/dependabot-core/bin",

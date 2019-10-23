@@ -91,3 +91,10 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
 RUN cd omnibus && bundle install
 # Make omnibus gems available to bundler in root directory
 RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
+
+# Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
+RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
+
+# Declare pass-thru environment variables used for debugging
+ENV LOCAL_GITHUB_ACCESS_TOKEN "" \
+    LOCAL_CONFIG_VARIABLES ""
