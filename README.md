@@ -69,7 +69,7 @@ Docker registry.
 
 ```shell
 $ docker pull dependabot/dependabot-core # OR
-$ docker build -f Dockerfile.development -t dependabot/dependabot-core . # This may take a while
+$ docker build -f Dockerfile -t dependabot/dependabot-core . # This may take a while
 ```
 
 Once you have the base Docker image, you can build and run the development
