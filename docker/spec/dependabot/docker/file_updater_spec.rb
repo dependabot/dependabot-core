@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
-  describe "#updated_dependency_files" do
+  describe "#updated_dependency_files for Dockerfile" do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "returns DependencyFile objects" do
@@ -432,6 +432,55 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include "FROM ubuntu:17.10@sha256:3ea1ca1aa"
           end
         end
+      end
+    end
+  end
+
+  describe "drone file updates" do
+    let(:files) { [drone_file] }
+    let(:drone_file) do
+      Dependabot::DependencyFile.new(
+        content: drone_body,
+        name: ".drone.yml"
+      )
+    end
+    let(:drone_body) { fixture("docker", "drone", "simple_drone.yml") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "alpine",
+        version: "3.10.2",
+        previous_version: "3.10.0",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".drone.yml",
+          source: { tag: "3.10.2" }
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".drone.yml",
+          source: { tag: "3.10.0" }
+        }],
+        package_manager: "docker"
+      )
+    end
+    describe "#updated_dependency_files" do
+      subject(:updated_files) { updater.updated_dependency_files }
+
+      it "returns DependencyFile objects" do
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+
+      its(:length) { is_expected.to eq(1) }
+      describe "the updated drone file" do
+        subject(:updated_drone_file) do
+          updated_files.find { |f| f.name == ".drone.yml" }
+        end
+
+        its(:content) { is_expected.to include "image: alpine:3.10.2\n" }
+        its(:content) { is_expected.to include "pipeline:\n" }
+        its(:content) { is_expected.to include "echo \"Heya!\"" }
       end
     end
   end

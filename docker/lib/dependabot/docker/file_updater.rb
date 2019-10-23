@@ -8,9 +8,13 @@ module Dependabot
   module Docker
     class FileUpdater < Dependabot::FileUpdaters::Base
       FROM_REGEX = /FROM/i.freeze
+      DRONE_REGEX = /\s+image\:/i.freeze
 
       def self.updated_files_regex
-        [/dockerfile/i]
+        [
+          /dockerfile/i,
+          /.drone.yml/i
+        ]
       end
 
       def updated_dependency_files
@@ -22,7 +26,7 @@ module Dependabot
           updated_files <<
             updated_file(
               file: file,
-              content: updated_dockerfile_content(file)
+              content: updated_file_content(file)
             )
         end
 
@@ -43,10 +47,10 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No Dockerfile or .drone.yml!"
       end
 
-      def updated_dockerfile_content(file)
+      def updated_file_content(file)
         updated_content =
           if specified_with_digest?(file)
             update_digest_and_tag(file)
@@ -60,7 +64,8 @@ module Dependabot
       end
 
       def update_digest_and_tag(file)
-        old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest(file)}/
+        old_declaration_regex =
+          /^(#{FROM_REGEX}|#{DRONE_REGEX})\s+.*@#{old_digest(file)}/
 
         file.content.gsub(old_declaration_regex) do |old_dec|
           old_dec.
@@ -81,7 +86,8 @@ module Dependabot
         escaped_declaration = Regexp.escape(old_declaration)
 
         old_declaration_regex =
-          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+          %r{^(#{FROM_REGEX}|#{DRONE_REGEX})
+          \s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}x
 
         file.content.gsub(old_declaration_regex) do |old_dec|
           old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")

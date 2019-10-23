@@ -1,0 +1,5 @@
+pipeline:
+  setup:
+    image: alpine:3.10.0
+    commands:
+    - echo "Heya!"

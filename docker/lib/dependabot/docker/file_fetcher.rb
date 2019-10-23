@@ -7,11 +7,11 @@ module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(/dockerfile/i) }
+        filenames.any? { |f| f.match?(/dockerfile|.drone.yml/i) }
       end
 
       def self.required_files_message
-        "Repo must contain a Dockerfile."
+        "Repo must contain a Dockerfile and/or a .drone.yml"
       end
 
       private
@@ -19,6 +19,7 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
+        fetched_files += drone_files
 
         return fetched_files if fetched_files.any?
 
@@ -48,6 +49,13 @@ module Dependabot
 
       def incorrectly_encoded_dockerfiles
         dockerfiles.reject { |f| f.content.valid_encoding? }
+      end
+
+      def drone_files
+        @drone_files ||=
+          repo_contents(raise_errors: false).
+          select { |f| f.type == "file" && f.name.match?(/.drone.yml/i) }.
+          map { |f| fetch_file_from_host(f.name) }
       end
     end
   end

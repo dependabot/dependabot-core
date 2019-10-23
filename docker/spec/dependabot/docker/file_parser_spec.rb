@@ -556,7 +556,7 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with a non-standard filename" do
       let(:dockerfile) do
         Dependabot::DependencyFile.new(
-          name: "custom-name",
+          name: "custom-dockerfile-name",
           content: dockerfile_body
         )
       end
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: "custom-name",
+            file: "custom-dockerfile-name",
             source: { tag: "17.04" }
           }]
         end
@@ -582,7 +582,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:files) { [dockerfile, dockefile2] }
       let(:dockefile2) do
         Dependabot::DependencyFile.new(
-          name: "custom-name",
+          name: "custom-dockerfile-name",
           content: dockerfile_body2
         )
       end
@@ -615,7 +615,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: "custom-name",
+            file: "custom-dockerfile-name",
             source: { tag: "17.04" }
           }]
         end
@@ -624,6 +624,38 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my-fork/ubuntu")
           expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a drone file" do
+      let(:files) { [drone_file] }
+      let(:drone_file) do
+        Dependabot::DependencyFile.new(
+          name: ".drone.yml",
+          content: drone_body
+        )
+      end
+      let(:drone_body) { fixture("docker", "drone", "simple_drone.yml") }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".drone.yml",
+            source: { tag: "3.10.0" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("alpine")
+          expect(dependency.version).to eq("3.10.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

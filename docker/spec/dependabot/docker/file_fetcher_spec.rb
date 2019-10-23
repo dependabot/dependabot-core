@@ -157,4 +157,41 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
+
+  context "with a Drone file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_docker_and_drone_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".drone.yml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: drone_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:drone_fixture) { fixture("github", "contents_drone.json") }
+
+    it "fetches the Dockerfile and .drone.yml" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(["Dockerfile", ".drone.yml"])
+    end
+  end
 end

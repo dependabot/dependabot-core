@@ -24,77 +24,86 @@ module Dependabot
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
       FROM = /FROM/i.freeze
+      DRONE_IMAGE = /\s+image\:/i.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
       NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
       FROM_LINE =
         %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
+      DRONE_IMAGE_LINE =
+        %r{^#{DRONE_IMAGE}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.
+        freeze
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
       def parse
         dependency_set = DependencySet.new
 
-        dockerfiles.each do |dockerfile|
-          dockerfile.content.each_line do |line|
-            next unless FROM_LINE.match?(line)
-
-            parsed_from_line = FROM_LINE.match(line).named_captures
-            if parsed_from_line["registry"] == "docker.io"
-              parsed_from_line["registry"] = nil
-            end
-
-            version = version_from(parsed_from_line)
-            next unless version
-
-            dependency_set << Dependency.new(
-              name: parsed_from_line.fetch("image"),
-              version: version,
-              package_manager: "docker",
-              requirements: [
-                requirement: nil,
-                groups: [],
-                file: dockerfile.name,
-                source: source_from(parsed_from_line)
-              ]
-            )
-          end
-        end
+        parse_docker_files(dependency_set, dockerfiles, FROM_LINE)
+        parse_docker_files(dependency_set, drone_files, DRONE_IMAGE_LINE)
 
         dependency_set.dependencies
       end
 
       private
 
-      def dockerfiles
-        # The Docker file fetcher only fetches Dockerfiles, so no need to
-        # filter here
-        dependency_files
+      def parse_docker_files(dependency_set, files, line_regex)
+        files.each do |docker_file|
+          docker_file.content.each_line do |line|
+            next unless line_regex.match?(line)
+
+            parsed_image_line = line_regex.match(line).named_captures
+            if parsed_image_line["registry"] == "docker.io"
+              parsed_image_line["registry"] = nil
+            end
+
+            version = version_from(parsed_image_line)
+            next unless version
+
+            dependency_set << Dependency.new(
+              name: parsed_image_line.fetch("image"),
+              version: version,
+              package_manager: "docker",
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: docker_file.name,
+                source: source_from(parsed_image_line)
+              ]
+            )
+          end
+        end
       end
 
-      def version_from(parsed_from_line)
-        return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
+      def dockerfiles
+        dependency_files.select { |f| f.name.match?(/dockerfile/i) }
+      end
+
+      def drone_files
+        dependency_files.select { |f| f.name.match?(/.drone.yml/i) }
+      end
+
+      def version_from(parsed_line)
+        return parsed_line.fetch("tag") if parsed_line.fetch("tag")
 
         version_from_digest(
-          registry: parsed_from_line.fetch("registry"),
-          image: parsed_from_line.fetch("image"),
-          digest: parsed_from_line.fetch("digest")
+          registry: parsed_line.fetch("registry"),
+          image: parsed_line.fetch("image"),
+          digest: parsed_line.fetch("digest")
         )
       end
 
-      def source_from(parsed_from_line)
+      def source_from(parsed_line)
         source = {}
 
-        if parsed_from_line.fetch("registry")
-          source[:registry] = parsed_from_line.fetch("registry")
+        if parsed_line.fetch("registry")
+          source[:registry] = parsed_line.fetch("registry")
         end
 
-        if parsed_from_line.fetch("tag")
-          source[:tag] = parsed_from_line.fetch("tag")
-        end
+        source[:tag] = parsed_line.fetch("tag") if parsed_line.fetch("tag")
 
-        if parsed_from_line.fetch("digest")
-          source[:digest] = parsed_from_line.fetch("digest")
+        if parsed_line.fetch("digest")
+          source[:digest] = parsed_line.fetch("digest")
         end
 
         source
@@ -158,7 +167,7 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No Dockerfile or .drone.yml!"
       end
     end
   end
