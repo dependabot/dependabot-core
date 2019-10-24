@@ -30,27 +30,43 @@ module Dependabot
 
         attr_reader :credentials
 
-        def build_aws_credentials(registry_details)
-          # If credentials have been generated from AWS we can just return them
-          return registry_details if registry_details["username"] == "AWS"
-
-          # If we don't have credentials, we might get them from the proxy
-          return registry_details if registry_details["username"].nil?
+        def get_ecr_client(registry_details, region)
+          if registry_details["use_default_credentials_provider"]
+            return Aws::ECR::Client.new(region: region)
+          end
 
           # Otherwise, we need to use the provided Access Key ID and secret to
-          # generate a temporary username and password
+          # generate a temporary username and password, and tell the ECR client
+          # to use that.
           aws_credentials = Aws::Credentials.new(
             registry_details["username"],
             registry_details["password"]
           )
 
+          Aws::ECR::Client.new(
+            region: region,
+            credentials: aws_credentials
+          )
+        end
+
+        def build_aws_credentials(registry_details)
+          unless registry_details["use_default_credentials_provider"]
+
+            # If credentials have been generated from AWS, just return them
+            return registry_details if registry_details["username"] == "AWS"
+
+            # If we don't have credentials, we might get them from the proxy
+            return registry_details if registry_details["username"].nil?
+          end
+
           registry_hostname = registry_details.fetch("registry")
           region = registry_hostname.match(AWS_ECR_URL).
                    named_captures.fetch("region")
 
+          ecr_client = get_ecr_client(registry_details, region)
           @authorization_tokens ||= {}
           @authorization_tokens[registry_hostname] ||=
-            Aws::ECR::Client.new(region: region, credentials: aws_credentials).
+            ecr_client.
             get_authorization_token.authorization_data.first.
             authorization_token
 
