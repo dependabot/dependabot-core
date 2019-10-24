@@ -47,29 +47,31 @@ module Dependabot
           # If credentials have been generated from AWS we can just return them
           return registry_details if registry_details["username"] == "AWS"
 
-          # If we don't have credentials, we might get them from the proxy
-          return registry_details if registry_details["username"].nil?
-
-          # Otherwise, we need to use the provided Access Key ID and secret to
-          # generate a temporary username and password
+          # Build a client either with explicit creds or default creds
+          registry_hostname = registry_details.fetch("registry")
+          region = registry_hostname.match(AWS_ECR_URL).named_captures.fetch("region")
           aws_credentials = Aws::Credentials.new(
             registry_details["username"],
             registry_details["password"]
           )
+          if aws_credentials.set?
+            ecr_client = Aws::ECR::Client.new(region: region, credentials: aws_credentials)
+          else
+            # Let the client check default locations for credentials
+            ecr_client = Aws::ECR::Client.new(region: region)
+          end
 
-          registry_hostname = registry_details.fetch("registry")
-          region = registry_hostname.match(AWS_ECR_URL).
-                   named_captures.fetch("region")
+          # If the client still lacks credentials, we might be running within GitHub's
+          # Dependabot Service, in which case we might get them from the proxy
+          return registry_details if ecr_client.config.credentials.nil?
 
+          # Otherwise, we need to use the provided Access Key ID and secret to
+          # generate a temporary username and password
           @authorization_tokens ||= {}
           @authorization_tokens[registry_hostname] ||=
-            Aws::ECR::Client.new(region: region, credentials: aws_credentials).
-            get_authorization_token.authorization_data.first.
-            authorization_token
-
+            ecr_client.get_authorization_token.authorization_data.first.authorization_token
           username, password =
             Base64.decode64(@authorization_tokens[registry_hostname]).split(":")
-
           registry_details.merge("username" => username, "password" => password)
         rescue Aws::Errors::MissingCredentialsError,
                Aws::ECR::Errors::UnrecognizedClientException,

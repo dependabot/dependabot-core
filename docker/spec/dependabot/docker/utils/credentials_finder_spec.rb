@@ -2,6 +2,8 @@
 
 require "spec_helper"
 require "dependabot/docker/utils/credentials_finder"
+require "aws-sdk-ecr"
+require "base64"
 
 RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
@@ -146,6 +148,37 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
               "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
               "username" => "AWS",
               "password" => "secret_aws_password"
+            )
+          end
+        end
+      end
+
+      context "using the default credentials provider" do
+        let(:credentials) do
+          [{
+            "type" => "docker_registry",
+            "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+          }]
+        end
+
+        context "and a valid AWS response" do
+          before do
+            ecr_stub = Aws::ECR::Client.new(stub_responses: true)
+            ecr_stub.stub_responses(
+              :get_authorization_token,
+              authorization_data:
+                [authorization_token: Base64.encode64("foo:bar")]
+            )
+            expect(Aws::ECR::Client).to \
+              receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
+          end
+
+          it "returns updated, valid credentials" do
+            expect(found_credentials).to eq(
+              "type" => "docker_registry",
+              "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+              "username" => "foo",
+              "password" => "bar",
             )
           end
         end
