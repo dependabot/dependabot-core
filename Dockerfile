@@ -51,7 +51,7 @@ RUN apt-get update \
 
 ### RUBY
 
-# Install Ruby 2.6.2, update RubyGems, and install Bundler
+# Install Ruby 2.6.5, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
