@@ -15,8 +15,8 @@ module Dependabot
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         TYPE_SUFFICES = %w(jre android java).freeze
 
-        def initialize(dependency:, dependency_files:, credentials:, ignored_versions:,
-                       security_advisories:)
+        def initialize(dependency:, dependency_files:, credentials:,
+                       ignored_versions:, security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
@@ -172,7 +172,7 @@ module Dependabot
           @dependency_metadata[repository_details.hash] ||=
             begin
               response = Excon.get(
-                dependency_metadata_url(repository_details.fetch('url')),
+                dependency_metadata_url(repository_details.fetch("url")),
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
@@ -183,7 +183,7 @@ module Dependabot
             rescue URI::InvalidURIError
               Nokogiri::XML("")
             rescue Excon::Error::Socket, Excon::Error::Timeout,
-              Excon::Error::TooManyRedirects
+                   Excon::Error::TooManyRedirects
               raise if central_repo_urls.include?(repository_details["url"])
 
               Nokogiri::XML("")
@@ -191,7 +191,7 @@ module Dependabot
         end
 
         def repository_urls
-          plugin? ? plugin_repository_urls : dependency_repository_urls
+          plugin? ? plugin_repository_urls : dependency_repository_details
         end
 
         def check_response(response, repository_url)
@@ -205,7 +205,13 @@ module Dependabot
         def repositories
           return @repositories if @repositories
 
-          details = plugin? ? plugin_repository_details + credentials_repository_details : dependency_repository_details + credentials_repository_details
+          details = if plugin?
+                      plugin_repository_details +
+                        credentials_repository_details
+                    else
+                      dependency_repository_details +
+                        credentials_repository_details
+                    end
 
           @repositories =
             details.reject do |repo|
@@ -234,20 +240,24 @@ module Dependabot
             map { |r| r.fetch(:file) }.
             map { |nm| dependency_files.find { |f| f.name == nm } }
 
-          @dependency_repository_urls ||=
+          @dependency_repository_details ||=
             requirement_files.flat_map do |target_file|
               Gradle::FileParser::RepositoriesFinder.new(
                 dependency_files: dependency_files,
                 target_dependency_file: target_file
               ).repository_urls.
                 map do |url|
-                {"url" => url, "username" => nil, "password" => nil}
-              end
+                  { "url" => url, "username" => nil, "password" => nil }
+                end
             end.uniq
         end
 
         def plugin_repository_details
-          [{"url" => GRADLE_PLUGINS_REPO, "username" => nil, "password" => nil}]
+          [{
+            "url" => GRADLE_PLUGINS_REPO,
+            "username" => nil,
+            "password" => nil
+          }]
         end
 
         def matches_dependency_version_type?(comparison_version)
@@ -293,7 +303,7 @@ module Dependabot
         def central_repo_urls
           central_url_without_protocol =
             Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.
-              gsub(%r{^.*://}, "")
+            gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end

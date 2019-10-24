@@ -135,11 +135,11 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     context "with a repository from credentials" do
       let(:credentials) do
         [{
-           "type" => "maven_repository",
-           "url" => "https://private.registry.org/repo/",
-           "username" => "dependabot",
-           "password" => "dependabotPassword"
-         }]
+          "type" => "maven_repository",
+          "url" => "https://private.registry.org/repo/",
+          "username" => "dependabot",
+          "password" => "dependabotPassword"
+        }]
       end
 
       let(:private_registry_metadata_url) do
@@ -163,9 +163,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       context "but no auth details" do
         let(:credentials) do
           [{
-             "type" => "maven_repository",
-             "url" => "https://private.registry.org/repo/"
-           }]
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
         end
 
         before do
@@ -198,11 +198,11 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     context "with a plugin from credentials" do
       let(:dependency_requirements) do
         [{
-           file: "build.gradle",
-           requirement: "2.0.5.RELEASE",
-           groups: ["plugins"],
-           source: nil
-         }]
+          file: "build.gradle",
+          requirement: "2.0.5.RELEASE",
+          groups: ["plugins"],
+          source: nil
+        }]
       end
       let(:dependency_name) { "org.springframework.boot" }
       let(:dependency_version) { "2.0.5.RELEASE" }
@@ -222,11 +222,11 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       context "with credentials" do
         let(:credentials) do
           [{
-             "type" => "maven_repository",
-             "url" => "https://private.registry.org/repo/",
-             "username" => "dependabot",
-             "password" => "dependabotPassword"
-           }]
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "username" => "dependabot",
+            "password" => "dependabotPassword"
+          }]
         end
 
         before do
@@ -237,7 +237,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
             to_return(status: 200, body: gradle_plugin_releases)
         end
 
-        its([:version]) { is_expected.to eq(version_class.new("2.1.4.RELEASE")) }
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -246,9 +248,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       context "no auth details" do
         let(:credentials) do
           [{
-             "type" => "maven_repository",
-             "url" => "https://private.registry.org/repo/"
-           }]
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
         end
 
         before do
@@ -258,7 +260,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
             to_return(status: 200, body: gradle_plugin_releases)
         end
 
-        its([:version]) { is_expected.to eq(version_class.new("2.1.4.RELEASE")) }
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -267,9 +271,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       context "when credentials are required" do
         let(:credentials) do
           [{
-             "type" => "maven_repository",
-             "url" => "https://private.registry.org/repo/"
-           }]
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
         end
         before do
           stub_request(:get, maven_metadata_url).
