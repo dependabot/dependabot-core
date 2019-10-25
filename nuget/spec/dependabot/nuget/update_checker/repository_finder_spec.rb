@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         end
       end
 
-      context "that doesn't have base url" do
+      context "that has no base url in v2 API response" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
