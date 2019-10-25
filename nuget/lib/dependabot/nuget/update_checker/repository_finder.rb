@@ -11,6 +11,7 @@ module Dependabot
     class UpdateChecker
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
+        ATOM_NAMESPACE = "http://www.w3.org/2007/app"
 
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
@@ -93,10 +94,13 @@ module Dependabot
 
         def build_v2_url(response, repo_details)
           doc = Nokogiri::XML(response.body)
+          return unless doc.root.namespace&.href&.casecmp(ATOM_NAMESPACE)&.zero?
+
           doc.remove_namespaces!
           base_url = doc.at_xpath("service")&.attributes&.
                      fetch("base", nil)&.value
-          return unless base_url
+
+          base_url ||= repo_details.fetch(:url)
 
           {
             repository_url: base_url,
