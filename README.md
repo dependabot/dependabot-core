@@ -106,6 +106,18 @@ $ bin/dry-run.rb go_modules rsc/quote
 ...
 ```
 
+## Debugging with Visual Studio Code and Docker
+
+There's built-in support for leveraging Visual Studio Code's [ability for
+debugging](https://code.visualstudio.com/docs/remote/containers) inside a Docker container.
+After installing the recommended [`Remote - Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
+simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Remote-Containers: Reopen in Container`.
+You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
+If the development Docker image isn't present on your machine, it will be built automatically.
+Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted
+to select a package manager and a repository to perform a dry run on.
+Feel free to place breakpoints on the code.
+
 ## Releasing
 
 Triggering the jobs that will push the new gems is done by following the steps below.

@@ -1,0 +1,51 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug dry run",
+      "type": "Ruby",
+      "request": "launch",
+      "program": "${workspaceRoot}/bin/dry-run.rb",
+      "cwd": "${workspaceRoot}",
+      "useBundler": true,
+      "args": [
+        "${input:package_manager}",
+        "${input:repository}"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "package_manager",
+      "description": "What type of package manager do you want to debug?",
+      "options": [
+        "bundler",
+        "cargo",
+        "composer",
+        "dep",
+        "docker",
+        "elm",
+        "go_modules",
+        "gradle",
+        "hex",
+        "maven",
+        "npm_and_yarn",
+        "nuget",
+        "pip",
+        "submodules",
+        "terraform"
+      ],
+      "default": "go_modules"
+    },
+    {
+      "type": "promptString",
+      "id": "repository",
+      "description": "Enter the name of the repository to scan.",
+      "default": "zonedb/zonedb"
+    }
+  ]
+}

@@ -99,7 +99,7 @@ $options = {
   commit: nil
 }
 
-if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
   $options[:credentials] << {
     "type" => "git_source",
     "host" => "github.com",
@@ -108,7 +108,7 @@ if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
   }
 end
 
-if ENV["LOCAL_CONFIG_VARIABLES"]
+unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
   $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
