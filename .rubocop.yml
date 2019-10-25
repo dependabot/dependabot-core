@@ -5,6 +5,7 @@ AllCops:
     - '*/vendor/**/*'
     - '*/bin/**/*'
     - '*/tmp/**/*'
+    - '*/spec/fixtures/**/*'
     - '*/helpers/**/*'
 
 Layout/DotPosition:

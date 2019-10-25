@@ -1,0 +1,3 @@
+mod "puppetlabs/dsc", :latest
+
+mod "puppet/windowsfeature", :latest

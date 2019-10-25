@@ -1,0 +1,11 @@
+mod "puppetlabs/dsc",
+    :git    => 'https://github.com/puppetlabs/dsc',
+    :ref => '1.4.0'
+
+mod "puppet/windowsfeature",
+    git: 'https://github.com/puppet/windowsfeature',
+    branch: 'proxy_match'
+
+mod "puppetlabs/example",
+    :git    => 'https://github.com/puppetlabs/example',
+    ref: '1.2.0'

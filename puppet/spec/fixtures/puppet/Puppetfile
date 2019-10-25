@@ -1,0 +1,3 @@
+mod "puppetlabs/dsc", '1.4.0'
+
+mod "puppet/windowsfeature",  "2.0.0"
