@@ -96,5 +96,5 @@ RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > G
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
 
 # Declare pass-thru environment variables used for debugging
-ENV LOCAL_GITHUB_ACCESS_TOKEN "" \
-    LOCAL_CONFIG_VARIABLES ""
+ENV LOCAL_GITHUB_ACCESS_TOKEN="" \
+    LOCAL_CONFIG_VARIABLES=""
