@@ -13,7 +13,24 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-        CODEBLOCK_REGEX = /(`+).*?(\1)|~~~.*?~~~/m.freeze
+        # rubocop:disable Metrics/LineLength
+        # Context:
+        # - https://github.github.com/gfm/#fenced-code-block (``` or ~~~)
+        #   (?<=\n|^)         Positive look-behind to ensure we start at a line start
+        #   (?>`{3,}|~{3,})   Atomic group marking the beginning of the block (3 or more chars)
+        #   (?>\k<fenceopen>) Atomic group marking the end of the code block (same length as opening)
+        # - https://github.github.com/gfm/#code-span
+        #   (?<codespanopen>`+)  Capturing group marking the beginning of the span (1 or more chars)
+        #   (?![^`]*?\n{2,})     Negative look-ahead to avoid empty lines inside code span
+        #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
+        #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
+        # rubocop:enable Metrics/LineLength
+        CODEBLOCK_REGEX = /
+          # fenced code block
+          (?<=\n|^)(?<fenceopen>(?>`{3,}|~{3,})).*?(?>\k<fenceopen>)|
+          # code span
+          (?<codespanopen>`+)(?![^`]*?\n{2,})(?:.|\n)*?(?>\k<codespanopen>)
+        /xm.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
 

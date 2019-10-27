@@ -60,6 +60,11 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it { is_expected.to eq(text) }
       end
 
+      context "with unmatched single code ticks previously" do
+        let(:text) { fixture("changelogs", "sentry.md") }
+        it { is_expected.to include("@&#8203;halkeye") }
+      end
+
       context "that appears in codeblock quotes" do
         let(:text) { "``` @model ||= 123```" }
         it { is_expected.to eq(text) }
