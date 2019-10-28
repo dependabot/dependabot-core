@@ -1,3 +1,12 @@
+## v0.113.16, 28 October 2019
+
+- Fix mismatched code span issue when sanitizing mentions
+- Bump eslint from 6.5.1 to 6.6.0 in /npm_and_yarn/helpers
+- Bump nock from 11.5.0 to 11.6.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.11.16 to 0.11.19 in /composer/helpers
+- Add support for VS Code Remote Development on Docker
+- Bump nock from 11.4.0 to 11.5.0 in /npm_and_yarn/helpers
+
 ## v0.113.15, 18 October 2019
 
 - Add whatsnew to changelog names
