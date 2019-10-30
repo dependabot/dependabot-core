@@ -1,3 +1,9 @@
+## v0.113.17, 30 October 2019
+
+- Bump npm from 6.10.3 to 6.12.1 in /npm_and_yarn/helpers
+- Update rubocop requirement from ~> 0.75.0 to ~> 0.76.0 in /common
+- Update toml-rb requirement from ~> 1.1, >= 1.1.2 to >= 1.1.2, < 3.0
+
 ## v0.113.16, 28 October 2019
 
 - Fix mismatched code span issue when sanitizing mentions
