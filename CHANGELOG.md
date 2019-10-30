@@ -1,3 +1,7 @@
+## v0.113.18, 30 October 2019
+
+- Bump pip-tools from 4.1.0 to 4.2.0 in /python/helpers
+
 ## v0.113.17, 30 October 2019
 
 - Bump npm from 6.10.3 to 6.12.1 in /npm_and_yarn/helpers
