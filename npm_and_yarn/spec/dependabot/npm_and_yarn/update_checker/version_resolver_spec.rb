@@ -1312,45 +1312,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq("1.7.0") }
       end
 
-      skip "when the requirement allows a newer deprecated version" do
-        let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "react",
-            version: nil,
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "package.json",
-              requirement: "^0.7.0",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
-        end
-
-        let(:listing_url) do
-          "https://registry.npmjs.org/react"
-        end
-        let(:response) do
-          fixture("npm_responses", "react.json")
-        end
-        before do
-          stub_request(:get, listing_url).
-            to_return(status: 200, body: response)
-          stub_request(:get, listing_url + "/latest").
-            to_return(status: 200, body: "{}")
-        end
-
-        # Note: We are currently not behaving the same as npm when calculating
-        # the previous version
-        # - npm ignores depreacted versions if the requirement allows any
-        #   non-deprecated versions but picks deprecated versions if no other
-        #   version is available (0.7.0 in this case)
-        # - yarn doesn't ignore deprecated versions and installs whatever is
-        #   newest (0.7.1 in this case)
-        it { is_expected.to eq("0.7.0") }
-      end
-
       describe "when current version requirement is deprecated" do
         let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
         let(:dependency) do

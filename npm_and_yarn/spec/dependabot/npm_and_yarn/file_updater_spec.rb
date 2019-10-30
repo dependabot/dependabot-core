@@ -1844,13 +1844,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "password" => "token"
                 }, {
                   "type" => "npm_registry",
-                  "registry" => "npm-proxy.fury.io",
+                  "registry" => "npm-proxy.fury.io/dependabot",
                   "token" => "bad_token"
                 }]
               end
 
               # TODO: Fix broken test
-              pending "raises a helpful error" do
+              it "raises a helpful error" do
                 expect { updater.updated_dependency_files }.
                   to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
               end
