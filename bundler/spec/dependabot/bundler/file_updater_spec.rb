@@ -893,7 +893,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.16.0",
+                requirement: "~> 1.17.0",
                 groups: [],
                 source: {
                   type: "git",
@@ -912,7 +912,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.16.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.17.0)!" }
           end
         end
       end
