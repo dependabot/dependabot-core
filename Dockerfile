@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:bionic-20191010
 
 ### SYSTEM DEPENDENCIES
 
