@@ -67,10 +67,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.13 && cd - \
-    && pyenv install 3.7.4 \
-    && pyenv install 2.7.16 \
-    && pyenv global 3.7.4
+    && cd /usr/local/.pyenv && git checkout v1.2.15 && cd - \
+    && pyenv install 3.7.5 \
+    && pyenv install 2.7.17 \
+    && pyenv global 3.7.5
 
 
 ### JAVASCRIPT
