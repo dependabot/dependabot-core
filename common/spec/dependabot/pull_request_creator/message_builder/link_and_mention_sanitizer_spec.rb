@@ -121,7 +121,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
             "```@not-a-mention``` ````"
           end
 
-          pending "sanitizes the text without touching the code fence" do
+          it "sanitizes the text without touching the code fence" do
             expect(sanitize_links_and_mentions).to eq(
               "Take a look at this code: ```` @not-a-mention "\
               "```@not-a-mention``` ````"
@@ -134,7 +134,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
               "```@not-a-mention``` ```` This is a @mention!"
             end
 
-            pending "sanitizes the text without touching the code fence" do
+            it "sanitizes the text without touching the code fence" do
               expect(sanitize_links_and_mentions).to eq(
                 "Take a look at this code: ```` @not-a-mention "\
                 "```@not-a-mention``` ```` "\
