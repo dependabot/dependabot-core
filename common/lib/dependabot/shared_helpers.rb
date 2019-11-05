@@ -122,7 +122,10 @@ module Dependabot
     # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
-      Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
+      Excon.defaults[:middlewares] + [
+        Excon::Middleware::RedirectFollower,
+        Excon::Middleware::Decompress
+      ]
     end
 
     def self.excon_defaults
