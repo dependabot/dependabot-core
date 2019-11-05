@@ -16,5 +16,5 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-PYENV_VERSION=2.7.16 pyenv exec pip install -r "requirements.txt"
-PYENV_VERSION=3.7.4  pyenv exec pip install -r "requirements.txt"
+PYENV_VERSION=2.7.17 pyenv exec pip install -r "requirements.txt"
+PYENV_VERSION=3.7.5  pyenv exec pip install -r "requirements.txt"
