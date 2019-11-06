@@ -64,6 +64,15 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             its([:declaration_string]) do
               is_expected.to eq("buildToolsVersion = '27.0.3'")
             end
+
+            context "and the property name has already been set" do
+              let(:buildfile_fixture_name) { "duplicate_property_name.gradle" }
+              let(:property_name) { "spek_version" }
+              its([:value]) { is_expected.to eq("2.0.6") }
+              its([:declaration_string]) do
+                is_expected.to eq("spek_version = '2.0.6'")
+              end
+            end
           end
 
           context "and the property is preceded by a comment" do
