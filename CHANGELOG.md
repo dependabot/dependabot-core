@@ -1,3 +1,10 @@
+## v0.113.20, 6 November 2019
+
+- Decompress gzipped http responses
+- Bump npm from 6.12.1 to 6.13.0 in /npm_and_yarn/helpers
+- Bump pip from 19.2.3 to 19.3.1 in /python/helpers
+- Gradle: Skip name property if we already present
+
 ## v0.113.19, 5 November 2019
 
 - Common: Fix hanging regex in LinkAndMentionSanitizer
