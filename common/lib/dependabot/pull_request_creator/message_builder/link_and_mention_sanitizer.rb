@@ -25,12 +25,7 @@ module Dependabot
         #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
         #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
         # rubocop:enable Metrics/LineLength
-        CODEBLOCK_REGEX = /
-          # fenced code block
-          (?<=\n|^)(?<fenceopen>(?>`{3,}|~{3,})).*?(?>\k<fenceopen>)|
-          # code span
-          (?<codespanopen>`+)(?![^`]*?\n{2,})(?:.|\n)*?(?>\k<codespanopen>)
-        /xm.freeze
+        CODEBLOCK_REGEX = /```|~~~/.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
 
@@ -43,33 +38,22 @@ module Dependabot
         def sanitize_links_and_mentions(text:)
           # We don't want to sanitize any links or mentions that are contained
           # within code blocks, so we split the text on "```" or "~~~"
-          sanitized_text = []
+          lines = []
           scan = StringScanner.new(text)
           until scan.eos?
-            block = scan.scan_until(CODEBLOCK_REGEX) ||
-                    scan.scan_until(EOS_REGEX)
-            sanitized_text << sanitize_links_and_mentions_in_block(block)
+            line = scan.scan_until(CODEBLOCK_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            delimiter = line.match(CODEBLOCK_REGEX)&.to_s
+            unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
+              line = sanitize_mentions(line)
+              line = sanitize_links(line)
+            end
+            lines << line
           end
-          sanitized_text.join
+          lines.join
         end
 
         private
-
-        def sanitize_links_and_mentions_in_block(block)
-          # Handle code blocks one by one
-          normal_text = block
-          verbatim_text = ""
-          match = block.match(CODEBLOCK_REGEX)
-          if match
-            # Part leading up to start of code block
-            normal_text = match.pre_match
-            # Entire code block copied verbatim
-            verbatim_text = match.to_s
-          end
-          normal_text = sanitize_mentions(normal_text)
-          normal_text = sanitize_links(normal_text)
-          normal_text + verbatim_text
-        end
 
         def sanitize_mentions(text)
           text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|

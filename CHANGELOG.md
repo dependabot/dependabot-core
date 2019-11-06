@@ -1,3 +1,12 @@
+## v0.113.19, 5 November 2019
+
+- Common: Fix hanging regex in LinkAndMentionSanitizer
+- Bump cython from 0.29.13 to 0.29.14 in /python/helpers
+- Bump composer/composer from 1.9.0 to 1.9.1 in /composer/helpers
+- Bump default Python versions to 3.7.5 and 2.7.17
+- Bump nock from 11.6.0 to 11.7.0 in /npm_and_yarn/helpers
+- GitLab: Don't pass empty array to update approvers
+
 ## v0.113.18, 30 October 2019
 
 - Bump pip-tools from 4.1.0 to 4.2.0 in /python/helpers

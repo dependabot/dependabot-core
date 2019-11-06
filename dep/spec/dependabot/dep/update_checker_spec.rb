@@ -292,7 +292,7 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
 
           it "updates the commit" do
             expect(latest_resolvable_version).
-              to eq("3d0f7978add91030e5e8976ff65ccdd828286cba")
+              to eq("4b67af870c6ffd08258ef1202f371aebccaf7b68")
           end
         end
 
@@ -361,7 +361,7 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
       let(:dependency_version) { "1.6.0" }
 
       it "unlocks the manifest and gets the correct version" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("1.10.2"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("1.10.3"))
       end
     end
   end
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
 
         it "updates the commit" do
           expect(checker.latest_resolvable_version_with_no_unlock).
-            to eq("3d0f7978add91030e5e8976ff65ccdd828286cba")
+            to eq("4b67af870c6ffd08258ef1202f371aebccaf7b68")
         end
       end
 
