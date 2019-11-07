@@ -8,6 +8,9 @@ require "dependabot/errors"
 module Dependabot
   module Bundler
     class FileFetcher < Dependabot::FileFetchers::Base
+      GEMFILE_REGEX = /\AGemfile.*(?<!\.lock)\z/.freeze
+      LOCKFILE_REGEX = /\AGemfile.*\.lock\z/.freeze
+
       require "dependabot/bundler/file_fetcher/gemspec_finder"
       require "dependabot/bundler/file_fetcher/path_gemspec_finder"
       require "dependabot/bundler/file_fetcher/child_gemfile_finder"
@@ -29,8 +32,8 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files << gemfile if gemfile
-        fetched_files << lockfile if gemfile && lockfile
+        fetched_files += gemfiles
+        fetched_files += lockfiles if gemfiles.any?
         fetched_files += child_gemfiles
         fetched_files += gemspecs
         fetched_files << ruby_version_file if ruby_version_file
@@ -55,21 +58,33 @@ module Dependabot
       end
 
       def check_required_files_present
-        return if gemfile || gemspecs.any?
+        return if gemfiles.any? || gemspecs.any?
 
         path = Pathname.new(File.join(directory, "Gemfile")).
                cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
 
-      def gemfile
-        @gemfile ||= fetch_file_if_present("gems.rb") ||
-                     fetch_file_if_present("Gemfile")
+      def gemfiles
+        return @gemfiles if defined?(@gemfiles)
+
+        @gemfiles = [fetch_file_if_present("gems.rb")].compact
+        files = repo_contents.select do |f|
+          f.name.match?(GEMFILE_REGEX)
+        end
+        @gemfiles += files.map { |f| fetch_file_from_host(f.name) }
+        @gemfiles
       end
 
-      def lockfile
-        @lockfile ||= fetch_file_if_present("gems.locked") ||
-                      fetch_file_if_present("Gemfile.lock")
+      def lockfiles
+        return @lockfiles if defined?(@lockfiles)
+
+        @lockfiles = [fetch_file_if_present("gems.locked")].compact
+        files = repo_contents.select do |f|
+          f.name.match?(LOCKFILE_REGEX)
+        end
+        @lockfiles += files.map { |f| fetch_file_from_host(f.name) }
+        @lockfiles
       end
 
       def gemspecs
@@ -89,9 +104,8 @@ module Dependabot
       end
 
       def gemspec_directories
-        gemfiles = ([gemfile] + child_gemfiles).compact
         directories =
-          gemfiles.flat_map do |file|
+          (gemfiles + child_gemfiles).flat_map do |file|
             GemspecFinder.new(gemfile: file).gemspec_directories
           end.uniq
 
@@ -99,8 +113,7 @@ module Dependabot
       end
 
       def ruby_version_file
-        return unless gemfile
-        return unless gemfile.content.include?(".ruby-version")
+        return unless gemfiles.any? { |f| f.content.include?(".ruby-version") }
 
         @ruby_version_file ||=
           fetch_file_if_present(".ruby-version")&.
@@ -146,7 +159,10 @@ module Dependabot
 
       def require_relative_files(files)
         ruby_files =
-          files.select { |f| f.name.end_with?(".rb", "Gemfile", ".gemspec") }
+          files.select do |f|
+            f.name.end_with?(".rb", ".gemspec") ||
+              f.name.match?(GEMFILE_REGEX)
+          end
 
         paths = ruby_files.flat_map do |file|
           RequireRelativeFinder.new(file: file).require_relative_paths
@@ -165,34 +181,40 @@ module Dependabot
       end
 
       def fetch_path_gemspec_paths
-        if lockfile
-          parsed_lockfile = ::Bundler::LockfileParser.
-                            new(sanitized_lockfile_content)
-          parsed_lockfile.specs.
-            select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
-            map { |s| s.source.path }.uniq
+        if lockfiles.any?
+          lockfiles.each_with_object([]) do |lockfile, paths|
+            paths << fetch_path_gemspec_paths_from_lockfile(lockfile)
+          end.flatten.uniq
         else
-          gemfiles = ([gemfile] + child_gemfiles).compact
-          gemfiles.flat_map do |file|
+          (gemfiles + child_gemfiles).flat_map do |file|
             PathGemspecFinder.new(gemfile: file).path_gemspec_paths
           end.uniq
         end
-      rescue ::Bundler::LockfileError
-        raise Dependabot::DependencyFileNotParseable, lockfile.path
       rescue ::Bundler::Plugin::UnknownSourceError
         # Quietly ignore plugin errors - we'll raise a better error during
         # parsing
         []
       end
 
-      def child_gemfiles
-        return [] unless gemfile
-
-        @child_gemfiles ||=
-          fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
+      def fetch_path_gemspec_paths_from_lockfile(lockfile)
+        parsed_lockfile = ::Bundler::LockfileParser.
+                          new(sanitized_lockfile_content(lockfile))
+        parsed_lockfile.specs.
+          select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
+          map { |s| s.source.path }.uniq
+      rescue ::Bundler::LockfileError
+        raise Dependabot::DependencyFileNotParseable, lockfile.path
       end
 
-      def sanitized_lockfile_content
+      def child_gemfiles
+        return [] unless gemfiles.any?
+
+        @child_gemfiles ||= gemfiles.flat_map do |gemfile|
+          fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
+        end
+      end
+
+      def sanitized_lockfile_content(lockfile)
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")
       end
