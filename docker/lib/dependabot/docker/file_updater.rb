@@ -71,21 +71,29 @@ module Dependabot
       end
 
       def update_tag(file)
-        return unless old_tag(file)
+        old_tags = old_tags(file)
+        return unless old_tags
 
-        old_declaration =
-          if private_registry_url(file) then "#{private_registry_url(file)}/"
-          else ""
+        modified_content = file.content
+
+        old_tags.each do |old_tag|
+          old_declaration =
+            if private_registry_url(file) then "#{private_registry_url(file)}/"
+            else ""
+            end
+          old_declaration += "#{dependency.name}:#{old_tag}"
+          escaped_declaration = Regexp.escape(old_declaration)
+
+          old_declaration_regex =
+            %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+
+          modified_content = modified_content.
+                             gsub(old_declaration_regex) do |old_dec|
+            old_dec.gsub(":#{old_tag}", ":#{new_tag(file)}")
           end
-        old_declaration += "#{dependency.name}:#{old_tag(file)}"
-        escaped_declaration = Regexp.escape(old_declaration)
-
-        old_declaration_regex =
-          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
-
-        file.content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
         end
+
+        modified_content
       end
 
       def specified_with_digest?(file)
@@ -117,10 +125,11 @@ module Dependabot
           fetch(:source)[:tag]
       end
 
-      def old_tag(file)
-        dependency.previous_requirements.
-          find { |r| r[:file] == file.name }.
-          fetch(:source)[:tag]
+      def old_tags(file)
+        dependency.
+          previous_requirements.
+          select { |r| r[:file] == file.name }.
+          map { |r| r.fetch(:source)[:tag] }
       end
 
       def private_registry_url(file)
