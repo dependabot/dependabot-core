@@ -72,7 +72,7 @@ module Dependabot
 
       def update_tag(file)
         old_tags = old_tags(file)
-        return unless old_tags
+        return if old_tags.empty?
 
         modified_content = file.content
 
