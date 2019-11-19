@@ -1,3 +1,10 @@
+## v0.113.21, 19 November 2019
+
+- Bump npm from 6.13.0 to 6.13.1 in /npm_and_yarn/helpers
+- Bump https-proxy-agent in /npm_and_yarn/helpers
+- Bump prettier from 1.18.2 to 1.19.1 in /npm_and_yarn/helpers
+- Fix Gitlab API commit file type to match GitHub's submodule type
+
 ## v0.113.20, 6 November 2019
 
 - Decompress gzipped http responses
