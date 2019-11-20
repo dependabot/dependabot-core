@@ -13,6 +13,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       dependencies: dependencies,
       files: files,
       credentials: credentials,
+      pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
       commit_message_options: { signoff_details: signoff_details },
       vulnerabilities_fixed: vulnerabilities_fixed,
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       "password" => "token"
     }]
   end
+  let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
@@ -1521,6 +1523,12 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:pr_message_footer) { "I'm a footer!" }
 
       it { is_expected.to end_with("\n\nI'm a footer!") }
+    end
+
+    context "with a header" do
+      let(:pr_message_header) { "I'm a header!" }
+
+      it { is_expected.to start_with("I'm a header!\n\n") }
     end
 
     context "with author details" do

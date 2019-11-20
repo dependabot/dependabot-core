@@ -18,16 +18,16 @@ module Dependabot
     class NoHistoryInCommon < StandardError; end
 
     attr_reader :source, :dependencies, :files, :base_commit,
-                :credentials, :pr_message_footer, :custom_labels,
-                :author_details, :signature_key, :commit_message_options,
-                :vulnerabilities_fixed,
+                :credentials, :pr_message_header, :pr_message_footer,
+                :custom_labels, :author_details, :signature_key,
+                :commit_message_options, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :github_redirection_service,
                 :custom_headers
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
-                   pr_message_footer: nil, custom_labels: nil,
-                   author_details: nil, signature_key: nil,
+                   pr_message_header: nil, pr_message_footer: nil,
+                   custom_labels: nil, author_details: nil, signature_key: nil,
                    commit_message_options: {}, vulnerabilities_fixed: {},
                    reviewers: nil, assignees: nil, milestone: nil,
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
@@ -39,6 +39,7 @@ module Dependabot
       @base_commit                = base_commit
       @files                      = files
       @credentials                = credentials
+      @pr_message_header          = pr_message_header
       @pr_message_footer          = pr_message_footer
       @author_details             = author_details
       @signature_key              = signature_key
@@ -169,6 +170,7 @@ module Dependabot
           files: files,
           credentials: credentials,
           commit_message_options: commit_message_options,
+          pr_message_header: pr_message_header,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed,
           github_redirection_service: github_redirection_service
