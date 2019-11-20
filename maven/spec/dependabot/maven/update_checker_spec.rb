@@ -29,7 +29,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     )
   end
   let(:dependency_requirements) do
-    [{ file: "pom.xml", requirement: "23.3-jre", groups: [], source: nil }]
+    [{
+      file: "pom.xml",
+      requirement: "23.3-jre",
+      groups: [],
+      metadata: { packaging_type: "jar" },
+      source: nil
+    }]
   end
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
@@ -59,15 +65,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/23.6-jre/"
   end
-  let(:maven_central_version_files) do
-    fixture("maven_central_version_files", "guava-23.6.html")
-  end
+
+  # let(:maven_central_version_files) do
+  #   fixture("maven_central_version_files", "guava-23.6.html")
+  # end
 
   before do
     stub_request(:get, maven_central_metadata_url).
       to_return(status: 200, body: maven_central_releases)
-    stub_request(:get, maven_central_version_files_url).
-      to_return(status: 200, body: maven_central_version_files)
+    stub_request(:head, maven_central_version_files_url).
+      to_return(status: 200)
   end
   let(:pom) do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
