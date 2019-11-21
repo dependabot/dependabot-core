@@ -542,7 +542,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "org/springframework/spring-beans/23.6-jre/"
+        "org/springframework/spring-beans/23.6-jre/spring-beans-23.6-jre.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "spring-beans-23.6.html")
@@ -556,7 +556,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           source: nil,
           metadata: {
             property_name: "springframework.version",
-            property_source: "pom.xml"
+            property_source: "pom.xml",
+            packaging_type: "jar"
           }
         }]
       end
@@ -612,7 +613,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "org/springframework/spring-beans/23.6-jre/"
+        "org/springframework/spring-beans/23.6-jre/spring-beans-23.6-jre.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "spring-beans-23.6.html")
