@@ -15,16 +15,19 @@ module Dependabot
       require_relative "pr_name_prefixer"
 
       attr_reader :source, :dependencies, :files, :credentials,
-                  :pr_message_footer, :commit_message_options,
-                  :vulnerabilities_fixed, :github_redirection_service
+                  :pr_message_header, :pr_message_footer,
+                  :commit_message_options, :vulnerabilities_fixed,
+                  :github_redirection_service
 
       def initialize(source:, dependencies:, files:, credentials:,
-                     pr_message_footer: nil, commit_message_options: {},
-                     vulnerabilities_fixed: {}, github_redirection_service: nil)
+                     pr_message_header: nil, pr_message_footer: nil,
+                     commit_message_options: {}, vulnerabilities_fixed: {},
+                     github_redirection_service: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
         @credentials                = credentials
+        @pr_message_header          = pr_message_header
         @pr_message_footer          = pr_message_footer
         @commit_message_options     = commit_message_options
         @vulnerabilities_fixed      = vulnerabilities_fixed
@@ -40,7 +43,8 @@ module Dependabot
       end
 
       def pr_message
-        commit_message_intro + metadata_cascades + prefixed_pr_message_footer
+        suffixed_pr_message_header + commit_message_intro + \
+          metadata_cascades + prefixed_pr_message_footer
       end
 
       def commit_message
@@ -118,6 +122,12 @@ module Dependabot
         return "" unless pr_message_footer
 
         "\n\n#{pr_message_footer}"
+      end
+
+      def suffixed_pr_message_header
+        return "" unless pr_message_header
+
+        "#{pr_message_header}\n\n"
       end
 
       def message_trailers
