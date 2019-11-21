@@ -63,12 +63,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/"\
-    "com/google/guava/guava/23.6-jre/"
+    "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
   end
-
-  # let(:maven_central_version_files) do
-  #   fixture("maven_central_version_files", "guava-23.6.html")
-  # end
 
   before do
     stub_request(:get, maven_central_metadata_url).
@@ -97,7 +93,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       let(:dependency_version) { "23.0-rc1-android" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/23.7-rc1-android/"
+        "com/google/guava/guava/23.7-rc1-android/guava-23.7-rc1-android.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.7.html")
@@ -118,7 +114,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "commons-collections/commons-collections/3.2.2/"
+        "commons-collections/commons-collections/3.2.2/"\
+        "commons-collections-3.2.2.jar"
       end
       let(:maven_central_version_files) do
         fixture(
@@ -133,7 +130,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/"\
-          "commons-collections/commons-collections/20040616/"
+          "commons-collections/commons-collections/20040616/"\
+          "commons-collections-20040616.jar"
         end
         let(:maven_central_version_files) do
           fixture(
@@ -150,7 +148,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       let(:dependency_version) { "RELEASE802" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/23.0/"
+        "com/google/guava/guava/23.0/guava-23.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.0.html")
@@ -166,7 +164,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "org/springframework/spring-beans/23.0/"
+        "org/springframework/spring-beans/23.0/spring-beans-23.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "spring-beans-23.0.html")
@@ -176,6 +174,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           file: "pom.xml",
           requirement: "4.3.12.RELEASE",
           groups: [],
+          metadata: { packaging_type: "jar" },
           source: nil
         }]
       end
@@ -203,7 +202,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "org/springframework/spring-beans/23.0/"
+        "org/springframework/spring-beans/23.0/spring-beans-23.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "spring-beans-23.0.html")
@@ -222,7 +221,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       let(:metadata) do
         {
           property_name: "springframework.version",
-          property_source: "pom.xml"
+          property_source: "pom.xml",
+          packaging_type: "jar"
         }
       end
 
@@ -253,7 +253,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         end
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/"\
-          "org/apache/maven/plugins/maven-javadoc-plugin/23.0/"
+          "org/apache/maven/plugins/maven-javadoc-plugin/23.0/"\
+          "maven-javadoc-plugin-23.0.jar"
         end
         let(:maven_central_version_files) do
           fixture(
@@ -299,11 +300,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               file: "pom.xml",
               requirement: "3.0.0-M1",
               groups: [],
+              metadata: { packaging_type: "jar" },
               source: nil
             }, {
               file: "pom.xml",
               requirement: nil,
               groups: [],
+              metadata: { packaging_type: "jar" },
               source: nil
             }]
           end
@@ -362,11 +365,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             requirement: "23.0-jre",
             file: "pom.xml",
             groups: [],
+            metadata: { packaging_type: "jar" },
             source: nil
           }, {
             requirement: nil,
             file: "util/pom.xml",
             groups: [],
+            metadata: { packaging_type: "jar" },
             source: nil
           }]
         end
@@ -382,6 +387,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             requirement: "2.5.6",
             file: "legacy/some-spring-project/pom.xml",
             groups: [],
+            metadata: { packaging_type: "jar" },
             source: nil
           }]
         end
@@ -393,7 +399,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         end
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/"\
-          "org/springframework/spring-aop/23.0/"
+          "org/springframework/spring-aop/23.0/spring-aop-23.0.jar"
         end
         let(:maven_central_version_files) do
           fixture(
@@ -424,7 +430,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/20.0/"
+        "com/google/guava/guava/20.0/guava-20.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.6.html").
@@ -454,6 +460,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             file: "pom.xml",
             requirement: "23.6-jre",
             groups: [],
+            metadata: { packaging_type: "jar" },
             source: {
               type: "maven_repo",
               url: "https://repo.maven.apache.org/maven2"
@@ -475,7 +482,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/20.0/"
+        "com/google/guava/guava/20.0/guava-20.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.6.html").
@@ -498,6 +505,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               file: "pom.xml",
               requirement: "20.0",
               groups: [],
+              metadata: { packaging_type: "jar" },
               source: {
                 type: "maven_repo",
                 url: "https://repo.maven.apache.org/maven2"
