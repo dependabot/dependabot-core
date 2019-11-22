@@ -58,17 +58,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/"\
-    "com/google/guava/guava/23.6-jre/"
-  end
-  let(:maven_central_version_files) do
-    fixture("maven_central_version_files", "guava-23.6.html")
+    "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
   end
 
   before do
     stub_request(:get, maven_central_metadata_url).
       to_return(status: 200, body: maven_central_releases)
-    stub_request(:get, maven_central_version_files_url).
-      to_return(status: 200, body: maven_central_version_files)
+    stub_request(:head, maven_central_version_files_url).
+      to_return(status: 200)
   end
 
   describe "#latest_version_details" do
@@ -79,17 +76,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the latest version hasn't actually been released" do
-      let(:maven_central_version_files) do
-        fixture("maven_central_version_files", "guava-23.6-no-jar.html")
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
-      let(:old_maven_central_version_files) do
-        fixture("maven_central_version_files", "guava-23.5.html")
+      let(:old_maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/23.5-jre/guava-23.5-jre.jar"
       end
+
       before do
-        stub_request(
-          :get,
-          maven_central_version_files_url.gsub("23.6", "23.5")
-        ).to_return(status: 200, body: old_maven_central_version_files)
+        stub_request(:head, maven_central_version_files_url).
+          to_return(status: 404)
+        stub_request(:head, old_maven_central_version_files_url).
+          to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.5-jre")) }
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "23.0-rc1-android" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/23.7-rc1-android/"
+        "com/google/guava/guava/23.7-rc1-android/guava-23.7-rc1-android.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.7.html")
@@ -119,7 +119,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "commons-collections/commons-collections/3.2.2/"
+        "commons-collections/commons-collections/3.2.2/"\
+        "commons-collections-3.2.2.jar"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_date_releases.xml")
@@ -137,7 +138,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/"\
-          "commons-collections/commons-collections/20040616/"
+          "commons-collections/commons-collections/20040616/"\
+          "commons-collections-20040616.jar"
         end
         let(:maven_central_version_files) do
           fixture(
@@ -154,7 +156,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/22.0/"
+        "com/google/guava/guava/22.0/guava-22.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -166,7 +168,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "RELEASE802" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
-        "com/google/guava/guava/23.0/"
+        "com/google/guava/guava/23.0/guava-23.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.0.html")
@@ -247,7 +249,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:scala_tools_version_files_url) do
         "http://scala-tools.org/repo-releases/"\
-        "com/google/guava/guava/23.6-jre/"
+        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       let(:jboss_metadata_url) do
@@ -262,12 +264,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:jboss_plugins_version_files_url) do
         "http://plugin-repository.jboss.org/maven2/"\
-        "com/google/guava/guava/23.6-jre/"
+        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       let(:jboss_version_files_url) do
         "http://repository.jboss.org/maven2/"\
-        "com/google/guava/guava/23.6-jre/"
+        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       before do
@@ -282,14 +284,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           )
         stub_request(:get, jboss_plugins_metadata_url).
           to_return(status: 404, body: "")
-        stub_request(:get, maven_central_version_files_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, scala_tools_version_files_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, jboss_plugins_version_files_url).
-          to_return(status: 404, body: "")
-        stub_request(:get, jboss_version_files_url).
-          to_return(status: 200, body: maven_central_version_files)
+        stub_request(:head, maven_central_version_files_url).
+          to_return(status: 404)
+        stub_request(:head, scala_tools_version_files_url).
+          to_return(status: 404)
+        stub_request(:head, jboss_plugins_version_files_url).
+          to_return(status: 404)
+        stub_request(:head, jboss_version_files_url).
+          to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
@@ -314,7 +316,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
     let(:maven_central_version_files_url) do
       "https://repo.maven.apache.org/maven2/"\
-      "com/google/guava/guava/20.0/"
+      "com/google/guava/guava/20.0/guava-20.0.jar"
     end
     let(:maven_central_version_files) do
       fixture("maven_central_version_files", "guava-23.6.html").
@@ -327,19 +329,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the lowest version hasn't actually been released" do
-      let(:maven_central_version_files) do
-        fixture("maven_central_version_files", "guava-23.6-no-jar.html").
-          gsub("23.6-jre", "20.0")
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/20.0/guava-20.0.jar"
       end
-      let(:next_maven_central_version_files) do
-        fixture("maven_central_version_files", "guava-23.6.html").
-          gsub("23.6-jre", "21.0")
+      let(:next_maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/21.0/guava-21.0.jar"
       end
+
       before do
-        stub_request(
-          :get,
-          maven_central_version_files_url.gsub("20.0", "21.0")
-        ).to_return(status: 200, body: next_maven_central_version_files)
+        stub_request(:head, maven_central_version_files_url).
+          to_return(status: 404)
+        stub_request(:head, next_maven_central_version_files_url).
+          to_return(status: 200)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("21.0")) }
