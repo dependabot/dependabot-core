@@ -1,3 +1,12 @@
+## v0.113.22, 22 November 2019
+
+- Bump @dependabot/yarn-lib from 1.19.1 to 1.19.2 in /npm_and_yarn/helpers
+- Add pull request message header support (thanks, @millerick!)
+- Go: Add go version specifier (thanks, @chenrui333!)
+- Go: Bump golang to v1.13.4 (thanks, @chenrui333!)
+- Docker: Support mix of Docker tags for the same image (thanks, @michael-booth!)
+- Maven: Change logic to check if a version is released
+
 ## v0.113.21, 19 November 2019
 
 - Bump npm from 6.13.0 to 6.13.1 in /npm_and_yarn/helpers
