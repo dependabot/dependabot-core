@@ -65,22 +65,6 @@ RSpec.describe Dependabot::Dep::UpdateChecker::VersionResolver do
     it { is_expected.to be >= Gem::Version.new("0.3.0") }
 
     context "with a git dependency" do
-      context "that specifies a branch" do
-        let(:manifest_fixture_name) { "branch.toml" }
-        let(:lockfile_fixture_name) { "branch.lock" }
-        let(:dependency_name) { "golang.org/x/text" }
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/golang/text",
-            branch: "master",
-            ref: nil
-          }
-        end
-
-        it { is_expected.to eq("4b67af870c6ffd08258ef1202f371aebccaf7b68") }
-      end
-
       context "that is unreachable" do
         let(:manifest_fixture_name) { "unreachable_source.toml" }
         let(:lockfile_fixture_name) { "unreachable_source.lock" }

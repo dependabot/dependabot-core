@@ -1,3 +1,4 @@
+
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -285,17 +286,6 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
         let(:branch) { "master" }
         let(:ref) { nil }
 
-        context "that has diverged" do
-          let(:commit_compare_response) do
-            fixture("github", "commit_compare_diverged.json")
-          end
-
-          it "updates the commit" do
-            expect(latest_resolvable_version).
-              to eq("4b67af870c6ffd08258ef1202f371aebccaf7b68")
-          end
-        end
-
         context "that is behind" do
           let(:commit_compare_response) do
             fixture("github", "commit_compare_behind.json")
@@ -426,20 +416,6 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
       end
       let(:commit_compare_response) do
         fixture("github", "commit_compare_behind.json")
-      end
-
-      context "that specifies a branch" do
-        let(:manifest_fixture_name) { "branch.toml" }
-        let(:lockfile_fixture_name) { "branch.lock" }
-        let(:req_str) { nil }
-        let(:dependency_version) { "7dd2c8130f5e924233f5543598300651c386d431" }
-        let(:branch) { "master" }
-        let(:ref) { nil }
-
-        it "updates the commit" do
-          expect(checker.latest_resolvable_version_with_no_unlock).
-            to eq("4b67af870c6ffd08258ef1202f371aebccaf7b68")
-        end
       end
 
       context "that specifies a tag" do

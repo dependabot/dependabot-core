@@ -164,18 +164,6 @@ RSpec.describe Dependabot::Dep::FileUpdater::LockfileUpdater do
           }]
         end
 
-        it "updates the lockfile correctly" do
-          expect(updated_lockfile_content).
-            to include("4b67af870c6ffd08258ef1202f371aebccaf7b68")
-          expect(updated_lockfile_content).
-            to include(
-              "  branch = \"master\"\n"\
-              "  digest = \"1:0b406d5b4810e418a37d3c692a99fdbd972f8a0b1eaf69b"\
-              "3bf43ffa7afa3e99a\"\n"\
-              "  name = \"golang.org/x/text\""
-            )
-        end
-
         context "to use a release instead" do
           let(:dependency_version) { "0.3.0" }
           let(:requirements) do
