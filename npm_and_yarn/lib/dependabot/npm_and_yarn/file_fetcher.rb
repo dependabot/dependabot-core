@@ -125,7 +125,12 @@ module Dependabot
 
         path_dependency_details(fetched_files).each do |name, path|
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
-          filename = File.join(path, "package.json")
+          filename = path
+          # NPM/Yarn support loading path dependencies from tarballs:
+          # https://docs.npmjs.com/cli/pack.html
+          unless filename.end_with?(".tgz")
+            filename = File.join(filename, "package.json")
+          end
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
