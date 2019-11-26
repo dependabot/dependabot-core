@@ -10,11 +10,7 @@ use Composer\Installer;
 class Updater
 {
     /**
-     * @param array $args
-     *
      * @throws \RuntimeException
-     *
-     * @return array
      */
     public static function update(array $args): array
     {
