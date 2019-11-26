@@ -20,6 +20,9 @@ def parse_requirements(directory):
     parser_options = optparse.Values(
             {
                 "skip_requirements_regex": JINJA_DELIMITER_IGNORE_REGEX,
+                # pip._internal assumes parse_requirements will be called from
+                # CLI, which sets default values. When passing parser options,
+                # need to explicitly set those defaults.
                 "isolated_mode": False,
                 "format_control": FormatControl(),
             }

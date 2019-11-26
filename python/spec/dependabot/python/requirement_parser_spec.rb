@@ -54,6 +54,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
 
     context "with a Jinja template" do
       let(:line) { "{{ cookiecutter.package_name }}" }
+
       it { is_expected.to be_nil }
     end
 
@@ -89,6 +90,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
           "{% if cookiecutter.include_package == 'y' %} luigi==0.1.0 "\
           "{% endif %}"
         end
+
         its([:name]) { is_expected.to eq "luigi" }
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]

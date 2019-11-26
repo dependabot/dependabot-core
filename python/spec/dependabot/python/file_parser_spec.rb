@@ -67,24 +67,17 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with jinja templates" do
       let(:requirements_fixture_name) { "jinja_requirements.txt" }
+
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
-
-        it "has the right details" do
-          dependency = dependencies.first
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("psycopg2")
-          expect(dependency.version).to eq("2.6.1")
-        end
+        its(:name) { is_expected.to eq("psycopg2") }
+        its(:version) { is_expected.to eq("2.6.1") }
       end
 
       describe "the second dependency" do
-        subject(:dependency) { dependencies[1] }
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("gunicorn")
-          expect(dependency.version).to eq("20.0.2")
-        end
+        subject(:dependency) { dependencies.last }
+        its(:name) { is_expected.to eq("gunicorn") }
+        its(:version) { is_expected.to eq("20.0.2") }
       end
     end
 
