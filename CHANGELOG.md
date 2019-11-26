@@ -1,3 +1,8 @@
+## v0.113.24, 26 November 2019
+
+- Bump friendsofphp/php-cs-fixer in /composer/helpers
+- Bump pip-tools from 4.2.0 to 4.3.0 in /python/helpers
+
 ## v0.113.23, 25 November 2019
 
 - JS: Fetch tarball path dependencies
