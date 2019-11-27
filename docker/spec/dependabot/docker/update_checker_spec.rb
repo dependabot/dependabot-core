@@ -185,6 +185,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the version is the latest release candidate" do
+      let(:dependency_name) { "php" }
+      let(:tags_fixture_name) { "php.json" }
+      let(:version) { "7.4.0RC6-fpm-buster" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/php/" }
+
+      it { is_expected.to eq("7.4.0RC6-fpm-buster") }
+    end
+
     context "when there is a latest tag" do
       let(:tags_fixture_name) { "ubuntu.json" }
       let(:headers_response) do
