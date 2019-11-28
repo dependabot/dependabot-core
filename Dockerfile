@@ -63,14 +63,14 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.7 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
     && cd /usr/local/.pyenv && git checkout v1.2.15 && cd - \
-    && pyenv install 3.7.5 \
+    && pyenv install 3.8.0 \
     && pyenv install 2.7.17 \
-    && pyenv global 3.7.5
+    && pyenv global 3.8.0
 
 
 ### JAVASCRIPT
