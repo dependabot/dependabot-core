@@ -1,3 +1,10 @@
+## v0.113.25, 28 November 2019
+
+- Bump default Python from 3.7.5 to 3.8.0
+- Update rubocop requirement from ~> 0.76.0 to ~> 0.77.0 in /common
+- Docker: support mixed case version suffixes (RC)
+- Support Jina templates in requirements files
+
 ## v0.113.24, 26 November 2019
 
 - Bump friendsofphp/php-cs-fixer in /composer/helpers
