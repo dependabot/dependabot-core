@@ -2366,14 +2366,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
             to eq("5.7.3")
         end
+      end
 
-        context "with non-standard indentation" do
-          it "preserves indentation in the package-lock.json" do
-            expect(updated_npm_lock.content).to eq(
-              fixture("npm_lockfiles",
-                      "subdependency_update_preserved_indentation.json")
-            )
-          end
+      context "with a sub-dependency and non-standard indentation" do
+        let(:manifest_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "1.3.0" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "preserves indentation in the package-lock.json" do
+          expect(updated_npm_lock.content).to eq(
+            fixture("npm_lockfiles",
+                    "subdependency_update_preserved_indentation.json")
+          )
         end
       end
 
