@@ -1,3 +1,7 @@
+## v0.113.26, 29 November 2019
+
+- Cargo: Handle virtual manifests with workspace glob on src/*
+
 ## v0.113.25, 28 November 2019
 
 - Bump default Python from 3.7.5 to 3.8.0
