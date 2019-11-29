@@ -402,6 +402,34 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when there's a virtual workspace" do
+      let(:manifest_fixture_name) { "virtual_workspace_root" }
+      let(:lockfile_fixture_name) { "virtual_workspace" }
+      let(:unprepared_dependency_files) do
+        [manifest, lockfile, workspace_child]
+      end
+      let(:workspace_child) do
+        Dependabot::DependencyFile.new(
+          name: "src/sub_crate/Cargo.toml",
+          content: fixture("manifests", "workspace_child")
+        )
+      end
+
+      let(:dependency_name) { "log" }
+      let(:dependency_version) { "0.4.0" }
+      let(:string_req) { "2.0" }
+      let(:requirements) do
+        [{
+          requirement: "=0.4.0",
+          file: "src/sub_crate/Cargo.toml",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("0.4.4") }
+    end
+
     context "when there is a workspace" do
       let(:unprepared_dependency_files) do
         [manifest, lockfile, workspace_child]

@@ -173,6 +173,8 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(file.name, prepared_manifest_content(file))
 
+            next if virtual_manifest?(file)
+
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
             File.write(File.join(dir, "src/main.rs"), dummy_app_content)
@@ -367,6 +369,10 @@ module Dependabot
         def toolchain
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
+        end
+
+        def virtual_manifest?(file)
+          !file.content.include?("[package]")
         end
       end
     end
