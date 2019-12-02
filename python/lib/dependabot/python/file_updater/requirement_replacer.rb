@@ -14,7 +14,7 @@ module Dependabot
         def initialize(content:, dependency_name:, old_requirement:,
                        new_requirement:, new_hash_version: nil)
           @content          = content
-          @dependency_name  = dependency_name
+          @dependency_name  = normalise(dependency_name)
           @old_requirement  = old_requirement
           @new_requirement  = new_requirement
           @new_hash_version = new_hash_version
