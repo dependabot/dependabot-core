@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 System.AskJeeves
                 System.Google
                 System.Lycos
-                System.WebCralwer
+                System.WebCrawler
               )
             )
         end

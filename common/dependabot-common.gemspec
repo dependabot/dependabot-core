@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pandoc-ruby", "~> 2.0"
   spec.add_dependency "parseconfig", "~> 1.0"
   spec.add_dependency "parser", "~> 2.5"
-  spec.add_dependency "toml-rb", "~> 1.1", ">= 1.1.2"
+  spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "byebug", "~> 11.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
@@ -40,7 +40,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
   spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
-  spec.add_development_dependency "rubocop", "~> 0.75.0"
+  spec.add_development_dependency "rubocop", "~> 0.77.0"
   spec.add_development_dependency "vcr", "~> 5.0"
   spec.add_development_dependency "webmock", "~> 3.4"
 

@@ -447,7 +447,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are idential" do
+      context "that are identical" do
         let(:dockerfile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
@@ -579,8 +579,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with multiple dockerfiles" do
-      let(:files) { [dockerfile, dockefile2] }
-      let(:dockefile2) do
+      let(:files) { [dockerfile, dockerfile2] }
+      let(:dockerfile2) do
         Dependabot::DependencyFile.new(
           name: "custom-name",
           content: dockerfile_body2

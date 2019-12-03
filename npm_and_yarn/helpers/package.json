@@ -9,17 +9,17 @@
     "test": "jest"
   },
   "dependencies": {
-    "@dependabot/yarn-lib": "^1.19.1",
+    "@dependabot/yarn-lib": "^1.19.2",
     "detect-indent": "^6.0.0",
-    "npm": "6.10.3",
+    "npm": "6.13.1",
     "semver": "^6.3.0"
   },
   "devDependencies": {
-    "eslint": "^6.5.1",
+    "eslint": "^6.7.2",
     "eslint-plugin-prettier": "^3.1.1",
     "jest": "^24.9.0",
-    "nock": "^11.4.0",
-    "prettier": "^1.18.2",
+    "nock": "^11.7.0",
+    "prettier": "^1.19.1",
     "rimraf": "^3.0.0"
   }
 }

@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5",
+            content: "SOME_CONSTANT = 5",
             directory: directory
           )
         end
@@ -1602,13 +1602,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to receive(:new).with(
               requirements: requirements,
               update_strategy: :bump_versions,
-              latest_version: "1.16.1",
-              latest_resolvable_version: "1.16.1",
+              latest_version: /^1./,
+              latest_resolvable_version: /^1./,
               updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.16.1")
+          expect(updated_requirements.first[:requirement]).
+            to start_with("~> 1.")
         end
 
         context "that is pinned" do
@@ -1642,8 +1643,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.1",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: /^1./,
+                  latest_resolvable_version: /^1./,
                   updated_source: requirements.first[:source]
                 ).and_call_original
 
@@ -1704,8 +1705,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.1",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: /^1./,
+                  latest_resolvable_version: /^1./,
                   updated_source: nil
                 ).and_call_original
 

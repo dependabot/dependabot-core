@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
       end
 
-      context "when the property containts a tricky to split string" do
+      context "when the property contains a tricky to split string" do
         let(:property_name) { "accumulo.1.6.version" }
         specify { expect { property_details }.to_not raise_error }
       end

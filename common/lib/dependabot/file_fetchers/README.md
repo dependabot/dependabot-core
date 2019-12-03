@@ -2,7 +2,7 @@
 
 File fetchers are used to fetch the relevant dependency files for a project
 (e.g., the `Gemfile` and `Gemfile.lock`). They are also responsible for checking
-whether a repo has an admissable set of requirement files.
+whether a repo has an admissible set of requirement files.
 
 There is a `Dependabot::FileFetchers` class for each language Dependabot
 supports.
@@ -60,6 +60,6 @@ fetcher.
 File fetchers tend to get complicated when the file requirements for an update
 to run are non-trivial - for example, for Ruby we could accept
 [`Gemfile`, `Gemfile.lock`] or [`Gemfile`, `example.gemspec`],
-but not just [`Gemfile.lock`]. When adding a new lanugage, it's normally easiest
+but not just [`Gemfile.lock`]. When adding a new language, it's normally easiest
 to pick a single case and implement it for all the update steps (parsing, update
 checking, etc.). You can then return and add other cases later.

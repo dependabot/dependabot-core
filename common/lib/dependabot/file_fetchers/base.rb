@@ -212,9 +212,11 @@ module Dependabot
         gitlab_client.
           repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
+            # GitLab API essentially returns the output from `git ls-tree`
             type = case file.type
                    when "blob" then "file"
                    when "tree" then "dir"
+                   when "commit" then "submodule"
                    else file.fetch("type")
                    end
 

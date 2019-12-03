@@ -73,7 +73,7 @@
             "committer_name": "Ivan Kondov",
             "created_at": "2017-04-17T16:24:56.000Z",
             "id": "e718899ddcdc666311d08497401199e126428163",
-            "message": "BUG: added 'force_consistent' keyword argument with default True\n\nThe bug fix is necessayry to pass the test turbomole_h3o2m.py.\n",
+            "message": "BUG: added 'force_consistent' keyword argument with default True\n\nThe bug fix is necessary to pass the test turbomole_h3o2m.py.\n",
             "parent_ids": [
                 "1a77c48212a3b3186564115b85448ca002ef158a"
             ],

@@ -157,8 +157,8 @@ module Dependabot
         gitlab_client_for_source.edit_merge_request_approvers(
           source.repo,
           merge_request.iid,
-          approver_ids: approvers_hash[:approvers] || [],
-          approver_group_ids: approvers_hash[:group_approvers] || []
+          approver_ids: approvers_hash[:approvers],
+          approver_group_ids: approvers_hash[:group_approvers]
         )
       end
 

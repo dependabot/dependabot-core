@@ -283,7 +283,7 @@ module Dependabot
       def numeric_version_from(tag)
         return unless tag.match?(NAME_WITH_VERSION)
 
-        tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
+        tag.match(NAME_WITH_VERSION).named_captures.fetch("version").downcase
       end
 
       def registry_hostname

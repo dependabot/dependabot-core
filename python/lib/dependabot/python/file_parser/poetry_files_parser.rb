@@ -91,7 +91,7 @@ module Dependabot
 
           parsed_lockfile.fetch("package", []).
             find { |p| normalise(p.fetch("name")) == normalise(dep_name) }&.
-            fetch("verison", nil)
+            fetch("version", nil)
         end
 
         def check_requirements(req)

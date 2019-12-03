@@ -340,6 +340,8 @@ module Dependabot
             FileUtils.mkdir_p(dir)
             File.write(file.name, sanitized_manifest_content(file.content))
 
+            next if virtual_manifest?(file)
+
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
             File.write(File.join(dir, "src/main.rs"), dummy_app_content)
@@ -413,6 +415,13 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           ).git_dependency?
+        end
+
+        # When the package table is not present in a workspace manifest, it is
+        # called a virtual manifest: https://doc.rust-lang.org/cargo/reference/
+        # manifest.html#virtual-manifest
+        def virtual_manifest?(file)
+          !file.content.include?("[package]")
         end
 
         def version_class

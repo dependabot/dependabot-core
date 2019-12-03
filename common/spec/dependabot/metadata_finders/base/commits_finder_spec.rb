@@ -853,7 +853,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               },
               {
                 message: "BUG: added 'force_consistent' keyword argument "\
-                          "with default True\n\nThe bug fix is necessayry to "\
+                          "with default True\n\nThe bug fix is necessary to "\
                           "pass the test turbomole_h3o2m.py.\n",
                 sha: "e718899ddcdc666311d08497401199e126428163",
                 html_url: "https://gitlab.com/org/business/commit/"\

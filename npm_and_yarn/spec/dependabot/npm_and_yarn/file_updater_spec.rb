@@ -1844,11 +1844,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "password" => "token"
                 }, {
                   "type" => "npm_registry",
-                  "registry" => "npm-proxy.fury.io",
+                  "registry" => "npm-proxy.fury.io/dependabot",
                   "token" => "bad_token"
                 }]
               end
 
+              # TODO: Fix broken test
               it "raises a helpful error" do
                 expect { updater.updated_dependency_files }.
                   to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
@@ -1902,7 +1903,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "because we're updating to a non-existant version" do
+      context "because we're updating to a nonexistent version" do
         let(:yarn_lock_fixture_name) { "yarn.lock" }
         let(:npm_lock_fixture_name) { "package-lock.json" }
         let(:manifest_fixture_name) { "package.json" }
@@ -1925,7 +1926,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a dependency that can't be found" do
-        let(:manifest_fixture_name) { "non_existant_dependency.json" }
+        let(:manifest_fixture_name) { "nonexistent_dependency.json" }
         let(:npm_lock_fixture_name) { "yanked_version.json" }
         let(:yarn_lock_fixture_name) { "yanked_version.lock" }
 
@@ -2365,14 +2366,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
             to eq("5.7.3")
         end
+      end
 
-        context "with non-standard indentation" do
-          it "preserves indentation in the package-lock.json" do
-            expect(updated_npm_lock.content).to eq(
-              fixture("npm_lockfiles",
-                      "subdependency_update_preserved_indentation.json")
-            )
-          end
+      context "with a sub-dependency and non-standard indentation" do
+        let(:manifest_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "1.3.0" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "preserves indentation in the package-lock.json" do
+          expect(updated_npm_lock.content).to eq(
+            fixture("npm_lockfiles",
+                    "subdependency_update_preserved_indentation.json")
+          )
         end
       end
 

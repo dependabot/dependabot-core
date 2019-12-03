@@ -49,7 +49,8 @@ To install the helpers for each language:
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd hex/helpers && mix deps.get && cd -`
-5. `cd terraform && helpers/build helpers/install-dir/terraform && cd -`
+5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
+6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
 
 ## Local development
 
@@ -68,7 +69,7 @@ Docker registry.
 
 ```shell
 $ docker pull dependabot/dependabot-core # OR
-$ docker build -f Dockerfile.development -t dependabot/dependabot-core . # This may take a while
+$ docker build -f Dockerfile -t dependabot/dependabot-core . # This may take a while
 ```
 
 Once you have the base Docker image, you can build and run the development
@@ -104,6 +105,18 @@ $ bin/dry-run.rb go_modules rsc/quote
 => updating 2 dependencies
 ...
 ```
+
+## Debugging with Visual Studio Code and Docker
+
+There's built-in support for leveraging Visual Studio Code's [ability for
+debugging](https://code.visualstudio.com/docs/remote/containers) inside a Docker container.
+After installing the recommended [`Remote - Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
+simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Remote-Containers: Reopen in Container`.
+You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
+If the development Docker image isn't present on your machine, it will be built automatically.
+Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted
+to select a package manager and a repository to perform a dry run on.
+Feel free to place breakpoints on the code.
 
 ## Releasing
 

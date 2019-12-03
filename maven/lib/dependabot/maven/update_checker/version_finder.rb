@@ -140,7 +140,7 @@ module Dependabot
           @released_check[version] =
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
-              response = Excon.get(
+              response = Excon.head(
                 dependency_files_url(url, version),
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
@@ -148,10 +148,7 @@ module Dependabot
                 **SharedHelpers.excon_defaults
               )
 
-              artifact_id = dependency.name.split(":").last
-              type = dependency.requirements.first.
-                     dig(:metadata, :packaging_type)
-              response.body.include?("#{artifact_id}-#{version}.#{type}")
+              response.status < 400
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               false
@@ -255,11 +252,14 @@ module Dependabot
 
         def dependency_files_url(repository_url, version)
           group_id, artifact_id = dependency.name.split(":")
+          type = dependency.requirements.first.
+                 dig(:metadata, :packaging_type)
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
           "#{artifact_id}/"\
-          "#{version}/"
+          "#{version}/"\
+          "#{artifact_id}-#{version}.#{type}"
         end
 
         def version_class

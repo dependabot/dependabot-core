@@ -99,7 +99,7 @@ $options = {
   commit: nil
 }
 
-if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
   $options[:credentials] << {
     "type" => "git_source",
     "host" => "github.com",
@@ -108,7 +108,7 @@ if ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
   }
 end
 
-if ENV["LOCAL_CONFIG_VARIABLES"]
+unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
   $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
@@ -304,7 +304,39 @@ def update_checker_for(dependency)
     dependency_files: $files,
     credentials: $options[:credentials],
     requirements_update_strategy: $options[:requirements_update_strategy],
+    ignored_versions: ignore_conditions_for(dependency),
+    security_advisories: security_advisories_for(dependency),
   )
+end
+
+# TODO: Parse from config file
+def ignore_conditions_for(_)
+  # Array of version requirements, e.g. ["4.x", "5.x"]
+  []
+end
+
+# TODO: Parse from config file
+def security_advisories_for(dependency)
+  # Array of version requirement ranges, e.g. affected_versions: ["< 3.5.1"]
+  advisories = [{
+    dependency_name: dependency.name,
+    patched_versions: [],
+    unaffected_versions: [],
+    affected_versions: []
+  }]
+
+  advisories.map do |adv|
+    vulnerable_versions = adv[:affected_versions] || []
+    safe_versions = (adv[:patched_versions] || []) +
+                    (adv[:unaffected_versions] || [])
+
+    Dependabot::SecurityAdvisory.new(
+      dependency_name: dependency.name,
+      package_manager: $package_manager,
+      vulnerable_versions: vulnerable_versions,
+      safe_versions: safe_versions
+    )
+  end
 end
 
 def peer_dependencies_can_update?(checker, reqs_to_unlock)

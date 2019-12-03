@@ -109,6 +109,50 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when multiple identical named dependencies with different tags" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "multi_stage_different_tags")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "node",
+          version: "10.9.4-alpine",
+          previous_version: "10.9.2-alpine",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "10.9.4-alpine" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.2-alpine" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.3-alpine" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM node:10.9.4-alpine AS" }
+        its(:content) { is_expected.to include "FROM node:10.9.4-alpine\n" }
+        its(:content) { is_expected.to include "RUN apk add" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
@@ -326,8 +370,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     end
 
     context "when multiple dockerfiles to be updated" do
-      let(:files) { [dockerfile, dockefile2] }
-      let(:dockefile2) do
+      let(:files) { [dockerfile, dockerfile2] }
+      let(:dockerfile2) do
         Dependabot::DependencyFile.new(
           name: "custom-name",
           content: dockerfile_body2
