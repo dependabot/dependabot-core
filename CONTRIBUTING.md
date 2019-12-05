@@ -4,15 +4,9 @@
 
 #### Overview
 
-* [Feedback workflow](#feedback-workflow)
-* [Contribution workflow](#contribution-workflow)
-* [Setup instructions](#setup-instructions)
-* [Project layout](#project-layout)
-
-## Feedback workflow
-
- * Go right ahead and [create an issue](https://github.com/dependabot/dependabot-core/issues), whatever it is. There are no stupid questions, no required formats, and we're always happy to help, whatever it is!
- * If you'd rather talk to us in private you can email us at [dependabot-support@github.com](mailto:dependabot-support@github.com).
+-* [Contribution workflow](#contribution-workflow)
+-* [Setup instructions](#setup-instructions)
+-* [Project layout](#project-layout)
 
 ## Contribution workflow
 
