@@ -52,6 +52,13 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       specify { expect { subject }.to_not raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
+
+      context "without credentials" do
+        let(:credentials) { [] }
+        before { ENV["AWS_REGION"] = "us-east-1" }
+
+        it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
+      end
     end
 
     context "when the target branch does not exist" do
