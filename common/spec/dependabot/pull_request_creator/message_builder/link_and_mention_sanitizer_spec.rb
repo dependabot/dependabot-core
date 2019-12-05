@@ -202,6 +202,20 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       end
     end
 
+    context "with a markdown footer" do
+      let(:text) do
+        "- [Updated the `libm` dependency to 0.2][144].\n"\
+        "[144]: https://github.com/rust-num/num-traits/pull/144"
+      end
+
+      it do
+        is_expected.to eq(
+          "- [Updated the `libm` dependency to 0.2][144].\n"\
+          "[144]: https://github-redirect.com/rust-num/num-traits/pull/144"
+        )
+      end
+    end
+
     context "with a changelog that doesn't need sanitizing" do
       let(:text) { fixture("changelogs", "jsdom.md") }
       let(:github_redirection_service) { "github.com" }
