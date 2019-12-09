@@ -138,7 +138,8 @@ module Dependabot
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
-            unfetchable_deps << [name, path]
+            # Unfetchable tarballs should not be re-fetched as a package
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz")
           end
         end
 
