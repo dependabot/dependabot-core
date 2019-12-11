@@ -53,6 +53,7 @@ $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
+require "json"
 ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "../omnibus/Gemfile")
 Bundler.setup
 
@@ -186,6 +187,7 @@ def show_diff(original_file, updated_file)
 end
 
 def cached_read(name)
+  puts "GGB: cache read #{name}"
   raise "Provide something to cache" unless block_given?
   return yield unless $options[:cache_steps].include?(name)
 
@@ -236,7 +238,7 @@ def cached_dependency_files_read
       puts "=> failed to read all dependency files from cache manifest: "\
            "./#{cache_manifest_path}"
     end
-    puts "=> fetching dependency files"
+    puts "=> Giri: fetching dependency files"
     data = yield
     puts "=> dumping fetched dependency files: ./#{cache_dir}"
     manifest_data = data.map do |file|
@@ -279,8 +281,11 @@ source = Dependabot::Source.new(
 $files = cached_dependency_files_read do
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
     new(source: source, credentials: $options[:credentials])
+  puts "GGB:=> fewtche.files"
   fetcher.files
 end
+
+# GGB: Print file names
 
 # Parse the dependency files
 puts "=> parsing dependency files"

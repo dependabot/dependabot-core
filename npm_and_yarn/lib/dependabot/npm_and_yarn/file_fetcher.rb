@@ -41,10 +41,12 @@ module Dependabot
         fetched_files << yarn_lock if yarn_lock
         fetched_files << shrinkwrap if shrinkwrap
         fetched_files << lerna_json if lerna_json
+        fetched_files << rush_json if rush_json
         fetched_files << npmrc if npmrc
         fetched_files << yarnrc if yarnrc
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
+        fetched_files += rush_packages
         fetched_files += path_dependencies(fetched_files)
 
         fetched_files.uniq
@@ -111,12 +113,23 @@ module Dependabot
                         tap { |f| f.support_file = true }
       end
 
+      def rush_json
+        @rush_json ||= fetch_file_if_present("rush.json")&.
+                        tap { |f| f.support_file = true }
+        puts "GGB: RushJson #{@rush_json}"
+        @rush_json
+      end
+
       def workspace_package_jsons
         @workspace_package_jsons ||= fetch_workspace_package_jsons
       end
 
       def lerna_packages
         @lerna_packages ||= fetch_lerna_packages
+      end
+
+      def rush_packages
+        @rush_packages ||= fetch_rush_packages
       end
 
       def path_dependencies(fetched_files)
@@ -258,6 +271,20 @@ module Dependabot
         dependency_files
       end
 
+      def fetch_rush_packages
+        puts "Trying Fetching rush packages"
+        return [] unless parsed_rush_json["projects"]
+
+        dependency_files = []
+
+        workspace_paths(parsed_rush_json["projects"]).each do |workspace|
+          dependency_files += fetch_rush_packages_from_path(workspace)
+        end
+      
+        # dependency_files 
+        dependency_files # return empty for now.
+      end
+
       def fetch_lerna_packages_from_path(path, nested = false)
         dependency_files = []
 
@@ -287,6 +314,11 @@ module Dependabot
         end
 
         dependency_files
+      end
+
+      def fetch_rush_packages_from_path(path, nested = false)
+        puts "GGB: Path: #{path["projectFolder"]}"
+        []
       end
 
       def workspace_paths(workspace_object)
@@ -370,6 +402,14 @@ module Dependabot
         JSON.parse(lerna_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
+      end
+
+      def parsed_rush_json
+        return {} unless rush_json
+
+        JSON.parse(rush_json.content)
+      # rescue JSON::ParserError
+      #   raise Dependabot::DependencyFileNotParseable, rush_json.path
       end
     end
     # rubocop:enable Metrics/ClassLength
