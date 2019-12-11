@@ -278,7 +278,7 @@ module Dependabot
         dependency_files = []
 
         workspace_paths(parsed_rush_json["projects"]).each do |workspace|
-          dependency_files += fetch_rush_packages_from_path(workspace)
+          dependency_files += fetch_rush_packages_from_path(workspace["projectFolder"])
         end
       
         # dependency_files 
@@ -317,8 +317,16 @@ module Dependabot
       end
 
       def fetch_rush_packages_from_path(path, nested = false)
-        puts "GGB: Path: #{path["projectFolder"]}"
-        []
+        puts "GGB: Path: #{path}"
+        
+        dependency_files = []
+        package_json_path = File.join(path, "package.json")
+        
+        # Currently we fetch just the package.json
+        # TODO: Do we need nested lookup here? Do we need wildcard matching?
+        dependency_files << fetch_file_from_host(package_json_path)
+        
+        dependency_files
       end
 
       def workspace_paths(workspace_object)
