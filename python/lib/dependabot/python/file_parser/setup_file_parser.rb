@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/python_versions"
 
 module Dependabot
   module Python
@@ -18,6 +19,12 @@ module Dependabot
         EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m.freeze
 
         CLOSING_BRACKET = { "[" => "]", "{" => "}" }.freeze
+
+        SUBPROCESS_PYTHON =
+          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.
+          select { |version| version.start_with?("3.") }.
+          first.
+          freeze
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files
@@ -62,6 +69,7 @@ module Dependabot
             requirements = SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python #{NativeHelpers.python_helper_path}",
               function: "parse_setup",
+              env: { "PYENV_VERSION" => SUBPROCESS_PYTHON },
               args: [Dir.pwd]
             )
 
@@ -83,6 +91,7 @@ module Dependabot
             requirements = SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python #{NativeHelpers.python_helper_path}",
               function: "parse_setup",
+              env: { "PYENV_VERSION" => SUBPROCESS_PYTHON },
               args: [Dir.pwd]
             )
 
