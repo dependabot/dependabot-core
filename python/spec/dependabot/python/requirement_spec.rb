@@ -230,4 +230,33 @@ RSpec.describe Dependabot::Python::Requirement do
       end
     end
   end
+
+  describe ".complement" do
+    subject(:complement_patterns) do
+      described_class.complement_patterns(version_patterns)
+    end
+
+    context "with a single pattern" do
+      let(:version_patterns) { [">= 7.1.0"] }
+      it { is_expected.to eq(["<7.1.0"]) }
+    end
+
+    context "with multiple patterns" do
+      let(:version_patterns) do
+        ["> 1", ">=1.2", "= 1.3", "==1.3.0",
+         "===1.3.1", "!=1.4", "<= 1.7", "<2.0.0"]
+      end
+      it {
+        is_expected.to eq(
+          ["<=1", "<1.2", "!=1.3", "!=1.3.0",
+           "!=1.3.1", "==1.4", ">1.7", ">=2.0.0"]
+        )
+      }
+    end
+
+    context "with no patterns" do
+      let(:version_patterns) { [] }
+      it { is_expected.to eq([]) }
+    end
+  end
 end

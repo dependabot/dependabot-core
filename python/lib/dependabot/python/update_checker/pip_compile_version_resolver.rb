@@ -30,12 +30,19 @@ module Dependabot
           %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency, :dependency_files, :credentials,
+                    :ignored_versions
 
-        def initialize(dependency:, dependency_files:, credentials:)
+        def initialize(
+          dependency:,
+          dependency_files:,
+          credentials:,
+          ignored_versions:
+        )
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @ignored_versions         = ignored_versions
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -74,11 +81,14 @@ module Dependabot
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
+                  # rubocop:disable LineLength
                   run_pip_compile_command(
                     "pyenv exec pip-compile --allow-unsafe "\
-                     "#{pip_compile_options(filename)} -P #{dependency.name} "\
+                     "#{pip_compile_options(filename)} -P "\
+                     "#{dependency.name}#{Python::Requirement.complement_patterns(ignored_versions).join(',')} "\
                      "#{filename}"
                   )
+                  # rubocop:enable LineLength
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   write_original_manifest_files unless dependency.top_level?

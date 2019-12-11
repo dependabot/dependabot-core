@@ -182,7 +182,12 @@ module Dependabot
 
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||=
-          PipCompileVersionResolver.new(resolver_args)
+          PipCompileVersionResolver.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions
+          )
       end
 
       def poetry_version_resolver
