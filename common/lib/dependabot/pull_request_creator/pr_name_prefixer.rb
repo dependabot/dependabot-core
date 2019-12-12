@@ -281,6 +281,7 @@ module Dependabot
         when "gitlab" then recent_gitlab_commit_messages
         when "azure" then recent_azure_commit_messages
         when "codecommit" then recent_codecommit_commit_messages
+        when "bitbucket_server" then recent_bitbucket_server_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
       end
@@ -334,6 +335,16 @@ module Dependabot
           map(&:strip)
       end
 
+      def recent_bitbucket_server_commit_messages
+        @recent_bitbucket_server_commits ||=
+          bitbucket_server_client_for_source.fetch_recent_commits
+        @recent_bitbucket_server_commits.
+          reject { |c| c.dig("author", "name").include?("dependabot") }.
+          map { |c| c.dig("message") }.
+          compact.
+          map(&:strip)
+      end
+
       def last_dependabot_commit_message
         @last_dependabot_commit_message ||=
           case source.provider
@@ -341,6 +352,8 @@ module Dependabot
           when "gitlab" then last_gitlab_dependabot_commit_message
           when "azure" then last_azure_dependabot_commit_message
           when "codecommit" then last_codecommit_dependabot_commit_message
+          when "bitbucket_server"
+            last_bitbucket_server_dependabot_commit_message
           else raise "Unsupported provider: #{source.provider}"
           end
       end
@@ -391,6 +404,16 @@ module Dependabot
           strip
       end
 
+      def last_bitbucket_server_dependabot_commit_message
+        @recent_bitbucket_server_commits ||=
+          bitbucket_server_client_for_source.fetch_recent_commits
+
+        @recent_bitbucket_server_commits.
+          find { |c| c.dig("author", "name")&.include?("dependabot") }&.
+          dig("message")&.
+          strip
+      end
+
       def github_client_for_source
         @github_client_for_source ||=
           Dependabot::Clients::GithubWithRetries.for_source(
@@ -418,6 +441,14 @@ module Dependabot
       def codecommit_client_for_source
         @codecommit_client_for_source ||=
           Dependabot::Clients::CodeCommit.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def bitbucket_server_client_for_source
+        @bitbucket_server_client_for_source ||=
+          Dependabot::Clients::BitbucketServer.for_source(
             source: source,
             credentials: credentials
           )

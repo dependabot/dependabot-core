@@ -255,5 +255,31 @@ RSpec.describe Dependabot::PullRequestCreator do
         creator.create
       end
     end
+
+    context "with a Bitbucket Server source" do
+      let(:source) do
+        Dependabot::Source.new(provider: "bitbucket_server",
+                               repo: "projects/gc/repos/bp")
+      end
+      let(:dummy_creator) { instance_double(described_class::BitbucketServer) }
+
+      it "delegates to PullRequestCreator::BitbucketServer w/ correct params" do
+        expect(described_class::BitbucketServer).
+          to receive(:new).
+          with(
+            source: source,
+            branch_name: "dependabot/bundler/business-1.5.0",
+            base_commit: base_commit,
+            credentials: credentials,
+            files: files,
+            commit_message: "Commit msg",
+            pr_description: "PR msg",
+            pr_name: "PR name",
+            reviewers: reviewers
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
   end
 end

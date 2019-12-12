@@ -52,8 +52,8 @@ module Dependabot
       )
     end
 
-    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil)
+    def initialize(provider:, repo:, directory: nil, organization: nil,
+                   branch: nil, commit: nil, hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
@@ -64,6 +64,7 @@ module Dependabot
       @provider = provider
       @repo = repo
       @directory = directory
+      @organization = organization
       @branch = branch
       @commit = commit
       @hostname = hostname || default_hostname(provider)
@@ -97,7 +98,7 @@ module Dependabot
     # rubocop:enable Metrics/CyclomaticComplexity
 
     def organization
-      repo.split("/").first
+      @organization ||= repo.split("/").first
     end
 
     def project
@@ -122,6 +123,7 @@ module Dependabot
       when "gitlab" then "gitlab.com"
       when "azure" then "dev.azure.com"
       when "codecommit" then "us-east-1"
+      when "bitbucket_server" then "bitbucket.com"
       else raise "Unexpected provider '#{provider}'"
       end
     end
@@ -130,6 +132,7 @@ module Dependabot
       case provider
       when "github" then "https://api.github.com/"
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
+      when "bitbucket_server" then "https://bitbucket.com/rest/api/1.0"
       when "gitlab" then "https://gitlab.com/api/v4"
       when "azure" then "https://dev.azure.com/"
       when "codecommit" then nil

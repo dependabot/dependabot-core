@@ -1,0 +1,16 @@
+{
+  "size": 1,
+  "limit": 25,
+  "isLastPage": true,
+  "values": [
+    {
+      "id": "refs\/heads\/dependabot\/bundler\/business-1.5.0",
+      "displayId": "dependabot\/bundler\/business-1.5.0",
+      "type": "BRANCH",
+      "latestCommit": "e5b883746aad941e4d67fcd1cd6ae19f2a7a02eb",
+      "latestChangeset": "e5b883746aad941e4d67fcd1cd6ae19f2a7a02eb",
+      "isDefault": false
+    }
+  ],
+  "start": 0
+}

@@ -1,0 +1,42 @@
+{
+   "slug": "bump",
+   "id": 2225,
+   "name": "bump",
+   "scmId": "git",
+   "state": "AVAILABLE",
+   "statusMessage": "Available",
+   "forkable": false,
+   "project": {
+      "key": "gocardless",
+      "id": 1372,
+      "name": "gocardless",
+      "description": "gocardless",
+      "public": false,
+      "type": "NORMAL",
+      "links": {
+         "self": [
+            {
+               "href": "https://bitbucket.com/projects/gocardless"
+            }
+         ]
+      }
+   },
+   "public": false,
+   "links": {
+      "clone": [
+         {
+            "href": "https://bitbucket.com/scm/gocardless/bump.git",
+            "name": "http"
+         },
+         {
+            "href": "ssh://git@bitbucket.com:7999/gocardless/bump.git",
+            "name": "ssh"
+         }
+      ],
+      "self": [
+         {
+            "href": "https://bitbucket.com/projects/gocardless/repos/bump/browse"
+         }
+      ]
+   }
+}
