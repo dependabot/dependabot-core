@@ -158,10 +158,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to start_with("psycopg2[")
-          expect(dependency.name).to end_with("]")
-          expect(dependency.name).to include("foo")
-          expect(dependency.name).to include("bar")
+          expect(dependency.name).to eq("psycopg2[bar,foo]")
           expect(dependency.version).to eq("2.6.1")
           expect(dependency.requirements).to eq(
             [{
