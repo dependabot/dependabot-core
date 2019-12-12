@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "commonmarker"
+require "nokogiri"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
@@ -73,23 +75,23 @@ module Dependabot
         end
 
         def sanitize_links(text)
-          text.gsub(GITHUB_REF_REGEX) do |ref|
-            last_match = Regexp.last_match
-            previous_char = last_match.pre_match.chars.last
-            next_char = last_match.post_match.chars.first
+          doc = CommonMarker.render_doc(text, :DEFAULT, [:table, :tasklist, :strikethrough, :autolink, :tagfilter])
 
-            sanitized_url =
-              ref.gsub("github.com", github_redirection_service || "github.com")
-            if (previous_char.nil? || previous_char.match?(/\s/)) &&
-               (next_char.nil? || next_char.match?(/\s/))
-              number = last_match.named_captures.fetch("number")
-              repo = last_match.named_captures.fetch("repo")
-              "[#{repo}##{number}]"\
-              "(#{sanitized_url})"
-            else
-              sanitized_url
+          doc.walk do |node|
+            if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
+              node.each do |subnode|
+                if subnode.type == :text && last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                  number = last_match.named_captures.fetch("number")
+                  repo = last_match.named_captures.fetch("repo")
+                  subnode.string_content = "#{repo}##{number}"
+                end
+              end
+
+              node.url = node.url.gsub("github.com", github_redirection_service || "github.com")
             end
           end
+
+          doc.to_html
         end
       end
     end

@@ -21,7 +21,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions).
-          to eq("Great work [@&#8203;greysteil](https://github.com/greysteil)!")
+          to eq("<p>Great work <a href=\"https://github.com/greysteil\">"\
+            "@​greysteil</a>!</p>\n")
       end
 
       context "that includes a dash" do
@@ -29,15 +30,15 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
-            "Great work [@&#8203;greysteil-work]"\
-            "(https://github.com/greysteil-work)!"
+            "<p>Great work <a href=\"https://github.com/greysteil-work\">"\
+            "@​greysteil-work</a>!</p>\n"
           )
         end
       end
 
       context "that includes a slash" do
         let(:text) { "Great work on @greysteil/repo!" }
-        it { is_expected.to eq(text) }
+        it { is_expected.to eq("<p>Great work on @greysteil/repo!</p>\n") }
       end
 
       context "that is in brackets" do
@@ -45,8 +46,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
-            "The team (by [@&#8203;greysteil](https://github.com/greysteil)) "\
-            "etc."
+            "<p>The team (by <a href=\"https://github.com/greysteil\">"\
+            "@​greysteil</a>) etc.</p>\n"
           )
         end
       end
@@ -58,7 +59,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       context "that appears in double tick code quotes" do
         let(:text) { "Great work ``@greysteil``!" }
-        it { is_expected.to eq(text) }
+        it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
       context "with unmatched single code ticks previously" do
@@ -68,11 +69,22 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       context "that appears in codeblock quotes" do
         let(:text) { "``` @model ||= 123```" }
-        it { is_expected.to eq(text) }
+        it do
+          is_expected.to eq(
+            "<pre><code></code></pre>\n<p>"\
+            "<a href=\"https://github.com/model\">@​model</a> ||= 123```</p>\n"
+          )
+        end
 
         context "that use `~`" do
           let(:text) { "~~~ @model ||= 123~~~" }
-          it { is_expected.to eq(text) }
+          it do
+            is_expected.to eq(
+              "<pre><code></code></pre>\n<p>"\
+              "<a href=\"https://github.com/model\">"\
+              "@​model</a> ||= 123~~~</p>\n"
+            )
+          end
         end
 
         context "with a mention before" do
@@ -171,7 +183,9 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the mention" do
           expect(sanitize_links_and_mentions).to eq(
-            "```````\nThis is a [@&#8203;mention](https://github.com/mention)!"
+            "<pre><code></code></pre>\n<pre><code></code></pre>\n<p>`\n"\
+            "This is a <a href=\"https://github.com/mention\">"\
+            "@​mention</a>!</p>\n"
           )
         end
       end
@@ -184,12 +198,17 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
     context "with ending newline" do
       let(:text) { "Changelog 2.0\n" }
-      it { is_expected.to eq(text) }
+      it { is_expected.to eq("<p>Changelog 2.0</p>\n") }
     end
 
     context "with an email" do
       let(:text) { "Contact support@dependabot.com for details" }
-      it { is_expected.to eq(text) }
+      it do
+        is_expected.to eq(
+          "<p>Contact <a href=\"mailto:support@dependabot.com\">"\
+          "support@dependabot.com</a> for details</p>\n"
+        )
+      end
     end
 
     context "with a GitHub link" do
@@ -197,21 +216,22 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       it do
         is_expected.to eq(
-          "Check out [my/repo#5](https://github-redirect.com/my/repo/issues/5)"
+          "<p>Check out <a href=\"https://github-redirect.com/my/repo/"\
+          "issues/5\">my/repo#5</a></p>\n"
         )
       end
     end
 
     context "with a markdown footer" do
       let(:text) do
-        "- [Updated the `libm` dependency to 0.2][144].\n"\
+        "[Updated the `libm` dependency to 0.2][144]\n\n"\
         "[144]: https://github.com/rust-num/num-traits/pull/144"
       end
 
       it do
         is_expected.to eq(
-          "- [Updated the `libm` dependency to 0.2][144].\n"\
-          "[144]: https://github-redirect.com/rust-num/num-traits/pull/144"
+          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/"\
+          "pull/144\">Updated the <code>libm</code> dependency to 0.2</a></p>\n"
         )
       end
     end
