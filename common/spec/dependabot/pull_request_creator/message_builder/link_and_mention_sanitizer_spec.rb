@@ -54,7 +54,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       context "that appears in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
-        it { is_expected.to eq(text) }
+        it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
       context "that appears in double tick code quotes" do
