@@ -75,19 +75,28 @@ module Dependabot
         end
 
         def sanitize_links(text)
-          doc = CommonMarker.render_doc(text, :DEFAULT, [:table, :tasklist, :strikethrough, :autolink, :tagfilter])
+          doc = CommonMarker.render_doc(
+            text,
+            :DEFAULT,
+            %i(table tasklist strikethrough autolink tagfilter)
+          )
 
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
               node.each do |subnode|
-                if subnode.type == :text && last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                if subnode.type == :text && last_match
                   number = last_match.named_captures.fetch("number")
                   repo = last_match.named_captures.fetch("repo")
                   subnode.string_content = "#{repo}##{number}"
                 end
+
+                next
               end
 
-              node.url = node.url.gsub("github.com", github_redirection_service || "github.com")
+              node.url = node.url.gsub(
+                "github.com", github_redirection_service || "github.com"
+              )
             end
           end
 
