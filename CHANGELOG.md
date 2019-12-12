@@ -1,3 +1,9 @@
+## v0.113.28, 12 December 2019
+
+- Bump npm from 6.13.2 to 6.13.4 in /npm_and_yarn/helpers
+- Bump @dependabot/yarn-lib from 1.21.0 to 1.21.1 in /npm_and_yarn/helpers
+- Python: Preserve dependency name extras
+
 ## v0.113.27, 9 December 2019
 
 - JS: Fix unfetchable tarball path deps ∞ loop
