@@ -92,7 +92,7 @@ module Dependabot
 
           dependencies <<
             Dependency.new(
-              name: normalised_name(dep["name"]),
+              name: normalised_name(dep["name"], dep["extras"]),
               version: dep["version"]&.include?("*") ? nil : dep["version"],
               requirements: requirements,
               package_manager: "pip"
@@ -192,8 +192,8 @@ module Dependabot
           join
       end
 
-      def normalised_name(name)
-        NameNormaliser.normalise(name)
+      def normalised_name(name, extras = [])
+        NameNormaliser.normalise_including_extras(name, extras)
       end
 
       def check_required_files
