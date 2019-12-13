@@ -48,11 +48,11 @@ module Dependabot
             delimiter = line.match(CODEBLOCK_REGEX)&.to_s
             unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
               line = sanitize_mentions(line)
-              line = sanitize_links(line)
             end
             lines << line
           end
-          lines.join
+
+          sanitize_links(lines.join)
         end
 
         private
@@ -63,12 +63,11 @@ module Dependabot
 
             last_match = Regexp.last_match
 
-            sanitized_mention = mention.gsub("@", "@&#8203;")
             if last_match.pre_match.chars.last == "[" &&
                last_match.post_match.chars.first == "]"
-              sanitized_mention
+              next mention
             else
-              "[#{sanitized_mention}]"\
+              "[#{mention}]"\
               "(https://github.com/#{mention.tr('@', '')})"
             end
           end

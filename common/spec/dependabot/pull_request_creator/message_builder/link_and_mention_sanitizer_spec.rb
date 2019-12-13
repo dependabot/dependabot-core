@@ -22,7 +22,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions).
           to eq("<p>Great work <a href=\"https://github.com/greysteil\">"\
-            "@​greysteil</a>!</p>\n")
+            "@greysteil</a>!</p>\n")
       end
 
       context "that includes a dash" do
@@ -31,7 +31,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>Great work <a href=\"https://github.com/greysteil-work\">"\
-            "@​greysteil-work</a>!</p>\n"
+            "@greysteil-work</a>!</p>\n"
           )
         end
       end
@@ -47,7 +47,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>The team (by <a href=\"https://github.com/greysteil\">"\
-            "@​greysteil</a>) etc.</p>\n"
+            "@greysteil</a>) etc.</p>\n"
           )
         end
       end
@@ -64,40 +64,37 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
       context "with unmatched single code ticks previously" do
         let(:text) { fixture("changelogs", "sentry.md") }
-        it { is_expected.to include("@&#8203;halkeye") }
+        it do
+          is_expected.to include(
+            "<a href=\"https://github.com/halkeye\">@halkeye</a>"
+          )
+        end
       end
 
       context "that appears in codeblock quotes" do
         let(:text) { "``` @model ||= 123```" }
         it do
-          is_expected.to eq(
-            "<pre><code></code></pre>\n<p>"\
-            "<a href=\"https://github.com/model\">@​model</a> ||= 123```</p>\n"
-          )
+          is_expected.to eq("<p><code> @model ||= 123</code></p>\n")
         end
 
         context "that use `~`" do
-          let(:text) { "~~~ @model ||= 123~~~" }
+          let(:text) { "~~~\n @model ||= 123\n~~~" }
           it do
-            is_expected.to eq(
-              "<pre><code></code></pre>\n<p>"\
-              "<a href=\"https://github.com/model\">"\
-              "@​model</a> ||= 123~~~</p>\n"
-            )
+            is_expected.to eq("<pre><code> @model ||= 123\n</code></pre>\n")
           end
         end
 
         context "with a mention before" do
           let(:text) do
-            "@greysteil wrote this:\n\n``` @model ||= 123\n```\n\n"\
+            "@greysteil wrote this:\n\n```\n @model ||= 123\n```\n\n"\
             "Review by @hmarr!"
           end
 
           it "sanitizes the text" do
             expect(sanitize_links_and_mentions).to eq(
-              "[@&#8203;greysteil](https://github.com/greysteil) wrote this:"\
-              "\n\n``` @model ||= 123\n```\n\n"\
-              "Review by [@&#8203;hmarr](https://github.com/hmarr)!"
+              "<p><a href=\"https://github.com/greysteil\">@greysteil</a> "\
+              "wrote this:</p>\n<pre><code> @model ||= 123\n</code></pre>\n<p>"\
+              "Review by <a href=\"https://github.com/hmarr\">@hmarr</a>!</p>\n"
             )
           end
         end
@@ -109,9 +106,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "```@command```\nThanks to [@&#8203;feelepxyz]"\
-              "(https://github.com/feelepxyz)"\
-              "```@other``` [@&#8203;escape](https://github.com/escape)"
+              "<p><code>@command</code>\nThanks to "\
+              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a>"\
+              "<code>@other</code> <a href=\"https://github.com/escape\">"\
+              "@escape</a></p>\n"
             )
           end
         end
@@ -121,8 +119,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "```@command ```\n``` @test``` "\
-              "[@&#8203;feelepxyz](https://github.com/feelepxyz)"
+              "<p><code>@command </code>\n<code> @test</code> "\
+              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
             )
           end
         end
@@ -157,11 +155,12 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
 
         context "with mixed syntax code blocks" do
-          let(:text) { "```@command ```\n~~~ @test~~~ @feelepxyz" }
+          let(:text) { "```@command ```\n~~~\n @test~~~ @feelepxyz" }
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "```@command ```\n~~~ @test~~~ [@&#8203;feelepxyz](https://github.com/feelepxyz)"
+              "<p><code>@command </code></p>\n<pre><code> @test~~~ "\
+              "[@feelepxyz](https://github.com/feelepxyz)\n</code></pre>\n"
             )
           end
         end
@@ -171,22 +170,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "[@&#8203;command](https://github.com/command) ``` "\
-              "[@&#8203;feelepxyz](https://github.com/feelepxyz)"
+              "<p><a href=\"https://github.com/command\">@command</a> ``` "\
+              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
             )
           end
-        end
-      end
-
-      context "that is formatted surprisingly" do
-        let(:text) { "```````\nThis is a @mention!" }
-
-        it "sanitizes the mention" do
-          expect(sanitize_links_and_mentions).to eq(
-            "<pre><code></code></pre>\n<pre><code></code></pre>\n<p>`\n"\
-            "This is a <a href=\"https://github.com/mention\">"\
-            "@​mention</a>!</p>\n"
-          )
         end
       end
     end
@@ -238,10 +225,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
     context "with a changelog that doesn't need sanitizing" do
       let(:text) { fixture("changelogs", "jsdom.md") }
-      let(:github_redirection_service) { "github.com" }
+      let(:html) { fixture("changelogs", "jsdom.html") }
 
       it "doesn't freeze when parsing the changelog" do
-        is_expected.to eq(text)
+        is_expected.to eq(html)
       end
     end
   end
