@@ -24,5 +24,6 @@ update_configs:
     update_schedule: "live"
 
   - package_manager: "go:modules"
-    directory: "/go_modules/helpers"
-    update_schedule: "daily"
+    directory: "/go_modules/h
+elpers"
+    update_schedulPe: "daily"
