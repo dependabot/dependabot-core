@@ -56,7 +56,8 @@ RUN mkdir -p ${CODE_DIR}/bundler \
              ${CODE_DIR}/nuget \
              ${CODE_DIR}/omnibus \
              ${CODE_DIR}/python \
-             ${CODE_DIR}/terraform
+             ${CODE_DIR}/terraform \
+             ${CODE_DIR}/sbt
 
 COPY bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
@@ -75,6 +76,7 @@ COPY nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
 COPY omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 COPY python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
+COPY sbt/Gemfile sbt/dependabot-sbt.gemspec ${CODE_DIR}/sbt/
 
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \

@@ -1,0 +1,18 @@
+{
+  "name": "Dependencies.scala",
+  "path": "project/Dependencies.scala",
+  "sha": "2db74534b504cb01e74441494c34416ad80e9def",
+  "size": 1093,
+  "url": "https://api.github.com/repos/17hao/scalacode/contents/project/Dependencies.scala?ref=master",
+  "html_url": "https://github.com/17hao/scalacode/blob/master/project/Dependencies.scala",
+  "git_url": "https://api.github.com/repos/17hao/scalacode/git/blobs/2db74534b504cb01e74441494c34416ad80e9def",
+  "download_url": "https://raw.githubusercontent.com/17hao/scalacode/master/project/Dependencies.scala",
+  "type": "file",
+  "content": "aW1wb3J0IHNidC5fCgpvYmplY3QgRGVwZW5kZW5jaWVzIHsKICAvLyBMaWJy\nYXJpZXMKICB2YWwgcmVkaXNjYWxhID0gImNvbS5naXRodWIuZXRhdHkiICUl\nICJyZWRpc2NhbGEiICUgIjEuOC4wIgogIHZhbCBnc29uID0gImNvbS5nb29n\nbGUuY29kZS5nc29uIiAlICJnc29uIiAlICIyLjYuMiIKICB2YWwga2Fma2Eg\nPSAib3JnLmFwYWNoZS5rYWZrYSIgJSAia2Fma2EtY2xpZW50cyIgJSAiMS4w\nLjEiCiAgdmFsIHRlc3QgPSAib3JnLnNjYWxhdGVzdCIgJSUgInNjYWxhdGVz\ndCIgJSAiMy4wLjUiCiAgdmFsIGd1aWNlID0gImNvbS5nb29nbGUuaW5qZWN0\nIiAlICJndWljZSIgJSAiNC4yLjIiCiAgdmFsIGFra2E6IFNlcVtNb2R1bGVJ\nRF0gPSBTZXEgewogICAgImNvbS50eXBlc2FmZS5ha2thIiAlJSAiYWtrYS1h\nY3RvciIgJSAiMi41LjI2IgogICAgImNvbS50eXBlc2FmZS5ha2thIiAlJSAi\nYWtrYS1zdHJlYW0iICUgIjIuNS4yNiIKICAgICJjb20udHlwZXNhZmUuYWtr\nYSIgJSUgImFra2EtYWN0b3ItdHlwZWQiICUgIjIuNi4wIgogIH0KICB2YWwg\nZ3JwYzogU2VxW01vZHVsZUlEXSA9IFNlcSB7CiAgICAiaW8uZ3JwYyIgJSAi\nZ3JwYy1wcm90b2J1ZiIgJSAiMS4yMy4wIgogICAgImlvLmdycGMiICUgImdy\ncGMtc3R1YiIgJSAiMS4yMy4wIgogICAgImlvLmdycGMiICUgImdycGMtbmV0\ndHktc2hhZGVkIiAlICIxLjIzLjAiCiAgfQogIHZhbCB5dW5waWFuID0gImNv\nbS55dW5waWFuLnNkayIgJSAieXVucGlhbi1qYXZhLXNkayIgJSAiMS4yLjci\nCiAgdmFsIGFsaXl1biA9ICJjb20uYWxpeXVuIiAlICJhbGl5dW4tamF2YS1z\nZGstY29yZSIgJSAiNC4xLjAiCiAgdmFsIGRpc3J1cHRvciA9ICJjb20ubG1h\neCIgJSAiZGlzcnVwdG9yIiAlICIzLjQuMiIKICB2YWwgY29uZmlnID0gImNv\nbS50eXBlc2FmZSIgJSAiY29uZmlnIiAlICIxLjMuMSIKICAvLyBQcm9qZWN0\ncwogIHZhbCBkZXBlbmRlbmNpZXM6IFNlcVtNb2R1bGVJRF0gPQogICAgU2Vx\nKAogICAgICByZWRpc2NhbGEsIGdzb24sIGthZmthLCB0ZXN0LCBndWljZSwg\neXVucGlhbiwgYWxpeXVuLCBkaXNydXB0b3IsIGNvbmZpZwogICAgKSArKyBh\na2thICsrIGdycGMKfQ==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/17hao/scalacode/contents/project/Dependencies.scala?ref=master",
+    "git": "https://api.github.com/repos/17hao/scalacode/git/blobs/2db74534b504cb01e74441494c34416ad80e9def",
+    "html": "https://github.com/17hao/scalacode/blob/master/project/Dependencies.scala"
+  }
+}

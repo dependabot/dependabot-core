@@ -17,6 +17,12 @@ COPY common/Gemfile common/dependabot-common.gemspec /home/dependabot/dependabot
 COPY common/lib/dependabot/version.rb /home/dependabot/dependabot-core/common/lib/dependabot/
 RUN cd common && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/sbt
+COPY sbt/Gemfile \
+     sbt/dependabot-sbt.gemspec \
+     /home/dependabot/dependabot-core/sbt/
+RUN cd sbt && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/terraform
 COPY terraform/Gemfile \
      terraform/dependabot-terraform.gemspec \

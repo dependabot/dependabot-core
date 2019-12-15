@@ -37,7 +37,8 @@
         "nuget",
         "pip",
         "submodules",
-        "terraform"
+        "terraform",
+        "sbt"
       ],
       "default": "go_modules"
     },

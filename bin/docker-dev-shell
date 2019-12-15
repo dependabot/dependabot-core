@@ -140,6 +140,10 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
   -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
+  -v "$(pwd)/sbt/Gemfile:$CODE_DIR/sbt/Gemfile" \
+  -v "$(pwd)/sbt/dependabot-sbt.gemspec:$CODE_DIR/sbt/dependabot-sbt.gemspec" \
+  -v "$(pwd)/sbt/lib:$CODE_DIR/sbt/lib" \
+  -v "$(pwd)/sbt/spec:$CODE_DIR/sbt/spec" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

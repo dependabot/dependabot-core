@@ -1,0 +1,18 @@
+{
+  "name": "plugins.sbt",
+  "path": "project/plugins.sbt",
+  "sha": "2ba2fe953acc9684d57e85eb166f8b61514b58a7",
+  "size": 60,
+  "url": "https://api.github.com/repos/17hao/scalacode/contents/project/plugins.sbt?ref=master",
+  "html_url": "https://github.com/17hao/scalacode/blob/master/project/plugins.sbt",
+  "git_url": "https://api.github.com/repos/17hao/scalacode/git/blobs/2ba2fe953acc9684d57e85eb166f8b61514b58a7",
+  "download_url": "https://raw.githubusercontent.com/17hao/scalacode/master/project/plugins.sbt",
+  "type": "file",
+  "content": "YWRkU2J0UGx1Z2luKCJjb20uZ2l0aHViLmdzZWl0eiIgJSAic2J0LXByb3Rv\nYnVmIiAlICIwLjYuNSIp\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/17hao/scalacode/contents/project/plugins.sbt?ref=master",
+    "git": "https://api.github.com/repos/17hao/scalacode/git/blobs/2ba2fe953acc9684d57e85eb166f8b61514b58a7",
+    "html": "https://github.com/17hao/scalacode/blob/master/project/plugins.sbt"
+  }
+}

@@ -33,6 +33,7 @@
 # - submodules
 # - docker
 # - terraform
+# - sbt
 
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
@@ -51,6 +52,7 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./sbt/lib"
 
 require "bundler"
 ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "../omnibus/Gemfile")
@@ -82,6 +84,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/terraform"
+require "dependabot/sbt"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).
