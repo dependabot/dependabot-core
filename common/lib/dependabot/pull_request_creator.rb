@@ -126,7 +126,7 @@ module Dependabot
         author_details: author_details,
         labeler: labeler,
         approvers: reviewers,
-        assignee: assignees&.first,
+        assignees: assignees,
         milestone: milestone
       )
     end
