@@ -1,3 +1,10 @@
+## v0.114.0, 16 December 2019
+
+- GitLab: Pass all assignees to merge request creator
+- Bump phpstan/phpstan from 0.11.19 to 0.12.3 in /composer/helpers
+- Bump eslint-plugin-prettier from 3.1.1 to 3.1.2 in /npm_and_yarn/helpers
+- Bump semver from 6.3.0 to 7.0.0 in /npm_and_yarn/helpers
+
 ## v0.113.28, 12 December 2019
 
 - Bump npm from 6.13.2 to 6.13.4 in /npm_and_yarn/helpers
