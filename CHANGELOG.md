@@ -1,3 +1,7 @@
+## v0.114.1, 17 December 2019
+
+- Bump semver from 7.0.0 to 7.1.0 in /npm_and_yarn/helpers
+
 ## v0.114.0, 16 December 2019
 
 - GitLab: Pass all assignees to merge request creator
