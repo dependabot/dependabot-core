@@ -1099,10 +1099,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<h2>v1.6.0</h2>\n"\
                 "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
                 "[@greysteil](https://github.com/greysteil)</a> and "\
-                "<a href=\"https://github.com/hmarr\">[@hmarr]"\
-                "(https://github.com/hmarr)</a> for the @angular/scope work - "\
-                "see <a href=\"https://github.com/gocardless/business/blob/"\
-                "HEAD/CHANGELOG.md\">changelog</a>.</p>\n"\
+                "<a href=\"https://github.com/hmarr\">@​hmarr</a> for the "\
+                "@angular/scope work - see <a href=\"https://github.com/"\
+                "gocardless/business/blob/HEAD/CHANGELOG.md\">"\
+                "changelog</a>.</p>\n"\
                 "</blockquote>\n"\
                 "</details>\n"\
                 "#{commits_details(base: 'v1.5.0', head: 'v1.6.0')}"\

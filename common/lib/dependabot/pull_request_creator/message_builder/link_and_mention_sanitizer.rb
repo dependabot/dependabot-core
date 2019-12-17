@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "commonmarker"
-require "nokogiri"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
@@ -62,10 +61,11 @@ module Dependabot
             next mention if mention.end_with?("/")
 
             last_match = Regexp.last_match
+            sanitized_mention = mention.gsub("@", "@&#8203;")
 
             if last_match.pre_match.chars.last == "[" &&
                last_match.post_match.chars.first == "]"
-              next mention
+              sanitized_mention
             else
               "[#{mention}]"\
               "(https://github.com/#{mention.tr('@', '')})"
@@ -84,13 +84,11 @@ module Dependabot
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
               node.each do |subnode|
                 last_match = subnode.string_content.match(GITHUB_REF_REGEX)
-                if subnode.type == :text && last_match
-                  number = last_match.named_captures.fetch("number")
-                  repo = last_match.named_captures.fetch("repo")
-                  subnode.string_content = "#{repo}##{number}"
-                end
+                next unless subnode.type == :text && last_match
 
-                next
+                number = last_match.named_captures.fetch("number")
+                repo = last_match.named_captures.fetch("repo")
+                subnode.string_content = "#{repo}##{number}"
               end
 
               node.url = node.url.gsub(
