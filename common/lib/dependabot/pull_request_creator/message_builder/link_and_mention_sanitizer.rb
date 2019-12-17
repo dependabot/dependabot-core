@@ -74,11 +74,11 @@ module Dependabot
         end
 
         def sanitize_links(text)
-          doc = CommonMarker.render_doc(
-            text,
-            :DEFAULT,
-            %i(table tasklist strikethrough autolink tagfilter)
-          )
+          # We rely on GitHub to do the HTML sanitization
+          options = %i(UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING)
+          extensions = %i(table tasklist strikethrough autolink tagfilter)
+
+          doc = CommonMarker.render_doc(text, :LIBERAL_HTML_TAG, extensions)
 
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -99,7 +99,7 @@ module Dependabot
             end
           end
 
-          doc.to_html
+          doc.to_html(options, extensions)
         end
       end
     end
