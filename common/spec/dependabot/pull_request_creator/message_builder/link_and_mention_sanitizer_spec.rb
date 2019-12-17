@@ -22,7 +22,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions).
           to eq("<p>Great work <a href=\"https://github.com/greysteil\">"\
-            "@greysteil</a>!</p>\n")
+            "@​greysteil</a>!</p>\n")
       end
 
       context "that includes a dash" do
@@ -31,7 +31,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>Great work <a href=\"https://github.com/greysteil-work\">"\
-            "@greysteil-work</a>!</p>\n"
+            "@​greysteil-work</a>!</p>\n"
           )
         end
       end
@@ -47,7 +47,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>The team (by <a href=\"https://github.com/greysteil\">"\
-            "@greysteil</a>) etc.</p>\n"
+            "@​greysteil</a>) etc.</p>\n"
           )
         end
       end
@@ -66,7 +66,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         let(:text) { fixture("changelogs", "sentry.md") }
         it do
           is_expected.to include(
-            "<a href=\"https://github.com/halkeye\">@halkeye</a>"
+            "<a href=\"https://github.com/halkeye\">@​halkeye</a>"
           )
         end
       end
@@ -92,9 +92,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the text" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><a href=\"https://github.com/greysteil\">@greysteil</a> "\
+              "<p><a href=\"https://github.com/greysteil\">@​greysteil</a> "\
               "wrote this:</p>\n<pre><code> @model ||= 123\n</code></pre>\n<p>"\
-              "Review by <a href=\"https://github.com/hmarr\">@hmarr</a>!</p>\n"
+              "Review by <a href=\"https://github.com/hmarr\">@​hmarr</a>!"\
+              "</p>\n"
             )
           end
         end
@@ -107,9 +108,9 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
               "<p><code>@command</code>\nThanks to "\
-              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a>"\
+              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a>"\
               "<code>@other</code> <a href=\"https://github.com/escape\">"\
-              "@escape</a></p>\n"
+              "@​escape</a></p>\n"
             )
           end
         end
@@ -120,7 +121,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
               "<p><code>@command </code>\n<code> @test</code> "\
-              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
+              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a></p>\n"
             )
           end
         end
@@ -160,7 +161,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
               "<p><code>@command </code></p>\n<pre><code> @test~~~ "\
-              "[@feelepxyz](https://github.com/feelepxyz)\n</code></pre>\n"
+              "[@&amp;#8203;feelepxyz](https://github.com/feelepxyz)\n</code>"\
+              "</pre>\n"
             )
           end
         end
@@ -170,8 +172,8 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><a href=\"https://github.com/command\">@command</a> ``` "\
-              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
+              "<p><a href=\"https://github.com/command\">@​command</a> ``` "\
+              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a></p>\n"
             )
           end
         end

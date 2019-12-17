@@ -67,7 +67,7 @@ module Dependabot
                last_match.post_match.chars.first == "]"
               sanitized_mention
             else
-              "[#{mention}]"\
+              "[#{sanitized_mention}]"\
               "(https://github.com/#{mention.tr('@', '')})"
             end
           end
