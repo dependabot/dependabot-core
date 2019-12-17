@@ -12,7 +12,7 @@
     "@dependabot/yarn-lib": "^1.21.1",
     "detect-indent": "^6.0.0",
     "npm": "6.13.4",
-    "semver": "^7.0.0"
+    "semver": "^7.1.0"
   },
   "devDependencies": {
     "eslint": "^6.7.2",
