@@ -52,6 +52,16 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
       end
 
+      context "that is in square brackets" do
+        let(:text) { "[@hmarr]" }
+
+        it "sanitizes the text with zero width space" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>[@​hmarr]</p>\n"
+          )
+        end
+      end
+
       context "that appears in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
@@ -207,6 +217,32 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         is_expected.to eq(
           "<p>Check out <a href=\"https://github-redirect.com/my/repo/"\
           "issues/5\">my/repo#5</a></p>\n"
+        )
+      end
+    end
+
+    context "with a GitHub pull request link" do
+      let(:text) do
+        "https://github.com/rust-num/num-traits/pull/144"
+      end
+
+      it do
+        is_expected.to eq(
+          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/"\
+          "pull/144\">rust-num/num-traits#144</a></p>\n"
+        )
+      end
+    end
+
+    context "with a GitHub repo settings link link" do
+      let(:text) do
+        "https://github.com/rust-num/num-traits/settings"
+      end
+
+      it do
+        is_expected.to eq(
+          "<p><a href=\"https://github.com/rust-num/num-traits/settings\">"\
+          "https://github.com/rust-num/num-traits/settings</a></p>\n"
         )
       end
     end
