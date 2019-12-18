@@ -1,3 +1,9 @@
+## v0.115.0, 18 December 2019
+
+- Bump semver from 7.1.0 to 7.1.1 in /npm_and_yarn/helpers
+- Refactor sanitize_links method
+  - HTML is now output in Dependabot::PullRequestCreator::MessageBuilder#pr_message.
+
 ## v0.114.1, 17 December 2019
 
 - Bump semver from 7.0.0 to 7.1.0 in /npm_and_yarn/helpers
