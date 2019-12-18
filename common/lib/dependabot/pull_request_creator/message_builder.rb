@@ -292,7 +292,7 @@ module Dependabot
         end
 
         dependencies.map do |dep|
-          msg = "\n\nUpdates `#{dep.display_name}` from "\
+          msg = "\nUpdates `#{dep.display_name}` from "\
                 "#{previous_version(dep)} to #{new_version(dep)}"
 
           if vulnerabilities_fixed[dep.name]&.one?
@@ -314,7 +314,7 @@ module Dependabot
         msg += commits_cascade(dep)
         msg += maintainer_changes_cascade(dep)
         msg += "\n<br />" unless msg == ""
-        sanitize_links_and_mentions(msg)
+        "\n" + sanitize_links_and_mentions(msg)
       end
 
       def vulnerabilities_cascade(dep)
@@ -438,9 +438,9 @@ module Dependabot
         if source.provider == ("azure" || "codecommit")
           "\n\##{summary}\n\n#{body}"
         else
-          msg = "\n<details>\n<summary>#{summary}</summary>\n\n"
+          msg = "<details>\n<summary>#{summary}</summary>\n\n"
           msg += body
-          msg + "</details>"
+          msg + "</details>\n"
         end
       end
 

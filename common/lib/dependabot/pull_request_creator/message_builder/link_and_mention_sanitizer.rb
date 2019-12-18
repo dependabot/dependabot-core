@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "commonmarker"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
@@ -46,11 +47,11 @@ module Dependabot
             delimiter = line.match(CODEBLOCK_REGEX)&.to_s
             unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
               line = sanitize_mentions(line)
-              line = sanitize_links(line)
             end
             lines << line
           end
-          lines.join
+
+          sanitize_links(lines.join)
         end
 
         private
@@ -60,8 +61,8 @@ module Dependabot
             next mention if mention.end_with?("/")
 
             last_match = Regexp.last_match
-
             sanitized_mention = mention.gsub("@", "@&#8203;")
+
             if last_match.pre_match.chars.last == "[" &&
                last_match.post_match.chars.first == "]"
               sanitized_mention
@@ -73,23 +74,30 @@ module Dependabot
         end
 
         def sanitize_links(text)
-          text.gsub(GITHUB_REF_REGEX) do |ref|
-            last_match = Regexp.last_match
-            previous_char = last_match.pre_match.chars.last
-            next_char = last_match.post_match.chars.first
+          # We rely on GitHub to do the HTML sanitization
+          options = %i(UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING)
+          extensions = %i(table tasklist strikethrough autolink tagfilter)
 
-            sanitized_url =
-              ref.gsub("github.com", github_redirection_service || "github.com")
-            if (previous_char.nil? || previous_char.match?(/\s/)) &&
-               (next_char.nil? || next_char.match?(/\s/))
-              number = last_match.named_captures.fetch("number")
-              repo = last_match.named_captures.fetch("repo")
-              "[#{repo}##{number}]"\
-              "(#{sanitized_url})"
-            else
-              sanitized_url
+          doc = CommonMarker.render_doc(text, :LIBERAL_HTML_TAG, extensions)
+
+          doc.walk do |node|
+            if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
+              node.each do |subnode|
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                next unless subnode.type == :text && last_match
+
+                number = last_match.named_captures.fetch("number")
+                repo = last_match.named_captures.fetch("repo")
+                subnode.string_content = "#{repo}##{number}"
+              end
+
+              node.url = node.url.gsub(
+                "github.com", github_redirection_service || "github.com"
+              )
             end
           end
+
+          doc.to_html(options, extensions)
         end
       end
     end

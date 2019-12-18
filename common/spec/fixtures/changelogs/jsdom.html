@@ -1,0 +1,23 @@
+<h2>15.2.0</h2>
+<ul>
+<li>Set <code>canvas</code> as an optional ``peerDependency`, which apparently helps with Yarn PnP support.</li>
+</ul>
+<h2>15.1.1</h2>
+<ul>
+<li>Moved the <code>nonce</code> property from <code>HTMLScriptElement</code> and <code>HTMLStyleElement</code> to <code>HTMLElement</code>. Note that it is still just a simple reflection of the attribute, and has not been updated for the rest of the changes in <a href="https://github-redirect.com/whatwg/html/pull/2373">whatwg/html#2373</a>.</li>
+</ul>
+<h2>15.1.0</h2>
+<ul>
+<li>Added the <code>Headers</code> class from the Fetch standard.</li>
+<li>Added the <code>element.translate</code> getter and setter.</li>
+<li>Fixed synchronous <code>XMLHttpRequest</code> on the newly-released Node.js v12.</li>
+<li>Fixed <code>form.elements</code> to exclude <code>&lt;input type=&quot;image&quot;&gt;</code> elements.</li>
+<li>Fixed event path iteration in shadow DOM cases, following spec fixes at <a href="https://github-redirect.com/whatwg/dom/pull/686">whatwg/dom#686</a> and <a href="https://github-redirect.com/whatwg/dom/pull/750">whatwg/dom#750</a>.</li>
+<li>Fixed <code>pattern=&quot;&quot;</code> form control validation to apply the given regular expression to the whole string. (kontomondo)</li>
+</ul>
+<h2>15.0.0</h2>
+<p>Several potentially-breaking changes, each of them fairly unlikely to actually break anything:</p>
+<ul>
+<li><code>JSDOM.fromFile()</code> now treats <code>.xht</code> files as <code>application/xhtml+xml</code>, the same as it does for <code>.xhtml</code> and <code>.xml</code>. Previously, it would treat them as <code>text/html</code>.</li>
+<li>When using the <code>Blob</code> or <code>File</code> constructor with the <code>endings: &quot;native&quot;</code> option, jsdom will now convert line endings to <code>\n</code> on all operating systems, for consistency. Previously, on Windows, it would convert line endings to <code>\r\n</code>.</li>
+</ul>
