@@ -29,6 +29,13 @@ module Dependabot
         CODEBLOCK_REGEX = /```|~~~/.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
+        # We rely on GitHub to do the HTML sanitization
+        COMMONMARKER_OPTIONS = %i(
+          UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING
+        ).freeze
+        COMMONMARKER_EXTENSIONS = %i(
+          table tasklist strikethrough autolink tagfilter
+        ).freeze
 
         attr_reader :github_redirection_service
 
@@ -37,49 +44,56 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text:)
-          # We don't want to sanitize any links or mentions that are contained
-          # within code blocks, so we split the text on "```" or "~~~"
-          lines = []
-          scan = StringScanner.new(text)
-          until scan.eos?
-            line = scan.scan_until(CODEBLOCK_REGEX) ||
-                   scan.scan_until(EOS_REGEX)
-            delimiter = line.match(CODEBLOCK_REGEX)&.to_s
-            unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
-              line = sanitize_mentions(line)
-            end
-            lines << line
-          end
+          doc = CommonMarker.render_doc(
+            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
+          )
 
-          sanitize_links(lines.join)
+          sanitize_mentions(doc)
+          sanitize_links(doc)
+          doc.to_html(COMMONMARKER_OPTIONS, COMMONMARKER_EXTENSIONS)
         end
 
         private
 
-        def sanitize_mentions(text)
-          text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|
-            next mention if mention.end_with?("/")
+        def sanitize_mentions(doc)
+          mention_regex = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
 
-            last_match = Regexp.last_match
-            sanitized_mention = mention.gsub("@", "@&#8203;")
+          doc.walk do |node|
+            if node.type == :text && node.string_content.match?(mention_regex)
+              nodes = []
+              scan = StringScanner.new(node.string_content)
 
-            if last_match.pre_match.chars.last == "[" &&
-               last_match.post_match.chars.first == "]"
-              sanitized_mention
-            else
-              "[#{sanitized_mention}]"\
-              "(https://github.com/#{mention.tr('@', '')})"
+              until scan.eos?
+                line = scan.scan_until(mention_regex) ||
+                        scan.scan_until(EOS_REGEX)
+                mention = line.match(mention_regex)&.to_s
+                text_node = CommonMarker::Node.new(:text)
+
+                if mention && !mention.end_with?("/")
+                  text_node.string_content = scan.pre_match
+                  nodes << text_node
+                  link_node = CommonMarker::Node.new(:link)
+                  text_node = CommonMarker::Node.new(:text)
+                  link_node.url = "https://github.com/#{mention.tr('@', '')}"
+                  text_node.string_content = "#{mention}"
+                  link_node.append_child(text_node)
+                  nodes << link_node
+                else
+                  text_node.string_content = line
+                  nodes << text_node
+                end
+              end
+
+              nodes.each do |n|
+                node.insert_before(n)
+              end
+
+              node.delete
             end
           end
         end
 
-        def sanitize_links(text)
-          # We rely on GitHub to do the HTML sanitization
-          options = %i(UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING)
-          extensions = %i(table tasklist strikethrough autolink tagfilter)
-
-          doc = CommonMarker.render_doc(text, :LIBERAL_HTML_TAG, extensions)
-
+        def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
               node.each do |subnode|
@@ -96,8 +110,6 @@ module Dependabot
               )
             end
           end
-
-          doc.to_html(options, extensions)
         end
       end
     end
