@@ -1,0 +1,2372 @@
+[
+    {
+        "sha": "487f4bf2ee7c86176637544c5473328f96ca0ba2",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6NDg3ZjRiZjJlZTdjODYxNzY2Mzc1NDRjNTQ3MzMyOGY5NmNhMGJhMg==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-28T06:55:48Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-28T06:55:48Z"
+            },
+            "message": "Update versions for 16.8.6",
+            "tree": {
+                "sha": "d251b21733c6d07c6534f76a6c99176d0a779a37",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/d251b21733c6d07c6534f76a6c99176d0a779a37"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/487f4bf2ee7c86176637544c5473328f96ca0ba2",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/487f4bf2ee7c86176637544c5473328f96ca0ba2",
+        "html_url": "https://github.com/facebook/react/commit/487f4bf2ee7c86176637544c5473328f96ca0ba2",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/487f4bf2ee7c86176637544c5473328f96ca0ba2/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "297165f1e12db61c778f8a7118e5e9dc5ebbabe3",
+                "url": "https://api.github.com/repos/facebook/react/commits/297165f1e12db61c778f8a7118e5e9dc5ebbabe3",
+                "html_url": "https://github.com/facebook/react/commit/297165f1e12db61c778f8a7118e5e9dc5ebbabe3"
+            }
+        ]
+    },
+    {
+        "sha": "f00be84b81584f5bc4df137ce00e9e370b49b341",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZjAwYmU4NGI4MTU4NGY1YmM0ZGYxMzdjZTAwZTllMzcwYjQ5YjM0MQ==",
+        "commit": {
+            "author": {
+                "name": "Renan Valentin",
+                "email": "renan.lifestyle@hotmail.com",
+                "date": "2019-03-20T13:11:54Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-27T15:45:32Z"
+            },
+            "message": "fix(react-dom): access iframe contentWindow instead of contentDocument (#15099)\n\nMDN has a list of methods for obtaining the window reference of an\r\niframe:\r\n\r\nhttps://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#Syntax\r\n\r\nfix(react-dom): check if iframe belongs to the same origin\r\n\r\nAccessing the contentDocument of a HTMLIframeElement can cause the browser\r\nto throw, e.g. if it has a cross-origin src attribute.\r\nSafari will show an error in the console when the access results in \"Blocked a frame with origin\". e.g:\r\n\r\n```javascript\r\ntry {\r\n $0.contentDocument.defaultView\r\n} catch (err) {\r\n  console.log('err', err)\r\n}\r\n\r\n> Blocked a frame with origin X from accessing a frame with origin Y. Protocols, domains, and ports must match.\r\n> err – TypeError: null is not an object (evaluating '$0.contentDocument.defaultView')\r\n```\r\n\r\nA safety way is to access one of the cross origin properties: Window or Location\r\nWhich might result in \"SecurityError\" DOM Exception and it is compatible to Safari.\r\n\r\n```javascript\r\ntry {\r\n $0.contentWindow.location.href\r\n} catch (err) {\r\n console.log('err', err)\r\n}\r\n\r\n> err – SecurityError: Blocked a frame with origin \"http://localhost:3001\" from accessing a cross-origin frame. Protocols, domains, and ports must match.\r\n```\r\n\r\nhttps://html.spec.whatwg.org/multipage/browsers.html#integration-with-idl",
+            "tree": {
+                "sha": "6fe201aa01b36335aedba4ac0c595250f863a7b5",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/6fe201aa01b36335aedba4ac0c595250f863a7b5"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/f00be84b81584f5bc4df137ce00e9e370b49b341",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/f00be84b81584f5bc4df137ce00e9e370b49b341",
+        "html_url": "https://github.com/facebook/react/commit/f00be84b81584f5bc4df137ce00e9e370b49b341",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/f00be84b81584f5bc4df137ce00e9e370b49b341/comments",
+        "author": {
+            "login": "renanvalentin",
+            "id": 2846918,
+            "node_id": "MDQ6VXNlcjI4NDY5MTg=",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/2846918?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/renanvalentin",
+            "html_url": "https://github.com/renanvalentin",
+            "followers_url": "https://api.github.com/users/renanvalentin/followers",
+            "following_url": "https://api.github.com/users/renanvalentin/following{/other_user}",
+            "gists_url": "https://api.github.com/users/renanvalentin/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/renanvalentin/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/renanvalentin/subscriptions",
+            "organizations_url": "https://api.github.com/users/renanvalentin/orgs",
+            "repos_url": "https://api.github.com/users/renanvalentin/repos",
+            "events_url": "https://api.github.com/users/renanvalentin/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/renanvalentin/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "e0c2c56dfd58c1145b1e63b9500043dccf675265",
+                "url": "https://api.github.com/repos/facebook/react/commits/e0c2c56dfd58c1145b1e63b9500043dccf675265",
+                "html_url": "https://github.com/facebook/react/commit/e0c2c56dfd58c1145b1e63b9500043dccf675265"
+            }
+        ]
+    },
+    {
+        "sha": "e0c2c56dfd58c1145b1e63b9500043dccf675265",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZTBjMmM1NmRmZDU4YzExNDViMWU2M2I5NTAwMDQzZGNjZjY3NTI2NQ==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-19T13:31:26Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-27T15:45:20Z"
+            },
+            "message": "Improve warning for invalid class contextType (#15142)\n\n* Improve warning for invalid class contextType\r\n\r\n* Don't warn for null\r\n\r\n* Grammar",
+            "tree": {
+                "sha": "0a90c48c5b2ae1cb0e784dd24a0d1c3261381c9b",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/0a90c48c5b2ae1cb0e784dd24a0d1c3261381c9b"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/e0c2c56dfd58c1145b1e63b9500043dccf675265",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/e0c2c56dfd58c1145b1e63b9500043dccf675265",
+        "html_url": "https://github.com/facebook/react/commit/e0c2c56dfd58c1145b1e63b9500043dccf675265",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/e0c2c56dfd58c1145b1e63b9500043dccf675265/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+                "url": "https://api.github.com/repos/facebook/react/commits/aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+                "html_url": "https://github.com/facebook/react/commit/aa8736a3a9474d9f9714ee315f00e77c0b80ea33"
+            }
+        ]
+    },
+    {
+        "sha": "aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YWE4NzM2YTNhOTQ3NGQ5Zjk3MTRlZTMxNWYwMGU3N2MwYjgwZWEzMw==",
+        "commit": {
+            "author": {
+                "name": "Brandon Dail",
+                "email": "aweary@users.noreply.github.com",
+                "date": "2019-03-18T19:27:05Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-27T15:45:13Z"
+            },
+            "message": "Warn for Context.Consumer with contextType (#14831)",
+            "tree": {
+                "sha": "7bfeeb240172ffc6b406ec7195d2bae63dad6bcd",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/7bfeeb240172ffc6b406ec7195d2bae63dad6bcd"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+        "html_url": "https://github.com/facebook/react/commit/aa8736a3a9474d9f9714ee315f00e77c0b80ea33",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/aa8736a3a9474d9f9714ee315f00e77c0b80ea33/comments",
+        "author": {
+            "login": "aweary",
+            "id": 6886061,
+            "node_id": "MDQ6VXNlcjY4ODYwNjE=",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/6886061?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/aweary",
+            "html_url": "https://github.com/aweary",
+            "followers_url": "https://api.github.com/users/aweary/followers",
+            "following_url": "https://api.github.com/users/aweary/following{/other_user}",
+            "gists_url": "https://api.github.com/users/aweary/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/aweary/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/aweary/subscriptions",
+            "organizations_url": "https://api.github.com/users/aweary/orgs",
+            "repos_url": "https://api.github.com/users/aweary/repos",
+            "events_url": "https://api.github.com/users/aweary/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/aweary/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "d9fa20d52fc25807851973853b32838ff97354a1",
+                "url": "https://api.github.com/repos/facebook/react/commits/d9fa20d52fc25807851973853b32838ff97354a1",
+                "html_url": "https://github.com/facebook/react/commit/d9fa20d52fc25807851973853b32838ff97354a1"
+            }
+        ]
+    },
+    {
+        "sha": "84cc8a31faf4ab589f8ef1454d3717d60f116de7",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ODRjYzhhMzFmYWY0YWI1ODlmOGVmMTQ1NGQzNzE3ZDYwZjExNmRlNw==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-22T16:41:58Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-22T16:42:00Z"
+            },
+            "message": "Release 16.8.5",
+            "tree": {
+                "sha": "035693056caaa6fdfdeff886308ed2e55e45dd64",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/035693056caaa6fdfdeff886308ed2e55e45dd64"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/84cc8a31faf4ab589f8ef1454d3717d60f116de7",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/84cc8a31faf4ab589f8ef1454d3717d60f116de7",
+        "html_url": "https://github.com/facebook/react/commit/84cc8a31faf4ab589f8ef1454d3717d60f116de7",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/84cc8a31faf4ab589f8ef1454d3717d60f116de7/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "f9e41e3a519f12cfdc3207e1df44e0d2d9602df9",
+                "url": "https://api.github.com/repos/facebook/react/commits/f9e41e3a519f12cfdc3207e1df44e0d2d9602df9",
+                "html_url": "https://github.com/facebook/react/commit/f9e41e3a519f12cfdc3207e1df44e0d2d9602df9"
+            }
+        ]
+    },
+    {
+        "sha": "fb572afc14ec5d25aea9be5d752007cc3b2e362f",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZmI1NzJhZmMxNGVjNWQyNWFlYTliZTVkNzUyMDA3Y2MzYjJlMzYyZg==",
+        "commit": {
+            "author": {
+                "name": "Jared Palmer",
+                "email": "jaredloganpalmer@gmail.com",
+                "date": "2019-03-18T18:22:38Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-22T14:47:58Z"
+            },
+            "message": "Add more info to invalid hook call error message (#15139)\n\n* Add more info to invalid hook call error message\n\n* Update other renderers + change call to action\n\n* Update related tests for new hooks error message\n\n* Fix lint errors",
+            "tree": {
+                "sha": "8f78ab5f81d12ad4e845f954fa1a582c4cb9846d",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/8f78ab5f81d12ad4e845f954fa1a582c4cb9846d"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/fb572afc14ec5d25aea9be5d752007cc3b2e362f",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/fb572afc14ec5d25aea9be5d752007cc3b2e362f",
+        "html_url": "https://github.com/facebook/react/commit/fb572afc14ec5d25aea9be5d752007cc3b2e362f",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/fb572afc14ec5d25aea9be5d752007cc3b2e362f/comments",
+        "author": {
+            "login": "jaredpalmer",
+            "id": 4060187,
+            "node_id": "MDQ6VXNlcjQwNjAxODc=",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/4060187?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/jaredpalmer",
+            "html_url": "https://github.com/jaredpalmer",
+            "followers_url": "https://api.github.com/users/jaredpalmer/followers",
+            "following_url": "https://api.github.com/users/jaredpalmer/following{/other_user}",
+            "gists_url": "https://api.github.com/users/jaredpalmer/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/jaredpalmer/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/jaredpalmer/subscriptions",
+            "organizations_url": "https://api.github.com/users/jaredpalmer/orgs",
+            "repos_url": "https://api.github.com/users/jaredpalmer/repos",
+            "events_url": "https://api.github.com/users/jaredpalmer/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/jaredpalmer/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "a0a2e846ce0f265515330ab95174bbf364c87cfc",
+                "url": "https://api.github.com/repos/facebook/react/commits/a0a2e846ce0f265515330ab95174bbf364c87cfc",
+                "html_url": "https://github.com/facebook/react/commit/a0a2e846ce0f265515330ab95174bbf364c87cfc"
+            }
+        ]
+    },
+    {
+        "sha": "b5cb9d345c812892007a5878782837a3e2484093",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YjVjYjlkMzQ1YzgxMjg5MjAwN2E1ODc4NzgyODM3YTNlMjQ4NDA5Mw==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-20T13:40:36Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-22T14:14:46Z"
+            },
+            "message": "Link to useLayoutEffect gist in a warning (#15158)",
+            "tree": {
+                "sha": "0b3676a94717fd67667f0e7210682ca038093f50",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/0b3676a94717fd67667f0e7210682ca038093f50"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/b5cb9d345c812892007a5878782837a3e2484093",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/b5cb9d345c812892007a5878782837a3e2484093",
+        "html_url": "https://github.com/facebook/react/commit/b5cb9d345c812892007a5878782837a3e2484093",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/b5cb9d345c812892007a5878782837a3e2484093/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "342fa78ed495aea3f25c2f5f1891d96a8c2ea88b",
+                "url": "https://api.github.com/repos/facebook/react/commits/342fa78ed495aea3f25c2f5f1891d96a8c2ea88b",
+                "html_url": "https://github.com/facebook/react/commit/342fa78ed495aea3f25c2f5f1891d96a8c2ea88b"
+            }
+        ]
+    },
+    {
+        "sha": "d822d4bbe7fefee12dfd87cd799119714ffa5bac",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZDgyMmQ0YmJlN2ZlZmVlMTJkZmQ4N2NkNzk5MTE5NzE0ZmZhNWJhYw==",
+        "commit": {
+            "author": {
+                "name": "Mateusz",
+                "email": "kulek1@users.noreply.github.com",
+                "date": "2019-03-14T21:40:09Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-03-22T14:12:11Z"
+            },
+            "message": "Don't set the first option as selected in select tag with `size` attribute  (#14242)\n\n* Set 'size' attribute to select tag if it occurs before appending options\r\n\r\n* Add comment about why size is assigned on select create. Tests\r\n\r\nI added some more clarification for why size must be set on select\r\nelement creation:\r\n\r\n- In the source code\r\n- In the DOM test fixture\r\n- In a unit test\r\n\r\n* Use let, not const in select tag stub assignment",
+            "tree": {
+                "sha": "642164d48d8830a287a9b6871c52a1de9983281b",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/642164d48d8830a287a9b6871c52a1de9983281b"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/d822d4bbe7fefee12dfd87cd799119714ffa5bac",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/d822d4bbe7fefee12dfd87cd799119714ffa5bac",
+        "html_url": "https://github.com/facebook/react/commit/d822d4bbe7fefee12dfd87cd799119714ffa5bac",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/d822d4bbe7fefee12dfd87cd799119714ffa5bac/comments",
+        "author": {
+            "login": "kulek1",
+            "id": 7605514,
+            "node_id": "MDQ6VXNlcjc2MDU1MTQ=",
+            "avatar_url": "https://avatars1.githubusercontent.com/u/7605514?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/kulek1",
+            "html_url": "https://github.com/kulek1",
+            "followers_url": "https://api.github.com/users/kulek1/followers",
+            "following_url": "https://api.github.com/users/kulek1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/kulek1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/kulek1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/kulek1/subscriptions",
+            "organizations_url": "https://api.github.com/users/kulek1/orgs",
+            "repos_url": "https://api.github.com/users/kulek1/repos",
+            "events_url": "https://api.github.com/users/kulek1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/kulek1/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "13a3788c541dfcaf0dd8e39ad35271742838ca7a",
+                "url": "https://api.github.com/repos/facebook/react/commits/13a3788c541dfcaf0dd8e39ad35271742838ca7a",
+                "html_url": "https://github.com/facebook/react/commit/13a3788c541dfcaf0dd8e39ad35271742838ca7a"
+            }
+        ]
+    },
+    {
+        "sha": "d8a73b5eb6c7217850103193635ff1b556925ed5",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZDhhNzNiNWViNmM3MjE3ODUwMTAzMTkzNjM1ZmYxYjU1NjkyNWVkNQ==",
+        "commit": {
+            "author": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-03-05T23:16:01Z"
+            },
+            "committer": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-03-05T23:16:01Z"
+            },
+            "message": "16.8.4 and changelog",
+            "tree": {
+                "sha": "cc06c6269989caa2cc755031d431ecd27ffe929e",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/cc06c6269989caa2cc755031d431ecd27ffe929e"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/d8a73b5eb6c7217850103193635ff1b556925ed5",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/d8a73b5eb6c7217850103193635ff1b556925ed5",
+        "html_url": "https://github.com/facebook/react/commit/d8a73b5eb6c7217850103193635ff1b556925ed5",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/d8a73b5eb6c7217850103193635ff1b556925ed5/comments",
+        "author": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "741aa17a333eb73ae0f4d2c5221664217a99cb6f",
+                "url": "https://api.github.com/repos/facebook/react/commits/741aa17a333eb73ae0f4d2c5221664217a99cb6f",
+                "html_url": "https://github.com/facebook/react/commit/741aa17a333eb73ae0f4d2c5221664217a99cb6f"
+            }
+        ]
+    },
+    {
+        "sha": "55cf14f98e329ed1efa326ff5c5a32eb80dbe6f1",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6NTVjZjE0Zjk4ZTMyOWVkMWVmYTMyNmZmNWM1YTMyZWI4MGRiZTZmMQ==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-21T18:05:52Z"
+            },
+            "committer": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-03-05T22:09:10Z"
+            },
+            "message": "Release 16.8.3",
+            "tree": {
+                "sha": "59a11bd4ad337929e53083fdc53afa289b8554d3",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/59a11bd4ad337929e53083fdc53afa289b8554d3"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/55cf14f98e329ed1efa326ff5c5a32eb80dbe6f1",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/55cf14f98e329ed1efa326ff5c5a32eb80dbe6f1",
+        "html_url": "https://github.com/facebook/react/commit/55cf14f98e329ed1efa326ff5c5a32eb80dbe6f1",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/55cf14f98e329ed1efa326ff5c5a32eb80dbe6f1/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "29b7b775f2ecf878eaf605be959d959030598b07",
+                "url": "https://api.github.com/repos/facebook/react/commits/29b7b775f2ecf878eaf605be959d959030598b07",
+                "html_url": "https://github.com/facebook/react/commit/29b7b775f2ecf878eaf605be959d959030598b07"
+            }
+        ]
+    },
+    {
+        "sha": "b668168d4dec542e9022bc779661f691b730dd44",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YjY2ODE2OGQ0ZGVjNTQyZTkwMjJiYzc3OTY2MWY2OTFiNzMwZGQ0NA==",
+        "commit": {
+            "author": {
+                "name": "overlookmotel",
+                "email": "j@dummett.org",
+                "date": "2019-02-14T19:50:23Z"
+            },
+            "committer": {
+                "name": "Andrew Clark",
+                "email": "git@andrewclark.io",
+                "date": "2019-02-20T19:25:02Z"
+            },
+            "message": "Fix react-dom/server context leaks when render stream destroyed early (#14706)\n\n* Fix react-dom/server context memory retention\r\n\r\n* Test for pollution of later renders\r\n\r\n* Inline loop\r\n\r\n* More tests",
+            "tree": {
+                "sha": "279c1f20ea12af8fe50c77cba5aa5d9380c6098d",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/279c1f20ea12af8fe50c77cba5aa5d9380c6098d"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/b668168d4dec542e9022bc779661f691b730dd44",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/b668168d4dec542e9022bc779661f691b730dd44",
+        "html_url": "https://github.com/facebook/react/commit/b668168d4dec542e9022bc779661f691b730dd44",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/b668168d4dec542e9022bc779661f691b730dd44/comments",
+        "author": {
+            "login": "overlookmotel",
+            "id": 557937,
+            "node_id": "MDQ6VXNlcjU1NzkzNw==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/557937?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/overlookmotel",
+            "html_url": "https://github.com/overlookmotel",
+            "followers_url": "https://api.github.com/users/overlookmotel/followers",
+            "following_url": "https://api.github.com/users/overlookmotel/following{/other_user}",
+            "gists_url": "https://api.github.com/users/overlookmotel/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/overlookmotel/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/overlookmotel/subscriptions",
+            "organizations_url": "https://api.github.com/users/overlookmotel/orgs",
+            "repos_url": "https://api.github.com/users/overlookmotel/repos",
+            "events_url": "https://api.github.com/users/overlookmotel/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/overlookmotel/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "acdlite",
+            "id": 3624098,
+            "node_id": "MDQ6VXNlcjM2MjQwOTg=",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/3624098?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/acdlite",
+            "html_url": "https://github.com/acdlite",
+            "followers_url": "https://api.github.com/users/acdlite/followers",
+            "following_url": "https://api.github.com/users/acdlite/following{/other_user}",
+            "gists_url": "https://api.github.com/users/acdlite/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/acdlite/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/acdlite/subscriptions",
+            "organizations_url": "https://api.github.com/users/acdlite/orgs",
+            "repos_url": "https://api.github.com/users/acdlite/repos",
+            "events_url": "https://api.github.com/users/acdlite/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/acdlite/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "619cdfc624875a03301be4f233bf4e7a24df6eea",
+                "url": "https://api.github.com/repos/facebook/react/commits/619cdfc624875a03301be4f233bf4e7a24df6eea",
+                "html_url": "https://github.com/facebook/react/commit/619cdfc624875a03301be4f233bf4e7a24df6eea"
+            }
+        ]
+    },
+    {
+        "sha": "3e5556043879c9c7b98dd9edfc0e89df0366714b",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6M2U1NTU2MDQzODc5YzljN2I5OGRkOWVkZmMwZTg5ZGYwMzY2NzE0Yg==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-14T19:12:42Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-14T19:13:15Z"
+            },
+            "message": "Release 16.8.2",
+            "tree": {
+                "sha": "dd6afd2ede6cf1bc6bb5a7a6a7e28ec1bce2f5cb",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/dd6afd2ede6cf1bc6bb5a7a6a7e28ec1bce2f5cb"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/3e5556043879c9c7b98dd9edfc0e89df0366714b",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/3e5556043879c9c7b98dd9edfc0e89df0366714b",
+        "html_url": "https://github.com/facebook/react/commit/3e5556043879c9c7b98dd9edfc0e89df0366714b",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/3e5556043879c9c7b98dd9edfc0e89df0366714b/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "dfabb77a97141baf07cfdad620949874e36516d7",
+                "url": "https://api.github.com/repos/facebook/react/commits/dfabb77a97141baf07cfdad620949874e36516d7",
+                "html_url": "https://github.com/facebook/react/commit/dfabb77a97141baf07cfdad620949874e36516d7"
+            }
+        ]
+    },
+    {
+        "sha": "c555c008b6e13004c57784950eb325ed1d917575",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YzU1NWMwMDhiNmUxMzAwNGM1Nzc4NDk1MGViMzI1ZWQxZDkxNzU3NQ==",
+        "commit": {
+            "author": {
+                "name": "Sunil Pai",
+                "email": "threepointone@oculus.com",
+                "date": "2019-02-14T17:20:49Z"
+            },
+            "committer": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-14T17:20:49Z"
+            },
+            "message": "Include component stack in 'act(...)' warning (#14855)\n\n* add a component stack trace to the act() warning\r\n\r\n* pass tests\r\n\r\n* nit",
+            "tree": {
+                "sha": "204318ceac26dae242398e4a05cbe7b01fb17496",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/204318ceac26dae242398e4a05cbe7b01fb17496"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/c555c008b6e13004c57784950eb325ed1d917575",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/c555c008b6e13004c57784950eb325ed1d917575",
+        "html_url": "https://github.com/facebook/react/commit/c555c008b6e13004c57784950eb325ed1d917575",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/c555c008b6e13004c57784950eb325ed1d917575/comments",
+        "author": {
+            "login": "threepointone",
+            "id": 18808,
+            "node_id": "MDQ6VXNlcjE4ODA4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/18808?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/threepointone",
+            "html_url": "https://github.com/threepointone",
+            "followers_url": "https://api.github.com/users/threepointone/followers",
+            "following_url": "https://api.github.com/users/threepointone/following{/other_user}",
+            "gists_url": "https://api.github.com/users/threepointone/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/threepointone/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/threepointone/subscriptions",
+            "organizations_url": "https://api.github.com/users/threepointone/orgs",
+            "repos_url": "https://api.github.com/users/threepointone/repos",
+            "events_url": "https://api.github.com/users/threepointone/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/threepointone/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "ff188d666bcb4c7aad38009ee61ad292349244b0",
+                "url": "https://api.github.com/repos/facebook/react/commits/ff188d666bcb4c7aad38009ee61ad292349244b0",
+                "html_url": "https://github.com/facebook/react/commit/ff188d666bcb4c7aad38009ee61ad292349244b0"
+            }
+        ]
+    },
+    {
+        "sha": "c4d8ef643002a2b181029ffed22abd451fb326df",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YzRkOGVmNjQzMDAyYTJiMTgxMDI5ZmZlZDIyYWJkNDUxZmIzMjZkZg==",
+        "commit": {
+            "author": {
+                "name": "Deniz Susman",
+                "email": "susmandeniz@gmail.com",
+                "date": "2019-02-14T04:49:37Z"
+            },
+            "committer": {
+                "name": "Brandon Dail",
+                "email": "aweary@users.noreply.github.com",
+                "date": "2019-02-14T04:49:37Z"
+            },
+            "message": "Fix typo in code comment (#14836)",
+            "tree": {
+                "sha": "83014886b962a3361f3670068fb8fae0ea7b9ada",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/83014886b962a3361f3670068fb8fae0ea7b9ada"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/c4d8ef643002a2b181029ffed22abd451fb326df",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/c4d8ef643002a2b181029ffed22abd451fb326df",
+        "html_url": "https://github.com/facebook/react/commit/c4d8ef643002a2b181029ffed22abd451fb326df",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/c4d8ef643002a2b181029ffed22abd451fb326df/comments",
+        "author": {
+            "login": "DenrizSusam",
+            "id": 39295979,
+            "node_id": "MDQ6VXNlcjM5Mjk1OTc5",
+            "avatar_url": "https://avatars1.githubusercontent.com/u/39295979?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/DenrizSusam",
+            "html_url": "https://github.com/DenrizSusam",
+            "followers_url": "https://api.github.com/users/DenrizSusam/followers",
+            "following_url": "https://api.github.com/users/DenrizSusam/following{/other_user}",
+            "gists_url": "https://api.github.com/users/DenrizSusam/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/DenrizSusam/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/DenrizSusam/subscriptions",
+            "organizations_url": "https://api.github.com/users/DenrizSusam/orgs",
+            "repos_url": "https://api.github.com/users/DenrizSusam/repos",
+            "events_url": "https://api.github.com/users/DenrizSusam/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/DenrizSusam/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "aweary",
+            "id": 6886061,
+            "node_id": "MDQ6VXNlcjY4ODYwNjE=",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/6886061?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/aweary",
+            "html_url": "https://github.com/aweary",
+            "followers_url": "https://api.github.com/users/aweary/followers",
+            "following_url": "https://api.github.com/users/aweary/following{/other_user}",
+            "gists_url": "https://api.github.com/users/aweary/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/aweary/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/aweary/subscriptions",
+            "organizations_url": "https://api.github.com/users/aweary/orgs",
+            "repos_url": "https://api.github.com/users/aweary/repos",
+            "events_url": "https://api.github.com/users/aweary/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/aweary/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "08e95543571eacbe88a03382adc9399607d53425",
+                "url": "https://api.github.com/repos/facebook/react/commits/08e95543571eacbe88a03382adc9399607d53425",
+                "html_url": "https://github.com/facebook/react/commit/08e95543571eacbe88a03382adc9399607d53425"
+            }
+        ]
+    },
+    {
+        "sha": "fa6205d522a9d3e3f228be18dd29f11f8930c394",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZmE2MjA1ZDUyMmE5ZDNlM2YyMjhiZTE4ZGQyOWYxMWY4OTMwYzM5NA==",
+        "commit": {
+            "author": {
+                "name": "Brandon Dail",
+                "email": "aweary@users.noreply.github.com",
+                "date": "2019-02-13T04:13:17Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-13T04:13:17Z"
+            },
+            "message": "Special case crossOrigin for SVG image elements (#14832)",
+            "tree": {
+                "sha": "bdbf12b106e539b5a60658a09d35f614ba5a815d",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/bdbf12b106e539b5a60658a09d35f614ba5a815d"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/fa6205d522a9d3e3f228be18dd29f11f8930c394",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcY5ldCRBK7hj4Ov3rIwAAdHIIAHB+TLK6erdMMeCV3nkV6hEH\nQw5w+Z68gM5uIlP3AEJumJAGjmDG2PKGBJTBRycoM9nHwQ7RZDSyxzFL5VuMw97d\nF0faQKdYsgJpJq/hu9hJIaOtD4w8es9WABsYQwzxJrRcSSPEYtDkgJ+PHHeX0zKD\n0B+ibt4GrUhkKwdWBn3X9KN1NUO3g0GctTFNbLXoVBox7EXShe3EO3tbpvRkkPqM\nEWgq4i4OiUHSKeULsBItmZ+ZVRp1L/wWrA1OQh5uwjHd97w95OroX8RSirODi5z/\n+J6I3Cq3Kbh7U67d7yw2HNO4kKAf2Ikl9PSL52aSk79wldlM/oJ0HlZ9FRfWuA8=\n=nPRK\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree bdbf12b106e539b5a60658a09d35f614ba5a815d\nparent c6bee765ba865298c69acdea70e1ec2d79f69efe\nauthor Brandon Dail <aweary@users.noreply.github.com> 1550031197 -0800\ncommitter GitHub <noreply@github.com> 1550031197 -0800\n\nSpecial case crossOrigin for SVG image elements (#14832)\n\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/fa6205d522a9d3e3f228be18dd29f11f8930c394",
+        "html_url": "https://github.com/facebook/react/commit/fa6205d522a9d3e3f228be18dd29f11f8930c394",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/fa6205d522a9d3e3f228be18dd29f11f8930c394/comments",
+        "author": {
+            "login": "aweary",
+            "id": 6886061,
+            "node_id": "MDQ6VXNlcjY4ODYwNjE=",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/6886061?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/aweary",
+            "html_url": "https://github.com/aweary",
+            "followers_url": "https://api.github.com/users/aweary/followers",
+            "following_url": "https://api.github.com/users/aweary/following{/other_user}",
+            "gists_url": "https://api.github.com/users/aweary/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/aweary/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/aweary/subscriptions",
+            "organizations_url": "https://api.github.com/users/aweary/orgs",
+            "repos_url": "https://api.github.com/users/aweary/repos",
+            "events_url": "https://api.github.com/users/aweary/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/aweary/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "c6bee765ba865298c69acdea70e1ec2d79f69efe",
+                "url": "https://api.github.com/repos/facebook/react/commits/c6bee765ba865298c69acdea70e1ec2d79f69efe",
+                "html_url": "https://github.com/facebook/react/commit/c6bee765ba865298c69acdea70e1ec2d79f69efe"
+            }
+        ]
+    },
+    {
+        "sha": "3ae94e1885b673543a30a05906c4f9a0e4b682cb",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6M2FlOTRlMTg4NWI2NzM1NDNhMzBhMDU5MDZjNGY5YTBlNGI2ODJjYg==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-12T20:18:35Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-12T20:18:35Z"
+            },
+            "message": "Fix ignored sync work in passive effects (#14799)\n\n* Fix ignored sync work in passive effects\r\n\r\n* Fix batching",
+            "tree": {
+                "sha": "c44c39ef85459d138d463fa8b60efb7bd20336b9",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/c44c39ef85459d138d463fa8b60efb7bd20336b9"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/3ae94e1885b673543a30a05906c4f9a0e4b682cb",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcYyobCRBK7hj4Ov3rIwAAdHIIABVOjn6l50dfqYFa0MGFkyh1\njXZD8LXGsOPesBr1T3O92d1ceiJGGEbCP43snzmIcy7S2j2i4pM3O6tyHYUHoALv\n+N4vxuudRX3JZkq/QYkLytVpybyzxUPE0OnfrAw6/wEryhkMm+6236uPKo0HRgu6\njj709kDz8d8jMkKPaModAa5UhXKebMfx8hPkB3x3r0/11T8ZYdDNLQ1qJBagQOzH\nxD9C4xwvEkv8+SXMsNhoiiy9vjikGv87M2gL8C/mdfA9EIzzkmc4XuVzs87hKgDx\nzTNWZdCgIOmVrMRDdJ/lDREQealfp3Qj8dutE441xCKdzCoK+jXo+nvOOpDwfLo=\n=Vz4E\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree c44c39ef85459d138d463fa8b60efb7bd20336b9\nparent f3a14951ab9bccfd59ca977493b72321b24e50a5\nauthor Dan Abramov <dan.abramov@gmail.com> 1550002715 +0000\ncommitter GitHub <noreply@github.com> 1550002715 +0000\n\nFix ignored sync work in passive effects (#14799)\n\n* Fix ignored sync work in passive effects\r\n\r\n* Fix batching\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/3ae94e1885b673543a30a05906c4f9a0e4b682cb",
+        "html_url": "https://github.com/facebook/react/commit/3ae94e1885b673543a30a05906c4f9a0e4b682cb",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/3ae94e1885b673543a30a05906c4f9a0e4b682cb/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "f3a14951ab9bccfd59ca977493b72321b24e50a5",
+                "url": "https://api.github.com/repos/facebook/react/commits/f3a14951ab9bccfd59ca977493b72321b24e50a5",
+                "html_url": "https://github.com/facebook/react/commit/f3a14951ab9bccfd59ca977493b72321b24e50a5"
+            }
+        ]
+    },
+    {
+        "sha": "f3a14951ab9bccfd59ca977493b72321b24e50a5",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZjNhMTQ5NTFhYjliY2NmZDU5Y2E5Nzc0OTNiNzIzMjFiMjRlNTBhNQ==",
+        "commit": {
+            "author": {
+                "name": "Sebastian Markbåge",
+                "email": "sebastian@calyptus.eu",
+                "date": "2019-02-12T05:25:44Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-12T05:25:44Z"
+            },
+            "message": "Partial Hydration (#14717)\n\n* Basic partial hydration test\r\n\r\n* Render comments around Suspense components\r\n\r\nWe need this to be able to identify how far to skip ahead if we're not\r\ngoing to hydrate this subtree yet.\r\n\r\n* Add DehydratedSuspenseComponent type of work\r\n\r\nWill be used for Suspense boundaries that are left with their server\r\nrendered content intact.\r\n\r\n* Add comment node as hydratable instance type as placeholder for suspense\r\n\r\n* Skip past nodes within the Suspense boundary\r\n\r\nThis lets us continue hydrating sibling nodes.\r\n\r\n* A dehydrated suspense boundary comment should be considered a sibling\r\n\r\n* Retry hydrating at offscreen pri or after ping if suspended\r\n\r\n* Enter hydration state when retrying dehydrated suspense boundary\r\n\r\n* Delete all children within a dehydrated suspense boundary when it's deleted\r\n\r\n* Delete server rendered content when props change before hydration completes\r\n\r\n* Make test internal\r\n\r\n* Wrap in act\r\n\r\n* Change SSR Fixture to use Partial Hydration\r\n\r\nThis requires the enableSuspenseServerRenderer flag to be manually enabled\r\nfor the build to work.\r\n\r\n* Changes to any parent Context forces clearing dehydrated content\r\n\r\nWe mark dehydrated boundaries as having child work, since they might have\r\ncomponents that read from the changed context.\r\n\r\nWe check this in beginWork and if it does we treat it as if the input\r\nhas changed (same as if props changes).\r\n\r\n* Wrap in feature flag\r\n\r\n* Treat Suspense boundaries without fallbacks as if not-boundaries\r\n\r\nThese don't come into play for purposes of hydration.\r\n\r\n* Fix clearing of nested suspense boundaries\r\n\r\n* ping -> retry\r\n\r\nCo-Authored-By: sebmarkbage <sebastian@calyptus.eu>\r\n\r\n* Typo\r\n\r\nCo-Authored-By: sebmarkbage <sebastian@calyptus.eu>\r\n\r\n* Use didReceiveUpdate instead of manually comparing props\r\n\r\n* Leave comment for why it's ok to ignore the timeout",
+            "tree": {
+                "sha": "0e9f04276d8befa76cfa41c8bcc8e7942c146b06",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/0e9f04276d8befa76cfa41c8bcc8e7942c146b06"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/f3a14951ab9bccfd59ca977493b72321b24e50a5",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcYljYCRBK7hj4Ov3rIwAAdHIIAFnwfHgliur3pOsnHMfkp2UB\n+7KA9qzoaJv8L2sEOg6bdlPBJNHqjGDW+FNQTXie0EfKyqYiK00I7NqZknR/c33E\nUuDKiNogrG3KE+76LKXOHoHAOEszxaufp3phkXKdEigCxuaIDoOL1+ziQ8VS8yNb\nfPzUtD0ibNgysQGhQJsobee8K0fFsMQFTqymgbYv5qmoyQZ2B2seae+BEL5kDQrL\n+KEjpCSvZZ2ogqGqAVSeJu8zlDV1B4ne2i+Udny43dwNFt8/Zx/4QnT5u+SIPMSl\nIPFkj8o+GTsFaaXDGDKJY6jPZeXDjqccp3LrwTp1b4DHBFYSIM17YG9gWPS/EEQ=\n=RpRU\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 0e9f04276d8befa76cfa41c8bcc8e7942c146b06\nparent f24a0da6e0f59484e5aafd0825bb1a6ed27d7182\nauthor Sebastian Markbåge <sebastian@calyptus.eu> 1549949144 -0800\ncommitter GitHub <noreply@github.com> 1549949144 -0800\n\nPartial Hydration (#14717)\n\n* Basic partial hydration test\r\n\r\n* Render comments around Suspense components\r\n\r\nWe need this to be able to identify how far to skip ahead if we're not\r\ngoing to hydrate this subtree yet.\r\n\r\n* Add DehydratedSuspenseComponent type of work\r\n\r\nWill be used for Suspense boundaries that are left with their server\r\nrendered content intact.\r\n\r\n* Add comment node as hydratable instance type as placeholder for suspense\r\n\r\n* Skip past nodes within the Suspense boundary\r\n\r\nThis lets us continue hydrating sibling nodes.\r\n\r\n* A dehydrated suspense boundary comment should be considered a sibling\r\n\r\n* Retry hydrating at offscreen pri or after ping if suspended\r\n\r\n* Enter hydration state when retrying dehydrated suspense boundary\r\n\r\n* Delete all children within a dehydrated suspense boundary when it's deleted\r\n\r\n* Delete server rendered content when props change before hydration completes\r\n\r\n* Make test internal\r\n\r\n* Wrap in act\r\n\r\n* Change SSR Fixture to use Partial Hydration\r\n\r\nThis requires the enableSuspenseServerRenderer flag to be manually enabled\r\nfor the build to work.\r\n\r\n* Changes to any parent Context forces clearing dehydrated content\r\n\r\nWe mark dehydrated boundaries as having child work, since they might have\r\ncomponents that read from the changed context.\r\n\r\nWe check this in beginWork and if it does we treat it as if the input\r\nhas changed (same as if props changes).\r\n\r\n* Wrap in feature flag\r\n\r\n* Treat Suspense boundaries without fallbacks as if not-boundaries\r\n\r\nThese don't come into play for purposes of hydration.\r\n\r\n* Fix clearing of nested suspense boundaries\r\n\r\n* ping -> retry\r\n\r\nCo-Authored-By: sebmarkbage <sebastian@calyptus.eu>\r\n\r\n* Typo\r\n\r\nCo-Authored-By: sebmarkbage <sebastian@calyptus.eu>\r\n\r\n* Use didReceiveUpdate instead of manually comparing props\r\n\r\n* Leave comment for why it's ok to ignore the timeout\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/f3a14951ab9bccfd59ca977493b72321b24e50a5",
+        "html_url": "https://github.com/facebook/react/commit/f3a14951ab9bccfd59ca977493b72321b24e50a5",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/f3a14951ab9bccfd59ca977493b72321b24e50a5/comments",
+        "author": {
+            "login": "sebmarkbage",
+            "id": 63648,
+            "node_id": "MDQ6VXNlcjYzNjQ4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/63648?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/sebmarkbage",
+            "html_url": "https://github.com/sebmarkbage",
+            "followers_url": "https://api.github.com/users/sebmarkbage/followers",
+            "following_url": "https://api.github.com/users/sebmarkbage/following{/other_user}",
+            "gists_url": "https://api.github.com/users/sebmarkbage/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/sebmarkbage/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/sebmarkbage/subscriptions",
+            "organizations_url": "https://api.github.com/users/sebmarkbage/orgs",
+            "repos_url": "https://api.github.com/users/sebmarkbage/repos",
+            "events_url": "https://api.github.com/users/sebmarkbage/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/sebmarkbage/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "f24a0da6e0f59484e5aafd0825bb1a6ed27d7182",
+                "url": "https://api.github.com/repos/facebook/react/commits/f24a0da6e0f59484e5aafd0825bb1a6ed27d7182",
+                "html_url": "https://github.com/facebook/react/commit/f24a0da6e0f59484e5aafd0825bb1a6ed27d7182"
+            }
+        ]
+    },
+    {
+        "sha": "1fecba92307041e181ce425082d4d21ec8928728",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6MWZlY2JhOTIzMDcwNDFlMTgxY2U0MjUwODJkNGQyMWVjODkyODcyOA==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-11T18:37:53Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-11T18:37:53Z"
+            },
+            "message": "Fix crash unmounting an empty Portal (#14820)\n\n* Adds failing test for https://github.com/facebook/react/issues/14811\r\n\r\n* Fix removeChild() crash when removing an empty Portal",
+            "tree": {
+                "sha": "b876832f1f21657e0a5c150ae9d4b85946804df1",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/b876832f1f21657e0a5c150ae9d4b85946804df1"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/1fecba92307041e181ce425082d4d21ec8928728",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcYcEBCRBK7hj4Ov3rIwAAdHIIAD6T51IuUgRiqVNRZ6BpMrKg\n6ttvp+pKyX0owsoKO5BYEzRL+nAe1YmCPLSOHxH/EPLkktsnxry+oeCA0F4CGU0a\nb2DlTD44MKwe7LUCRWC9FYZ2e0aNALFb4Bi/FgLKeZ3xDoUCG9HhFXA65fgIoqQA\n/qedA2VWzGCQ1UtZhnIy0gEoY6jADUvY9NAdc0+9w0+/pq9M7+ew82V6IlELl5Yp\nsmAfTZHiC5Gkx91VqdWCLLUuZVUQmIylYAUKjOu6dwWnMUfr7pxOK+ulOAbF72bQ\nDbnN8o/IOZArAIgaPjSn/23gYX9TwHeFDbWctGqgrMxa//J0elgAR/2aMQVsAEw=\n=0w6P\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree b876832f1f21657e0a5c150ae9d4b85946804df1\nparent e15542ee0f9c5ef5646820d59bde3a282e107d02\nauthor Dan Abramov <dan.abramov@gmail.com> 1549910273 +0000\ncommitter GitHub <noreply@github.com> 1549910273 +0000\n\nFix crash unmounting an empty Portal (#14820)\n\n* Adds failing test for https://github.com/facebook/react/issues/14811\r\n\r\n* Fix removeChild() crash when removing an empty Portal\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/1fecba92307041e181ce425082d4d21ec8928728",
+        "html_url": "https://github.com/facebook/react/commit/1fecba92307041e181ce425082d4d21ec8928728",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/1fecba92307041e181ce425082d4d21ec8928728/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "e15542ee0f9c5ef5646820d59bde3a282e107d02",
+                "url": "https://api.github.com/repos/facebook/react/commits/e15542ee0f9c5ef5646820d59bde3a282e107d02",
+                "html_url": "https://github.com/facebook/react/commit/e15542ee0f9c5ef5646820d59bde3a282e107d02"
+            }
+        ]
+    },
+    {
+        "sha": "1d48b4a68485ce870711e6baa98e5c9f5f213fdf",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6MWQ0OGI0YTY4NDg1Y2U4NzA3MTFlNmJhYTk4ZTVjOWY1ZjIxM2ZkZg==",
+        "commit": {
+            "author": {
+                "name": "Sebastian Markbåge",
+                "email": "sebastian@calyptus.eu",
+                "date": "2019-02-09T17:12:11Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-09T17:12:11Z"
+            },
+            "message": "Fix hydration with createRoot warning (#14808)\n\nIt's suggesting an API that doesn't exist. Fixed it to reference the actual\r\nAPI.",
+            "tree": {
+                "sha": "e1b2b012f92e02c09ce5933b2aeb30789b2a1920",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/e1b2b012f92e02c09ce5933b2aeb30789b2a1920"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/1d48b4a68485ce870711e6baa98e5c9f5f213fdf",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcXwnrCRBK7hj4Ov3rIwAAdHIIAA4X69tiY3nJC+yz7ElivfcO\nG32iywmy7HCGUCmuuW0h6GB7pmLzfvnkJdpEOfGPX79XwVMey2R3jHS/hBZG1Jvl\nSuyyFnZGqKGJAjXubUXcrITFJynMWoFleV0o/JA2/L6eJwWK7ZCgymZIOSuSO/Mx\nXZKsHHc26GDKU+7iwa+vh0QS5sdNTN1b1rJy3ZQfRCYtxY4hRyXHJy2T+FPn0VgE\nvrQWz1UGLRVG5HEJ+u8gNgwpSc97ixU5D5H8MkEYKA4mVj73dflgvpo4hlAGFQ9a\n8r/nQfNxRkGMNp0C/Lz8xhfCo0UokkG7jIHuEzv+5iTroCLbfbPZTRFwLNqGuu8=\n=RlCU\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree e1b2b012f92e02c09ce5933b2aeb30789b2a1920\nparent aa9423701e99a194d65a8b835882502902a65a50\nauthor Sebastian Markbåge <sebastian@calyptus.eu> 1549732331 +0000\ncommitter GitHub <noreply@github.com> 1549732331 +0000\n\nFix hydration with createRoot warning (#14808)\n\nIt's suggesting an API that doesn't exist. Fixed it to reference the actual\r\nAPI."
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/1d48b4a68485ce870711e6baa98e5c9f5f213fdf",
+        "html_url": "https://github.com/facebook/react/commit/1d48b4a68485ce870711e6baa98e5c9f5f213fdf",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/1d48b4a68485ce870711e6baa98e5c9f5f213fdf/comments",
+        "author": {
+            "login": "sebmarkbage",
+            "id": 63648,
+            "node_id": "MDQ6VXNlcjYzNjQ4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/63648?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/sebmarkbage",
+            "html_url": "https://github.com/sebmarkbage",
+            "followers_url": "https://api.github.com/users/sebmarkbage/followers",
+            "following_url": "https://api.github.com/users/sebmarkbage/following{/other_user}",
+            "gists_url": "https://api.github.com/users/sebmarkbage/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/sebmarkbage/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/sebmarkbage/subscriptions",
+            "organizations_url": "https://api.github.com/users/sebmarkbage/orgs",
+            "repos_url": "https://api.github.com/users/sebmarkbage/repos",
+            "events_url": "https://api.github.com/users/sebmarkbage/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/sebmarkbage/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "aa9423701e99a194d65a8b835882502902a65a50",
+                "url": "https://api.github.com/repos/facebook/react/commits/aa9423701e99a194d65a8b835882502902a65a50",
+                "html_url": "https://github.com/facebook/react/commit/aa9423701e99a194d65a8b835882502902a65a50"
+            }
+        ]
+    },
+    {
+        "sha": "45fc46bfa0e761c8382d177c46778e892f949cad",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6NDVmYzQ2YmZhMGU3NjFjODM4MmQxNzdjNDY3NzhlODkyZjk0OWNhZA==",
+        "commit": {
+            "author": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-02-06T18:21:33Z"
+            },
+            "committer": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-02-06T18:21:33Z"
+            },
+            "message": "16.8.1 packages",
+            "tree": {
+                "sha": "0031fbc7dacc4214e5862f6d28bf03a41cc2ff51",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/0031fbc7dacc4214e5862f6d28bf03a41cc2ff51"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/45fc46bfa0e761c8382d177c46778e892f949cad",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/45fc46bfa0e761c8382d177c46778e892f949cad",
+        "html_url": "https://github.com/facebook/react/commit/45fc46bfa0e761c8382d177c46778e892f949cad",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/45fc46bfa0e761c8382d177c46778e892f949cad/comments",
+        "author": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "b7cc6b2e6f58848563314b2a46d331284755b84c",
+                "url": "https://api.github.com/repos/facebook/react/commits/b7cc6b2e6f58848563314b2a46d331284755b84c",
+                "html_url": "https://github.com/facebook/react/commit/b7cc6b2e6f58848563314b2a46d331284755b84c"
+            }
+        ]
+    },
+    {
+        "sha": "1107b9673c779425a251ed5336ee8b6721498666",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6MTEwN2I5NjczYzc3OTQyNWEyNTFlZDUzMzZlZThiNjcyMTQ5ODY2Ng==",
+        "commit": {
+            "author": {
+                "name": "Sunil Pai",
+                "email": "threepointone@oculus.com",
+                "date": "2019-02-06T16:25:26Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-06T16:25:26Z"
+            },
+            "message": "[TestUtils.act] warn when using TestUtils.act in node (#14768)\n\n* warn when using TestUtils.act in node\r\n\r\n* s/warns/throws\r\n\r\n* s/throw/warn\r\n\r\n* consistent ellipses",
+            "tree": {
+                "sha": "c293af8a0cd8a826342da9e623d2bcf93abcc469",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/c293af8a0cd8a826342da9e623d2bcf93abcc469"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/1107b9673c779425a251ed5336ee8b6721498666",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcWwp2CRBK7hj4Ov3rIwAAdHIIAJAfKL07y21gde8sqJ+3pzQ8\nVml6vcPqvtoiPZZGV8n47a8KGWuINFOEqB48ezTrDlEEIn5DDbVP2fYoepxxglMO\nvgH4p5FMW2AubMF2TXJEpZu7DVb1pVN41rDmTSBXQ9f74aPgYejxz+W4Ju85PCl5\nRE22HtlWoMPTGzcW+hWzxNjm7wETNX9JdEyw8J5K4tNnke2rys6rnyZVagb1D+FW\ngkeM8CPuAxAUnIeUpD5ogUnEIG65hW8L4HBxLPYNRjlE31G0IEtsZ3BPDsIhTYSE\nszHcACiFSYEQCljSEN2TM0FplGxmXQa+/hQMTrYYvRbs69zC3VmXkCCJm0y1quM=\n=MQeL\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree c293af8a0cd8a826342da9e623d2bcf93abcc469\nparent 0975ea3278c4a203b73ad6cc1ea61c44a8eeeb17\nauthor Sunil Pai <threepointone@oculus.com> 1549470326 +0000\ncommitter GitHub <noreply@github.com> 1549470326 +0000\n\n[TestUtils.act] warn when using TestUtils.act in node (#14768)\n\n* warn when using TestUtils.act in node\r\n\r\n* s/warns/throws\r\n\r\n* s/throw/warn\r\n\r\n* consistent ellipses\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/1107b9673c779425a251ed5336ee8b6721498666",
+        "html_url": "https://github.com/facebook/react/commit/1107b9673c779425a251ed5336ee8b6721498666",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/1107b9673c779425a251ed5336ee8b6721498666/comments",
+        "author": {
+            "login": "threepointone",
+            "id": 18808,
+            "node_id": "MDQ6VXNlcjE4ODA4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/18808?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/threepointone",
+            "html_url": "https://github.com/threepointone",
+            "followers_url": "https://api.github.com/users/threepointone/followers",
+            "following_url": "https://api.github.com/users/threepointone/following{/other_user}",
+            "gists_url": "https://api.github.com/users/threepointone/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/threepointone/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/threepointone/subscriptions",
+            "organizations_url": "https://api.github.com/users/threepointone/orgs",
+            "repos_url": "https://api.github.com/users/threepointone/repos",
+            "events_url": "https://api.github.com/users/threepointone/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/threepointone/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "0975ea3278c4a203b73ad6cc1ea61c44a8eeeb17",
+                "url": "https://api.github.com/repos/facebook/react/commits/0975ea3278c4a203b73ad6cc1ea61c44a8eeeb17",
+                "html_url": "https://github.com/facebook/react/commit/0975ea3278c4a203b73ad6cc1ea61c44a8eeeb17"
+            }
+        ]
+    },
+    {
+        "sha": "008a2ab9cd2e6bf4efcc1ad0a2f7c7e017c1c82f",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6MDA4YTJhYjljZDJlNmJmNGVmY2MxYWQwYTJmN2M3ZTAxN2MxYzgyZg==",
+        "commit": {
+            "author": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-02-06T08:04:00Z"
+            },
+            "committer": {
+                "name": "Brian Vaughn",
+                "email": "bvaughn@fb.com",
+                "date": "2019-02-06T08:04:00Z"
+            },
+            "message": "16.8.0",
+            "tree": {
+                "sha": "2c8ca0b666993ec1db170b700152ebfa565e1988",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/2c8ca0b666993ec1db170b700152ebfa565e1988"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/008a2ab9cd2e6bf4efcc1ad0a2f7c7e017c1c82f",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/008a2ab9cd2e6bf4efcc1ad0a2f7c7e017c1c82f",
+        "html_url": "https://github.com/facebook/react/commit/008a2ab9cd2e6bf4efcc1ad0a2f7c7e017c1c82f",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/008a2ab9cd2e6bf4efcc1ad0a2f7c7e017c1c82f/comments",
+        "author": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "bvaughn",
+            "id": 29597,
+            "node_id": "MDQ6VXNlcjI5NTk3",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/29597?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/bvaughn",
+            "html_url": "https://github.com/bvaughn",
+            "followers_url": "https://api.github.com/users/bvaughn/followers",
+            "following_url": "https://api.github.com/users/bvaughn/following{/other_user}",
+            "gists_url": "https://api.github.com/users/bvaughn/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/bvaughn/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/bvaughn/subscriptions",
+            "organizations_url": "https://api.github.com/users/bvaughn/orgs",
+            "repos_url": "https://api.github.com/users/bvaughn/repos",
+            "events_url": "https://api.github.com/users/bvaughn/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/bvaughn/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+                "url": "https://api.github.com/repos/facebook/react/commits/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+                "html_url": "https://github.com/facebook/react/commit/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06"
+            }
+        ]
+    },
+    {
+        "sha": "d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZDEzMjZmNDY2YTI0ZjJiOWUwOTExNWVkMWEzZGRkOWRlMmFkMmUwNg==",
+        "commit": {
+            "author": {
+                "name": "Sunil Pai",
+                "email": "threepointone@oculus.com",
+                "date": "2019-02-05T17:34:21Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-05T17:34:21Z"
+            },
+            "message": "[TestUtils.act] fix return result checking  (#14758)\n\n* fix .act return value testing when result === null\r\n\r\n* nit",
+            "tree": {
+                "sha": "8951fc0f444f76d6a22fa6e2b83aa0bca7c0c6bb",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/8951fc0f444f76d6a22fa6e2b83aa0bca7c0c6bb"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcWckdCRBK7hj4Ov3rIwAAdHIIADllpLTyEj1SuM7qX3quqBqB\n8Wmv4PckmgHmkOlPgx6IQrQYNEtUfw+pqq7Az7tTMyn0bm+ujoas1hn/rUc5Lqsl\nncFwn8d1z9dH+cGwQNovJMSNNHErNd0BcD6Nwsi/KV84/2OOVdMiehh1tlgFNnFg\nZECQBUbTDPe8Q4b68L+CVc1/oW7y7ZKMFZ0B39QflWC5VtEdZ5+fMI0mmTrg0t2y\nwLEumDYm7gu5Gqu3knZEkkaF3N52U6Sxj9MAVjkQjGy5QVBNugWlis4VzXMgzhsu\nkYDxcObPOdrVXvY6wSRLQoXgXAVlY5lec/klYrbd93BM5fGGN2G97ChnMxaQTk0=\n=Y79d\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 8951fc0f444f76d6a22fa6e2b83aa0bca7c0c6bb\nparent 267ed981466ef323b1461b013b5db8db31e31772\nauthor Sunil Pai <threepointone@oculus.com> 1549388061 +0000\ncommitter GitHub <noreply@github.com> 1549388061 +0000\n\n[TestUtils.act] fix return result checking  (#14758)\n\n* fix .act return value testing when result === null\r\n\r\n* nit\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+        "html_url": "https://github.com/facebook/react/commit/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/d1326f466a24f2b9e09115ed1a3ddd9de2ad2e06/comments",
+        "author": {
+            "login": "threepointone",
+            "id": 18808,
+            "node_id": "MDQ6VXNlcjE4ODA4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/18808?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/threepointone",
+            "html_url": "https://github.com/threepointone",
+            "followers_url": "https://api.github.com/users/threepointone/followers",
+            "following_url": "https://api.github.com/users/threepointone/following{/other_user}",
+            "gists_url": "https://api.github.com/users/threepointone/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/threepointone/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/threepointone/subscriptions",
+            "organizations_url": "https://api.github.com/users/threepointone/orgs",
+            "repos_url": "https://api.github.com/users/threepointone/repos",
+            "events_url": "https://api.github.com/users/threepointone/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/threepointone/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "267ed981466ef323b1461b013b5db8db31e31772",
+                "url": "https://api.github.com/repos/facebook/react/commits/267ed981466ef323b1461b013b5db8db31e31772",
+                "html_url": "https://github.com/facebook/react/commit/267ed981466ef323b1461b013b5db8db31e31772"
+            }
+        ]
+    },
+    {
+        "sha": "267ed981466ef323b1461b013b5db8db31e31772",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6MjY3ZWQ5ODE0NjZlZjMyM2IxNDYxYjAxM2I1ZGI4ZGIzMWUzMTc3Mg==",
+        "commit": {
+            "author": {
+                "name": "Sunil Pai",
+                "email": "threepointone@oculus.com",
+                "date": "2019-02-05T16:10:16Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-05T16:10:16Z"
+            },
+            "message": "expose `TestUtils.act()` for batching actions in tests (#14744)\n\n* expose unstable_interact for batching actions in tests\r\n\r\n* move to TestUtils\r\n\r\n* move it all into testutils\r\n\r\n* s/interact/act\r\n\r\n* warn when calling hook-like setState outside batching mode\r\n\r\n* pass tests\r\n\r\n* merge-temp\r\n\r\n* move jsdom test to callsite\r\n\r\n* mark failing tests\r\n\r\n* pass most tests (except one)\r\n\r\n* augh IE\r\n\r\n* pass fuzz tests\r\n\r\n* better warning, expose the right batchedUpdates on TestRenderer for www\r\n\r\n* move it into hooks, test for dom\r\n\r\n* expose a flag on the host config, move stuff around\r\n\r\n* rename, pass flow\r\n\r\n* pass flow... again\r\n\r\n* tweak .act() type\r\n\r\n* enable for all jest environments/renderers; pass (most) tests.\r\n\r\n* pass all tests\r\n\r\n* expose just the warning from the scheduler\r\n\r\n* don't return values\r\n\r\n* a bunch of changes.\r\n\r\ncan't return values from .act\r\ndon't try to await .act calls\r\npass tests\r\n\r\n* fixes and nits\r\n\r\n* \"fire events that udpates state\"\r\n\r\n* nit\r\n\r\n* 🙄\r\n\r\n* my bad\r\n\r\n* hi andrew\r\n\r\n(prettier fix)",
+            "tree": {
+                "sha": "fdce5ccdf6441766c71c85ae4ca0725821b71763",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/fdce5ccdf6441766c71c85ae4ca0725821b71763"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/267ed981466ef323b1461b013b5db8db31e31772",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcWbVoCRBK7hj4Ov3rIwAAdHIIABmjSrDfpqC/98N89/70t+6Q\nglpoe3BlbUaG2EWkwkxeCUs1PKhadl0erHm2y6KhytORFM13cJ5pkoSOIskLzKq+\nN1DA1uhrFwryV70dV0BTq/B+3/i8Jv0ZozmbnFlz+oGC6T5zYW9Ygwh0ikMgqCOZ\n0xFoimHpGLMHoOTu0RxrHwMbr3iP7+q/NgicI2bRZ/0KW0UlrWGjIeL4OTTDvYwX\n+AMxSWcIoVXwUDmvQRD+I+Vq58/YwX3emjDqBdkVHNyy0/l9S4rfaLGyEVMkuHIB\n+rhsATi8Kes3eQ+mtybMKImHPTL6sLTNXAKXHy80JTyAmFKy2vEClyRjnkWU878=\n=/Bmf\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree fdce5ccdf6441766c71c85ae4ca0725821b71763\nparent fb3f7bfde9a326a09d827b94dddfa2628dc9346f\nauthor Sunil Pai <threepointone@oculus.com> 1549383016 +0000\ncommitter GitHub <noreply@github.com> 1549383016 +0000\n\nexpose `TestUtils.act()` for batching actions in tests (#14744)\n\n* expose unstable_interact for batching actions in tests\r\n\r\n* move to TestUtils\r\n\r\n* move it all into testutils\r\n\r\n* s/interact/act\r\n\r\n* warn when calling hook-like setState outside batching mode\r\n\r\n* pass tests\r\n\r\n* merge-temp\r\n\r\n* move jsdom test to callsite\r\n\r\n* mark failing tests\r\n\r\n* pass most tests (except one)\r\n\r\n* augh IE\r\n\r\n* pass fuzz tests\r\n\r\n* better warning, expose the right batchedUpdates on TestRenderer for www\r\n\r\n* move it into hooks, test for dom\r\n\r\n* expose a flag on the host config, move stuff around\r\n\r\n* rename, pass flow\r\n\r\n* pass flow... again\r\n\r\n* tweak .act() type\r\n\r\n* enable for all jest environments/renderers; pass (most) tests.\r\n\r\n* pass all tests\r\n\r\n* expose just the warning from the scheduler\r\n\r\n* don't return values\r\n\r\n* a bunch of changes.\r\n\r\ncan't return values from .act\r\ndon't try to await .act calls\r\npass tests\r\n\r\n* fixes and nits\r\n\r\n* \"fire events that udpates state\"\r\n\r\n* nit\r\n\r\n* 🙄\r\n\r\n* my bad\r\n\r\n* hi andrew\r\n\r\n(prettier fix)\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/267ed981466ef323b1461b013b5db8db31e31772",
+        "html_url": "https://github.com/facebook/react/commit/267ed981466ef323b1461b013b5db8db31e31772",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/267ed981466ef323b1461b013b5db8db31e31772/comments",
+        "author": {
+            "login": "threepointone",
+            "id": 18808,
+            "node_id": "MDQ6VXNlcjE4ODA4",
+            "avatar_url": "https://avatars2.githubusercontent.com/u/18808?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/threepointone",
+            "html_url": "https://github.com/threepointone",
+            "followers_url": "https://api.github.com/users/threepointone/followers",
+            "following_url": "https://api.github.com/users/threepointone/following{/other_user}",
+            "gists_url": "https://api.github.com/users/threepointone/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/threepointone/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/threepointone/subscriptions",
+            "organizations_url": "https://api.github.com/users/threepointone/orgs",
+            "repos_url": "https://api.github.com/users/threepointone/repos",
+            "events_url": "https://api.github.com/users/threepointone/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/threepointone/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+                "url": "https://api.github.com/repos/facebook/react/commits/fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+                "html_url": "https://github.com/facebook/react/commit/fb3f7bfde9a326a09d827b94dddfa2628dc9346f"
+            }
+        ]
+    },
+    {
+        "sha": "fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6ZmIzZjdiZmRlOWEzMjZhMDlkODI3Yjk0ZGRkZmEyNjI4ZGM5MzQ2Zg==",
+        "commit": {
+            "author": {
+                "name": "Andrew Clark",
+                "email": "git@andrewclark.io",
+                "date": "2019-02-05T11:21:25Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-05T11:21:25Z"
+            },
+            "message": "Avoid importing Scheduler directly (#14757)\n\n* Avoid importing Scheduler directly\r\n\r\nThe reconciler should not depend directly on Scheduler. This adds it to\r\nthe host config for the renderer instead.\r\n\r\n(Except for `scheduler/tracing` imports, which are used only by the\r\nprofiling build. I've left those imports as-is, though I'm open to\r\ndirecting those through the host config, too.)\r\n\r\n* Make throwaway root id longer to appease Brian",
+            "tree": {
+                "sha": "79475506e9f20e7570663ab38181d06b1324f327",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/79475506e9f20e7570663ab38181d06b1324f327"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcWXG1CRBK7hj4Ov3rIwAAdHIIAH5v7JTUVgE4h4XDNtcwKmOY\nBARulZrbcDLs9VaBd++QCX2hMpHzZzyRnA8Tibf0jo0o/kukfHkLgUBRt6x5yTrk\nR6Xcga8CLcR08UCnkLeFX98LbHANS6Om3881bVnD0yKNAXrxrcXCJRj7+2409gvR\ndJ8rY+wIX0CfJUc0wEfIf7H73mNg3wsIx7X6+xs2aaOKRDpdT+CpsL1YcR1bQJr4\nyh4wY0/E1OkLnjwITnui/W10mmpeclon6iYq6ufr6eGiQt8+1/9Ed5sExHdhwRu0\naNWnFI0g6H0ckjFyLG4sRXjC4S5kDK2zah2K5rimYONRuFn3uratJQiMnv+ijhk=\n=Xp/6\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 79475506e9f20e7570663ab38181d06b1324f327\nparent 81470a00272f7840c27c9fc5be977f5573f5cb44\nauthor Andrew Clark <git@andrewclark.io> 1549365685 -0800\ncommitter GitHub <noreply@github.com> 1549365685 -0800\n\nAvoid importing Scheduler directly (#14757)\n\n* Avoid importing Scheduler directly\r\n\r\nThe reconciler should not depend directly on Scheduler. This adds it to\r\nthe host config for the renderer instead.\r\n\r\n(Except for `scheduler/tracing` imports, which are used only by the\r\nprofiling build. I've left those imports as-is, though I'm open to\r\ndirecting those through the host config, too.)\r\n\r\n* Make throwaway root id longer to appease Brian\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+        "html_url": "https://github.com/facebook/react/commit/fb3f7bfde9a326a09d827b94dddfa2628dc9346f",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/fb3f7bfde9a326a09d827b94dddfa2628dc9346f/comments",
+        "author": {
+            "login": "acdlite",
+            "id": 3624098,
+            "node_id": "MDQ6VXNlcjM2MjQwOTg=",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/3624098?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/acdlite",
+            "html_url": "https://github.com/acdlite",
+            "followers_url": "https://api.github.com/users/acdlite/followers",
+            "following_url": "https://api.github.com/users/acdlite/following{/other_user}",
+            "gists_url": "https://api.github.com/users/acdlite/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/acdlite/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/acdlite/subscriptions",
+            "organizations_url": "https://api.github.com/users/acdlite/orgs",
+            "repos_url": "https://api.github.com/users/acdlite/repos",
+            "events_url": "https://api.github.com/users/acdlite/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/acdlite/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "81470a00272f7840c27c9fc5be977f5573f5cb44",
+                "url": "https://api.github.com/repos/facebook/react/commits/81470a00272f7840c27c9fc5be977f5573f5cb44",
+                "html_url": "https://github.com/facebook/react/commit/81470a00272f7840c27c9fc5be977f5573f5cb44"
+            }
+        ]
+    },
+    {
+        "sha": "c21c41ecfad46de0a718d059374e48d13cf08ced",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YzIxYzQxZWNmYWQ0NmRlMGE3MThkMDU5Mzc0ZTQ4ZDEzY2YwOGNlZA==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-02-01T21:05:13Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-02-01T21:05:13Z"
+            },
+            "message": "Tweak invalid Hook warning and error (#14747)",
+            "tree": {
+                "sha": "f6340451bb6f35e1a206f1a5dc4079ca7b9a43f7",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/f6340451bb6f35e1a206f1a5dc4079ca7b9a43f7"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/c21c41ecfad46de0a718d059374e48d13cf08ced",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcVLSJCRBK7hj4Ov3rIwAAdHIIAE2+ky2Gdww1wuPO5ocX+xkA\ncwwmblTe1KaidOB86wsw6oHUzZe9HRPJkzvM8o0y4ElxUWWKowNf+FW1FnxTuPIb\nqalugzLENcHaR+p3OwxWSpRBikQLJrNvsceaHTeeb8pUixR2EGRECvaCiE4rt7Xs\n/1wympWF88U40GS1Ti1tDkVtqT8Mtw04rJUGuYNla1hWriUE+QfAzJVFk5JXrxiV\nRs/9hPThJ4g0MTr+T0PXb0z5rn1fBHOSIADnz1KjwBd3/INkdTKuTraYIlL1gGIH\nhLRV+KS62wBCDdV4OqUdEFG35EykmiSj0z64235fK8iwcrwIXrWrMJW+msfrNj4=\n=nqCs\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree f6340451bb6f35e1a206f1a5dc4079ca7b9a43f7\nparent fec00a869c987c9fa3e8bb6354000375b3271315\nauthor Dan Abramov <dan.abramov@gmail.com> 1549055113 +0000\ncommitter GitHub <noreply@github.com> 1549055113 +0000\n\nTweak invalid Hook warning and error (#14747)\n\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/c21c41ecfad46de0a718d059374e48d13cf08ced",
+        "html_url": "https://github.com/facebook/react/commit/c21c41ecfad46de0a718d059374e48d13cf08ced",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/c21c41ecfad46de0a718d059374e48d13cf08ced/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "fec00a869c987c9fa3e8bb6354000375b3271315",
+                "url": "https://api.github.com/repos/facebook/react/commits/fec00a869c987c9fa3e8bb6354000375b3271315",
+                "html_url": "https://github.com/facebook/react/commit/fec00a869c987c9fa3e8bb6354000375b3271315"
+            }
+        ]
+    },
+    {
+        "sha": "66eb29374239945c3a512a88aa2480637f62e5cc",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6NjZlYjI5Mzc0MjM5OTQ1YzNhNTEyYTg4YWEyNDgwNjM3ZjYyZTVjYw==",
+        "commit": {
+            "author": {
+                "name": "Andrew Clark",
+                "email": "git@andrewclark.io",
+                "date": "2019-01-31T18:11:47Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-01-31T18:11:47Z"
+            },
+            "message": "Restrict effect return type to a function or nothing (#14119)\n\n* Restrict effect return type to a function or nothing\r\n\r\nWe already warn in dev if the wrong type is returned. This updates the\r\nFlow type.\r\n\r\n* Restrict return type further\r\n\r\n* Assume Effect hook returns either a function or undefined\r\n\r\n* Tweak warning message",
+            "tree": {
+                "sha": "1622c7afc3d112c07fcf9a122b0a083fd495a3d4",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/1622c7afc3d112c07fcf9a122b0a083fd495a3d4"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/66eb29374239945c3a512a88aa2480637f62e5cc",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcUzpjCRBK7hj4Ov3rIwAAdHIIACMs1HUSCP+CKTqqDqAKKj1d\nXYTeSCXU3+CeHGFkPAPUgj143bWc4C/80lS4eL04ubyauJ5fAICl8YfSemVS6Mg+\nx3HeFT4o2e2cxavEJ7WeLL0bD54+cuRqK6qeryvCckdcLoGOYc4EH+xDci/IO3Ym\n9gKpCKpv76WSFO2l6DjMr3GQPm7gfrtatrTMu/3U4OWzyAn53Q5ZxsQI6wjblsT9\nNsoJTIrhNbuMmZI1DSLgt9LDQl+Me/E9zEG2pOQ6nR7KR6kR76SuZoxJQHIb8mnB\n8+aB2vZPXSa6xHkZz9v9NAPQACmf8Fa/CD9FzQGcUie1mHJVe5eiACKddyhmz8k=\n=Zc26\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 1622c7afc3d112c07fcf9a122b0a083fd495a3d4\nparent 51c07912ac047d076e15e730eda1f4634cfe144f\nauthor Andrew Clark <git@andrewclark.io> 1548958307 -0800\ncommitter GitHub <noreply@github.com> 1548958307 -0800\n\nRestrict effect return type to a function or nothing (#14119)\n\n* Restrict effect return type to a function or nothing\r\n\r\nWe already warn in dev if the wrong type is returned. This updates the\r\nFlow type.\r\n\r\n* Restrict return type further\r\n\r\n* Assume Effect hook returns either a function or undefined\r\n\r\n* Tweak warning message\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/66eb29374239945c3a512a88aa2480637f62e5cc",
+        "html_url": "https://github.com/facebook/react/commit/66eb29374239945c3a512a88aa2480637f62e5cc",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/66eb29374239945c3a512a88aa2480637f62e5cc/comments",
+        "author": {
+            "login": "acdlite",
+            "id": 3624098,
+            "node_id": "MDQ6VXNlcjM2MjQwOTg=",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/3624098?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/acdlite",
+            "html_url": "https://github.com/acdlite",
+            "followers_url": "https://api.github.com/users/acdlite/followers",
+            "following_url": "https://api.github.com/users/acdlite/following{/other_user}",
+            "gists_url": "https://api.github.com/users/acdlite/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/acdlite/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/acdlite/subscriptions",
+            "organizations_url": "https://api.github.com/users/acdlite/orgs",
+            "repos_url": "https://api.github.com/users/acdlite/repos",
+            "events_url": "https://api.github.com/users/acdlite/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/acdlite/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "51c07912ac047d076e15e730eda1f4634cfe144f",
+                "url": "https://api.github.com/repos/facebook/react/commits/51c07912ac047d076e15e730eda1f4634cfe144f",
+                "html_url": "https://github.com/facebook/react/commit/51c07912ac047d076e15e730eda1f4634cfe144f"
+            }
+        ]
+    },
+    {
+        "sha": "51c07912ac047d076e15e730eda1f4634cfe144f",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6NTFjMDc5MTJhYzA0N2QwNzZlMTVlNzMwZWRhMWY0NjM0Y2ZlMTQ0Zg==",
+        "commit": {
+            "author": {
+                "name": "Dan Abramov",
+                "email": "dan.abramov@gmail.com",
+                "date": "2019-01-31T13:56:48Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-01-31T13:56:48Z"
+            },
+            "message": "Warn when second argument is passed to useCallback (#14729)",
+            "tree": {
+                "sha": "d81f3826ceed655a403cefbe4220341b91daf9a2",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/d81f3826ceed655a403cefbe4220341b91daf9a2"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/51c07912ac047d076e15e730eda1f4634cfe144f",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcUv6gCRBK7hj4Ov3rIwAAdHIIAIviVDwLVEFhxIKaZxBAWCe6\nXsRge2aUNGzZ1VM6/ysCjvffDq8lOYicquEhJBDH8NW5ROBXJFvIHphE34FUgQST\nXYrV/K47bheIqzoprMCvB+yHd47rLTrsZC1KPWdltV2mqBlbuCUULQECEv8pSa5y\npZwM6SjkeRehHxzdAjwexfYOmkjSApTf0VKzJ19+uqeivhKDYsCvpdfMjL7aAVl3\nMtI5nmgV/LJmJTRRk7trct9MsclKPVXeZexkToKU43+I5tELE2IJeksT9Cx7hYC2\nd7QStUqhOwcar4OFttngREPxAYVGfhNq5u0GcFobB9PEeVl9+mtz2dnFoRc0R3A=\n=1Ri+\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree d81f3826ceed655a403cefbe4220341b91daf9a2\nparent 70d4075832cebc8bd3eb19f1089701096b483bd5\nauthor Dan Abramov <dan.abramov@gmail.com> 1548943008 +0000\ncommitter GitHub <noreply@github.com> 1548943008 +0000\n\nWarn when second argument is passed to useCallback (#14729)\n\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/51c07912ac047d076e15e730eda1f4634cfe144f",
+        "html_url": "https://github.com/facebook/react/commit/51c07912ac047d076e15e730eda1f4634cfe144f",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/51c07912ac047d076e15e730eda1f4634cfe144f/comments",
+        "author": {
+            "login": "gaearon",
+            "id": 810438,
+            "node_id": "MDQ6VXNlcjgxMDQzOA==",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/810438?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/gaearon",
+            "html_url": "https://github.com/gaearon",
+            "followers_url": "https://api.github.com/users/gaearon/followers",
+            "following_url": "https://api.github.com/users/gaearon/following{/other_user}",
+            "gists_url": "https://api.github.com/users/gaearon/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/gaearon/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/gaearon/subscriptions",
+            "organizations_url": "https://api.github.com/users/gaearon/orgs",
+            "repos_url": "https://api.github.com/users/gaearon/repos",
+            "events_url": "https://api.github.com/users/gaearon/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/gaearon/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "70d4075832cebc8bd3eb19f1089701096b483bd5",
+                "url": "https://api.github.com/repos/facebook/react/commits/70d4075832cebc8bd3eb19f1089701096b483bd5",
+                "html_url": "https://github.com/facebook/react/commit/70d4075832cebc8bd3eb19f1089701096b483bd5"
+            }
+        ]
+    },
+    {
+        "sha": "ba6477aa3cc0b189f4c9b805bf20edb2a2d94e91",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6YmE2NDc3YWEzY2MwYjE4OWY0YzliODA1YmYyMGVkYjJhMmQ5NGU5MQ==",
+        "commit": {
+            "author": {
+                "name": "Andrew Clark",
+                "email": "git@andrewclark.io",
+                "date": "2019-01-30T01:39:24Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-01-30T01:39:24Z"
+            },
+            "message": "Improve Reducer Hook's lazy init API (#14723)\n\n* Improve Reducer Hook's lazy init API\r\n\r\n* Use generic type for initilizer input\r\n\r\nStill requires an `any` cast in the case where `init` function is\r\nnot provided.",
+            "tree": {
+                "sha": "24d91ce35cdebb24c4dfe094ce4d3c181c1e20f6",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/24d91ce35cdebb24c4dfe094ce4d3c181c1e20f6"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/ba6477aa3cc0b189f4c9b805bf20edb2a2d94e91",
+            "comment_count": 0,
+            "verification": {
+                "verified": true,
+                "reason": "valid",
+                "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJcUQBMCRBK7hj4Ov3rIwAAdHIIAGMLkFvXXLbmLXoiH1qNrjsZ\n1uHxAJCOBEKJPkhZSozTzaUURGtczxsAhspYjAwzTspp2TFmoe/Jcj4vw0OEYd8R\nsWZKvoJ77+9ELy+pPR17lDDDpvHFcuHYO/NrPSJomZJm2HhIJPLCCZFOUQrcTOWm\nL4EZ2mxWT/xib07zZkEajOkuZcoE+4RU2G4Cu5OhvDMFCFbNh7+iyAxhkYO91zR2\ntIECOSWpo04cRxjZSTZB584bb/ikOYvk2J6qqNOesXPOzmTMU/iRgTtJzRFocS3B\nJAg5E9JD+QWYbNIqN6R0nU4gshWixnmmlhP2cePVE0yhEX5w8bOhXIlxBeZBuGE=\n=BtYT\n-----END PGP SIGNATURE-----\n",
+                "payload": "tree 24d91ce35cdebb24c4dfe094ce4d3c181c1e20f6\nparent cb1ff430e8c473a8a6bddd592106891251bbf5bf\nauthor Andrew Clark <git@andrewclark.io> 1548812364 -0800\ncommitter GitHub <noreply@github.com> 1548812364 -0800\n\nImprove Reducer Hook's lazy init API (#14723)\n\n* Improve Reducer Hook's lazy init API\r\n\r\n* Use generic type for initilizer input\r\n\r\nStill requires an `any` cast in the case where `init` function is\r\nnot provided.\r\n"
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/ba6477aa3cc0b189f4c9b805bf20edb2a2d94e91",
+        "html_url": "https://github.com/facebook/react/commit/ba6477aa3cc0b189f4c9b805bf20edb2a2d94e91",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/ba6477aa3cc0b189f4c9b805bf20edb2a2d94e91/comments",
+        "author": {
+            "login": "acdlite",
+            "id": 3624098,
+            "node_id": "MDQ6VXNlcjM2MjQwOTg=",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/3624098?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/acdlite",
+            "html_url": "https://github.com/acdlite",
+            "followers_url": "https://api.github.com/users/acdlite/followers",
+            "following_url": "https://api.github.com/users/acdlite/following{/other_user}",
+            "gists_url": "https://api.github.com/users/acdlite/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/acdlite/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/acdlite/subscriptions",
+            "organizations_url": "https://api.github.com/users/acdlite/orgs",
+            "repos_url": "https://api.github.com/users/acdlite/repos",
+            "events_url": "https://api.github.com/users/acdlite/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/acdlite/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+                "url": "https://api.github.com/repos/facebook/react/commits/cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+                "html_url": "https://github.com/facebook/react/commit/cb1ff430e8c473a8a6bddd592106891251bbf5bf"
+            }
+        ]
+    },
+    {
+        "sha": "cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+        "node_id": "MDY6Q29tbWl0MTAyNzAyNTA6Y2IxZmY0MzBlOGM0NzNhOGE2YmRkZDU5MjEwNjg5MTI1MWJiZjViZg==",
+        "commit": {
+            "author": {
+                "name": "Andrew Clark",
+                "email": "git@andrewclark.io",
+                "date": "2019-01-30T00:32:15Z"
+            },
+            "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "date": "2019-01-30T00:32:15Z"
+            },
+            "message": "Phased dispatcher (#14701)\n\n* Move DEV-only function right above where it's used\r\n\r\nI don't like looking at this top-level function #petty\r\n\r\n* Use different dispatchers for functions & classes\r\n\r\nClasses support readContext, but not any of the other dispatcher\r\nmethods. Function support all methods.\r\n\r\nThis is a more robust version of our previous strategy of checking\r\nwhether `currentlyRenderingFiber` is null.\r\n\r\nAs a next step, we can use a separate dispatcher for each phase of the\r\nrender cycle (mount versus update).\r\n\r\n* Use separate dispatchers for mount and update\r\n\r\n* Remove mount code from update path\r\n\r\nDeletes mount-specific code from the update path, since it should be\r\nunreachable. To continue supporting progressive enhancement (mounting\r\nnew hooks at the end of the list), we detect when there are no more\r\ncurrent hooks and switch back to the mount dispatcher. Progressive\r\nenhancement isn't officially supported yet, so it will continue to warn.\r\n\r\n* Factoring nits\r\n\r\n* Fix Flow\r\n\r\nHad to cheat more than I would like\r\n\r\n* More Flow nits\r\n\r\n* Switch back to using a special dispatcher for nested hooks in DEV\r\n\r\nIn order for this strategy to work, I had to revert progressive\r\nenhancement support (appending hooks to the end). It was previously a\r\nwarning but now it results in an error. We'll reconsider later.\r\n\r\n* Always pass args to updateState and updateReducer\r\n\r\nEven though the extra args are only used on mount, to ensure\r\ntype consistency.",
+            "tree": {
+                "sha": "24f51d4fa424a0de5b0feb10f787961ac4d39300",
+                "url": "https://api.github.com/repos/facebook/react/git/trees/24f51d4fa424a0de5b0feb10f787961ac4d39300"
+            },
+            "url": "https://api.github.com/repos/facebook/react/git/commits/cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+            "comment_count": 0,
+            "verification": {
+                "verified": false,
+                "reason": "unsigned",
+                "signature": null,
+                "payload": null
+            }
+        },
+        "url": "https://api.github.com/repos/facebook/react/commits/cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+        "html_url": "https://github.com/facebook/react/commit/cb1ff430e8c473a8a6bddd592106891251bbf5bf",
+        "comments_url": "https://api.github.com/repos/facebook/react/commits/cb1ff430e8c473a8a6bddd592106891251bbf5bf/comments",
+        "author": {
+            "login": "acdlite",
+            "id": 3624098,
+            "node_id": "MDQ6VXNlcjM2MjQwOTg=",
+            "avatar_url": "https://avatars0.githubusercontent.com/u/3624098?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/acdlite",
+            "html_url": "https://github.com/acdlite",
+            "followers_url": "https://api.github.com/users/acdlite/followers",
+            "following_url": "https://api.github.com/users/acdlite/following{/other_user}",
+            "gists_url": "https://api.github.com/users/acdlite/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/acdlite/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/acdlite/subscriptions",
+            "organizations_url": "https://api.github.com/users/acdlite/orgs",
+            "repos_url": "https://api.github.com/users/acdlite/repos",
+            "events_url": "https://api.github.com/users/acdlite/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/acdlite/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "committer": {
+            "login": "web-flow",
+            "id": 19864447,
+            "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+            "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/web-flow",
+            "html_url": "https://github.com/web-flow",
+            "followers_url": "https://api.github.com/users/web-flow/followers",
+            "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+            "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+            "organizations_url": "https://api.github.com/users/web-flow/orgs",
+            "repos_url": "https://api.github.com/users/web-flow/repos",
+            "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/web-flow/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "parents": [
+            {
+                "sha": "9d483dcfd6aad53ce082d249845436a56eb39248",
+                "url": "https://api.github.com/repos/facebook/react/commits/9d483dcfd6aad53ce082d249845436a56eb39248",
+                "html_url": "https://github.com/facebook/react/commit/9d483dcfd6aad53ce082d249845436a56eb39248"
+            }
+        ]
+    }
+]

@@ -249,6 +249,51 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                               "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
+
+        context "returns correct repo links" do
+          let(:dependency_name) { "react-dom" }
+          let(:dependency_version) { "16.12.0" }
+          let(:dependency_previous_version) { "16.8.6" }
+          let(:source) do
+            Dependabot::Source.new(
+              provider: "github",
+              repo: "facebook/react",
+              directory: "packages/react-dom"
+            )
+          end
+          let(:service_pack_url) do
+            "https://github.com/facebook/react.git/info/refs"\
+            "?service=git-upload-pack"
+          end
+          let(:upload_pack_fixture) { "react" }
+
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/facebook/react/commits?"\
+              "path=packages/react-dom&sha=v16.8.6"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "commits-react-16.8.6.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+            stub_request(
+              :get,
+              "https://api.github.com/repos/facebook/react/commits?"\
+              "path=packages/react-dom&sha=v16.12.0"
+            ).with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "commits-react-16.12.0.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+            allow(builder).to receive(:fetch_dependency_tags).and_call_original
+          end
+
+          pending it "has the right commit link" do
+          end
+        end
       end
     end
 
