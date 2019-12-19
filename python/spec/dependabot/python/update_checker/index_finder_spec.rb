@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
-  let(:pypi_response) { fixture("pypi_simple_response.html") }
+  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
 
   let(:pipfile) do
     Dependabot::DependencyFile.new(
