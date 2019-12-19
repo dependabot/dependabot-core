@@ -1,3 +1,8 @@
+## v0.115.1, 19 December 2019
+
+- Python: Fix dep name extras bug in metadafinder
+- Update rubocop requirement from ~> 0.77.0 to ~> 0.78.0 in /common
+
 ## v0.115.0, 18 December 2019
 
 - Bump semver from 7.1.0 to 7.1.1 in /npm_and_yarn/helpers
