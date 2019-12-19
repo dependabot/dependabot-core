@@ -65,7 +65,7 @@ module Dependabot
 
               until scan.eos?
                 line = scan.scan_until(mention_regex) ||
-                        scan.scan_until(EOS_REGEX)
+                       scan.scan_until(EOS_REGEX)
                 mention = line.match(mention_regex)&.to_s
                 text_node = CommonMarker::Node.new(:text)
 
@@ -75,7 +75,7 @@ module Dependabot
                   link_node = CommonMarker::Node.new(:link)
                   text_node = CommonMarker::Node.new(:text)
                   link_node.url = "https://github.com/#{mention.tr('@', '')}"
-                  text_node.string_content = "#{mention}"
+                  text_node.string_content = mention.to_s
                   link_node.append_child(text_node)
                   nodes << link_node
                 else
