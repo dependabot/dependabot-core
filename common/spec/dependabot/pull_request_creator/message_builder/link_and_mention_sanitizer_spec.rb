@@ -62,6 +62,17 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
       end
 
+      context "when a mention is already a link" do
+        let(:text) { "[*@hmarr*](https://github.com/hmarr) @feelepxyz" }
+
+        it "sanitizes the mention" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p><a href=\"https://github.com/hmarr\"><em>@hmarr</em></a> "\
+            "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
+          )
+        end
+      end
+
       context "that appears in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
@@ -142,10 +153,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
             "```@not-a-mention``` ````"
           end
 
-          pending "sanitizes the text without touching the code fence" do
+          it "sanitizes the text without touching the code fence" do
             expect(sanitize_links_and_mentions).to eq(
-              "Take a look at this code: ```` @not-a-mention "\
-              "```@not-a-mention``` ````"
+              "<p>Take a look at this code: <code>@not-a-mention "\
+              "```@not-a-mention```</code></p>\n"
             )
           end
 
@@ -155,11 +166,11 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
               "```@not-a-mention``` ```` This is a @mention!"
             end
 
-            pending "sanitizes the text without touching the code fence" do
+            it "sanitizes the text without touching the code fence" do
               expect(sanitize_links_and_mentions).to eq(
-                "Take a look at this code: ```` @not-a-mention "\
-                "```@not-a-mention``` ```` "\
-                "This is a [@&#8203;mention](https://github.com/mention)!"
+                "<p>Take a look at this code: <code>@not-a-mention "\
+                "```@not-a-mention```</code> This is a "\
+                "<a href=\"https://github.com/mention\">@mention</a>!</p>\n"
               )
             end
           end

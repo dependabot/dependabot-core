@@ -14,19 +14,8 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
         # rubocop:disable Metrics/LineLength
-        # Context:
-        # - https://github.github.com/gfm/#fenced-code-block (``` or ~~~)
-        #   (?<=\n|^)         Positive look-behind to ensure we start at a line start
-        #   (?>`{3,}|~{3,})   Atomic group marking the beginning of the block (3 or more chars)
-        #   (?>\k<fenceopen>) Atomic group marking the end of the code block (same length as opening)
-        # - https://github.github.com/gfm/#code-span
-        #   (?<codespanopen>`+)  Capturing group marking the beginning of the span (1 or more chars)
-        #   (?![^`]*?\n{2,})     Negative look-ahead to avoid empty lines inside code span
-        #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
-        #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
-        # rubocop:enable Metrics/LineLength
-        CODEBLOCK_REGEX = /```|~~~/.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
         # We rely on GitHub to do the HTML sanitization
@@ -56,17 +45,16 @@ module Dependabot
         private
 
         def sanitize_mentions(doc)
-          mention_regex = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
-
           doc.walk do |node|
-            if node.type == :text && node.string_content.match?(mention_regex)
+            if !parent_node_link?(node) && node.type == :text &&
+               node.string_content.match?(MENTION_REGEX)
               nodes = []
               scan = StringScanner.new(node.string_content)
 
               until scan.eos?
-                line = scan.scan_until(mention_regex) ||
+                line = scan.scan_until(MENTION_REGEX) ||
                        scan.scan_until(EOS_REGEX)
-                mention = line.match(mention_regex)&.to_s
+                mention = line.match(MENTION_REGEX)&.to_s
                 text_node = CommonMarker::Node.new(:text)
 
                 if mention && !mention.end_with?("/")
@@ -110,6 +98,10 @@ module Dependabot
               )
             end
           end
+        end
+
+        def parent_node_link?(node)
+          node.type == :link || node.parent && parent_node_link?(node.parent)
         end
       end
     end
