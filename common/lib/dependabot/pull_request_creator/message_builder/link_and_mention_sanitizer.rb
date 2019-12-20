@@ -14,7 +14,7 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
         # We rely on GitHub to do the HTML sanitization
@@ -47,29 +47,7 @@ module Dependabot
           doc.walk do |node|
             if !parent_node_link?(node) && node.type == :text &&
                node.string_content.match?(MENTION_REGEX)
-              nodes = []
-              scan = StringScanner.new(node.string_content)
-
-              until scan.eos?
-                line = scan.scan_until(MENTION_REGEX) ||
-                       scan.scan_until(EOS_REGEX)
-                mention = line.match(MENTION_REGEX)&.to_s
-                text_node = CommonMarker::Node.new(:text)
-
-                if mention && !mention.end_with?("/")
-                  text_node.string_content = scan.pre_match
-                  nodes << text_node
-                  link_node = CommonMarker::Node.new(:link)
-                  text_node = CommonMarker::Node.new(:text)
-                  link_node.url = "https://github.com/#{mention.tr('@', '')}"
-                  text_node.string_content = mention.to_s
-                  link_node.append_child(text_node)
-                  nodes << link_node
-                else
-                  text_node.string_content = line
-                  nodes << text_node
-                end
-              end
+              nodes = build_mention_nodes(node.string_content)
 
               nodes.each do |n|
                 node.insert_before(n)
@@ -97,6 +75,40 @@ module Dependabot
               )
             end
           end
+        end
+
+        def build_mention_nodes(text)
+          nodes = []
+          scan = StringScanner.new(text)
+
+          until scan.eos?
+            line = scan.scan_until(MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            mention = line.match(MENTION_REGEX)&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention && !mention.end_with?("/")
+              text_node.string_content = scan.pre_match
+              nodes << text_node
+              nodes << create_link_node(
+                "https://github.com/#{mention.tr('@', '')}", mention.to_s
+              )
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def create_link_node(url, text)
+          link_node = CommonMarker::Node.new(:link)
+          text_node = CommonMarker::Node.new(:text)
+          link_node.url = url
+          text_node.string_content = text
+          link_node.append_child(text_node)
+          link_node
         end
 
         def parent_node_link?(node)
