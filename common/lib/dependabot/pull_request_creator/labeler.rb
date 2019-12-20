@@ -2,8 +2,6 @@
 
 require "octokit"
 require "dependabot/pull_request_creator"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Labeler
@@ -89,7 +87,6 @@ module Dependabot
         @automerge_candidate
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def update_type
         return unless dependencies.any?(&:previous_version)
@@ -112,7 +109,7 @@ module Dependabot
         when 3 then "patch"
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def version(dep)
@@ -394,4 +391,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

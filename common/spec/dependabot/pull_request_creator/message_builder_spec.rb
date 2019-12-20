@@ -67,8 +67,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
-
-  # rubocop:disable Metrics/MethodLength
   def commits_details(base:, head:)
     "<details>\n"\
     "<summary>Commits</summary>\n"\
@@ -105,7 +103,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "</ul>\n"\
     "</details>\n"
   end
-  # rubocop:enable Metrics/MethodLength
 
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }

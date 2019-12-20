@@ -17,9 +17,7 @@ module Dependabot
         @prefix        = prefix
       end
 
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
       def new_branch_name
         @name ||=
           begin
@@ -50,9 +48,8 @@ module Dependabot
         # Some users need branch names without slashes
         branch_name.gsub("/", separator)
       end
-      # rubocop:enable Metrics/AbcSize
+
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       private
 

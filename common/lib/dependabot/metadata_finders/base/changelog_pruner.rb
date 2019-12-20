@@ -22,7 +22,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def pruned_text
           changelog_lines = changelog_text.split("\n")
 
@@ -53,7 +52,6 @@ module Dependabot
           changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         private
 
@@ -70,7 +68,6 @@ module Dependabot
           changelog_line_for_version(new_version)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog_line_for_version(version)
           raise "No changelog text" unless changelog_text
@@ -93,7 +90,7 @@ module Dependabot
             false
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_contains_relevant_versions?

@@ -154,7 +154,6 @@ module Dependabot
             ).prepared_dependency_files
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def dependency_from_definition(unlock_subdependencies: true)
           dependencies_to_unlock = [dependency.name]
@@ -181,7 +180,7 @@ module Dependabot
           # try again but without unlocking any other sub-dependencies
           dependency_from_definition(unlock_subdependencies: false)
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def unlock_yanked_gem(dependencies_to_unlock, error)

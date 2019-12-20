@@ -56,7 +56,6 @@ module Dependabot
         Gem::Version.new(release_str).<=>(Gem::Version.new(other_release_str))
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def compare_prerelease_part(other)
         release_str = @version_string.split("-").first&.split("+")&.first || ""
@@ -80,7 +79,7 @@ module Dependabot
 
         prerelease_string.<=>(other_prerelease_string)
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def compare_build_info(other)

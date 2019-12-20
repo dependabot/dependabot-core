@@ -14,7 +14,7 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-        # rubocop:disable Metrics/LineLength
+        # rubocop:disable Layout/LineLength
         # Context:
         # - https://github.github.com/gfm/#fenced-code-block (``` or ~~~)
         #   (?<=\n|^)         Positive look-behind to ensure we start at a line start
@@ -25,7 +25,7 @@ module Dependabot
         #   (?![^`]*?\n{2,})     Negative look-ahead to avoid empty lines inside code span
         #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
         #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
-        # rubocop:enable Metrics/LineLength
+        # rubocop:enable Layout/LineLength
         CODEBLOCK_REGEX = /```|~~~/.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
