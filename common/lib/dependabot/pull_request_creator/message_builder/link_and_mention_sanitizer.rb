@@ -15,7 +15,6 @@ module Dependabot
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
-        # rubocop:disable Metrics/LineLength
         # End of string
         EOS_REGEX = /\z/.freeze
         # We rely on GitHub to do the HTML sanitization

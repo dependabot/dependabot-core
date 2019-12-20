@@ -136,8 +136,6 @@ module Dependabot
       end
 
       GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
-
-      # rubocop:disable Metrics/AbcSize
       def handle_parser_error(path, stderr)
         case stderr
         when /go: .*: unknown revision/
@@ -157,7 +155,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
         end
       end
-      # rubocop:enable Metrics/AbcSize
 
       def rev_identifier?(dep)
         dep["Version"]&.match?(GIT_VERSION_REGEX)

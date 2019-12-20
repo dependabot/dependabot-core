@@ -5,8 +5,6 @@ require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -389,7 +387,6 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
 
 Dependabot::UpdateCheckers.
   register("bundler", Dependabot::Bundler::UpdateChecker)

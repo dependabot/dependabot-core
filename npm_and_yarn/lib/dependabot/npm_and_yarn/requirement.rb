@@ -57,7 +57,6 @@ module Dependabot
       private
 
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
       def convert_js_constraint_to_ruby_constraint(req_string)
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
@@ -74,7 +73,6 @@ module Dependabot
         end
       end
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?[\s=]*/, "")

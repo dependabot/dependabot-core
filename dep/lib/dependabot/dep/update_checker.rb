@@ -93,7 +93,6 @@ module Dependabot
         dependency_files.none? { |f| f.type == "package_main" }
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def latest_resolvable_version_for_git_dependency
         return latest_version if modules_dependency?
@@ -127,7 +126,7 @@ module Dependabot
         # version then there's nothing we can do.
         nil
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def version_from_tag(tag)
