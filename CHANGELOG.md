@@ -1,3 +1,7 @@
+## v0.115.3, 20 December 2019
+
+- Handle links with breaks in the link sanitizer
+
 ## v0.115.2, 20 December 2019
 
 - Update gitlab requirement from = 4.12 to = 4.13.1 in /common
