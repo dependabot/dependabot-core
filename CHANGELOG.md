@@ -1,3 +1,8 @@
+## v0.115.2, 20 December 2019
+
+- Update gitlab requirement from = 4.12 to = 4.13.1 in /common
+- Refactor sanitize_mentions method to use commonmarker
+
 ## v0.115.1, 19 December 2019
 
 - Python: Fix dep name extras bug in metadafinder
