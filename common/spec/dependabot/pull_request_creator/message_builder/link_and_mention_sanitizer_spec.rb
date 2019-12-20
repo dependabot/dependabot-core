@@ -177,12 +177,13 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         end
 
         context "with mixed syntax code blocks" do
-          let(:text) { "```@command ```\n~~~\n @test~~~ @feelepxyz" }
+          let(:text) { "```@command ```\n~~~\n@test\n~~~\n@feelepxyz" }
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command </code></p>\n<pre><code> @test~~~ "\
-              "@feelepxyz\n</code></pre>\n"
+              "<p><code>@command </code></p>\n<pre><code>@test\n"\
+              "</code></pre>\n"\
+              "<p><a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
             )
           end
         end
@@ -190,9 +191,9 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         context "with a dangling code block" do
           let(:text) { "@command ``` @feelepxyz" }
 
-          it "sanitizes the mention" do
+          it "sanitizes the mentions" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><a href=\"https://github.com/command\">@command</a>@command "\
+              "<p><a href=\"https://github.com/command\">@command</a> "\
               "``` <a href=\"https://github.com/feelepxyz\">"\
               "@feelepxyz</a></p>\n"
             )

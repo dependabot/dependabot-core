@@ -84,11 +84,12 @@ module Dependabot
           until scan.eos?
             line = scan.scan_until(MENTION_REGEX) ||
                    scan.scan_until(EOS_REGEX)
-            mention = line.match(MENTION_REGEX)&.to_s
+            line_match = line.match(MENTION_REGEX)
+            mention = line_match&.to_s
             text_node = CommonMarker::Node.new(:text)
 
             if mention && !mention.end_with?("/")
-              text_node.string_content = scan.pre_match
+              text_node.string_content = line_match.pre_match
               nodes << text_node
               nodes << create_link_node(
                 "https://github.com/#{mention.tr('@', '')}", mention.to_s
