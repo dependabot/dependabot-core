@@ -351,7 +351,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/MethodLength
       def _fetch_file_content_from_github(path, repo, commit)
         tmp = github_client.contents(repo, path: path, ref: commit)
 
@@ -388,7 +387,6 @@ module Dependabot
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/MethodLength
 
       def default_branch_for_repo
         @default_branch_for_repo ||= client_for_provider.

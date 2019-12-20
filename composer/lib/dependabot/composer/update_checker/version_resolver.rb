@@ -8,8 +8,6 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Composer
     class UpdateChecker
@@ -166,7 +164,6 @@ module Dependabot
           JSON.dump(json)
         end
 
-        # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_requirement_string
           lower_bound =
@@ -203,7 +200,7 @@ module Dependabot
 
           lower_bound + ", <= #{latest_allowable_version}"
         end
-        # rubocop:enable Metrics/AbcSize
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -335,7 +332,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
@@ -374,7 +370,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/MethodLength
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def version_for_reqs(requirements)
@@ -483,4 +479,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

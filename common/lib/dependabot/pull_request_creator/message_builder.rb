@@ -72,7 +72,6 @@ module Dependabot
           end
       end
 
-      # rubocop:disable Metrics/AbcSize
       def application_pr_name
         pr_name = "bump "
         pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
@@ -96,7 +95,6 @@ module Dependabot
             "#{names[0..-2].join(', ')} and #{names[-1]}"
           end
       end
-      # rubocop:enable Metrics/AbcSize
 
       def pr_name_prefix
         pr_name_prefixer.pr_name_prefix
@@ -166,7 +164,6 @@ module Dependabot
         msg + "to permit the latest version."
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def version_commit_message_intro
         if dependencies.count > 1 && updating_a_property?
@@ -196,7 +193,7 @@ module Dependabot
 
         msg
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def multidependency_property_intro

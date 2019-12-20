@@ -58,7 +58,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/MethodLength
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           if @latest_resolvable_version_string.key?(requirement)
@@ -97,12 +96,9 @@ module Dependabot
               handle_pip_compile_errors(e)
             end
         end
-        # rubocop:enable Metrics/MethodLength
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable
@@ -146,10 +142,9 @@ module Dependabot
 
           raise
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/MethodLength
 
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a

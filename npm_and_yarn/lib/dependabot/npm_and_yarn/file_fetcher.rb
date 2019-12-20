@@ -7,7 +7,6 @@ require "dependabot/npm_and_yarn/file_parser"
 
 module Dependabot
   module NpmAndYarn
-    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -32,7 +31,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def fetch_files
         fetched_files = []
@@ -49,7 +47,7 @@ module Dependabot
 
         fetched_files.uniq
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def package_json
@@ -373,7 +371,6 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 

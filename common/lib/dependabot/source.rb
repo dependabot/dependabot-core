@@ -74,7 +74,6 @@ module Dependabot
       "https://" + hostname + "/" + repo
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity
     def url_with_directory
       return url if [nil, ".", "/"].include?(directory)
 
@@ -94,7 +93,6 @@ module Dependabot
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
 
     def organization
       repo.split("/").first

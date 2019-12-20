@@ -77,7 +77,6 @@ module Dependabot
           resolve_latest_previous_version(dependency, updated_version)
         end
 
-        # rubocop:disable Metrics/MethodLength
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           if part_of_tightly_locked_monorepo?
@@ -114,7 +113,6 @@ module Dependabot
           end
           updates.uniq
         end
-        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -302,7 +300,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def satisfying_versions
           latest_version_finder(dependency).
@@ -327,7 +324,7 @@ module Dependabot
             end.
             map(&:first)
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def satisfies_peer_reqs_on_dep?(version)

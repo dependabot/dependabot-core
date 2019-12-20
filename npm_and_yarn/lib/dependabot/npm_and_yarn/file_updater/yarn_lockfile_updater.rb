@@ -99,7 +99,6 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def run_yarn_updater(path:, lockfile_name:,
                              top_level_dependency_updates:)
@@ -131,7 +130,7 @@ module Dependabot
 
           sleep(rand(3.0..10.0)) && retry
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
