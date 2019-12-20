@@ -55,7 +55,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       context "that is in square brackets" do
         let(:text) { "[@hmarr]" }
 
-        it "sanitizes the text with zero width space" do
+        it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>[<a href=\"https://github.com/hmarr\">@hmarr</a>]</p>\n"
           )
@@ -269,6 +269,19 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         is_expected.to eq(
           "<p><a href=\"https://github-redirect.com/rust-num/num-traits/"\
           "pull/144\">Updated the <code>libm</code> dependency to 0.2</a></p>\n"
+        )
+      end
+    end
+
+    context "when the link has softbreaks" do
+      let(:text) do
+        "[\n#144\n](https://github.com/rust-num/num-traits/pull/144)"
+      end
+
+      it do
+        is_expected.to eq(
+          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/"\
+          "pull/144\">\n#144\n</a></p>\n"
         )
       end
     end

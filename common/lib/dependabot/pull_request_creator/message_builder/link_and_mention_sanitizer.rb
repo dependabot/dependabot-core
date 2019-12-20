@@ -62,9 +62,12 @@ module Dependabot
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
               node.each do |subnode|
-                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
-                next unless subnode.type == :text && last_match
+                unless subnode.type == :text &&
+                       subnode.string_content.match?(GITHUB_REF_REGEX)
+                  next
+                end
 
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
                 number = last_match.named_captures.fetch("number")
                 repo = last_match.named_captures.fetch("repo")
                 subnode.string_content = "#{repo}##{number}"
