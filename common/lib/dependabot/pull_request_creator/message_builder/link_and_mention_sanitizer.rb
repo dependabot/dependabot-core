@@ -14,21 +14,16 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-        # rubocop:disable Layout/LineLength
-        # Context:
-        # - https://github.github.com/gfm/#fenced-code-block (``` or ~~~)
-        #   (?<=\n|^)         Positive look-behind to ensure we start at a line start
-        #   (?>`{3,}|~{3,})   Atomic group marking the beginning of the block (3 or more chars)
-        #   (?>\k<fenceopen>) Atomic group marking the end of the code block (same length as opening)
-        # - https://github.github.com/gfm/#code-span
-        #   (?<codespanopen>`+)  Capturing group marking the beginning of the span (1 or more chars)
-        #   (?![^`]*?\n{2,})     Negative look-ahead to avoid empty lines inside code span
-        #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
-        #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
-        # rubocop:enable Layout/LineLength
-        CODEBLOCK_REGEX = /```|~~~/.freeze
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
+        # We rely on GitHub to do the HTML sanitization
+        COMMONMARKER_OPTIONS = %i(
+          UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING
+        ).freeze
+        COMMONMARKER_EXTENSIONS = %i(
+          table tasklist strikethrough autolink tagfilter
+        ).freeze
 
         attr_reader :github_redirection_service
 
@@ -37,49 +32,33 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text:)
-          # We don't want to sanitize any links or mentions that are contained
-          # within code blocks, so we split the text on "```" or "~~~"
-          lines = []
-          scan = StringScanner.new(text)
-          until scan.eos?
-            line = scan.scan_until(CODEBLOCK_REGEX) ||
-                   scan.scan_until(EOS_REGEX)
-            delimiter = line.match(CODEBLOCK_REGEX)&.to_s
-            unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
-              line = sanitize_mentions(line)
-            end
-            lines << line
-          end
+          doc = CommonMarker.render_doc(
+            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
+          )
 
-          sanitize_links(lines.join)
+          sanitize_mentions(doc)
+          sanitize_links(doc)
+          doc.to_html(COMMONMARKER_OPTIONS, COMMONMARKER_EXTENSIONS)
         end
 
         private
 
-        def sanitize_mentions(text)
-          text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|
-            next mention if mention.end_with?("/")
+        def sanitize_mentions(doc)
+          doc.walk do |node|
+            if !parent_node_link?(node) && node.type == :text &&
+               node.string_content.match?(MENTION_REGEX)
+              nodes = build_mention_nodes(node.string_content)
 
-            last_match = Regexp.last_match
-            sanitized_mention = mention.gsub("@", "@&#8203;")
+              nodes.each do |n|
+                node.insert_before(n)
+              end
 
-            if last_match.pre_match.chars.last == "[" &&
-               last_match.post_match.chars.first == "]"
-              sanitized_mention
-            else
-              "[#{sanitized_mention}]"\
-              "(https://github.com/#{mention.tr('@', '')})"
+              node.delete
             end
           end
         end
 
-        def sanitize_links(text)
-          # We rely on GitHub to do the HTML sanitization
-          options = %i(UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING)
-          extensions = %i(table tasklist strikethrough autolink tagfilter)
-
-          doc = CommonMarker.render_doc(text, :LIBERAL_HTML_TAG, extensions)
-
+        def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
               node.each do |subnode|
@@ -96,8 +75,45 @@ module Dependabot
               )
             end
           end
+        end
 
-          doc.to_html(options, extensions)
+        def build_mention_nodes(text)
+          nodes = []
+          scan = StringScanner.new(text)
+
+          until scan.eos?
+            line = scan.scan_until(MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention && !mention.end_with?("/")
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes << create_link_node(
+                "https://github.com/#{mention.tr('@', '')}", mention.to_s
+              )
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def create_link_node(url, text)
+          link_node = CommonMarker::Node.new(:link)
+          text_node = CommonMarker::Node.new(:text)
+          link_node.url = url
+          text_node.string_content = text
+          link_node.append_child(text_node)
+          link_node
+        end
+
+        def parent_node_link?(node)
+          node.type == :link || node.parent && parent_node_link?(node.parent)
         end
       end
     end

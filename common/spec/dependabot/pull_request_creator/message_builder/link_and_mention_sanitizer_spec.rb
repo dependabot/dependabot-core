@@ -22,7 +22,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions).
           to eq("<p>Great work <a href=\"https://github.com/greysteil\">"\
-            "@​greysteil</a>!</p>\n")
+            "@greysteil</a>!</p>\n")
       end
 
       context "that includes a dash" do
@@ -31,7 +31,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>Great work <a href=\"https://github.com/greysteil-work\">"\
-            "@​greysteil-work</a>!</p>\n"
+            "@greysteil-work</a>!</p>\n"
           )
         end
       end
@@ -47,7 +47,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it "sanitizes the text" do
           expect(sanitize_links_and_mentions).to eq(
             "<p>The team (by <a href=\"https://github.com/greysteil\">"\
-            "@​greysteil</a>) etc.</p>\n"
+            "@greysteil</a>) etc.</p>\n"
           )
         end
       end
@@ -57,7 +57,18 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the text with zero width space" do
           expect(sanitize_links_and_mentions).to eq(
-            "<p>[@​hmarr]</p>\n"
+            "<p>[<a href=\"https://github.com/hmarr\">@hmarr</a>]</p>\n"
+          )
+        end
+      end
+
+      context "when a mention is already a link" do
+        let(:text) { "[*@hmarr*](https://github.com/hmarr) @feelepxyz" }
+
+        it "sanitizes the mention" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p><a href=\"https://github.com/hmarr\"><em>@hmarr</em></a> "\
+            "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
           )
         end
       end
@@ -76,7 +87,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         let(:text) { fixture("changelogs", "sentry.md") }
         it do
           is_expected.to include(
-            "<a href=\"https://github.com/halkeye\">@​halkeye</a>"
+            "<a href=\"https://github.com/halkeye\">@halkeye</a>"
           )
         end
       end
@@ -102,9 +113,9 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
           it "sanitizes the text" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><a href=\"https://github.com/greysteil\">@​greysteil</a> "\
+              "<p><a href=\"https://github.com/greysteil\">@greysteil</a> "\
               "wrote this:</p>\n<pre><code> @model ||= 123\n</code></pre>\n<p>"\
-              "Review by <a href=\"https://github.com/hmarr\">@​hmarr</a>!"\
+              "Review by <a href=\"https://github.com/hmarr\">@hmarr</a>!"\
               "</p>\n"
             )
           end
@@ -118,9 +129,9 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
               "<p><code>@command</code>\nThanks to "\
-              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a>"\
+              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a>"\
               "<code>@other</code> <a href=\"https://github.com/escape\">"\
-              "@​escape</a></p>\n"
+              "@escape</a></p>\n"
             )
           end
         end
@@ -131,7 +142,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
               "<p><code>@command </code>\n<code> @test</code> "\
-              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a></p>\n"
+              "<a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
             )
           end
         end
@@ -142,10 +153,10 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
             "```@not-a-mention``` ````"
           end
 
-          pending "sanitizes the text without touching the code fence" do
+          it "sanitizes the text without touching the code fence" do
             expect(sanitize_links_and_mentions).to eq(
-              "Take a look at this code: ```` @not-a-mention "\
-              "```@not-a-mention``` ````"
+              "<p>Take a look at this code: <code>@not-a-mention "\
+              "```@not-a-mention```</code></p>\n"
             )
           end
 
@@ -155,24 +166,24 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
               "```@not-a-mention``` ```` This is a @mention!"
             end
 
-            pending "sanitizes the text without touching the code fence" do
+            it "sanitizes the text without touching the code fence" do
               expect(sanitize_links_and_mentions).to eq(
-                "Take a look at this code: ```` @not-a-mention "\
-                "```@not-a-mention``` ```` "\
-                "This is a [@&#8203;mention](https://github.com/mention)!"
+                "<p>Take a look at this code: <code>@not-a-mention "\
+                "```@not-a-mention```</code> This is a "\
+                "<a href=\"https://github.com/mention\">@mention</a>!</p>\n"
               )
             end
           end
         end
 
         context "with mixed syntax code blocks" do
-          let(:text) { "```@command ```\n~~~\n @test~~~ @feelepxyz" }
+          let(:text) { "```@command ```\n~~~\n@test\n~~~\n@feelepxyz" }
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command </code></p>\n<pre><code> @test~~~ "\
-              "[@&amp;#8203;feelepxyz](https://github.com/feelepxyz)\n</code>"\
-              "</pre>\n"
+              "<p><code>@command </code></p>\n<pre><code>@test\n"\
+              "</code></pre>\n"\
+              "<p><a href=\"https://github.com/feelepxyz\">@feelepxyz</a></p>\n"
             )
           end
         end
@@ -180,10 +191,11 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         context "with a dangling code block" do
           let(:text) { "@command ``` @feelepxyz" }
 
-          it "sanitizes the mention" do
+          it "sanitizes the mentions" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><a href=\"https://github.com/command\">@​command</a> ``` "\
-              "<a href=\"https://github.com/feelepxyz\">@​feelepxyz</a></p>\n"
+              "<p><a href=\"https://github.com/command\">@command</a> "\
+              "``` <a href=\"https://github.com/feelepxyz\">"\
+              "@feelepxyz</a></p>\n"
             )
           end
         end
