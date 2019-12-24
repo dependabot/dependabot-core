@@ -41,12 +41,11 @@ module Dependabot
         fetched_files << yarn_lock if yarn_lock
         fetched_files << shrinkwrap if shrinkwrap
         fetched_files << lerna_json if lerna_json
-        fetched_files << rush_json if rush_json
         fetched_files << npmrc if npmrc
         fetched_files << yarnrc if yarnrc
+        fetched_files += rush_files if rush_files
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
-        fetched_files += rush_packages
         fetched_files += path_dependencies(fetched_files)
 
         fetched_files.uniq
@@ -113,12 +112,26 @@ module Dependabot
                         tap { |f| f.support_file = true }
       end
 
+      def rush_files
+        @rush_files ||= [rush_json, *rush_configs, *rush_packages]
+      end
+
       def rush_json
         @rush_json ||= fetch_file_if_present("rush.json")&.
                         tap { |f| f.support_file = true }
-        puts "GGB: RushJson #{@rush_json}"
-        @rush_json
       end
+
+      def rush_configs
+        @rush_configs ||= fetch_rush_configs
+      end
+
+      def fetch_rush_configs
+        [
+          fetch_file_if_present("common/config/rush/shrinkwrap.yaml"),
+          fetch_file_if_present("common/config/rush/pnpmfile.js")
+        ].compact        
+      end
+
 
       def workspace_package_jsons
         @workspace_package_jsons ||= fetch_workspace_package_jsons
@@ -272,17 +285,14 @@ module Dependabot
       end
 
       def fetch_rush_packages
-        puts "Trying Fetching rush packages"
         return [] unless parsed_rush_json["projects"]
 
         dependency_files = []
-
         workspace_paths(parsed_rush_json["projects"]).each do |workspace|
           dependency_files += fetch_rush_packages_from_path(workspace["projectFolder"])
         end
       
-        # dependency_files 
-        dependency_files # return empty for now.
+        dependency_files
       end
 
       def fetch_lerna_packages_from_path(path, nested = false)
