@@ -10,11 +10,14 @@
       "request": "launch",
       "program": "${workspaceRoot}/bin/dry-run.rb",
       "cwd": "${workspaceRoot}",
-      "useBundler": true,
+      "useBundler": false,
       "args": [
         "${input:package_manager}",
         "${input:repository}"
-      ]
+      ],
+      "env": {
+        "LOCAL_GITHUB_ACCESS_TOKEN":"8803e6e90fe0e2961243453acc3efb9a9300cdd1"
+      }
     }
   ],
   "inputs": [
@@ -39,13 +42,13 @@
         "submodules",
         "terraform"
       ],
-      "default": "go_modules"
+      "default": "npm_and_yarn"
     },
     {
       "type": "promptString",
       "id": "repository",
       "description": "Enter the name of the repository to scan.",
-      "default": "zonedb/zonedb"
+      "default": "GiriB/rush-example"
     }
   ]
 }

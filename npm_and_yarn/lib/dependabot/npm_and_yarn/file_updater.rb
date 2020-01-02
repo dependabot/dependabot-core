@@ -11,6 +11,7 @@ module Dependabot
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
+      require_relative "file_updater/pnpm_lockfile_updater"
 
       class NoChangeError < StandardError
         def initialize(message:, error_context:)
@@ -28,7 +29,8 @@ module Dependabot
           /^package\.json$/,
           /^package-lock\.json$/,
           /^npm-shrinkwrap\.json$/,
-          /^yarn\.lock$/
+          /^yarn\.lock$/,
+          /^shrinkwrap\.yaml$/
         ]
       end
 
@@ -163,7 +165,50 @@ module Dependabot
           )
         end
 
+        # Currently adding support for only pnpm with rush.
+        # If the pacakge manager is yarn/npm then this needs to updated to 
+        # handle those as well. Also, note that yarn/npm lock files would have
+        # been modified above too! 
+        if rush_config_present?
+
+          # pnpn_shrinkwraps.each do |shrinkwrap|
+          #   next unless pnpm_shrinwrap_changes?(shrinkwrap)
+
+          # fetch the whrinkwrap file 
+          pnpm_shrinkwrap_file = dependency_files.find {|f| f.name == "common/config/rush/shrinkwrap.yaml"}
+          if pnpm_shrinkwrap_file
+            updated_files << updated_file(
+              file: pnpm_shrinkwrap_file,
+              content: updated_pnpm_shrinkwrap_content(pnpm_shrinkwrap_file)
+            )
+          end
+        end
+
         updated_files
+      end
+
+      def rush_config_present?
+        # filtered_dependency_files.each do |f|
+        dependency_files.each do |f|
+          puts "GGB: f name is #{f.name}"
+        end
+
+        @rush_config_present ||= dependency_files.one? {|f| f.name.end_with?("rush.json")}
+      end
+
+      def updated_pnpm_shrinkwrap_content(pnpm_shrinkwrap)
+        @updated_pnpm_lock_content ||= {}
+        @updated_pnpm_lock_content[pnpm_shrinkwrap.name] ||=
+          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_shrinkwrap)
+      end
+
+      def pnpm_lockfile_updater
+        @pnpm_lockfile_updater ||= 
+          PnpmLockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
       end
 
       def updated_yarn_lock_content(yarn_lock)

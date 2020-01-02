@@ -16,6 +16,8 @@ module Dependabot
           dependency_set += yarn_lock_dependencies if yarn_locks.any?
           dependency_set += package_lock_dependencies if package_locks.any?
           dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
+          # dependency_set += pnpm_shrinkwrap_dependencies
+          # TODO: Add dependecy for rush/pnpm lock file.
           dependency_set.dependencies
         end
 
