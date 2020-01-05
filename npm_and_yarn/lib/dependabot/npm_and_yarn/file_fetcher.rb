@@ -326,7 +326,7 @@ module Dependabot
       end
 
       def fetch_rush_packages_from_path(path, nested = false)
-        puts "GGB: Path: #{path}"
+        puts "GGB: Fetching rush package Path: #{path}"
         
         dependency_files = []
         package_json_path = File.join(path, "package.json")
