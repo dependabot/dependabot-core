@@ -14,7 +14,10 @@
       "args": [
         "${input:package_manager}",
         "${input:repository}"
-      ]
+      ],
+      "env": {
+        "LOCAL_GITHUB_ACCESS_TOKEN": ""
+      }
     }
   ],
   "inputs": [
