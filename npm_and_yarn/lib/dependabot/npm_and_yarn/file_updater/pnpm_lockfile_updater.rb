@@ -30,7 +30,7 @@ module Dependabot
 
                 def updated_pnpm_lock(pnpm_lock)
                     SharedHelpers.in_a_temporary_directory do
-                    # write_temporary_dependency_files
+                    write_temporary_dependency_files
                     lockfile_name = Pathname.new(pnpm_lock.name).basename.to_s
                     path = Pathname.new(pnpm_lock.name).dirname.to_s
                     updated_files = run_current_rush_update(
@@ -80,27 +80,36 @@ module Dependabot
         
                     # File.write(".npmrc", npmrc_content)
                     # File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
-        
-                    package_files.each do |file|
+                    
+                    # TODO: Copy all the dependency files to the temp folder and run yarn update?
+                    @dependency_files.each do |file|
                         path = file.name
                         FileUtils.mkdir_p(Pathname.new(path).dirname)
-            
-                        updated_content =
-                            if update_package_json && top_level_dependencies.any?
-                                updated_package_json_content(file)
-                            else
-                                file.content
-                            end
-            
-                        updated_content = replace_ssh_sources(updated_content)
-            
-                        # A bug prevents Yarn recognising that a directory is part of a
-                        # workspace if it is specified with a `./` prefix.
-                        updated_content = remove_workspace_path_prefixes(updated_content)
-            
-                        updated_content = sanitized_package_json_content(updated_content)
-                        File.write(file.name, updated_content)
+
+                    #     updated_content =
+                    #         if update_package_json && top_level_dependencies.any?
+                    #             updated_package_json_content(file)
+                    #         else
+                    #             file.content
+                    #         end
+                    
+                        File.write(file.name, file.content)
                     end
+                    # package_files.each do |file|
+                    #     path = file.name
+                    #     FileUtils.mkdir_p(Pathname.new(path).dirname)
+            
+
+            
+                    #     updated_content = replace_ssh_sources(updated_content)
+            
+                    #     # A bug prevents Yarn recognising that a directory is part of a
+                    #     # workspace if it is specified with a `./` prefix.
+                    #     updated_content = remove_workspace_path_prefixes(updated_content)
+            
+                    #     updated_content = sanitized_package_json_content(updated_content)
+                    #     File.write(file.name, updated_content)
+                    # end
                 end
         
                 def npmrc_content
