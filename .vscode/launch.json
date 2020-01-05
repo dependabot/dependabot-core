@@ -42,13 +42,13 @@
         "submodules",
         "terraform"
       ],
-      "default": "go_modules"
+      "default": "npm_and_yarn"
     },
     {
       "type": "promptString",
       "id": "repository",
       "description": "Enter the name of the repository to scan.",
-      "default": "zonedb/zonedb"
+      "default": "GiriB/rush-example"
     }
   ]
 }
