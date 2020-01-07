@@ -13,7 +13,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
       name: dependency_name,
       version: "2.1.0",
       requirements: requirements,
-      package_manager: "dep"
+      package_manager: "go_modules"
     )
   end
   let(:requirements) do
