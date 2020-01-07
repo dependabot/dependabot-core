@@ -2,38 +2,12 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 const rimraf = require("rimraf");
-const nock = require("nock");
-const {
-  updateDependencyFiles,
-  updateVersionPattern
-} = require("../../lib/npm/updater");
+const { updateDependencyFiles } = require("../../lib/npm/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {
   let tempDir;
   beforeEach(() => {
-    nock("https://registry.npmjs.org")
-      .persist()
-      .get("/left-pad")
-      .replyWithFile(
-        200,
-        path.join(__dirname, "fixtures", "npm-left-pad.json"),
-        {
-          "Content-Type": "application/json"
-        }
-      );
-
-    nock("https://registry.npmjs.org")
-      .persist()
-      .get("/left-pad/-/left-pad-1.1.3.tgz")
-      .replyWithFile(
-        200,
-        path.join(__dirname, "fixtures", "left-pad-1.1.3.tgz"),
-        {
-          "Content-Type": "application/octet-stream"
-        }
-      );
-
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
   afterEach(() => rimraf.sync(tempDir));
