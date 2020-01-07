@@ -172,6 +172,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the dependency name includes extras" do
+      let(:dependency_name) { "luigi[toml]" }
+
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+    end
+
     context "when the user's current version is a pre-release" do
       let(:dependency_version) { "2.6.0a1" }
       let(:dependency_requirements) do
