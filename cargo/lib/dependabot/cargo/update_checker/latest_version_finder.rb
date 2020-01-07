@@ -7,6 +7,8 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        CRATES_IO_DL = "https://crates.io/api/v1/crates"
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:)
           @dependency          = dependency
@@ -76,10 +78,12 @@ module Dependabot
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
+          info = dependency.requirements.map { |r| r[:source] }.compact.first
+          dl = info&.dl || CRATES_IO_DL
           response = Excon.get(
-            "https://crates.io/api/v1/crates/#{dependency.name}",
-            idempotent: true,
+            "#{dl}/#{dependency.name}",
             headers: { "User-Agent" => "Dependabot (dependabot.com)" },
+            idempotent: true,
             **SharedHelpers.excon_defaults
           )
 

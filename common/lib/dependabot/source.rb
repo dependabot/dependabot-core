@@ -2,6 +2,9 @@
 
 module Dependabot
   class Source
+    attr_accessor :provider, :repo, :directory, :branch, :commit,
+                  :hostname, :api_endpoint
+
     GITHUB_SOURCE = %r{
       (?<provider>github)
       (?:\.com)[/:]
@@ -29,27 +32,43 @@ module Dependabot
       (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
     }x.freeze
 
-    SOURCE_REGEX = /
-      (?:#{GITHUB_SOURCE})|
-      (?:#{GITLAB_SOURCE})|
-      (?:#{BITBUCKET_SOURCE})|
-      (?:#{AZURE_SOURCE})
-    /x.freeze
+    DEFAULT_SOURCE_REGEXS = [
+      GITHUB_SOURCE,
+      GITLAB_SOURCE,
+      BITBUCKET_SOURCE,
+      AZURE_SOURCE
+    ].freeze
 
-    attr_accessor :provider, :repo, :directory, :branch, :commit,
-                  :hostname, :api_endpoint
+    @registered_sources = []
+
+    # `register_source` is a class method that allows registration
+    # of a URL regex with a factory function to create a new
+    # `Source` instance from the regex captures.
+    def self.register_source(regex, source_factory)
+      @registered_sources.push(regex: regex, factory: source_factory)
+    end
+
+    # Initialize the default sources.
+    # Apps can add to this list via Dependabot::Source.add_source(...).
+    DEFAULT_SOURCE_REGEXS.each do |regex|
+      Source.register_source(regex, lambda { |captures|
+        new(
+          provider: captures.fetch("provider"),
+          repo: captures["repo"],
+          directory: captures["directory"],
+          branch: captures["branch"]
+        )
+      })
+    end
 
     def self.from_url(url_string)
-      return unless url_string&.match?(SOURCE_REGEX)
+      return unless url_string
 
-      captures = url_string.match(SOURCE_REGEX).named_captures
-
-      new(
-        provider: captures.fetch("provider"),
-        repo: captures.fetch("repo"),
-        directory: captures.fetch("directory"),
-        branch: captures.fetch("branch")
-      )
+      @registered_sources.each do |source_info|
+        m = url_string.match(source_info[:regex])
+        return source_info[:factory].call(m.named_captures) if m
+      end
+      puts "Source.from_url failed to find source for: #{url_string}"
     end
 
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,

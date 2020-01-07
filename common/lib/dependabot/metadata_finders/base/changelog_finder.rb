@@ -209,11 +209,10 @@ module Dependabot
         end
 
         def fetch_gitlab_file(file)
-          Excon.get(
-            file.download_url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          ).body.force_encoding("UTF-8").encode
+          raw_content = gitlab_client.get_file(
+            file.repo, file.name, file.ref || "master"
+          ).content
+          Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
         def fetch_bitbucket_file(file)
@@ -244,7 +243,7 @@ module Dependabot
           case source.provider
           when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
-          when "gitlab" then fetch_gitlab_file_list
+          when "gitlab" then fetch_gitlab_file_list(ref)
           when "azure" then [] # TODO: Fetch files from Azure
           else raise "Unexpected repo provider '#{source.provider}'"
           end
@@ -296,7 +295,7 @@ module Dependabot
           []
         end
 
-        def fetch_gitlab_file_list
+        def fetch_gitlab_file_list(ref)
           gitlab_client.repo_tree(source.repo).map do |file|
             type = case file.type
                    when "blob" then "file"
@@ -308,7 +307,9 @@ module Dependabot
               type: type,
               size: 100, # GitLab doesn't return file size
               html_url: "#{source.url}/blob/master/#{file.path}",
-              download_url: "#{source.url}/raw/master/#{file.path}"
+              download_url: "#{source.url}/raw/master/#{file.path}",
+              repo: source.repo,
+              ref: ref
             )
           end
         rescue Gitlab::Error::NotFound
@@ -361,7 +362,8 @@ module Dependabot
 
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
-                             for_gitlab_dot_com(credentials: credentials)
+                             for_source(source: source,
+                                        credentials: credentials)
         end
 
         def github_client

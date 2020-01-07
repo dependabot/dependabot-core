@@ -9,12 +9,14 @@ module Dependabot
   module Cargo
     class MetadataFinder < Dependabot::MetadataFinders::Base
       SOURCE_KEYS = %w(repository homepage documentation).freeze
+      CRATES_IO_DL = "https://crates.io/api/v1/crates"
 
       private
 
       def look_up_source
         case new_source_type
         when "default" then find_source_from_crates_listing
+        when "registry" then find_source_from_crates_listing
         when "git" then find_source_from_git_url
         else raise "Unexpected source type: #{new_source_type}"
         end
@@ -50,8 +52,10 @@ module Dependabot
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
+        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        dl = info&.dl || CRATES_IO_DL
         response = Excon.get(
-          "https://crates.io/api/v1/crates/#{dependency.name}",
+          "#{dl}/#{dependency.name}",
           headers: { "User-Agent" => "Dependabot (dependabot.com)" },
           idempotent: true,
           **SharedHelpers.excon_defaults
