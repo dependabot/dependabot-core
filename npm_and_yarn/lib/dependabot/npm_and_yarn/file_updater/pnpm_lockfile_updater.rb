@@ -21,7 +21,7 @@ module Dependabot
                         return @updated_pnpm_lock_content[pnpm_lock_file.name]
                     end
             
-                    new_content = updated_pnpm_lock(pnpm_lock_file)
+                    updated_pnpm_lock(pnpm_lock_file)
             
                     # @updated_pnpm_lock_content[pnpm_lock_file.name] =
                     #     post_process_pnpm_lock_file(new_content)
@@ -44,7 +44,7 @@ module Dependabot
                 #     handle_pnpm_lock_updater_error(e, pnpm_lock)
                 end
                 
-         # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml). Update the params to take a list of file paths that need to be reread 
+                # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml). Update the params to take a list of file paths that need to be reread 
                 # after we run rush update.
                 def run_rush_updater(path:, lockfile_name:)
                     puts "#{Dir.pwd}"
@@ -74,36 +74,32 @@ module Dependabot
                     # File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
                     
                     # TODO: Copy all the dependency files to the temp folder and run yarn update?
+
                     @dependency_files.each do |file|
                         path = file.name
                         FileUtils.mkdir_p(Pathname.new(path).dirname)
 
-                    #     updated_content =
-                    #         if update_package_json && top_level_dependencies.any?
-                    #             updated_package_json_content(file)
-                    #         else
-                    #             file.content
-                    #         end
+                        # Update package.json files. Copy others as is
+                        updated_content =
+                            if file.name.end_with?("package.json") && top_level_dependencies.any?
+                                updated_package_json_content(file)
+                            else
+                                file.content
+                            end
                     
-                        File.write(file.name, file.content)
+                        File.write(file.name, updated_content)
                     end
-                    # package_files.each do |file|
-                    #     path = file.name
-                    #     FileUtils.mkdir_p(Pathname.new(path).dirname)
-            
-
-            
-                    #     updated_content = replace_ssh_sources(updated_content)
-            
-                    #     # A bug prevents Yarn recognising that a directory is part of a
-                    #     # workspace if it is specified with a `./` prefix.
-                    #     updated_content = remove_workspace_path_prefixes(updated_content)
-            
-                    #     updated_content = sanitized_package_json_content(updated_content)
-                    #     File.write(file.name, updated_content)
-                    # end
+                    
                 end
-        
+                
+                # def package_files
+                #     dependency_files.select { |f| f.name.end_with?("package.json") }
+                # end
+
+                def top_level_dependencies
+                    @dependencies.select(&:top_level?)
+                end
+                
                 def npmrc_content
                     NpmrcBuilder.new(
                         credentials: credentials,
@@ -116,7 +112,7 @@ module Dependabot
                     @updated_package_json_content[file.name] ||=
                         PackageJsonUpdater.new(
                         package_json: file,
-                        dependencies: top_level_dependencies
+                        dependencies: @dependencies
                         ).updated_package_json.content
                 end
             end
