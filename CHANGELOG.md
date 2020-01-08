@@ -1,3 +1,13 @@
+## v0.116.0, 8 January 2020
+
+- Python: Fix latest version finder when the dependency name has extras
+- Go Modules: Fix version comparison in `SecurityAdvisory`
+- Bump default Python to 3.8.1 and add 3.7.6 to allowed versions
+- [Security] Bump handlebars from 4.1.2 to 4.5.3 in /npm_and_yarn/helpers
+- Bump rubocop requirement from ~> 0.78.0 to ~> 0.79.0 in /common
+- Bump phpstan/phpstan from 0.12.3 to 0.12.4 in /composer/helpers
+- Bump eslint from 6.7.2 to 6.8.0 in /npm_and_yarn/helpers
+
 ## v0.115.3, 20 December 2019
 
 - Handle links with breaks in the link sanitizer
