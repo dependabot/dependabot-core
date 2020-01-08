@@ -1,3 +1,7 @@
+## v0.116.1, 8 January 2020
+
+- Hex: fix file fetching for nested umbrella apps
+
 ## v0.116.0, 8 January 2020
 
 - Python: Fix latest version finder when the dependency name has extras
