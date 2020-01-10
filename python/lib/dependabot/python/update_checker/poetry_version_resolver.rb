@@ -80,20 +80,42 @@ module Dependabot
                   )
                 end
 
+                update_poetry_binary_version
+
                 # Shell out to Poetry, which handles everything for us.
                 run_poetry_command(poetry_update_command)
 
-                updated_lockfile =
-                  if File.exist?("poetry.lock") then File.read("poetry.lock")
-                  else File.read("pyproject.lock")
-                  end
-                updated_lockfile = TomlRB.parse(updated_lockfile)
+                updated_lockfile = read_lockfile
 
                 fetch_version_from_parsed_lockfile(updated_lockfile)
               rescue SharedHelpers::HelperSubprocessFailed => e
                 handle_poetry_errors(e)
               end
             end
+        end
+
+        def update_poetry_binary_version
+          # TODO: I'm not sure if the case where there's no lockfile is
+          # already handled by dependabot.
+          lockfile = read_lockfile
+
+          # Before version 1.0.0, poetry used a metadata.hashes to store
+          # package dependencies hashes. After 1.0.0, it is stored in
+          # metadata.files.
+          pre100 = lockfile.dig("metadata", "hashes")
+
+          return unless pre100
+
+          puts " => downgrading poetry to 0.12.17 due to pre-1.0.0 lockfile"
+          run_poetry_command("pyenv exec pip install poetry==0.12.17")
+        end
+
+        def read_lockfile
+          updated_lockfile =
+            if File.exist?("poetry.lock") then File.read("poetry.lock")
+            else File.read("pyproject.lock")
+            end
+          TomlRB.parse(updated_lockfile)
         end
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
