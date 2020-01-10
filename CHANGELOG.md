@@ -1,3 +1,8 @@
+## v0.116.2, 10 January 2020
+
+- Go Modules: Stop trying to update indirect deps
+- Bump npm from 6.13.4 to 6.13.6 in /npm_and_yarn/helpers
+
 ## v0.116.1, 8 January 2020
 
 - Hex: fix file fetching for nested umbrella apps
