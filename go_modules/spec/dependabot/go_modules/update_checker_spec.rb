@@ -97,13 +97,9 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       expect(latest_resolvable_version).to_not eq("1.2.0-pre2")
     end
 
-    context "for libraries" do
+    context "doesn't update indirect dependencies (not supported)" do
       let(:requirements) { [] }
-
-      it "updates the version" do
-        expect(latest_resolvable_version).
-          to eq(Dependabot::GoModules::Version.new("1.1.0"))
-      end
+      it { is_expected.to eq(dependency.version) }
     end
 
     it "updates v2+ modules"
@@ -132,6 +128,5 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     end
 
     it "doesn't update Git SHAs not on master to newer commits to master"
-    # TODO: sub-dependencies?
   end
 end
