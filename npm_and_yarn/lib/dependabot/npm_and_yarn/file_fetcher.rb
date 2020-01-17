@@ -130,7 +130,8 @@ module Dependabot
           fetch_file_if_present("common/config/rush/shrinkwrap.yaml"),
           fetch_file_if_present("common/config/rush/pnpmfile.js"),
           fetch_file_if_present("common/scripts/install-run-rush.js"),
-          fetch_file_if_present("common/scripts/install-run.js")
+          fetch_file_if_present("common/scripts/install-run.js"),
+          fetch_file_if_present("common/config/pnpmfile-dependencies.json")
         ].compact        
       end
 

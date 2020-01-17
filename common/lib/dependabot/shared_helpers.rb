@@ -89,6 +89,7 @@ module Dependabot
       stdin_data = JSON.dump(function: function, args: args)
       cmd = escape_command_str ? escape_command(command) : command
       env_cmd = [env, cmd].compact
+      puts "#{env_cmd}" + "#{stdin_data}"
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 

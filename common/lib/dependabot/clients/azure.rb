@@ -17,7 +17,6 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "git_source" }.
           find { |cred| cred["host"] == source.hostname }
-
         new(source, credential)
       end
 
@@ -40,11 +39,12 @@ module Dependabot
       end
 
       def fetch_default_branch(_repo)
-        response = get(source.api_endpoint +
-          source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo)
+        #response = get(source.api_endpoint +
+          #source.organization + "/" + source.project +
+          #"/_apis/git/repositories/" + source.unscoped_repo)
 
-        JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
+        #JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
+        "test_rush"
       end
 
       def fetch_repo_contents(commit = nil, path = nil)
@@ -125,7 +125,7 @@ module Dependabot
 
       def create_commit(branch_name, base_commit, commit_message, files,
                         author_details)
-        content = {
+         content = {
           refUpdates: [
             { name: "refs/heads/" + branch_name, oldObjectId: base_commit }
           ],
@@ -147,6 +147,7 @@ module Dependabot
           ]
         }
 
+        puts "creating commit"
         post(source.api_endpoint + source.organization + "/" + source.project +
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pushes?api-version=5.0", content.to_json)
@@ -163,6 +164,8 @@ module Dependabot
           pr_description = pr_description[0..truncate_length] + truncated_msg
         end
 
+        puts "in create_pull_request #{source_branch} #{target_branch}"
+        puts "#{pr_name}"
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -178,10 +181,13 @@ module Dependabot
       end
 
       def get(url)
+        token = credentials&.fetch("password")
+        accessToken = 'Basic '+ token
         response = Excon.get(
           url,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          #user: credentials&.fetch("username"),
+          #password: credentials&.fetch("password"),
+          :headers => {'Authorization' => accessToken},
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -191,14 +197,17 @@ module Dependabot
       end
 
       def post(url, json)
+        token = credentials&.fetch("password")
+        accessToken = 'Basic '+token
         response = Excon.post(
           url,
           headers: {
-            "Content-Type" => "application/json"
+            "Content-Type" => "application/json",
+            "Authorization" => accessToken
           },
           body: json,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          #user: credentials&.fetch("username"),
+          #password: credentials&.fetch("password"),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )

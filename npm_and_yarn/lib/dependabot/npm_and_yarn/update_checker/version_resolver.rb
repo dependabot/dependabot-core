@@ -393,14 +393,15 @@ module Dependabot
           # yarn updater, yarn is also used when only a package.json exists
           if lockfiles_for_path(lockfiles: yarn_locks, path: path).any? ||
              lockfiles_for_path(lockfiles: lockfiles, path: path).none?
-            return run_yarn_checker(path: path, version: version)
+            return ##run_yarn_checker(path: path, version: version)
           end
 
           run_npm_checker(path: path, version: version)
         end
 
         def run_yarn_checker(path:, version:)
-          SharedHelpers.with_git_configured(credentials: credentials) do
+        puts "running sub process"
+        SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
