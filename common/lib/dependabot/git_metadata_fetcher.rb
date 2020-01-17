@@ -156,10 +156,7 @@ module Dependabot
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| bare_uri.start_with?(c["host"]) }
 
-      scheme =
-        if uri.match?(%r{^http://}) then "http"
-        else "https"
-        end
+      scheme = scheme_for_uri(uri)
 
       if bare_uri.match?(%r{[^/]+:[^/]+@})
         # URI already has authentication details
@@ -171,6 +168,14 @@ module Dependabot
       else
         # No credentials, so just return the http(s) URI
         "#{scheme}://#{bare_uri}"
+      end
+    end
+
+    def scheme_for_uri(uri)
+      if uri.match?(%r{^http://})
+        "http"
+      else
+        "https"
       end
     end
 
