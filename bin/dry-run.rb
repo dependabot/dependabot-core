@@ -97,23 +97,10 @@ $options = {
   write: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
-  commit: nil
+  commit: nil,
+  azure_token: nil,
+  reg_token: nil
 }
-
-unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
-  $options[:credentials] << {
-    "type" => "git_source",
-    "host" => "github.com",
-    "username" => "x-access-token",
-    "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
-  }
-end
-
-unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
-  # For example:
-  # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
-  $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
-end
 
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
@@ -152,9 +139,37 @@ option_parse = OptionParser.new do |opts|
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
     $options[:commit] = value
   end
+  opts.on("--azure-token TOKEN", "Azure PAT for accessing azure repos") do |value|
+    $options[:azure_token] = value
+  end
+
+  opts.on("--registry-token RTOKEN", "Azure PAT for accessing azure package feeds") do |value|
+   $options[:reg_token] = value
+  end
 end
 
 option_parse.parse!
+
+#unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
+  $options[:credentials] << {
+    "type" => "git_source",
+    "host" => "dev.azure.com",
+    #"username" => "x-access-token",
+    "password" => $options[:azure_token]
+  }
+#end
+
+#unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
+  # For example:
+  # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
+  #$options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
+  $options[:credentials] << {
+    "type" => "npm_registry",
+    "registry" => "office.pkgs.visualstudio.com/_packaging/Office/npm/registry",
+    "token" => $options[:reg_token]
+  }
+#end
+
 
 # Full name of the GitHub repo you want to create pull requests for
 if ARGV.length < 2
@@ -271,7 +286,7 @@ def cached_dependency_files_read
 end
 
 source = Dependabot::Source.new(
-  provider: "github",
+  provider: "azure",
   repo: $repo_name,
   directory: $options[:directory],
   branch: $options[:branch],
@@ -448,4 +463,13 @@ dependencies.each do |dep|
     original_file = $files.find { |f| f.name == updated_file.name }
     show_diff(original_file, updated_file)
   end
+  pull_request_creator = Dependabot::PullRequestCreator.new(
+ source: source,
+ base_commit: "b77be6ef9361e2bfbf2c06d6d4292c44702f5fc5",
+ dependencies: updated_deps,
+ files: updated_files,
+ credentials: $options[:credentials]
+)
+
+pull_request_creator.create
 end
