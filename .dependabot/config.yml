@@ -12,3 +12,4 @@ update_configs:
       - "github-username"
     default_labels:
       - "label-name"
+
