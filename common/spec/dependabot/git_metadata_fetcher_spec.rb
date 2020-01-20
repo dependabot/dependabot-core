@@ -151,6 +151,18 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
       its(:count) { is_expected.to eq(14) }
     end
+
+    context "with source code hosted on a HTTP host" do
+      let(:url) { "http://bitbucket.org/gocardless/business" }
+      let(:service_pack_url) do
+        "http://bitbucket.org/gocardless/business.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+
+      let(:upload_pack_fixture) { "business" }
+
+      its(:count) { is_expected.to eq(14) }
+    end
   end
 
   describe "#ref_names" do
