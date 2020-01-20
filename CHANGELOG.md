@@ -1,3 +1,10 @@
+## v0.116.3, 20 January 2020
+
+- Git Dependencies: Respect HTTP scheme for service pack URLs
+- Maven: Support properties with attributes
+- Bump composer/composer from 1.9.1 to 1.9.2 in /composer/helpers
+- Bump phpstan/phpstan from 0.12.4 to 0.12.5 in /composer/helpers
+
 ## v0.116.2, 10 January 2020
 
 - Go Modules: Stop trying to update indirect deps
