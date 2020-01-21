@@ -1,4 +1,4 @@
-pip==19.3.1
+pip==20.0
 pip-tools==4.3.0
 hashin==0.14.6
 pipenv==2018.11.26
