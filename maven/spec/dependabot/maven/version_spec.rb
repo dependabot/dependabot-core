@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Maven::Version do
     context "with a post-release" do
       let(:version_string) { "1.0.0.sp7" }
       it { is_expected.to eq(false) }
-    end    
+    end
   end
 
   describe "#<=>" do
