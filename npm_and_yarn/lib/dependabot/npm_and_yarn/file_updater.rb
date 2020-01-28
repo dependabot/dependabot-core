@@ -189,9 +189,9 @@ module Dependabot
 
       def rush_config_present?
         # filtered_dependency_files.each do |f|
-        dependency_files.each do |f|
-          puts "GGB: f name is #{f.name}"
-        end
+        #dependency_files.each do |f|
+          #puts "GGB: f name is #{f.name}"
+        #end
 
         @rush_config_present ||= dependency_files.one? {|f| f.name.end_with?("rush.json")}
       end

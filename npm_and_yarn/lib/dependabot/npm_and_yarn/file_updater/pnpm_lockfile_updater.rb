@@ -29,16 +29,18 @@ module Dependabot
 
 
                 def updated_pnpm_lock(pnpm_lock)
-                    SharedHelpers.in_a_temporary_directory do
+                        original_path = Dir.pwd
+                        Dir.chdir('demo')
                         write_temporary_dependency_files
                         lockfile_name = Pathname.new(pnpm_lock.name).basename.to_s
                         path = Pathname.new(pnpm_lock.name).dirname.to_s
-                        run_current_rush_update(
+                        response = run_current_rush_update(
                             path: path,
                             lockfile_name: lockfile_name
                         )
+                        Dir.chdir(original_path)
+                        return response
                         # updated_files.fetch(lockfile_name)
-                    end
                 rescue SharedHelpers::HelperSubprocessFailed => e
                     puts "#{e}"
                 #     handle_pnpm_lock_updater_error(e, pnpm_lock)
@@ -47,8 +49,7 @@ module Dependabot
                 # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml). Update the params to take a list of file paths that need to be reread 
                 # after we run rush update.
                 def run_rush_updater(path:, lockfile_name:)
-                    puts "#{Dir.pwd}"
-
+                    #puts "#{Dir.pwd}"
                     SharedHelpers.run_helper_subprocess(
                         command: NativeHelpers.helper_path,
                         function: "rush:update",
@@ -58,6 +59,7 @@ module Dependabot
                         # top_level_dependency_updates
                         ]
                     )
+
                 end
 
                 def run_current_rush_update(path:, lockfile_name:)

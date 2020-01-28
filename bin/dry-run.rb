@@ -150,7 +150,7 @@ end
 
 option_parse.parse!
 
-#unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
+#unless ENV["LOCAL_AZURE_ACCESS_TOKEN"].to_s.strip.empty?
   $options[:credentials] << {
     "type" => "git_source",
     "host" => "dev.azure.com",
@@ -158,6 +158,14 @@ option_parse.parse!
     "password" => $options[:azure_token]
   }
 #end
+  
+unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
+  $options[:credentials] << {
+    "type" => "git_source",
+    "host" => "github.com",
+    "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+  }
+end
 
 #unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
@@ -169,7 +177,6 @@ option_parse.parse!
     "token" => $options[:reg_token]
   }
 #end
-
 
 # Full name of the GitHub repo you want to create pull requests for
 if ARGV.length < 2
@@ -193,16 +200,16 @@ def show_diff(original_file, updated_file)
   updated_tmp_file.write(updated_file.content)
   updated_tmp_file.close
 
-  diff = `diff #{original_tmp_file.path} #{updated_tmp_file.path}`
-  puts
-  puts "    ± #{original_file.name}"
-  puts "    ~~~"
-  puts diff.lines.map { |line| "    " + line }.join("")
-  puts "    ~~~"
+  #diff = `diff #{original_tmp_file.path} #{updated_tmp_file.path}`
+  #puts
+  #puts "    ± #{original_file.name}"
+  #puts "    ~~~"
+  #puts diff.lines.map { |line| "    " + line }.join("")
+  #puts "    ~~~"
 end
 
 def cached_read(name)
-  puts "GGB: cache read #{name}"
+  puts "cache read #{name}"
   raise "Provide something to cache" unless block_given?
   return yield unless $options[:cache_steps].include?(name)
 
@@ -253,7 +260,7 @@ def cached_dependency_files_read
       puts "=> failed to read all dependency files from cache manifest: "\
            "./#{cache_manifest_path}"
     end
-    puts "=> Giri: fetching dependency files"
+    puts "=>Fetching dependency files"
     data = yield
     puts "=> dumping fetched dependency files: ./#{cache_dir}"
     manifest_data = data.map do |file|
@@ -296,7 +303,7 @@ source = Dependabot::Source.new(
 $files = cached_dependency_files_read do
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
     new(source: source, credentials: $options[:credentials])
-  puts "GGB:=> fewtche.files"
+  #puts "GGB:=> fewtche.files"
   fetcher.files
 end
 
