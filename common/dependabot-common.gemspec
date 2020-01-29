@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
-  spec.add_dependency "commonmarker", "~> 0.20.1"
+  spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.22.0"
   spec.add_dependency "docker_registry2", "~> 1.7", ">= 1.7.1"
   spec.add_dependency "excon", "~> 0.66"
   spec.add_dependency "gitlab", "4.13.1"
