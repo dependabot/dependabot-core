@@ -1,3 +1,13 @@
+## v0.116.4, 29 January 2020
+
+- Bump npm from 6.13.6 to 6.13.7 in /npm_and_yarn/helpers
+- Bump rimraf from 3.0.0 to 3.0.1 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.5 to 0.12.8 in /composer/helpers
+- Maven: Add Support for Semver Build Identifier "+"
+- Bump commonmarker requirement from ~> 0.20.1 to >= 0.20.1, < 0.22.0
+- Bump jest from 24.9.0 to 25.1.0 in /npm_and_yarn/helpers
+- Bump pip-tools from 4.3.0 to 4.4.0 in /python/helpers
+
 ## v0.116.3, 20 January 2020
 
 - Git Dependencies: Respect HTTP scheme for service pack URLs
