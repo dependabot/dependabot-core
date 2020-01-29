@@ -28,7 +28,7 @@ module Dependabot
       VERSION_PATTERN =
         "[0-9a-zA-Z]+"\
         '(?>\.[0-9a-zA-Z]*)*'\
-        '([_-][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
 
       def self.correct?(version)
@@ -132,7 +132,7 @@ module Dependabot
       end
 
       def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.])/)
+        ".#{version}".split(/(?=[\-\.\+])/)
       end
 
       def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
