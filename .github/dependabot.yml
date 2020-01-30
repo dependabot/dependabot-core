@@ -3,23 +3,23 @@ version: 1
 update_configs:
   - package_manager: "ruby:bundler"
     directory: "/common"
-    update_schedule: "live"
+    update_schedule: "daily"
 
   - package_manager: "php:composer"
     directory: "/composer/helpers"
-    update_schedule: "live"
+    update_schedule: "daily"
 
   - package_manager: "elixir:hex"
     directory: "/hex/helpers"
-    update_schedule: "live"
+    update_schedule: "daily"
 
   - package_manager: "javascript"
     directory: "/npm_and_yarn/helpers"
-    update_schedule: "live"
+    update_schedule: "daily"
 
   - package_manager: "python"
     directory: "/python/helpers"
-    update_schedule: "live"
+    update_schedule: "daily"
 
   - package_manager: "go:modules"
     directory: "/go_modules/helpers"
