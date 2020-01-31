@@ -98,6 +98,7 @@ $options = {
   write: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
+  security_updates_only: false,
   commit: nil
 }
 
@@ -140,8 +141,8 @@ option_parse = OptionParser.new do |opts|
     $options[:write] = true
   end
 
-  opts.on("--lockfile-only", "Only update the lockfile") do |value|
-    $options[:lockfile_only] = value
+  opts.on("--lockfile-only", "Only update the lockfile") do |_value|
+    $options[:lockfile_only] = true
   end
 
   opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
@@ -149,6 +150,12 @@ option_parse = OptionParser.new do |opts|
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
     $options[:requirements_update_strategy] = value
+  end
+
+  opts_sec_desc = "Only update vulnerable dependencies to "\
+                  "non-vulnerable versions"
+  opts.on("--security-updates-only", opts_sec_desc) do |_value|
+    $options[:security_updates_only] = true
   end
 
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
@@ -323,7 +330,8 @@ def update_checker_for(dependency)
     credentials: $options[:credentials],
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
-    security_advisories: security_advisories_for(dependency)
+    security_advisories: security_advisories_for(dependency),
+    security_updates_only: $options[:security_updates_only]
   )
 end
 
