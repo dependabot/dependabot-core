@@ -1,3 +1,8 @@
+## v0.116.5, 31 January 2020
+
+- Bump semver from 7.1.1 to 7.1.2 in /npm_and_yarn/helpers
+- Add security updates only option to the update checker (unused)
+
 ## v0.116.4, 29 January 2020
 
 - Bump npm from 6.13.6 to 6.13.7 in /npm_and_yarn/helpers
