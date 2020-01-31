@@ -13,13 +13,15 @@ module Dependabot
 
       def initialize(dependency:, dependency_files:, credentials:,
                      ignored_versions: [], security_advisories: [],
-                     requirements_update_strategy: nil)
+                     requirements_update_strategy: nil,
+                     security_updates_only: false)
         @dependency = dependency
         @dependency_files = dependency_files
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions
         @security_advisories = security_advisories
+        @security_updates_only = security_updates_only
       end
 
       def up_to_date?
