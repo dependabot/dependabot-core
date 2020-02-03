@@ -13,15 +13,13 @@ module Dependabot
 
       def initialize(dependency:, dependency_files:, credentials:,
                      ignored_versions: [], security_advisories: [],
-                     requirements_update_strategy: nil,
-                     security_updates_only: false)
+                     requirements_update_strategy: nil)
         @dependency = dependency
         @dependency_files = dependency_files
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions
         @security_advisories = security_advisories
-        @security_updates_only = security_updates_only
       end
 
       def up_to_date?
@@ -110,16 +108,20 @@ module Dependabot
       end
 
       def vulnerable?
+        vulnerable_version?(dependency.version)
+      end
+
+      def vulnerable_version?(version_str)
         return false if security_advisories.none?
 
         # Can't (currently) detect whether dependencies without a version
         # (i.e., for repos without a lockfile) are vulnerable
-        return false unless dependency.version
+        return false unless version_str
 
         # Can't (currently) detect whether git dependencies are vulnerable
-        return false if existing_version_is_sha?
+        return false if version_is_sha?(version_str)
 
-        version = version_class.new(dependency.version)
+        version = version_class.new(version_str)
         security_advisories.any? { |a| a.vulnerable?(version) }
       end
 
@@ -179,10 +181,14 @@ module Dependabot
         )
       end
 
-      def existing_version_is_sha?
-        return false if version_class.correct?(dependency.version)
+      def version_is_sha?(version_str)
+        return false if version_class.correct?(version_str)
 
-        dependency.version.match?(/^[0-9a-f]{6,}$/)
+        version_str.match?(/^[0-9a-f]{6,}$/)
+      end
+
+      def existing_version_is_sha?
+        version_is_sha?(dependency.version)
       end
 
       def sha1_version_up_to_date?
@@ -222,6 +228,8 @@ module Dependabot
         case requirements_to_unlock&.to_sym
         when :none
           new_version = latest_resolvable_version_with_no_unlock
+          return false if vulnerable_version?(new_version)
+
           new_version && new_version > version_class.new(dependency.version)
         when :own
           preferred_version_resolvable_with_unlock?
@@ -234,6 +242,7 @@ module Dependabot
       def preferred_version_resolvable_with_unlock?
         new_version = preferred_resolvable_version
         return false unless new_version
+        return false if vulnerable_version?(new_version)
 
         if existing_version_is_sha?
           return false if new_version.to_s.start_with?(dependency.version)
