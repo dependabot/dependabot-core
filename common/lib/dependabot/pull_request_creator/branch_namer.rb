@@ -27,7 +27,11 @@ module Dependabot
               elsif dependencies.count > 1 && updating_a_dependency_set?
                 dependency_set.fetch(:group)
               else
-                dependencies.map(&:name).join("-and-").tr(":", "-").tr("@", "")
+                dependencies.
+                  map(&:name).
+                  join("-and-").
+                  tr(":[]", "-").
+                  tr("@", "")
               end
 
             dep = dependencies.first
@@ -42,6 +46,7 @@ module Dependabot
           end
 
         branch_name = File.join(prefixes, @name).
+                      gsub(/-+/, "-").
                       gsub(%r{/\.}, "/dot-").
                       gsub(%r{/\.}, "/dot-")
 

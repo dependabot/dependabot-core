@@ -290,6 +290,23 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
+    context "with square brackets in the name" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "werkzeug[watchdog]",
+          version: "0.16.0",
+          previous_version: "0.15.0",
+          package_manager: "pip",
+          requirements: []
+        )
+      end
+
+      it "replaces the brackets with hyphens" do
+        expect(new_branch_name).
+          to eq("dependabot/pip/werkzeug-watchdog-0.16.0")
+      end
+    end
+
     context "with a requirement only" do
       let(:previous_version) { nil }
       let(:requirements) do
