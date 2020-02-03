@@ -1,3 +1,7 @@
+## v0.116.6, 3 February 2020
+
+- Better branch name sanitisation
+
 ## v0.116.5, 31 January 2020
 
 - Bump semver from 7.1.1 to 7.1.2 in /npm_and_yarn/helpers
