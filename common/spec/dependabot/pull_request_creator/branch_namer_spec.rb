@@ -303,7 +303,24 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it "replaces the brackets with hyphens" do
         expect(new_branch_name).
-          to eq("dependabot/pip/werkzeug-watchdog-0.16.0")
+          to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
+      end
+    end
+
+    context "with an invalid control character name" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "werk\1zeug",
+          version: "0.16.0",
+          previous_version: "0.15.0",
+          package_manager: "pip",
+          requirements: []
+        )
+      end
+
+      it "strips the invalid character" do
+        expect(new_branch_name).
+          to eq("dependabot/pip/werkzeug-0.16.0")
       end
     end
 
