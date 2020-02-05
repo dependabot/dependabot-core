@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           [{
             "type" => "docker_registry",
             "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-            "use_default_credentials_provider" => true
+            "use_default_aws_credentials" => true
           }]
         end
 
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
               "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
               "username" => "foo",
               "password" => "bar",
-              "use_default_credentials_provider" => true
+              "use_default_aws_credentials" => true
             )
           end
         end

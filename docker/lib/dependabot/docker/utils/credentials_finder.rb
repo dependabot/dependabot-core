@@ -31,7 +31,7 @@ module Dependabot
         attr_reader :credentials
 
         def get_ecr_client(registry_details, region)
-          if registry_details["use_default_credentials_provider"]
+          if registry_details["use_default_aws_credentials"]
             return Aws::ECR::Client.new(region: region)
           end
 
@@ -50,7 +50,7 @@ module Dependabot
         end
 
         def build_aws_credentials(registry_details)
-          unless registry_details["use_default_credentials_provider"]
+          unless registry_details["use_default_aws_credentials"]
 
             # If credentials have been generated from AWS, just return them
             return registry_details if registry_details["username"] == "AWS"
