@@ -187,4 +187,70 @@ RSpec.describe Dependabot::Hex::FileFetcher do
       end
     end
   end
+
+  context "with an umbrella app in a directory" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "api"
+      )
+    end
+
+    before do
+      stub_request(:get, url + "api?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_umbrella.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "api/mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_umbrella_mixfile.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "api/mix.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_lockfile.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "api/apps?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_umbrella_api_apps.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "api/apps/bank/mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_bank_mixfile.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "api/apps/bank_web/mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_bank_web_mixfile.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the mixfiles for nested sub-apps" do
+      expect(file_fetcher_instance.files.count).to eq(4)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("apps/bank/mix.exs")
+    end
+  end
 end

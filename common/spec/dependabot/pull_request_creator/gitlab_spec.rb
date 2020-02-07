@@ -19,7 +19,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       author_details: author_details,
       labeler: labeler,
       approvers: approvers,
-      assignee: assignee,
+      assignees: assignees,
       milestone: milestone
     )
   end
@@ -43,7 +43,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:pr_name) { "PR name" }
   let(:author_details) { nil }
   let(:approvers) { nil }
-  let(:assignee) { nil }
+  let(:assignees) { nil }
   let(:milestone) { nil }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(

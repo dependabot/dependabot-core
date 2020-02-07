@@ -49,10 +49,11 @@ module Dependabot
         return [] unless apps_path
 
         app_directories = repo_contents(dir: apps_path).
-                          select { |f| f.type == "dir" }
+                          select { |f| f.type == "dir" }.
+                          map { |f| File.join(apps_path, f.name) }
 
         app_directories.map do |dir|
-          fetch_file_from_host("#{dir.path}/mix.exs")
+          fetch_file_from_host("#{dir}/mix.exs")
         rescue Dependabot::DependencyFileNotFound
           # If the folder doesn't have a mix.exs it *might* be because it's
           # not an app. Ignore the fact we couldn't fetch one and proceed with

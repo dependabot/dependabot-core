@@ -5,8 +5,6 @@ require "securerandom"
 require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Github
@@ -405,7 +403,6 @@ module Dependabot
           )
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       def handle_error(err)
         case err
         when Octokit::Forbidden
@@ -425,8 +422,6 @@ module Dependabot
           raise err
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

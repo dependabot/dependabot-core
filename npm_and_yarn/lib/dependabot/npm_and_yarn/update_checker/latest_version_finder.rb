@@ -7,8 +7,6 @@ require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-
-# rubocop:disable ClassLength
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
@@ -408,4 +406,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable ClassLength

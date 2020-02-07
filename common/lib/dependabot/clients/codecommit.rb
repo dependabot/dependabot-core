@@ -26,11 +26,16 @@ module Dependabot
 
       def initialize(source, credentials)
         @source = source
-        @cc_client = Aws::CodeCommit::Client.new(
-          access_key_id: credentials&.fetch("username"),
-          secret_access_key: credentials&.fetch("password"),
-          region: credentials&.fetch("region")
-        )
+        @cc_client =
+          if credentials
+            Aws::CodeCommit::Client.new(
+              access_key_id: credentials.fetch("username"),
+              secret_access_key: credentials.fetch("password"),
+              region: credentials.fetch("region")
+            )
+          else
+            Aws::CodeCommit::Client.new
+          end
       end
 
       def fetch_commit(repo, branch)

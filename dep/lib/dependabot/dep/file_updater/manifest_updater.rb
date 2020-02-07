@@ -92,7 +92,6 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def update_manifest_req(content:, dep:, old_req:, new_req:)
           declaration = content.scan(declaration_regex(dep)).
@@ -117,7 +116,7 @@ module Dependabot
             end
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def update_manifest_pin(content:, dep:, old_pin:, new_pin:)

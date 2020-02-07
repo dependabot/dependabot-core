@@ -11,8 +11,6 @@ require "dependabot/utils"
 require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/git_metadata_fetcher"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /
@@ -362,4 +360,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

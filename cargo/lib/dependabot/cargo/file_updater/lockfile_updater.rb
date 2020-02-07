@@ -7,8 +7,6 @@ require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/shared_helpers"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class FileUpdater
@@ -68,8 +66,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def better_specification_needed?(error)
           return false if @custom_specification
@@ -99,8 +95,7 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_spec
@@ -378,4 +373,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

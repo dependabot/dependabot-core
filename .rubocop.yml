@@ -5,33 +5,35 @@ AllCops:
     - '*/vendor/**/*'
     - '*/bin/**/*'
     - '*/tmp/**/*'
+    - 'tmp/**/*'
     - '*/helpers/**/*'
 
 Layout/DotPosition:
   EnforcedStyle: trailing
 
+Layout/LineLength:
+  Max: 80
+
 Layout/RescueEnsureAlignment:
   Enabled: false
 
 Metrics/ClassLength:
-  Max: 250
+  Max: 350
 
 Metrics/ModuleLength:
-  Max: 200
+  Max: 350
 
 Metrics/CyclomaticComplexity:
-  Max: 7
-
-Metrics/LineLength:
-  Max: 80
+  Max: 10
 
 Metrics/AbcSize:
-  Max: 30
+  Max: 35
 
 Metrics/MethodLength:
-  Max: 25
+  Max: 35
 
 Metrics/BlockLength:
+  Max: 35
   Exclude:
     - '*/Rakefile'
     - '*/spec/**/*'

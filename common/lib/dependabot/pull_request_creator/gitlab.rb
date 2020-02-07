@@ -9,12 +9,12 @@ module Dependabot
     class Gitlab
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
-                  :author_details, :labeler, :approvers, :assignee,
+                  :author_details, :labeler, :approvers, :assignees,
                   :milestone
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, approvers:, assignee:,
+                     author_details:, labeler:, approvers:, assignees:,
                      milestone:)
         @source         = source
         @branch_name    = branch_name
@@ -27,7 +27,7 @@ module Dependabot
         @author_details = author_details
         @labeler        = labeler
         @approvers      = approvers
-        @assignee       = assignee
+        @assignees      = assignees
         @milestone      = milestone
       end
 
@@ -140,7 +140,7 @@ module Dependabot
           target_branch: source.branch || default_branch,
           description: pr_description,
           remove_source_branch: true,
-          assignee_id: assignee,
+          assignee_ids: assignees,
           labels: labeler.labels_for_pr.join(","),
           milestone_id: milestone
         )
