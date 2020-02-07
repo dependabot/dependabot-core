@@ -8,14 +8,20 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
+mkdir -p $install_dir
+
 mix local.hex --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cp -r \
-  "$helpers_dir/lib" \
-  "$helpers_dir/mix.exs" \
-  "$helpers_dir/mix.lock" \
-  "$install_dir"
+
+case `uname` in
+  'Darwin') CP_OPTS='-R' ;;
+  *) CP_OPTS='-r' ;;
+esac
+
+cp $CP_OPTS "$helpers_dir/lib" $install_dir
+cp $CP_OPTS "$helpers_dir/mix.exs" $install_dir
+cp $CP_OPTS "$helpers_dir/mix.lock" $install_dir
 
 cd "$install_dir"
 mix deps.get
