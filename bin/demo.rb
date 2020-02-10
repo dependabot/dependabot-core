@@ -29,6 +29,5 @@ if ARGV.length < 1
 end
 
 $repo_name = ARGV[0]
-cmd = "ruby bin/dry-run.rb #{$dep_option} --azure-token {Base64 encoded AZURE PAT goes here} --registry-token {REGISTRY PAT GOES HERE} npm_and_yarn #{$repo_name}"
-puts "#{cmd}"
+cmd = "ruby bin/dry-run.rb #{$dep_option} --azure-token {azure_token_goes_here} npm_and_yarn #{$repo_name}"
 system(cmd)

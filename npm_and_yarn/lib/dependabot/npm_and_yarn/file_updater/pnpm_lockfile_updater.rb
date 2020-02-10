@@ -30,7 +30,7 @@ module Dependabot
 
                 def updated_pnpm_lock(pnpm_lock)
                         original_path = Dir.pwd
-                        Dir.chdir('demo')
+                        Dir.chdir(ENV["NODE_MODULES_ROOT"].to_s.strip)
                         write_temporary_dependency_files
                         lockfile_name = Pathname.new(pnpm_lock.name).basename.to_s
                         path = Pathname.new(pnpm_lock.name).dirname.to_s

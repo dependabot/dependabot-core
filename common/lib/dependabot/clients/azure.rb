@@ -180,13 +180,9 @@ module Dependabot
       end
 
       def get(url)
-        token = credentials&.fetch("password")
-        accessToken = 'Basic '+ token
         response = Excon.get(
           url,
-          #user: credentials&.fetch("username"),
-          #password: credentials&.fetch("password"),
-          :headers => {'Authorization' => accessToken},
+          password: credentials&.fetch("password"),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -196,17 +192,13 @@ module Dependabot
       end
 
       def post(url, json)
-        token = credentials&.fetch("password")
-        accessToken = 'Basic '+token
         response = Excon.post(
           url,
           headers: {
             "Content-Type" => "application/json",
-            "Authorization" => accessToken
           },
           body: json,
-          #user: credentials&.fetch("username"),
-          #password: credentials&.fetch("password"),
+          password: credentials&.fetch("password"),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )

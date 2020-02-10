@@ -113,7 +113,7 @@ module Dependabot
       end
 
       def rush_files
-        @rush_files ||= [rush_json, *rush_configs, *rush_packages]
+        @rush_files ||= [rush_json, *rush_configs, *rush_packages].compact
       end
 
       def rush_json

@@ -142,10 +142,6 @@ option_parse = OptionParser.new do |opts|
   opts.on("--azure-token TOKEN", "Azure PAT for accessing azure repos") do |value|
     $options[:azure_token] = value
   end
-
-  opts.on("--registry-token RTOKEN", "Azure PAT for accessing azure package feeds") do |value|
-   $options[:reg_token] = value
-  end
 end
 
 option_parse.parse!
@@ -167,16 +163,13 @@ unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
   }
 end
 
-#unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
+unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
-  #$options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
-  $options[:credentials] << {
-    "type" => "npm_registry",
-    "registry" => "office.pkgs.visualstudio.com/_packaging/Office/npm/registry",
-    "token" => $options[:reg_token]
-  }
-#end
+  $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
+end
+
+
 
 # Full name of the GitHub repo you want to create pull requests for
 if ARGV.length < 2
@@ -185,6 +178,25 @@ if ARGV.length < 2
 end
 
 $package_manager, $repo_name = ARGV
+
+def read_user_npmrc
+ puts "reading user .npmrc file"
+ home = ENV["HOME"].to_s.strip
+ npmrc_path = "#{home}/.npmrc"
+ puts "#{npmrc_path}"
+ file_data = File.read(npmrc_path).split if File.exist?(npmrc_path)
+ file_data.each do |registry|
+   registry_details = registry.split("=")
+   registry = registry_details.at(0).split("/:_authToken")
+   $options[:credentials] << {
+     "type" => "npm_registry",
+     "registry" => registry.at(0)[2..-1],
+     "token" => registry_details.at(1)
+   }
+  end
+end
+
+read_user_npmrc
 
 def show_diff(original_file, updated_file)
   if original_file.content == updated_file.content
@@ -300,9 +312,9 @@ source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-$files = cached_dependency_files_read do
-  fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
     new(source: source, credentials: $options[:credentials])
+$files = cached_dependency_files_read do
   #puts "GGB:=> fewtche.files"
   fetcher.files
 end
@@ -472,7 +484,7 @@ dependencies.each do |dep|
   end
   pull_request_creator = Dependabot::PullRequestCreator.new(
  source: source,
- base_commit: "b77be6ef9361e2bfbf2c06d6d4292c44702f5fc5",
+ base_commit: fetcher.commit,
  dependencies: updated_deps,
  files: updated_files,
  credentials: $options[:credentials]
