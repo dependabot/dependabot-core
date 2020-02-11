@@ -336,6 +336,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
 
           it { is_expected.to eq "https://user:password@company.com/simple" }
         end
+
+        it "interpolates two variables" do
+          let(:arguments) { "https://${creds}@${domain}.company.com/simple" }
+
+          it { is_expected.to eq "https://user:password@not.company.com/simple" }
+        end
       end
     end
   end
