@@ -319,13 +319,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             {
               "type" => "python_index",
               "index-url" => "https://${creds}@company.com/simple",
-              "token" => "user:password"
+              "token" => "user:password",
               "replaces-base" => false
             },
             {
               "type" => "python_index",
               "index-url" => "https://${creds}@not.company.com/simple",
-              "token" => "user:password"
+              "token" => "user:password",
               "replaces-base" => false
             }
           ]
