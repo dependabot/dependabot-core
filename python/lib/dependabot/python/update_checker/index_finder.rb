@@ -168,7 +168,7 @@ module Dependabot
                    sub(%r{(?<=://).+@}, "@").
                    split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
-                   map { |part| part.sub("@", ".+") }
+                   map { |part| part.sub("@", ".+") }.
                    join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }
           return authed_url if authed_url

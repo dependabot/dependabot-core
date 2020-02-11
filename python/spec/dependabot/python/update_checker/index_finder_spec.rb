@@ -309,5 +309,34 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
       end
     end
+
+    describe "#environment_variables" do
+      subject { finder.clean_check_and_remove_environment_variables(*arguments) }
+
+      context "environment variable interpolation" do
+        let(:credentials) do
+          [
+            {
+              "type" => "python_index",
+              "index-url" => "https://${creds}@company.com/simple",
+              "token" => "user:password"
+              "replaces-base" => false
+            },
+            {
+              "type" => "python_index",
+              "index-url" => "https://${creds}@not.company.com/simple",
+              "token" => "user:password"
+              "replaces-base" => false
+            }
+          ]
+        end
+
+        it "selects the correct URL" do
+          let(:arguments) { "https://${creds}@company.com/simple" }
+
+          it { is_expected.to eq "https://user:password@company.com/simple" }
+        end
+      end
+    end
   end
 end
