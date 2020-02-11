@@ -334,13 +334,17 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "selects the correct URL" do
           let(:arguments) { "https://${creds}@company.com/simple" }
 
-          it { is_expected.to eq "https://user:password@company.com/simple" }
+          it {
+            is_expected.to eq "https://user:password@company.com/simple"
+          }
         end
 
         it "interpolates two variables" do
           let(:arguments) { "https://${creds}@${domain}.company.com/simple" }
 
-          it { is_expected.to eq "https://user:password@not.company.com/simple" }
+          it {
+            is_expected.to eq "https://user:password@not.company.com/simple"
+          }
         end
       end
     end
