@@ -311,7 +311,9 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     end
 
     describe "#environment_variables" do
-      subject { finder.clean_check_and_remove_environment_variables(*arguments) }
+      subject {
+        finder.clean_check_and_remove_environment_variables(*arguments)
+      }
 
       context "environment variable interpolation" do
         let(:credentials) do
