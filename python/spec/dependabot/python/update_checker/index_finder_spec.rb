@@ -310,9 +310,9 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
       end
     end
 
-    describe "#environment_variables" do
+    describe "#clean_check_and_remove_environment_variables" do
       subject do
-        finder.clean_check_and_remove_environment_variables(*arguments)
+        finder.clean_check_and_remove_environment_variables(url)
       end
 
       context "environment variable interpolation" do
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "selects the correct URL" do
-          let(:arguments) { "https://${creds}@company.com/simple" }
+          let(:url) { "https://${creds}@company.com/simple" }
 
           it do
             is_expected.to eq "https://user:password@company.com/simple"
@@ -342,7 +342,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "interpolates two variables" do
-          let(:arguments) { "https://${creds}@${domain}.company.com/simple" }
+          let(:url) { "https://${creds}@${domain}.company.com/simple" }
 
           it do
             is_expected.to eq "https://user:password@not.company.com/simple"
