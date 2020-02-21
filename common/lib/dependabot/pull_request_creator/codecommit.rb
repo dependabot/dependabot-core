@@ -50,6 +50,8 @@ module Dependabot
         branch = create_or_get_branch(base_commit)
         return unless branch
 
+        create_commit
+
         pull_request = codecommit_client_for_source.create_pull_request(
           pr_name,
           branch_name,
