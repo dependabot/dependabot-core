@@ -191,7 +191,7 @@ module Dependabot
         end
 
         def repository_urls
-          plugin? ? plugin_repository_urls : dependency_repository_details
+          plugin? ? plugin_repository_details : dependency_repository_details
         end
 
         def check_response(response, repository_url)
@@ -257,7 +257,7 @@ module Dependabot
             "url" => GRADLE_PLUGINS_REPO,
             "username" => nil,
             "password" => nil
-          }]
+          }] + dependency_repository_details
         end
 
         def matches_dependency_version_type?(comparison_version)
