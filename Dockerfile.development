@@ -35,10 +35,9 @@ WORKDIR ${CODE_DIR}
 ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
     BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-ENV NODE_MODULES_ROOT = "$CODE_DIR/demo"
+ENV NODE_MODULES_ROOT="$CODE_DIR/demo"
 
-COPY common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
-COPY common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
+COPY common/ ${CODE_DIR}/common/
 RUN cd common && bundle install
 
 RUN mkdir -p ${CODE_DIR}/bundler \
@@ -61,23 +60,24 @@ RUN mkdir -p ${CODE_DIR}/bundler \
              ${CODE_DIR}/demo \
              ${CODE_DIR}/demo/common
 
-COPY bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
-COPY cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
-COPY composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
-COPY dep/Gemfile dep/dependabot-dep.gemspec ${CODE_DIR}/dep/
-COPY docker/Gemfile docker/dependabot-docker.gemspec ${CODE_DIR}/docker/
-COPY elm/Gemfile elm/dependabot-elm.gemspec ${CODE_DIR}/elm/
-COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec ${CODE_DIR}/git_submodules/
-COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec ${CODE_DIR}/github_actions/
-COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec ${CODE_DIR}/go_modules/
-COPY gradle/Gemfile gradle/dependabot-gradle.gemspec ${CODE_DIR}/gradle/
-COPY hex/Gemfile hex/dependabot-hex.gemspec ${CODE_DIR}/hex/
-COPY maven/Gemfile maven/dependabot-maven.gemspec ${CODE_DIR}/maven/
-COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
-COPY nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
-COPY omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
-COPY python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
-COPY terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
+COPY bundler/ ${CODE_DIR}/bundler/
+COPY cargo/ ${CODE_DIR}/cargo/
+COPY composer/ ${CODE_DIR}/composer/
+COPY dep/ ${CODE_DIR}/dep/
+COPY docker/ ${CODE_DIR}/docker/
+COPY elm/ ${CODE_DIR}/elm/
+COPY git_submodules/ ${CODE_DIR}/git_submodules/
+COPY github_actions/ ${CODE_DIR}/github_actions/
+COPY go_modules/ ${CODE_DIR}/go_modules/
+COPY gradle/ ${CODE_DIR}/gradle/
+COPY hex/ ${CODE_DIR}/hex/
+COPY maven/ ${CODE_DIR}/maven/
+COPY npm_and_yarn/ ${CODE_DIR}/npm_and_yarn/
+COPY nuget/ ${CODE_DIR}/nuget/
+COPY omnibus/ ${CODE_DIR}/omnibus/
+COPY python/ ${CODE_DIR}/python/
+COPY terraform/ ${CODE_DIR}/terraform/
+COPY bin/ ${CODE_DIR}/bin/
 
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \

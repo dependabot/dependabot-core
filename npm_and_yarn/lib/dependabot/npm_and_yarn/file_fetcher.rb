@@ -30,6 +30,10 @@ module Dependabot
         "Repo must contain a package.json."
       end
 
+      def npmrc_content
+        npmrc.content
+      end
+
       private
 
       # rubocop:disable Metrics/CyclomaticComplexity

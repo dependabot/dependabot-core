@@ -35,6 +35,10 @@ module Dependabot
         create_pull_request
       end
 
+      def pr_exists
+        return branch_exists? && pull_request_exists?
+      end
+
       private
 
       def azure_client_for_source

@@ -316,7 +316,7 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          reject { |c| c.fetch("author").fetch("email") == dependabot_email }.
+          reject { |c| c.fetch("author").fetch("email", "") == dependabot_email }.
           reject { |c| c.fetch("comment")&.start_with?("Merge") }.
           map { |c| c.fetch("comment") }.
           compact.
@@ -376,7 +376,7 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          find { |c| c.fetch("author").fetch("email") == dependabot_email }&.
+          find { |c| c.fetch("author").fetch("email", "") == dependabot_email }&.
           message&.
           strip
       end

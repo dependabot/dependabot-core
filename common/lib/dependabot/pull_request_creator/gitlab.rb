@@ -50,6 +50,10 @@ module Dependabot
         merge_request
       end
 
+      def pull_request_exists
+        return branch_exists? && merge_request_exists?
+      end
+
       private
 
       def gitlab_client_for_source

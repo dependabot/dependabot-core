@@ -47,6 +47,10 @@ module Dependabot
         handle_error(e)
       end
 
+      def pull_request_exists
+        return branch_exists?(branch_name) && unmerged_pull_request_exists?
+      end
+
       private
 
       def require_up_to_date_base?

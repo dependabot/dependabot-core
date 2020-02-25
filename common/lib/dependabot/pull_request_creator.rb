@@ -68,6 +68,16 @@ module Dependabot
             "requirement to have a pull request created for them!"
     end
 
+    def pull_request_exists
+      case source.provider
+      when "github" then github_creator.pull_request_exists
+      when "gitlab" then gitlab_creator.pull_request_exists
+      when "azure" then azure_creator.pr_exists
+      when "codecommit" then codecommit_creator.pull_request_exists
+      else raise "Unsupported provider #{source.provider}"
+      end
+    end
+
     def create
       case source.provider
       when "github" then github_creator.create
