@@ -79,7 +79,7 @@ module Dependabot
           return @crates_listing unless @crates_listing.nil?
 
           info = dependency.requirements.map { |r| r[:source] }.compact.first
-          dl = info && info["dl"] || CRATES_IO_DL
+          dl = info && info[:dl] || CRATES_IO_DL
           response = Excon.get(
             "#{dl}/#{dependency.name}",
             headers: { "User-Agent" => "Dependabot (dependabot.com)" },
