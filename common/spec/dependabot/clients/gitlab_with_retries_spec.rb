@@ -15,7 +15,6 @@ RSpec.describe Dependabot::Clients::GitlabWithRetries do
   describe "retrying a method" do
     subject { client.get_file("some/repo", "important_path.json", "sha") }
 
-    # rubocop:disable Style/BracesAroundHashParameters
     context "when the request has to be retried" do
       before do
         repo_url = "https://gitlab.com/api/v4/projects/some%2Frepo/repository"
@@ -32,6 +31,5 @@ RSpec.describe Dependabot::Clients::GitlabWithRetries do
 
       its(:name) { is_expected.to eq("Gemfile") }
     end
-    # rubocop:enable Style/BracesAroundHashParameters
   end
 end
