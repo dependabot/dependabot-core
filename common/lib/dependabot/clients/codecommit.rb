@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "reverse_markdown"
 
 module Dependabot
   module Clients
@@ -184,7 +185,10 @@ module Dependabot
                               pr_description)
         cc_client.create_pull_request(
           title: pr_name,
-          description: pr_description,
+          description: ReverseMarkdown.convert(
+            pr_description,
+            github_flavored: true
+          ),
           targets: [
             repository_name: source.unscoped_repo,
             source_reference: target_branch,
