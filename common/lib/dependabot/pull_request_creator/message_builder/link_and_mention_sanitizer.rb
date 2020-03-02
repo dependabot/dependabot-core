@@ -58,6 +58,7 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -73,11 +74,19 @@ module Dependabot
                 subnode.string_content = "#{repo}##{number}"
               end
 
-              node.url = node.url.gsub(
-                "github.com", github_redirection_service || "github.com"
-              )
+              node.url = replace_github_host(node.url)
+            elsif node.type == :text &&
+                  node.string_content.match?(GITHUB_REF_REGEX)
+              node.string_content = replace_github_host(node.string_content)
             end
           end
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        def replace_github_host(text)
+          text.gsub(
+            "github.com", github_redirection_service || "github.com"
+          )
         end
 
         def build_mention_nodes(text)
