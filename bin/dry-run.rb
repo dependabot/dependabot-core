@@ -323,7 +323,7 @@ def update_checker_for(dependency)
     credentials: $options[:credentials],
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
-    security_advisories: security_advisories_for(dependency),
+    security_advisories: security_advisories_for(dependency)
   )
 end
 

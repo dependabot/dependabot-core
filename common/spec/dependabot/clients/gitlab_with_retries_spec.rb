@@ -21,11 +21,9 @@ RSpec.describe Dependabot::Clients::GitlabWithRetries do
         stub_request(:get, "#{repo_url}/files/important_path.json?ref=sha").
           to_return(
             { status: 502, headers: { "content-type" => "application/json" } },
-            {
-              status: 200,
-              body: fixture("github", "gemfile_content.json"),
-              headers: { "content-type" => "application/json" }
-            }
+            status: 200,
+            body: fixture("github", "gemfile_content.json"),
+            headers: { "content-type" => "application/json" }
           )
       end
 

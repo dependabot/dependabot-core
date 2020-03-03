@@ -17,11 +17,9 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
           with(headers: { "Authorization" => "token my-token" }).
           to_return(
             { status: 502, headers: { "content-type" => "application/json" } },
-            {
-              status: 200,
-              body: fixture("github", "gemfile_content.json"),
-              headers: { "content-type" => "application/json" }
-            }
+            status: 200,
+            body: fixture("github", "gemfile_content.json"),
+            headers: { "content-type" => "application/json" }
           )
       end
 
