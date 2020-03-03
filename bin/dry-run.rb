@@ -327,7 +327,7 @@ def create_user_npmrc
 
   npmrc = $fetcher.npmrc_content.split
   registries = []
-  npmrc.each do |registry| if registry.include?("registry")
+  npmrc.each do |registry| if registry.include?("registry=")
     registries.push(registry.split('=').at(1).gsub("https:", "").gsub("http:", ""))
   end
   end

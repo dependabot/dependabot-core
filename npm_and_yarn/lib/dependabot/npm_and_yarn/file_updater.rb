@@ -175,7 +175,7 @@ module Dependabot
           #   next unless pnpm_shrinwrap_changes?(shrinkwrap)
 
           # fetch the whrinkwrap file 
-          pnpm_shrinkwrap_file = dependency_files.find {|f| f.name == "common/config/rush/shrinkwrap.yaml"}
+          pnpm_shrinkwrap_file = dependency_files.find {|f| f.name == "common/config/rush/pnpm-lock.yaml"}
           if pnpm_shrinkwrap_file
             updated_files << updated_file(
               file: pnpm_shrinkwrap_file,

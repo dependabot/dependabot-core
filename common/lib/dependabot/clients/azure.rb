@@ -39,12 +39,11 @@ module Dependabot
       end
 
       def fetch_default_branch(_repo)
-        #response = get(source.api_endpoint +
-          #source.organization + "/" + source.project +
-          #"/_apis/git/repositories/" + source.unscoped_repo)
+        response = get(source.api_endpoint +
+          source.organization + "/" + source.project +
+          "/_apis/git/repositories/" + source.unscoped_repo)
 
-        #JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
-        "test_rush"
+        JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
       end
 
       def fetch_repo_contents(commit = nil, path = nil)
