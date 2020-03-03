@@ -1,3 +1,19 @@
+## v0.117.0, 3 March 2020
+
+- Maven: Add support for "+" Semver Build Identifier
+- Sanitize github ref links in plaintext/rdoc
+- Codecommit: Ensures a commit is created before opening a PR
+- Hex: Fix mix.lock file parser for hex 0.20.2+
+- Bump rubocop requirement from ~> 0.79.0 to ~> 0.80.1 in /common
+- Bump phpstan/phpstan from 0.12.08 to 0.12.12 in /composer/helpers
+- Bump npm from 6.13.7 to 6.14.1 in /npm_and_yarn/helpers
+- Bump pip-tools from 4.4.1 to 4.5.1 in /python/helpers
+- Bump semver from 7.1.2 to 7.1.3 in /npm_and_yarn/helpers
+- Bump cython from 0.29.14 to 0.29.15 in /python/helpers
+- Bump rimraf from 3.0.1 to 3.0.2 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.9.2 to 1.9.3 in /composer/helpers
+- Remove security_updates_only (unused)
+
 ## v0.116.6, 3 February 2020
 
 - Better branch name sanitisation
