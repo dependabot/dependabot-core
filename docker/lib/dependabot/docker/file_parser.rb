@@ -12,6 +12,7 @@ module Dependabot
   module Docker
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
+      require "yaml"
 
       # Detials of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
@@ -32,32 +33,33 @@ module Dependabot
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
+      LINE =
+        %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?}.freeze
+
       def parse
         dependency_set = DependencySet.new
+        input_files.each do |file|
+          parsed = begin
+            YAML.safe_load(file.content, [], [], true)
+                   rescue ArgumentError => e
+                     puts "Could not parse YAML: #{e.message}"
+          end
 
-        dockerfiles.each do |dockerfile|
-          dockerfile.content.each_line do |line|
-            next unless FROM_LINE.match?(line)
+          res = parsed["resources"]
+          res.each do |item|
+            next unless (item["type"] == "registry-image") && (item["source"]["tag"] != "latest")
 
-            parsed_from_line = FROM_LINE.match(line).named_captures
-            if parsed_from_line["registry"] == "docker.io"
-              parsed_from_line["registry"] = nil
-            end
+            parsed_data = item["source"]["repository"].to_s + ":" + item["source"]["tag"].to_s
+            img_data = LINE.match(parsed_data).named_captures
 
-            version = version_from(parsed_from_line)
+            version = version_from(img_data)
             next unless version
 
-            dependency_set << Dependency.new(
-              name: parsed_from_line.fetch("image"),
-              version: version,
-              package_manager: "docker",
-              requirements: [
-                requirement: nil,
-                groups: [],
-                file: dockerfile.name,
-                source: source_from(parsed_from_line)
-              ]
-            )
+            add_dependency_set(dependency_set,
+                               img_data.fetch("image"),
+                               version,
+                               source_from(img_data),
+                               file.name)
           end
         end
 
@@ -66,7 +68,7 @@ module Dependabot
 
       private
 
-      def dockerfiles
+      def input_files
         # The Docker file fetcher only fetches Dockerfiles, so no need to
         # filter here
         dependency_files
@@ -82,22 +84,27 @@ module Dependabot
         )
       end
 
-      def source_from(parsed_from_line)
+      def source_from(img_data)
         source = {}
 
-        if parsed_from_line.fetch("registry")
-          source[:registry] = parsed_from_line.fetch("registry")
+        if img_data.fetch("registry")
+          source[:registry] = img_data.fetch("registry")
         end
-
-        if parsed_from_line.fetch("tag")
-          source[:tag] = parsed_from_line.fetch("tag")
-        end
-
-        if parsed_from_line.fetch("digest")
-          source[:digest] = parsed_from_line.fetch("digest")
+        if img_data.fetch("tag")
+        source[:tag] = img_data.fetch("tag")
         end
 
         source
+      end
+
+      def version_from(img_data)
+        return img_data.fetch("tag") if img_data.fetch("tag")
+      end
+
+      def check_required_files
+        return if dependency_files.any?
+
+        raise "No file!"
       end
 
       def version_from_digest(registry:, image:, digest:)
@@ -124,6 +131,20 @@ module Dependabot
         return image unless image.split("/").count < 2
 
         "library/#{image}"
+      end
+
+      def add_dependency_set(dependency_set, name_in, version_in, source_in, file_in)
+        dependency_set << Dependency.new(
+          name: name_in,
+          version: version_in,
+          package_manager: "docker",
+          requirements: [
+            requirement: nil,
+            groups: [],
+            file: file_in,
+            source: source_in
+          ]
+        )
       end
 
       def docker_registry_client(registry)

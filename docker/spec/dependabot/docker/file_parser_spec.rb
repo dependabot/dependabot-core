@@ -9,6 +9,13 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Docker::FileParser do
   it_behaves_like "a dependency file parser"
 
+  def fixture(*name)
+    File.read(File.join("spec", "fixtures", *name))
+  end
+
+  let(:file_body) do
+    fixture("pipelines", file_name)
+  end
   let(:files) { [dockerfile] }
   let(:dockerfile) do
     Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
@@ -628,5 +635,203 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    let(:dockerfile) do
+      Dependabot::DependencyFile.new(name: file_name, content: file_body)
+    end
+
+    context "single yml file which contains no registry-image resources", :pix4d do
+      let(:file_name) { "no-registry.yml" }
+      it "to be empty" do
+        expect(dependencies).to be_empty
+      end
+    end
+    context "single yml file which contains a single resource", :pix4d do
+      describe "with a simple public repository name" do
+        let(:file_name) { "public-simple.yml" }
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "1.0.7" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-1")
+          expect(dependency.version).to eq("1.0.7")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+
+      describe "with a complex public repository name" do
+        let(:file_name) { "public-complex.yml" }
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "3.7.1" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-2/part")
+          expect(dependency.version).to eq("3.7.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+
+      describe "from a private registry" do
+        let(:file_name) { "private.yml" }
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { registry: "private.repo.com", tag: "20190620" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("private-image-name")
+          expect(dependency.version).to eq("20190620")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+
+      describe "from a private registry (new tag format)" do
+        let(:file_name) { "private.yml" }
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { registry: "private.repo.com", tag: "20190620150000" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("private-image-name-new-tag-format")
+          expect(dependency.version).to eq("20190620150000")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+    end # context
+
+    context "single yml file which contains multiple (two) public resources", :pix4d do
+      let(:file_name) { "public-mix.yml" }
+
+      describe "having a resource with single part repository name" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "1.0.7" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-1")
+          expect(dependency.version).to eq("1.0.7")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "having a resource with multi-part respository name" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "3.7.1" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-2/part")
+          expect(dependency.version).to eq("3.7.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+    end # context
+
+    context "single yml file which contains multiple resources (mix of private and public ones)", :pix4d do
+      let(:file_name) { "mix.yml" }
+
+      describe "having a resource with single part repository name" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "1.0.7" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-1")
+          expect(dependency.version).to eq("1.0.7")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "having a resource with mulit-part repository name" do
+        subject(:dependency) { dependencies[1] }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { tag: "3.7.1" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("public-image-name-2/part")
+          expect(dependency.version).to eq("3.7.1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "having a resource with the tag format in YYYYMMDD" do
+        subject(:dependency) { dependencies[2]}
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { registry: "private.repo.com", tag: "20190620" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("private-image-name")
+          expect(dependency.version).to eq("20190620")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "having a resource with the tag format in YYYYMMDDHHmmss" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: file_name,
+            source: { registry: "private.repo.com", tag: "20190620150000" }
+          }]
+        end
+        it "has the right details" do
+          expect(dependency.name).to eq("private-image-name-new-tag-format")
+          expect(dependency.version).to eq("20190620150000")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end # describe
+
+    end # context
+
   end
 end

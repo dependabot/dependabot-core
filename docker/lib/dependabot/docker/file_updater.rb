@@ -22,7 +22,7 @@ module Dependabot
           updated_files <<
             updated_file(
               file: file,
-              content: updated_dockerfile_content(file)
+              content: file_content(file)
             )
         end
 
@@ -43,16 +43,11 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No file!"
       end
 
-      def updated_dockerfile_content(file)
-        updated_content =
-          if specified_with_digest?(file)
-            update_digest_and_tag(file)
-          else
-            update_tag(file)
-          end
+      def file_content(file)
+        updated_content = update_tag(file)
 
         raise "Expected content to change!" if updated_content == file.content
 
@@ -73,19 +68,15 @@ module Dependabot
       def update_tag(file)
         return unless old_tag(file)
 
-        old_declaration =
+        img_data =
           if private_registry_url(file) then "#{private_registry_url(file)}/"
           else ""
           end
-        old_declaration += "#{dependency.name}:#{old_tag(file)}"
-        escaped_declaration = Regexp.escape(old_declaration)
+        img_data += dependency.name.to_s
 
-        old_declaration_regex =
-          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
-
-        file.content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
-        end
+        tag_var = file.content.match(/repository: #{img_data}\n + (tag: [^\n]+)\n/)
+        new_tag_var = tag_var.to_s.gsub(Regexp.last_match(1), "tag: \"#{new_tag(file)}\"")
+        file.content.gsub(tag_var.to_s, new_tag_var.to_s)
       end
 
       def specified_with_digest?(file)

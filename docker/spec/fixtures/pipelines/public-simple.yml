@@ -1,0 +1,10 @@
+---
+resources:
+
+- name: public-image-name-1.docker
+  type: registry-image
+  source:
+    username: here_is_the_username
+    password: here_is_the_password
+    repository: public-image-name-1
+    tag: 1.0.7

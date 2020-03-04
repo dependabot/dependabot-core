@@ -1,0 +1,10 @@
+---
+resources:
+
+- name: private-image-name.docker
+  type: registry-image
+  source:
+    username: here_is_the_username
+    password: here_is_the_password
+    repository: private.repo.com/private-image-name-16.04
+    tag: 0

@@ -1,0 +1,10 @@
+[
+  {
+    "name": "pipeline-template.yml",
+    "type": "file"
+  },
+  {
+    "name": "pipeline-template-base.yml",
+    "type": "file"
+  }
+]
