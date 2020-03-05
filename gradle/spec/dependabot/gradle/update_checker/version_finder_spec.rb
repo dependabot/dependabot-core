@@ -222,7 +222,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         "https://repo.maven.apache.org/maven2/org/springframework/boot"\
         "/org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
-      
       before do
         stub_request(:get, repo_maven_metadata_url).
           to_return(status: 404)
