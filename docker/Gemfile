@@ -2,6 +2,8 @@
 
 source "https://rubygems.org"
 
+gem "rubocop"
+
 gem "dependabot-common", path: "../common"
 
 gemspec

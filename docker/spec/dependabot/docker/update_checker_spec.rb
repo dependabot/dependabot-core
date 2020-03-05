@@ -631,4 +631,789 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
   end
+
+  describe "Method #up_to_date?", :pix4d  do
+    before do
+      stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+        .and_return(
+          status: 200,
+          body: { "name": "library/#{dependency_name}", "tags": ["20171025.8"] }.to_json
+        )
+    end
+    subject { checker.up_to_date? }
+    let(:dependency_name) { "docker-img-name-1" }
+
+    context "given an string dependency tag" do
+      let(:version) { "any_other_string" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an bootstrapme dependency tag" do
+      let(:version) { "bootstrapme" }
+      it { is_expected.to be_falsey }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20150620" }
+      it { is_expected.to be_falsey }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20160620.1" }
+      it { is_expected.to be_falsey }
+    end
+
+    context "given an up-to-date dependency" do
+      let(:version) { "20171025.8" }
+      it { is_expected.to be_truthy }
+    end
+  end
+
+  describe "Method #can_update?", :pix4d  do
+    before do
+      stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+        .and_return(
+          status: 200,
+          body: { "name": "library/#{dependency_name}", "tags": ["20191025.3"] }.to_json
+        )
+    end
+
+    subject { checker.can_update?(requirements_to_unlock: :own) }
+
+    let(:dependency_name) { "docker-img-name-2" }
+
+    context "given an string dependency tag" do
+      let(:version) { "any_other_string" }
+      it { is_expected.to be_falsey }
+    end
+
+    context "given an bootstrapme dependency tag" do
+      let(:version) { "bootstrapme" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20190620" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20190620.1" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20190707" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an outdated dependency" do
+      let(:version) { "20190707.1" }
+      it { is_expected.to be_truthy }
+    end
+
+    context "given an up-to-date dependency" do
+      let(:version) { "20191025.3" }
+      it { is_expected.to be_falsey }
+    end
+  end
+
+  describe "Method #latest_version", :pix4d  do
+    subject { checker.latest_version }
+
+    let(:version) { "0" }
+    let(:dependency_name) { "docker-img-name-2" }
+
+    context "return latest tag" do
+      before do
+        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ["20191025.3"] }.to_json
+          )
+      end
+
+      it { is_expected.to eq("20191025.3") }
+    end
+
+    context "every time public docker registry times out" do
+      before do
+        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+          .to_raise(RestClient::Exceptions::OpenTimeout)
+      end
+
+      it "raises" do
+        expect { checker.latest_version }
+          .to raise_error(RestClient::Exceptions::OpenTimeout)
+      end
+    end
+
+    context "every time private docker registry times out" do
+      before do
+        stub_request(:get, "https://registry-host.io:5000/v2/#{dependency_name}/tags/list")
+          .to_raise(RestClient::Exceptions::OpenTimeout)
+      end
+
+      let(:source) { { registry: "registry-host.io:5000" } }
+
+      it "raises" do
+        expect { checker.latest_version }
+          .to raise_error(Dependabot::PrivateSourceTimedOut)
+      end
+    end
+
+    context "without authentication credentials" do
+      before do
+        stub_request(:get, "https://registry-host.io:5000/v2/#{dependency_name}/tags/list")
+          .and_return(
+            status: 401,
+            body: "",
+            headers: { 'www_authenticate' => 'basic 123' }
+          )
+      end
+      let(:source) { { registry: "registry-host.io:5000" } }
+
+      it "raises a to PrivateSourceAuthenticationFailure error" do
+        expect { checker.latest_version }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+            expect(error.source).to eq("registry-host.io:5000")
+          end
+      end
+    end
+
+    context "connects to private registry with authentication credentials and returns" do
+      let(:credentials) do
+        [{
+          'type' => 'docker_registry',
+          'registry' => 'registry-host.io:5000',
+          'username' => 'user',
+          'password' => 'pa55word'
+        }]
+      end
+      let(:source) { { registry: "registry-host.io:5000" } }
+
+      before do
+        tags_url = "https://registry-host.io:5000/v2/#{dependency_name}/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ["20191027.8"] }.to_json
+          )
+      end
+
+      it { is_expected.to eq("20191027.8") }
+    end
+
+    context "connects to public registry and returns" do
+      let(:credentials) do
+        [{
+          'type' => 'docker_registry',
+          'registry' => 'registry-host.io:5000'
+        }]
+      end
+
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ["20191028.2"] }.to_json
+          )
+      end
+
+      it { is_expected.to eq("20191028.2") }
+    end
+  end
+
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: version,
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "pipeline-template.yml",
+        source: source
+      }],
+      package_manager: "docker"
+    )
+  end
+
+  describe "Method #updated_requirements", :pix4d  do
+    subject { checker.updated_requirements }
+
+    let(:source) { { tag: version } }
+    let(:dependency_name) { "docker-img-name-1" }
+
+    before do
+      tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+      stub_request(:get, tags_url)
+        .and_return(
+          status: 200,
+          body: { "name": "library/#{dependency_name}", "tags": ["20191028.2"] }.to_json
+        )
+    end
+
+    context "when specified with a tag" do
+      let(:version) { "bootstrapme" }
+      it "updates the tag" do
+        expect(checker.updated_requirements)
+          .to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "pipeline-template.yml",
+              source: { tag: "20191028.2" }
+            }]
+          )
+      end
+
+      let(:version) { "0" }
+      it "updates the tag" do
+        expect(checker.updated_requirements)
+          .to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "pipeline-template.yml",
+              source: { tag: "20191028.2" }
+            }]
+          )
+      end
+
+      let(:version) { "20150101" }
+      it "updates the tag" do
+        expect(checker.updated_requirements)
+          .to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "pipeline-template.yml",
+              source: { tag: '20191028.2' }
+            }]
+          )
+      end
+    end
+  end
+
+  describe 'when we use python style tags', :pix4d  do
+    let(:dependency_name) { 'python' }
+
+    before do
+      tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+      stub_request(:get, tags_url)
+        .and_return(
+          status: 200,
+          body: {
+            "name": "library/#{dependency_name}",
+            "tags": ['3.6.0', '3.7.0a2', '3.7.0a2-alpine']
+          }.to_json
+        )
+    end
+
+    context 'Method #up_to_date?' do
+      subject { checker.up_to_date? }
+      context 'given an bootstrapme dependency' do
+        let(:version) { 'bootstrapme' }
+        it { is_expected.to be_falsey }
+      end
+      context 'given an string dependency' do
+        let(:version) { 'anystring' }
+        it { is_expected.to be_truthy }
+      end
+      context 'given an outdated dependency' do
+        let(:version) { '2.5' }
+        it { is_expected.to be_falsey }
+      end
+      context 'given an outdated dependency' do
+        let(:version) { '0' }
+        it { is_expected.to be_falsey }
+      end
+      context 'given an up-to-date dependency' do
+        let(:version) { '3.6.0' }
+        it { is_expected.to be_truthy }
+      end
+      context 'given an outdated pre-release dependency' do
+        let(:version) { '3.7.0a1' }
+        it { is_expected.to be_falsey }
+      end
+      context 'given an up-to-date pre-release dependency' do
+        let(:version) { '3.7.0a2' }
+        it { is_expected.to be_truthy }
+      end
+    end
+
+    context 'Method #can_update?' do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      context 'given an string dependency tag' do
+        let(:version) { 'any_other_string' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an bootstrapme dependency tag' do
+        let(:version) { 'bootstrapme' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an outdated dependency' do
+        let(:version) { '2.7' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an up-to-date dependency' do
+        let(:version) { '3.6.0' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an outdated pre-release dependency' do
+        let(:version) { '3.7.0a1' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an up-to-date pre-release dependency' do
+        let(:version) { '3.7.0a2' }
+        it { is_expected.to be_falsey }
+      end
+    end
+
+    context 'Method #latest_version' do
+      subject { checker.latest_version }
+
+      context 'given a 2.7 dependency tag' do
+        let(:version) { '2.7' }
+        it { is_expected.to eq('3.6.0') }
+      end
+
+      context 'given a 3.7.0a1 dependency tag' do
+        let(:version) { '3.7.0a1' }
+        it { is_expected.to eq('3.7.0a2') }
+      end
+
+      context 'given a 3.7.1a1-alpine dependency tag' do
+        let(:version) { '3.7.0a1-alpine' }
+        it { is_expected.to eq('3.7.0a2-alpine') }
+      end
+    end
+    context 'Method #updated_requirements' do
+      subject { checker.updated_requirements }
+
+      context 'when specified with a tag' do
+        let(:version) { 'bootstrapme' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '3.6.0' }
+              }]
+            )
+        end
+      end
+
+      context 'when specified with a tag' do
+        let(:version) { '3.7.0a1' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '3.7.0a2' }
+              }]
+            )
+        end
+      end
+      context 'when specified with a tag' do
+        let(:version) { '0' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '3.6.0' }
+              }]
+            )
+        end
+      end
+      context 'when specified with a tag' do
+        let(:version) { '2.6' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '3.6.0' }
+              }]
+            )
+        end
+      end
+    end
+
+    describe 'when we use ubuntu style tags' do
+      let(:dependency_name) { 'ubuntu' }
+
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(
+            status: 200,
+            body: {
+              "name": "library/#{dependency_name}",
+              "tags": ['17.10', 'bionic-20170916', 'xenial-20170916', 'utopic-20191027.11']
+            }.to_json
+          )
+      end
+
+      context 'Method #up_to_date?' do
+        subject { checker.up_to_date? }
+
+        context 'given an bootstrapme dependency' do
+          let(:version) { 'bootstrapme' }
+          it { is_expected.to be_falsey }
+        end
+        context 'given an string dependency' do
+          let(:version) { 'anystring' }
+          it { is_expected.to be_truthy }
+        end
+        context 'given an outdated dependency' do
+          let(:version) { '16.04' }
+          it { is_expected.to be_falsey }
+        end
+        context 'given an outdated dependency' do
+          let(:version) { '0' }
+          it { is_expected.to be_falsey }
+        end
+        context 'given an up-to-date dependency' do
+          let(:version) { '17.10' }
+          it { is_expected.to be_truthy }
+        end
+        context 'given an outdated string-version type dependency' do
+          let(:version) { 'bionic-20160101' }
+          it { is_expected.to be_falsey }
+        end
+        context 'given an up-to-date string-version type dependency' do
+          let(:version) { 'bionic-20170916' }
+          it { is_expected.to be_truthy }
+        end
+        context 'given an outdated string-version type dependency' do
+          let(:version) { 'xenial-20160101' }
+          it { is_expected.to be_falsey }
+        end
+        context 'given an up-to-date string-version type dependency' do
+          let(:version) { 'xenial-20170916' }
+          it { is_expected.to be_truthy }
+        end
+      end
+
+      context 'Method #can_update?' do
+        subject { checker.can_update?(requirements_to_unlock: :own) }
+
+        context 'given an string dependency tag' do
+          let(:version) { 'any_other_string' }
+          it { is_expected.to be_falsey }
+        end
+
+        context 'given an bootstrapme dependency tag' do
+          let(:version) { 'bootstrapme' }
+          it { is_expected.to be_truthy }
+        end
+
+        context 'given an outdated dependency' do
+          let(:version) { '14.04' }
+          it { is_expected.to be_truthy }
+        end
+
+        context 'given an up-to-date dependency' do
+          let(:version) { '17.10' }
+          it { is_expected.to be_falsey }
+        end
+
+        context 'given an outdated string-version typee dependency' do
+          let(:version) { 'bionic-20160202' }
+          it { is_expected.to be_truthy }
+        end
+
+        context 'given an up-to-date string-version type dependency' do
+          let(:version) { 'bionic-20170916' }
+          it { is_expected.to be_falsey }
+        end
+      end
+      context 'Method #latest_version' do
+        subject { checker.latest_version }
+
+        context 'given a 14.04 dependency tag' do
+          let(:version) { '14.04' }
+          it { is_expected.to eq('17.10') }
+        end
+
+        context 'given a bionic-YYYYMMDD dependency tag' do
+          let(:version) { 'bionic-20150101' }
+          it { is_expected.to eq('bionic-20170916') }
+        end
+
+        context 'given a xenial-YYYYMMDD dependency tag' do
+          let(:version) { 'xenial-20150101' }
+          it { is_expected.to eq('xenial-20170916') }
+        end
+        context 'given a utopic-YYYYMMDD.N dependency tag' do
+          let(:version) { 'utopic-20150101' }
+          it { is_expected.to eq('utopic-20191027.11') }
+        end
+
+        context 'given a utopic-YYYYMMDD.N dependency tag' do
+          let(:version) { 'utopic-20150101' }
+          it { is_expected.to eq('utopic-20191027.11') }
+        end
+      end
+      context 'Method #updated_requirements' do
+        subject { checker.updated_requirements }
+
+        context 'when specified with a tag' do
+          let(:version) { 'bootstrapme' }
+          it 'updates the tag' do
+            expect(checker.updated_requirements)
+              .to eq(
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: 'pipeline-template.yml',
+                  source: { tag: '17.10' }
+                }]
+              )
+          end
+        end
+        context 'when specified with a tag' do
+          let(:version) { 'xenial-20140101' }
+          it 'updates the tag' do
+            expect(checker.updated_requirements)
+              .to eq(
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: 'pipeline-template.yml',
+                  source: { tag: 'xenial-20170916' }
+                }]
+              )
+          end
+        end
+        context 'when specified with a tag' do
+          let(:version) { '14.04' }
+          it 'updates the tag' do
+            expect(checker.updated_requirements)
+              .to eq(
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: 'pipeline-template.yml',
+                  source: { tag: '17.10' }
+                }]
+              )
+          end
+        end
+      end
+    end
+
+    describe 'Method #up_to_date (new tag format)?' do
+      before do
+        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ['20171025090000'] }.to_json
+          )
+      end
+      subject { checker.up_to_date? }
+      let(:dependency_name) { 'docker-img-name-1' }
+
+      context 'given an string dependency tag' do
+        let(:version) { 'any_other_string' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an bootstrapme dependency tag' do
+        let(:version) { 'bootstrapme' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an outdated dependency in format YYYYMMDD' do
+        let(:version) { '20150620' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an outdated dependency in format YYYYMMDD.N' do
+        let(:version) { '20150620.1' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an outdated dependency' do
+        let(:version) { '20150620150000' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an up-to-date dependency' do
+        let(:version) { '20171025090000'}
+        it { is_expected.to be_truthy }
+      end
+    end
+
+    describe 'Method #can_update (new tag format)?' do
+      before do
+        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ['20191025090000'] }.to_json
+          )
+      end
+
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      let(:dependency_name) { 'docker-img-name-2' }
+
+      context 'given an string dependency tag' do
+        let(:version) { 'any_other_string' }
+        it { is_expected.to be_falsey }
+      end
+
+      context 'given an bootstrapme dependency tag' do
+        let(:version) { 'bootstrapme' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an outdated dependency' do
+        let(:version) { '20190620140000' }
+        it { is_expected.to be_truthy }
+      end
+
+      context 'given an up-to-date dependency' do
+        let(:version) { '20191025140000' }
+        it { is_expected.to be_falsey }
+      end
+    end
+
+    describe 'Method #latest_version (new tag format)' do
+      subject { checker.latest_version }
+
+      let(:version) { '0' }
+      let(:dependency_name) { 'docker-img-name-2' }
+
+      context 'return latest tag' do
+        before do
+          stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list")
+            .and_return(
+              status: 200,
+              body: { "name": "library/#{dependency_name}", "tags": ['20191025090000'] }.to_json
+            )
+        end
+
+        it { is_expected.to eq('20191025090000') }
+      end
+
+      context 'connects to private registry with authentication credentials and returns' do
+        let(:credentials) do
+          [{
+            'type' => 'docker_registry',
+            'registry' => 'registry-host.io:5000',
+            'username' => 'user',
+            'password' => 'pa55word'
+          }]
+        end
+        let(:source) { { registry: 'registry-host.io:5000' } }
+
+        before do
+          tags_url = "https://registry-host.io:5000/v2/#{dependency_name}/tags/list"
+          stub_request(:get, tags_url)
+            .and_return(
+              status: 200,
+              body: { "name": "library/#{dependency_name}", "tags": ['20191027090000'] }.to_json
+            )
+        end
+
+        it { is_expected.to eq('20191027090000') }
+      end
+
+      context 'connects to public registry and returns' do
+        let(:credentials) do
+          [{
+            'type' => 'docker_registry',
+            'registry' => 'registry-host.io:5000'
+          }]
+        end
+
+        before do
+          tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+          stub_request(:get, tags_url)
+            .and_return(
+              status: 200,
+              body: { "name": "library/#{dependency_name}", "tags": ['20191028090000'] }.to_json
+            )
+        end
+
+        it { is_expected.to eq('20191028090000') }
+      end
+    end
+
+    describe 'Method #updated_requirements (new tag format)' do
+      subject { checker.updated_requirements }
+
+      let(:source) { { tag: version } }
+      let(:dependency_name) { 'docker-img-name-1' }
+
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+        stub_request(:get, tags_url)
+          .and_return(
+            status: 200,
+            body: { "name": "library/#{dependency_name}", "tags": ['20191028090000'] }.to_json
+          )
+      end
+
+      context 'when specified with a tag' do
+        let(:version) { 'bootstrapme' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '20191028090000' }
+              }]
+            )
+        end
+
+        let(:version) { '0' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '20191028090000' }
+              }]
+            )
+        end
+
+        let(:version) { '20150101' }
+        it 'updates the tag' do
+          expect(checker.updated_requirements)
+            .to eq(
+              [{
+                requirement: nil,
+                groups: [],
+                file: 'pipeline-template.yml',
+                source: { tag: '20191028090000' }
+              }]
+            )
+        end
+      end
+    end
+  end
 end
