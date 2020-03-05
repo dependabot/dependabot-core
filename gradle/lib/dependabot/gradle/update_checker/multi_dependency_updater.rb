@@ -10,10 +10,11 @@ module Dependabot
         require_relative "version_finder"
         require_relative "requirements_updater"
 
-        def initialize(dependency:, dependency_files:,
+        def initialize(dependency:, dependency_files:, credentials:,
                        target_version_details:, ignored_versions:)
           @dependency       = dependency
           @dependency_files = dependency_files
+          @credentials      = credentials
           @target_version   = target_version_details&.fetch(:version)
           @source_url       = target_version_details&.fetch(:source_url)
           @ignored_versions = ignored_versions
@@ -27,6 +28,7 @@ module Dependabot
               VersionFinder.new(
                 dependency: dep,
                 dependency_files: dependency_files,
+                credentials: credentials,
                 ignored_versions: ignored_versions,
                 security_advisories: []
               ).versions.
@@ -53,8 +55,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :target_version,
-                    :source_url, :ignored_versions
+        attr_reader :dependency, :dependency_files, :credentials,
+                    :target_version, :source_url, :ignored_versions
 
         def dependencies_to_update
           @dependencies_to_update ||=
