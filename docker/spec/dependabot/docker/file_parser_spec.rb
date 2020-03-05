@@ -636,17 +636,22 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    let(:dockerfile) do
-      Dependabot::DependencyFile.new(name: file_name, content: file_body)
-    end
-
     context "single yml file which contains no registry-image resources", :pix4d do
+      it_behaves_like "a dependency file parser"
       let(:file_name) { "no-registry.yml" }
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+      end
       it "to be empty" do
         expect(dependencies).to be_empty
       end
     end
+
     context "single yml file which contains a single resource", :pix4d do
+      it_behaves_like "a dependency file parser"
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+      end
       describe "with a simple public repository name" do
         let(:file_name) { "public-simple.yml" }
         subject(:dependency) { dependencies.first }
@@ -654,7 +659,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "1.0.7" }
           }]
         end
@@ -673,7 +678,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "3.7.1" }
           }]
         end
@@ -692,7 +697,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { registry: "private.repo.com", tag: "20190620" }
           }]
         end
@@ -710,7 +715,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { registry: "private.repo.com", tag: "20190620150000" }
           }]
         end
@@ -723,7 +728,11 @@ RSpec.describe Dependabot::Docker::FileParser do
     end # context
 
     context "single yml file which contains multiple (two) public resources", :pix4d do
+      it_behaves_like "a dependency file parser"
       let(:file_name) { "public-mix.yml" }
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+      end
 
       describe "having a resource with single part repository name" do
         subject(:dependency) { dependencies.first }
@@ -731,7 +740,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "1.0.7" }
           }]
         end
@@ -748,7 +757,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "3.7.1" }
           }]
         end
@@ -761,7 +770,11 @@ RSpec.describe Dependabot::Docker::FileParser do
     end # context
 
     context "single yml file which contains multiple resources (mix of private and public ones)", :pix4d do
+      it_behaves_like "a dependency file parser"
       let(:file_name) { "mix.yml" }
+      let(:dockerfile) do
+        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+      end
 
       describe "having a resource with single part repository name" do
         subject(:dependency) { dependencies.first }
@@ -769,7 +782,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "1.0.7" }
           }]
         end
@@ -786,7 +799,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { tag: "3.7.1" }
           }]
         end
@@ -803,7 +816,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { registry: "private.repo.com", tag: "20190620" }
           }]
         end
@@ -820,7 +833,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: file_name,
+            file: "#{file_name}-template",
             source: { registry: "private.repo.com", tag: "20190620150000" }
           }]
         end

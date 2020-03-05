@@ -11,9 +11,9 @@ require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot
   module Docker
-    BOOTSTRAP_TAG = "bootstrapme"
-
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      BOOTSTRAP_TAG = "bootstrapme"
+
       VERSION_REGEX =
         /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
@@ -45,6 +45,7 @@ module Dependabot
       def updated_requirements
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
+          updated_source[:digest] = updated_digest if req[:source][:digest]
           updated_source[:tag] = latest_version if req[:source][:tag]
 
           req.merge(source: updated_source)
@@ -68,21 +69,30 @@ module Dependabot
 
       def version_up_to_date?
         # If the tag isn't up-to-date then we can definitely update
-        if version_tag_up_to_date?
-          true
-        else
-          false
-        end
+        return false if version_tag_up_to_date? == false
+
+        # Otherwise, if the Dockerfile specifies a digest check that that is
+        # up-to-date
+        digest_up_to_date?
       end
 
       def version_tag_up_to_date?
-        return true unless dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG
-        return false if dependency.version == BOOTSTRAP_TAG
+        if not (dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG)
+          return
+        if dependency.version == BOOTSTRAP_TAG
+          return false
 
         old_v = numeric_version_from(dependency.version)
         latest_v = numeric_version_from(latest_version)
 
         return true if version_class.new(latest_v) <= version_class.new(old_v)
+
+        # Check the precision of the potentially higher tag is the same as the
+        # one it would replace. In the event that it's not the same, check the
+        # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
+        return false if old_v.split(".").count == latest_v.split(".").count
+
+        digest_of(dependency.version) == digest_of(latest_version)
       end
 
       def digest_up_to_date?
@@ -108,11 +118,10 @@ module Dependabot
         candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
         wants_prerelease = if dependency.version == BOOTSTRAP_TAG
-                             false
-                           else
-                             prerelease?(dependency.version)
-                           end
-
+          false
+        else
+          prerelease?(dependency.version)
+        end
         candidate_tags =
           candidate_tags.
           reject { |tag| prerelease?(tag) && !wants_prerelease }.
@@ -126,24 +135,20 @@ module Dependabot
           max_by { |tag| version_class.new(numeric_version_from(tag)) }
 
         latest_tag || dependency.version
+
       end
 
       def comparable_tags_from_registry
-        if dependency.version == BOOTSTRAP_TAG
-          original_prefix = nil
-          original_suffix = nil
-          original_format = :normal
-        else
-          original_prefix = prefix_of(dependency.version)
-          original_suffix = suffix_of(dependency.version)
-          original_format = format_of(dependency.version)
-        end
+        original_prefix = prefix_of(dependency.version)
+        original_suffix = suffix_of(dependency.version)
+        original_format = format_of(dependency.version)
+
         tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
           select { |tag| prefix_of(tag) == original_prefix }.
           select { |tag| suffix_of(tag) == original_suffix }.
-          select { |tag| format_of(tag) == original_format }
-
+          select { |tag| format_of(tag) == original_format }.
+          reject { |tag| commit_sha_suffix?(tag) }
       end
 
       def remove_version_downgrades(candidate_tags)
@@ -164,16 +169,18 @@ module Dependabot
         # which case we'll use that to find the latest version)
         return false unless tag.match?(/(^|\-)[0-9a-f]{7,}$/)
 
-        !tag.match?(/(^|\-)20[0-1]\d{5}$/)
+        !tag.match?(/(^|\-)\d+$/)
       end
 
       def version_of_latest_tag
+        return unless latest_digest
+
         candidate_tag =
           tags_from_registry.
           select { |tag| canonical_version?(tag) }.
           sort_by { |t| version_class.new(numeric_version_from(t)) }.
           reverse.
-          first
+          find { |t| digest_of(t) == latest_digest }
 
         return unless candidate_tag
 
@@ -254,19 +261,28 @@ module Dependabot
       end
 
       def prefix_of(tag)
+        if tag == BOOTSTRAP_TAG
+          return nil
+
         tag.match(NAME_WITH_VERSION).named_captures.fetch("prefix")
       end
 
       def suffix_of(tag)
+        if tag == BOOTSTRAP_TAG
+          return nil
+
         tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
       def format_of(tag)
+        if tag == BOOTSTRAP_TAG
+          return :build_num
+
         version = numeric_version_from(tag)
 
-        # THIS TWO CASES ARE UNTESTED YET
         return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+        return :build_num if version.match?(/^\d+$/)
 
         :normal
       end
@@ -279,6 +295,7 @@ module Dependabot
         # If we're dealing with a numeric version we can compare it against
         # the digest for the `latest` tag.
         return false unless numeric_version_from(tag)
+        return false unless latest_digest
         return false unless version_of_latest_tag
 
         version_class.new(numeric_version_from(tag)) > version_of_latest_tag

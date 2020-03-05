@@ -7,47 +7,47 @@ module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(/template|docker-image-version/i) }
+        filenames.any? { |f| f.match?(/dockerfile|template|docker-image-version/i) }
       end
 
       def self.required_files_message
-        "Repo must contain a pipeline yml."
+        "Repo must contain a Dockerfile or a Concourse pipeline file."
       end
 
       private
 
       def fetch_files
         fetched_files = []
-        fetched_files += correctly_encoded_template_file
+        fetched_files += correctly_encoded_file
 
         return fetched_files if fetched_files.any?
 
-        if incorrectly_encoded_template_file.none?
+        if incorrectly_encoded_file.none?
           raise(
             Dependabot::DependencyFileNotFound,
-            File.join(directory, "template")
+            "No Dockerfile or Concourse pipeline file found at path: #{directory}."
           )
         else
           raise(
             Dependabot::DependencyFileNotParseable,
-            incorrectly_encoded_template_file.first.path
+            incorrectly_encoded_file.first.path
           )
         end
       end
 
-      def template_file
-        @template_file ||=
+      def fetched_file
+        @fetched_file ||=
           repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(/template|docker-image-version/i) }.
+          select { |f| f.type == "file" && f.name.match?(/dockerfile|template|docker-image-version/i) }.
           map { |f| fetch_file_from_host(f.name) }
       end
 
-      def correctly_encoded_template_file
-        template_file.select { |f| f.content.valid_encoding? }
+      def correctly_encoded_file
+        fetched_file.select { |f| f.content.valid_encoding? }
       end
 
-      def incorrectly_encoded_template_file
-        template_file.reject { |f| f.content.valid_encoding? }
+      def incorrectly_encoded_file
+        fetched_file.reject { |f| f.content.valid_encoding? }
       end
     end
   end

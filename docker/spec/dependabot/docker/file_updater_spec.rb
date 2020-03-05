@@ -434,122 +434,124 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
     end
+  describe "#updated_dependency_files",:pix4d do
+    it_behaves_like "a dependency file updater"
 
-  it "raises the correct error when there is no input files or the files are not a list", :pix4d do
-    expect do
-      described_class.new(
-        dependencies: nil,
-        dependency_files: [nil],
+    it "raises the correct error when 'dependency_files' do not contain any files or when 'dependency_files' is not a list" do
+      expect do
+        described_class.new(
+          dependencies: nil,
+          dependency_files: [nil],
+          credentials: nil
+        )
+      end .to raise_error("No file!")
+
+      expect do
+        described_class.new(
+          dependencies: nil,
+          dependency_files: nil,
+          credentials: nil
+        )
+      end .to raise_error("undefined method `any?' for nil:NilClass")
+    end
+
+    it "updates the input files"  do
+      # expected output
+      expected_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "public-simple.yml",
+          source: { tag: "1.10" }
+        }]
+
+      previous_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "public-simple.yml",
+          source: { tag: "1.0.7" }
+        }]
+
+      # required input for the FileUpdater class
+      input_files = Dependabot::DependencyFile.new(
+        name: "public-simple.yml",
+        content: fixture("pipelines", "public-simple.yml")
+      )
+
+      input_dependencies = Dependabot::Dependency.new(
+        name: "public-image-name-1",
+        version: "1.10",
+        previous_version: "1.0.7",
+        requirements: expected_requirements,
+        previous_requirements: previous_requirements,
+        package_manager: "docker"
+      )
+
+      # call and instance to the FileUpdater class
+      updater = described_class.new(
+        dependencies: [input_dependencies],
+        dependency_files: [input_files],
         credentials: nil
       )
-    end .to raise_error("No file!")
 
-    expect do
-      described_class.new(
-        dependencies: nil,
-        dependency_files: nil,
-        credentials: nil
-      )
-    end .to raise_error("undefined method `any?' for nil:NilClass")
-  end
-
-  it "creates the input objects that are needed and update the input files", :pix4d  do
-    # expected output
-    expected_requirements =
-      [{
-        requirement: nil,
-        groups: [],
-        file: "public-simple.yml",
-        source: { tag: "1.10" }
-      }]
-
-    previous_requirements =
-      [{
-        requirement: nil,
-        groups: [],
-        file: "public-simple.yml",
-        source: { tag: "1.0.7" }
-      }]
-
-    # required input for the FileUpdater class
-    input_files = Dependabot::DependencyFile.new(
-      name: "public-simple.yml",
-      content: fixture("pipelines", "public-simple.yml")
-    )
-
-    input_dependencies = Dependabot::Dependency.new(
-      name: "public-image-name-1",
-      version: "1.10",
-      previous_version: "1.0.7",
-      requirements: expected_requirements,
-      previous_requirements: previous_requirements,
-      package_manager: "docker"
-    )
-
-    # call and instance to the FileUpdater class
-    updater = described_class.new(
-      dependencies: [input_dependencies],
-      dependency_files: [input_files],
-      credentials: nil
-    )
-
-    updated_files = updater.updated_dependency_files
-    updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-    expect(updated_files.first.name).to eq("public-simple.yml")
-    expect(updated_files.first.content).to include "public-image-name-1\n"
-    expect(updated_files.first.content).to include "tag: \"1.10\"\n"
-  end
-
-  it "correctly updates the input files if we use the same number/string
-      in both the repository and tag", :pix4d  do
-    # expected output
-    expected_requirements =
-      [{
-        requirement: nil,
-        groups: [],
-        file: "private-complex.yml",
-        source: { tag: "20190825" }
-      }]
-
-    previous_requirements =
-      [{
-        requirement: nil,
-        groups: [],
-        file: "private-complex.yml",
-        source: { tag: "0" }
-      }]
-
-    # required input for the FileUpdater class
-    input_files = Dependabot::DependencyFile.new(
-      name: "private-complex.yml",
-      content: fixture("pipelines", "private-complex.yml")
-    )
-
-    input_dependencies = Dependabot::Dependency.new(
-      name: "private.repo.com/private-image-name-16.04",
-      version: "20190825",
-      previous_version: 0,
-      requirements: expected_requirements,
-      previous_requirements: previous_requirements,
-      package_manager: "docker"
-    )
-
-    # call and instance to the FileUpdater class
-    updater = described_class.new(
-      dependencies: [input_dependencies],
-      dependency_files: [input_files],
-      credentials: nil
-    )
-
-    updated_files = updater.updated_dependency_files
-    updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-    expect(updated_files.first.name).to eq("private-complex.yml")
-    expect(updated_files.first.content).to include "private-image-name-16.04\n"
-    expect(updated_files.first.content).to include "tag: \"20190825\"\n"
+      updated_files = updater.updated_dependency_files
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files.first.name).to eq("public-simple.yml")
+      expect(updated_files.first.content).to include "public-image-name-1\n"
+      expect(updated_files.first.content).to include "tag: 1.10\n"
     end
 
     it "correctly updates the input files if we use the same number/string
-        in both the repository and tag (new tag format)", :pix4d  do
+        in both the repository and tag"  do
+      # expected output
+      expected_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "private-complex.yml",
+          source: { tag: "20190825" }
+        }]
+
+      previous_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "private-complex.yml",
+          source: { tag: "0" }
+        }]
+
+      # required input for the FileUpdater class
+      input_files = Dependabot::DependencyFile.new(
+        name: "private-complex.yml",
+        content: fixture("pipelines", "private-complex.yml")
+      )
+
+      input_dependencies = Dependabot::Dependency.new(
+        name: "private.repo.com/private-image-name-16.04",
+        version: "20190825",
+        previous_version: 0,
+        requirements: expected_requirements,
+        previous_requirements: previous_requirements,
+        package_manager: "docker"
+      )
+
+      # call and instance to the FileUpdater class
+      updater = described_class.new(
+        dependencies: [input_dependencies],
+        dependency_files: [input_files],
+        credentials: nil
+      )
+
+      updated_files = updater.updated_dependency_files
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files.first.name).to eq("private-complex.yml")
+      expect(updated_files.first.content).to include "private-image-name-16.04\n"
+      expect(updated_files.first.content).to include "tag: 20190825\n"
+    end
+
+    it "correctly updates the input files if we use the same number/string
+        in both the repository and tag (new tag format)"  do
 
       expected_requirements =
         [{
@@ -578,7 +580,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         previous_version: 0,
         requirements: expected_requirements,
         previous_requirements: expected_previous_requirements,
-        package_manager: "concourse"
+        package_manager: "docker"
       )
 
       updater = described_class.new(
@@ -591,7 +593,142 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       expect(updated_files.first.name).to eq("private-complex.yml")
       expect(updated_files.first.content).to include "private-image-name-16.04\n"
-      expect(updated_files.first.content).to include "tag: \"20190825090000\"\n"
+      expect(updated_files.first.content).to include "tag: 20190825090000\n"
     end
-  end # describe updated_dependency_files
+
+    it "correctly updates the input files if we use the bootstrapme tags"  do
+
+      expected_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "pix4d-special.yml",
+          source: { tag: "20200308093045" }
+        }]
+
+      expected_previous_requirements =
+        [{
+          requirement: nil,
+          groups: [],
+          file: "pix4d-special.yml",
+          source: { tag: "bootstrapme" }
+        }]
+
+      input_files = Dependabot::DependencyFile.new(
+        name: "pix4d-special.yml",
+        content: fixture("pipelines", "pix4d-special.yml")
+      )
+
+      input_dependencies = Dependabot::Dependency.new(
+        name: "private.repo.com/private-image-name-16.04",
+        version: "20200308093045",
+        previous_version: "bootstrapme",
+        requirements: expected_requirements,
+        previous_requirements: expected_previous_requirements,
+        package_manager: "docker"
+      )
+
+      updater = described_class.new(
+        dependencies: [input_dependencies],
+        dependency_files: [input_files],
+        credentials: nil
+      )
+
+      updated_files = updater.updated_dependency_files
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files.first.name).to eq("pix4d-special.yml")
+      expect(updated_files.first.content).to include "private-image-name-16.04\n"
+      expect(updated_files.first.content).to include "tag: 20200308093045\n"
+  end
+
+  it "correctly updates the input files if we use double quotes around tags"  do
+
+    expected_requirements =
+      [{
+        requirement: nil,
+        groups: [],
+        file: "pix4d-special.yml",
+        source: { tag: "20200309103030" }
+      }]
+
+    expected_previous_requirements =
+      [{
+        requirement: nil,
+        groups: [],
+        file: "pix4d-special.yml",
+        source: { tag: "20200220151020" }
+      }]
+
+    input_files = Dependabot::DependencyFile.new(
+      name: "pix4d-special.yml",
+      content: fixture("pipelines", "pix4d-special.yml")
+    )
+
+    input_dependencies = Dependabot::Dependency.new(
+      name: "private.repo.com/private-image-name-18.04",
+      version: "20200309103030",
+      previous_version: "20200220151020",
+      requirements: expected_requirements,
+      previous_requirements: expected_previous_requirements,
+      package_manager: "docker"
+    )
+    updater = described_class.new(
+      dependencies: [input_dependencies],
+      dependency_files: [input_files],
+      credentials: nil
+    )
+
+    updated_files = updater.updated_dependency_files
+    updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    expect(updated_files.first.name).to eq("pix4d-special.yml")
+    expect(updated_files.first.content).to include "private-image-name-18.04\n"
+    expect(updated_files.first.content).to include "tag: 20200309103030\n"
+  end
+
+  it "correctly updates the input files if we use the bootstrapme tags with double quotes"  do
+
+    expected_requirements =
+      [{
+        requirement: nil,
+        groups: [],
+        file: "pix4d-special.yml",
+        source: { tag: "20200306093045" }
+      }]
+
+    expected_previous_requirements =
+      [{
+        requirement: nil,
+        groups: [],
+        file: "pix4d-special.yml",
+        source: { tag: "bootstrapme" }
+      }]
+
+    input_files = Dependabot::DependencyFile.new(
+      name: "pix4d-special.yml",
+      content: fixture("pipelines", "pix4d-special.yml")
+    )
+
+    input_dependencies = Dependabot::Dependency.new(
+      name: "private.repo.com/private-image-name",
+      version: "20200306093045",
+      previous_version: "bootstrapme",
+      requirements: expected_requirements,
+      previous_requirements: expected_previous_requirements,
+      package_manager: "docker"
+    )
+
+    updater = described_class.new(
+      dependencies: [input_dependencies],
+      dependency_files: [input_files],
+      credentials: nil
+    )
+
+    updated_files = updater.updated_dependency_files
+    updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    expect(updated_files.first.name).to eq("pix4d-special.yml")
+    expect(updated_files.first.content).to include "private-image-name\n"
+    expect(updated_files.first.content).to include "tag: 20200306093045\n"
+end
+end
+end# describe updated_dependency_files
 end # RSpec.describe

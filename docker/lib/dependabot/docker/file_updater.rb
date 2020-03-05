@@ -22,7 +22,7 @@ module Dependabot
           updated_files <<
             updated_file(
               file: file,
-              content: file_content(file)
+              content: updated_file_content(file)
             )
         end
 
@@ -46,9 +46,17 @@ module Dependabot
         raise "No file!"
       end
 
-      def file_content(file)
-        updated_content = update_tag(file)
-
+      def updated_file_content(file)
+        if file.name.match?(/dockerfile|custom/i)
+          updated_content =
+            if specified_with_digest?(file)
+              update_digest_and_tag(file)
+            else
+              update_tag_docker(file)
+            end
+        else
+          updated_content = update_tag_template(file)
+        end
         raise "Expected content to change!" if updated_content == file.content
 
         updated_content
@@ -65,18 +73,38 @@ module Dependabot
         end
       end
 
-      def update_tag(file)
+      def update_tag_docker(file)
         return unless old_tag(file)
 
-        img_data =
+        old_declaration =
           if private_registry_url(file) then "#{private_registry_url(file)}/"
           else ""
           end
-        img_data += dependency.name.to_s
+        old_declaration += "#{dependency.name}:#{old_tag(file)}"
+        escaped_declaration = Regexp.escape(old_declaration)
 
-        tag_var = file.content.match(/repository: #{img_data}\n + (tag: [^\n]+)\n/)
-        new_tag_var = tag_var.to_s.gsub(Regexp.last_match(1), "tag: \"#{new_tag(file)}\"")
-        file.content.gsub(tag_var.to_s, new_tag_var.to_s)
+        old_declaration_regex =
+          %r{^#{FROM_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+
+        file.content.gsub(old_declaration_regex) do |old_dec|
+          old_dec.gsub(":#{old_tag(file)}", ":#{new_tag(file)}")
+        end
+      end
+
+      def update_tag_template(file)
+        return unless old_tag(file)
+
+        old_declaration =
+          if private_registry_url(file) then "#{private_registry_url(file)}/"
+          else ""
+          end
+        old_declaration += "#{dependency.name}"
+        escaped_declaration = Regexp.escape(old_declaration)
+
+        old_declaration_regex = %r{repository:\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)\n + (tag:\s[^\n]+)\n}
+        file.content.gsub(old_declaration_regex) do |old_dec|
+          old_dec.gsub(/(tag:\s#{old_tag(file)})|(tag:\s"#{old_tag(file)}")/, "tag:\s#{new_tag(file)}")
+        end
       end
 
       def specified_with_digest?(file)
