@@ -1,3 +1,9 @@
+## v0.117.1, 5 March 2020
+
+- Bump npm from 6.14.1 to 6.14.2 in /npm_and_yarn/helpers
+- Gradle: Add support for authenticated repositories (@GeorgiosGoniotakis)
+- Bump phpstan/phpstan from 0.12.12 to 0.12.14 in /composer/helpers
+
 ## v0.117.0, 3 March 2020
 
 - Maven: Add support for "+" Semver Build Identifier
