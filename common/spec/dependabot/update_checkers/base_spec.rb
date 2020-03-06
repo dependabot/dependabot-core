@@ -162,9 +162,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
-      context "that already permits the latest version" do
+      context "when the requirement is out of date" do
         let(:updated_requirements) { requirements }
-        it { is_expected.to be_truthy }
+        it { is_expected.to be_falsy }
       end
 
       context "that doesn't yet permit the latest version" do
