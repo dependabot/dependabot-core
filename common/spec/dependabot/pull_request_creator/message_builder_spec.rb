@@ -897,6 +897,33 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
         end
+
+        context "from GitLab" do
+          let(:source) do
+            Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
+          end
+
+          it "does not sanitize github links" do
+            expect(pr_message).not_to include(github_redirection_service)
+          end
+        end
+
+        context "from codecommit" do
+          let(:source) do
+            Dependabot::Source.new(
+              provider: "codecommit",
+              repo: "gocardless/bump"
+            )
+          end
+
+          it "does not include detail tags" do
+            expect(pr_message).not_to include("<details>")
+          end
+
+          it "does not include br tags" do
+            expect(pr_message).not_to include("<br />")
+          end
+        end
       end
 
       context "switching from a SHA-1 version to a release" do
