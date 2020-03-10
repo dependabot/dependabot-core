@@ -1,3 +1,8 @@
+## v0.117.2, 9 March 2020
+
+- Improve PR descriptions for non-github PR's
+- Correctly mark requirements as not up to date
+
 ## v0.117.1, 5 March 2020
 
 - Bump npm from 6.14.1 to 6.14.2 in /npm_and_yarn/helpers
