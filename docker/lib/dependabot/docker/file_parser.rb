@@ -13,20 +13,20 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
-      # Detials of Docker regular expressions is at
+      # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
-        /(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])/.freeze
+        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/.freeze
       DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
-      REGISTRY = /(?<registry>#{DOMAIN}(?::[0-9]+)?)/.freeze
+      REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/.freeze
 
-      NAME_COMPONENT = /(?:[a-z0-9]+(?:(?:[._]|__|[-]*)[a-z0-9]+)*)/.freeze
+      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/.freeze
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
-      FROM = /[Ff][Rr][Oo][Mm]/.freeze
+      FROM = /FROM/i.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
-      NAME = /\s+AS\s+(?<name>[a-zA-Z0-9_-]+)/.freeze
+      NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
       FROM_LINE =
         %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
 

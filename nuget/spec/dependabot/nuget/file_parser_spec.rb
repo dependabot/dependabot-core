@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(4) }
+    its(:length) { is_expected.to eq(5) }
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -82,20 +82,17 @@ RSpec.describe Dependabot::Nuget::FileParser do
           expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
           expect(dependency.version).to eq("1.1.1")
           expect(dependency.requirements).to eq(
-            [
-              {
-                requirement: "1.1.1",
-                file: "my.csproj",
-                groups: [],
-                source: nil
-              },
-              {
-                requirement: "1.0.1",
-                file: "my.vbproj",
-                groups: [],
-                source: nil
-              }
-            ]
+            [{
+              requirement: "1.1.1",
+              file: "my.csproj",
+              groups: [],
+              source: nil
+            }, {
+              requirement: "1.0.1",
+              file: "my.vbproj",
+              groups: [],
+              source: nil
+            }]
           )
         end
       end
@@ -224,7 +221,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       describe "the last dependency" do
         subject(:dependency) { dependencies.last }
@@ -237,6 +234,36 @@ RSpec.describe Dependabot::Nuget::FileParser do
             [{
               requirement: "2.3.0",
               file: "commonprops.props",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
+    context "with a packages.props file" do
+      let(:files) { [csproj_file, packages_file] }
+      let(:packages_file) do
+        Dependabot::DependencyFile.new(
+          name: "packages.props",
+          content: fixture("csproj", "packages.props")
+        )
+      end
+
+      its(:length) { is_expected.to eq(10) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("System.WebCrawler")
+          expect(dependency.version).to eq("1.1.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.1.1",
+              file: "packages.props",
               groups: [],
               source: nil
             }]

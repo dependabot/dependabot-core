@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
     described_class.new(
       dependency: dependency,
       credentials: credentials,
-      config_file: config_file
+      config_files: [config_file].compact
     )
   end
   let(:config_file) { nil }
@@ -162,9 +162,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       let(:config_file) do
         Dependabot::DependencyFile.new(
           name: "NuGet.Config",
-          content: fixture("configs", "nuget.config")
+          content: fixture("configs", config_file_fixture_name)
         )
       end
+      let(:config_file_fixture_name) { "nuget.config" }
 
       before do
         repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -203,13 +204,59 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         )
       end
 
-      context "that has a numeric key" do
-        let(:config_file) do
-          Dependabot::DependencyFile.new(
-            name: "NuGet.Config",
-            content: fixture("configs", "numeric_key.config")
+      context "that doesn't include the default repository" do
+        let(:config_file_fixture_name) { "excludes_default.config" }
+
+        it "still includes the default repository (as it wasn't cleared)" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://api.nuget.org/v3/index.json",
+              versions_url: "https://api.nuget.org/v3-flatcontainer/"\
+                              "microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://api-v2v3search-0.nuget.org/query"\
+                              "?q=microsoft.extensions.dependencymodel"\
+                              "&prerelease=true",
+              auth_header: {},
+              repository_type: "v3"
+            }, {
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "flatcontainer/microsoft.extensions."\
+                              "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                              "query?q=microsoft.extensions.dependencymodel"\
+                              "&prerelease=true",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            }]
           )
         end
+
+        context "and clears it" do
+          let(:config_file_fixture_name) { "clears_default.config" }
+
+          it "still excludes the default repository" do
+            expect(dependency_urls).to match_array(
+              [{
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "flatcontainer/microsoft.extensions."\
+                                "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "query?q=microsoft.extensions.dependencymodel"\
+                                "&prerelease=true",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
+          end
+        end
+      end
+
+      context "that has a numeric key" do
+        let(:config_file_fixture_name) { "numeric_key.config" }
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -239,12 +286,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       end
 
       context "that has a non-ascii key" do
-        let(:config_file) do
-          Dependabot::DependencyFile.new(
-            name: "NuGet.Config",
-            content: fixture("configs", "non_ascii_key.config")
-          )
-        end
+        let(:config_file_fixture_name) { "non_ascii_key.config" }
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -274,12 +316,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       end
 
       context "that uses the v2 API alongside the v3 API" do
-        let(:config_file) do
-          Dependabot::DependencyFile.new(
-            name: "NuGet.Config",
-            content: fixture("configs", "with_v2_endpoints.config")
-          )
-        end
+        let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
           v2_repo_urls = %w(

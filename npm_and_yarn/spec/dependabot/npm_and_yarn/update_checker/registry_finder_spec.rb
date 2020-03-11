@@ -76,6 +76,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         it { is_expected.to eq("npm.fury.io/dependabot") }
 
+        context "but returns HTML" do
+          before do
+            stub_request(:get, "https://npm.fury.io/dependabot/etag").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 200, body: "<html>Hello!</html>")
+          end
+
+          it { is_expected.to eq("registry.npmjs.org") }
+        end
+
         context "but doesn't include auth" do
           let(:credentials) do
             [{
@@ -167,7 +177,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           stub_request(:get, url).to_return(status: 401, body: "")
         end
 
-        # Since this registry is declared at the global registry, in the absense
+        # Since this registry is declared at the global registry, in the absence
         # of other information we should still us it (and *not* flaa back to
         # registry.npmjs.org)
         it { is_expected.to eq("npm-proxy.fury.io/password/dependabot") }

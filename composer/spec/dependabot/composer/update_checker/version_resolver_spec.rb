@@ -84,6 +84,35 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
+    context "with an application using a >= PHP constraint" do
+      let(:manifest_fixture_name) { "php_specified" }
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+
+      context "the minimum version of which is invalid" do
+        let(:dependency_version) { "4.2.0" }
+        let(:string_req) { "4.2.0" }
+
+        it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
+      end
+    end
+
+    context "with an application using a ^ PHP constraint" do
+      context "the minimum version of which is invalid" do
+        let(:manifest_fixture_name) { "php_specified_min_invalid" }
+        let(:dependency_files) { [manifest] }
+        let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+        let(:dependency_version) { "2.0.4" }
+        let(:string_req) { "2.0.4" }
+
+        it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+      end
+    end
+
     context "updating a subdependency that's not required anymore" do
       let(:manifest_fixture_name) { "exact_version" }
       let(:lockfile_fixture_name) { "version_conflict_at_latest" }
@@ -110,12 +139,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:manifest_fixture_name) { "stability_flag" }
       let(:lockfile_fixture_name) { "minor_version" }
       let(:string_req) { "@stable" }
-      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
       let(:dependency_name) { "monolog/monolog" }
       let(:dependency_version) { "1.0.2" }
       let(:requirements_to_unlock) { :none }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.24.0")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
     context "with a library that requires itself" do
@@ -128,6 +157,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
             expect(error.message).to include("cannot require itself")
           end
       end
+    end
+
+    context "with a library that uses a dev branch" do
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:manifest_fixture_name) { "dev_branch" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:string_req) { "dev-1.x" }
+      let(:dependency_version) { nil }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
     context "with a local VCS source" do

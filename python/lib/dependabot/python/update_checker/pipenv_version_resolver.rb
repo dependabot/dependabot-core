@@ -385,7 +385,8 @@ module Dependabot
             end
 
           # Ideally, the requirement is satisfied by a Python version we support
-          requirement = Python::Requirement.new(requirement_string)
+          requirement =
+            Python::Requirement.requirements_array(requirement_string).first
           version =
             PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
             find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
@@ -457,7 +458,7 @@ module Dependabot
           run_command("pyenv local #{python_version}")
           run_command("pyenv exec pipenv --rm")
 
-          @python_version = "2.7.16"
+          @python_version = "2.7.17"
           retry
         ensure
           @python_version = nil

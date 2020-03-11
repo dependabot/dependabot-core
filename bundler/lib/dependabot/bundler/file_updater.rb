@@ -50,6 +50,7 @@ module Dependabot
             updated_file(file: file, content: updated_gemfile_content(file))
         end
 
+        check_updated_files(updated_files)
         updated_files
       end
 
@@ -68,6 +69,12 @@ module Dependabot
         raise "A gemspec or Gemfile must be provided!"
       end
 
+      def check_updated_files(updated_files)
+        return if updated_files.reject { |f| dependency_files.include?(f) }.any?
+
+        raise "No files have changed!"
+      end
+
       def gemfile
         @gemfile ||= get_original_file("Gemfile") ||
                      get_original_file("gems.rb")
@@ -82,6 +89,7 @@ module Dependabot
         @evaled_gemfiles ||=
           dependency_files.
           reject { |f| f.name.end_with?(".gemspec") }.
+          reject { |f| f.name.end_with?(".specification") }.
           reject { |f| f.name.end_with?(".lock") }.
           reject { |f| f.name.end_with?(".ruby-version") }.
           reject { |f| f.name == "Gemfile" }.

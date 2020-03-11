@@ -1,6 +1,7 @@
 {
     "require": {
         "ext-maxminddb": "*",
+        "ext-couchbase": ">= 2.2.1",
         "erusev/parsedown": "^1.6.0",
         "illuminate/support": "^5.2.0"
     },

@@ -112,13 +112,13 @@ module Dependabot
       end
 
       def registry_source_details_from(source_string)
-        parts = source_string.split("/")
+        parts = source_string.split("//").first.split("/")
 
         if parts.count == 3
           {
             type: "registry",
             registry_hostname: "registry.terraform.io",
-            module_identifier: source_string
+            module_identifier: source_string.split("//").first
           }
         elsif parts.count == 4
           {

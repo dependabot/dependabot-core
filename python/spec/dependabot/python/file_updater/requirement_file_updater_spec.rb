@@ -68,6 +68,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
       its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       its(:content) { is_expected.to include "luigi==2.2.0\n" }
+      # extras are preserved
+      its(:content) { is_expected.to include "aiocache[redis]==0.10.0\n" }
 
       context "when only the minor version is specified" do
         let(:requirements_fixture_name) { "minor_version_specified.txt" }

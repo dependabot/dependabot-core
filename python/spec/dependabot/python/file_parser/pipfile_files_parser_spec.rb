@@ -15,9 +15,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
     Dependabot::DependencyFile.new(name: "Pipfile.lock", content: lockfile_body)
   end
   let(:pipfile_body) { fixture("pipfiles", pipfile_fixture_name) }
-  let(:lockfile_body) do
-    fixture("lockfiles", lockfile_fixture_name)
-  end
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
   let(:pipfile_fixture_name) { "version_not_specified" }
   let(:lockfile_fixture_name) { "version_not_specified.lock" }
 
@@ -63,6 +61,28 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:name) { is_expected.to eq("certifi") }
         its(:version) { is_expected.to eq("2017.11.5") }
         its(:requirements) { is_expected.to eq([]) }
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ production: true }])
+        end
+      end
+
+      describe "a development only dependency" do
+        subject { dependencies.find { |d| d.name == "py" } }
+
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ production: false }])
+        end
+      end
+
+      describe "a development and production dependency" do
+        let(:pipfile_fixture_name) { "prod_and_dev" }
+        let(:lockfile_fixture_name) { "prod_and_dev.lock" }
+
+        subject { dependencies.find { |d| d.name == "py" } }
+
+        its(:subdependency_metadata) do
+          is_expected.to eq([{ production: true }, { production: false }])
+        end
       end
     end
 

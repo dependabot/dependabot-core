@@ -7,8 +7,6 @@ require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
 require "dependabot/errors"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class UpdateChecker
@@ -80,8 +78,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def better_specification_needed?(error)
           return false if @custom_specification
@@ -111,8 +107,7 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_spec
@@ -219,6 +214,14 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
+          if workspace_native_library_update_error?(error.message)
+            # This happens when we're updating one part of a workspace which
+            # triggers an update of a subdependency that uses a native library,
+            # whilst leaving another part of the workspace using an older
+            # version. Ideally we would prevent the subdependency update.
+            return nil
+          end
+
           if git_dependency? && error.message.include?("no matching package")
             # This happens when updating a git dependency whose version has
             # changed from a release to a pre-release version
@@ -308,6 +311,19 @@ module Dependabot
           false
         end
 
+        def workspace_native_library_update_error?(message)
+          return unless message.include?("native library")
+
+          library_count = prepared_manifest_files.count do |file|
+            package_name = TomlRB.parse(file.content).dig("package", "name")
+            next false unless package_name
+
+            message.include?("depended on by `#{package_name} ")
+          end
+
+          library_count >= 2
+        end
+
         def write_manifest_files(prepared: true)
           manifest_files = if prepared then prepared_manifest_files
                            else original_manifest_files
@@ -318,6 +334,8 @@ module Dependabot
             dir = Pathname.new(path).dirname
             FileUtils.mkdir_p(dir)
             File.write(file.name, sanitized_manifest_content(file.content))
+
+            next if virtual_manifest?(file)
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -349,6 +367,10 @@ module Dependabot
           object = TomlRB.parse(content)
 
           object.delete("bin")
+
+          if object.dig("package", "default-run")
+            object["package"].delete("default-run")
+          end
 
           package_name = object.dig("package", "name")
           return TomlRB.dump(object) unless package_name&.match?(/[\{\}]/)
@@ -390,6 +412,13 @@ module Dependabot
           ).git_dependency?
         end
 
+        # When the package table is not present in a workspace manifest, it is
+        # called a virtual manifest: https://doc.rust-lang.org/cargo/reference/
+        # manifest.html#virtual-manifest
+        def virtual_manifest?(file)
+          !file.content.include?("[package]")
+        end
+
         def version_class
           Cargo::Version
         end
@@ -397,4 +426,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

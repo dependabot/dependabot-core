@@ -41,7 +41,7 @@
             "version": "==3.0.4"
         },
         "django": {
-            "git": "https://github.com/greysteil/django.git",
+            "git": "https://github.com/user/django.git",
             "ref": "1.11.4"
         },
         "idna": {

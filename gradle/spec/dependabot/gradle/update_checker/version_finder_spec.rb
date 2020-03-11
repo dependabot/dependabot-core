@@ -10,11 +10,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      credentials: credentials,
       ignored_versions: ignored_versions,
       security_advisories: security_advisories
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
+  let(:credentials) { [] }
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
 
@@ -127,6 +129,174 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("27.1.1")) }
       its([:source_url]) do
         is_expected.to eq("https://maven.google.com")
+      end
+    end
+
+    context "with a repository from credentials" do
+      let(:credentials) do
+        [{
+          "type" => "maven_repository",
+          "url" => "https://private.registry.org/repo/",
+          "username" => "dependabot",
+          "password" => "dependabotPassword"
+        }]
+      end
+
+      let(:private_registry_metadata_url) do
+        "https://private.registry.org/repo/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).
+          to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url).
+          with(basic_auth: %w(dependabot dependabotPassword)).
+          to_return(status: 200, body: maven_central_releases)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("https://private.registry.org/repo")
+      end
+
+      context "but no auth details" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
+        end
+
+        before do
+          stub_request(:get, private_registry_metadata_url).
+            to_return(status: 200, body: maven_central_releases)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/repo")
+        end
+
+        context "when credentials are required" do
+          before do
+            stub_request(:get, private_registry_metadata_url).
+              to_return(status: 401, body: "no dice")
+          end
+
+          it "raises a helpful error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { subject }.
+              to raise_error(error_class) do |error|
+              expect(error.source).to eq("https://private.registry.org/repo")
+            end
+          end
+        end
+      end
+    end
+
+    context "with a plugin from credentials" do
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "2.0.5.RELEASE",
+          groups: ["plugins"],
+          source: nil
+        }]
+      end
+      let(:dependency_name) { "org.springframework.boot" }
+      let(:dependency_version) { "2.0.5.RELEASE" }
+
+      let(:private_plugin_registry_metadata_url) do
+        "https://private.registry.org/repo/org/springframework/boot/"\
+        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+      end
+      let(:gradle_plugin_releases) do
+        fixture("gradle_plugin_metadata", "org_springframework_boot.xml")
+      end
+      let(:maven_metadata_url) do
+        "https://plugins.gradle.org/m2/org/springframework/boot/"\
+        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+      end
+      let(:repo_maven_metadata_url) do
+        "https://repo.maven.apache.org/maven2/org/springframework/boot"\
+        "/org.springframework.boot.gradle.plugin/maven-metadata.xml"
+      end
+      before do
+        stub_request(:get, repo_maven_metadata_url).
+          to_return(status: 404)
+      end
+
+      context "with credentials" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "username" => "dependabot",
+            "password" => "dependabotPassword"
+          }]
+        end
+
+        before do
+          stub_request(:get, maven_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_plugin_registry_metadata_url).
+            with(basic_auth: %w(dependabot dependabotPassword)).
+            to_return(status: 200, body: gradle_plugin_releases)
+        end
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/repo")
+        end
+      end
+
+      context "no auth details" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
+        end
+
+        before do
+          stub_request(:get, maven_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_plugin_registry_metadata_url).
+            to_return(status: 200, body: gradle_plugin_releases)
+        end
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/repo")
+        end
+      end
+
+      context "when credentials are required" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          }]
+        end
+        before do
+          stub_request(:get, maven_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_plugin_registry_metadata_url).
+            to_return(status: 401, body: "no dice")
+        end
+
+        it "raises a helpful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { subject }.
+            to raise_error(error_class) do |error|
+            expect(error.source).to eq("https://private.registry.org/repo")
+          end
+        end
       end
     end
   end

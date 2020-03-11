@@ -81,7 +81,6 @@ module Dependabot
       Shellwords.join(command_parts)
     end
 
-    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    escape_command_str: true)
@@ -119,10 +118,11 @@ module Dependabot
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
-      Excon.defaults[:middlewares] + [Excon::Middleware::RedirectFollower]
+      Excon.defaults[:middlewares] +
+        [Excon::Middleware::Decompress] +
+        [Excon::Middleware::RedirectFollower]
     end
 
     def self.excon_defaults
@@ -165,12 +165,10 @@ module Dependabot
       )
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
     def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
-      # an wrapper binary that only allows non-mutative commands. Without this,
+      # a wrapper binary that only allows non-mutating commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
       credential_helper_path =
         File.join(__dir__, "../../bin/git-credential-store-immutable")
@@ -210,8 +208,6 @@ module Dependabot
       # Save the file
       File.write("git.store", git_store_content)
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/MethodLength
 
     def self.stash_global_git_config
       return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)

@@ -47,6 +47,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     describe "top level dependencies" do
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
+      context "with no lockfile" do
+        let(:package_json_fixture_name) { "exact_version_requirements.json" }
+        let(:files) { [package_json] }
+        its(:length) { is_expected.to eq(3) }
+      end
+
       context "with a package-lock.json" do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
@@ -115,6 +121,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:npm_lock_fixture_name) { "empty_version.json" }
 
           its(:length) { is_expected.to eq(2) }
+        end
+
+        context "that contains a version requirement string" do
+          let(:npm_lock_fixture_name) { "invalid_version_requirement.json" }
+          subject { dependencies.find { |d| d.name == "etag" } }
+          it { is_expected.to eq(nil) }
         end
 
         context "that has URL versions (i.e., is from a bad version of npm)" do
@@ -199,7 +211,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:npm_lock_fixture_name) { "private_source.json" }
 
-          its(:length) { is_expected.to eq(4) }
+          its(:length) { is_expected.to eq(6) }
 
           describe "the first private dependency" do
             subject { top_level_dependencies[1] }
@@ -237,6 +249,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   source: {
                     type: "private_registry",
                     url: "https://npm.fury.io/dependabot"
+                  }
+                }]
+              )
+            end
+          end
+
+          describe "the GPR dependency" do
+            subject { top_level_dependencies[5] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("@dependabot/pack-core-3") }
+            its(:version) { is_expected.to eq("2.0.14") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://npm.pkg.github.com"
                   }
                 }]
               )
@@ -337,6 +370,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
             end
           end
+
+          describe "the bintray dependency" do
+            subject { top_level_dependencies[4] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("@dependabot/pack-core-2") }
+            its(:version) { is_expected.to eq("2.0.14") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://api.bintray.com/npm/dependabot/npm-private"
+                  }
+                }]
+              )
+            end
+          end
         end
 
         context "with an optional dependency" do
@@ -411,6 +465,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   }
                 }]
               )
+            end
+
+            context "when the lockfile has a branch for the version" do
+              let(:npm_lock_fixture_name) do
+                "git_dependency_branch_version.json"
+              end
+
+              it "is excluded" do
+                expect(top_level_dependencies.map(&:name)).
+                  to_not include("is-number")
+              end
             end
           end
         end
@@ -906,7 +971,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:package_json_fixture_name) { "private_source.json" }
           let(:yarn_lock_fixture_name) { "private_source.lock" }
 
-          its(:length) { is_expected.to eq(4) }
+          its(:length) { is_expected.to eq(6) }
 
           describe "the second dependency" do
             subject { top_level_dependencies[1] }
@@ -984,6 +1049,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           let(:files) { [package_json, lockfile] }
           let(:package_json_fixture_name) { "aliased_dependency.json" }
           let(:yarn_lock_fixture_name) { "aliased_dependency.lock" }
+
+          it "doesn't include the aliased dependency" do
+            expect(top_level_dependencies.length).to eq(1)
+            expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+            expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+          end
+        end
+
+        context "with an aliased dependency name (only supported by yarn)" do
+          let(:files) { [package_json, lockfile] }
+          let(:package_json_fixture_name) { "aliased_dependency_name.json" }
+          let(:yarn_lock_fixture_name) { "aliased_dependency_name.lock" }
 
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
@@ -1103,12 +1180,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     groups: ["devDependencies"],
                     source: {
                       type: "git",
-                      url: "https://github.com/jonschlinkert/is-number.git",
+                      url: "https://username:password@github.com/"\
+                           "jonschlinkert/is-number.git",
                       branch: nil,
                       ref: "master"
                     }
                   }]
                 )
+              end
+            end
+
+            context "specified with https and a colon (supported by npm)" do
+              let(:package_json_fixture_name) do
+                "git_dependency_with_auth_2.json"
+              end
+              let(:files) { [package_json] }
+
+              describe "the git dependency" do
+                subject { top_level_dependencies.last }
+
+                its(:requirements) do
+                  is_expected.to eq(
+                    [{
+                      requirement: nil,
+                      file: "package.json",
+                      groups: ["devDependencies"],
+                      source: {
+                        type: "git",
+                        url: "https://username:password@github.com/"\
+                             "jonschlinkert/is-number.git",
+                        branch: nil,
+                        ref: "master"
+                      }
+                    }]
+                  )
+                end
               end
             end
           end

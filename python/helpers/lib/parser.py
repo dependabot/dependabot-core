@@ -2,17 +2,31 @@ from itertools import chain
 import glob
 import io
 import json
+import optparse
 import os.path
 import re
 
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.download import PipSession
+from pip._internal.models.format_control import FormatControl
 from pip._internal.req.constructors import install_req_from_line
+
+JINJA_DELIMITER_IGNORE_REGEX = r"({{(.*?)}})|({%[-]?(.*?)%})|({#(.*?)#})"
 
 def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []
+    parser_options = optparse.Values(
+            {
+                "skip_requirements_regex": JINJA_DELIMITER_IGNORE_REGEX,
+                # pip._internal assumes parse_requirements will be called from
+                # CLI, which sets default values. When passing parser options,
+                # need to explicitly set those defaults.
+                "isolated_mode": False,
+                "format_control": FormatControl(),
+            }
+        )
 
     requirement_files = glob.glob(os.path.join(directory, '*.txt')) \
                         + glob.glob(os.path.join(directory, '**', '*.txt'))
@@ -28,6 +42,7 @@ def parse_requirements(directory):
         try:
             requirements = pip._internal.req.req_file.parse_requirements(
                 reqs_file,
+                options=parser_options,
                 session=PipSession()
             )
             for install_req in requirements:
@@ -43,7 +58,8 @@ def parse_requirements(directory):
                     "version": version_from_install_req(install_req),
                     "markers": str(install_req.markers) or None,
                     "file": rel_path,
-                    "requirement": str(install_req.specifier) or None
+                    "requirement": str(install_req.specifier) or None,
+                    "extras": sorted(list(install_req.extras))
                 })
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
@@ -70,7 +86,8 @@ def parse_setup(directory):
                 "markers": str(install_req.markers) or None,
                 "file": "setup.py",
                 "requirement": str(install_req.specifier) or None,
-                "requirement_type": req_type
+                "requirement_type": req_type,
+                "extras": sorted(list(install_req.extras))
             })
 
         def setup(*args, **kwargs):

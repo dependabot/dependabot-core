@@ -3,9 +3,15 @@ root = true
 
 [*]
 indent_size = 2
-translate_tabs_to_spaces = true
 indent_style = space
 end_of_line = lf
 charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
+
+[*.neon]
+indent_size = 4
+indent_style = tab
+
+[*.php]
+indent_size = 4

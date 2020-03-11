@@ -27,7 +27,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
     {
       file: "some.gemspec",
       requirement: gemspec_requirement_string,
-      groups: gemspec_groups
+      groups: gemspec_groups,
+      source: nil
     }
   end
   let(:gemfile_requirement_string) { "~> 1.4.0" }
@@ -361,7 +362,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
             [{
               file: "some.gemspec",
               requirement: gemspec_requirement_string,
-              groups: ["development"]
+              groups: ["development"],
+              source: nil
             }]
           end
 
@@ -431,16 +433,76 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
       it "updates both files" do
         expect(updated_requirements).to match_array(
-          [
-            {
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "some.gemspec",
+            requirement: ">= 1.0, < 1.9",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      context "and an updated source" do
+        let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+        let(:gemfile_requirement) do
+          {
+            file: "Gemfile",
+            requirement: gemfile_requirement_string,
+            groups: gemfile_groups,
+            source: gemfile_source
+          }
+        end
+        let(:gemspec_requirement) do
+          {
+            file: "some.gemspec",
+            requirement: gemspec_requirement_string,
+            groups: gemspec_groups,
+            source: gemspec_source
+          }
+        end
+        let(:gemfile_source) { { type: "git", ref: "v1.4.0" } }
+        let(:gemspec_source) { { type: "git", ref: "v1.4.0" } }
+
+        it "updates both files" do
+          expect(updated_requirements).to match_array(
+            [{
               file: "Gemfile",
               requirement: "~> 1.5.0",
               groups: [],
-              source: nil
-            },
-            { file: "some.gemspec", requirement: ">= 1.0, < 1.9", groups: [] }
-          ]
-        )
+              source: { type: "git", ref: "v1.5.0" }
+            }, {
+              file: "some.gemspec",
+              requirement: ">= 1.0, < 1.9",
+              groups: [],
+              source: { type: "git", ref: "v1.5.0" }
+            }]
+          )
+        end
+
+        context "when the original gemspec source was `nil`" do
+          let(:gemspec_source) { nil }
+
+          it "leaves the gemspec source as `nil`" do
+            expect(updated_requirements).to match_array(
+              [{
+                file: "Gemfile",
+                requirement: "~> 1.5.0",
+                groups: [],
+                source: { type: "git", ref: "v1.5.0" }
+              }, {
+                file: "some.gemspec",
+                requirement: ">= 1.0, < 1.9",
+                groups: [],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
   end

@@ -91,6 +91,22 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         end
 
         its(:length) { is_expected.to eq(36) }
+
+        describe "a development sub-dependency" do
+          subject(:dep) { dependencies.find { |d| d.name == "atomicwrites" } }
+
+          its(:subdependency_metadata) do
+            is_expected.to eq([{ production: false }])
+          end
+        end
+
+        describe "a production sub-dependency" do
+          subject(:dep) { dependencies.find { |d| d.name == "certifi" } }
+
+          its(:subdependency_metadata) do
+            is_expected.to eq([{ production: true }])
+          end
+        end
       end
 
       context "with a git dependency" do

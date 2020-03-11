@@ -61,7 +61,7 @@ module Dependabot
           name: details["Path"],
           version: version,
           requirements: details["Indirect"] ? [] : reqs,
-          package_manager: "dep"
+          package_manager: "go_modules"
         )
       end
 
@@ -81,7 +81,11 @@ module Dependabot
 
               command = "go mod edit -print > /dev/null"
               command += " && go list -m -json all"
-              env = { "GO111MODULE" => "on" }
+
+              # Turn off the module proxy for now, as it's causing issues with
+              # private git dependencies
+              env = { "GOPRIVATE" => "*" }
+
               stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
               stdout
@@ -105,7 +109,11 @@ module Dependabot
             # Parse the go.mod to get a JSON representation of the replace
             # directives
             command = "go mod edit -json"
-            env = { "GO111MODULE" => "on" }
+
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
             stdout, stderr, status = Open3.capture3(env, command)
             handle_parser_error(path, stderr) unless status.success?
 
@@ -128,8 +136,6 @@ module Dependabot
       end
 
       GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
-
-      # rubocop:disable Metrics/AbcSize
       def handle_parser_error(path, stderr)
         case stderr
         when /go: .*: unknown revision/
@@ -149,7 +155,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
         end
       end
-      # rubocop:enable Metrics/AbcSize
 
       def rev_identifier?(dep)
         dep["Version"]&.match?(GIT_VERSION_REGEX)

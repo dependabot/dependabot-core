@@ -41,6 +41,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   let(:updated_requirement) { ">= 1.0.0" }
   let(:latest_resolvable_version) { latest_version }
   let(:latest_resolvable_version_with_no_unlock) { latest_version }
+  let(:latest_resolvable_previous_version) { dependency.version }
   before do
     allow(updater_instance).
       to receive(:latest_version).
@@ -53,6 +54,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     allow(updater_instance).
       to receive(:latest_resolvable_version_with_no_unlock).
       and_return(latest_resolvable_version_with_no_unlock)
+
+    allow(updater_instance).
+      to receive(:latest_resolvable_previous_version).
+      and_return(latest_resolvable_previous_version)
 
     allow(updater_instance).
       to receive(:updated_requirements).
@@ -157,9 +162,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
-      context "that already permits the latest version" do
+      context "when the requirement is out of date" do
         let(:updated_requirements) { requirements }
-        it { is_expected.to be_truthy }
+        it { is_expected.to be_falsy }
       end
 
       context "that doesn't yet permit the latest version" do
@@ -440,6 +445,33 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       its(:package_manager) { is_expected.to eq(dependency.package_manager) }
       its(:name) { is_expected.to eq(dependency.name) }
       its(:requirements) { is_expected.to eq(updated_requirements) }
+    end
+
+    context "without a previous version" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: nil,
+          requirements: original_requirements,
+          package_manager: "dummy"
+        )
+      end
+
+      describe "the dependency" do
+        subject { updated_dependencies.first }
+        its(:version) { is_expected.to eq("1.8.0") }
+        its(:previous_version) { is_expected.to be_nil }
+      end
+
+      context "when resolved from a requirement" do
+        let(:latest_resolvable_previous_version) { Gem::Version.new("1.4.0") }
+
+        describe "the dependency" do
+          subject { updated_dependencies.first }
+          its(:version) { is_expected.to eq("1.8.0") }
+          its(:previous_version) { is_expected.to eq("1.4.0") }
+        end
+      end
     end
 
     context "when not updating requirements" do

@@ -6,3 +6,5 @@ require (
 )
 
 replace github.com/dependabot/dependabot-core/helpers/go/importresolver => ./importresolver
+
+go 1.13

@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5",
+            content: "SOME_CONSTANT = 5",
             directory: directory
           )
         end
@@ -676,6 +676,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
+        end
+
+        context "that has a .specification" do
+          let(:dependency_files) { [gemfile, lockfile, specification] }
+          let(:gemfile_fixture_name) { "path_source_statesman" }
+          let(:lockfile_fixture_name) { "path_source_statesman.lock" }
+          let(:specification) do
+            Dependabot::DependencyFile.new(
+              content: fixture("ruby", "specifications", "statesman"),
+              name: "vendor/gems/statesman-4.1.1/.specification",
+              support_file: true
+            )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
       end
     end
@@ -1587,13 +1602,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to receive(:new).with(
               requirements: requirements,
               update_strategy: :bump_versions,
-              latest_version: "1.16.0",
-              latest_resolvable_version: "1.16.0",
+              latest_version: /^1./,
+              latest_resolvable_version: /^1./,
               updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.16.0")
+          expect(updated_requirements.first[:requirement]).
+            to start_with("~> 1.")
         end
 
         context "that is pinned" do
@@ -1627,8 +1643,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.0",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: /^1./,
+                  latest_resolvable_version: /^1./,
                   updated_source: requirements.first[:source]
                 ).and_call_original
 
@@ -1689,8 +1705,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: "1.16.0",
-                  latest_resolvable_version: "1.6.0",
+                  latest_version: /^1./,
+                  latest_resolvable_version: /^1./,
                   updated_source: nil
                 ).and_call_original
 

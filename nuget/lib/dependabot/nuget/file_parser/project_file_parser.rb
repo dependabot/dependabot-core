@@ -15,10 +15,12 @@ module Dependabot
         require_relative "property_value_finder"
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, "\
+                              "ItemGroup > GlobalPackageReference, "\
                               "ItemGroup > Dependency, "\
                               "ItemGroup > DevelopmentDependency"
 
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/.freeze
+        ITEM_REGEX          = /\@\((?<property>.*?)\)/.freeze
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files
@@ -79,8 +81,14 @@ module Dependabot
         def dependency_name(dependency_node, project_file)
           raw_name =
             dependency_node.attribute("Include")&.value&.strip ||
-            dependency_node.at_xpath("./Include")&.content&.strip
+            dependency_node.at_xpath("./Include")&.content&.strip ||
+            dependency_node.attribute("Update")&.value&.strip ||
+            dependency_node.at_xpath("./Update")&.content&.strip
           return unless raw_name
+
+          # If the item contains @(ItemGroup) then ignore as it
+          # updates a set of ItemGroup elements
+          return if raw_name.match?(ITEM_REGEX)
 
           evaluated_value(raw_name, project_file)
         end
@@ -120,10 +128,13 @@ module Dependabot
 
         def get_node_version_value(node)
           attribute = "Version"
-          node.attribute(attribute)&.value&.strip ||
+          value =
+            node.attribute(attribute)&.value&.strip ||
             node.at_xpath("./#{attribute}")&.content&.strip ||
             node.attribute(attribute.downcase)&.value&.strip ||
             node.at_xpath("./#{attribute.downcase}")&.content&.strip
+
+          value == "" ? nil : value
         end
 
         def evaluated_value(value, project_file)

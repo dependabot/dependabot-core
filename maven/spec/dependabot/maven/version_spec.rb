@@ -29,6 +29,16 @@ RSpec.describe Dependabot::Maven::Version do
       it { is_expected.to eq("1.0.0") }
     end
 
+    context "with a + separated build number" do
+      let(:version_string) { "1.0.0+100" }
+      it { is_expected.to eq("1.0.0+100") }
+    end
+
+    context "with a + separated alphanumeric build identifier" do
+      let(:version_string) { "1.0.0+build1" }
+      it { is_expected.to eq("1.0.0+build1") }
+    end
+
     context "with a dot-specified prerelease" do
       let(:version_string) { "1.0.0.pre1" }
       it { is_expected.to eq("1.0.0.pre1") }
@@ -145,6 +155,26 @@ RSpec.describe Dependabot::Maven::Version do
         let(:version) { described_class.new("Finchley") }
         let(:other_version) { described_class.new("Edgware") }
         it { is_expected.to eq(1) }
+      end
+
+      describe "with a + separated alphanumeric build identifier" do
+        context "that is equal" do
+          let(:version_string) { "9.0.0+100" }
+          let(:other_version) { described_class.new("9.0.0+100") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "that is greater" do
+          let(:version_string) { "9.0.0+102" }
+          let(:other_version) { described_class.new("9.0.0+101") }
+          it { is_expected.to eq(1) }
+        end
+
+        context "that is less than" do
+          let(:version_string) { "9.0.0+100" }
+          let(:other_version) { described_class.new("9.0.0+101") }
+          it { is_expected.to eq(-1) }
+        end
       end
 
       describe "from the spec" do

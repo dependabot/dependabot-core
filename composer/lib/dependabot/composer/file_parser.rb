@@ -38,7 +38,7 @@ module Dependabot
         dependencies = DependencySet.new
 
         DEPENDENCY_GROUP_KEYS.each do |keys|
-          next unless parsed_composer_json[keys[:manifest]]
+          next unless parsed_composer_json[keys[:manifest]].is_a?(Hash)
 
           parsed_composer_json[keys[:manifest]].each do |name, req|
             next unless package?(name)
@@ -46,91 +46,126 @@ module Dependabot
             if lockfile
               version = dependency_version(name: name, type: keys[:group])
 
-              # Ignore dependencies which appear in the composer.json but not
-              # the composer.lock.
-              next if version.nil?
-
-              # Ignore dependency versions which are non-numeric, since they
+              # Ignore dependency versions which don't appear in the
+              # composer.lock or are non-numeric and not a git SHA, since they
               # can't be compared later in the process.
-              next unless version.match?(/^\d/)
+              next unless version&.match?(/^\d/) ||
+                          version&.match?(/^[0-9a-f]{40}$/)
             end
 
-            dependencies <<
-              Dependency.new(
-                name: name,
-                version: dependency_version(name: name, type: keys[:group]),
-                requirements: [{
-                  requirement: req,
-                  file: "composer.json",
-                  source: dependency_source(name: name, type: keys[:group]),
-                  groups: [keys[:group]]
-                }],
-                package_manager: "composer"
-              )
+            dependencies << build_manifest_dependency(name, req, keys)
           end
         end
 
         dependencies
       end
 
+      def build_manifest_dependency(name, req, keys)
+        Dependency.new(
+          name: name,
+          version: dependency_version(name: name, type: keys[:group]),
+          requirements: [{
+            requirement: req,
+            file: "composer.json",
+            source: dependency_source(
+              name: name,
+              type: keys[:group],
+              requirement: req
+            ),
+            groups: [keys[:group]]
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      # rubocop:disable Metrics/PerceivedComplexity
       def lockfile_dependencies
         dependencies = DependencySet.new
 
         return dependencies unless lockfile
 
-        DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
-          next unless parsed_lockfile[key]
+        DEPENDENCY_GROUP_KEYS.each do |keys|
+          key = keys.fetch(:lockfile)
+          next unless parsed_lockfile[key].is_a?(Array)
 
           parsed_lockfile[key].each do |details|
             name = details["name"]
-            next unless package?(name)
+            next unless name.is_a?(String) && package?(name)
 
             version = details["version"]&.to_s&.sub(/^v?/, "")
-            next if version.nil?
-            next unless version.match?(/^\d/)
+            next unless version.is_a?(String)
+            next unless version.match?(/^\d/) ||
+                        version.match?(/^[0-9a-f]{40}$/)
 
-            dependencies <<
-              Dependency.new(
-                name: name,
-                version: version,
-                requirements: [],
-                package_manager: "composer"
-              )
+            dependencies << build_lockfile_dependency(name, version, keys)
           end
         end
 
         dependencies
       end
 
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      def build_lockfile_dependency(name, version, keys)
+        Dependency.new(
+          name: name,
+          version: version,
+          requirements: [],
+          package_manager: "composer",
+          subdependency_metadata: [{
+            production: keys.fetch(:group) != "development"
+          }]
+        )
+      end
+
       def dependency_version(name:, type:)
         return unless lockfile
 
-        key = lockfile_key(type)
-
-        parsed_lockfile.
-          fetch(key, []).
-          find { |d| d["name"] == name }&.
-          fetch("version")&.to_s&.sub(/^v?/, "")
-      end
-
-      def dependency_source(name:, type:)
-        return unless lockfile
-
-        key = lockfile_key(type)
-        package = parsed_lockfile.fetch(key).find { |d| d["name"] == name }
-
+        package = lockfile_details(name: name, type: type)
         return unless package
 
-        if package["source"].nil? && package.dig("dist", "type") == "path"
+        version = package.fetch("version")&.to_s&.sub(/^v?/, "")
+        return version unless version&.start_with?("dev-")
+
+        package.dig("source", "reference")
+      end
+
+      def dependency_source(name:, type:, requirement:)
+        return unless lockfile
+
+        package_details = lockfile_details(name: name, type: type)
+        return unless package_details
+
+        if package_details["source"].nil? &&
+           package_details.dig("dist", "type") == "path"
           return { type: "path" }
         end
 
-        return unless package.dig("source", "type") == "git"
+        git_dependency_details(package_details, requirement)
+      end
 
-        {
-          type: "git",
-          url: package.dig("source", "url")
-        }
+      def git_dependency_details(package_details, requirement)
+        return unless package_details.dig("source", "type") == "git"
+
+        branch =
+          if requirement.start_with?("dev-")
+            requirement.
+              sub(/^dev-/, "").
+              sub(/\s+as\s.*/, "").
+              split("#").first
+          elsif package_details.fetch("version")&.to_s&.start_with?("dev-")
+            package_details.fetch("version")&.to_s&.sub(/^dev-/, "")
+          end
+
+        details = { type: "git", url: package_details.dig("source", "url") }
+        return details unless branch
+
+        details.merge(branch: branch, ref: nil)
+      end
+
+      def lockfile_details(name:, type:)
+        key = lockfile_key(type)
+        parsed_lockfile.fetch(key, []).find { |d| d["name"] == name }
       end
 
       def lockfile_key(type)

@@ -113,10 +113,14 @@ module Dependabot
       end
 
       def get_url(details)
-        case details
-        when String then details
-        when Hash then details.fetch("url", nil)
-        end
+        url =
+          case details
+          when String then details
+          when Hash then details.fetch("url", nil)
+          end
+        return url unless url&.match?(%r{^[\w.-]+/[\w.-]+$})
+
+        "https://github.com/" + url
       end
 
       def get_directory(details)

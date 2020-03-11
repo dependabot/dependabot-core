@@ -2,8 +2,6 @@
 
 require "octokit"
 require "dependabot/pull_request_creator"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Labeler
@@ -48,7 +46,7 @@ module Dependabot
         [
           *default_labels_for_pr,
           includes_security_fixes? ? security_label : nil,
-          semver_labels_exist? ? semver_label : nil,
+          label_update_type? ? semver_label : nil,
           automerge_candidate? ? automerge_label : nil
         ].compact.uniq
       end
@@ -89,12 +87,11 @@ module Dependabot
         @automerge_candidate
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def update_type
         return unless dependencies.any?(&:previous_version)
 
-        precison = dependencies.map do |dep|
+        precision = dependencies.map do |dep|
           new_version_parts = version(dep).split(".")
           old_version_parts = previous_version(dep)&.split(".") || []
           all_parts = new_version_parts.first(3) + old_version_parts.first(3)
@@ -105,14 +102,14 @@ module Dependabot
           3
         end.min
 
-        case precison
+        case precision
         when 0 then "non-semver"
         when 1 then "major"
         when 2 then "minor"
         when 3 then "patch"
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def version(dep)
@@ -191,7 +188,13 @@ module Dependabot
         labels.find { |l| l.match?(/security/i) }
       end
 
-      def semver_labels_exist?
+      def label_update_type?
+        # If a `skip-release` label exists then this repo is likely to be using
+        # an auto-releasing service (like auto). We don't want to hijack that
+        # service's labels.
+        return false if labels.map(&:downcase).include?("skip-release")
+
+        # Otherwise, check whether labels exist for each update type
         (%w(major minor patch) - labels.map(&:downcase)).empty?
       end
 
@@ -388,4 +391,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

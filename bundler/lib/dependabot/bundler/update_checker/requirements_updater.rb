@@ -127,6 +127,7 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def update_gemspec_requirement(req)
+          req = req.merge(source: updated_source) if req.fetch(:source)
           return req unless latest_version && latest_resolvable_version
 
           requirements =
@@ -213,7 +214,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         def convert_twidle_to_range(requirement, version_to_be_permitted)
           version = requirement.requirements.first.last
           version = version.release if version.prerelease?
@@ -242,7 +242,6 @@ module Dependabot
             Gem::Requirement.new("< #{ub_segments.join('.')}")
           ]
         end
-        # rubocop:enable Metrics/AbcSize
 
         # Updates the version in a "~>" constraint to allow the given version
         def update_twiddle_version(requirement, version_to_be_permitted)
@@ -253,7 +252,6 @@ module Dependabot
 
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
-        # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def update_greatest_version(requirement, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
@@ -280,7 +278,7 @@ module Dependabot
 
           Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
-        # rubocop:enable Metrics/AbcSize
+
         # rubocop:enable Metrics/PerceivedComplexity
       end
     end

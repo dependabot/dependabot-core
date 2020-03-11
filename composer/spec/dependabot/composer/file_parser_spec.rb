@@ -65,6 +65,11 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with doctored entries" do
+      let(:lockfile_fixture_name) { "doctored" }
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with an integer version" do
       let(:composer_json_fixture_name) { "integer_version" }
       let(:lockfile_fixture_name) { "integer_version" }
@@ -122,6 +127,40 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with subdependencies" do
+      let(:composer_json_fixture_name) { "development_subdependencies" }
+      let(:lockfile_fixture_name) { "development_subdependencies" }
+
+      its(:length) { is_expected.to eq(16) }
+
+      describe "top level dependencies" do
+        subject { dependencies.select(&:top_level?) }
+        its(:length) { is_expected.to eq(2) }
+      end
+
+      describe "a production subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "symfony/polyfill-ctype" }
+        end
+
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("1.11.0")
+          expect(subdep.subdependency_metadata).to eq([{ production: true }])
+        end
+      end
+
+      describe "a development subdependency" do
+        subject(:subdep) do
+          dependencies.find { |d| d.name == "phpunit/php-token-stream" }
+        end
+
+        it "parses the details correctly" do
+          expect(subdep.version).to eq("3.1.0")
+          expect(subdep.subdependency_metadata).to eq([{ production: false }])
+        end
+      end
+    end
+
     context "with a version with a 'v' prefix" do
       let(:lockfile_fixture_name) { "v_prefix" }
 
@@ -130,11 +169,80 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a non-numeric version" do
+    context "with a git dependency" do
+      let(:composer_json_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source" }
 
-      it "skips the dependency" do
-        expect(dependencies.length).to eq(1)
+      it "includes the dependency" do
+        expect(dependencies.length).to eq(2)
+      end
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("monolog/monolog") }
+        its(:version) do
+          is_expected.to eq("5267b03b1e4861c4657ede17a88f13ef479db482")
+        end
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: "dev-example",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "https://github.com/dependabot/monolog.git",
+                branch: "example",
+                ref: nil
+              }
+            }]
+          )
+        end
+
+        context "specified as an alias" do
+          let(:composer_json_fixture_name) { "git_source_alias" }
+
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "dev-example as 1.0.2",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/dependabot/monolog.git",
+                  branch: "example",
+                  ref: nil
+                }
+              }]
+            )
+          end
+        end
+
+        context "due to a stability flag" do
+          subject { dependencies.last }
+
+          let(:composer_json_fixture_name) { "git_source_transitive" }
+          let(:lockfile_fixture_name) { "git_source_transitive" }
+
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "1.*@dev",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/php-fig/log.git",
+                  branch: "master",
+                  ref: nil
+                }
+              }]
+            )
+          end
+        end
       end
     end
 
@@ -228,6 +336,32 @@ RSpec.describe Dependabot::Composer::FileParser do
       context "with the PHP version specified" do
         let(:composer_json_fixture_name) { "php_specified" }
         its(:length) { is_expected.to eq(2) }
+      end
+
+      context "with a git dependency" do
+        let(:composer_json_fixture_name) { "git_source" }
+
+        it "includes the dependency" do
+          expect(dependencies.length).to eq(2)
+        end
+
+        describe "the first dependency" do
+          subject { dependencies.first }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("monolog/monolog") }
+          its(:version) { is_expected.to be_nil }
+          its(:requirements) do
+            is_expected.to eq(
+              [{
+                requirement: "dev-example",
+                file: "composer.json",
+                groups: ["runtime"],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
 

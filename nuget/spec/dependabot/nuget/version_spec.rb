@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Nuget::Version do
       end
     end
 
-    context "compared to a Hex::Version" do
+    context "compared to a Nuget::Version" do
       context "that is lower" do
         let(:other_version) { described_class.new("0.9.0") }
         it { is_expected.to eq(1) }
@@ -104,6 +104,12 @@ RSpec.describe Dependabot::Nuget::Version do
       context "that is equal" do
         let(:other_version) { described_class.new("1.0.0") }
         it { is_expected.to eq(0) }
+
+        context "and both versions are blank" do
+          let(:other_version) { described_class.new("") }
+          let(:version_string) { described_class.new("") }
+          it { is_expected.to eq(0) }
+        end
 
         context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
@@ -143,6 +149,37 @@ RSpec.describe Dependabot::Nuget::Version do
       context "that is greater" do
         let(:other_version) { described_class.new("1.1.0") }
         it { is_expected.to eq(-1) }
+
+        context "and this version is a blank version" do
+          let(:version_string) { described_class.new("") }
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with an easy pre-release" do
+          let(:version_string) { "3.0.0-alpha" }
+          let(:other_version) { "3.0.0-beta" }
+
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with a not-so-easy pre-release" do
+          let(:version_string) { "3.0.0-alpha" }
+          let(:other_version) { "3.0.0-alpha2" }
+
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with a tricky pre-release" do
+          let(:version_string) { "3.0.0-preview.19108.1" }
+          let(:other_version) { "3.0.0-preview7.19362.4" }
+
+          it { is_expected.to eq(-1) }
+        end
+      end
+
+      context "that is a blank version" do
+        let(:other_version) { described_class.new("") }
+        it { is_expected.to eq(1) }
       end
     end
   end

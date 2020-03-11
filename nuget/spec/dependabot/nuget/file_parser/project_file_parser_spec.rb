@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
     describe "the dependencies" do
       subject(:dependencies) { dependency_set.dependencies }
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -111,6 +111,23 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 Microsoft.AspNetCore.App
                 Microsoft.Extensions.PlatformAbstractions
                 System.Collections.Specialized
+              )
+            )
+        end
+      end
+
+      context "with an updated package specified" do
+        let(:file_body) { fixture("csproj", "packages.props") }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to match_array(
+              %w(
+                Microsoft.SourceLink.GitHub
+                System.AskJeeves
+                System.Google
+                System.Lycos
+                System.WebCrawler
               )
             )
         end

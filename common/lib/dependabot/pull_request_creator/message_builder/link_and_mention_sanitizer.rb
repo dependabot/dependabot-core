@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "commonmarker"
+require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
@@ -9,21 +11,19 @@ module Dependabot
         GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i.freeze
         GITHUB_REF_REGEX = %r{
           (?:https?://)?
-          github\.com/#{GITHUB_USERNAME}/[^/\s]+/
+          github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-
-        # Note that we're being deliberately careful about not matching
-        # different length strings of what look like code block quotes. By
-        # doing so we err on the side of sanitizing, which is *much* better
-        # than accidentally not sanitizing.
-        #
-        # rubocop:disable Style/RegexpLiteral
-        CODEBLOCK_REGEX = %r{
-          (?=[\s]`{3}[^`])|(?=[\s]`{3}\Z)|(?=\A`{3}[^`])|
-          (?=[\s]~{3}[^~])|(?=[\s]~{3}\Z)|(?=\A~{3}[^~])
-        }x.freeze
-        # rubocop:enable Style/RegexpLiteral
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
+        # End of string
+        EOS_REGEX = /\z/.freeze
+        # We rely on GitHub to do the HTML sanitization
+        COMMONMARKER_OPTIONS = %i(
+          UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING
+        ).freeze
+        COMMONMARKER_EXTENSIONS = %i(
+          table tasklist strikethrough autolink tagfilter
+        ).freeze
 
         attr_reader :github_redirection_service
 
@@ -32,56 +32,100 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text:)
-          # We don't want to sanitize any links or mentions that are contained
-          # within code blocks, so we split the text on "```"
-          snippets = text.split(CODEBLOCK_REGEX)
-          if snippets.first&.start_with?(CODEBLOCK_REGEX)
-            snippets = ["", *snippets]
-          end
+          doc = CommonMarker.render_doc(
+            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
+          )
 
-          snippets.map.with_index do |snippet, index|
-            next snippet if index.odd?
-
-            snippet = sanitize_mentions(snippet)
-            sanitize_links(snippet)
-          end.join
+          sanitize_mentions(doc)
+          sanitize_links(doc)
+          doc.to_html(COMMONMARKER_OPTIONS, COMMONMARKER_EXTENSIONS)
         end
 
         private
 
-        def sanitize_mentions(text)
-          text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|
-            next mention if mention.end_with?("/")
+        def sanitize_mentions(doc)
+          doc.walk do |node|
+            if !parent_node_link?(node) && node.type == :text &&
+               node.string_content.match?(MENTION_REGEX)
+              nodes = build_mention_nodes(node.string_content)
 
-            last_match = Regexp.last_match
+              nodes.each do |n|
+                node.insert_before(n)
+              end
 
-            sanitized_mention = mention.gsub("@", "@&#8203;")
-            if last_match.pre_match.chars.last == "[" &&
-               last_match.post_match.chars.first == "]"
-              sanitized_mention
-            else
-              "[#{sanitized_mention}]"\
-              "(https://github.com/#{mention.tr('@', '')})"
+              node.delete
             end
           end
         end
 
-        def sanitize_links(text)
-          text.gsub(GITHUB_REF_REGEX) do |ref|
-            last_match = Regexp.last_match
-            previous_char = last_match.pre_match.chars.last
-            next_char = last_match.post_match.chars.first
+        # rubocop:disable Metrics/PerceivedComplexity
+        def sanitize_links(doc)
+          doc.walk do |node|
+            if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
+              node.each do |subnode|
+                unless subnode.type == :text &&
+                       subnode.string_content.match?(GITHUB_REF_REGEX)
+                  next
+                end
 
-            sanitized_url =
-              ref.gsub("github.com", github_redirection_service || "github.com")
-            if (previous_char.nil? || previous_char.match?(/\s/)) &&
-               (next_char.nil? || next_char.match?(/\s/))
-              "[##{last_match.named_captures.fetch('number')}]"\
-              "(#{sanitized_url})"
-            else
-              sanitized_url
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                number = last_match.named_captures.fetch("number")
+                repo = last_match.named_captures.fetch("repo")
+                subnode.string_content = "#{repo}##{number}"
+              end
+
+              node.url = replace_github_host(node.url)
+            elsif node.type == :text &&
+                  node.string_content.match?(GITHUB_REF_REGEX)
+              node.string_content = replace_github_host(node.string_content)
             end
           end
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        def replace_github_host(text)
+          text.gsub(
+            "github.com", github_redirection_service || "github.com"
+          )
+        end
+
+        def build_mention_nodes(text)
+          nodes = []
+          scan = StringScanner.new(text)
+
+          until scan.eos?
+            line = scan.scan_until(MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention && !mention.end_with?("/")
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes << create_link_node(
+                "https://github.com/#{mention.tr('@', '')}", mention.to_s
+              )
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def create_link_node(url, text)
+          link_node = CommonMarker::Node.new(:link)
+          text_node = CommonMarker::Node.new(:text)
+          link_node.url = url
+          text_node.string_content = text
+          link_node.append_child(text_node)
+          link_node
+        end
+
+        def parent_node_link?(node)
+          node.type == :link || node.parent && parent_node_link?(node.parent)
         end
       end
     end

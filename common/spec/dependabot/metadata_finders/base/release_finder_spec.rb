@@ -126,6 +126,48 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               expect(WebMock).to have_requested(:get, github_url).once
             end
 
+            context "with git tags" do
+              let(:dependency) do
+                Dependabot::Dependency.new(
+                  name: dependency_name,
+                  version: "a" * 40,
+                  requirements: [{
+                    file: "Gemfile",
+                    requirement: nil,
+                    groups: [],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/actions/setup-node",
+                      ref: "v1.8.0",
+                      branch: nil
+                    }
+                  }],
+                  previous_requirements: [{
+                    file: "Gemfile",
+                    requirement: nil,
+                    groups: [],
+                    source: {
+                      type: "git",
+                      url: "https://github.com/actions/setup-node",
+                      ref: "v1.7.0",
+                      branch: nil
+                    }
+                  }],
+                  previous_version: nil,
+                  package_manager: "dummy"
+                )
+              end
+
+              it "gets the right text" do
+                expect(subject).
+                  to eq(
+                    "## v1.8.0\n"\
+                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "- Add 2018-2027 Bankgirot holiday defintions"
+                  )
+              end
+            end
+
             context "but prefixed" do
               let(:github_response) do
                 fixture("github", "prefixed_releases.json")

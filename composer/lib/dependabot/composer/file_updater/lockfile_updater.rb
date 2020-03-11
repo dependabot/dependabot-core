@@ -2,6 +2,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/composer/file_parser"
 require "dependabot/composer/file_updater"
 require "dependabot/composer/version"
 require "dependabot/composer/requirement"
@@ -22,6 +23,17 @@ module Dependabot
             super
           end
         end
+
+        MISSING_EXPLICIT_PLATFORM_REQ_REGEX =
+          %r{
+            (?<=PHP\sextension\s)ext\-[^\s/]+\s.*?\s(?=is|but)|
+            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=but)
+          }x.freeze
+        MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
+          %r{
+            (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
+            (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
+          }x.freeze
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -63,6 +75,11 @@ module Dependabot
           retry_count ||= 0
           retry_count += 1
           retry if transitory_failure?(e) && retry_count <= 1
+          if locked_git_dep_error?(e) && retry_count <= 1
+            @lock_git_deps = false
+            retry
+          end
+
           handle_composer_errors(e)
         end
 
@@ -104,24 +121,52 @@ module Dependabot
           error.message.include?("Content-Length mismatch")
         end
 
+        def locked_git_dep_error?(error)
+          error.message.start_with?("Could not authenticate against")
+        end
+
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_composer_errors(error)
-          if error.message.include?("package requires php") ||
-             error.message.include?("requested PHP extension")
+          if error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+            # These errors occur when platform requirements declared explicitly
+            # in the composer.json aren't met.
             missing_extensions =
-              error.message.scan(/\sext\-.*? .*?\s|(?<=requires )php .*?\s/).
+              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
               map do |extension_string|
-                name, requirement = extension_string.strip.split(" ")
+                name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
             raise MissingExtensions, missing_extensions
+          elsif error.message.match?(MISSING_IMPLICIT_PLATFORM_REQ_REGEX) &&
+                !library? &&
+                !initial_platform.empty? &&
+                implicit_platform_reqs_satisfiable?(error.message)
+            missing_extensions =
+              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+              map do |extension_string|
+                name, requirement = extension_string.strip.split(" ", 2)
+                { name: name, requirement: requirement }
+              end
+
+            missing_extension = missing_extensions.find do |hash|
+              existing_reqs = composer_platform_extensions[hash[:name]] || []
+              version_for_reqs(existing_reqs + [hash[:requirement]])
+            end
+
+            raise MissingExtensions, [missing_extension]
           end
 
           if error.message.start_with?("Failed to execute git checkout")
             raise git_dependency_reference_error(error)
+          end
+
+          # Special case for Laravel Nova, which will fall back to attempting
+          # to close a private repo if given invalid (or no) credentials
+          if error.message.include?("github.com/laravel/nova.git")
+            raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
           if error.message.start_with?("Failed to execute git clone")
@@ -172,6 +217,24 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/PerceivedComplexity
 
+        def library?
+          parsed_composer_json["type"] == "library"
+        end
+
+        def implicit_platform_reqs_satisfiable?(message)
+          missing_extensions =
+            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
+            map do |extension_string|
+              name, requirement = extension_string.strip.split(" ", 2)
+              { name: name, requirement: requirement }
+            end
+
+          missing_extensions.any? do |hash|
+            existing_reqs = composer_platform_extensions[hash[:name]] || []
+            version_for_reqs(existing_reqs + [hash[:requirement]])
+          end
+        end
+
         def write_temporary_dependency_files
           path_dependencies.each do |file|
             path = file.name
@@ -185,36 +248,68 @@ module Dependabot
         end
 
         def locked_composer_json_content
-          tmp_content =
-            dependencies.reduce(updated_composer_json_content) do |content, dep|
-              updated_req = dep.version
-              next content unless Composer::Version.correct?(updated_req)
+          content = updated_composer_json_content
+          content = lock_dependencies_being_updated(content)
+          content = lock_git_dependencies(content) if @lock_git_deps != false
+          content = add_temporary_platform_extensions(content)
+          content
+        end
 
-              old_req =
-                dep.requirements.find { |r| r[:file] == "composer.json" }&.
-                fetch(:requirement)
-
-              # When updating a subdep there won't be an old requirement
-              next content unless old_req
-
-              regex =
-                /
-                  "#{Regexp.escape(dep.name)}"\s*:\s*
-                  "#{Regexp.escape(old_req)}"
-                /x
-
-              content.gsub(regex) do |declaration|
-                declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
-              end
-            end
-
-          json = JSON.parse(tmp_content)
+        def add_temporary_platform_extensions(content)
+          json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
             json["config"]["platform"][extension] =
               version_for_reqs(requirements)
+          end
+
+          JSON.dump(json)
+        end
+
+        def lock_dependencies_being_updated(original_content)
+          dependencies.reduce(original_content) do |content, dep|
+            updated_req = dep.version
+            next content unless Composer::Version.correct?(updated_req)
+
+            old_req =
+              dep.requirements.find { |r| r[:file] == "composer.json" }&.
+              fetch(:requirement)
+
+            # When updating a subdep there won't be an old requirement
+            next content unless old_req
+
+            regex =
+              /
+                "#{Regexp.escape(dep.name)}"\s*:\s*
+                "#{Regexp.escape(old_req)}"
+              /x
+
+            content.gsub(regex) do |declaration|
+              declaration.gsub(%("#{old_req}"), %("#{updated_req}"))
+            end
+          end
+        end
+
+        def lock_git_dependencies(content)
+          json = JSON.parse(content)
+
+          FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
+            next unless json[keys[:manifest]]
+
+            json[keys[:manifest]].each do |name, req|
+              next unless req.start_with?("dev-")
+              next if req.include?("#")
+
+              commit_sha = parsed_lockfile.
+                           fetch(keys[:lockfile], []).
+                           find { |d| d["name"] == name }&.
+                           dig("source", "reference")
+              updated_req_parts = req.split(" ")
+              updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
+              json[keys[:manifest]][name] = updated_req_parts.join(" ")
+            end
           end
 
           JSON.dump(json)
@@ -359,19 +454,38 @@ module Dependabot
         end
 
         def initial_platform
-          return {} unless parsed_composer_json["type"] == "library"
+          platform_php = parsed_composer_json.dig("config", "platform", "php")
 
-          php_requirements = [
-            parsed_composer_json.dig("require", "php"),
-            parsed_composer_json.dig("require-dev", "php")
-          ].compact
-          return {} if php_requirements.empty?
+          platform = {}
+          if platform_php.is_a?(String) && requirement_valid?(platform_php)
+            platform["php"] = [platform_php]
+          end
 
-          { "php" => php_requirements }
+          # Note: We *don't* include the require-dev PHP version in our initial
+          # platform. If we fail to resolve with the PHP version specified in
+          # `require` then it will be picked up in a subsequent iteration.
+          requirement_php = parsed_composer_json.dig("require", "php")
+          return platform unless requirement_php.is_a?(String)
+          return platform unless requirement_valid?(requirement_php)
+
+          platform["php"] ||= []
+          platform["php"] << requirement_php
+          platform
+        end
+
+        def requirement_valid?(req_string)
+          Composer::Requirement.requirements_array(req_string)
+          true
+        rescue Gem::Requirement::BadRequirementError
+          false
         end
 
         def parsed_composer_json
-          JSON.parse(composer_json.content)
+          @parsed_composer_json ||= JSON.parse(composer_json.content)
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
         end
 
         def composer_json

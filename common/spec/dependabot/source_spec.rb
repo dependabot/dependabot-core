@@ -17,8 +17,8 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          api_endpoint: "https://my.private.insance/api/v3/",
-          hostname: "my.private.insance"
+          api_endpoint: "https://my.private.instance/api/v3/",
+          hostname: "my.private.instance"
         }
       end
 
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          hostname: "my.private.insance"
+          hostname: "my.private.instance"
         }
       end
 
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Source do
         {
           provider: "github",
           repo: "my/repo",
-          api_endpoint: "https://my.private.insance/api/v3/"
+          api_endpoint: "https://my.private.instance/api/v3/"
         }
       end
 
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Source do
       its(:directory) { is_expected.to eq("dir") }
     end
 
-    context "with an Azue DevOps URL" do
+    context "with an Azure DevOps URL" do
       let(:url) { "https://dev.azure.com/greysteil/_git/dependabot-test?path" }
       its(:provider) { is_expected.to eq("azure") }
       its(:repo) { is_expected.to eq("greysteil/_git/dependabot-test") }

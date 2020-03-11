@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with registry sources" do
       let(:terraform_fixture_name) { "registry.tf" }
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       context "that are invalid" do
         let(:terraform_fixture_name) { "invalid_registry.tf" }
@@ -147,6 +147,29 @@ RSpec.describe Dependabot::Terraform::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("devops-workflow/members/github")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the fifth dependency (default registry with a sub-directory)" do
+        subject(:dependency) { dependencies[4] }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "mongodb/ecs-task-definition/aws"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("mongodb/ecs-task-definition/aws")
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to eq(expected_requirements)
         end

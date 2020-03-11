@@ -73,6 +73,10 @@ module Dependabot
           true
         end
 
+        def latest_resolvable_previous_version(updated_version)
+          resolve_latest_previous_version(dependency, updated_version)
+        end
+
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           if part_of_tightly_locked_monorepo?
@@ -80,8 +84,13 @@ module Dependabot
           end
           return if newly_broken_peer_reqs_from_dep.any?
 
-          updates =
-            [{ dependency: dependency, version: latest_allowable_version }]
+          updates = [{
+            dependency: dependency,
+            version: latest_allowable_version,
+            previous_version: latest_resolvable_previous_version(
+              latest_allowable_version
+            )
+          }]
           newly_broken_peer_reqs_on_dep.each do |peer_req|
             dep_name = peer_req.fetch(:requiring_dep_name)
             dep = top_level_dependencies.find { |d| d.name == dep_name }
@@ -94,7 +103,13 @@ module Dependabot
               latest_version_of_dep_with_satisfied_peer_reqs(dep)
             return nil unless updated_version
 
-            updates << { dependency: dep, version: updated_version }
+            updates << {
+              dependency: dep,
+              version: updated_version,
+              previous_version: resolve_latest_previous_version(
+                dep, updated_version
+              )
+            }
           end
           updates.uniq
         end
@@ -113,6 +128,37 @@ module Dependabot
               ignored_versions: [],
               security_advisories: []
             )
+        end
+
+        def resolve_latest_previous_version(dep, updated_version)
+          return dep.version if dep.version
+
+          @resolve_latest_previous_version ||= {}
+          @resolve_latest_previous_version[dep] ||= begin
+            relevant_versions = latest_version_finder(dependency).
+                                possible_previous_versions_with_details.
+                                map(&:first)
+            reqs = dep.requirements.map { |r| r[:requirement] }.compact.
+                   map { |r| requirement_class.requirements_array(r) }
+
+            # Pick the lowest version from the max possible version from all
+            # requirements. This matches the logic when combining the same
+            # dependency in DependencySet from multiple manifest files where we
+            # pick the lowest version from the duplicates.
+            latest_previous_version = reqs.flat_map do |req|
+              relevant_versions.select do |version|
+                req.any? { |r| r.satisfied_by?(version) }
+              end.max
+            end.min&.to_s
+
+            # Handle cases where the latest resolvable previous version is the
+            # latest version. This often happens if you don't have lockfiles and
+            # have requirements update strategy set to bump_versions, where an
+            # update might go from ^1.1.1 to ^1.1.2 (both resolve to 1.1.2).
+            return if updated_version.to_s == latest_previous_version
+
+            latest_previous_version
+          end
         end
 
         def part_of_tightly_locked_monorepo?
@@ -149,7 +195,13 @@ module Dependabot
               find { |v| v == latest_allowable_version }
             next unless updated_version
 
-            updates << { dependency: dep, version: updated_version }
+            updates << {
+              dependency: dep,
+              version: updated_version,
+              previous_version: resolve_latest_previous_version(
+                dep, updated_version
+              )
+            }
           end
 
           updates
@@ -248,7 +300,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def satisfying_versions
           latest_version_finder(dependency).
@@ -273,7 +324,7 @@ module Dependabot
             end.
             map(&:first)
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def satisfies_peer_reqs_on_dep?(version)
@@ -432,7 +483,7 @@ module Dependabot
           ).npmrc_content
         end
 
-        # Top level dependecies are required in the peer dep checker
+        # Top level dependencies are required in the peer dep checker
         # to fetch the manifests for all top level deps which may contain
         # "peerDependency" requirements
         def top_level_dependencies

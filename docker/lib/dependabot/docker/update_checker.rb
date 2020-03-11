@@ -134,7 +134,9 @@ module Dependabot
 
         latest_tag =
           candidate_tags.
-          max_by { |tag| version_class.new(numeric_version_from(tag)) }
+          max_by do |tag|
+            [version_class.new(numeric_version_from(tag)), tag.length]
+          end
 
         latest_tag || dependency.version
 
@@ -309,7 +311,7 @@ module Dependabot
       def numeric_version_from(tag)
         return unless tag.match?(NAME_WITH_VERSION)
 
-        tag.match(NAME_WITH_VERSION).named_captures.fetch("version")
+        tag.match(NAME_WITH_VERSION).named_captures.fetch("version").downcase
       end
 
       def registry_hostname

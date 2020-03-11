@@ -1487,6 +1487,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    context "when 'latest' is specified as version requirement" do
+      let(:manifest_fixture_name) { "latest_package_requirement.json" }
+      let(:npm_lock_fixture_name) { "latest_package_requirement.json" }
+      let(:yarn_lock_fixture_name) { "latest_package_requirement.lock" }
+
+      let(:dependency_name) { "extend" }
+      let(:version) { "3.0.2" }
+      let(:previous_version) { "2.0.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.0.2",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.0.1",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      context "with an npm lock file" do
+        let(:files) { [package_json, package_lock] }
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content).
+            to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content).
+            to include("etag/-/etag-1.7.0.tgz")
+        end
+      end
+
+      context "with a yarn lockfile" do
+        let(:files) { [package_json, yarn_lock] }
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json yarn.lock))
+          expect(updated_yarn_lock.content).
+            to include("extend@^3.0.2:\n  version \"3.0.2\"")
+          expect(updated_yarn_lock.content).
+            to include("etag@latest:\n  version \"1.7.0\"")
+        end
+      end
+    end
+
     context "when the exact version we're updating from is still requested" do
       let(:files) { [package_json, yarn_lock] }
       let(:manifest_fixture_name) { "typedoc-plugin-ui-router.json" }
@@ -1779,7 +1831,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to raise_error do |error|
                   expect(error).
                     to be_a(Dependabot::PrivateSourceAuthenticationFailure)
-                  expect(error.source).to eq("npm-proxy.fury.io")
+                  expect(error.source).to eq("npm-proxy.fury.io/dependabot")
                 end
             end
 
@@ -1792,11 +1844,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "password" => "token"
                 }, {
                   "type" => "npm_registry",
-                  "registry" => "npm-proxy.fury.io",
+                  "registry" => "npm-proxy.fury.io/dependabot",
                   "token" => "bad_token"
                 }]
               end
 
+              # TODO: Fix broken test
               it "raises a helpful error" do
                 expect { updater.updated_dependency_files }.
                   to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
@@ -1850,7 +1903,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "because we're updating to a non-existant version" do
+      context "because we're updating to a nonexistent version" do
         let(:yarn_lock_fixture_name) { "yarn.lock" }
         let(:npm_lock_fixture_name) { "package-lock.json" }
         let(:manifest_fixture_name) { "package.json" }
@@ -1873,7 +1926,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a dependency that can't be found" do
-        let(:manifest_fixture_name) { "non_existant_dependency.json" }
+        let(:manifest_fixture_name) { "nonexistent_dependency.json" }
         let(:npm_lock_fixture_name) { "yanked_version.json" }
         let(:yarn_lock_fixture_name) { "yanked_version.lock" }
 
@@ -2080,7 +2133,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "when a git src depednency doesn't have a valid package.json" do
+      context "when a git src dependency doesn't have a valid package.json" do
         let(:manifest_fixture_name) { "git_missing_version.json" }
         let(:npm_lock_fixture_name) { "git_missing_version.json" }
         let(:yarn_lock_fixture_name) { "git_missing_version.lock" }
@@ -2313,14 +2366,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
             to eq("5.7.3")
         end
+      end
 
-        context "with non-standard indentation" do
-          it "preserves indentation in the package-lock.json" do
-            expect(updated_npm_lock.content).to eq(
-              fixture("npm_lockfiles",
-                      "subdependency_update_preserved_indentation.json")
-            )
-          end
+      context "with a sub-dependency and non-standard indentation" do
+        let(:manifest_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+        let(:npm_lock_fixture_name) do
+          "subdependency_update_tab_indentation.json"
+        end
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "1.3.0" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "preserves indentation in the package-lock.json" do
+          expect(updated_npm_lock.content).to eq(
+            fixture("npm_lockfiles",
+                    "subdependency_update_preserved_indentation.json")
+          )
         end
       end
 

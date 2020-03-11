@@ -22,7 +22,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       labeler: labeler,
       reviewers: reviewers,
       assignees: assignees,
-      milestone: milestone
+      milestone: milestone,
+      require_up_to_date_base: require_up_to_date_base
     )
   end
 
@@ -49,6 +50,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:reviewers) { nil }
   let(:assignees) { nil }
   let(:milestone) { nil }
+  let(:require_up_to_date_base) { false }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -251,6 +253,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "when we got a 401" do
+      before do
+        service_pack_url =
+          "https://github.com/gocardless/bump.git/info/refs"\
+          "?service=git-upload-pack"
+        stub_request(:get, service_pack_url).to_return(status: 401)
+      end
+
+      it "raises a normal error" do
+        expect { creator.create }.to raise_error(Octokit::Unauthorized)
+      end
+    end
+
     context "when the repo exists but we got a 404" do
       before do
         stub_request(:get, repo_api_url).
@@ -265,7 +280,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
 
       it "raises a normal error" do
-        expect { creator.create }.to raise_error("Unexpected git error!")
+        expect { creator.create }.to raise_error(/Unexpected git error!/)
       end
     end
 
@@ -400,9 +415,100 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "returns nil" do
           expect(creator.create).to be_nil
+          expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
+        end
 
-          expect(WebMock).
-            to_not have_requested(:post, "#{repo_api_url}/pulls")
+        context "but isn't initially returned (a race)" do
+          before do
+            url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
+                  "&state=all"
+            stub_request(:get, url).
+              to_return(status: 200, body: "[]", headers: json_header)
+            stub_request(
+              :patch,
+              "#{repo_api_url}/git/refs/heads/#{branch_name}"
+            ).to_return(
+              status: 200,
+              body: fixture("github", "update_ref.json"),
+              headers: json_header
+            )
+            stub_request(:post, "#{repo_api_url}/pulls").
+              to_return(
+                status: 422,
+                body: fixture("github", "pull_request_already_exists.json"),
+                headers: json_header
+              )
+          end
+
+          it "returns nil" do
+            expect(creator.create).to be_nil
+            expect(WebMock).to have_requested(:post, "#{repo_api_url}/pulls")
+          end
+        end
+
+        context "but is merged" do
+          before do
+            url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}"\
+                  "&state=all"
+            stub_request(:get, url).to_return(
+              status: 200,
+              body: "[{ \"merged\": true }]",
+              headers: json_header
+            )
+            stub_request(
+              :patch,
+              "#{repo_api_url}/git/refs/heads/#{branch_name}"
+            ).to_return(
+              status: 200,
+              body: fixture("github", "update_ref.json"),
+              headers: json_header
+            )
+          end
+          let(:base_commit) { "basecommitsha" }
+
+          it "creates a PR" do
+            creator.create
+
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/pulls").
+              with(
+                body: {
+                  base: "master",
+                  head: "dependabot/bundler/business-1.5.0",
+                  title: "PR name",
+                  body: "PR msg"
+                }
+              )
+          end
+
+          context "when `require_up_to_date_base` is true" do
+            let(:require_up_to_date_base) { true }
+
+            it "does not create a PR" do
+              expect(creator.create).to be_nil
+              expect(WebMock).
+                to_not have_requested(:post, "#{repo_api_url}/pulls")
+            end
+
+            context "and the commit we're branching off of is up-to-date" do
+              let(:base_commit) { "7bb4e41ce5164074a0920d5b5770d196b4d90104" }
+
+              it "creates a PR" do
+                creator.create
+
+                expect(WebMock).
+                  to have_requested(:post, "#{repo_api_url}/pulls").
+                  with(
+                    body: {
+                      base: "master",
+                      head: "dependabot/bundler/business-1.5.0",
+                      title: "PR name",
+                      body: "PR msg"
+                    }
+                  )
+              end
+            end
+          end
         end
       end
     end
@@ -717,9 +823,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     context "when a reviewer has been requested" do
       let(:reviewers) { { "reviewers" => ["greysteil"] } }
       before do
-        stub_request(
-          :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
-        ).to_return(status: 200,
+        stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers").
+          to_return(status: 200,
                     body: fixture("github", "create_pr.json"),
                     headers: json_header)
       end
@@ -731,6 +836,41 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           to have_requested(
             :post, "#{repo_api_url}/pulls/1347/requested_reviewers"
           ).with(body: { reviewers: ["greysteil"], team_reviewers: [] }.to_json)
+      end
+
+      context "that can't be added" do
+        before do
+          stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers").
+            to_return(status: 422,
+                      body: fixture("github", "add_reviewer_error.json"),
+                      headers: json_header)
+          stub_request(:post, "#{repo_api_url}/issues/1347/comments")
+        end
+        let(:expected_comment_body) do
+          "Dependabot tried to add `@greysteil` as a reviewer to this PR, "\
+          "but received the following error from GitHub:\n\n"\
+          "```\n"\
+          "POST https://api.github.com/repos/gocardless/bump/pulls"\
+          "/1347/requested_reviewers: 422 - Reviews may only be requested "\
+          "from collaborators. One or more of the users or teams you "\
+          "specified is not a collaborator of the example/repo repository. "\
+          "// See: https://developer.github.com/v3/pulls/review_requests/"\
+          "#create-a-review-request\n"\
+          "```"
+        end
+
+        it "comments on the PR with details of the failure" do
+          creator.create
+
+          expect(WebMock).to have_requested(
+            :post,
+            "#{repo_api_url}/pulls/1347/requested_reviewers"
+          )
+          expect(WebMock).to have_requested(
+            :post,
+            "#{repo_api_url}/issues/1347/comments"
+          ).with(body: { body: expected_comment_body }.to_json)
+        end
       end
     end
 

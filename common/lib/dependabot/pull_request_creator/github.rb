@@ -5,8 +5,6 @@ require "securerandom"
 require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class Github
@@ -18,27 +16,92 @@ module Dependabot
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, signature_key:, custom_headers:,
-                     labeler:, reviewers:, assignees:, milestone:)
-        @source         = source
-        @branch_name    = branch_name
-        @base_commit    = base_commit
-        @credentials    = credentials
-        @files          = files
-        @commit_message = commit_message
-        @pr_description = pr_description
-        @pr_name        = pr_name
-        @author_details = author_details
-        @signature_key  = signature_key
-        @custom_headers = custom_headers
-        @labeler        = labeler
-        @reviewers      = reviewers
-        @assignees      = assignees
-        @milestone      = milestone
+                     labeler:, reviewers:, assignees:, milestone:,
+                     require_up_to_date_base:)
+        @source                  = source
+        @branch_name             = branch_name
+        @base_commit             = base_commit
+        @credentials             = credentials
+        @files                   = files
+        @commit_message          = commit_message
+        @pr_description          = pr_description
+        @pr_name                 = pr_name
+        @author_details          = author_details
+        @signature_key           = signature_key
+        @custom_headers          = custom_headers
+        @labeler                 = labeler
+        @reviewers               = reviewers
+        @assignees               = assignees
+        @milestone               = milestone
+        @require_up_to_date_base = require_up_to_date_base
       end
 
       def create
-        return if branch_exists?(branch_name) && pull_request_exists?
+        return if branch_exists?(branch_name) && unmerged_pull_request_exists?
+        return if require_up_to_date_base? && !base_commit_is_up_to_date?
 
+        create_annotated_pull_request
+      rescue Octokit::Error => e
+        handle_error(e)
+      end
+
+      private
+
+      def require_up_to_date_base?
+        @require_up_to_date_base
+      end
+
+      def branch_exists?(name)
+        git_metadata_fetcher.ref_names.include?(name)
+      rescue Dependabot::GitDependenciesNotReachable => e
+        raise e.cause if e.cause&.message&.include?("is disabled")
+        raise e.cause if e.cause.is_a?(Octokit::Unauthorized)
+        raise(RepoNotFound, source.url) unless repo_exists?
+
+        retrying ||= false
+
+        msg = "Unexpected git error!\n\n#{e.cause&.class}: #{e.cause&.message}"
+        raise msg if retrying
+
+        retrying = true
+        retry
+      end
+
+      def unmerged_pull_request_exists?
+        pull_requests_for_branch.reject(&:merged).any?
+      end
+
+      def pull_requests_for_branch
+        @pull_requests_for_branch ||=
+          begin
+            github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "all"
+            )
+          rescue Octokit::InternalServerError
+            # A GitHub bug sometimes means adding `state: all` causes problems.
+            # In that case, fall back to making two separate requests.
+            open_prs = github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "open"
+            )
+
+            closed_prs = github_client_for_source.pull_requests(
+              source.repo,
+              head: "#{source.repo.split('/').first}:#{branch_name}",
+              state: "closed"
+            )
+            [*open_prs, *closed_prs]
+          end
+      end
+
+      def base_commit_is_up_to_date?
+        git_metadata_fetcher.head_commit_for_ref(target_branch) == base_commit
+      end
+
+      def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
         return unless branch
@@ -49,55 +112,6 @@ module Dependabot
         annotate_pull_request(pull_request)
 
         pull_request
-      rescue Octokit::Error => e
-        handle_error(e)
-      end
-
-      private
-
-      def github_client_for_source
-        @github_client_for_source ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def branch_exists?(name)
-        git_metadata_fetcher.ref_names.include?(name)
-      rescue Dependabot::GitDependenciesNotReachable => e
-        raise e.cause if e.cause&.message&.include?("is disabled")
-        raise(RepoNotFound, source.url) unless repo_exists?
-
-        retrying ||= false
-        raise "Unexpected git error!" if retrying
-
-        retrying = true
-        retry
-      end
-
-      def pull_request_exists?
-        github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "all"
-        ).any?
-      rescue Octokit::InternalServerError
-        # A GitHub bug sometimes means adding `state: all` causes problems.
-        # In that case, fall back to making two separate requests.
-        open_prs = github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "open"
-        )
-
-        closed_prs = github_client_for_source.pull_requests(
-          source.repo,
-          head: "#{source.repo.split('/').first}:#{branch_name}",
-          state: "closed"
-        )
-
-        [*open_prs, *closed_prs].any?
       end
 
       def repo_exists?
@@ -110,6 +124,32 @@ module Dependabot
       def create_commit
         tree = create_tree
 
+        begin
+          github_client_for_source.create_commit(
+            source.repo,
+            commit_message,
+            tree.sha,
+            base_commit,
+            commit_options(tree)
+          )
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.message == "Tree SHA does not exist"
+
+          # Sometimes a race condition on GitHub's side means we get an error
+          # here. No harm in retrying if we do.
+          raise_or_increment_retry_counter(counter: @commit_creation, limit: 3)
+          sleep(rand(1..1.99))
+          retry
+        end
+      rescue Octokit::UnprocessableEntity => e
+        raise unless e.message == "Tree SHA does not exist"
+
+        raise_or_increment_retry_counter(counter: @tree_creation, limit: 1)
+        sleep(rand(1..1.99))
+        retry
+      end
+
+      def commit_options(tree)
         options = author_details&.any? ? { author: author_details } : {}
 
         if options[:author]&.any? && signature_key
@@ -117,26 +157,7 @@ module Dependabot
           options[:signature] = commit_signature(tree, options[:author])
         end
 
-        begin
-          github_client_for_source.create_commit(
-            source.repo,
-            commit_message,
-            tree.sha,
-            base_commit,
-            options
-          )
-        rescue Octokit::UnprocessableEntity => e
-          raise unless e.message == "Tree SHA does not exist"
-
-          # Sometimes a race condition on GitHub's side means we get an error
-          # here. No harm in retrying if we do.
-          retry_count ||= 0
-          retry_count += 1
-          raise if retry_count > 10
-
-          sleep(rand(1..1.99))
-          retry
-        end
+        options
       end
 
       def create_tree
@@ -237,10 +258,53 @@ module Dependabot
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
       rescue Octokit::UnprocessableEntity => e
-        return if e.message.include?("not a collaborator")
+        # Special case GitHub bug for team reviewers
         return if e.message.include?("Could not resolve to a node")
 
+        if invalid_reviewer?(e.message)
+          comment_with_invalid_reviewer(pull_request, e.message)
+          return
+        end
+
         raise
+      end
+
+      def invalid_reviewer?(message)
+        return true if message.include?("Could not resolve to a node")
+        return true if message.include?("not a collaborator")
+        return true if message.include?("Could not add requested reviewers")
+
+        false
+      end
+
+      def comment_with_invalid_reviewer(pull_request, message)
+        reviewers_hash =
+          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+        reviewers = []
+        reviewers += reviewers_hash[:reviewers] || []
+        reviewers += (reviewers_hash[:team_reviewers] || []).
+                     map { |rv| "#{source.repo.split('/').first}/#{rv}" }
+
+        reviewers_string =
+          if reviewers.count == 1
+            "`@#{reviewers.first}`"
+          else
+            names = reviewers.map { |rv| "`@#{rv}`" }
+            "#{names[0..-2].join(', ')} and #{names[-1]}"
+          end
+
+        msg = "Dependabot tried to add #{reviewers_string} as "
+        msg += reviewers.count > 1 ? "reviewers" : "a reviewer"
+        msg += " to this PR, but received the following error from GitHub:\n\n"\
+               "```\n" \
+               "#{message}\n"\
+               "```"
+
+        github_client_for_source.add_comment(
+          source.repo,
+          pull_request.number,
+          msg
+        )
       end
 
       def add_assignees_to_pull_request(pull_request)
@@ -267,14 +331,23 @@ module Dependabot
       def create_pull_request
         github_client_for_source.create_pull_request(
           source.repo,
-          source.branch || default_branch,
+          target_branch,
           branch_name,
           pr_name,
           pr_description,
           headers: custom_headers || {}
         )
       rescue Octokit::UnprocessableEntity => e
-        handle_pr_creation_error(e)
+        return handle_pr_creation_error(e) if e.message.include? "Error summary"
+
+        # Sometimes PR creation fails with no details (presumably because the
+        # details are internal). It doesn't hurt to retry in these cases, in
+        # case the cause is a race.
+        retrying_pr_creation ||= false
+        raise if retrying_pr_creation
+
+        retrying_pr_creation = true
+        retry
       end
 
       def handle_pr_creation_error(error)
@@ -287,6 +360,10 @@ module Dependabot
                   !branch_exists?(source.branch)
 
         raise
+      end
+
+      def target_branch
+        source.branch || default_branch
       end
 
       def default_branch
@@ -312,7 +389,20 @@ module Dependabot
         ).signature
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
+      def raise_or_increment_retry_counter(counter:, limit:)
+        counter ||= 0
+        counter += 1
+        raise if counter > limit
+      end
+
+      def github_client_for_source
+        @github_client_for_source ||=
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
       def handle_error(err)
         case err
         when Octokit::Forbidden
@@ -332,8 +422,6 @@ module Dependabot
           raise err
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

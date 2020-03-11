@@ -7,8 +7,6 @@ require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/shared_helpers"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class FileUpdater
@@ -68,8 +66,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def better_specification_needed?(error)
           return false if @custom_specification
@@ -99,8 +95,7 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_spec
@@ -173,6 +168,8 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(file.name, prepared_manifest_content(file))
 
+            next if virtual_manifest?(file)
+
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
             File.write(File.join(dir, "src/main.rs"), dummy_app_content)
@@ -197,6 +194,7 @@ module Dependabot
           content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
+          content = remove_default_run_specification(content)
           content
         end
 
@@ -262,6 +260,14 @@ module Dependabot
         def remove_binary_specifications(content)
           parsed_manifest = TomlRB.parse(content)
           parsed_manifest.delete("bin")
+          TomlRB.dump(parsed_manifest)
+        end
+
+        def remove_default_run_specification(content)
+          parsed_manifest = TomlRB.parse(content)
+          if parsed_manifest.dig("package", "default-run")
+            parsed_manifest["package"].delete("default-run")
+          end
           TomlRB.dump(parsed_manifest)
         end
 
@@ -359,8 +365,11 @@ module Dependabot
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
+
+        def virtual_manifest?(file)
+          !file.content.include?("[package]")
+        end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

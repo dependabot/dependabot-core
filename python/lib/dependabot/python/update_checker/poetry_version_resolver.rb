@@ -26,7 +26,7 @@ module Dependabot
           /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
           freeze
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /Command '\['git', 'clone', '(?<url>.+?)'.* exit status 128/.
+          /'\['git',\s+'clone',\s+'(?<url>.+?)'.*\s+exit\s+status\s+128/m.
           freeze
 
         attr_reader :dependency, :dependency_files, :credentials
@@ -61,7 +61,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/MethodLength
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           if @latest_resolvable_version_string.key?(requirement)
@@ -96,7 +95,6 @@ module Dependabot
               end
             end
         end
-        # rubocop:enable Metrics/MethodLength
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
@@ -132,8 +130,8 @@ module Dependabot
           # would break Python version compatibility the update is blocked
           return if error.message.include?("support the following Python")
 
-          # If any kind of other error is now occuring as a result of our change
-          # then we want to hear about it
+          # If any kind of other error is now occurring as a result of our
+          # change then we want to hear about it
           raise
         end
 

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "time"
-require "gpgme"
 require "tmpdir"
 require "dependabot/pull_request_creator"
 
@@ -21,6 +20,13 @@ module Dependabot
       end
 
       def signature
+        begin
+          require "gpgme"
+        rescue LoadError
+          raise LoadError, "Please add `gpgme` to your Gemfile or gemspec " \
+                           "enable commit signatures"
+        end
+
         email = author_details[:email]
 
         dir = Dir.mktmpdir

@@ -11,6 +11,13 @@ module Dependabot
   module GoModules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       def latest_resolvable_version
+        # We don't yet support updating indirect dependencies for go_modules
+        #
+        # To update indirect dependencies we'll need to promote the indirect
+        # dependency to the go.mod file forcing the resolver to pick this
+        # version (possibly as # indirect)
+        return dependency.version unless dependency.top_level?
+
         @latest_resolvable_version ||=
           version_class.new(find_latest_resolvable_version.gsub(/^v/, ""))
       end
@@ -40,9 +47,13 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             File.write("go.mod", go_mod.content)
 
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
-              env: { "GO111MODULE" => "on" },
+              env: env,
               function: "getUpdatedVersion",
               args: {
                 dependency: {

@@ -36,8 +36,8 @@ module Dependabot
       (?:#{AZURE_SOURCE})
     /x.freeze
 
-    attr_accessor :provider, :repo, :directory, :branch, :hostname,
-                  :api_endpoint
+    attr_accessor :provider, :repo, :directory, :branch, :commit,
+                  :hostname, :api_endpoint
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -52,9 +52,9 @@ module Dependabot
       )
     end
 
-    def initialize(provider:, repo:, directory: nil, branch: nil, hostname: nil,
-                   api_endpoint: nil)
-      if hostname.nil? ^ api_endpoint.nil?
+    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
+                   hostname: nil, api_endpoint: nil)
+      if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
               "provider's defaults."
@@ -65,6 +65,7 @@ module Dependabot
       @repo = repo
       @directory = directory
       @branch = branch
+      @commit = commit
       @hostname = hostname || default_hostname(provider)
       @api_endpoint = api_endpoint || default_api_endpoint(provider)
     end
@@ -87,6 +88,8 @@ module Dependabot
         url + "/" + path
       when "azure"
         url + "?path=#{directory}"
+      when "codecommit"
+        raise "The codecommit provider does not utilize URLs"
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
@@ -116,6 +119,7 @@ module Dependabot
       when "bitbucket" then "bitbucket.org"
       when "gitlab" then "gitlab.com"
       when "azure" then "dev.azure.com"
+      when "codecommit" then "us-east-1"
       else raise "Unexpected provider '#{provider}'"
       end
     end
@@ -126,6 +130,7 @@ module Dependabot
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
       when "gitlab" then "https://gitlab.com/api/v4"
       when "azure" then "https://dev.azure.com/"
+      when "codecommit" then nil
       else raise "Unexpected provider '#{provider}'"
       end
     end

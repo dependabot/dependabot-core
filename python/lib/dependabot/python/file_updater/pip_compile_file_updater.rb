@@ -10,6 +10,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -61,8 +62,6 @@ module Dependabot
           ]
         end
 
-        # rubocop:disable Metrics/MethodLength
-        # rubocop:disable Metrics/BlockLength
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
@@ -105,8 +104,6 @@ module Dependabot
             end.compact
           end
         end
-        # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/BlockLength
 
         def update_manifest_files
           dependency_files.map do |file|
@@ -177,9 +174,9 @@ module Dependabot
 
           raise relevant_error unless error_suggests_bad_python_version?(msg)
           raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.16"
+          raise relevant_error if python_version == "2.7.17"
 
-          @python_version = "2.7.16"
+          @python_version = "2.7.17"
           retry
         ensure
           @python_version = nil
@@ -202,6 +199,7 @@ module Dependabot
         end
 
         def error_suggests_bad_python_version?(message)
+          return true if message.include?("UnsupportedPythonVersion")
           return true if message.include?("not find a version that satisfies")
 
           message.include?('Command "python setup.py egg_info" failed') ||
@@ -424,13 +422,22 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          requirements_file = compiled_file_for_filename(filename)
-          return "--build-isolation" unless requirements_file
+          options = ["--build-isolation"]
+          options += pip_compile_index_options
 
-          options = [
-            "--build-isolation",
-            "--output-file=#{requirements_file.name}"
-          ]
+          if (requirements_file = compiled_file_for_filename(filename))
+            options += pip_compile_options_from_compiled_file(requirements_file)
+          end
+
+          options.join(" ")
+        end
+
+        def pip_compile_options_from_compiled_file(requirements_file)
+          options = ["--output-file=#{requirements_file.name}"]
+
+          unless requirements_file.content.include?("index-url http")
+            options << "--no-index"
+          end
 
           if requirements_file.content.include?("--hash=sha")
             options << "--generate-hashes"
@@ -449,7 +456,21 @@ module Dependabot
           end
 
           options << "--pre" if requirements_file.content.include?("--pre")
-          options.join(" ")
+          options
+        end
+
+        def pip_compile_index_options
+          credentials.
+            select { |cred| cred["type"] == "python_index" }.
+            map do |cred|
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+
+              if cred["replaces-base"]
+                "--index-url=#{authed_url}"
+              else
+                "--extra-index-url=#{authed_url}"
+              end
+            end
         end
 
         def includes_unsafe_packages?(content)

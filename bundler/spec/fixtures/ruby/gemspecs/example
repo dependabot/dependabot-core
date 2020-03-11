@@ -4,6 +4,7 @@ Gem::Specification.new do |spec|
   spec.version      = "0.9.3"
   spec.summary      = "Automated dependency management"
   spec.description  = "Core logic for updating a GitHub repos dependencies"
+  spec.date         = "2019-08-01"
 
   spec.author       = "Dependabot"
   spec.email        = "support@dependabot.com"

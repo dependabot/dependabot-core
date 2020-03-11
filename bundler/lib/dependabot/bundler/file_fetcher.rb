@@ -159,16 +159,15 @@ module Dependabot
 
       def fetch_gemspecs_from_directory(dir_path)
         repo_contents(dir: dir_path, fetch_submodules: true).
-          select { |f| f.name.end_with?(".gemspec") }.
+          select { |f| f.name.end_with?(".gemspec", ".specification") }.
           map { |f| File.join(dir_path, f.name) }.
           map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
       end
 
       def fetch_path_gemspec_paths
         if lockfile
-          parsed_lockfile = ::Bundler::LockfileParser.new(
-            sanitized_lockfile_content
-          )
+          parsed_lockfile = ::Bundler::LockfileParser.
+                            new(sanitized_lockfile_content)
           parsed_lockfile.specs.
             select { |s| s.source.instance_of?(::Bundler::Source::Path) }.
             map { |s| s.source.path }.uniq
