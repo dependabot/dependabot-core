@@ -44,9 +44,9 @@ fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).
 files = fetcher.files
 commit = fetcher.commit
 
-# ##############################
-# # Parse the dependency files #
-# ##############################
+##############################
+# Parse the dependency files #
+##############################
 parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
   dependency_files: files,
   source: source
@@ -62,8 +62,6 @@ dependencies.select(&:top_level?).each do |dep|
     dependency_files: files,
     credentials: credentials_docker,
   )
-  puts dep.name
-  #puts checker.up_to_date?
   next if checker.up_to_date?
 
   requirements_to_unlock =

@@ -168,6 +168,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   context "with a yml template", :pix4d do
     let(:file_fixture) { fixture("github", "contents_pipeline.json") }
 
+    it_behaves_like "a dependency file fetcher"
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: token).
@@ -203,6 +204,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   end
 
   context "with multiple template files", :pix4d do
+    it_behaves_like "a dependency file fetcher"
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: token)
@@ -248,6 +250,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   end
 
   context "with a custom named template file", :pix4d do
+    it_behaves_like "a dependency file fetcher"
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: token)
@@ -274,6 +277,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   end
 
   context "with a directory that does not exist", :pix4d do
+    it_behaves_like "a dependency file fetcher"
     let(:directory) { "/non/existant" }
 
     before do
@@ -293,6 +297,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   end
 
   context "with a docker-image-version file", :pix4d do
+    it_behaves_like "a dependency file fetcher"
     before do
       stub_request(:get, url + "?ref=sha")
         .with(headers: token)
