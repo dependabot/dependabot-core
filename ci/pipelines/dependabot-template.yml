@@ -1,0 +1,58 @@
+meta:
+  status-handlers: &status-handlers
+    on_success:
+      put: gh-status
+      inputs: [dependabot-core.git]
+      params: {state: success}
+    on_error:
+      do:
+      - put: gh-status
+        inputs: [dependabot-core.git]
+        params: {state: error}
+    on_failure:
+      do:
+      - put: gh-status
+        inputs: [dependabot-core.git]
+        params: {state: failure}
+
+resource_types:
+- name: cogito
+  type: registry-image
+  check_every: 1h
+  source:
+    repository: pix4d/cogito
+    tag: latest
+
+resources:
+  - name: gh-status
+    type: cogito
+    icon: comment-alert
+    check_every: 1h
+    source:
+      owner: pix4d
+      repo: dependabot-core
+      access_token: ((concourse_janus_access_token_repo_status))
+
+  - name: dependabot-core.git
+    type: git
+    icon: git
+    source:
+      uri: git@github.com:Pix4D/dependabot-core.git
+      private_key: ((concourse_janus_ssh_key))
+      branch: ((branch))
+      paths:
+        - ci/*
+        - common/*
+        - docker/*
+
+jobs:
+  - name: test-dependabot
+    <<: *status-handlers
+    plan:
+    - get: dependabot-core.git
+      trigger: ((trigger))
+    - put: gh-status
+      inputs: [dependabot-core.git]
+      params: {state: pending}
+    - task: test-dependabot
+      file: dependabot-core.git/ci/tasks/test-dependabot-task.yml
