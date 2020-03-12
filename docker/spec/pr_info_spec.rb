@@ -1,5 +1,4 @@
-# frozen_string_literal: true
-
+# rubocop:disable Style/FrozenStringLiteralComment
 require "dependabot/pr_info"
 require "dependabot/dependency"
 
@@ -26,7 +25,9 @@ RSpec.describe "pr_info", :pix4d do
     it "links to Pix4D image builder repo" do
       dependency = make_dependency_with_registry("docker.ci.pix4d.com")
       expect(pr_info(dependency)).
-        to include("https://github.com/Pix4D/linux-image-build/releases/tag/python-3.8.0")
+        to include(
+          "https://github.com/Pix4D/linux-image-build/releases/tag/python-3.8.0"
+        )
     end
   end
 
@@ -38,3 +39,4 @@ RSpec.describe "pr_info", :pix4d do
     end
   end
 end
+# rubocop:enable Style/FrozenStringLiteralComment

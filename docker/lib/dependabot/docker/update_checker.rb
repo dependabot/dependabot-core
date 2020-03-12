@@ -77,7 +77,8 @@ module Dependabot
       end
 
       def version_tag_up_to_date?
-        unless dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG
+        unless dependency.version.match?(NAME_WITH_VERSION) ||
+               dependency.version == BOOTSTRAP_TAG
           return
         end
         return false if dependency.version == BOOTSTRAP_TAG
@@ -107,7 +108,8 @@ module Dependabot
       # Note: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_version
-        unless dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG
+        unless dependency.version.match?(NAME_WITH_VERSION) ||
+               dependency.version == BOOTSTRAP_TAG
           return dependency.version
         end
 
@@ -117,11 +119,7 @@ module Dependabot
         non_downgrade_tags = remove_version_downgrades(candidate_tags)
         candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        wants_prerelease = if dependency.version == BOOTSTRAP_TAG
-                             false
-                           else
-                             prerelease?(dependency.version)
-        end
+        wants_prerelease = prerelease?(dependency.version)
         candidate_tags =
           candidate_tags.
           reject { |tag| prerelease?(tag) && !wants_prerelease }.
@@ -286,6 +284,7 @@ module Dependabot
       end
 
       def prerelease?(tag)
+        return false if tag == BOOTSTRAP_TAG
         if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
           return true
         end

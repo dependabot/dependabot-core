@@ -481,7 +481,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     describe "#updated_dependency_files", :pix4d do
       it_behaves_like "a dependency file updater"
 
-      it "raises the correct error when 'dependency_files' do not contain any files or when 'dependency_files' is not a list" do
+      it "raises the correct error when 'dependency_files' do not contain \
+         any files or when 'dependency_files' is not a list" do
         expect do
           described_class.new(
             dependencies: nil,
@@ -590,7 +591,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         updated_files = updater.updated_dependency_files
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.first.name).to eq("private-complex.yml")
-        expect(updated_files.first.content).to include "private-image-name-16.04\n"
+        expect(
+          updated_files.first.content
+        ).to include "private-image-name-16.04\n"
         expect(updated_files.first.content).to include "tag: 20190825\n"
       end
 
@@ -635,7 +638,9 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         updated_files = updater.updated_dependency_files
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.first.name).to eq("private-complex.yml")
-        expect(updated_files.first.content).to include "private-image-name-16.04\n"
+        expect(
+          updated_files.first.content
+        ).to include "private-image-name-16.04\n"
         expect(updated_files.first.content).to include "tag: 20190825090000\n"
       end
 
@@ -679,11 +684,14 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         updated_files = updater.updated_dependency_files
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.first.name).to eq("pix4d-special.yml")
-        expect(updated_files.first.content).to include "private-image-name-16.04\n"
+        expect(
+          updated_files.first.content
+        ).to include "private-image-name-16.04\n"
         expect(updated_files.first.content).to include "tag: 20200308093045\n"
       end
 
-      it "correctly updates the input files if we use double quotes around tags" do
+      it "correctly updates the input files if we use double \
+         quotes around tags" do
         expected_requirements =
           [{
             requirement: nil,
@@ -722,11 +730,14 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         updated_files = updater.updated_dependency_files
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.first.name).to eq("pix4d-special.yml")
-        expect(updated_files.first.content).to include "private-image-name-18.04\n"
+        expect(
+          updated_files.first.content
+        ).to include "private-image-name-18.04\n"
         expect(updated_files.first.content).to include "tag: 20200309103030\n"
       end
 
-      it "correctly updates the input files if we use the bootstrapme tags with double quotes" do
+      it "correctly updates the input files if we use the bootstrapme \
+         tags with double quotes" do
         expected_requirements =
           [{
             requirement: nil,
@@ -770,5 +781,5 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         expect(updated_files.first.content).to include "tag: 20200306093045\n"
       end
     end
-  end # describe updated_dependency_files
-end # RSpec.describe
+  end
+end

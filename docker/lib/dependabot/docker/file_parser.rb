@@ -12,7 +12,8 @@ module Dependabot
   module Docker
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
-
+      TEMPLATE_REGEX = /template|docker-image-version/i.freeze
+      DOCKERFILE_REGEX = /dockerfile|custom/i.freeze
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
@@ -36,8 +37,8 @@ module Dependabot
         %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
 
       def parse
-        templatefiles = input_files.select { |f| f.name.match?(/template|docker-image-version/i) }
-        dockerfiles = input_files.select { |f| f.name.match?(/dockerfile|custom/i) }
+        templatefiles = input_files.select { |f| f.name.match?(TEMPLATE_REGEX) }
+        dockerfiles = input_files.select { |f| f.name.match?(DOCKERFILE_REGEX) }
 
         return parse_templatefiles(templatefiles) unless templatefiles.empty?
 
@@ -88,11 +89,13 @@ module Dependabot
 
           res = parsed["resources"]
           res.each do |item|
-            unless (item["type"] == "registry-image") && (item["source"]["tag"] != "latest")
+            unless (item["type"] == "registry-image") &&
+                   (item["source"]["tag"] != "latest")
               next
-              end
+            end
 
-            parsed_data = item["source"]["repository"].to_s + ":" + item["source"]["tag"].to_s
+            parsed_data = item["source"]["repository"].to_s +
+                          ":" + item["source"]["tag"].to_s
             img_data = LINE.match(parsed_data).named_captures
 
             version = version_from(img_data)
@@ -116,8 +119,8 @@ module Dependabot
       end
 
       def input_files
-        # The file fetcher only fetches Dockerfiles and pipeline template files, so no need to
-        # filter here
+        # The file fetcher only fetches Dockerfiles and pipeline template files,
+        # so no need to filter here
         dependency_files
       end
 

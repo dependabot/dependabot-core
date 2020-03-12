@@ -7,7 +7,7 @@ require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
   it_behaves_like "an update checker"
-
+  BASE_URL = "https://registry.hub.docker.com/v2/library"
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -662,10 +662,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   describe "Pix4D tests", :pix4d do
     describe "Method #can_update?" do
       before do
-        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list").
+        stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
           and_return(
             status: 200,
-            body: { "name": "library/#{dependency_name}", "tags": ["20200310162045"] }.to_json
+            body: {
+              "name": "library/#{dependency_name}",
+              "tags": ["20200310162045"]
+            }.to_json
           )
       end
 
@@ -711,10 +714,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     describe "Method #up_to_date?" do
       before do
-        stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list").
+        stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
           and_return(
             status: 200,
-            body: { "name": "library/#{dependency_name}", "tags": ["20200315081015"] }.to_json
+            body: {
+              "name": "library/#{dependency_name}",
+              "tags": ["20200315081015"]
+            }.to_json
           )
       end
       subject { checker.up_to_date? }
@@ -764,10 +770,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "return latest tag" do
         before do
-          stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list").
+          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
             and_return(
               status: 200,
-              body: { "name": "library/#{dependency_name}", "tags": ["20200320091510"] }.to_json
+              body: {
+                "name": "library/#{dependency_name}",
+                "tags": ["20200320091510"]
+              }.to_json
             )
         end
 
@@ -776,7 +785,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "every time public docker registry times out" do
         before do
-          stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list").
+          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
             to_raise(RestClient::Exceptions::OpenTimeout)
         end
 
@@ -788,8 +797,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "every time private docker registry times out" do
         before do
-          stub_request(:get, "https://registry-host.io:5000/v2/#{dependency_name}/tags/list").
-            to_raise(RestClient::Exceptions::OpenTimeout)
+          stub_request(
+            :get,
+            "https://registry-host.io:5000/v2/#{dependency_name}/tags/list"
+          ).to_raise(RestClient::Exceptions::OpenTimeout)
         end
 
         let(:source) { { registry: "registry-host.io:5000" } }
@@ -802,24 +813,29 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "without authentication credentials" do
         before do
-          stub_request(:get, "https://registry-host.io:5000/v2/#{dependency_name}/tags/list").
-            and_return(
-              status: 401,
-              body: "",
-              headers: { "www_authenticate" => "basic 123" }
-            )
+          stub_request(
+            :get,
+            "https://registry-host.io:5000/v2/#{dependency_name}/tags/list"
+          ).and_return(
+            status: 401,
+            body: "",
+            headers: { "www_authenticate" => "basic 123" }
+          )
         end
         let(:source) { { registry: "registry-host.io:5000" } }
 
         it "raises a to PrivateSourceAuthenticationFailure error" do
           expect { checker.latest_version }.
-            to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("registry-host.io:5000")
-            end
+            to raise_error(
+              Dependabot::PrivateSourceAuthenticationFailure
+            ) do |error|
+            expect(error.source).to eq("registry-host.io:5000")
+          end
         end
       end
 
-      context "connects to private registry with authentication credentials and returns" do
+      context "connects to private registry with authentication \
+              credentials and returns" do
         let(:credentials) do
           [{
             "type" => "docker_registry",
@@ -831,11 +847,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:source) { { registry: "registry-host.io:5000" } }
 
         before do
-          tags_url = "https://registry-host.io:5000/v2/#{dependency_name}/tags/list"
+          registry_url = "https://registry-host.io:5000/v2"
+          tags_url = "#{registry_url}/#{dependency_name}/tags/list"
           stub_request(:get, tags_url).
             and_return(
               status: 200,
-              body: { "name": "library/#{dependency_name}", "tags": %w(bootstrapme 20190220091510 20200220091510 20200320091510) }.to_json
+              body: {
+                "name": "library/#{dependency_name}",
+                "tags": %w(bootstrapme 20190220091510 \
+                           20200220091510 20200320091510)
+              }.to_json
             )
         end
 
@@ -849,13 +870,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             "registry" => "registry-host.io:5000"
           }]
         end
-
         before do
-          tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+          tags_url = "#{BASE_URL}/#{dependency_name}/tags/list"
           stub_request(:get, tags_url).
             and_return(
               status: 200,
-              body: { "name": "library/#{dependency_name}", "tags": %w(20190220 20200302 20200320091510) }.to_json
+              body: {
+                "name": "library/#{dependency_name}",
+                "tags": %w(20190220 20200302 20200320091510)
+              }.to_json
             )
         end
 
@@ -865,19 +888,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "return latest tag if actual latest tag exist" do
         let(:version) { "20200301" }
         let(:dependency_name) { "docker-img-name-5" }
-
         before do
-          stub_request(:get, "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list").
+          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
             and_return(
               status: 200,
-              body: { "name": "library/#{dependency_name}", "tags": %w(20200301 20200302 latest 20200320091510) }.to_json
+              body: {
+                "name": "library/#{dependency_name}",
+                "tags": %w(20200301 20200302 latest 20200320091510)
+              }.to_json
             )
-          stub_request(:head, "https://registry.hub.docker.com/v2/library/#{dependency_name}/manifests/latest").
+          stub_request(
+            :head,
+            "#{BASE_URL}/#{dependency_name}/manifests/latest"
+          ).
             and_return(
               status: 200,
               headers: JSON.parse('{"docker_content_digest":"sha256:123"}')
             )
-          stub_request(:head, "https://registry.hub.docker.com/v2/library/#{dependency_name}/manifests/20200320091510").
+          stub_request(
+            :head,
+            "#{BASE_URL}/#{dependency_name}/manifests/20200320091510"
+          ).
             and_return(
               status: 200,
               headers: JSON.parse('{"docker_content_digest":"sha256:123"}')
@@ -906,13 +937,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       let(:dependency_name) { "docker-img-name-1" }
-
       before do
-        tags_url = "https://registry.hub.docker.com/v2/library/#{dependency_name}/tags/list"
+        tags_url = "#{BASE_URL}/#{dependency_name}/tags/list"
         stub_request(:get, tags_url).
           and_return(
             status: 200,
-            body: { "name": "library/#{dependency_name}", "tags": %w(bootstrapme 20190220091510 20200220091510 20200320091510) }.to_json
+            body: {
+              "name": "library/#{dependency_name}",
+              "tags": %w(bootstrapme 20190220091510 \
+                         20200220091510 20200320091510)
+            }.to_json
           )
       end
 

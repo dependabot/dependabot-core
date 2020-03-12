@@ -52,7 +52,7 @@ module Dependabot
                               update_digest_and_tag(file)
                             else
                               update_tag_docker(file)
-                              end
+                            end
                           else
                             update_tag_template(file)
                           end
@@ -111,12 +111,16 @@ module Dependabot
             end
           old_declaration += dependency.name.to_s
           escaped_declaration = Regexp.escape(old_declaration)
-
           old_declaration_regex =
-            %r{repository:\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)\n + (tag:\s[^\n]+)\n}
+            %r{repository:\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)\n\s+
+            \s(tag:\s[^\n]+)\n}x
+
           modified_content = modified_content.
                              gsub(old_declaration_regex) do |old_dec|
-            old_dec.gsub(/(tag:\s#{old_tag})|(tag:\s"#{old_tag}")/, "tag:\s#{new_tag(file)}")
+            old_dec.gsub(
+              /(tag:\s#{old_tag})|(tag:\s"#{old_tag}")/,
+              "tag:\s#{new_tag(file)}"
+            )
           end
         end
 

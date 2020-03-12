@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         to_return(
           status: 200,
           body: '{
-            "content": "RlJPTSB1YnVudHU6MTguMDQKCiMjIyBTWVNURU0gREVQRU5ERU5DSUVTCgoj\n",
+            "content": "RlJPTSB1Y\n",
             "encoding": "base64"
             }',
           headers: json_content_type

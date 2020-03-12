@@ -6,8 +6,9 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
+      PATH_REGEX = /dockerfile|template|docker-image-version/i.freeze
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(/dockerfile|template|docker-image-version/i) }
+        filenames.any? { |f| f.match?(PATH_REGEX) }
       end
 
       def self.required_files_message
@@ -25,7 +26,8 @@ module Dependabot
         if incorrectly_encoded_file.none?
           raise(
             Dependabot::DependencyFileNotFound,
-            "No Dockerfile or Concourse pipeline file found at path: #{directory}."
+            "No Dockerfile or Concourse pipeline file \
+            found at path: #{directory}."
           )
         else
           raise(
@@ -38,7 +40,7 @@ module Dependabot
       def fetched_file
         @fetched_file ||=
           repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(/dockerfile|template|docker-image-version/i) }.
+          select { |f| f.type == "file" && f.name.match?(PATH_REGEX) }.
           map { |f| fetch_file_from_host(f.name) }
       end
 
