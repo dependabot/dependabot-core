@@ -184,6 +184,11 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         it { is_expected.to eq(%(Spec.new { |s| s.version = 1 })) }
       end
 
+      context "with an assignment to a float" do
+        let(:content) { "Spec.new { |s| s.version = 1.0 }" }
+        it { is_expected.to eq(%(Spec.new { |s| s.version = "1.5.0" })) }
+      end
+
       context "with an assignment to a File.read" do
         let(:content) { "Spec.new { |s| s.version = File.read('something') }" }
         it do

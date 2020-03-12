@@ -334,6 +334,22 @@ RSpec.describe Dependabot::Bundler::FileParser do
         expect(sub_dep.requirements).to eq([])
         expect(sub_dep.top_level?).to eq(false)
       end
+
+      context "that comes from a .specification file" do
+        let(:files) { [gemfile, lockfile, specification] }
+        let(:specification) do
+          Dependabot::DependencyFile.new(
+            name: "plugins/example/.specification",
+            content: fixture("ruby", "specifications", "statesman"),
+            support_file: true
+          )
+        end
+
+        it "includes the path dependency" do
+          path_dep = dependencies.find { |dep| dep.name == "example" }
+          expect(path_dep.requirements).to eq(expected_requirements)
+        end
+      end
     end
 
     context "with a gem from a private gem source" do
@@ -458,7 +474,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       let(:required_file) do
         Dependabot::DependencyFile.new(
           name: "../some_other_file.rb",
-          content: "SOME_CONTANT = 5"
+          content: "SOME_CONSTANT = 5"
         )
       end
 
@@ -509,6 +525,26 @@ RSpec.describe Dependabot::Bundler::FileParser do
                 source: nil
               }]
             )
+        end
+
+        context "with a gemspec with a float version number" do
+          let(:files) { [gemspec, gemfile] }
+
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              name: "version_as_float.gemspec",
+              content: gemspec_content
+            )
+          end
+          let(:gemspec_content) do
+            fixture("ruby", "gemspecs", "version_as_float")
+          end
+          let(:gemfile_fixture_name) { "imports_gemspec" }
+
+          it "includes the gemspec dependency" do
+            expect(dependencies.map(&:name)).
+              to match_array(%w(business statesman))
+          end
         end
       end
 
@@ -583,6 +619,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it "includes details of each sub-dependency" do
           expect(dependencies.reject(&:top_level?).count).to eq(23)
+
+          diff_lcs = dependencies.find { |d| d.name == "diff-lcs" }
+          expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
+
+          addressable = dependencies.find { |d| d.name == "addressable" }
+          expect(addressable.subdependency_metadata).
+            to eq([{ production: true }])
         end
 
         describe "a runtime gemspec dependency" do

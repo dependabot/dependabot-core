@@ -4,6 +4,7 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
 require "dependabot/clients/azure"
+require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -19,7 +20,8 @@ module Dependabot
         Octokit::NotFound,
         Gitlab::Error::NotFound,
         Dependabot::Clients::Azure::NotFound,
-        Dependabot::Clients::Bitbucket::NotFound
+        Dependabot::Clients::Bitbucket::NotFound,
+        Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
       def self.required_files_in?(_filename_array)
@@ -54,6 +56,8 @@ module Dependabot
       end
 
       def commit
+        return source.commit if source.commit
+
         branch = target_branch || default_branch_for_repo
 
         @commit ||= client_for_provider.fetch_commit(repo, branch)
@@ -153,6 +157,8 @@ module Dependabot
           _azure_repo_contents(path, commit)
         when "bitbucket"
           _bitbucket_repo_contents(repo, path, commit)
+        when "codecommit"
+          _codecommit_repo_contents(repo, path, commit)
         else raise "Unsupported provider '#{provider}'."
         end
       end
@@ -206,9 +212,11 @@ module Dependabot
         gitlab_client.
           repo_tree(repo, path: path, ref_name: commit, per_page: 100).
           map do |file|
+            # GitLab API essentially returns the output from `git ls-tree`
             type = case file.type
                    when "blob" then "file"
                    when "tree" then "dir"
+                   when "commit" then "submodule"
                    else file.fetch("type")
                    end
 
@@ -259,6 +267,23 @@ module Dependabot
             path: file.fetch("path"),
             type: type,
             size: file.fetch("size", 0)
+          )
+        end
+      end
+
+      def _codecommit_repo_contents(repo, path, commit)
+        response = codecommit_client.fetch_repo_contents(
+          repo,
+          commit,
+          path
+        )
+
+        response.files.map do |file|
+          OpenStruct.new(
+            name: file.absolute_path,
+            path: file.absolute_path,
+            type: "file",
+            size: 0 # file size would require new api call per file..
           )
         end
       end
@@ -319,12 +344,13 @@ module Dependabot
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
           bitbucket_client.fetch_file_contents(repo, commit, path)
+        when "codecommit"
+          codecommit_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/MethodLength
       def _fetch_file_content_from_github(path, repo, commit)
         tmp = github_client.contents(repo, path: path, ref: commit)
 
@@ -361,7 +387,6 @@ module Dependabot
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/MethodLength
 
       def default_branch_for_repo
         @default_branch_for_repo ||= client_for_provider.
@@ -400,6 +425,7 @@ module Dependabot
         when "gitlab" then gitlab_client
         when "azure" then azure_client
         when "bitbucket" then bitbucket_client
+        when "codecommit" then codecommit_client
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -432,6 +458,12 @@ module Dependabot
         @bitbucket_client ||=
           Dependabot::Clients::BitbucketWithRetries.
           for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def codecommit_client
+        @codecommit_client ||=
+          Dependabot::Clients::CodeCommit.
+          for_source(source: source, credentials: credentials)
       end
     end
   end

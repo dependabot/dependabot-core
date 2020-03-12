@@ -81,11 +81,14 @@ module Dependabot
             declaration_string = Regexp.last_match.to_s.strip
             captures = Regexp.last_match.named_captures
             name = captures.fetch("name").sub(/^ext\./, "")
-            properties[name] = {
-              value: captures.fetch("value"),
-              declaration_string: declaration_string,
-              file: buildfile.name
-            }
+
+            unless properties.key?(name)
+              properties[name] = {
+                value: captures.fetch("value"),
+                declaration_string: declaration_string,
+                file: buildfile.name
+              }
+            end
           end
 
           properties

@@ -109,6 +109,64 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "with an application using a >= PHP constraint" do
+        let(:manifest_fixture_name) { "php_specified" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phpdocumentor/reflection-docblock",
+            version: "4.3.1",
+            requirements: [{
+              file: "composer.json",
+              requirement: "4.3.1",
+              groups: ["runtime"],
+              source: nil
+            }],
+            previous_version: "2.0.4",
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "2.0.4",
+              groups: ["runtime"],
+              source: nil
+            }],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"4.3.1\"")
+        end
+      end
+
+      context "with an application using a ^ PHP constraint" do
+        let(:manifest_fixture_name) { "php_specified_min_invalid" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "phpdocumentor/reflection-docblock",
+            version: "3.3.2",
+            requirements: [{
+              file: "composer.json",
+              requirement: "3.3.2",
+              groups: ["runtime"],
+              source: nil
+            }],
+            previous_version: "2.0.4",
+            previous_requirements: [{
+              file: "composer.json",
+              requirement: "2.0.4",
+              groups: ["runtime"],
+              source: nil
+            }],
+            package_manager: "composer"
+          )
+        end
+
+        it "has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"3.3.2\"")
+        end
+      end
+
       context "and an extension is specified that we don't have" do
         let(:manifest_fixture_name) { "missing_extension" }
         let(:lockfile_fixture_name) { "missing_extension" }
@@ -212,11 +270,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           )
         end
 
-        it "runs just fine (we get a 400 here because our key is wrong)" do
+        it "runs just fine (we get a 404 here because our key is wrong)" do
           expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).
-              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-            expect(error.message).to include("400 Bad Request")
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include("404 Not Found")
           end
         end
       end
@@ -393,6 +450,56 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a laravel nova" do
+      let(:manifest_fixture_name) { "laravel_nova" }
+      let(:lockfile_fixture_name) { "laravel_nova" }
+      before { `composer clear-cache --quiet` }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "laravel/nova",
+          version: "2.0.9",
+          previous_version: "2.0.7",
+          requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "*",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "composer_repository",
+            "registry" => "nova.laravel.com",
+            "username" => "username",
+            "password" => "password"
+          }]
+        end
+
+        it "raises a helpful errors" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to be_a Dependabot::PrivateSourceAuthenticationFailure
+            expect(error.source).to eq("nova.laravel.com")
+          end
+        end
+      end
+    end
+
     context "when another dependency has git source with a bad reference" do
       let(:lockfile_fixture_name) { "git_source_bad_ref" }
       let(:manifest_fixture_name) { "git_source_bad_ref" }
@@ -426,6 +533,44 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when another dependency has git source with a bad commit" do
+      let(:manifest_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source_bad_commit" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.6.0",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.6.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "updates the lockfile correctly" do
+        # Updates the commit SHA of the git dependency (because we have to)
+        expect(updated_lockfile_content).
+          to include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
+        expect(updated_lockfile_content).to include('"version":"dev-example"')
+
+        # Updates the specified dependency
+        expect(updated_lockfile_content).
+          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
+        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+      end
+    end
+
     context "with a git source using no-api" do
       let(:manifest_fixture_name) { "git_source_no_api" }
       let(:lockfile_fixture_name) { "git_source_no_api" }
@@ -451,7 +596,22 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it { is_expected.to_not include('"support": {') }
+      it "updates the lockfile correctly" do
+        # Doesn't update the commit SHA of the git dependency
+        expect(updated_lockfile_content).
+          to include('"5267b03b1e4861c4657ede17a88f13ef479db482"')
+        expect(updated_lockfile_content).
+          to_not include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
+        expect(updated_lockfile_content).to include('"version":"dev-example"')
+
+        # Does update the specified dependency
+        expect(updated_lockfile_content).
+          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
+        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+
+        # Cleans up the additions we made
+        expect(updated_lockfile_content).to_not include('"support": {')
+      end
     end
 
     context "when another dependency has an unreachable git source" do
@@ -483,7 +643,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error).to be_a Dependabot::GitDependenciesNotReachable
           expect(error.dependency_urls).
-            to eq(["https://github.com/no-exist-sorry/monolog"])
+            to eq(["https://github.com/no-exist-sorry/monolog.git"])
         end
       end
     end

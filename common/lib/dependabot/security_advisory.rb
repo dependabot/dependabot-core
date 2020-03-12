@@ -39,7 +39,7 @@ module Dependabot
       return false if vulnerable_versions.any?
 
       # Finally, if no vulnerable range provided, but a safe range provided,
-      # and this versions isn't included (checked earler), it's vulnerable
+      # and this versions isn't included (checked earlier), it's vulnerable
       safe_versions.any?
     end
 

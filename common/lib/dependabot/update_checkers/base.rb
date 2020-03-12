@@ -84,6 +84,10 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def latest_resolvable_previous_version(_updated_version)
+        dependency.version
+      end
+
       def updated_requirements
         raise NotImplementedError
       end
@@ -124,22 +128,28 @@ module Dependabot
       end
 
       def updated_dependency_without_unlock
+        version = latest_resolvable_version_with_no_unlock.to_s
+        previous_version = latest_resolvable_previous_version(version)&.to_s
+
         Dependency.new(
           name: dependency.name,
-          version: latest_resolvable_version_with_no_unlock.to_s,
+          version: version,
           requirements: dependency.requirements,
-          previous_version: dependency.version,
+          previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager
         )
       end
 
       def updated_dependency_with_own_req_unlock
+        version = preferred_resolvable_version.to_s
+        previous_version = latest_resolvable_previous_version(version)&.to_s
+
         Dependency.new(
           name: dependency.name,
-          version: preferred_resolvable_version.to_s,
+          version: version,
           requirements: updated_requirements,
-          previous_version: dependency.version,
+          previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager
         )
@@ -198,7 +208,7 @@ module Dependabot
 
         # If a lockfile isn't out of date and the package has switched to a git
         # source then we'll get a numeric version switching to a git SHA. In
-        # this case we treat the verison as up-to-date so that it's ignored.
+        # this case we treat the version as up-to-date so that it's ignored.
         return true if latest_version.to_s.match?(/^[0-9a-f]{40}$/)
 
         latest_version <= version_class.new(dependency.version)
@@ -233,12 +243,22 @@ module Dependabot
       end
 
       def requirements_up_to_date?
-        return true if (updated_requirements - dependency.requirements).none?
-        return false unless latest_version
-        return false unless version_class.correct?(latest_version.to_s)
-        return false unless version_from_requirements
+        if can_compare_requirements?
+          return (version_from_requirements >=
+                  version_class.new(latest_version.to_s))
+        end
 
-        version_from_requirements >= version_class.new(latest_version.to_s)
+        changed_requirements.none?
+      end
+
+      def can_compare_requirements?
+        version_from_requirements &&
+          latest_version &&
+          version_class.correct?(latest_version.to_s)
+      end
+
+      def changed_requirements
+        (updated_requirements - dependency.requirements)
       end
 
       def version_from_requirements
@@ -252,11 +272,9 @@ module Dependabot
       end
 
       def requirements_can_update?
-        changed_reqs = updated_requirements - dependency.requirements
+        return false if changed_requirements.none?
 
-        return false if changed_reqs.none?
-
-        changed_reqs.none? { |r| r[:requirement] == :unfixable }
+        changed_requirements.none? { |r| r[:requirement] == :unfixable }
       end
 
       def ignore_reqs

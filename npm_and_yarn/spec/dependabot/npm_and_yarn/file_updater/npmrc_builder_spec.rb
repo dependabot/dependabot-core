@@ -230,11 +230,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "token" => "my_other_token"
               }]
             end
+
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token\n"\
                       "//npm.fury.io/dep/:_authToken=my_other_token")
+            end
+
+            context "using bintray" do
+              let(:credentials) do
+                [{
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }, {
+                  "type" => "npm_registry",
+                  "registry" => "api.bintray.com/npm/dependabot/npm-private",
+                  "token" => "my_token"
+                }]
+              end
+
+              it "adds auth details, and scopes them correctly" do
+                expect(npmrc_content).
+                  to eq(
+                    "@dependabot:registry=https://api.bintray.com/npm/"\
+                    "dependabot/npm-private/\n"\
+                    "//api.bintray.com/npm/dependabot/"\
+                    "npm-private/:_authToken=my_token"
+                  )
+              end
+            end
+
+            context "with an irrelevant package-lock.json" do
+              let(:dependency_files) { [package_json, yarn_lock, package_lock] }
+              let(:npm_lock_fixture_name) { "no_dependencies.json" }
+
+              it "adds auth details, and scopes them correctly" do
+                expect(npmrc_content).
+                  to eq(
+                    "@dependabot:registry=https://npm.fury.io/dependabot/\n"\
+                    "//npm.fury.io/dependabot/:_authToken=my_token\n"\
+                    "//npm.fury.io/dep/:_authToken=my_other_token"
+                  )
+              end
             end
           end
         end

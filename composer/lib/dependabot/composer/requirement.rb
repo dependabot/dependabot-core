@@ -11,6 +11,8 @@ module Dependabot
 
       def self.parse(obj)
         new_obj = obj.gsub(/@\w+/, "").gsub(/[a-z0-9\-_\.]*\sas\s+/i, "")
+        return DefaultRequirement if new_obj == ""
+
         super(new_obj)
       end
 
@@ -41,18 +43,25 @@ module Dependabot
         # ensures that the dev-requirement doesn't match anything.
         return "0-dev-branch-match" if req_string.strip.start_with?("dev-")
 
-        if req_string.start_with?("*") then ">= 0"
+        if req_string.start_with?("*", "x") then ">= 0"
         elsif req_string.include?("*") then convert_wildcard_req(req_string)
+        elsif req_string.include?(".x") then convert_wildcard_req(req_string)
         elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
         elsif req_string.match?(/\s-\s/) then convert_hyphen_req(req_string)
         else req_string
         end
       end
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_wildcard_req(req_string)
-        version = req_string.gsub(/^~/, "").gsub(/(?:\.|^)\*/, "")
+        if req_string.start_with?(">", "<")
+          msg = "Illformed requirement [#{req_string.inspect}]"
+          raise Gem::Requirement::BadRequirementError, msg
+        end
+
+        version = req_string.gsub(/^~/, "").gsub(/(?:\.|^)[\*x]/, "")
         "~> #{version}.0"
       end
 

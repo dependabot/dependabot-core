@@ -152,7 +152,6 @@ module Dependabot
           }
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
           current_version = dependency.version
@@ -176,7 +175,7 @@ module Dependabot
             false
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def v3_nuget_listings
@@ -261,13 +260,13 @@ module Dependabot
             RepositoryFinder.new(
               dependency: dependency,
               credentials: credentials,
-              config_file: nuget_config
+              config_files: nuget_configs
             ).dependency_urls
         end
 
-        def nuget_config
-          @nuget_config ||=
-            dependency_files.find { |f| f.name.casecmp("nuget.config").zero? }
+        def nuget_configs
+          @nuget_configs ||=
+            dependency_files.select { |f| f.name.match?(/nuget\.config$/i) }
         end
 
         def sanitized_name

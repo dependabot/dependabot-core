@@ -68,6 +68,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
+    context "given a purely numeric version" do
+      let(:version) { "1234567890" }
+      it { is_expected.to be_truthy }
+    end
+
     context "given a non-numeric version" do
       let(:version) { "artful" }
       it { is_expected.to be_falsey }
@@ -150,6 +155,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when versions at different specificities look equal" do
+      let(:dependency_name) { "ruby" }
+      let(:version) { "2.4.0-slim" }
+      let(:tags_fixture_name) { "ruby_25.json" }
+      before do
+        tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("2.5.0-slim") }
+    end
+
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 17.10"] }
       it { is_expected.to eq("17.04") }
@@ -165,6 +183,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "1803" }
         it { is_expected.to eq("1903") }
       end
+    end
+
+    context "when the version is the latest release candidate" do
+      let(:dependency_name) { "php" }
+      let(:tags_fixture_name) { "php.json" }
+      let(:version) { "7.4.0RC6-fpm-buster" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/php/" }
+
+      it { is_expected.to eq("7.4.0RC6-fpm-buster") }
     end
 
     context "when there is a latest tag" do

@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Composer::Requirement do
       it { is_expected.to eq(described_class.new(">=1.0.0")) }
     end
 
+    context "with just a stability constraint" do
+      let(:requirement_string) { "@dev" }
+      it { is_expected.to eq(described_class.new(">= 0")) }
+    end
+
     context "with an alias" do
       let(:requirement_string) { ">=whatever as 1.0.0" }
       it { is_expected.to eq(described_class.new(">=1.0.0")) }
@@ -50,9 +55,41 @@ RSpec.describe Dependabot::Composer::Requirement do
       it { is_expected.to eq(described_class.new(">= 0")) }
     end
 
+    context "with only a x" do
+      let(:requirement_string) { "x" }
+      it { is_expected.to eq(described_class.new(">= 0")) }
+    end
+
     context "with a *" do
       let(:requirement_string) { "1.*" }
       it { is_expected.to eq(described_class.new("~> 1.0")) }
+
+      context "in a range" do
+        let(:requirement_string) { ">= 1.x" }
+
+        it "raises a Gem::Requirement::BadRequirementError error" do
+          expect { requirement }.
+            to raise_error(Gem::Requirement::BadRequirementError) do |error|
+              expect(error.message).to eq("Illformed requirement [\">= 1.x\"]")
+            end
+        end
+      end
+    end
+
+    context "with a x" do
+      let(:requirement_string) { "1.x" }
+      it { is_expected.to eq(described_class.new("~> 1.0")) }
+
+      context "in a range" do
+        let(:requirement_string) { ">= 1.x" }
+
+        it "raises a Gem::Requirement::BadRequirementError error" do
+          expect { requirement }.
+            to raise_error(Gem::Requirement::BadRequirementError) do |error|
+              expect(error.message).to eq("Illformed requirement [\">= 1.x\"]")
+            end
+        end
+      end
     end
 
     context "with a trailing ." do

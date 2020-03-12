@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
                     "microsoft.extensions.dependencymodel.nuspec",
         repo_url: "https://api.nuget.org/v3/index.json",
         source_url: nil,
-        version: Dependabot::Nuget::Version.new("1.0.0.pre.rc2.pre.002702")
+        version: Dependabot::Nuget::Version.new("1.0.0-rc2-002702")
       )
     end
   end

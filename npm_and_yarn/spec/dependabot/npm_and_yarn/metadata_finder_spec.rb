@@ -138,6 +138,20 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
     end
 
+    context "when there's a link using GitHub shorthand" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        fixture("npm_response_string_shorthand.json")
+      end
+
+      it { is_expected.to eq("https://github.com/jshttp/etag") }
+
+      it "caches the call to npm" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, npm_url).once
+      end
+    end
+
     context "when there isn't a source link in the npm response" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
@@ -155,9 +169,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when the npm link resolves to a redirect" do
       let(:redirect_url) { "https://registry.npmjs.org/eTag" }
       let(:npm_latest_version_response) { nil }
-      let(:npm_all_versions_response) do
-        fixture("npm_responses", "etag.json")
-      end
+      let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
       before do
         stub_request(:get, npm_url).
@@ -174,9 +186,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
       before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
       let(:npm_latest_version_response) { nil }
-      let(:npm_all_versions_response) do
-        fixture("npm_responses", "etag.json")
-      end
+      let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
       # Not an ideal error, but this should never happen
       specify { expect { finder.source_url }.to raise_error(JSON::ParserError) }
@@ -191,9 +201,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
       let(:dependency_name) { "@etag/etag" }
       let(:npm_latest_version_response) { nil }
-      let(:npm_all_versions_response) do
-        fixture("npm_responses", "etag.json")
-      end
+      let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
 
       it "requests the escaped name" do
         finder.source_url

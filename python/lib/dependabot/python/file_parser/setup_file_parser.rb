@@ -37,7 +37,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep["name"]),
+                name: normalised_name(dep["name"], dep["extras"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
@@ -164,8 +164,8 @@ module Dependabot
           0
         end
 
-        def normalised_name(name)
-          NameNormaliser.normalise(name)
+        def normalised_name(name, extras)
+          NameNormaliser.normalise_including_extras(name, extras)
         end
 
         def setup_file

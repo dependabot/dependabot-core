@@ -144,7 +144,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             expect(error.message).to eq(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.7.3"
+              "but the running Python is 3.7.6"
             )
           end
       end
@@ -219,6 +219,19 @@ RSpec.describe namespace::PipenvVersionResolver do
       let(:lockfile_fixture_name) { "required_python.lock" }
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
+      context "that comes from a Poetry file and includes || logic" do
+        let(:pipfile_fixture_name) { "exact_version" }
+        let(:dependency_files) { [pipfile, pyproject] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "pyproject.toml")
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+      end
+
       context "that is invalid" do
         let(:pipfile_fixture_name) { "required_python_invalid" }
 
@@ -242,7 +255,7 @@ RSpec.describe namespace::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.8-dev, 3.7.3, 3.7.2")
+                to include("supported in Dependabot: 3.8.1, 3.8.0, 3.7.6")
             end
         end
       end
@@ -302,7 +315,9 @@ RSpec.describe namespace::PipenvVersionResolver do
         end
         let(:updated_requirement) { ">= 1.1.14, <= 2.1.4" }
 
-        it { is_expected.to eq(Gem::Version.new("1.11.22")) }
+        it "updates to the latest resolvable 1.x version" do
+          expect(subject.to_s).to start_with("1.")
+        end
       end
 
       context "for a resolution that has caused trouble in the past" do
@@ -357,7 +372,7 @@ RSpec.describe namespace::PipenvVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
               expect(error.dependency_urls).
-                to eq(["https://github.com/greysteil/django.git"])
+                to eq(["https://github.com/user/django.git"])
             end
         end
       end

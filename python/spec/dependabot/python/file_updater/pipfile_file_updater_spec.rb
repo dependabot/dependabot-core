@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         json_lockfile = JSON.parse(updated_lockfile.content)
 
         expect(updated_pipfile.content).
-          to include('python_full_version = "2.7.16"')
+          to include('python_full_version = "2.7.17"')
         expect(json_lockfile["default"]["requests"]["version"]).
           to eq("==2.18.4")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
@@ -151,12 +151,27 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           to eq("python_version < '3.0'")
       end
 
+      context "that comes from a Poetry file and includes || logic" do
+        let(:pipfile_fixture_name) { "exact_version" }
+        let(:dependency_files) { [pipfile, lockfile, pyproject] }
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "pyproject.toml")
+          )
+        end
+
+        it "updates both files correctly" do
+          expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+        end
+      end
+
       context "and includes a .python-version file" do
         let(:dependency_files) { [pipfile, lockfile, python_version_file] }
         let(:python_version_file) do
           Dependabot::DependencyFile.new(
             name: ".python-version",
-            content: "2.7.16\n"
+            content: "2.7.17\n"
           )
         end
 

@@ -4,6 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/gradle/version"
 
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
@@ -180,10 +181,13 @@ module Dependabot
           if group == "plugins" then ["plugins"]
           else []
           end
+        source =
+          source_from(group, name, version)
 
         # If we can't evaluate a property they we won't be able to
         # update this dependency
         return if "#{dependency_name}:#{version}".match?(PROPERTY_REGEX)
+        return unless Gradle::Version.correct?(version)
 
         Dependency.new(
           name: dependency_name,
@@ -191,12 +195,25 @@ module Dependabot
           requirements: [{
             requirement: version,
             file: buildfile.name,
-            source: nil,
+            source: source,
             groups: groups,
             metadata: dependency_metadata(details_hash, in_dependency_set)
           }],
           package_manager: "gradle"
         )
+      end
+
+      def source_from(group, name, version)
+        return nil unless group&.start_with?("com.github")
+
+        account = group.sub("com.github.", "")
+
+        {
+          type: "git",
+          url: "https://github.com/#{account}/#{name}",
+          branch: nil,
+          ref: version
+        }
       end
 
       def dependency_metadata(details_hash, in_dependency_set)

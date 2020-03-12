@@ -14,7 +14,10 @@ module Dependabot
         [
           %r{^[^/]*\.[a-z]{2}proj$},
           /^packages\.config$/i,
-          /^global\.json$/i
+          /^global\.json$/i,
+          /^Directory\.Build\.props$/i,
+          /^Directory\.Build\.targets$/i,
+          /^Packages\.props$/i
         ]
       end
 

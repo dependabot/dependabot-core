@@ -69,8 +69,12 @@ module Dependabot
           requirements: dependency.requirements,
           updated_source: updated_source,
           target_version: target_version,
-          update_strategy: requirement_update_strategy
+          update_strategy: requirements_update_strategy
         ).updated_requirements
+      end
+
+      def requirements_update_strategy
+        library? ? :bump_versions_if_necessary : :bump_versions
       end
 
       private
@@ -97,10 +101,6 @@ module Dependabot
         # If it has a lockfile, treat it as an application. Otherwise treat it
         # as a library.
         dependency_files.none? { |f| f.name == "Cargo.lock" }
-      end
-
-      def requirement_update_strategy
-        library? ? :bump_versions_if_necessary : :bump_versions
       end
 
       def latest_version_finder

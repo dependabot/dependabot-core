@@ -51,7 +51,7 @@ RUN apt-get update \
 
 ### RUBY
 
-# Install Ruby 2.6.2, update RubyGems, and install Bundler
+# Install Ruby 2.6.5, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
@@ -63,14 +63,14 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.7 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.12 && cd - \
-    && pyenv install 3.7.3 \
-    && pyenv install 2.7.16 \
-    && pyenv global 3.7.3
+    && cd /usr/local/.pyenv && git checkout v1.2.16 && cd - \
+    && pyenv install 3.8.1 \
+    && pyenv install 2.7.17 \
+    && pyenv global 3.8.1
 
 
 ### JAVASCRIPT
@@ -102,7 +102,7 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.3 php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
+    && apt-get install -y php7.3 php7.3-cli php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
@@ -110,8 +110,8 @@ RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/ap
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz | tar -xz -C /opt \
-    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/0.5.2/dep-linux-amd64 \
+RUN curl https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -xz -C /opt \
+    && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
     && chmod +x /opt/go/bin/dep \
     && mkdir /opt/go/gopath
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
@@ -125,7 +125,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
     && dpkg -i erlang-solutions_1.0_all.deb \
     && apt-get update \
     && apt-get install -y esl-erlang \
-    && wget https://github.com/elixir-lang/elixir/releases/download/v1.8.2/Precompiled.zip \
+    && wget https://github.com/elixir-lang/elixir/releases/download/v1.9.1/Precompiled.zip \
     && unzip -d /usr/local/elixir -x Precompiled.zip \
     && rm -f Precompiled.zip \
     && mix local.hex --force
@@ -133,7 +133,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.36.0
+# Install Rust 1.37.0
 ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y

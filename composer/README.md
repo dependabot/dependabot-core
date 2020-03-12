@@ -1,6 +1,6 @@
 ## `dependabot-composer`
 
-PHP support for [`dependabot-core`][core-repo].
+PHP (Composer) support for [`dependabot-core`][core-repo].
 
 ### Running locally
 

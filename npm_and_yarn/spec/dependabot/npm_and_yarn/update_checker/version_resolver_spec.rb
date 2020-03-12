@@ -871,7 +871,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                     source: nil
                   }]
                 ),
-                version: Dependabot::NpmAndYarn::Version.new("2.5.21")
+                version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
+                previous_version: "2.5.20"
               }, {
                 dependency: Dependabot::Dependency.new(
                   name: "vue-template-compiler",
@@ -884,7 +885,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                     source: nil
                   }]
                 ),
-                version: Dependabot::NpmAndYarn::Version.new("2.5.21")
+                version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
+                previous_version: "2.5.20"
               }]
             )
         end
@@ -925,7 +927,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+              previous_version: "15.2.0"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -938,7 +941,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+              previous_version: "15.2.0"
             }]
           )
       end
@@ -992,7 +996,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+              previous_version: "15.6.2"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -1005,7 +1010,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+              previous_version: "15.6.2"
             }]
           )
       end
@@ -1068,7 +1074,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1")
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+              previous_version: "15.6.2"
             }, {
               dependency: Dependabot::Dependency.new(
                 name: "react-dom",
@@ -1086,9 +1093,329 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   source: nil
                 }]
               ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0")
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+              previous_version: "15.6.2"
             }]
           )
+      end
+    end
+
+    context "#dependency_updates_from_full_unlock resolves previous version" do
+      let(:dependency_files) { [package_json] }
+      let(:manifest_fixture_name) { "exact_version_requirements.json" }
+      subject do
+        resolver.dependency_updates_from_full_unlock.first[:previous_version]
+      end
+
+      let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "chalk",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "0.3.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      let(:listing_url) do
+        "https://registry.npmjs.org/chalk"
+      end
+      let(:response) do
+        fixture("npm_responses", "chalk.json")
+      end
+      before do
+        stub_request(:get, listing_url).
+          to_return(status: 200, body: response)
+        stub_request(:get, listing_url + "/latest").
+          to_return(status: 200, body: "{}")
+      end
+
+      it { is_expected.to eq("0.3.0") }
+    end
+
+    context "#latest_resolvable_previous_version" do
+      let(:dependency_files) { [package_json] }
+      let(:manifest_fixture_name) { "exact_version_requirements.json" }
+      subject do
+        resolver.latest_resolvable_previous_version(latest_allowable_version)
+      end
+
+      describe "when version requirement is exact" do
+        let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/chalk"
+        end
+        let(:response) do
+          fixture("npm_responses", "chalk.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to eq("0.3.0") }
+      end
+
+      describe "when version requirement is missing a patch" do
+        let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "15.3",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/react"
+        end
+        let(:response) do
+          fixture("npm_responses", "react.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to eq("15.3.2") }
+      end
+
+      describe "with multiple version requirements" do
+        let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }, {
+              file: "other/package.json",
+              requirement: "< 15.0.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/react"
+        end
+        let(:response) do
+          fixture("npm_responses", "react.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it "picks the lowest requirements max version" do
+          is_expected.to eq("0.14.9")
+        end
+      end
+
+      describe "when version requirement has a caret" do
+        let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.1.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/etag"
+        end
+        let(:response) do
+          fixture("npm_responses", "etag.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to eq("1.7.0") }
+      end
+
+      describe "when all versions are deprecated" do
+        let(:latest_allowable_version) { Gem::Version.new("1.8.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.1.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/etag"
+        end
+        let(:response) do
+          fixture("npm_responses", "etag_deprecated.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to eq("1.7.0") }
+      end
+
+      describe "when current version requirement is deprecated" do
+        let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.7.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/react"
+        end
+        let(:response) do
+          fixture("npm_responses", "react.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to eq("0.7.1") }
+      end
+
+      context "when the resolved previous version is the same as the updated" do
+        let(:latest_allowable_version) { Gem::Version.new("0.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: nil,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:listing_url) do
+          "https://registry.npmjs.org/chalk"
+        end
+        let(:response) do
+          fixture("npm_responses", "chalk.json")
+        end
+        before do
+          stub_request(:get, listing_url).
+            to_return(status: 200, body: response)
+          stub_request(:get, listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        it { is_expected.to be_nil }
+
+        context "when the updated version is a string" do
+          let(:latest_allowable_version) { "0.3.0" }
+
+          it { is_expected.to be_nil }
+        end
+      end
+
+      context "when the dependency has a previous version" do
+        let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: "0.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^0.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+        it { is_expected.to eq("0.2.0") }
+      end
+
+      context "when the previous version is a git sha" do
+        let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "chalk",
+            version: "9ec4acec6abd23f9b23e33b1171e50d41953f00d",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+        it { is_expected.to eq("9ec4acec6abd23f9b23e33b1171e50d41953f00d") }
       end
     end
   end

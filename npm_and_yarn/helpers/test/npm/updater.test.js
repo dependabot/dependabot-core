@@ -1,40 +1,33 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const nock = require("nock");
-const {
-  updateDependencyFiles,
-  updateVersionPattern
-} = require("../../lib/npm/updater");
+const rimraf = require("rimraf");
+const { updateDependencyFiles } = require("../../lib/npm/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {
   let tempDir;
   beforeEach(() => {
-    nock("https://registry.npmjs.org")
-      .get("/left-pad")
-      .reply(200, helpers.loadFixture("npm-left-pad.json"));
-
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => fs.rmdirSync(tempDir));
+  afterEach(() => rimraf.sync(tempDir));
 
-  async function copyDependencies(sourceDir, destDir) {
+  function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`
     );
-    await fs.copyFile(srcPackageJson, `${destDir}/package.json`);
+    fs.copyFileSync(srcPackageJson, `${destDir}/package.json`);
 
     const srcLockfile = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package-lock.json`
     );
-    await fs.copyFile(srcLockfile, `${destDir}/package-lock.json`);
+    fs.copyFileSync(srcLockfile, `${destDir}/package-lock.json`);
   }
 
   it("generates an updated package-lock.json", async () => {
-    await copyDependencies("original", tempDir);
+    copyDependencies("original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "package-lock.json", [
       {

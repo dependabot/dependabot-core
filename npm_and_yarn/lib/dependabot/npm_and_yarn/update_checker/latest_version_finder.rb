@@ -7,8 +7,6 @@ require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-
-# rubocop:disable ClassLength
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
@@ -73,13 +71,19 @@ module Dependabot
           # our problem, so we quietly return `nil` here.
         end
 
+        def possible_previous_versions_with_details
+          @possible_previous_versions_with_details ||= begin
+            npm_details.fetch("versions", {}).
+              transform_keys { |k| version_class.new(k) }.
+              reject { |v, _| v.prerelease? && !related_to_current_pre?(v) }.
+              sort_by(&:first).reverse
+          end
+        end
+
         def possible_versions_with_details
-          npm_details.fetch("versions", {}).
+          possible_previous_versions_with_details.
             reject { |_, details| details["deprecated"] }.
-            transform_keys { |k| version_class.new(k) }.
-            reject { |k, _| k.prerelease? && !related_to_current_pre?(k) }.
-            reject { |k, _| ignore_reqs.any? { |r| r.satisfied_by?(k) } }.
-            sort_by(&:first).reverse
+            reject { |v, _| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
         end
 
         def possible_versions
@@ -402,4 +406,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable ClassLength

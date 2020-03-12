@@ -991,13 +991,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     end
 
     context "with versions that would be considered equivalent" do
+      let(:registry_listing_url) do
+        "https://registry.npmjs.org/react-test-renderer"
+      end
       let(:registry_response) do
         fixture("npm_responses", "react-test-renderer.json")
       end
 
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "etag",
+          name: "react-test-renderer",
           version: "16.0.0-beta.5",
           requirements: [{
             file: "package.json",
@@ -1010,7 +1013,150 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it "returns a list of versions" do
-        expect { possible_versions_with_details }.to_not raise_error
+        expect(possible_versions_with_details.count).to eq(49)
+      end
+    end
+
+    context "with ignored versions" do
+      let(:registry_listing_url) { "https://registry.npmjs.org/react" }
+      let(:registry_response) do
+        fixture("npm_responses", "react.json")
+      end
+      let(:ignored_versions) { ["<15.0.0", "^16.0.0"] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.3.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "excludes ignored versions" do
+        versions = possible_versions_with_details
+        latest_version = versions.first.first
+        expect(versions.count).to eq(20)
+        expect(latest_version).
+          to eq(Dependabot::NpmAndYarn::Version.new("15.6.2"))
+      end
+    end
+
+    context "with only deprecated versions" do
+      let(:registry_response) do
+        fixture("npm_responses", "etag_deprecated.json")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.1.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "1.1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns no versions" do
+        expect(possible_versions_with_details).to eq([])
+      end
+    end
+  end
+
+  describe "#possible_previous_versions_with_details" do
+    subject(:possible_previous_versions_with_details) do
+      version_finder.possible_previous_versions_with_details
+    end
+
+    context "with ignored versions and non pre-release version requirement" do
+      let(:registry_listing_url) { "https://registry.npmjs.org/react" }
+      let(:registry_response) do
+        fixture("npm_responses", "react.json")
+      end
+      let(:ignored_versions) { ["<15.0.0", "^16.0.0"] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.6.2",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "includes ignored versions and excludes pre-releases" do
+        versions = possible_previous_versions_with_details
+        latest_version = versions.first.first
+        expect(versions.count).to eq(80)
+        expect(latest_version).
+          to eq(Dependabot::NpmAndYarn::Version.new("16.6.0"))
+      end
+    end
+
+    context "with pre-release version requirement" do
+      let(:registry_listing_url) { "https://registry.npmjs.org/react" }
+      let(:registry_response) do
+        fixture("npm_responses", "react.json")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.6.0-rc.1",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.6.0-rc.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "includes pre-released versions" do
+        versions = possible_previous_versions_with_details
+        latest_version = versions.first.first
+        expect(versions.count).to eq(103)
+        expect(latest_version).
+          to eq(Dependabot::NpmAndYarn::Version.new("16.6.0"))
+      end
+    end
+
+    context "with only deprecated versions" do
+      let(:registry_response) do
+        fixture("npm_responses", "etag_deprecated.json")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.1.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "1.1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns all versions" do
+        expect(possible_previous_versions_with_details.count).to eq(13)
       end
     end
   end

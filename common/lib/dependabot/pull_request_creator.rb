@@ -5,6 +5,7 @@ require "dependabot/metadata_finders"
 module Dependabot
   class PullRequestCreator
     require "dependabot/pull_request_creator/azure"
+    require "dependabot/pull_request_creator/codecommit"
     require "dependabot/pull_request_creator/github"
     require "dependabot/pull_request_creator/gitlab"
     require "dependabot/pull_request_creator/message_builder"
@@ -17,27 +18,28 @@ module Dependabot
     class NoHistoryInCommon < StandardError; end
 
     attr_reader :source, :dependencies, :files, :base_commit,
-                :credentials, :pr_message_footer, :custom_labels,
-                :author_details, :signature_key, :commit_message_options,
-                :vulnerabilities_fixed,
+                :credentials, :pr_message_header, :pr_message_footer,
+                :custom_labels, :author_details, :signature_key,
+                :commit_message_options, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :github_redirection_service,
                 :custom_headers
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
-                   pr_message_footer: nil, custom_labels: nil,
-                   author_details: nil, signature_key: nil,
+                   pr_message_header: nil, pr_message_footer: nil,
+                   custom_labels: nil, author_details: nil, signature_key: nil,
                    commit_message_options: {}, vulnerabilities_fixed: {},
                    reviewers: nil, assignees: nil, milestone: nil,
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: "github-redirect.dependabot.com",
-                   custom_headers: nil)
+                   custom_headers: nil, require_up_to_date_base: false)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
       @files                      = files
       @credentials                = credentials
+      @pr_message_header          = pr_message_header
       @pr_message_footer          = pr_message_footer
       @author_details             = author_details
       @signature_key              = signature_key
@@ -53,6 +55,7 @@ module Dependabot
       @automerge_candidate        = automerge_candidate
       @github_redirection_service = github_redirection_service
       @custom_headers             = custom_headers
+      @require_up_to_date_base    = require_up_to_date_base
 
       check_dependencies_have_previous_version
     end
@@ -70,6 +73,7 @@ module Dependabot
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
       when "azure" then azure_creator.create
+      when "codecommit" then codecommit_creator.create
       else raise "Unsupported provider #{source.provider}"
       end
     end
@@ -82,6 +86,10 @@ module Dependabot
 
     def automerge_candidate?
       @automerge_candidate
+    end
+
+    def require_up_to_date_base?
+      @require_up_to_date_base
     end
 
     def github_creator
@@ -100,7 +108,8 @@ module Dependabot
         reviewers: reviewers,
         assignees: assignees,
         milestone: milestone,
-        custom_headers: custom_headers
+        custom_headers: custom_headers,
+        require_up_to_date_base: require_up_to_date_base?
       )
     end
 
@@ -117,7 +126,7 @@ module Dependabot
         author_details: author_details,
         labeler: labeler,
         approvers: reviewers,
-        assignee: assignees&.first,
+        assignees: assignees,
         milestone: milestone
       )
     end
@@ -137,6 +146,22 @@ module Dependabot
       )
     end
 
+    def codecommit_creator
+      Codecommit.new(
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        author_details: author_details,
+        labeler: labeler,
+        require_up_to_date_base: require_up_to_date_base?
+      )
+    end
+
     def message_builder
       @message_builder ||
         MessageBuilder.new(
@@ -145,6 +170,7 @@ module Dependabot
           files: files,
           credentials: credentials,
           commit_message_options: commit_message_options,
+          pr_message_header: pr_message_header,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed,
           github_redirection_service: github_redirection_service

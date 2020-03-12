@@ -95,6 +95,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
+    context "with a default-run specified" do
+      let(:manifest_fixture_name) { "default_run" }
+      let(:lockfile_fixture_name) { "bare_version_specified" }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
     context "with a target-specific dependency" do
       let(:manifest_fixture_name) { "target_dependency" }
       let(:lockfile_fixture_name) { "target_dependency" }
@@ -229,7 +236,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:dependency_version) { "0.1.3" }
       let(:string_req) { "0.1.3" }
 
-      it { is_expected.to eq(Gem::Version.new("1.0.3")) }
+      it { is_expected.to eq(Gem::Version.new("1.0.4")) }
     end
 
     context "with a git dependency" do
@@ -247,7 +254,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         }
       end
 
-      it { is_expected.to eq("b7c73859eb0507d378b9d0a4d9ae2a0c653267f7") }
+      it { is_expected.to eq("8d38a931b7e34f9da339c058cbbca6ded624ea58") }
 
       context "with a tag" do
         let(:manifest_fixture_name) { "git_dependency_with_tag" }
@@ -393,6 +400,34 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
         it { is_expected.to eq(Gem::Version.new("0.10.16")) }
       end
+    end
+
+    context "when there's a virtual workspace" do
+      let(:manifest_fixture_name) { "virtual_workspace_root" }
+      let(:lockfile_fixture_name) { "virtual_workspace" }
+      let(:unprepared_dependency_files) do
+        [manifest, lockfile, workspace_child]
+      end
+      let(:workspace_child) do
+        Dependabot::DependencyFile.new(
+          name: "src/sub_crate/Cargo.toml",
+          content: fixture("manifests", "workspace_child")
+        )
+      end
+
+      let(:dependency_name) { "log" }
+      let(:dependency_version) { "0.4.0" }
+      let(:string_req) { "2.0" }
+      let(:requirements) do
+        [{
+          requirement: "=0.4.0",
+          file: "src/sub_crate/Cargo.toml",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("0.4.4") }
     end
 
     context "when there is a workspace" do

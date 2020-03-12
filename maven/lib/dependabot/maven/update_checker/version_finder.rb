@@ -140,7 +140,7 @@ module Dependabot
           @released_check[version] =
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
-              response = Excon.get(
+              response = Excon.head(
                 dependency_files_url(url, version),
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
@@ -148,11 +148,9 @@ module Dependabot
                 **SharedHelpers.excon_defaults
               )
 
-              artifact_id = dependency.name.split(":").last
-              type = dependency.requirements.first.
-                     dig(:metadata, :packaging_type)
-              response.body.include?("#{artifact_id}-#{version}.#{type}")
-            rescue Excon::Error::Socket, Excon::Error::Timeout
+              response.status < 400
+            rescue Excon::Error::Socket, Excon::Error::Timeout,
+                   Excon::Error::TooManyRedirects
               false
             end
         end
@@ -166,13 +164,14 @@ module Dependabot
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **Dependabot::SharedHelpers.excon_defaults
               )
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
             rescue URI::InvalidURIError
               Nokogiri::XML("")
-            rescue Excon::Error::Socket, Excon::Error::Timeout
+            rescue Excon::Error::Socket, Excon::Error::Timeout,
+                   Excon::Error::TooManyRedirects
               raise if central_repo_urls.include?(repository_details["url"])
 
               Nokogiri::XML("")
@@ -253,11 +252,14 @@ module Dependabot
 
         def dependency_files_url(repository_url, version)
           group_id, artifact_id = dependency.name.split(":")
+          type = dependency.requirements.first.
+                 dig(:metadata, :packaging_type)
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
           "#{artifact_id}/"\
-          "#{version}/"
+          "#{version}/"\
+          "#{artifact_id}-#{version}.#{type}"
         end
 
         def version_class

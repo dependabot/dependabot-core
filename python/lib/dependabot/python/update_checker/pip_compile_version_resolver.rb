@@ -14,6 +14,7 @@ require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/authed_url_builder"
 
 module Dependabot
   module Python
@@ -57,7 +58,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/MethodLength
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           if @latest_resolvable_version_string.key?(requirement)
@@ -96,12 +96,9 @@ module Dependabot
               handle_pip_compile_errors(e)
             end
         end
-        # rubocop:enable Metrics/MethodLength
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable
@@ -145,10 +142,9 @@ module Dependabot
 
           raise
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/MethodLength
 
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a
@@ -199,13 +195,28 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          requirements_file = compiled_file_for_filename(filename)
-          return "--build-isolation" unless requirements_file
+          options = ["--build-isolation"]
+          options += pip_compile_index_options
 
-          [
-            "--build-isolation",
-            "--output-file=#{requirements_file.name}"
-          ].join(" ")
+          if (requirements_file = compiled_file_for_filename(filename))
+            options << "--output-file=#{requirements_file.name}"
+          end
+
+          options.join(" ")
+        end
+
+        def pip_compile_index_options
+          credentials.
+            select { |cred| cred["type"] == "python_index" }.
+            map do |cred|
+              authed_url = AuthedUrlBuilder.authed_url(credential: cred)
+
+              if cred["replaces-base"]
+                "--index-url=#{authed_url}"
+              else
+                "--extra-index-url=#{authed_url}"
+              end
+            end
         end
 
         def run_pip_compile_command(command)
@@ -218,9 +229,9 @@ module Dependabot
           relevant_error = choose_relevant_error(original_err, e)
           raise relevant_error unless error_suggests_bad_python_version?(msg)
           raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.16"
+          raise relevant_error if python_version == "2.7.17"
 
-          @python_version = "2.7.16"
+          @python_version = "2.7.17"
           retry
         ensure
           @python_version = nil
@@ -262,6 +273,8 @@ module Dependabot
         end
 
         def error_certainly_bad_python_version?(message)
+          return true if message.include?("UnsupportedPythonVersion")
+
           unless message.include?('"python setup.py egg_info" failed') ||
                  message.include?("exit status 1: python setup.py egg_info")
             return false
@@ -271,6 +284,7 @@ module Dependabot
         end
 
         def error_suggests_bad_python_version?(message)
+          return true if error_certainly_bad_python_version?(message)
           return true if message.include?("not find a version that satisfies")
           return true if message.include?("No matching distribution found")
 

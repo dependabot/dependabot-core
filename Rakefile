@@ -16,6 +16,7 @@ GEMSPECS = %w(
   terraform/dependabot-terraform.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
+  github_actions/dependabot-github_actions.gemspec
   nuget/dependabot-nuget.gemspec
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
@@ -53,6 +54,7 @@ namespace :ci do
   end
 end
 
+# rubocop:disable Metrics/BlockLength
 namespace :gems do
   task build: :clean do
     root_path = Dir.getwd
@@ -88,8 +90,8 @@ namespace :gems do
           begin
             sh "gem push #{gem_path}"
             break
-          rescue => err
-            puts "! `gem push` failed with error: #{err}"
+          rescue StandardError => e
+            puts "! `gem push` failed with error: #{e}"
             raise if attempts >= 3
           end
         end
@@ -124,7 +126,6 @@ def rubygems_release_exists?(name, version)
   existing_versions.include?(version)
 end
 
-# rubocop:disable Metrics/MethodLength
 def changed_packages
   all_packages = GEMSPECS.
                  select { |gs| gs.include?("/") }.
@@ -162,9 +163,9 @@ def changed_packages
 
   packages
 end
-# rubocop:enable Metrics/MethodLength
 
 def commit_range_changes_paths?(range, paths)
   cmd = %w(git diff --quiet) + [range, "--"] + paths
   !system(Shellwords.join(cmd))
 end
+# rubocop:enable Metrics/BlockLength

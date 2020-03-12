@@ -1,4 +1,6 @@
 import codecs
+import io
+import os
 from setuptools import setup, find_packages
 
 file = open("some_file", "r")

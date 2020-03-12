@@ -6,9 +6,13 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class IssueLinker
+        REPO_REGEX = %r{(?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)}.freeze
         TAG_REGEX = /(?<tag>(?:\#|GH-)\d+)/i.freeze
         ISSUE_LINK_REGEXS = [
-          /(?<=[^A-Za-z0-9\[\\]|^)\\*#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$)/.freeze,
+          /
+            (?:(?<=[^A-Za-z0-9\[\\]|^)\\*#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))|
+            (?:(?<=\s|^)#{REPO_REGEX}#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))
+          /x.freeze,
           /\[#{TAG_REGEX}\](?=[^A-Za-z0-9\-\(])/.freeze,
           /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i.freeze
         ].freeze
@@ -28,7 +32,14 @@ module Dependabot
                     match(/(?<tag>(?:\#|GH-)?\d+)/i).
                     named_captures.fetch("tag")
               number = tag.match(/\d+/).to_s
-              "[#{tag}](#{source_url}/issues/#{number})"
+
+              repo = issue_link.
+                     match("#{REPO_REGEX}#{TAG_REGEX}")&.
+                     named_captures&.
+                     fetch("repo", nil)
+              source = repo ? "https://github.com/#{repo}" : source_url
+
+              "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"
             end
           end
         end

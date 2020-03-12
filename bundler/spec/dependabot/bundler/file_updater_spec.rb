@@ -465,7 +465,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:required_file) do
           Dependabot::DependencyFile.new(
             name: "../some_other_file.rb",
-            content: "SOME_CONTANT = 5",
+            content: "SOME_CONSTANT = 5",
             directory: directory
           )
         end
@@ -690,6 +690,32 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
+        context "that specifies the dependency using github:" do
+          let(:gemfile_fixture_name) { "github_source" }
+          let(:lockfile_fixture_name) { "github_source_bundler_2.lock" }
+
+          it "doesn't update the git dependencies" do
+            old_lock = lockfile_body.split(/^/)
+            new_lock = file.content.split(/^/)
+
+            original_remote_line =
+              old_lock.find { |l| l.include?("gocardless/business") }
+            original_revision_line =
+              old_lock[old_lock.find_index(original_remote_line) + 1]
+
+            new_remote_line =
+              new_lock.find { |l| l.include?("gocardless/business") }
+
+            new_revision_line =
+              new_lock[new_lock.find_index(original_remote_line) + 1]
+
+            expect(new_remote_line).to eq(original_remote_line)
+            expect(new_revision_line).to eq(original_revision_line)
+            expect(new_lock.index(new_remote_line)).
+              to eq(old_lock.index(original_remote_line))
+          end
+        end
+
         context "and the git dependency is used internally" do
           let(:gemfile_fixture_name) { "git_source_internal" }
           let(:lockfile_fixture_name) { "git_source_internal.lock" }
@@ -867,7 +893,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.16.0",
+                requirement: "~> 1.17.0",
                 groups: [],
                 source: {
                   type: "git",
@@ -886,7 +912,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.16.0)!" }
+            its(:content) { is_expected.to include "business (~> 1.17.0)!" }
           end
         end
       end
@@ -917,6 +943,23 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               not_to include Dependabot::SharedHelpers::BUMP_TMP_FILE_PREFIX
             expect(file.content).
               not_to include Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
+          end
+
+          context "as a .specification" do
+            let(:dependency_files) { [gemfile, lockfile, specification] }
+            let(:gemfile_fixture_name) { "path_source_statesman" }
+            let(:lockfile_fixture_name) { "path_source_statesman.lock" }
+            let(:specification) do
+              Dependabot::DependencyFile.new(
+                content: fixture("ruby", "specifications", "statesman"),
+                name: "vendor/gems/statesman-4.1.1/.specification",
+                support_file: true
+              )
+            end
+
+            it "updates the gem just fine" do
+              expect(file.content).to include "business (1.5.0)"
+            end
           end
 
           context "that requires other files" do
@@ -1240,7 +1283,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               package_manager: "bundler"
             )
           end
-          it { is_expected.to be_nil }
+
+          it "raises an error" do
+            expect { updated_files }.to raise_error("No files have changed!")
+          end
         end
 
         its(:content) do

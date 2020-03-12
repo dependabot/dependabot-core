@@ -88,4 +88,5 @@ dependencies {
     implementation 'com.android.support:support-v4:21.0.3'
     implementation 'com.android.support:appcompat-v7:23.1.1'
     implementation 'com.yanzhenjie.zbar:camera:1.0.0'
+    implementation 'com.badly.specified:dep:.*'
 }

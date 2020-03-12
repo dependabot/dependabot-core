@@ -8,8 +8,6 @@ require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
@@ -18,7 +16,9 @@ module Dependabot
         require_relative "commits_finder"
 
         # Earlier entries are preferred
-        CHANGELOG_NAMES = %w(changelog history news changes release).freeze
+        CHANGELOG_NAMES = %w(
+          changelog news changes history release whatsnew
+        ).freeze
 
         attr_reader :source, :dependency, :credentials, :suggested_changelog_url
 
@@ -380,4 +380,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

@@ -1,20 +1,25 @@
 {
     "require": {
-        "composer/composer": "^1.8",
         "php": "^7.1",
-        "ext-json": "*"
+        "ext-json": "*",
+        "composer/composer": "^1.8"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.9"
+        "friendsofphp/php-cs-fixer": "^2.9",
+        "phpstan/phpstan": "~0.12.3"
     },
     "autoload": {
         "psr-4": {
-            "Dependabot\\PHP\\": "src/"
+            "Dependabot\\Composer\\": "src/"
         }
     },
     "scripts": {
         "lint": [
-            "php-cs-fixer fix"
-        ]
+            "php-cs-fixer fix --diff --verbose"
+        ],
+        "stan": "phpstan analyse -l 5"
+    },
+    "config": {
+        "sort-packages": true
     }
 }

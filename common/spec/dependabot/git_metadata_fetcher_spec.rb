@@ -124,6 +124,19 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
           its(:count) { is_expected.to eq(14) }
         end
+
+        context "when there is a github.com credential with an @ in the user" do
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token@github.com",
+              "password" => "token"
+            }]
+          end
+
+          its(:count) { is_expected.to eq(14) }
+        end
       end
     end
 
@@ -131,6 +144,18 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       let(:url) { "https://bitbucket.org/gocardless/business" }
       let(:service_pack_url) do
         "https://bitbucket.org/gocardless/business.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+
+      let(:upload_pack_fixture) { "business" }
+
+      its(:count) { is_expected.to eq(14) }
+    end
+
+    context "with source code hosted on a HTTP host" do
+      let(:url) { "http://bitbucket.org/gocardless/business" }
+      let(:service_pack_url) do
+        "http://bitbucket.org/gocardless/business.git/info/refs"\
         "?service=git-upload-pack"
       end
 
@@ -178,6 +203,50 @@ RSpec.describe Dependabot::GitMetadataFetcher do
           expect { ref_names }.
             to raise_error(Dependabot::GitDependenciesNotReachable)
         end
+      end
+    end
+  end
+
+  describe "#head_commit_for_ref" do
+    subject(:head_commit_for_ref) { checker.head_commit_for_ref(ref) }
+    let(:ref) { "v1.0.0" }
+
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    let(:service_pack_url) do
+      "https://github.com/gocardless/business.git/info/refs"\
+      "?service=git-upload-pack"
+    end
+
+    let(:upload_pack_fixture) { "business" }
+
+    it "gets the correct commit SHA (not the tag SHA)" do
+      expect(head_commit_for_ref).
+        to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2")
+    end
+
+    context "with a branch" do
+      let(:ref) { "master" }
+
+      it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
+
+      context "that doesn't exist" do
+        let(:ref) { "nonexistent" }
+        it { is_expected.to be_nil }
+      end
+
+      context "that is HEAD" do
+        let(:ref) { "HEAD" }
+        it { is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104") }
       end
     end
   end

@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/dependabot/monolog.git",
-                "reference": "303b8a83c87d5c6d749926cf02620465a5dcd0f2"
+                "reference": "5267b03b1e4861c4657ede17a88f13ef479db482"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dependabot/monolog/zipball/303b8a83c87d5c6d749926cf02620465a5dcd0f2",
-                "reference": "303b8a83c87d5c6d749926cf02620465a5dcd0f2",
+                "url": "https://api.github.com/repos/dependabot/monolog/zipball/5267b03b1e4861c4657ede17a88f13ef479db482",
+                "reference": "5267b03b1e4861c4657ede17a88f13ef479db482",
                 "shasum": ""
             },
             "require": {

@@ -9,7 +9,7 @@ require "dependabot/gradle/file_parser/repositories_finder"
 module Dependabot
   module Gradle
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      DOT_SEPARATOR_REGEX = %r{\.(?:(?!\d+[.\/])+)}.freeze
+      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
 
       private

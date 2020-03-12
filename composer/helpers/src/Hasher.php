@@ -2,20 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Dependabot\PHP;
+namespace Dependabot\Composer;
 
-use Composer\Factory;
+use Composer\Package\Locker;
 
 class Hasher
 {
-    public static function getContentHash(array $args): ?string
+    /**
+     * @throws \RuntimeException
+     */
+    public static function getContentHash(array $args): string
     {
         [$workingDirectory] = $args;
 
-        $io = new ExceptionIO();
-        $composer = Factory::create($io, $workingDirectory . '/composer.json');
-        $locker = $composer->getLocker();
+        $config = $workingDirectory . '/composer.json';
 
-        return $locker->getContentHash(file_get_contents(Factory::getComposerFile()));
+        $contents = file_get_contents($config);
+
+        if (!is_string($contents)) {
+            throw new \RuntimeException(sprintf('Failed to load contents of "%s".', $config));
+        }
+
+        return Locker::getContentHash($contents);
     }
 }

@@ -99,7 +99,6 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def run_yarn_updater(path:, lockfile_name:,
                              top_level_dependency_updates:)
@@ -131,7 +130,7 @@ module Dependabot
 
           sleep(rand(3.0..10.0)) && retry
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
@@ -433,8 +432,6 @@ module Dependabot
             yarnrc_file: yarnrc_file
           ).registry
 
-          # Sanitize Gemfury URLs
-          reg = reg.gsub(%r{(?<=\.fury\.io)/.*}, "")
           return if central_registry?(reg) && !package_name.start_with?("@")
 
           raise PrivateSourceAuthenticationFailure, reg
@@ -510,7 +507,7 @@ module Dependabot
         def sanitized_package_json_content(content)
           updated_content =
             content.
-            gsub(/\{\{.*?\}\}/, "something"). # {{ name }} syntax not allowed
+            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
             gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
             gsub(%r{^\s*//.*}, " ")           # comments are not allowed
 

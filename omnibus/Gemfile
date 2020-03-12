@@ -10,6 +10,7 @@ gem "dependabot-dep", path: "../dep"
 gem "dependabot-docker", path: "../docker"
 gem "dependabot-elm", path: "../elm"
 gem "dependabot-git_submodules", path: "../git_submodules"
+gem "dependabot-github_actions", path: "../github_actions"
 gem "dependabot-go_modules", path: "../go_modules"
 gem "dependabot-gradle", path: "../gradle"
 gem "dependabot-hex", path: "../hex"
@@ -19,6 +20,12 @@ gem "dependabot-nuget", path: "../nuget"
 gem "dependabot-python", path: "../python"
 gem "dependabot-terraform", path: "../terraform"
 
-gem "rubocop"
+gem "rubocop", group: :development
+
+# Visual Studio Code integration
+gem "debase", group: :development
+gem "reek", group: :development
+gem "ruby-debug-ide", group: :development
+gem "solargraph", group: :development
 
 gemspec
