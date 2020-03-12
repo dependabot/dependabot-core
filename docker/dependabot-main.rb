@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 # LIST OF ENVIROMENTAL VARIABLES NEEDED:
-  # FEATURE_PACKAGE i.e docker or concourse
-  # PROJECT_PATH i.e. Pix4D/test-dependabot-docker
-  # DEPENDENCY_DIRECTORY i.e. ci/docker or ci/pipelines
-  # REPOSITORY_BRANCH default is master
-  # GITHUB_ACCESS_TOKEN
-  # DOCKER_REGISTRY i.e. docker.ci.pix4d.com
-  # DOCKER_USER
-  # DOCKER_PASS
+# FEATURE_PACKAGE i.e docker or concourse
+# PROJECT_PATH i.e. Pix4D/test-dependabot-docker
+# DEPENDENCY_DIRECTORY i.e. ci/docker or ci/pipelines
+# REPOSITORY_BRANCH default is master
+# GITHUB_ACCESS_TOKEN
+# DOCKER_REGISTRY i.e. docker.ci.pix4d.com
+# DOCKER_USER
+# DOCKER_PASS
 
 require "dependabot/docker"
 require "dependabot/pr_info"
@@ -23,7 +25,7 @@ credentials_github =
 credentials_docker =
   [{
     "type" => "docker_registry",
-    "registry" => (ENV["DOCKER_REGISTRY"]  || "registry.hub.docker.com"),
+    "registry" => (ENV["DOCKER_REGISTRY"] || "registry.hub.docker.com"),
     "username" => (ENV["DOCKER_USER"] || nil),
     "password" => (ENV["DOCKER_PASS"] || nil)
   }]
@@ -36,7 +38,6 @@ input_files_path = recursive_path(
 )
 
 input_files_path.each do |file_path|
-
   #
   # Source setup
   #
@@ -73,7 +74,7 @@ input_files_path.each do |file_path|
     checker = Dependabot::UpdateCheckers.for_package_manager("docker").new(
       dependency: dep,
       dependency_files: files,
-      credentials: credentials_docker,
+      credentials: credentials_docker
     )
     next if checker.up_to_date?
 
@@ -94,6 +95,7 @@ input_files_path.each do |file_path|
     )
 
     next if updated_deps.first.version == updated_deps.first.previous_version
+
     #
     # Generate updated dependency files
     #

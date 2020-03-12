@@ -811,7 +811,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       describe "having a resource with the tag format in YYYYMMDD" do
-        subject(:dependency) { dependencies[2]}
+        subject(:dependency) { dependencies[2] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -843,8 +843,6 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end # describe
-
     end # context
-
   end
 end

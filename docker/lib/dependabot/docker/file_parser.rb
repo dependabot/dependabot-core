@@ -39,13 +39,9 @@ module Dependabot
         templatefiles = input_files.select { |f| f.name.match?(/template|docker-image-version/i) }
         dockerfiles = input_files.select { |f| f.name.match?(/dockerfile|custom/i) }
 
-        unless templatefiles.empty?
-          return parse_templatefiles(templatefiles)
-        end
+        return parse_templatefiles(templatefiles) unless templatefiles.empty?
 
-        unless dockerfiles.empty?
-          return parse_dockerfiles(dockerfiles)
-        end
+        return parse_dockerfiles(dockerfiles) unless dockerfiles.empty?
       end
 
       private
@@ -83,35 +79,37 @@ module Dependabot
 
       def parse_templatefiles(input_files)
         dependency_set = DependencySet.new
-          input_files.each do |file|
-            parsed = begin
+        input_files.each do |file|
+          parsed = begin
               YAML.safe_load(file.content, [], [], true)
                      rescue ArgumentError => e
                        puts "Could not parse YAML: #{e.message}"
             end
 
-            res = parsed["resources"]
-            res.each do |item|
-              next unless (item["type"] == "registry-image") && (item["source"]["tag"] != "latest")
+          res = parsed["resources"]
+          res.each do |item|
+            unless (item["type"] == "registry-image") && (item["source"]["tag"] != "latest")
+              next
+              end
 
-              parsed_data = item["source"]["repository"].to_s + ":" + item["source"]["tag"].to_s
-              img_data = LINE.match(parsed_data).named_captures
+            parsed_data = item["source"]["repository"].to_s + ":" + item["source"]["tag"].to_s
+            img_data = LINE.match(parsed_data).named_captures
 
-              version = version_from(img_data)
-              next unless version
+            version = version_from(img_data)
+            next unless version
 
-              dependency_set << Dependency.new(
-                name: img_data.fetch("image"),
-                version: version,
-                package_manager: "docker",
-                requirements: [
-                  requirement: nil,
-                  groups: [],
-                  file: file.name,
-                  source: source_from(img_data)
-                ]
-              )
-            end
+            dependency_set << Dependency.new(
+              name: img_data.fetch("image"),
+              version: version,
+              package_manager: "docker",
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: file.name,
+                source: source_from(img_data)
+              ]
+            )
+          end
         end
 
         dependency_set.dependencies

@@ -77,12 +77,10 @@ module Dependabot
       end
 
       def version_tag_up_to_date?
-        if not (dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG)
+        unless dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG
           return
         end
-        if dependency.version == BOOTSTRAP_TAG
-          return false
-        end
+        return false if dependency.version == BOOTSTRAP_TAG
 
         old_v = numeric_version_from(dependency.version)
         latest_v = numeric_version_from(latest_version)
@@ -120,9 +118,9 @@ module Dependabot
         candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
         wants_prerelease = if dependency.version == BOOTSTRAP_TAG
-          false
-        else
-          prerelease?(dependency.version)
+                             false
+                           else
+                             prerelease?(dependency.version)
         end
         candidate_tags =
           candidate_tags.
@@ -139,7 +137,6 @@ module Dependabot
           end
 
         latest_tag || dependency.version
-
       end
 
       def comparable_tags_from_registry
@@ -265,25 +262,19 @@ module Dependabot
       end
 
       def prefix_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return nil
-        end
+        return nil if tag == BOOTSTRAP_TAG
 
         tag.match(NAME_WITH_VERSION).named_captures.fetch("prefix")
       end
 
       def suffix_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return nil
-        end
+        return nil if tag == BOOTSTRAP_TAG
 
         tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
       def format_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return :build_num
-        end
+        return :build_num if tag == BOOTSTRAP_TAG
 
         version = numeric_version_from(tag)
 
