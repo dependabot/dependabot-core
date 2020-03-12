@@ -123,7 +123,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
       # Note: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
-      it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
 
     context "with a package-lock.json" do
@@ -144,7 +144,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
       # Note: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
-      it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
       context "when using npm5 lockfile" do
         let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
@@ -195,7 +195,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      it { is_expected.to eq(Gem::Version.new("5.7.3")) }
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
       context "when using npm5" do
         let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
