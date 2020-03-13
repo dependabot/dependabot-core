@@ -77,12 +77,11 @@ module Dependabot
       end
 
       def version_tag_up_to_date?
-        if not (dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG)
+        unless dependency.version.match?(NAME_WITH_VERSION) ||
+               dependency.version == BOOTSTRAP_TAG
           return
         end
-        if dependency.version == BOOTSTRAP_TAG
-          return false
-        end
+        return false if dependency.version == BOOTSTRAP_TAG
 
         old_v = numeric_version_from(dependency.version)
         latest_v = numeric_version_from(latest_version)
@@ -109,7 +108,8 @@ module Dependabot
       # Note: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_version
-        unless dependency.version.match?(NAME_WITH_VERSION) || dependency.version == BOOTSTRAP_TAG
+        unless dependency.version.match?(NAME_WITH_VERSION) ||
+               dependency.version == BOOTSTRAP_TAG
           return dependency.version
         end
 
@@ -119,11 +119,7 @@ module Dependabot
         non_downgrade_tags = remove_version_downgrades(candidate_tags)
         candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        wants_prerelease = if dependency.version == BOOTSTRAP_TAG
-          false
-        else
-          prerelease?(dependency.version)
-        end
+        wants_prerelease = prerelease?(dependency.version)
         candidate_tags =
           candidate_tags.
           reject { |tag| prerelease?(tag) && !wants_prerelease }.
@@ -139,7 +135,6 @@ module Dependabot
           end
 
         latest_tag || dependency.version
-
       end
 
       def comparable_tags_from_registry
@@ -265,25 +260,19 @@ module Dependabot
       end
 
       def prefix_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return nil
-        end
+        return nil if tag == BOOTSTRAP_TAG
 
         tag.match(NAME_WITH_VERSION).named_captures.fetch("prefix")
       end
 
       def suffix_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return nil
-        end
+        return nil if tag == BOOTSTRAP_TAG
 
         tag.match(NAME_WITH_VERSION).named_captures.fetch("suffix")
       end
 
       def format_of(tag)
-        if tag == BOOTSTRAP_TAG
-          return :build_num
-        end
+        return :build_num if tag == BOOTSTRAP_TAG
 
         version = numeric_version_from(tag)
 
@@ -295,6 +284,7 @@ module Dependabot
       end
 
       def prerelease?(tag)
+        return false if tag == BOOTSTRAP_TAG
         if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
           return true
         end

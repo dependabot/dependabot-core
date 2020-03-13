@@ -47,16 +47,15 @@ module Dependabot
       end
 
       def updated_file_content(file)
-        if file.name.match?(/dockerfile|custom/i)
-          updated_content =
-            if specified_with_digest?(file)
-              update_digest_and_tag(file)
-            else
-              update_tag_docker(file)
-            end
-        else
-          updated_content = update_tag_template(file)
-        end
+        updated_content = if file.name.match?(/dockerfile|custom/i)
+                            if specified_with_digest?(file)
+                              update_digest_and_tag(file)
+                            else
+                              update_tag_docker(file)
+                            end
+                          else
+                            update_tag_template(file)
+                          end
         raise "Expected content to change!" if updated_content == file.content
 
         updated_content
@@ -110,14 +109,18 @@ module Dependabot
             if private_registry_url(file) then "#{private_registry_url(file)}/"
             else ""
             end
-            old_declaration += "#{dependency.name}"
-            escaped_declaration = Regexp.escape(old_declaration)
+          old_declaration += dependency.name.to_s
+          escaped_declaration = Regexp.escape(old_declaration)
+          old_declaration_regex =
+            %r{repository:\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)\n\s+
+            \s(tag:\s[^\n]+)\n}x
 
-            old_declaration_regex =
-              %r{repository:\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)\n + (tag:\s[^\n]+)\n}
-            modified_content = modified_content.
-                              gsub(old_declaration_regex) do |old_dec|
-                                old_dec.gsub(/(tag:\s#{old_tag})|(tag:\s"#{old_tag}")/, "tag:\s#{new_tag(file)}")
+          modified_content = modified_content.
+                             gsub(old_declaration_regex) do |old_dec|
+            old_dec.gsub(
+              /(tag:\s#{old_tag})|(tag:\s"#{old_tag}")/,
+              "tag:\s#{new_tag(file)}"
+            )
           end
         end
 

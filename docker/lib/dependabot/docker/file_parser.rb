@@ -12,7 +12,8 @@ module Dependabot
   module Docker
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
-
+      TEMPLATE_REGEX = /template|docker-image-version/i.freeze
+      DOCKERFILE_REGEX = /dockerfile|custom/i.freeze
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
@@ -36,16 +37,12 @@ module Dependabot
         %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
 
       def parse
-        templatefiles = input_files.select { |f| f.name.match?(/template|docker-image-version/i) }
-        dockerfiles = input_files.select { |f| f.name.match?(/dockerfile|custom/i) }
+        templatefiles = input_files.select { |f| f.name.match?(TEMPLATE_REGEX) }
+        dockerfiles = input_files.select { |f| f.name.match?(DOCKERFILE_REGEX) }
 
-        unless templatefiles.empty?
-          return parse_templatefiles(templatefiles)
-        end
+        return parse_templatefiles(templatefiles) unless templatefiles.empty?
 
-        unless dockerfiles.empty?
-          return parse_dockerfiles(dockerfiles)
-        end
+        return parse_dockerfiles(dockerfiles) unless dockerfiles.empty?
       end
 
       private
@@ -83,43 +80,47 @@ module Dependabot
 
       def parse_templatefiles(input_files)
         dependency_set = DependencySet.new
-          input_files.each do |file|
-            parsed = begin
+        input_files.each do |file|
+          parsed = begin
               YAML.safe_load(file.content, [], [], true)
                      rescue ArgumentError => e
                        puts "Could not parse YAML: #{e.message}"
             end
 
-            res = parsed["resources"]
-            res.each do |item|
-              next unless (item["type"] == "registry-image") && (item["source"]["tag"] != "latest")
-
-              parsed_data = item["source"]["repository"].to_s + ":" + item["source"]["tag"].to_s
-              img_data = LINE.match(parsed_data).named_captures
-
-              version = version_from(img_data)
-              next unless version
-
-              dependency_set << Dependency.new(
-                name: img_data.fetch("image"),
-                version: version,
-                package_manager: "docker",
-                requirements: [
-                  requirement: nil,
-                  groups: [],
-                  file: file.name,
-                  source: source_from(img_data)
-                ]
-              )
+          res = parsed["resources"]
+          res.each do |item|
+            unless (item["type"] == "registry-image") &&
+                   (item["source"]["tag"] != "latest")
+              next
             end
+
+            parsed_data = item["source"]["repository"].to_s +
+                          ":" + item["source"]["tag"].to_s
+            img_data = LINE.match(parsed_data).named_captures
+
+            version = version_from(img_data)
+            next unless version
+
+            dependency_set << Dependency.new(
+              name: img_data.fetch("image"),
+              version: version,
+              package_manager: "docker",
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: file.name,
+                source: source_from(img_data)
+              ]
+            )
+          end
         end
 
         dependency_set.dependencies
       end
 
       def input_files
-        # The file fetcher only fetches Dockerfiles and pipeline template files, so no need to
-        # filter here
+        # The file fetcher only fetches Dockerfiles and pipeline template files,
+        # so no need to filter here
         dependency_files
       end
 

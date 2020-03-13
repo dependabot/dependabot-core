@@ -636,11 +636,15 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    context "single yml file which contains no registry-image resources", :pix4d do
+    context "single yml file which contains no registry-image resources",
+            :pix4d do
       it_behaves_like "a dependency file parser"
       let(:file_name) { "no-registry.yml" }
       let(:dockerfile) do
-        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+        Dependabot::DependencyFile.new(
+          name: "#{file_name}-template",
+          content: file_body
+        )
       end
       it "to be empty" do
         expect(dependencies).to be_empty
@@ -650,7 +654,10 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "single yml file which contains a single resource", :pix4d do
       it_behaves_like "a dependency file parser"
       let(:dockerfile) do
-        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+        Dependabot::DependencyFile.new(
+          name: "#{file_name}-template",
+          content: file_body
+        )
       end
       describe "with a simple public repository name" do
         let(:file_name) { "public-simple.yml" }
@@ -669,7 +676,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("1.0.7")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
+      end
 
       describe "with a complex public repository name" do
         let(:file_name) { "public-complex.yml" }
@@ -688,7 +695,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("3.7.1")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
+      end
 
       describe "from a private registry" do
         let(:file_name) { "private.yml" }
@@ -706,7 +713,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("20190620")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
+      end
 
       describe "from a private registry (new tag format)" do
         let(:file_name) { "private.yml" }
@@ -724,14 +731,18 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("20190620150000")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
-    end # context
+      end
+    end
 
-    context "single yml file which contains multiple (two) public resources", :pix4d do
+    context "single yml file which contains multiple (two) public resources",
+            :pix4d do
       it_behaves_like "a dependency file parser"
       let(:file_name) { "public-mix.yml" }
       let(:dockerfile) do
-        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+        Dependabot::DependencyFile.new(
+          name: "#{file_name}-template",
+          content: file_body
+        )
       end
 
       describe "having a resource with single part repository name" do
@@ -766,14 +777,18 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("3.7.1")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
-    end # context
+      end
+    end
 
-    context "single yml file which contains multiple resources (mix of private and public ones)", :pix4d do
+    context "single yml file which contains multiple resources \
+            (mix of private and public ones)", :pix4d do
       it_behaves_like "a dependency file parser"
       let(:file_name) { "mix.yml" }
       let(:dockerfile) do
-        Dependabot::DependencyFile.new(name: "#{file_name}-template", content: file_body)
+        Dependabot::DependencyFile.new(
+          name: "#{file_name}-template",
+          content: file_body
+        )
       end
 
       describe "having a resource with single part repository name" do
@@ -811,7 +826,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       describe "having a resource with the tag format in YYYYMMDD" do
-        subject(:dependency) { dependencies[2]}
+        subject(:dependency) { dependencies[2] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -842,9 +857,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("20190620150000")
           expect(dependency.requirements).to eq(expected_requirements)
         end
-      end # describe
-
-    end # context
-
+      end
+    end
   end
 end

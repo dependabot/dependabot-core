@@ -190,15 +190,15 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     it "fetches the pipeline template" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w[pipeline-template.yml])
+        to match_array(%w(pipeline-template.yml))
     end
 
     context "that has an invalid encoding" do
       let(:file_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(Dependabot::DependencyFileNotParseable)
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end
@@ -206,23 +206,23 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   context "with multiple template files", :pix4d do
     it_behaves_like "a dependency file fetcher"
     before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, url + "?ref=sha").
+        with(headers: token).
+        to_return(
           status: 200,
           body: fixture("github", "contents_pipeline_repo_multiple.json"),
           headers: json_content_type
         )
-      stub_request(:get, File.join(url, "pipeline-template.yml?ref=sha"))
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, File.join(url, "pipeline-template.yml?ref=sha")).
+        with(headers: token).
+        to_return(
           status: 200,
           body: file_fixture,
           headers: json_content_type
         )
-      stub_request(:get, File.join(url, "pipeline-template-base.yml?ref=sha"))
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, File.join(url, "pipeline-template-base.yml?ref=sha")).
+        with(headers: token).
+        to_return(
           status: 200,
           body: file_2_fixture,
           headers: json_content_type
@@ -234,8 +234,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     it "fetches both template files" do
       expect(file_fetcher_instance.files.count).to eq(2)
-      expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w[pipeline-template.yml pipeline-template-base.yml])
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(pipeline-template.yml pipeline-template-base.yml))
     end
 
     context "one of which has an invalid encoding" do
@@ -243,8 +243,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
       it "fetches the first file, and ignores the invalid one" do
         expect(file_fetcher_instance.files.count).to eq(1)
-        expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w[pipeline-template.yml])
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pipeline-template.yml))
       end
     end
   end
@@ -252,17 +252,17 @@ RSpec.describe Dependabot::Docker::FileFetcher do
   context "with a custom named template file", :pix4d do
     it_behaves_like "a dependency file fetcher"
     before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, url + "?ref=sha").
+        with(headers: token).
+        to_return(
           status: 200,
           body: fixture("github", "contents_pipeline_repo_custom.json"),
           headers: json_content_type
         )
 
-      stub_request(:get, File.join(url, "pipeline-template-base.yml?ref=sha"))
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, File.join(url, "pipeline-template-base.yml?ref=sha")).
+        with(headers: token).
+        to_return(
           status: 200,
           body: fixture("github", "contents_pipeline.json"),
           headers: json_content_type
@@ -271,8 +271,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     it "fetches the template file" do
       expect(file_fetcher_instance.files.count).to eq(1)
-      expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w[pipeline-template-base.yml])
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(pipeline-template-base.yml))
     end
   end
 
@@ -281,9 +281,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     let(:directory) { "/non/existant" }
 
     before do
-      stub_request(:get, url + "non/existant?ref=sha")
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, url + "non/existant?ref=sha").
+        with(headers: token).
+        to_return(
           status: 404,
           body: fixture("github", "not_found.json"),
           headers: json_content_type
@@ -291,28 +291,28 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     it "raises a helpful error" do
-      expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound)
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 
   context "with a docker-image-version file", :pix4d do
     it_behaves_like "a dependency file fetcher"
     before do
-      stub_request(:get, url + "?ref=sha")
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, url + "?ref=sha").
+        with(headers: token).
+        to_return(
           status: 200,
           body: '[{"name": "docker-image-version.yml","type": "file"}]',
           headers: json_content_type
         )
 
-      stub_request(:get, File.join(url, "docker-image-version.yml?ref=sha"))
-        .with(headers: token)
-        .to_return(
+      stub_request(:get, File.join(url, "docker-image-version.yml?ref=sha")).
+        with(headers: token).
+        to_return(
           status: 200,
           body: '{
-            "content": "RlJPTSB1YnVudHU6MTguMDQKCiMjIyBTWVNURU0gREVQRU5ERU5DSUVTCgoj\n",
+            "content": "RlJPTSB1Y\n",
             "encoding": "base64"
             }',
           headers: json_content_type
@@ -321,8 +321,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     it "fetches the template file" do
       expect(file_fetcher_instance.files.count).to eq(1)
-      expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w[docker-image-version.yml])
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(docker-image-version.yml))
     end
   end
 end
