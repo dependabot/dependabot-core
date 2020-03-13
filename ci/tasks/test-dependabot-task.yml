@@ -1,0 +1,24 @@
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: ruby
+    tag: 2.7-alpine
+inputs:
+- name: dependabot-core.git
+run:
+  path: /bin/sh
+  args:
+  - -c
+  - |
+      set -ex
+      apk update && \
+      apk add --no-cache \
+        g++ \
+        make && \
+        gem update --system && \
+        gem install bundler --no-document
+      cd dependabot-core.git/docker
+      bundle install --path ../../requirements
+      bundle exec rspec ./spec/
+      bundle exec rubocop ../
