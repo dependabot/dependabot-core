@@ -51,7 +51,7 @@ RUN apt-get update \
 
 ### RUBY
 
-# Install Ruby 2.6.5, update RubyGems, and install Bundler
+# Install Ruby 2.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
     && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
@@ -67,10 +67,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.16 && cd - \
-    && pyenv install 3.8.1 \
+    && cd /usr/local/.pyenv && git checkout v1.2.17 && cd - \
+    && pyenv install 3.8.2 \
     && pyenv install 2.7.17 \
-    && pyenv global 3.8.1
+    && pyenv global 3.8.2
 
 
 ### JAVASCRIPT
