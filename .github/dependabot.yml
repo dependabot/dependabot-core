@@ -1,27 +1,26 @@
 version: 2
-
 updates:
-  - package-ecosystem: "ruby-bundler"
+  - package-ecosystem: "bundler"
     directory: "/common"
     schedule:
       interval: "daily"
-  - package-ecosystem: "php-composer"
+  - package-ecosystem: "composer"
     directory: "/composer/helpers"
     schedule:
       interval: "daily"
-  - package-ecosystem: "elixir-hex"
+  - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
       interval: "daily"
-  - package-ecosystem: "javascript"
+  - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
     schedule:
       interval: "daily"
-  - package-ecosystem: "python"
+  - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
       interval: "daily"
-  - package-ecosystem: "go-modules"
+  - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
       interval: "daily"
