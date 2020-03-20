@@ -348,6 +348,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             is_expected.to eq "https://user:password@not.company.com/simple"
           end
         end
+
+        it "shouldn't match" do
+          let (:url) { "https://${creds}@other.com/simple" }
+
+          it do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            is_expected.to raise_error(error_class)
+          end
+        end
+
+        it "shouldn't match" do
+          let (:url) { "https://${creds}@other.company.com/simple" }
+
+          it do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            is_expected.to raise_error(error_class)
+          end
+        end
       end
     end
   end
