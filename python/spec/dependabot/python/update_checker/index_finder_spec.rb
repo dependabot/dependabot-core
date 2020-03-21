@@ -332,38 +332,46 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             }
           ]
         end
-
-        it "selects the correct URL" do
+        
+        context "when we select the correct URL" do
           let(:url) { "https://${creds}@company.com/simple" }
-
-          it do
-            is_expected.to eq "https://user:password@company.com/simple"
+          
+          it "should interpolate correctly" do
+            it do
+              is_expected.to eq "https://user:password@company.com/simple"
+            end
           end
         end
-
-        it "interpolates two variables" do
+        
+        context "when we have two environment variables"
           let(:url) { "https://${creds}@${domain}.company.com/simple" }
-
-          it do
-            is_expected.to eq "https://user:password@not.company.com/simple"
+         
+          it "interpolates two variables" do
+            it do
+              is_expected.to eq "https://user:password@not.company.com/simple"
+            end
           end
         end
-
-        it "shouldn't match" do
+        
+        context "we have non-matching environment variables" do
           let (:url) { "https://${creds}@other.com/simple" }
-
-          it do
-            error_class = Dependabot::PrivateSourceAuthenticationFailure
-            is_expected.to raise_error(error_class)
+          
+          it "shouldn't match" do
+            it do
+              error_class = Dependabot::PrivateSourceAuthenticationFailure
+              is_expected.to raise_error(error_class)
+            end
           end
         end
 
-        it "shouldn't match" do
+        context "we have non-matching environment variables" do
           let (:url) { "https://${creds}@other.company.com/simple" }
-
-          it do
-            error_class = Dependabot::PrivateSourceAuthenticationFailure
-            is_expected.to raise_error(error_class)
+          
+          it "shouldn't match" do
+            it do
+              error_class = Dependabot::PrivateSourceAuthenticationFailure
+              is_expected.to raise_error(error_class)
+            end
           end
         end
       end
