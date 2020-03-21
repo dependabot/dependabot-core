@@ -335,7 +335,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         
         context "when we select the correct URL" do
           let(:url) { "https://${creds}@company.com/simple" }
-          
           it "should interpolate correctly" do
             it do
               is_expected.to eq "https://user:password@company.com/simple"
@@ -345,7 +344,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         
         context "when we have two environment variables" do
           let(:url) { "https://${creds}@${domain}.company.com/simple" }
-         
           it "interpolates two variables" do
             it do
               is_expected.to eq "https://user:password@not.company.com/simple"
@@ -354,8 +352,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
         
         context "we have non-matching environment variables" do
-          let (:url) { "https://${creds}@other.com/simple" }
-          
+          let(:url) { "https://${creds}@other.com/simple" }
           it "shouldn't match" do
             it do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
@@ -365,8 +362,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         context "we have non-matching environment variables" do
-          let (:url) { "https://${creds}@other.company.com/simple" }
-          
+          let(:url) { "https://${creds}@other.company.com/simple" }
           it "shouldn't match" do
             it do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
