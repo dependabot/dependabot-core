@@ -343,7 +343,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           end
         end
         
-        context "when we have two environment variables"
+        context "when we have two environment variables" do
           let(:url) { "https://${creds}@${domain}.company.com/simple" }
          
           it "interpolates two variables" do
