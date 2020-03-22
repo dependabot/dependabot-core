@@ -332,7 +332,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             }
           ]
         end
-        
+
         context "when we select the correct URL" do
           let(:url) { "https://${creds}@company.com/simple" }
           it "should interpolate correctly" do
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             end
           end
         end
-        
+
         context "when we have two environment variables" do
           let(:url) { "https://${creds}@${domain}.company.com/simple" }
           it "interpolates two variables" do
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             end
           end
         end
-        
+
         context "we have non-matching environment variables" do
           let(:url) { "https://${creds}@other.com/simple" }
           it "shouldn't match" do
