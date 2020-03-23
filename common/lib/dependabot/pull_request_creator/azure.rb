@@ -30,9 +30,15 @@ module Dependabot
 
         # For Azure we create or update a branch in the same request as creating
         # a commit (so we don't need create or update branch logic here)
-        create_commit
+        response = create_commit
 
-        create_pull_request
+        raise "Error occurred while creating commit. Response status code:#{response.status}
+               and error message:#{JSON.parse(response.body).fetch("message", nil)}" unless response.status.to_s.start_with?("2")
+
+        response = create_pull_request
+
+        raise "Error occurred while creating pull request. Response status code:#{response.status}
+                and error message:#{JSON.parse(response.body).fetch("message", nil)}" unless response.status.to_s.start_with?("2")
       end
 
       def pr_exists
