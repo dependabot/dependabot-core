@@ -41,6 +41,28 @@ def requirements(checker)
   requirements
 end
 
+# Automatically merge a pull request to update base Docker image
+# for Dockerfiles found in linux-image-build repository
+def auto_merge(pull_req)
+  return unless ENV["FEATURE_PACKAGE"] == "docker"
+
+  puts pull_req.html_url
+
+  commit_title = "[Dependabot Docker] Update base Docker image (automerged)"
+  client = Octokit::Client.new(access_token: ENV["GITHUB_ACCESS_TOKEN"])
+  client.merge_pull_request(
+    ENV["PROJECT_PATH"],
+    pull_req.number,
+    "Update base Docker image",
+    commit_title: commit_title
+  )
+  unless client.pull_merged?(ENV["PROJECT_PATH"], pull_req.number)
+    raise "The PR was not merged correctly"
+  end
+
+  client.delete_branch(ENV["PROJECT_PATH"], pull_req.head.ref)
+end
+
 credentials_github =
   [{
     "type" => "git_source",
@@ -111,6 +133,8 @@ input_files_path.each do |file_path|
                     updated_files, credentials_github)
 
     pull_request = pr.create
+
+    auto_merge(pull_request)
 
     next unless pull_request
   end
