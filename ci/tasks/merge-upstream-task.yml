@@ -1,0 +1,36 @@
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    repository: python
+    tag: 3.8
+
+params:
+  REPOSITORY_ACCESS_TOKEN: ((dependabot_github_access_token))
+  private_keys: 
+    - ((concourse_janus_ssh_key_base64))
+
+inputs:
+- name: upstream-dependabot-core.git
+- name: dependabot-core.git
+- name: pix4d_build_tools.git
+- name: known-hosts.s3
+
+run:
+  path: bash
+  args:
+    - -c
+    - |
+      set -o errexit
+      apt-get update && apt-get install -y jq
+      mkdir /root/.ssh && cp known-hosts.s3/known_hosts /root/.ssh/
+      source pix4d_build_tools.git/ci/scripts/ssh_key_helpers.sh
+      ssh_agent_start
+      ssh_agent_load_keys $private_keys
+      cd dependabot-core.git
+      echo "Installing requirements..."
+      pip install -r ci/tasks/requirements.txt
+      echo "Runing the script..."
+      TAG=$(cat ../upstream-dependabot-core.git/.git/ref)
+      TIMESTAMP=$(date --utc +"%Y%m%d%H%M%S")
+      python ci/tasks/merge-upstream.py --tag=$TAG --timestamp=$TIMESTAMP

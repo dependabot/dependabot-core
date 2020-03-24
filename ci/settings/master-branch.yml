@@ -1,3 +1,4 @@
 project: dependabot
 branch: master
+gchat_hook: ((gchat_hook_integration_team))
 trigger: true

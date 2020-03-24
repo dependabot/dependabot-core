@@ -1,27 +1,16 @@
-meta:
-  status-handlers: &status-handlers
-    on_success:
-      put: gh-status
-      inputs: [dependabot-core.git]
-      params: {state: success}
-    on_error:
-      do:
-      - put: gh-status
-        inputs: [dependabot-core.git]
-        params: {state: error}
-    on_failure:
-      do:
-      - put: gh-status
-        inputs: [dependabot-core.git]
-        params: {state: failure}
-
 resource_types:
-- name: cogito
-  type: registry-image
-  check_every: 1h
-  source:
-    repository: pix4d/cogito
-    tag: latest
+  - name: cogito
+    type: registry-image
+    check_every: 1h
+    source:
+      repository: pix4d/cogito
+      tag: latest
+
+  - name: google-chat-resource-type
+    check_every: 1h
+    type: registry-image
+    source:
+      repository: cloudinn/concourse-hangouts-resource
 
 resources:
   - name: gh-status
@@ -32,6 +21,13 @@ resources:
       owner: pix4d
       repo: dependabot-core
       access_token: ((concourse_janus_access_token_repo_status))
+
+  - name: google-chat
+    type: google-chat-resource-type
+    icon: chat-alert
+    source:
+      webhook_url: ((gchat_hook))
+      post_url: true
 
   - name: dependabot-core.git
     type: git
@@ -45,9 +41,53 @@ resources:
         - common/*
         - docker/*
 
+  - name: upstream-dependabot-core.git
+    type: git
+    icon: git
+    source:
+      uri: https://github.com/dependabot/dependabot-core.git
+      branch: master
+      tag_filter: v*
+  
+  - name: pix4d_build_tools.git
+    type: git
+    icon: git
+    source:
+      uri: git@github.com:Pix4D/pix4d_build_tools.git
+      private_key: ((concourse_janus_ssh_key))
+      branch: master
+
+  - name: known-hosts.s3
+    type: s3
+    source:
+      versioned_file: known_hosts
+      bucket: ci-pix4d-internal-static
+      region_name: eu-west-1
+      access_key_id: ((concourse_user_access_key))
+      secret_access_key: ((concourse_user_secret_key))
+
 jobs:
   - name: test-dependabot
-    <<: *status-handlers
+    on_success:
+      put: gh-status
+      inputs: [dependabot-core.git]
+      params: {state: success}
+    on_error:
+      do:
+      - put: gh-status
+        inputs: [dependabot-core.git]
+        params: {state: error}
+      - put: google-chat
+        inputs: []
+        params: {message: Oops! The pipeline encountered an error.}
+    on_failure:
+      do:
+      - put: gh-status
+        inputs: [dependabot-core.git]
+        params: {state: failure}
+      - put: google-chat
+        inputs: []
+        params: {message: Oops! The pipeline encountered an error.}
     plan:
     - get: dependabot-core.git
       trigger: ((trigger))
@@ -56,3 +96,23 @@ jobs:
       params: {state: pending}
     - task: test-dependabot
       file: dependabot-core.git/ci/tasks/test-dependabot-task.yml
+
+  - name: merge-upstream
+    on_error:
+      do:
+      - put: google-chat
+        inputs: []
+        params: {message: Oops! The pipeline encountered an error.}
+    on_failure:
+      do:
+      - put: google-chat
+        inputs: []
+        params: {message: Oops! The pipeline encountered an error.}
+    plan:
+    - get: dependabot-core.git
+    - get: pix4d_build_tools.git
+    - get: known-hosts.s3
+    - get: upstream-dependabot-core.git
+      trigger: ((trigger))
+    - task: merge-upstream
+      file: dependabot-core.git/ci/tasks/merge-upstream-task.yml
