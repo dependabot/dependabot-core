@@ -1,3 +1,7 @@
+## v0.117.3, 20 March 2020
+
+- Update Maven Requirement (@a1flecke)
+
 ## v0.117.2, 9 March 2020
 
 - Improve PR descriptions for non-github PR's
