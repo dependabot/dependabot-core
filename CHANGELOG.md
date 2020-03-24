@@ -1,3 +1,15 @@
+## v0.117.4, 24 March 2020
+
+- Bump prettier from 1.19.1 to 2.0.2 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.14 to 0.12.18 in /composer/helpers
+- Bump npm from 6.14.2 to 6.14.3 in /npm_and_yarn/helpers
+- Upgrade to PHP 7.4 (@kubawerlos)
+- python: upgrade to poetry ^1.0.0 (@tommilligan)
+- Update pyenv version (@ulgens)
+- Update Python version to 3.8.2 (@ulgens)
+- Bump acorn from 6.3.0 to 6.4.1 in /npm_and_yarn/helpers
+- Update gitlab requirement from = 4.13.1 to = 4.14.1 in /common
+
 ## v0.117.3, 20 March 2020
 
 - Update Maven Requirement (@a1flecke)
