@@ -15,7 +15,7 @@ const installer = require("npm/lib/install");
 const { muteStderr, runAsync } = require("./helpers.js");
 
 function installArgsWithVersion(depName, desiredVersion, reqs) {
-  const source = (reqs.find(req => req.source) || {}).source;
+  const source = (reqs.find((req) => req.source) || {}).source;
 
   if (source && source.type === "git") {
     return [`${depName}@${source.url}#${desiredVersion}`];
@@ -48,8 +48,8 @@ async function checkPeerDependencies(
       audit: false,
       "prefer-offline": true,
       "ignore-scripts": true,
-      save: false
-    }
+      save: false,
+    },
   ]);
 
   const dryRun = true;
@@ -75,18 +75,20 @@ async function checkPeerDependencies(
   // Returns dep name and version for npm install, example: ["react-dom@15.6.2"]
   // - given react and react-dom in top level deps
   const otherDeps = (topLevelDependencies || [])
-    .filter(dep => dep.name !== depName && dep.version)
-    .map(dep => installArgsWithVersion(dep.name, dep.version, dep.requirements))
+    .filter((dep) => dep.name !== depName && dep.version)
+    .map((dep) =>
+      installArgsWithVersion(dep.name, dep.version, dep.requirements)
+    )
     .reduce((acc, dep) => acc.concat(dep), []);
 
   args = args.concat(otherDeps);
 
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
-    packageLockOnly: true
+    packageLockOnly: true,
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = cb => cb();
+  initialInstaller.printInstalled = (cb) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
@@ -98,8 +100,8 @@ async function checkPeerDependencies(
   }
 
   const peerDependencyWarnings = initialInstaller.idealTree.warnings
-    .filter(warning => warning.code === "EPEERINVALID")
-    .map(warning => warning.message);
+    .filter((warning) => warning.code === "EPEERINVALID")
+    .map((warning) => warning.message);
 
   if (peerDependencyWarnings.length) {
     throw new Error(peerDependencyWarnings.join("\n"));
