@@ -255,7 +255,7 @@ RSpec.describe namespace::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.8.1, 3.8.0, 3.7.6")
+                to include("supported in Dependabot: 3.8.2, 3.8.1, 3.8.0")
             end
         end
       end
@@ -273,9 +273,9 @@ RSpec.describe namespace::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 3.4.0, <= 3.8.1" }
+        let(:updated_requirement) { ">= 3.4.0, <= 3.8.2" }
 
-        it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+        it { is_expected.to eq(Gem::Version.new("3.8.2")) }
 
         context "when updating a python-2 only dep" do
           let(:dependency_name) { "futures" }
@@ -297,7 +297,7 @@ RSpec.describe namespace::PipenvVersionResolver do
           let(:pipfile_fixture_name) { "required_python_implicit_2" }
           let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }
 
-          it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("3.8.2")) }
         end
       end
 
