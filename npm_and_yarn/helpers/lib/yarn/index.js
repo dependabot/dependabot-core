@@ -7,5 +7,5 @@ module.exports = {
   parseLockfile: lockfileParser.parse,
   update: updater.updateDependencyFiles,
   updateSubdependency: subdependencyUpdater.updateDependencyFile,
-  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
+  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies,
 };

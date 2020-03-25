@@ -22,7 +22,7 @@ const detectIndent = require("detect-indent");
 const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   // `force: true` ignores checks for platform (os, cpu) and engines
@@ -41,14 +41,14 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
       force: true,
       audit: false,
       "prefer-offline": true,
-      "ignore-scripts": true
-    }
+      "ignore-scripts": true,
+    },
   ]);
   const manifest = JSON.parse(readFile("package.json"));
 
   const dryRun = true;
   const flattenedDependencies = flattenAllDependencies(manifest);
-  const args = dependencies.map(dependency => {
+  const args = dependencies.map((dependency) => {
     const existingVersionRequirement = flattenedDependencies[dependency.name];
     return installArgs(
       dependency.name,
@@ -58,18 +58,18 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
     );
   });
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
-    packageLockOnly: true
+    packageLockOnly: true,
   });
 
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
   const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true
+    packageLockOnly: true,
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = cb => cb();
-  cleanupInstaller.printInstalled = cb => cb();
+  initialInstaller.printInstalled = (cb) => cb();
+  cleanupInstaller.printInstalled = (cb) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.
@@ -119,7 +119,7 @@ function installArgs(
   requirements,
   existingVersionRequirement
 ) {
-  const source = (requirements.find(req => req.source) || {}).source;
+  const source = (requirements.find((req) => req.source) || {}).source;
 
   if (source && source.type === "git") {
     if (!existingVersionRequirement) {
