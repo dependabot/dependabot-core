@@ -94,6 +94,8 @@ docker run --rm -ti \
   -v "$(pwd)/github_actions/spec:$CODE_DIR/github_actions/spec" \
   -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
   -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
+  -v "$(pwd)/python/helpers:/opt/python" \
+  -v "$(pwd)/python/helpers:/opt/python/helpers" \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
   -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \

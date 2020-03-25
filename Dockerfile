@@ -67,10 +67,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout v1.2.16 && cd - \
-    && pyenv install 3.8.1 \
+    && cd /usr/local/.pyenv && git checkout v1.2.17 && cd - \
+    && pyenv install 3.8.2 \
     && pyenv install 2.7.17 \
-    && pyenv global 3.8.1
+    && pyenv global 3.8.2
 
 
 ### JAVASCRIPT
@@ -96,13 +96,13 @@ RUN npm install elm@0.18.0 \
 
 ### PHP
 
-# Install PHP 7.3 and Composer
+# Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
     && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
     && apt-get update \
-    && apt-get install -y php7.3 php7.3-cli php7.3-xml php7.3-json php7.3-zip php7.3-mbstring php7.3-intl php7.3-common php7.3-gettext php7.3-curl php7.3-bcmath php7.3-gmp php7.3-imagick php7.3-gd php7.3-redis php7.3-soap php7.3-ldap php7.3-memcached php7.3-sqlite3 php7.3-apcu php7.3-tidy php7.3-mongodb php7.3-zmq php7.3-mysql php7.3-imap php7.3-geoip \
+    && apt-get install -y php7.4 php7.4-cli php7.4-xml php7.4-json php7.4-zip php7.4-mbstring php7.4-intl php7.4-common php7.4-gettext php7.4-curl php7.4-bcmath php7.4-gmp php7.4-imagick php7.4-gd php7.4-redis php7.4-soap php7.4-ldap php7.4-memcached php7.4-sqlite3 php7.4-apcu php7.4-tidy php7.4-mongodb php7.4-zmq php7.4-mysql php7.4-imap php7.4-geoip \
     && curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer
 
