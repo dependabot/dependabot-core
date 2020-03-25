@@ -7,7 +7,6 @@ require "dependabot/npm_and_yarn/file_parser"
 
 module Dependabot
   module NpmAndYarn
-    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -36,7 +35,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def fetch_files
         fetched_files = []
@@ -54,7 +52,7 @@ module Dependabot
 
         fetched_files.uniq
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def package_json
@@ -132,6 +130,7 @@ module Dependabot
       def fetch_rush_configs
         [
           fetch_file_if_present("common/config/rush/pnpm-lock.yaml"),
+          fetch_file_if_present("common/config/rush/shrinkwrap.yaml"),
           fetch_file_if_present("common/config/rush/pnpmfile.js"),
           fetch_file_if_present("common/config/rush/.npmrc"),
           fetch_file_if_present("common/scripts/install-run-rush.js"),
@@ -171,7 +170,8 @@ module Dependabot
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
-            unfetchable_deps << [name, path]
+            # Unfetchable tarballs should not be re-fetched as a package
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz")
           end
         end
 
@@ -433,11 +433,10 @@ module Dependabot
         return {} unless rush_json
 
         JSON.parse(rush_json.content)
-      # rescue JSON::ParserError
-      #   raise Dependabot::DependencyFileNotParseable, rush_json.path
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, rush_json.path
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 
