@@ -60,7 +60,12 @@ def auto_merge(pull_req)
     raise "The PR was not merged correctly"
   end
 
-  client.delete_branch(ENV["PROJECT_PATH"], pull_req.head.ref)
+  # Delete the branch if it exists. If it doesn't exist, swallow the exception.
+  begin
+    client.delete_branch(ENV["PROJECT_PATH"], pull_req.head.ref)
+  rescue Octokit::UnprocessableEntity
+    nil
+  end
 end
 
 credentials_github =
