@@ -11,8 +11,9 @@
 # DOCKER_PASS
 
 require "dependabot/docker"
+require "dependabot/auto_merge"
 require "dependabot/pr_info"
-require "dependabot/path_level.rb"
+require "dependabot/path_level"
 
 def pr_creator(source, commit, updated_deps, updated_files, credentials_github)
   Dependabot::PullRequestCreator.new(
@@ -41,33 +42,6 @@ def requirements(checker)
   requirements
 end
 
-# Automatically merge a pull request to update base Docker image
-# for Dockerfiles found in linux-image-build repository
-def auto_merge(pull_req)
-  return unless ENV["FEATURE_PACKAGE"] == "docker"
-
-  puts pull_req.html_url
-
-  commit_title = "[Dependabot Docker] Update base Docker image (automerged)"
-  client = Octokit::Client.new(access_token: ENV["GITHUB_ACCESS_TOKEN"])
-  client.merge_pull_request(
-    ENV["PROJECT_PATH"],
-    pull_req.number,
-    "Update base Docker image",
-    commit_title: commit_title
-  )
-  unless client.pull_merged?(ENV["PROJECT_PATH"], pull_req.number)
-    raise "The PR was not merged correctly"
-  end
-
-  # Delete the branch if it exists. If it doesn't exist, swallow the exception.
-  begin
-    client.delete_branch(ENV["PROJECT_PATH"], pull_req.head.ref)
-  rescue Octokit::UnprocessableEntity
-    nil
-  end
-end
-
 credentials_github =
   [{
     "type" => "git_source",
@@ -91,6 +65,7 @@ input_files_path = recursive_path(
   ENV["GITHUB_ACCESS_TOKEN"]
 )
 
+# rubocop:disable Metrics/BlockLength
 input_files_path.each do |file_path|
   # Source setup
   print "  - Checking the file in #{file_path}\n"
@@ -139,9 +114,16 @@ input_files_path.each do |file_path|
 
     pull_request = pr.create
 
-    auto_merge(pull_request)
+    puts pull_request.html_url
+
+    auto_merge(pull_request.number,
+               pull_request.head.ref,
+               ENV["PROJECT_PATH"],
+               ENV["FEATURE_PACKAGE"],
+               ENV["GITHUB_ACCESS_TOKEN"])
 
     next unless pull_request
   end
 end
 puts "Done"
+# rubocop:enable Metrics/BlockLength
