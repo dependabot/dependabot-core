@@ -1,3 +1,11 @@
+## v0.117.5, 31 March 2020
+
+- Adds python 3.7.7 (@sobolevn)
+- Bump jest from 25.2.0 to 25.2.3 in /npm_and_yarn/helpers
+- Bump jest from 25.1.0 to 25.2.0 in /npm_and_yarn/helpers
+- Bump npm from 6.14.3 to 6.14.4 in /npm_and_yarn/helpers
+- Bump cython from 0.29.15 to 0.29.16 in /python/helpers
+
 ## v0.117.4, 24 March 2020
 
 - Bump prettier from 1.19.1 to 2.0.2 in /npm_and_yarn/helpers
