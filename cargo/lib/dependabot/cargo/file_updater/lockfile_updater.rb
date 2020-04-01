@@ -112,9 +112,6 @@ module Dependabot
             spec += ":#{git_previous_version}" if git_previous_version
           elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
-            #puts "cargo/file_updater/lockfile_updater/dependency_spec spec:#{spec}"
-            # JPB: Remove
-            #spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec

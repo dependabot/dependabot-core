@@ -161,15 +161,6 @@ module Dependabot
         registry_source_details(declaration)
       end
 
-      # def default_registry_source_details
-      #   {
-      #     type: "registry",
-      #     index: "https://github.com/rust-lang/crates.io-index",
-      #     dl: "https://crates.io/api/v1/crates",
-      #     api: "https://crates.io"
-      #   }
-      # end
-
       def registry_source_details(declaration)
         registry_name = declaration["registry"]
         return if registry_name.nil?
