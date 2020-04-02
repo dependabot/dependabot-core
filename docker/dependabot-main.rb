@@ -114,13 +114,14 @@ input_files_path.each do |file_path|
 
     pull_request = pr.create
 
-    puts pull_request.html_url
+    puts pull_request.html_url if pull_request
 
-    auto_merge(pull_request.number,
-               pull_request.head.ref,
-               ENV["PROJECT_PATH"],
-               ENV["FEATURE_PACKAGE"],
-               ENV["GITHUB_ACCESS_TOKEN"])
+    if ENV["FEATURE_PACKAGE"] == "docker"
+      auto_merge(pull_request.number,
+                 pull_request.head.ref,
+                 ENV["PROJECT_PATH"],
+                 ENV["GITHUB_ACCESS_TOKEN"])
+    end
 
     next unless pull_request
   end

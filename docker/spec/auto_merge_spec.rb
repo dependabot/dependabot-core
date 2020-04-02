@@ -3,10 +3,6 @@ require "spec_helper"
 # frozen_string_literal: true
 
 RSpec.describe "auto_merge", :pix4d do
-  it "returns nil if feature package is not set to docker" do
-    expect(auto_merge("", "", "", "concourse", "")).to be_nil
-  end
-
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
     let(:url_1) do
@@ -31,7 +27,7 @@ RSpec.describe "auto_merge", :pix4d do
 
     it "raises if the PR is not merged correctly" do
       expect do
-        auto_merge(pr_number, "feature-branch", project_path, "docker", "token")
+        auto_merge(pr_number, "feature-branch", project_path, "token")
       end.to raise_error(RuntimeError, "The PR was not merged correctly")
     end
   end
@@ -68,7 +64,7 @@ RSpec.describe "auto_merge", :pix4d do
     end
 
     it "returns nil if the branch was already deleted" do
-      expect(auto_merge(pr_number, pr_branch, project_path, "docker", "token")).
+      expect(auto_merge(pr_number, pr_branch, project_path, "token")).
         to be_nil
     end
   end

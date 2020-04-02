@@ -5,10 +5,7 @@
 def auto_merge(pr_number,
                pr_branch,
                project_path,
-               feature_package,
                github_token)
-
-  return unless feature_package == "docker"
 
   commit_title = "[Dependabot Docker] Update base Docker image (automerged)"
   client = Octokit::Client.new(access_token: github_token)
