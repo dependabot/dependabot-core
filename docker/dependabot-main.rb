@@ -114,7 +114,9 @@ input_files_path.each do |file_path|
 
     pull_request = pr.create
 
-    puts pull_request.html_url if pull_request
+    next unless pull_request
+
+    puts pull_request.html_url
 
     if ENV["FEATURE_PACKAGE"] == "docker"
       auto_merge(pull_request.number,
@@ -123,7 +125,6 @@ input_files_path.each do |file_path|
                  ENV["GITHUB_ACCESS_TOKEN"])
     end
 
-    next unless pull_request
   end
 end
 puts "Done"
