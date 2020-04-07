@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require "open3"
 require "excon"
 require "dependabot/errors"
+require "dependabot/shared_helpers"
 
 module Dependabot
   class GitMetadataFetcher
-    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i.freeze
+    KNOWN_HOSTS = /github\.com|bitbucket\.org|amazonaws\.com|gitlab.com/i.freeze
 
     def initialize(url:, credentials:)
       @url = url
@@ -50,7 +52,13 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
-      response = fetch_raw_upload_pack_for(uri)
+      response =
+        if uri.match?(/git\-codecommit/i && /\.amazonaws\.com/i)
+          fetch_raw_codecommit_upload_pack_for(uri)
+        else
+          fetch_raw_upload_pack_for(uri)
+        end
+
       return response.body if response.status == 200
 
       unless uri.match?(KNOWN_HOSTS)
@@ -85,10 +93,43 @@ module Dependabot
     def fetch_raw_upload_pack_for(uri)
       url = service_pack_uri(uri)
       url = url.rpartition("@").tap { |a| a.first.gsub!("@", "%40") }.join
+
       Excon.get(
         url,
         idempotent: true,
         **excon_defaults
+      )
+    end
+
+    def fetch_raw_codecommit_upload_pack_for(uri)
+      status = 200
+      url = uri + ".git"
+      command = "git ls-remote #{url}"
+
+      start = Time.now
+      # the git-upload-pack service endpoint isn't exposed in codecommit so
+      # the git-upload-pack has to be queried via git directly
+      stdout, stderr, process = Open3.capture3(
+        { "PATH" => ENV["PATH"] },
+        command
+      )
+      time_taken = Time.now - start
+
+      # package the command error like a HTTP response so upstream error
+      # handling remains unchanged
+      unless process.success?
+        status = 500
+        stdout = {
+            message: stderr,
+            command: command,
+            time_taken: time_taken,
+            process_exit_value: process.to_s
+          }
+      end
+
+      OpenStruct.new(
+        body: stdout,
+        status: status
       )
     end
 
