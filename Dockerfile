@@ -138,6 +138,14 @@ ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
+### CODECOMMIT
+
+# install the awscli and configure git to use the codecommit credential-helper
+RUN apt-get update \
+    && apt-get install -y awscli \
+    && git config --global credential.'https://git-codecommit.us-east-1.amazonaws.com'.helper '!aws codecommit credential-helper $@' \
+    && git config --global credential.'https://git-codecommit.us-east-1.amazonaws.com'.UseHttpPath true \
+
 
 ### NEW NATIVE HELPERS
 
