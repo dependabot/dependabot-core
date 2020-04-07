@@ -23,7 +23,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     subject(:tags) { checker.tags }
 
     before do
-      stub_request(:get, service_pack_url).
+      stub_request(:get, service_pack_uri).
         to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
@@ -34,7 +34,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     end
 
     context "with source code hosted on GitHub" do
-      let(:service_pack_url) do
+      let(:service_pack_uri) do
         "https://github.com/gocardless/business.git/info/refs"\
         "?service=git-upload-pack"
       end
@@ -61,7 +61,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 404" do
-        before { stub_request(:get, service_pack_url).to_return(status: 404) }
+        before { stub_request(:get, service_pack_uri).to_return(status: 404) }
 
         it "raises a helpful error" do
           expect { tags }.
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 401" do
-        before { stub_request(:get, service_pack_url).to_return(status: 401) }
+        before { stub_request(:get, service_pack_uri).to_return(status: 401) }
 
         it "raises a helpful error" do
           expect { tags }.
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 500" do
-        before { stub_request(:get, service_pack_url).to_return(status: 500) }
+        before { stub_request(:get, service_pack_uri).to_return(status: 500) }
 
         it "raises a helpful error" do
           expect { tags }.to raise_error(Octokit::InternalServerError)
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
     context "with source code not hosted on GitHub" do
       let(:url) { "https://bitbucket.org/gocardless/business" }
-      let(:service_pack_url) do
+      let(:service_pack_uri) do
         "https://bitbucket.org/gocardless/business.git/info/refs"\
         "?service=git-upload-pack"
       end
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
     context "with source code hosted on a HTTP host" do
       let(:url) { "http://bitbucket.org/gocardless/business" }
-      let(:service_pack_url) do
+      let(:service_pack_uri) do
         "http://bitbucket.org/gocardless/business.git/info/refs"\
         "?service=git-upload-pack"
       end
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     subject(:ref_names) { checker.ref_names }
 
     before do
-      stub_request(:get, service_pack_url).
+      stub_request(:get, service_pack_uri).
         to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     end
 
     context "with source code hosted on GitHub" do
-      let(:service_pack_url) do
+      let(:service_pack_uri) do
         "https://github.com/gocardless/business.git/info/refs"\
         "?service=git-upload-pack"
       end
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 404" do
-        before { stub_request(:get, service_pack_url).to_return(status: 404) }
+        before { stub_request(:get, service_pack_uri).to_return(status: 404) }
 
         it "raises a helpful error" do
           expect { ref_names }.
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     let(:ref) { "v1.0.0" }
 
     before do
-      stub_request(:get, service_pack_url).
+      stub_request(:get, service_pack_uri).
         to_return(
           status: 200,
           body: fixture("git", "upload_packs", upload_pack_fixture),
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
         )
     end
 
-    let(:service_pack_url) do
+    let(:service_pack_uri) do
       "https://github.com/gocardless/business.git/info/refs"\
       "?service=git-upload-pack"
     end
