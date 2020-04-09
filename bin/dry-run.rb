@@ -535,10 +535,14 @@ dependencies.each do |dep|
 )
 
 if !pull_request_creator.pull_request_exists
+  response = pull_request_creator.create
+  parsed_response = JSON.parse(response.body)
+  if parsed_response.fetch("pullRequestId", nil).nil?
+    raise "Error occurred while creating pull request. Response status code:#{response.status}
+    and error message:#{parsed_response.fetch("message", nil)}"
+  end
   count += 1
 end
-
-pull_request_creator.create
 
 if count == $options[:pr_count]
  break
