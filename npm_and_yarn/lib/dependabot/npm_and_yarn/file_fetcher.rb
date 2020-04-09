@@ -135,8 +135,7 @@ module Dependabot
           fetch_file_if_present("common/config/rush/.npmrc"),
           fetch_file_if_present("common/scripts/install-run-rush.js"),
           fetch_file_if_present("common/scripts/install-run.js"),
-          fetch_file_if_present("common/config/pnpmfile-dependencies.json"),
-          fetch_file_if_present("common/config/rush/common-versions.json")
+          fetch_file_if_present("common/config/pnpmfile-dependencies.json")
         ].compact        
       end
 
