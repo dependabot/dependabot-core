@@ -1,3 +1,9 @@
+## v0.117.6, 9 April 2020
+
+- Handle unauthorized pushes to protected branches
+- Bump jest from 25.2.3 to 25.3.0 in /npm_and_yarn/helpers
+- Bump prettier from 2.0.2 to 2.0.4 in /npm_and_yarn/helpers
+
 ## v0.117.5, 31 March 2020
 
 - Adds python 3.7.7 (@sobolevn)
