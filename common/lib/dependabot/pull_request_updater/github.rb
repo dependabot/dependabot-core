@@ -162,7 +162,10 @@ module Dependabot
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
 
-        raise BranchProtected if e.message.match?(/force\-push to a protected/i)
+        if e.message.match?(/force\-push to a protected/i) ||
+           e.message.match?(/not authorized to push/i)
+          raise BranchProtected
+        end
 
         raise
       end
