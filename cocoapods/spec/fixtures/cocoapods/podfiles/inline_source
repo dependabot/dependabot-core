@@ -2,7 +2,7 @@ platform :ios, '9.0'
 use_frameworks!
 
 def core_pods
-  pod 'Alamofire', :source => 'https://github.com/dependabot/Specs.git'
+  pod 'Alamofire', :source => 'https://cdn.cocoapods.org'
 end
 
 target 'MyApp' do

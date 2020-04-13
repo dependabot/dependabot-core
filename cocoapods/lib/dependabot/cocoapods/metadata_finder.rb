@@ -13,7 +13,10 @@ module Dependabot
       private
 
       def look_up_source
-        cocoapods_listing.match(GITHUB_LINK_REGEX)&.named_captures
+        captures = cocoapods_listing.match(GITHUB_LINK_REGEX)&.named_captures
+        return if captures.nil?
+
+        Source.from_url("https://github.com/#{captures['repo']}")
       end
 
       def cocoapods_listing
@@ -29,3 +32,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::MetadataFinders.
+  register("cocoapods", Dependabot::CocoaPods::MetadataFinder)

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
 require "dependabot/cocoapods/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 

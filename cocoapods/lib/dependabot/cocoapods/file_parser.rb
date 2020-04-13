@@ -2,6 +2,7 @@
 
 require "cocoapods-core"
 require "dependabot/dependency"
+require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 
 module Dependabot
@@ -83,3 +84,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.register("cocoapods", Dependabot::CocoaPods::FileParser)

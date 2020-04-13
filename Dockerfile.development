@@ -42,6 +42,7 @@ RUN cd common && bundle install
 
 RUN mkdir -p ${CODE_DIR}/bundler \
              ${CODE_DIR}/cargo \
+             ${CODE_DIR}/cocoapods \
              ${CODE_DIR}/composer \
              ${CODE_DIR}/dep \
              ${CODE_DIR}/docker \
@@ -60,6 +61,7 @@ RUN mkdir -p ${CODE_DIR}/bundler \
 
 COPY bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
+COPY cocoapods/Gemfile cocoapods/dependabot-cocoapods.gemspec ${CODE_DIR}/cocoapods/
 COPY composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
 COPY dep/Gemfile dep/dependabot-dep.gemspec ${CODE_DIR}/dep/
 COPY docker/Gemfile docker/dependabot-docker.gemspec ${CODE_DIR}/docker/

@@ -24,17 +24,7 @@ module Dependabot
             select(&:external_source).
             map(&:root_name).uniq
 
-          lockfile_hash =
-            Pod::YAMLHelper.load_string(@lockfile.content)
-          parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
           pod_sandbox = Pod::Sandbox.new("tmp")
-          analyzer = Pod::Installer::Analyzer.new(
-            pod_sandbox,
-            evaluated_podfile,
-            parsed_lockfile
-          )
-          analyzer.installation_options.integrate_targets = false
-
           checkout_options =
             pod_sandbox.checkout_sources.select do |root_name, _|
               external_source_pods.include?(root_name)
@@ -76,15 +66,17 @@ module Dependabot
         def pod_analyzer
           @pod_analyzer =
             begin
-              lockfile_hash =
-                Pod::YAMLHelper.load_string(@lockfile.content)
+              lockfile_hash = Pod::YAMLHelper.load_string(@lockfile.content)
               parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
 
               pod_sandbox = Pod::Sandbox.new("tmp")
               analyzer = Pod::Installer::Analyzer.new(
                 pod_sandbox,
                 evaluated_podfile,
-                parsed_lockfile
+                parsed_lockfile,
+                nil,
+                true,
+                { pods: @dependencies.map(&:name) }
               )
 
               analyzer.installation_options.integrate_targets = false

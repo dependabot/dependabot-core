@@ -8,6 +8,8 @@ module Dependabot
       class RequirementsUpdater
         class UnfixableRequirement < StandardError; end
 
+        VERSION_REGEX = /(\d+\.)?(\d+\.)?(\*|\d+).*/.freeze
+
         attr_reader :requirements, :existing_version,
                     :latest_version, :latest_resolvable_version
 
@@ -50,7 +52,7 @@ module Dependabot
           end
 
           new_req = req[:requirement].gsub(/<=?/, "~>")
-          new_req.sub!(VERSION) do |old_version|
+          new_req.sub!(VERSION_REGEX) do |old_version|
             at_same_precision(latest_resolvable_version, old_version)
           end
 

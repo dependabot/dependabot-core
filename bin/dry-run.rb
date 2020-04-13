@@ -33,6 +33,7 @@
 # - submodules
 # - docker
 # - terraform
+# - cocoapods
 
 # rubocop:disable Style/GlobalVars
 
@@ -71,6 +72,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/cocoapods"
 require "dependabot/dep"
 require "dependabot/docker"
 require "dependabot/elm"

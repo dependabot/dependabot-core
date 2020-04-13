@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
@@ -32,3 +33,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileFetchers.
+  register("cocoapods", Dependabot::CocoaPods::FileFetcher)

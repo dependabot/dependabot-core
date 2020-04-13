@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "cocoapods"
+require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -28,6 +29,16 @@ module Dependabot
         ).updated_requirements
       end
 
+      def latest_resolvable_version_with_no_unlock
+        return latest_resolvable_version unless dependency.top_level?
+
+        if git_dependency?
+          return latest_resolvable_version_with_no_unlock_for_git_dependency
+        end
+
+        latest_version_finder.latest_version_with_no_unlock
+      end
+
       private
 
       def fetch_latest_resolvable_version
@@ -39,6 +50,20 @@ module Dependabot
         specs = pod_analyzer.analyze.specifications
 
         Pod::Version.new(specs.find { |d| d.name == dependency.name }.version)
+      end
+
+      def latest_version_resolvable_with_full_unlock?
+        return unless latest_version
+
+        # No support for full unlocks for subdependencies yet
+        return false unless dependency.top_level?
+
+        version_resolver.latest_version_resolvable_with_full_unlock?
+      end
+
+      def updated_dependencies_after_full_unlock
+        version_resolver.dependency_updates_from_full_unlock.
+          map { |update_details| build_updated_dependency(update_details) }
       end
 
       def pod_analyzer
@@ -56,11 +81,13 @@ module Dependabot
             analyzer = Pod::Installer::Analyzer.new(
               pod_sandbox,
               evaluated_podfile,
-              parsed_lockfile
+              parsed_lockfile,
+              nil,
+              true,
+              { pods: [dependency.name] }
             )
 
             analyzer.installation_options.integrate_targets = false
-            analyzer.update = { pods: [dependency.name] }
 
             analyzer.config.silent = true
             analyzer.update_repositories
@@ -118,3 +145,6 @@ module Dependabot
     end
   end
 end
+
+Dependabot::UpdateCheckers.
+  register("cocoapods", Dependabot::CocoaPods::UpdateChecker)

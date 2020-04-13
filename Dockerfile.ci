@@ -113,6 +113,12 @@ COPY bundler/Gemfile \
      /home/dependabot/dependabot-core/bundler/
 RUN cd bundler && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/cocoapods
+COPY cocoapods/Gemfile \
+     cocoapods/dependabot-cocoapods.gemspec \
+     /home/dependabot/dependabot-core/cocoapods/
+RUN cd cocoapods && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/omnibus
 COPY omnibus/Gemfile \
      omnibus/dependabot-omnibus.gemspec \
