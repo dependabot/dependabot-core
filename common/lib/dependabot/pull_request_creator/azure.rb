@@ -26,17 +26,13 @@ module Dependabot
       end
 
       def create
-        return if pr_exists
+        return if branch_exists? && pull_request_exists?
 
         # For Azure we create or update a branch in the same request as creating
         # a commit (so we don't need create or update branch logic here)
         create_commit
 
         create_pull_request
-      end
-
-      def pr_exists
-        return branch_exists? && pull_request_exists?
       end
 
       private
