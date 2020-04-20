@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: "\U0001F41B Bug report"
 about: Report a bug in Dependabot to help us fix it
 title: ''
 labels: bug
