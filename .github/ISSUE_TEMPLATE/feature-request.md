@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest features or enhancements
+about: Suggest an idea for Dependabot
 title: ''
 labels: enhancements
 assignees: ''
