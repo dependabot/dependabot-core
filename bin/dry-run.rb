@@ -60,6 +60,7 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
+require "set"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
@@ -101,7 +102,8 @@ $options = {
   azure_token: nil,
   reg_token: nil,
   github_token:nil,
-  pr_count:-1
+  pr_count:-1,
+  exclusions: []
 }
 
 option_parse = OptionParser.new do |opts|
@@ -155,6 +157,9 @@ option_parse = OptionParser.new do |opts|
       raise "Invalid PR count"
     end
     $options[:pr_count] = value.to_i
+  end
+  opts.on("--exclusions EXCLUSIONS", "List of dependencies to exclude") do |value|
+    $options[:exclusions] = Set.new(value.split(",").map(&:strip))
   end
 end
 
@@ -461,7 +466,9 @@ if $options[:pr_count] == -1
   $options[:pr_count] = dependencies.length
 end
 
-dependencies.each do |dep|
+puts "Exclusions: #{$options[:exclusions]}"
+
+dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
 
   if count == $options[:pr_count]
     break
@@ -552,6 +559,6 @@ parsed_response = JSON.parse(response.body)
     and error message:#{parsed_response.fetch("message", nil)}"
   else
    count += 1
+  end
 end
-
 end
