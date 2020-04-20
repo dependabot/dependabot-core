@@ -538,6 +538,7 @@ dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
     original_file = $files.find { |f| f.name == updated_file.name }
     show_diff(original_file, updated_file)
   end
+
   pull_request_creator = Dependabot::PullRequestCreator.new(
  source: source,
  base_commit: $fetcher.commit,
@@ -546,11 +547,18 @@ dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
  credentials: $options[:credentials]
 )
 
-if !pull_request_creator.pull_request_exists
-  count += 1
+response = pull_request_creator.create
+if response.nil?
+  puts "Pull request exists!"
+  next
 end
 
-pull_request_creator.create
-
+parsed_response = JSON.parse(response.body)
+  if parsed_response.nil? || parsed_response.fetch("pullRequestId", nil).nil?
+    puts "Error occurred while creating pull request. Response status code:#{response.status}
+    and error message:#{parsed_response.fetch("message", nil)}"
+  else
+   count += 1
+  end
 end
 end
