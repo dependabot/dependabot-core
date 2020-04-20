@@ -466,6 +466,8 @@ if $options[:pr_count] == -1
   $options[:pr_count] = dependencies.length
 end
 
+puts "Exclusions: #{$options[:exclusions]}"
+
 dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
 
   if count == $options[:pr_count]
