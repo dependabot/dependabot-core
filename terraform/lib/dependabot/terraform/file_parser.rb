@@ -49,13 +49,11 @@ module Dependabot
       end
 
       def parse_terragrunt_file(file)
-        modules = parsed_file(file)
+        modules = parsed_file(file).fetch("terraform", []).first || {}
         modules.each do |details|
-          details.each do |sub_detail|
-            next unless sub_detail.is_a?(Hash)
-
-            @dependency_set << build_terragrunt_dependency(file, sub_detail)
-          end
+          next unless details.is_a?(Hash)
+          next unless details.key?("terraform")
+            @dependency_set << build_terragrunt_dependency(file, details)
         end
       end
 
