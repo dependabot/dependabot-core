@@ -42,7 +42,7 @@ module Dependabot
       def parse_terraform_file(file)
         parsed_file = parsed_file(file)
         modules = parsed_file.fetch("module", []).map(&:first)
-        modules = parsed_file.fetch("module_calls") if modules.empty?
+        modules = parsed_file.fetch("module_calls", []) if modules.empty?
         modules.each do |name, details|
           @dependency_set << build_terraform_dependency(file, name, details)
         end
