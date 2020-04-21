@@ -12,14 +12,16 @@ assignees: ''
 <!-- The Dependabot team is currently at reduced capacity, because of this our
 response times on issues will be slower than we'd like. -->
 
-**Describe the bug**
-A clear and concise description of what the bug may be.
+<!-- The more information you can provide, the easier it will be to reproduce the issue and find a fix -->
 
-**Package ecosystem**: <!-- bundler, docker, npm.. etc -->
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**PR, Issue or logs**
-If applicable, add links to public PR's or Issues that Dependabot opened, and/or
-paste in any related logs.
+**Package manage/ecosystem**
+<!-- ruby:bundler, javascript, docker.. etc -->
+**Manifest contents prior to update**
+<!-- If applicable, link to package.json, Gemfile.. etc -->
+**Updated dependency**
+<!-- If applicable, the dependency name and to and from versions -->
+**What you expected to see, versus what you actually saw**
+<!-- A clear and concise description of what you expected to happen -->
+**Images of the diff or a link to the PR, issue or logs**
+<!-- If applicable, add links to public PR's or Issues that Dependabot opened, and/or
+paste in any related logs -->
