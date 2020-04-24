@@ -88,7 +88,7 @@ module Dependabot
       end
 
       def convert_java_equals_req_to_ruby(req_string)
-        return convert_wildcard_req(req_string) if req_string&.include?("+")
+        return convert_wildcard_req(req_string) if req_string&.end_with?("+")
 
         # If a soft requirement is being used, treat it as an equality matcher
         return req_string unless req_string&.start_with?("[")

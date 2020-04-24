@@ -36,6 +36,12 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 		return nil, errors.New("Expected args.dependency to not be nil")
 	}
 
+	currentVersion := args.Dependency.Version
+	currentPrerelease := semver.Prerelease(currentVersion)
+	if pseudoVersionRegexp.MatchString(currentPrerelease) {
+		return currentVersion, nil
+	}
+
 	modload.InitMod()
 
 	repo, err := modfetch.Lookup(args.Dependency.Name)
@@ -53,14 +59,8 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 		return nil, err
 	}
 
-	currentVersion := args.Dependency.Version
 	currentMajor := semver.Major(currentVersion)
-	currentPrerelease := semver.Prerelease(currentVersion)
 	latestVersion := args.Dependency.Version
-
-	if pseudoVersionRegexp.MatchString(currentPrerelease) {
-		return latestVersion, nil
-	}
 
 Outer:
 	for _, v := range versions {

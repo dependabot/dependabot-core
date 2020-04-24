@@ -14,7 +14,8 @@ module Dependabot
       NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = {
         "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 }
+        "-" => { qualifier: 2, number: 3 },
+        "+" => { qualifier: 3, number: 2 }
       }.freeze
       NAMED_QUALIFIERS_HIERARCHY = {
         "a" => 1, "alpha"     => 1,

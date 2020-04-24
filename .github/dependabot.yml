@@ -1,26 +1,26 @@
 version: 2
-
-update_configs:
-  - package_manager: "ruby:bundler"
+updates:
+  - package-ecosystem: "bundler"
     directory: "/common"
-    update_schedule: "daily"
-
-  - package_manager: "php:composer"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
     directory: "/composer/helpers"
-    update_schedule: "daily"
-
-  - package_manager: "elixir:hex"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "mix"
     directory: "/hex/helpers"
-    update_schedule: "daily"
-
-  - package_manager: "javascript"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
-    update_schedule: "daily"
-
-  - package_manager: "python"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "pip"
     directory: "/python/helpers"
-    update_schedule: "daily"
-
-  - package_manager: "go:modules"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
-    update_schedule: "daily"
+    schedule:
+      interval: "daily"

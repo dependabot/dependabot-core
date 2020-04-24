@@ -15,7 +15,7 @@ const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
 function recoverVersionComments(oldLockfile, newLockfile) {
   const yarnRegex = /^# yarn v(\S+)\n/gm;
   const nodeRegex = /^# node v(\S+)\n/gm;
-  const oldMatch = regex => [].concat(oldLockfile.match(regex))[0];
+  const oldMatch = (regex) => [].concat(oldLockfile.match(regex))[0];
   return newLockfile
     .replace(yarnRegex, () => oldMatch(yarnRegex) || "")
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
@@ -24,21 +24,21 @@ function recoverVersionComments(oldLockfile, newLockfile) {
 // Installs exact version and returns lockfile entry
 async function getLockfileEntryForUpdate(depName, depVersion) {
   const directory = fs.mkdtempSync(`${os.tmpdir()}${path.sep}`);
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   const flags = {
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
     ignoreEngines: true,
-    ignorePlatform: true
+    ignorePlatform: true,
   };
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({
     cwd: directory,
     nonInteractive: true,
-    enableDefaultRc: true
+    enableDefaultRc: true,
   });
 
   // Empty lockfile
@@ -58,21 +58,21 @@ async function updateDependencyFile(
   lockfileName,
   updatedDependency
 ) {
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile(lockfileName);
 
   const flags = {
     ignoreScripts: true,
     ignoreWorkspaceRootCheck: true,
-    ignoreEngines: true
+    ignoreEngines: true,
   };
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({
     cwd: directory,
     nonInteractive: true,
-    enableDefaultRc: true
+    enableDefaultRc: true,
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
   const depName = updatedDependency && updatedDependency.name;
@@ -103,7 +103,7 @@ async function updateDependencyFile(
   );
 
   return {
-    [lockfileName]: updatedYarnLockWithVersion
+    [lockfileName]: updatedYarnLockWithVersion,
   };
 }
 

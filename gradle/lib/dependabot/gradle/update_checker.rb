@@ -115,6 +115,7 @@ module Dependabot
           VersionFinder.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            credentials: credentials,
             ignored_versions: ignored_versions,
             security_advisories: security_advisories
           )
@@ -125,6 +126,7 @@ module Dependabot
           MultiDependencyUpdater.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            credentials: credentials,
             target_version_details: latest_version_details,
             ignored_versions: ignored_versions
           )

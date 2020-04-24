@@ -33,13 +33,13 @@ describe("updater", () => {
       {
         name: "left-pad",
         version: "1.1.3",
-        requirements: [{ file: "package.json", groups: ["dependencies"] }]
-      }
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
     ]);
     expect(result).toEqual({
       "package-lock.json": helpers.loadFixture(
         "updater/updated/package-lock.json"
-      )
+      ),
     });
   });
 });

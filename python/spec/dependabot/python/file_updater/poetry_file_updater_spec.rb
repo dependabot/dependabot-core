@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
 
-      pending "updates the lockfile successfully" do
+      it "updates the lockfile successfully" do
         updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)

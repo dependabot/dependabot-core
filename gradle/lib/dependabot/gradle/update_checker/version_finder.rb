@@ -15,12 +15,14 @@ module Dependabot
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         TYPE_SUFFICES = %w(jre android java).freeze
 
-        def initialize(dependency:, dependency_files:, ignored_versions:,
-                       security_advisories:)
+        def initialize(dependency:, dependency_files:, credentials:,
+                       ignored_versions:, security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
+          @credentials         = credentials
           @ignored_versions    = ignored_versions
           @security_advisories = security_advisories
+          @forbidden_urls      = []
         end
 
         def latest_version_details
@@ -49,22 +51,27 @@ module Dependabot
 
         def versions
           version_details =
-            repository_urls.map do |url|
+            repositories.map do |repository_details|
+              url = repository_details.fetch("url")
               next google_version_details if url == GOOGLE_MAVEN_REPO
 
-              dependency_metadata(url).css("versions > version").
+              dependency_metadata(repository_details).css("versions > version").
                 select { |node| version_class.correct?(node.content) }.
                 map { |node| version_class.new(node.content) }.
                 map { |version| { version: version, source_url: url } }
             end.flatten.compact
+
+          if version_details.none? && forbidden_urls.any?
+            raise PrivateSourceAuthenticationFailure, forbidden_urls.first
+          end
 
           version_details.sort_by { |details| details.fetch(:version) }
         end
 
         private
 
-        attr_reader :dependency, :dependency_files, :ignored_versions,
-                    :security_advisories
+        attr_reader :dependency, :dependency_files, :credentials,
+                    :ignored_versions, :forbidden_urls, :security_advisories
 
         def filter_prereleases(possible_versions)
           return possible_versions if wants_prerelease?
@@ -160,47 +167,97 @@ module Dependabot
           nil
         end
 
-        def dependency_metadata(repository_url)
+        def dependency_metadata(repository_details)
           @dependency_metadata ||= {}
-          @dependency_metadata[repository_url] ||=
+          @dependency_metadata[repository_details.hash] ||=
             begin
               response = Excon.get(
-                dependency_metadata_url(repository_url),
+                dependency_metadata_url(repository_details.fetch("url")),
+                user: repository_details.fetch("username"),
+                password: repository_details.fetch("password"),
                 idempotent: true,
                 **SharedHelpers.excon_defaults
               )
+              check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
+            rescue URI::InvalidURIError
+              Nokogiri::XML("")
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
-              namespace = Gradle::FileParser::RepositoriesFinder
-              central = namespace::CENTRAL_REPO_URL
-              raise if repository_url == central
+              raise if central_repo_urls.include?(repository_details["url"])
 
               Nokogiri::XML("")
             end
         end
 
         def repository_urls
-          plugin? ? plugin_repository_urls : dependency_repository_urls
+          plugin? ? plugin_repository_details : dependency_repository_details
         end
 
-        def dependency_repository_urls
+        def check_response(response, repository_url)
+          return unless [401, 403].include?(response.status)
+          return if @forbidden_urls.include?(repository_url)
+          return if central_repo_urls.include?(repository_url)
+
+          @forbidden_urls << repository_url
+        end
+
+        def repositories
+          return @repositories if @repositories
+
+          details = if plugin?
+                      plugin_repository_details +
+                        credentials_repository_details
+                    else
+                      dependency_repository_details +
+                        credentials_repository_details
+                    end
+
+          @repositories =
+            details.reject do |repo|
+              next if repo["password"]
+
+              # Reject this entry if an identical one with a password exists
+              details.any? { |r| r["url"] == repo["url"] && r["password"] }
+            end
+        end
+
+        def credentials_repository_details
+          credentials.
+            select { |cred| cred["type"] == "maven_repository" }.
+            map do |cred|
+            {
+              "url" => cred.fetch("url").gsub(%r{/+$}, ""),
+              "username" => cred.fetch("username", nil),
+              "password" => cred.fetch("password", nil)
+            }
+          end
+        end
+
+        def dependency_repository_details
           requirement_files =
             dependency.requirements.
             map { |r| r.fetch(:file) }.
             map { |nm| dependency_files.find { |f| f.name == nm } }
 
-          @dependency_repository_urls ||=
+          @dependency_repository_details ||=
             requirement_files.flat_map do |target_file|
               Gradle::FileParser::RepositoriesFinder.new(
                 dependency_files: dependency_files,
                 target_dependency_file: target_file
-              ).repository_urls
+              ).repository_urls.
+                map do |url|
+                  { "url" => url, "username" => nil, "password" => nil }
+                end
             end.uniq
         end
 
-        def plugin_repository_urls
-          [GRADLE_PLUGINS_REPO] + dependency_repository_urls
+        def plugin_repository_details
+          [{
+            "url" => GRADLE_PLUGINS_REPO,
+            "username" => nil,
+            "password" => nil
+          }] + dependency_repository_details
         end
 
         def matches_dependency_version_type?(comparison_version)
@@ -241,6 +298,14 @@ module Dependabot
 
         def plugin?
           dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+        end
+
+        def central_repo_urls
+          central_url_without_protocol =
+            Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.
+            gsub(%r{^.*://}, "")
+
+          %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
 
         def version_class

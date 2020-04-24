@@ -2364,7 +2364,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the version" do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
-            to eq("5.7.3")
+            to eq("5.7.4")
         end
       end
 

@@ -138,7 +138,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:pyproject_fixture_name) { "python_2.toml" }
       let(:lockfile_fixture_name) { "python_2.lock" }
 
-      pending "resolves version" do
+      it "resolves version" do
         is_expected.to eq(Gem::Version.new("2.18.4"))
       end
     end

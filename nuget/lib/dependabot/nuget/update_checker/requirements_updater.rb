@@ -12,8 +12,6 @@ module Dependabot
   module Nuget
     class UpdateChecker
       class RequirementsUpdater
-        VERSION_REGEX = /[0-9a-zA-Z]+(?:\.[a-zA-Z0-9\-]+)*/.freeze
-
         def initialize(requirements:, latest_version:, source_details:)
           @requirements = requirements
           @source_details = source_details
@@ -36,9 +34,13 @@ module Dependabot
               if req.fetch(:requirement).include?("*")
                 update_wildcard_requirement(req.fetch(:requirement))
               else
-                # Since range requirements are excluded by the line above we
-                # can just do a `gsub` on anything that looks like a version
-                req[:requirement].gsub(VERSION_REGEX, latest_version.to_s)
+                # Since range requirements are excluded by the line above we can
+                # replace anything that looks like a version with the new
+                # version
+                req[:requirement].sub(
+                  /#{Nuget::Version::VERSION_PATTERN}/,
+                  latest_version.to_s
+                )
               end
 
             next req if new_req == req.fetch(:requirement)

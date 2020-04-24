@@ -501,5 +501,23 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
+
+    context "when unauthorized to push to a protected branch" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(
+          status: 422,
+          body: fixture("github", "unauthorized_push_protected_branch.json"),
+          headers: json_header
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update }.
+          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
   end
 end

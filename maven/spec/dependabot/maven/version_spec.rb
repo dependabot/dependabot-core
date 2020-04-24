@@ -157,6 +157,26 @@ RSpec.describe Dependabot::Maven::Version do
         it { is_expected.to eq(1) }
       end
 
+      describe "with a + separated alphanumeric build identifier" do
+        context "that is equal" do
+          let(:version_string) { "9.0.0+100" }
+          let(:other_version) { described_class.new("9.0.0+100") }
+          it { is_expected.to eq(0) }
+        end
+
+        context "that is greater" do
+          let(:version_string) { "9.0.0+102" }
+          let(:other_version) { described_class.new("9.0.0+101") }
+          it { is_expected.to eq(1) }
+        end
+
+        context "that is less than" do
+          let(:version_string) { "9.0.0+100" }
+          let(:other_version) { described_class.new("9.0.0+101") }
+          it { is_expected.to eq(-1) }
+        end
+      end
+
       describe "from the spec" do
         context "number padding" do
           let(:version) { described_class.new("1") }

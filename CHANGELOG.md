@@ -1,3 +1,70 @@
+## v0.117.7, 20 April 2020
+
+- Nuget: Handle version requirements with suffix
+- Bump eslint-plugin-prettier from 3.1.2 to 3.1.3 in /npm_and_yarn/helpers
+- Bump jest from 25.3.0 to 25.4.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.18 to 0.12.19 in /composer/helpers
+- Update rubocop requirement from ~> 0.80.1 to ~> 0.82.0 in /common
+- Bump friendsofphp/php-cs-fixer in /composer/helpers
+- Bump semver from 7.1.3 to 7.3.2 in /npm_and_yarn/helpers
+
+## v0.117.6, 9 April 2020
+
+- Handle unauthorized pushes to protected branches
+- Bump jest from 25.2.3 to 25.3.0 in /npm_and_yarn/helpers
+- Bump prettier from 2.0.2 to 2.0.4 in /npm_and_yarn/helpers
+
+## v0.117.5, 31 March 2020
+
+- Adds python 3.7.7 (@sobolevn)
+- Bump jest from 25.2.0 to 25.2.3 in /npm_and_yarn/helpers
+- Bump jest from 25.1.0 to 25.2.0 in /npm_and_yarn/helpers
+- Bump npm from 6.14.3 to 6.14.4 in /npm_and_yarn/helpers
+- Bump cython from 0.29.15 to 0.29.16 in /python/helpers
+
+## v0.117.4, 24 March 2020
+
+- Bump prettier from 1.19.1 to 2.0.2 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.14 to 0.12.18 in /composer/helpers
+- Bump npm from 6.14.2 to 6.14.3 in /npm_and_yarn/helpers
+- Upgrade to PHP 7.4 (@kubawerlos)
+- python: upgrade to poetry ^1.0.0 (@tommilligan)
+- Update pyenv version (@ulgens)
+- Update Python version to 3.8.2 (@ulgens)
+- Bump acorn from 6.3.0 to 6.4.1 in /npm_and_yarn/helpers
+- Update gitlab requirement from = 4.13.1 to = 4.14.1 in /common
+
+## v0.117.3, 20 March 2020
+
+- Update Maven Requirement (@a1flecke)
+
+## v0.117.2, 9 March 2020
+
+- Improve PR descriptions for non-github PR's
+- Correctly mark requirements as not up to date
+
+## v0.117.1, 5 March 2020
+
+- Bump npm from 6.14.1 to 6.14.2 in /npm_and_yarn/helpers
+- Gradle: Add support for authenticated repositories (@GeorgiosGoniotakis)
+- Bump phpstan/phpstan from 0.12.12 to 0.12.14 in /composer/helpers
+
+## v0.117.0, 3 March 2020
+
+- Maven: Add support for "+" Semver Build Identifier
+- Sanitize github ref links in plaintext/rdoc
+- Codecommit: Ensures a commit is created before opening a PR
+- Hex: Fix mix.lock file parser for hex 0.20.2+
+- Bump rubocop requirement from ~> 0.79.0 to ~> 0.80.1 in /common
+- Bump phpstan/phpstan from 0.12.08 to 0.12.12 in /composer/helpers
+- Bump npm from 6.13.7 to 6.14.1 in /npm_and_yarn/helpers
+- Bump pip-tools from 4.4.1 to 4.5.1 in /python/helpers
+- Bump semver from 7.1.2 to 7.1.3 in /npm_and_yarn/helpers
+- Bump cython from 0.29.14 to 0.29.15 in /python/helpers
+- Bump rimraf from 3.0.1 to 3.0.2 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.9.2 to 1.9.3 in /composer/helpers
+- Remove security_updates_only (unused)
+
 ## v0.116.6, 3 February 2020
 
 - Better branch name sanitisation

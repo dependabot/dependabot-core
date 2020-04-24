@@ -26,6 +26,16 @@ RSpec.describe Dependabot::Maven::Requirement do
       end
     end
 
+    context "with a requirement ending with build metadata" do
+      let(:requirement_string) { "1.0.0+92" }
+
+      it "creates a requirement object" do
+        expect(requirement).to be_satisfied_by(
+          Dependabot::Maven::Version.new("1.0.0+92")
+        )
+      end
+    end
+
     context "with a version that has underscores" do
       let(:requirement_string) { "[2.2.1_CODICE_1]" }
 

@@ -303,6 +303,8 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
+        break_tag = source_provider_supports_html? ? "\n<br />" : "\n\n"
+
         msg = ""
         msg += vulnerabilities_cascade(dep)
         msg += release_cascade(dep)
@@ -310,7 +312,7 @@ module Dependabot
         msg += upgrade_guide_cascade(dep)
         msg += commits_cascade(dep)
         msg += maintainer_changes_cascade(dep)
-        msg += "\n<br />" unless msg == ""
+        msg += break_tag unless msg == ""
         "\n" + sanitize_links_and_mentions(msg)
       end
 
@@ -432,13 +434,17 @@ module Dependabot
       def build_details_tag(summary:, body:)
         # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
         # CodeCommit does not support the <details> tag (no url available)
-        if source.provider == ("azure" || "codecommit")
-          "\n\##{summary}\n\n#{body}"
-        else
+        if source_provider_supports_html?
           msg = "<details>\n<summary>#{summary}</summary>\n\n"
           msg += body
           msg + "</details>\n"
+        else
+          "\n\##{summary}\n\n#{body}"
         end
+      end
+
+      def source_provider_supports_html?
+        !%w(azure codecommit).include?(source.provider)
       end
 
       def serialized_vulnerability_details(details)
@@ -659,6 +665,8 @@ module Dependabot
       end
 
       def sanitize_links_and_mentions(text)
+        return text unless source.provider == "github"
+
         LinkAndMentionSanitizer.
           new(github_redirection_service: github_redirection_service).
           sanitize_links_and_mentions(text: text)

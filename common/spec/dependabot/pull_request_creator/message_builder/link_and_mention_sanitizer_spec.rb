@@ -246,6 +246,19 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
       end
     end
 
+    context "with a GitHub link in rdoc" do
+      let(:text) do
+        "{Issue 111}[https://github.com/dependabot/dependabot-core/issues/111]"
+      end
+
+      it do
+        is_expected.to eq(
+          "<p>{Issue 111}[https://github-redirect.com/dependabot/"\
+          "dependabot-core/issues/111\]</p>\n"
+        )
+      end
+    end
+
     context "with a GitHub repo settings link link" do
       let(:text) do
         "https://github.com/rust-num/num-traits/settings"

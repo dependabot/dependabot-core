@@ -32,7 +32,7 @@ module Dependabot
         private
 
         attr_reader :requirements, :latest_resolvable_version, :updated_source
-        # rubocop:disable PerceivedComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_mixfile_requirement(req)
           req = update_source(req)
           return req unless latest_resolvable_version && req[:requirement]
@@ -60,7 +60,7 @@ module Dependabot
           req.merge(requirement: new_requirement)
         end
 
-        # rubocop:enable PerceivedComplexity
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_source(requirement_hash)
           # Only git sources ever need to be updated. Anything else should be
