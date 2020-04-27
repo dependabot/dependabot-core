@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/clients/azure"
+require "dependabot/clients/bitbucket"
 require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -279,6 +280,7 @@ module Dependabot
         when "gitlab" then recent_gitlab_commit_messages
         when "azure" then recent_azure_commit_messages
         when "codecommit" then recent_codecommit_commit_messages
+        when "bitbucket" then recent_bitbucket_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
       end
@@ -332,6 +334,17 @@ module Dependabot
           map(&:strip)
       end
 
+      def recent_bitbucket_commit_messages
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits
+
+        @recent_bitbucket_commit_messages.
+          reject { |c| c.dig("author", "raw").include?(dependabot_email) }.
+          map { |c| c.dig("message") }.
+          compact.
+          map(&:strip)
+      end
+
       def last_dependabot_commit_message
         @last_dependabot_commit_message ||=
           case source.provider
@@ -339,6 +352,7 @@ module Dependabot
           when "gitlab" then last_gitlab_dependabot_commit_message
           when "azure" then last_azure_dependabot_commit_message
           when "codecommit" then last_codecommit_dependabot_commit_message
+          when "bitbucket" then last_bitbucket_dependabot_commit_message
           else raise "Unsupported provider: #{source.provider}"
           end
       end
@@ -389,6 +403,16 @@ module Dependabot
           strip
       end
 
+      def last_bitbucket_dependabot_commit_message
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits
+
+        @recent_bitbucket_commit_messages.
+          find { |c| c.fetch("author").fetch("raw").include?(dependabot_email)  }&.
+          message&.
+          strip
+      end
+
       def github_client_for_source
         @github_client_for_source ||=
           Dependabot::Clients::GithubWithRetries.for_source(
@@ -416,6 +440,14 @@ module Dependabot
       def codecommit_client_for_source
         @codecommit_client_for_source ||=
           Dependabot::Clients::CodeCommit.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+      
+      def bitbucket_client_for_source
+        @bitbucket_client_for_source ||=
+          Dependabot::Clients::BitbucketTS.for_source(
             source: source,
             credentials: credentials
           )
