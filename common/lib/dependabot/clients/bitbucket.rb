@@ -15,7 +15,6 @@ module Dependabot
       #######################
 
       def self.for_source(source:, credentials:)
-       
         credential = credentials.
                      find do |cred|
           cred["type"] == "git_source" &&
@@ -129,15 +128,17 @@ module Dependabot
       def pull_requests(source_branch, target_branch)
         path = "#{source.repo}/pullrequests?"
         path += "state=OPEN&state=MERGED&state=SUPERSEDED&state=DECLINED"
-        path += "&q=source.branch.name = \"" + source_branch + "\" AND destination.branch.name = \"" + target_branch + "\""
+        path += "&q=source.branch.name = \"" + 
+          source_branch + "\" AND destination.branch.name = \"" + 
+          target_branch + "\""
 
         response = get(base_url + path)
 
         JSON.parse(response.body).fetch("values")
       end
 
-      def create_commit(branch_name, base_commit, commit_message, files,
-        author_details)
+      def create_commit(branch_name, _base_commit, commit_message, files,
+      author_details)
         path = "#{source.repo}/src"
 
         body = files.map { |file| [file.path, file.content] }
@@ -145,21 +146,21 @@ module Dependabot
         body.push(["message", commit_message])
         body.push(["author", author_details])
 
-        response = Excon.post(
+        Excon.post(
           base_url + path,
-            headers: {
-              "Content-Type" => "application/x-www-form-urlencoded"
-            },
-            body: URI.encode_www_form(body),
-            user: credentials&.fetch("username"),
-            password: credentials&.fetch("password"),
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          headers: {
+            "Content-Type" => "application/x-www-form-urlencoded"
+          },
+          body: URI.encode_www_form(body),
+          user: credentials&.fetch("username"),
+          password: credentials&.fetch("password"),
+          idempotent: true,
+          **SharedHelpers.excon_defaults
+        )
       end
 
       def create_pull_request(pr_name, source_branch, target_branch,
-          pr_description, labels)
+      pr_description, labels)
         content = {
           title: pr_name,
           description: pr_description,
@@ -187,7 +188,6 @@ module Dependabot
         response = get(base_url + path)
 
         JSON.parse(response.body).fetch("values")
-
       end
 
       private

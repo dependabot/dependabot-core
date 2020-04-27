@@ -444,7 +444,7 @@ module Dependabot
             credentials: credentials
           )
       end
-      
+
       def bitbucket_client_for_source
         @bitbucket_client_for_source ||=
           Dependabot::Clients::BitbucketTS.for_source(

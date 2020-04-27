@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require "dependabot/clients/bitbucket"
 require "dependabot/pull_request_creator"
 
@@ -28,8 +27,9 @@ module Dependabot
       def create
         return if branch_exists? && pull_request_exists?
 
-        # For Bitbucket we create or update a branch in the same request as creating
-        # a commit (so we don't need create or update branch logic here)
+        # For Bitbucket we create or update a branch in the same request 
+        # as creating a commit (so we don't need create or 
+        # update branch logic here)
         create_commit
 
         create_pull_request
