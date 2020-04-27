@@ -4,9 +4,9 @@
 
 #### Overview
 
--* [Contribution workflow](#contribution-workflow)
--* [Setup instructions](#setup-instructions)
--* [Project layout](#project-layout)
+- [Contribution workflow](#contribution-workflow)
+- [Setup instructions](#setup-instructions)
+- [Project layout](#project-layout)
 
 ## Contribution workflow
 

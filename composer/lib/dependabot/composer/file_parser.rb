@@ -78,7 +78,6 @@ module Dependabot
         )
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def lockfile_dependencies
         dependencies = DependencySet.new
@@ -104,7 +103,7 @@ module Dependabot
 
         dependencies
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def build_lockfile_dependency(name, version, keys)

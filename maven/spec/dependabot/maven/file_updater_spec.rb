@@ -421,6 +421,48 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
         end
 
+        context "with an attribute" do
+          let(:pom_body) do
+            fixture("poms", "property_pom_single_attribute.xml")
+          end
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "5.0.0.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "5.0.0.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE.1",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              )
+            ]
+          end
+
+          it "updates the version in the POM" do
+            expect(updated_pom_file.content).
+              to include("<springframework.version attribute=\"value\">5.0.0.")
+            expect(updated_pom_file.content).
+              to include("<version>${springframework.version}</version>")
+          end
+        end
+
         context "with a suffix" do
           let(:pom_body) do
             fixture("poms", "property_pom_single_suffix.xml")

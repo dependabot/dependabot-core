@@ -69,11 +69,12 @@ defmodule Parser do
   defp parse_lock({:git, repo_url, checksum, opts}),
     do: {nil, checksum, git_source(repo_url, opts)}
 
-  defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies, _source}),
-    do: {version, checksum, nil}
+  defp parse_lock(tuple) when elem(tuple, 0) == :hex do
+    destructure [:hex, _app, version, _old_checksum, _managers, _deps, _repo, checksum],
+                Tuple.to_list(tuple)
 
-  defp parse_lock({:hex, _app, version, checksum, _managers, _dependencies}),
-    do: {version, checksum, nil}
+    {version, checksum, nil}
+  end
 
   defp normalise_requirement(req) do
     req

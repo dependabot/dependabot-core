@@ -8,7 +8,7 @@ const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockf
 const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFile(directory, lockfileName, dependencies) {
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
   const lockfile = readFile(lockfileName);
@@ -18,7 +18,7 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   // npm find the latest resolvable version and fix the lockfile
   const updatedLockfileObject = removeDependenciesFromLockfile(
     lockfileObject,
-    dependencies.map(dep => dep.name)
+    dependencies.map((dep) => dep.name)
   );
   fs.writeFileSync(
     path.join(directory, lockfileName),
@@ -41,24 +41,24 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
       force: true,
       audit: false,
       "prefer-offline": true,
-      "ignore-scripts": true
-    }
+      "ignore-scripts": true,
+    },
   ]);
 
   const dryRun = true;
   const initialInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true
+    packageLockOnly: true,
   });
 
   // A bug in npm means the initial install will remove any git dependencies
   // from the lockfile. A subsequent install with no arguments fixes this.
   const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true
+    packageLockOnly: true,
   });
 
   // Skip printing the success message
-  initialInstaller.printInstalled = cb => cb();
-  cleanupInstaller.printInstalled = cb => cb();
+  initialInstaller.printInstalled = (cb) => cb();
+  cleanupInstaller.printInstalled = (cb) => cb();
 
   // There are some hard-to-prevent bits of output.
   // This is horrible, but works.

@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Python::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(3) }
+    its(:length) { is_expected.to eq(4) }
 
     context "with a version specified" do
       describe "the first dependency" do
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
     end
 
     context "with jinja templates" do
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("psycopg2")
+          expect(dependency.name).to eq("psycopg2[bar,foo]")
           expect(dependency.version).to eq("2.6.1")
           expect(dependency.requirements).to eq(
             [{
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -420,7 +420,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -661,7 +661,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       it "has the right details" do
         expect(dependencies).to match_array(
@@ -672,6 +672,17 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.4.1",
                 file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "aiocache[redis]",
+              version: "0.10.0",
+              requirements: [{
+                requirement: "==0.10.0",
+                file: "more_requirements.txt",
                 groups: ["dependencies"],
                 source: nil
               }],
@@ -912,12 +923,12 @@ RSpec.describe Dependabot::Python::FileParser do
 
         describe "a dependency with extras" do
           subject(:dependency) do
-            dependencies.find { |d| d.name == "requests" }
+            dependencies.find { |d| d.name == "requests[security]" }
           end
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name).to eq("requests")
+            expect(dependency.name).to eq("requests[security]")
             expect(dependency.version).to be_nil
             expect(dependency.requirements).to eq(
               [{
@@ -1036,7 +1047,7 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(4) }
+        its(:length) { is_expected.to eq(5) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
@@ -1125,7 +1136,7 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(4) }
+        its(:length) { is_expected.to eq(5) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }

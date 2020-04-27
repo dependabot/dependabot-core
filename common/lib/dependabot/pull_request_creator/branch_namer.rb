@@ -17,9 +17,7 @@ module Dependabot
         @prefix        = prefix
       end
 
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
       def new_branch_name
         @name ||=
           begin
@@ -29,7 +27,11 @@ module Dependabot
               elsif dependencies.count > 1 && updating_a_dependency_set?
                 dependency_set.fetch(:group)
               else
-                dependencies.map(&:name).join("-and-").tr(":", "-").tr("@", "")
+                dependencies.
+                  map(&:name).
+                  join("-and-").
+                  tr(":[]", "-").
+                  tr("@", "")
               end
 
             dep = dependencies.first
@@ -43,16 +45,11 @@ module Dependabot
             end
           end
 
-        branch_name = File.join(prefixes, @name).
-                      gsub(%r{/\.}, "/dot-").
-                      gsub(%r{/\.}, "/dot-")
-
         # Some users need branch names without slashes
-        branch_name.gsub("/", separator)
+        sanitize_ref(File.join(prefixes, @name).gsub("/", separator))
       end
-      # rubocop:enable Metrics/AbcSize
+
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
 
       private
 
@@ -116,8 +113,7 @@ module Dependabot
           gsub(">", "gt-").
           gsub("<", "lt-").
           gsub("*", "star").
-          gsub(",", "-and-").
-          sub(/\.$/, "")
+          gsub(",", "-and-")
       end
 
       def new_version(dependency)
@@ -171,6 +167,23 @@ module Dependabot
 
       def requirements_changed?(dependency)
         (dependency.requirements - dependency.previous_requirements).any?
+      end
+
+      def sanitize_ref(ref)
+        # This isn't a complete implementation of git's ref validation, but it
+        # covers most cases that crop up. Its list of allowed charactersr is a
+        # bit stricter than git's, but that's for cosmetic reasons.
+        ref.
+          # Remove forbidden characters (those not already replaced elsewhere)
+          gsub(%r{[^A-Za-z0-9/\-_.(){}]}, "").
+          # Slashes can't be followed by periods
+          gsub(%r{/\.}, "/dot-").
+          # Two or more sequential periods are forbidden
+          gsub(/\.+/, ".").
+          # Two or more sequential slashes are forbidden
+          gsub(%r{/+}, "/").
+          # Trailing periods are forbidden
+          sub(/\.$/, "")
       end
     end
   end

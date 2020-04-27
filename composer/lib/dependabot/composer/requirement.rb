@@ -35,7 +35,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def convert_php_constraint_to_ruby_constraint(req_string)
         req_string = req_string.strip.gsub(/v(?=\d)/, "").gsub(/\.$/, "")
@@ -53,7 +52,7 @@ module Dependabot
         else req_string
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_wildcard_req(req_string)

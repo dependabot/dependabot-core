@@ -341,18 +341,6 @@ RSpec.describe Dependabot::Dep::UpdateChecker do
         end
       end
     end
-
-    context "with fsnotify as a dependency" do
-      let(:manifest_fixture_name) { "fsnotify_trans_dep.toml" }
-      let(:lockfile_fixture_name) { "fsnotify_trans_dep.lock" }
-      let(:req_str) { "1.6.0" }
-      let(:dependency_name) { "github.com/onsi/ginkgo" }
-      let(:dependency_version) { "1.6.0" }
-
-      it "unlocks the manifest and gets the correct version" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("1.10.3"))
-      end
-    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do

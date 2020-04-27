@@ -73,7 +73,6 @@ module Dependabot
           updated_requirement(req)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
@@ -99,7 +98,7 @@ module Dependabot
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def update_pyproject_version(req)

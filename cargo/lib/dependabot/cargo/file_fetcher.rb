@@ -98,7 +98,6 @@ module Dependabot
         files
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def fetch_path_dependency_files(file:, previously_fetched_files:)
         current_dir = file.name.rpartition("/").first
@@ -133,7 +132,7 @@ module Dependabot
         raise Dependabot::PathDependenciesNotReachable,
               unfetchable_required_path_deps
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_paths_from_file(file)
@@ -217,7 +216,6 @@ module Dependabot
 
       # Check whether a path is required or not. It will not be required if
       # an alternative source (i.e., a git source) is also specified
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def required_path?(file, path)
@@ -256,7 +254,7 @@ module Dependabot
 
         false
       end
-      # rubocop:enable Metrics/AbcSize
+
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 

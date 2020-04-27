@@ -274,6 +274,13 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
     end
 
+    context "with hex v0.20.2+" do
+      let(:mixfile_fixture_name) { "minor_version" }
+      let(:lockfile_fixture_name) { "hex_version_0_20_2" }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with an old elixir version" do
       let(:mixfile_fixture_name) { "old_elixir" }
       let(:lockfile_fixture_name) { "old_elixir" }

@@ -13,7 +13,6 @@ require "dependabot/python/name_normaliser"
 module Dependabot
   module Python
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
       class PipfileFileUpdater
         require_relative "pipfile_preparer"
         require_relative "pipfile_manifest_updater"
@@ -461,7 +460,6 @@ module Dependabot
           }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

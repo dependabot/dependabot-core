@@ -64,6 +64,29 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
   let(:dependency_version) { "1.0.0" }
 
+  describe "#up_to_date?", :vcr do
+    context "with no lockfile" do
+      let(:manifest_fixture_name) { "peer_dependency_typescript.json" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "typescript",
+          version: nil,
+          requirements: [{
+            requirement: "3.7",
+            file: "package.json",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns false when there is a newer version available" do
+        expect(checker.up_to_date?).to be_falsy
+      end
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 

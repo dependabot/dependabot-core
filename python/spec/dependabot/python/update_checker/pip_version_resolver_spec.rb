@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
   let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
-  let(:pypi_response) { fixture("pypi_simple_response.html") }
+  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     )
   end
   let(:python_version_content) { "3.7.0\n" }
-  let(:pypi_response) { fixture("pypi_simple_response_django.html") }
+  let(:pypi_response) { fixture("pypi", "pypi_simple_response_django.html") }
   let(:pypi_url) { "https://pypi.python.org/simple/django/" }
   let(:dependency) do
     Dependabot::Dependency.new(

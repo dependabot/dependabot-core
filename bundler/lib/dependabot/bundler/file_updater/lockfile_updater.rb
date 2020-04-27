@@ -10,8 +10,6 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
 require "dependabot/git_commit_checker"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Bundler
     class FileUpdater
@@ -458,4 +456,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

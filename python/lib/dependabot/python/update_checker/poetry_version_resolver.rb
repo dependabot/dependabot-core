@@ -61,7 +61,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/MethodLength
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           if @latest_resolvable_version_string.key?(requirement)
@@ -96,7 +95,6 @@ module Dependabot
               end
             end
         end
-        # rubocop:enable Metrics/MethodLength
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =

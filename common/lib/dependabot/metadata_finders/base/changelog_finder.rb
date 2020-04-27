@@ -8,8 +8,6 @@ require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
@@ -382,4 +380,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

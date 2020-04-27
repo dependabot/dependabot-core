@@ -243,12 +243,22 @@ module Dependabot
       end
 
       def requirements_up_to_date?
-        return true if (updated_requirements - dependency.requirements).none?
-        return false unless latest_version
-        return false unless version_class.correct?(latest_version.to_s)
-        return false unless version_from_requirements
+        if can_compare_requirements?
+          return (version_from_requirements >=
+                  version_class.new(latest_version.to_s))
+        end
 
-        version_from_requirements >= version_class.new(latest_version.to_s)
+        changed_requirements.none?
+      end
+
+      def can_compare_requirements?
+        version_from_requirements &&
+          latest_version &&
+          version_class.correct?(latest_version.to_s)
+      end
+
+      def changed_requirements
+        (updated_requirements - dependency.requirements)
       end
 
       def version_from_requirements
@@ -262,11 +272,9 @@ module Dependabot
       end
 
       def requirements_can_update?
-        changed_reqs = updated_requirements - dependency.requirements
+        return false if changed_requirements.none?
 
-        return false if changed_reqs.none?
-
-        changed_reqs.none? { |r| r[:requirement] == :unfixable }
+        changed_requirements.none? { |r| r[:requirement] == :unfixable }
       end
 
       def ignore_reqs

@@ -46,6 +46,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       its(:length) { is_expected.to eq(3) }
 
+      it "sets the package manager" do
+        expect(dependencies.first.package_manager).to eq("go_modules")
+      end
+
       describe "a dependency that uses go modules" do
         subject(:dependency) do
           dependencies.find { |d| d.name == "rsc.io/quote" }

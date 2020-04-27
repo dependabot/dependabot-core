@@ -10,7 +10,6 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
   describe "retrying a method that mutates args" do
     subject { client.contents("some/repo", path: "important_path.json") }
 
-    # rubocop:disable Style/BracesAroundHashParameters
     context "when the request has to be retried" do
       before do
         repo_url = "https://api.github.com/repos/some/repo"
@@ -18,17 +17,14 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
           with(headers: { "Authorization" => "token my-token" }).
           to_return(
             { status: 502, headers: { "content-type" => "application/json" } },
-            {
-              status: 200,
-              body: fixture("github", "gemfile_content.json"),
-              headers: { "content-type" => "application/json" }
-            }
+            status: 200,
+            body: fixture("github", "gemfile_content.json"),
+            headers: { "content-type" => "application/json" }
           )
       end
 
       its(:name) { is_expected.to eq("Gemfile") }
     end
-    # rubocop:enable Style/BracesAroundHashParameters
   end
 
   describe "with multiple possible access tokens" do

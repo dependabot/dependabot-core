@@ -6,8 +6,6 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
 require "dependabot/errors"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -403,6 +401,5 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
 
 Dependabot::FileFetchers.register("pip", Dependabot::Python::FileFetcher)

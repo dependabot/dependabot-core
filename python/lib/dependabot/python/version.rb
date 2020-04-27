@@ -117,7 +117,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Style/CaseEquality
-      # rubocop:disable Metrics/LineLength
+      # rubocop:disable Layout/LineLength
       # rubocop:disable Style/ParallelAssignment
       # rubocop:disable Style/RedundantReturn
       def old_comp(other)
@@ -149,7 +149,7 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Style/CaseEquality
-      # rubocop:enable Metrics/LineLength
+      # rubocop:enable Layout/LineLength
       # rubocop:enable Style/ParallelAssignment
       # rubocop:enable Style/RedundantReturn
     end

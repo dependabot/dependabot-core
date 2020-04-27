@@ -224,7 +224,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             author_details: author_details,
             labeler: instance_of(described_class::Labeler),
             approvers: reviewers,
-            assignee: nil,
+            assignees: nil,
             milestone: milestone
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)

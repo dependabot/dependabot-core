@@ -10,12 +10,14 @@ RSpec.describe namespace::MultiDependencyUpdater do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      credentials: credentials,
       target_version_details: target_version_details,
       ignored_versions: ignored_versions
     )
   end
 
   let(:version_class) { Dependabot::Gradle::Version }
+  let(:credentials) { [] }
   let(:ignored_versions) { [] }
   let(:target_version_details) do
     {

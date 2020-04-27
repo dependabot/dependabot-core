@@ -35,7 +35,6 @@ module Dependabot
           "#{source.url}/#{path}"
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         def commits
           return [] unless source
           return [] unless new_tag && previous_tag
@@ -48,7 +47,6 @@ module Dependabot
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def new_tag
           new_version = dependency.version
@@ -68,7 +66,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def previous_tag
           previous_version = dependency.previous_version
@@ -88,7 +85,7 @@ module Dependabot
             lowest_tag_satisfying_previous_requirements
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def lowest_tag_satisfying_previous_requirements

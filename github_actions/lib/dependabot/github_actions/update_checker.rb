@@ -78,7 +78,6 @@ module Dependabot
         dependency.version
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def updated_source
         # TODO: Support Docker sources
@@ -101,7 +100,7 @@ module Dependabot
         # Otherwise return the original source
         dependency_source_details
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_source_details

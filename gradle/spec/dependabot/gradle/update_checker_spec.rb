@@ -365,6 +365,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
+            credentials: credentials,
             ignored_versions: [],
             target_version_details: {
               version: version_class.new("23.0"),
@@ -429,6 +430,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
+            credentials: credentials,
             ignored_versions: [],
             target_version_details: {
               version: version_class.new("23.0"),
@@ -488,6 +490,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
           with(
             dependency: dependency,
             dependency_files: dependency_files,
+            credentials: credentials,
             ignored_versions: [],
             target_version_details: {
               version: version_class.new("23.0"),

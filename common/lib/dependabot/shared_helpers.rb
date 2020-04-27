@@ -81,7 +81,6 @@ module Dependabot
       Shellwords.join(command_parts)
     end
 
-    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    escape_command_str: true)
@@ -120,7 +119,6 @@ module Dependabot
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +
@@ -168,8 +166,6 @@ module Dependabot
       )
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
     def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
@@ -213,8 +209,6 @@ module Dependabot
       # Save the file
       File.write("git.store", git_store_content)
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/MethodLength
 
     def self.stash_global_git_config
       return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)

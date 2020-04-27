@@ -32,6 +32,19 @@ RSpec.describe Dependabot::Python::FileUpdater::SetupFileSanitizer do
       )
     end
 
+    context "for a setup.py including a dependency with extras" do
+      let(:setup_file_fixture_name) { "extras.py" }
+      it "extracts the install_requires and conserves extras" do
+        expect(sanitized_content).to eq(
+          "from setuptools import setup\n\n"\
+          'setup(name="sanitized-package",version="0.0.1",'\
+          'install_requires=["requests[security]==2.12.*",'\
+          '"scipy==0.18.1","scikit-learn==0.18.1"],'\
+          "extras_require={})"
+        )
+      end
+    end
+
     context "for a setup.py using pbr" do
       let(:setup_file_fixture_name) { "with_pbr.py" }
       let(:setup_cfg) do

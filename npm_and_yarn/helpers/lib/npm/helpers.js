@@ -21,5 +21,5 @@ function muteStderr() {
 
 module.exports = {
   runAsync,
-  muteStderr
+  muteStderr,
 };

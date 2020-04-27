@@ -16,6 +16,7 @@ Elixir support for [`dependabot-core`][core-repo].
 
 3. Run tests
    ```
+   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
    $ bundle exec rspec spec
    ```
 

@@ -54,7 +54,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def updated_requirement(req)
           req_string = req[:requirement].strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
@@ -83,7 +82,6 @@ module Dependabot
           new_req.merge(requirement: new_req_string)
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def updated_alias(req)
           req_string = req[:requirement]

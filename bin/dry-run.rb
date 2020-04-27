@@ -34,6 +34,8 @@
 # - docker
 # - terraform
 
+# rubocop:disable Style/GlobalVars
+
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
@@ -106,6 +108,22 @@ $options = {
   exclusions: []
 }
 
+unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
+  $options[:credentials] << {
+    "type" => "git_source",
+    "host" => "github.com",
+    "username" => "x-access-token",
+    "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+  }
+end
+
+unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
+  # For example:
+  # "[{\"type\":\"npm_registry\",\"registry\":\
+  #     "registry.npmjs.org\",\"token\":\"123\"}]"
+  $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
+end
+
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
 
@@ -125,17 +143,17 @@ option_parse = OptionParser.new do |opts|
     $options[:cache_steps].concat(value.split(",").map(&:strip))
   end
 
-  opts.on("--write", "Write the update to the cache directory") do |value|
+  opts.on("--write", "Write the update to the cache directory") do |_value|
     $options[:write] = true
   end
 
-  opts.on("--lockfile-only", "Only update the lockfile") do |value|
-    $options[:lockfile_only] = value
+  opts.on("--lockfile-only", "Only update the lockfile") do |_value|
+    $options[:lockfile_only] = true
   end
 
-  opts_req_description = "Options: auto, widen_ranges, bump_versions or "\
+  opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
                          "bump_versions_if_necessary"
-  opts.on("--requirements-update-strategy STRATEGY", opts_req_description) do |value|
+  opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
     $options[:requirements_update_strategy] = value
   end
@@ -182,16 +200,6 @@ option_parse.parse!
   }
 #end
 
-#unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
-  # For example:
-  # "[{\"type\":\"npm_registry\",\"registry\":\"registry.npmjs.org\",\"token\":\"123\"}]"
-  #$options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
-  #$options[:credentials] << {
-  #}
-#end
-
-
-
 # Full name of the GitHub repo you want to create pull requests for
 if ARGV.length < 2
   puts option_parse.help
@@ -232,7 +240,10 @@ def cached_read(name)
   cache_dir = File.dirname(cache_path)
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
   cached = File.read(cache_path) if File.exist?(cache_path)
+  # rubocop:disable Security/MarshalLoad
   return Marshal.load(cached) if cached
+
+  # rubocop:enable Security/MarshalLoad
 
   data = yield
   File.write(cache_path, Marshal.dump(data))
@@ -245,15 +256,23 @@ def dependency_files_cache_dir
   File.join("dry-run", $repo_name.split("/"), branch, dir)
 end
 
+# rubocop:disable Metrics/AbcSize
+# rubocop:disable Metrics/MethodLength
+# rubocop:disable Metrics/CyclomaticComplexity
+# rubocop:disable Metrics/PerceivedComplexity
 def cached_dependency_files_read
   cache_dir = dependency_files_cache_dir
-  cache_manifest_path = File.join(cache_dir, "cache-manifest-#{$package_manager}.json")
+  cache_manifest_path = File.join(
+    cache_dir, "cache-manifest-#{$package_manager}.json"
+  )
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
-  cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
+  if File.exist?(cache_manifest_path)
+    cached_manifest = File.read(cache_manifest_path)
+  end
   cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
 
-  all_files_cached = cached_dependency_files && cached_dependency_files.all? do |file|
+  all_files_cached = cached_dependency_files&.all? do |file|
     File.exist?(File.join(cache_dir, file["name"]))
   end
 
@@ -306,6 +325,10 @@ def cached_dependency_files_read
     data
   end
 end
+# rubocop:enable Metrics/PerceivedComplexity
+# rubocop:enable Metrics/CyclomaticComplexity
+# rubocop:enable Metrics/MethodLength
+# rubocop:enable Metrics/AbcSize
 
 source = Dependabot::Source.new(
   provider: "azure",
@@ -387,7 +410,7 @@ def update_checker_for(dependency)
     credentials: $options[:credentials],
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
-    security_advisories: security_advisories_for(dependency),
+    security_advisories: security_advisories_for(dependency)
   )
 end
 
@@ -429,7 +452,7 @@ def peer_dependencies_can_update?(checker, reqs_to_unlock)
         name: dep.name,
         version: dep.previous_version,
         requirements: dep.previous_requirements,
-        package_manager: dep.package_manager,
+        package_manager: dep.package_manager
       )
       update_checker_for(original_peer_dep).
         can_update?(requirements_to_unlock: :own)
@@ -499,7 +522,8 @@ dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
   puts " => requirements to unlock: #{requirements_to_unlock}"
 
   if checker.respond_to?(:requirements_update_strategy)
-    puts " => requirements update strategy: #{checker.requirements_update_strategy}"
+    puts " => requirements update strategy: "\
+         "#{checker.requirements_update_strategy}"
   end
 
   if requirements_to_unlock == :update_not_possible
@@ -518,8 +542,9 @@ dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
 
 
   updated_files = generate_dependency_files_for(updated_deps)
+
   # Currently unused but used to create pull requests (from the updater)
-  updated_deps = updated_deps.reject do |d|
+  updated_deps.reject do |d|
     next false if d.name == checker.dependency.name
     next true if d.requirements == d.previous_requirements
 
@@ -562,3 +587,6 @@ parsed_response = JSON.parse(response.body)
   end
 end
 end
+# rubocop:enable Metrics/BlockLength
+
+# rubocop:enable Style/GlobalVars

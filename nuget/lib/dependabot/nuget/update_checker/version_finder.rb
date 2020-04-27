@@ -152,7 +152,6 @@ module Dependabot
           }
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
           current_version = dependency.version
@@ -176,7 +175,7 @@ module Dependabot
             false
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def v3_nuget_listings

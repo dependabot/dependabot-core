@@ -58,7 +58,8 @@ def parse_requirements(directory):
                     "version": version_from_install_req(install_req),
                     "markers": str(install_req.markers) or None,
                     "file": rel_path,
-                    "requirement": str(install_req.specifier) or None
+                    "requirement": str(install_req.specifier) or None,
+                    "extras": sorted(list(install_req.extras))
                 })
         except Exception as e:
             print(json.dumps({ "error": repr(e) }))
@@ -85,7 +86,8 @@ def parse_setup(directory):
                 "markers": str(install_req.markers) or None,
                 "file": "setup.py",
                 "requirement": str(install_req.specifier) or None,
-                "requirement_type": req_type
+                "requirement_type": req_type,
+                "extras": sorted(list(install_req.extras))
             })
 
         def setup(*args, **kwargs):
