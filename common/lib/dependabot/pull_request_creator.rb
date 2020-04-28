@@ -166,16 +166,16 @@ module Dependabot
 
     def bitbucket_creator
       Bitbucket.new(
-          source: source,
-          branch_name: branch_namer.new_branch_name,
-          base_commit: base_commit,
-          credentials: credentials,
-          files: files,
-          commit_message: message_builder.commit_message,
-          pr_description: message_builder.pr_message,
-          pr_name: message_builder.pr_name,
-          author_details: author_details,
-          labeler: labeler
+        source: source,
+        branch_name: branch_namer.new_branch_name,
+        base_commit: base_commit,
+        credentials: credentials,
+        files: files,
+        commit_message: message_builder.commit_message,
+        pr_description: message_builder.pr_message,
+        pr_name: message_builder.pr_name,
+        author_details: author_details,
+        labeler: labeler
       )
     end
 

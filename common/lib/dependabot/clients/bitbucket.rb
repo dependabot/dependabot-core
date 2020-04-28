@@ -128,9 +128,9 @@ module Dependabot
       def pull_requests(source_branch, target_branch)
         path = "#{source.repo}/pullrequests?"
         path += "state=OPEN&state=MERGED&state=SUPERSEDED&state=DECLINED"
-        path += "&q=source.branch.name = \"" + 
-          source_branch + "\" AND destination.branch.name = \"" + 
-          target_branch + "\""
+        path += "&q=source.branch.name = \"" +
+        source_branch + "\" AND destination.branch.name = \"" +
+        target_branch + "\""
 
         response = get(base_url + path)
 
@@ -138,7 +138,7 @@ module Dependabot
       end
 
       def create_commit(branch_name, _base_commit, commit_message, files,
-      author_details)
+                        author_details)
         path = "#{source.repo}/src"
 
         body = files.map { |file| [file.path, file.content] }
@@ -160,7 +160,7 @@ module Dependabot
       end
 
       def create_pull_request(pr_name, source_branch, target_branch,
-      pr_description, labels)
+      pr_description, _labels)
         content = {
           title: pr_name,
           description: pr_description,
@@ -191,7 +191,7 @@ module Dependabot
       end
 
       private
-  
+
       attr_reader :credentials
       attr_reader :source
 

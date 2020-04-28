@@ -408,7 +408,11 @@ module Dependabot
           bitbucket_client_for_source.commits
 
         @recent_bitbucket_commit_messages.
-          find { |c| c.fetch("author").fetch("raw").include?(dependabot_email)  }&.
+          find { |c| 
+            c.fetch("author")
+              .fetch("raw")
+              .include?(dependabot_email) 
+          }&.
           message&.
           strip
       end
