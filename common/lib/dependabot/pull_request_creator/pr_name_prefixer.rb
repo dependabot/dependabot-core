@@ -6,6 +6,8 @@ require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
+
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class PrNamePrefixer
