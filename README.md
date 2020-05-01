@@ -5,7 +5,10 @@
 # Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
 
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise), GitLab and
+for updating dependencies on
+GitHub (including GitHub Enterprise),
+GitLab
+and
 Azure DevOps.
 
 If you want to host your own automated dependency update bot then this repo
@@ -20,8 +23,23 @@ response times on issues and contributions will be slower than we'd like.
 ## What's in this repo?
 
 Dependabot Core is a collection of packages for automating dependency updating
-in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
-.NET. It can also update git submodules, Docker files, and Terraform files.
+in
+Ruby,
+JavaScript,
+Python,
+PHP,
+Elixir,
+Elm,
+Go,
+Rust,
+Java
+and
+.NET.
+It can also update
+git submodules,
+Docker files,
+and
+Terraform files.
 
 Highlights include:
 
@@ -41,13 +59,29 @@ In addition to this library, you may be interested in:
 
 ## Setup
 
-To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
-Elm, and Rust installed. However, if you just wish to run it for a single
+To run all of Dependabot Core, you'll need
+Ruby,
+Python,
+PHP,
+Elixir,
+Node,
+Go,
+Elm,
+and
+Rust
+installed. However, if you just wish to run it for a single
 language you can get away with just having that language and Ruby.
 
-The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
-Elixir, Go, and Rust are required for dealing with updates for their respective
-languages.
+The main library is written in Ruby, while
+JavaScript,
+Python,
+PHP,
+Elm,
+Elixir,
+Go,
+and
+Rust
+are required for dealing with updates for their respective languages.
 
 To install the helpers for each language:
 
