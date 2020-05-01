@@ -7,7 +7,7 @@
 Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
 for updating dependencies on
 GitHub (including GitHub Enterprise),
-GitLab
+GitLab,
 and
 Azure DevOps.
 
@@ -32,7 +32,7 @@ Elixir,
 Elm,
 Go,
 Rust,
-Java
+Java,
 and
 .NET.
 It can also update
