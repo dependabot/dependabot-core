@@ -37,6 +37,7 @@ and
 .NET.
 It can also update
 git submodules,
+GitHub Actions,
 Docker files,
 and
 Terraform files.
