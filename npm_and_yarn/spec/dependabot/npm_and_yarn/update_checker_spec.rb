@@ -195,6 +195,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         credentials: credentials,
         dependency_files: dependency_files,
         ignored_versions: ignored_versions,
+        raise_on_ignored: false,
         security_advisories: security_advisories
       ).and_call_original
 
@@ -506,6 +507,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           dependency_files: dependency_files,
           ignored_versions: ignored_versions,
+          raise_on_ignored: false,
           security_advisories: security_advisories
         ).and_call_original
 

@@ -21,11 +21,13 @@ module Dependabot
         end
 
         def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, security_advisories:,
+                       raise_on_ignored: false)
           @dependency          = dependency
           @credentials         = credentials
           @dependency_files    = dependency_files
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -81,9 +83,17 @@ module Dependabot
         end
 
         def possible_versions_with_details
-          possible_previous_versions_with_details.
-            reject { |_, details| details["deprecated"] }.
-            reject { |v, _| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          versions = possible_previous_versions_with_details.
+                     reject { |_, details| details["deprecated"] }
+          filtered = versions.reject do |v, _|
+            ignore_reqs.any? { |r| r.satisfied_by?(v) }
+          end
+
+          if @raise_on_ignored && filtered.empty? && versions.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def possible_versions

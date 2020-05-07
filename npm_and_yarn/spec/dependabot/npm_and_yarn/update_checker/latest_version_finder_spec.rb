@@ -24,10 +24,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:dependency_files) { [package_json] }
   let(:package_json) do
@@ -936,6 +938,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200)
       end
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { [">= 0, < 99"] }
+
+      it { is_expected.to be_nil }
+
+      context "with raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises exception" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
   end
 
