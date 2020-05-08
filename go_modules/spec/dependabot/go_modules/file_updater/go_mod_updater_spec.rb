@@ -253,5 +253,30 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
+
+    context "for an upgraded indirect dependency" do
+      let(:go_mod_fixture_name) { "upgraded_indirect_dependency.mod" }
+      let(:dependency_name) { "github.com/gorilla/csrf" }
+      let(:dependency_version) { "v1.7.0" }
+      let(:dependency_previous_version) { "v1.6.2" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.7.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/gorilla/csrf"
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [requirements.first.merge(requirement: "1.6.2")]
+      end
+
+      it do
+        is_expected.to_not include("github.com/pkg/errors")
+      end
+    end
   end
 end
