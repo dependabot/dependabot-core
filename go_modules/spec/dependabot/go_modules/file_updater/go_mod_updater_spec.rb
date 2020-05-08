@@ -34,7 +34,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       requirements: requirements,
       previous_version: dependency_previous_version,
       previous_requirements: previous_requirements,
-      package_manager: "dep"
+      package_manager: "go_modules"
     )
   end
 
