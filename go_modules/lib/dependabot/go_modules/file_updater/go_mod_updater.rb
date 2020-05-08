@@ -49,6 +49,7 @@ module Dependabot
           @updated_files ||= update_files
         end
 
+        # rubocop:disable Metrics/AbcSize
         def update_files
           substitutions = replace_directive_substitutions(go_mod.content)
           clean_go_mod = substitute_all(go_mod.content, substitutions)
@@ -86,6 +87,7 @@ module Dependabot
 
           { go_mod: output_go_mod, go_sum: regenerated_files[:go_sum] }
         end
+        # rubocop:enable Metrics/AbcSize
 
         def update_go_mod(go_mod_content, dependencies)
           File.write("go.mod", go_mod_content)
@@ -247,15 +249,16 @@ module Dependabot
           # This is an approximation - we're not correctly populating `source`
           # for instance, but it's only to plug the requirement into the
           # `update_go_mod` method so this mapping doesn't need to be perfect
+          dep_req = {
+            file: "go.mod",
+            requirement: req["Version"],
+            groups: [],
+            source: nil
+          }
           Dependency.new(
             name: req["Path"],
             version: req["Version"],
-            requirements: req["Indirect"] ? [] : [{
-              file: "go.mod",
-              requirement: req["Version"],
-              groups: [],
-              source: nil
-            }],
+            requirements: req["Indirect"] ? [] : [dep_req],
             package_manager: "go_modules"
           )
         end
