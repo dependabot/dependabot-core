@@ -51,37 +51,46 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         def update_files
+          # Map paths in local replace directives to path hashes
           substitutions = replace_directive_substitutions(go_mod.content)
+          stub_dirs = substitutions.values
+
+          # Replace full paths with path hashes in the go.mod
           clean_go_mod = substitute_all(go_mod.content, substitutions)
 
-          original_manifest_requirements = in_temp_dir(substitutions) do
-            parse_manifest_requirements(go_mod.content)
-          end
-
-          updated_go_mod = in_temp_dir(substitutions) do
+          # Set the new dependency versions in the go.mod
+          updated_go_mod = in_temp_dir(stub_dirs) do
             update_go_mod(clean_go_mod, dependencies)
           end
 
-          regenerated_files = in_temp_dir(substitutions) do
+          # Then run `go get` to pick up other changes to the file cuased by
+          # the upgrade
+          regenerated_files = in_temp_dir(stub_dirs) do
             run_go_get(updated_go_mod, go_sum)
           end
 
-          updated_manifest_requirements = in_temp_dir(substitutions) do
+          # At this point, the go.mod returned from run_go_get contains the
+          # correct set of modules, but running `go get` can change the file in
+          # undesirable ways (such as injecting the current Go version), so we
+          # need to update the original go.mod with the updated set of
+          # requirements rather than using the regenerated file directly
+          original_reqs = in_temp_dir(stub_dirs) do
+            parse_manifest_requirements(go_mod.content)
+          end
+          updated_reqs = in_temp_dir(stub_dirs) do
             parse_manifest_requirements(regenerated_files[:go_mod])
           end
 
-          original_reqs = original_manifest_requirements.map { |r| r["Path"] }
-          updated_reqs = updated_manifest_requirements.map { |r| r["Path"] }
-          reqs_to_remove = original_reqs - updated_reqs
+          original_paths = original_reqs.map { |r| r["Path"] }
+          updated_paths = updated_reqs.map { |r| r["Path"] }
+          req_paths_to_remove = original_paths - updated_paths
 
-          output_go_mod = in_temp_dir(substitutions) do
-            remove_requirements(go_mod.content, reqs_to_remove)
+          output_go_mod = in_temp_dir(stub_dirs) do
+            remove_requirements(go_mod.content, req_paths_to_remove)
           end
 
-          output_go_mod = in_temp_dir(substitutions) do
-            deps = updated_manifest_requirements.map do |req|
-              requirement_to_dependency_obj(req)
-            end
+          output_go_mod = in_temp_dir(stub_dirs) do
+            deps = updated_reqs.map { |r| requirement_to_dependency_obj(r) }
             update_go_mod(output_go_mod, deps)
           end
 
@@ -198,7 +207,8 @@ module Dependabot
                 map { |r| r["New"]["Path"] }.
                 compact.
                 select { |p| p.start_with?(".") || p.start_with?("/") }.
-                map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+                map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
+                to_h
             end
         end
 
