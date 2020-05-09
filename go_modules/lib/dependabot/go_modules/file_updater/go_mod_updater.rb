@@ -2,7 +2,6 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/go_modules/file_parser"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
 
