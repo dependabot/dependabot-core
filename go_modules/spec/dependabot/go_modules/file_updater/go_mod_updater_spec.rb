@@ -78,6 +78,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
 
+        context "when a replace directive is present" do
+          let(:go_mod_body) do
+            fixture("go_mods", go_mod_fixture_name) +
+              "\nreplace github.com/fatih/Color => ../../../../../../foo"
+          end
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
+
         context "for a go 1.11 go.mod" do
           let(:go_mod_body) do
             fixture("go_mods", go_mod_fixture_name).sub(/go 1.12/, "")
