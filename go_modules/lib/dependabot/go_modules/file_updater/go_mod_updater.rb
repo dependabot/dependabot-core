@@ -125,7 +125,8 @@ module Dependabot
           _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
           handle_subprocess_error(stderr) unless status.success?
 
-          { go_mod: File.read("go.mod"), go_sum: File.read("go.sum") }
+          updated_go_sum = go_sum ? File.read("go.sum") : nil
+          { go_mod: File.read("go.mod"), go_sum: updated_go_sum }
         end
 
         def parse_manifest_requirements(go_mod_content)

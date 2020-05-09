@@ -213,6 +213,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
         end
+
+        context "without a go.sum" do
+          it "doesn't return a go.sum" do
+            expect(updater.updated_go_sum_content).to be_nil
+          end
+        end
       end
 
       context "when it has become indirect" do
