@@ -61,10 +61,11 @@ module Dependabot
           versions_array =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
-            else possible_versions
+            else possible_versions(false)
             end
 
           secure_versions = filter_vulnerable_versions(versions_array)
+          secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
@@ -82,22 +83,17 @@ module Dependabot
           end
         end
 
-        def possible_versions_with_details
+        def possible_versions_with_details(ignore = true)
           versions = possible_previous_versions_with_details.
                      reject { |_, details| details["deprecated"] }
-          filtered = versions.reject do |v, _|
-            ignore_reqs.any? { |r| r.satisfied_by?(v) }
-          end
 
-          if @raise_on_ignored && filtered.empty? && versions.any?
-            raise AllVersionsIgnored
-          end
+          return filter_ignored_versions(versions) if ignore
 
-          filtered
+          versions
         end
 
-        def possible_versions
-          possible_versions_with_details.map(&:first)
+        def possible_versions(ignore = true)
+          possible_versions_with_details(ignore).map(&:first)
         end
 
         private
@@ -107,6 +103,18 @@ module Dependabot
 
         def valid_npm_details?
           !npm_details&.fetch("dist-tags", nil).nil?
+        end
+
+        def filter_ignored_versions(versions_array)
+          filtered = versions_array.reject do |v, _|
+            ignore_reqs.any? { |r| r.satisfied_by?(v) }
+          end
+
+          if @raise_on_ignored && filtered.empty? && versions_array.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def filter_out_of_range_versions(versions_array)

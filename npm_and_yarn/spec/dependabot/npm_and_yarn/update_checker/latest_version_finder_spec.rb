@@ -953,6 +953,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         end
       end
     end
+
+    context "when the user has ignored all but vulnerable versions" do
+      # 1.1.0 is not ignored, but it is vulnerable
+      let(:ignored_versions) { ["> 0, < 1.1.0", "> 1.2.0, < 99"] }
+
+      it { is_expected.to be_nil }
+
+      context "with raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises exception" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
   end
 
   describe "#possible_versions" do
