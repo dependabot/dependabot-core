@@ -25,8 +25,6 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
-        attr_reader :dependencies, :go_mod, :go_sum, :credentials
-
         def initialize(dependencies:, go_mod:, go_sum:, credentials:)
           @dependencies = dependencies
           @go_mod = go_mod
@@ -43,6 +41,8 @@ module Dependabot
         end
 
         private
+
+        attr_reader :dependencies, :go_mod, :go_sum, :credentials
 
         def updated_files
           @updated_files ||= update_files
