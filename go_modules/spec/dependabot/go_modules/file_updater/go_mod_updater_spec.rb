@@ -34,7 +34,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       requirements: requirements,
       previous_version: dependency_previous_version,
       previous_requirements: previous_requirements,
-      package_manager: "dep"
+      package_manager: "go_modules"
     )
   end
 
@@ -77,6 +77,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+
+        context "when a replace directive is present" do
+          let(:go_mod_body) do
+            fixture("go_mods", go_mod_fixture_name) +
+              "\nreplace github.com/fatih/Color => ../../../../../../foo"
+          end
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
 
         context "for a go 1.11 go.mod" do
           let(:go_mod_body) do
@@ -204,6 +213,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
         end
+
+        context "without a go.sum" do
+          it "doesn't return a go.sum" do
+            expect(updater.updated_go_sum_content).to be_nil
+          end
+        end
       end
 
       context "when it has become indirect" do
@@ -251,6 +266,31 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           is_expected.
             to include(%(rsc.io/sampler v1.3.0 // indirect\n))
         end
+      end
+    end
+
+    context "for an upgraded indirect dependency" do
+      let(:go_mod_fixture_name) { "upgraded_indirect_dependency.mod" }
+      let(:dependency_name) { "github.com/gorilla/csrf" }
+      let(:dependency_version) { "v1.7.0" }
+      let(:dependency_previous_version) { "v1.6.2" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.7.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/gorilla/csrf"
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [requirements.first.merge(requirement: "1.6.2")]
+      end
+
+      it do
+        is_expected.to_not include("github.com/pkg/errors")
       end
     end
   end

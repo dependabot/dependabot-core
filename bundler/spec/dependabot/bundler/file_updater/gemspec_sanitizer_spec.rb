@@ -241,6 +241,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
       end
 
+      context "with an assignment to a method call with a block (Dir.chdir)" do
+        let(:content) do
+          'Spec.new { |s| s.files = Dir.chdir("path") { `ls`.split("\n") } }'
+        end
+        it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
+      end
+
       context "with an assignment to Dir[..]" do
         let(:content) { fixture("ruby", "gemspecs", "example") }
         it { is_expected.to include("spec.files        = []") }
