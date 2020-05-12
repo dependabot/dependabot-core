@@ -62,7 +62,7 @@ module Dependabot
             update_go_mod(clean_go_mod, dependencies)
           end
 
-          # Then run `go get` to pick up other changes to the file cuased by
+          # Then run `go get` to pick up other changes to the file caused by
           # the upgrade
           regenerated_files = in_temp_dir(stub_dirs) do
             run_go_get(updated_go_mod, go_sum)
