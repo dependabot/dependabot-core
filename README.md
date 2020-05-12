@@ -12,6 +12,11 @@ If you want to host your own automated dependency update bot then this repo
 should give you the tools you need. A reference implementation is available
 [here][dependabot-script].
 
+## Issue / contribution response times
+
+Currently the Dependabot team is at reduced capacity, because of this our
+response times on issues and contributions will be slower than we'd like.
+
 ## What's in this repo?
 
 Dependabot Core is a collection of packages for automating dependency updating
