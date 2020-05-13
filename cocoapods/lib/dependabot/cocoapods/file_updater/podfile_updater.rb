@@ -14,15 +14,19 @@ module Dependabot
         def updated_podfile_content
           dependencies.select { |dep| requirement_changed?(podfile, dep) }.
             reduce(podfile.content.dup) do |_content, dep|
-            podfile.content.to_enum(:scan, POD_CALL).find do
+            match = podfile.content.to_enum(:scan, POD_CALL).find do
               Regexp.last_match[:q_name] == dep.name ||
                 Regexp.last_match[:name] == dep.name
             end
 
             original_pod_declaration_string = Regexp.last_match.to_s
-            updated_pod_declaration_string = update_pod_declaration_string(
-              original_pod_declaration_string, dep
-            )
+            updated_pod_declaration_string = original_pod_declaration_string
+
+            unless match.nil?
+              updated_pod_declaration_string = update_pod_declaration_string(
+                original_pod_declaration_string, dep
+              )
+            end
 
             @updated_podfile_content = podfile.content.gsub(
               original_pod_declaration_string,

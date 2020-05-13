@@ -24,7 +24,7 @@ module Dependabot
 
         parsed_podfile.dependencies.each do |dep|
           # Ignore dependencies with multiple requirements, since they would
-          # cause trouble at the gem update step
+          # cause trouble at the bundle update step
           next if dep.requirement.requirements.count > 1
 
           dependencies <<
@@ -34,7 +34,7 @@ module Dependabot
               requirements: [{
                 requirement: dep.requirement.to_s,
                 groups: [],
-                source: nil, # TODO: Identify git dependencies
+                source: dependency_requirements(dep),
                 file: podfile.name
               }],
               package_manager: "cocoapods"
@@ -47,8 +47,16 @@ module Dependabot
       def lockfile_dependencies
         dependencies = DependencySet.new
 
-        # TODO: Add dependencies from lockfile here (their requirements should
-        # be an empty array)
+        parsed_lockfile.pod_names.each do |dep|
+          # For lockfile, requirements are an empty array
+          dependencies <<
+            Dependency.new(
+              name: dep,
+              version: parsed_lockfile.version(dep)&.to_s,
+              requirements: [],
+              package_manager: "cocoapods"
+            )
+        end
 
         dependencies
       end
@@ -59,7 +67,19 @@ module Dependabot
       end
 
       def dependency_version(dependency_name)
-        Gem::Version.new(parsed_lockfile.version(dependency_name))
+        Pod::Version.new(parsed_lockfile.version(dependency_name))
+      end
+
+      def dependency_requirements(dependency)
+        return unless dependency.external_source
+
+        type_key, type_value = dependency.external_source.first
+        {
+          branch: dependency.external_source[:branch],
+          ref: dependency.external_source[:tag],
+          type: type_key.to_s,
+          url: type_value
+        }
       end
 
       def podfile

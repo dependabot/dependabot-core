@@ -82,12 +82,22 @@ RSpec.describe Dependabot::CocoaPods::FileParser do
     end
 
     context "with a sub-dependency" do
-      let(:podfile_body) { fixture("cocoapods", "podfiles", "subdependency") }
-      let(:lockfile_body) { fixture("cocoapods", "lockfiles", "subdependency") }
+      let(:podfile_body) do
+        fixture("cocoapods", "podfiles", "subdependency")
+      end
+      let(:lockfile_body) do
+        fixture("cocoapods", "lockfiles", "subdependency")
+      end
 
-      pending { expect(dependencies.length).to eq(2) }
-      pending { expect(dependencies.last.name).to eq("Alamofire") }
-      pending { expect(dependencies.last.requirements).to eq([]) }
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the last dependency" do
+        subject { dependencies.last }
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("Alamofire") }
+        its(:version) { is_expected.to eq("3.5.1") }
+        its(:requirements) { is_expected.to eq([]) }
+      end
     end
 
     context "with a version specified as between two constraints" do
@@ -98,7 +108,7 @@ RSpec.describe Dependabot::CocoaPods::FileParser do
         fixture("cocoapods", "lockfiles", "version_specified")
       end
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "for a dependency with a git source" do
@@ -130,7 +140,39 @@ RSpec.describe Dependabot::CocoaPods::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("Alamofire") }
         its(:version) { is_expected.to eq("4.3.0") }
-        pending { expect(subject.requirements).to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "for a dependency with a git source and branch specified" do
+      let(:podfile_body) do
+        fixture("cocoapods", "podfiles", "git_source_branch")
+      end
+      let(:lockfile_body) do
+        fixture("cocoapods", "lockfiles", "git_source_branch")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Podfile",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/Alamofire/Alamofire.git",
+              branch: "hotfix",
+              ref: nil
+            }
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("Alamofire") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
       end
     end
 

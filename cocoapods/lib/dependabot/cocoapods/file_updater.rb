@@ -9,7 +9,7 @@ module Dependabot
       require_relative "file_updater/podfile_updater"
       require_relative "file_updater/lockfile_updater"
 
-      WORD = /[a-zA-Z0-9\-_\.]+/.freeze
+      WORD = %r{[a-zA-Z0-9\-_\./]+}.freeze
       POD_NAME = /(('|")(?<q_name>#{WORD})('|")|(?<name>#{WORD}))/.freeze
 
       POD_VERSION = /((\d+)\.(\d+)\.(\*|\d+))/.freeze
@@ -34,10 +34,19 @@ module Dependabot
       end
 
       def updated_dependency_files
-        [
-          updated_file(file: podfile, content: updated_podfile_content),
-          updated_file(file: lockfile, content: updated_lockfile_content)
-        ]
+        updated_files = []
+
+        if podfile && file_changed?(podfile)
+          updated_files <<
+            updated_file(file: podfile, content: updated_podfile_content)
+        end
+
+        if lockfile && dependencies.any?(&:appears_in_lockfile?)
+          updated_files <<
+            updated_file(file: lockfile, content: updated_lockfile_content)
+        end
+
+        updated_files
       end
 
       private

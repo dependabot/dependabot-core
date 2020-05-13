@@ -39,6 +39,7 @@
 
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
+$LOAD_PATH << "./cocoapods/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./dep/lib"
