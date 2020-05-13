@@ -307,7 +307,11 @@ module Dependabot
                            find { |d| d["name"] == name }&.
                            dig("source", "reference")
               updated_req_parts = req.split(" ")
-              updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
+
+              unless commit_sha.to_s.empty?
+                updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
+              end
+
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
             end
           end
