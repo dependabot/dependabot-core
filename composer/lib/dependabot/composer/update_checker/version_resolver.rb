@@ -8,6 +8,8 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
+
+# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Composer
     class UpdateChecker
@@ -483,3 +485,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
