@@ -415,6 +415,7 @@ module Dependabot
 
         # TODO: Remove need for me
         def git_dependency?
+          # ignored_version/raise_on_ignored are irrelevant.
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials
