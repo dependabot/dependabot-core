@@ -83,6 +83,36 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
     end
 
+    context "when the user has asked for a version type and it's available" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:dependency_version) { "1.4.11.1" }
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:dependency_version) { "1.4.11-java7" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
+    end
+
+    context "when a version type is available that wasn't requested" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:dependency_version) { "1.4.11.1" }
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:dependency_version) { "1.4.11.1" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
+    end
+
     context "when the user has asked to ignore a major version" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }

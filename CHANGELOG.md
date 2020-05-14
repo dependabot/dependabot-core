@@ -1,3 +1,10 @@
+## v0.117.8, 12 May 2020
+
+- gradle: Fix version types in gradle to allow matching postfixed version types
+- bundler: Sanitize Dir.chdir calls in gemspecs
+- go_modules: Remove unnecessary `require`s from go.mod
+- dependencies: Fix acorn vulnerability
+
 ## v0.117.7, 20 April 2020
 
 - Nuget: Handle version requirements with suffix
