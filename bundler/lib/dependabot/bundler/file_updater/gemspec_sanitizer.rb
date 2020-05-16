@@ -159,7 +159,15 @@ module Dependabot
             return false unless node.children.first&.type == :lvar
             return false unless node.children[1] == :files=
 
-            node.children[2]&.type == :send
+            node_dynamically_lists_files?(node.children[2])
+          end
+
+          def node_dynamically_lists_files?(node)
+            return false unless node.is_a?(Parser::AST::Node)
+
+            return true if node.type == :send
+
+            node.type == :block && node.children.first&.type == :send
           end
 
           def node_assigns_require_paths?(node)
