@@ -6,16 +6,19 @@ module Dependabot
   module Gradle
     class FileParser
       class PropertyValueFinder
+        # rubocop:disable Layout/LineLength
+        PROPERTY_DECLARATION_AS_DEFAULTS_REGEX =
+          /(?:\s*(?:project\.findProperty\(\s*['"][^\s]+['"]\s*\)\s*\?|project\.hasProperty\(\s*['"][^\s]+['"]\s*\)\s*\?\s*project\.getProperty\(\s*['"][^\s]+['"]\s*\)\s*):)?/.freeze
+
         SINGLE_PROPERTY_DECLARATION_REGEX =
-          /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=\s*['"](?<value>[^\s]+)['"]/.
-          freeze
+          /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=#{PROPERTY_DECLARATION_AS_DEFAULTS_REGEX}\s*['"](?<value>[^\s]+)['"]/.freeze
 
         MULTI_PROPERTY_DECLARATION_REGEX =
-          /(?:^|\s+|ext.)(?<namespace>[^\s=]+)\s*=\s*\[(?<values>[^\]]+)\]/m.
-          freeze
+          /(?:^|\s+|ext.)(?<namespace>[^\s=]+)\s*=\s*\[(?<values>[^\]]+)\]/m.freeze
 
         NAMESPACED_DECLARATION_REGEX =
-          /(?:^|\s+)(?<name>[^\s:]+)\s*:\s*['"](?<value>[^\s]+)['"]\s*/.freeze
+          /(?:^|\s+)(?<name>[^\s:]+)\s*:#{PROPERTY_DECLARATION_AS_DEFAULTS_REGEX}\s*['"](?<value>[^\s]+)['"]\s*/.freeze
+        # rubocop:enable Layout/LineLength
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files
