@@ -15,11 +15,13 @@ module Dependabot
         require_relative "repository_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -38,8 +40,8 @@ module Dependabot
             begin
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
-              possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_vulnerable_versions(possible_versions)
+              possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
               possible_versions.min_by { |hash| hash.fetch(:version) }
             end
@@ -62,16 +64,20 @@ module Dependabot
         end
 
         def filter_ignored_versions(possible_versions)
-          versions_array = possible_versions
+          filtered = possible_versions
 
           ignored_versions.each do |req|
             ignore_req = requirement_class.new(req.split(","))
-            versions_array =
-              versions_array.
+            filtered =
+              filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          versions_array
+          if @raise_on_ignored && filtered.empty? && possible_versions.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def filter_vulnerable_versions(possible_versions)
