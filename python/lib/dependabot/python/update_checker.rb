@@ -195,6 +195,7 @@ module Dependabot
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          raise_on_ignored: @raise_on_ignored,
           security_advisories: security_advisories
         )
       end
@@ -262,6 +263,7 @@ module Dependabot
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          raise_on_ignored: @raise_on_ignored,
           security_advisories: security_advisories
         )
       end
