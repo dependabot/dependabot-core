@@ -112,17 +112,14 @@ module Dependabot
         non_downgrade_tags = remove_version_downgrades(candidate_tags)
         candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        wants_prerelease = prerelease?(dependency.version)
-        candidate_tags =
-          candidate_tags.
-          reject { |tag| prerelease?(tag) && !wants_prerelease }.
-          reject do |tag|
-            version = version_class.new(numeric_version_from(tag))
-            ignore_reqs.any? { |r| r.satisfied_by?(version) }
-          end
+        unless prerelease?(dependency.version)
+          candidate_tags =
+            candidate_tags.
+            reject { |tag| prerelease?(tag) }
+        end
 
         latest_tag =
-          candidate_tags.
+          filter_ignored(candidate_tags).
           max_by do |tag|
             [version_class.new(numeric_version_from(tag)), tag.length]
           end
@@ -317,6 +314,20 @@ module Dependabot
             user: registry_credentials&.fetch("username", nil),
             password: registry_credentials&.fetch("password", nil)
           )
+      end
+
+      def filter_ignored(candidate_tags)
+        filtered =
+          candidate_tags.
+          reject do |tag|
+            version = version_class.new(numeric_version_from(tag))
+            ignore_reqs.any? { |r| r.satisfied_by?(version) }
+          end
+        if @raise_on_ignored && filtered.empty? && candidate_tags.any?
+          raise AllVersionsIgnored
+        end
+
+        filtered
       end
 
       def ignore_reqs
