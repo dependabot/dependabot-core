@@ -12,12 +12,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
   let(:credentials) { [] }
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
 
   let(:dependency) do
@@ -117,6 +119,21 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when the user has asked to ignore all versions" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:dependency_version) { "17.0" }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the current version isn't normal" do
