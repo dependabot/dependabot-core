@@ -28,6 +28,8 @@ if [ "$HELP" = "true" ]; then
 fi
 
 build_image() {
+  echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
+  docker build -t dependabot/dependabot-core .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
   docker build --build-arg "USER_UID=$UID" --build-arg "USER_GID=$(id -g)" -t "$IMAGE_NAME" -f "$DOCKERFILE" .
 }
