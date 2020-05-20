@@ -156,7 +156,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "raises the correct error" do
         expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("hmarr/404")
+          end
       end
     end
 
