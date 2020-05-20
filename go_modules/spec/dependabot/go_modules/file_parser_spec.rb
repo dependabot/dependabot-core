@@ -150,6 +150,16 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "a non-existing transitive dependency" do
+      # go.mod references repo with bad go.mod, a broken transitive dependency
+      let(:go_mod_fixture_name) { "parent_module.mod" }
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     describe "a dependency at a non-existent version" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
