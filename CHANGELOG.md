@@ -1,3 +1,9 @@
+## v0.117.9, 19 May 2020
+
+- Handle protected branches enforcing linear history
+- Bump cython from 0.29.17 to 0.29.18 in /python/helpers
+- Update rubocop requirement from ~> 0.82.0 to ~> 0.83.0 in /common
+
 ## v0.117.8, 12 May 2020
 
 - gradle: Fix version types in gradle to allow matching postfixed version types
