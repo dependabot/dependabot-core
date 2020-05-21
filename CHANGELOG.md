@@ -1,3 +1,10 @@
+## v0.117.10, 21 May 2020
+
+- Always use exact dependencies label if one exists
+- Bump cython from 0.29.18 to 0.29.19 in /python/helpers
+- go_modules: Handle multiline errors
+- docker-dev-shell: rebuild core image when passing `--rebuild` option
+
 ## v0.117.9, 19 May 2020
 
 - Handle protected branches enforcing linear history
