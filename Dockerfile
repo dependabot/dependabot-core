@@ -67,7 +67,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout master && cd - \
+    && cd /usr/local/.pyenv && git checkout cf81e5a0c47ab09d8f760e2bb9172196d9602fde && cd - \
     && pyenv install 3.8.3 \
     && pyenv install 2.7.18 \
     && pyenv global 3.8.3
