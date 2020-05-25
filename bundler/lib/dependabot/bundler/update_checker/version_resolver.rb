@@ -25,6 +25,7 @@ module Dependabot
 
         def initialize(dependency:, unprepared_dependency_files:,
                        credentials:, ignored_versions:,
+                       raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
                        latest_allowable_version: nil)
@@ -32,6 +33,7 @@ module Dependabot
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
           @ignored_versions            = ignored_versions
+          @raise_on_ignored            = raise_on_ignored
           @replacement_git_pin         = replacement_git_pin
           @remove_git_source           = remove_git_source
           @unlock_requirement          = unlock_requirement
@@ -270,6 +272,7 @@ module Dependabot
               dependency_files: dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              raise_on_ignored: @raise_on_ignored,
               security_advisories: []
             ).latest_version_details
         end
