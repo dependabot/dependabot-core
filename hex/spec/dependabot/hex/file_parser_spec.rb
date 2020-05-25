@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Hex::FileParser do
         expect { parser.parse }.
           to raise_error do |error|
             expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-            expect(error.message).to include("Random error!")
+            expect(error.message).to include("(ArgumentError) argument error")
           end
       end
     end
