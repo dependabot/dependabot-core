@@ -93,7 +93,8 @@ module Dependabot
         end
 
         def possible_versions(filter_ignored: true)
-          possible_versions_with_details(filter_ignored).map(&:first)
+          possible_versions_with_details(filter_ignored: filter_ignored).
+            map(&:first)
         end
 
         private
