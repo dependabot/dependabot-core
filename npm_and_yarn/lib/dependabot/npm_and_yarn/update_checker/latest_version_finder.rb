@@ -61,7 +61,7 @@ module Dependabot
           versions_array =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
-            else possible_versions(false)
+            else possible_versions(filter_ignored: false)
             end
 
           secure_versions = filter_vulnerable_versions(versions_array)
@@ -83,17 +83,17 @@ module Dependabot
           end
         end
 
-        def possible_versions_with_details(ignore = true)
+        def possible_versions_with_details(filter_ignored: true)
           versions = possible_previous_versions_with_details.
                      reject { |_, details| details["deprecated"] }
 
-          return filter_ignored_versions(versions) if ignore
+          return filter_ignored_versions(versions) if filter_ignored
 
           versions
         end
 
-        def possible_versions(ignore = true)
-          possible_versions_with_details(ignore).map(&:first)
+        def possible_versions(filter_ignored: true)
+          possible_versions_with_details(filter_ignored).map(&:first)
         end
 
         private
