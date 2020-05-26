@@ -288,7 +288,8 @@ module Dependabot
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
-          elsif error.message.start_with?("Allowed memory size")
+          elsif error.message.start_with?("Allowed memory size") ||
+                error.message.start_with?("Out of memory")
             raise Dependabot::OutOfMemory
           elsif error.message.start_with?("Package not found in updated") &&
                 !dependency.top_level?
