@@ -8,9 +8,12 @@ import re
 
 import setuptools
 import pip._internal.req.req_file
-from pip._internal.download import PipSession
+from pip._internal.network.session import PipSession
 from pip._internal.models.format_control import FormatControl
-from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.constructors import (
+        install_req_from_line,
+        install_req_from_parsed_requirement,
+)
 
 JINJA_DELIMITER_IGNORE_REGEX = r"({{(.*?)}})|({%[-]?(.*?)%})|({#(.*?)#})"
 
@@ -45,7 +48,8 @@ def parse_requirements(directory):
                 options=parser_options,
                 session=PipSession()
             )
-            for install_req in requirements:
+            for parsed_req in requirements:
+                install_req = install_req_from_parsed_requirement(parsed_req)
                 if install_req.original_link:
                     continue
 
