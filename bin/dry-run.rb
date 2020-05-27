@@ -491,7 +491,7 @@ end
 
 puts "Exclusions: #{$options[:exclusions]}"
 
-dependencies.shuffle
+dependencies = dependencies.shuffle
 
 dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
 
