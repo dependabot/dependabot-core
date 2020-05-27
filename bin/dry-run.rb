@@ -491,6 +491,8 @@ end
 
 puts "Exclusions: #{$options[:exclusions]}"
 
+dependencies = dependencies.shuffle
+
 dependencies.each do |dep| unless $options[:exclusions].include?(dep.name)
 
   if count == $options[:pr_count]
