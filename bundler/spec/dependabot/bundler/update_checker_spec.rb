@@ -1602,7 +1602,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to receive(:new).with(
               requirements: requirements,
               update_strategy: :bump_versions,
-              latest_version: /^1./,
+              latest_version: /^2./,
               latest_resolvable_version: /^1./,
               updated_source: requirements.first[:source]
             ).and_call_original
@@ -1643,7 +1643,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: /^1./,
+                  latest_version: /^2./,
                   latest_resolvable_version: /^1./,
                   updated_source: requirements.first[:source]
                 ).and_call_original
@@ -1705,7 +1705,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to receive(:new).with(
                   requirements: requirements,
                   update_strategy: :bump_versions,
-                  latest_version: /^1./,
+                  latest_version: /^2./,
                   latest_resolvable_version: /^1./,
                   updated_source: nil
                 ).and_call_original
