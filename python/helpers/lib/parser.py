@@ -15,22 +15,9 @@ from pip._internal.req.constructors import (
         install_req_from_parsed_requirement,
 )
 
-JINJA_DELIMITER_IGNORE_REGEX = r"({{(.*?)}})|({%[-]?(.*?)%})|({#(.*?)#})"
-
 def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []
-    parser_options = optparse.Values(
-            {
-                "skip_requirements_regex": JINJA_DELIMITER_IGNORE_REGEX,
-                # pip._internal assumes parse_requirements will be called from
-                # CLI, which sets default values. When passing parser options,
-                # need to explicitly set those defaults.
-                "isolated_mode": False,
-                "format_control": FormatControl(),
-            }
-        )
-
     requirement_files = glob.glob(os.path.join(directory, '*.txt')) \
                         + glob.glob(os.path.join(directory, '**', '*.txt'))
 
@@ -45,7 +32,6 @@ def parse_requirements(directory):
         try:
             requirements = pip._internal.req.req_file.parse_requirements(
                 reqs_file,
-                options=parser_options,
                 session=PipSession()
             )
             for parsed_req in requirements:
