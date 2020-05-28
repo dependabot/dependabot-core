@@ -174,7 +174,7 @@ async function updateDependencyFile(
   // requirement from the package manifest
   const replacedDeclarationYarnLock = replaceDeclaration(
     originalYarnLock,
-    readFile("yarn.lock"),
+    dedupedYarnLock,
     depName,
     newVersionRequirement,
     existingVersionRequirement
