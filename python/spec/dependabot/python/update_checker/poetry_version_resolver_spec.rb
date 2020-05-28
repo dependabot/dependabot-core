@@ -158,7 +158,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
       let(:updated_requirement) { ">= 3.7.4, <= 3.9.0" }
 
-      it { is_expected.to eq(Gem::Version.new("3.8.3")) }
+      it { is_expected.to eq(Gem::Version.new("3.8.2")) }
 
       context "that has a bad reference" do
         let(:pyproject_fixture_name) { "git_dependency_bad_ref.toml" }
