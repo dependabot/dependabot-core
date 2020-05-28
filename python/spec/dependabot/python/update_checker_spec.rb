@@ -20,6 +20,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
@@ -32,6 +33,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
@@ -106,6 +108,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           dependency_files: dependency_files,
           credentials: credentials,
           ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
           security_advisories: security_advisories
         ).and_call_original
       expect(checker.latest_version).to eq(Gem::Version.new("2.6.0"))
@@ -372,6 +375,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           ).and_call_original
         expect(checker.latest_resolvable_version_with_no_unlock).

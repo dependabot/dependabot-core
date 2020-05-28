@@ -205,6 +205,7 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           )
       end
@@ -306,7 +307,9 @@ module Dependabot
         @git_commit_checker ||=
           GitCommitChecker.new(
             dependency: dependency,
-            credentials: credentials
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored
           )
       end
     end

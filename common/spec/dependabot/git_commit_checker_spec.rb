@@ -9,7 +9,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     described_class.new(
       dependency: dependency,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
     )
   end
 
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     )
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
 
   let(:requirements) do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: source }]
@@ -921,6 +923,20 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }
+        end
+
+        context "all versions ignored" do
+          let(:ignored_versions) { [">= 0"] }
+          it "returns nil" do
+            expect(subject).to be_nil
+          end
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "raises an error" do
+              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            end
+          end
         end
 
         context "and a ref prefixed with tags/" do

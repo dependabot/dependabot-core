@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       dependency: dependency,
       dependency_files: dependency_files,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
       credentials: [{
         "type" => "git_source",
@@ -23,6 +24,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   end
   let(:dependency_files) { [gemfile, lockfile] }
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
 
   let(:dependency) do
@@ -142,6 +144,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+      end
+
+      context "when the user has ignored all versions" do
+        let(:ignored_versions) { [">= 0"] }
+
+        it "returns nil" do
+          expect(subject).to be_nil
+        end
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "raises an error" do
+            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          end
+        end
       end
 
       context "with a prerelease version specified" do
