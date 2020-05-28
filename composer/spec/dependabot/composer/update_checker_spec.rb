@@ -89,8 +89,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0"] }
-      it "returns nil" do
-        expect(subject).to be_nil
+      it "returns latest_resolvable_version" do
+        expect(subject).to eq(Gem::Version.new("1.17.0"))
       end
 
       context "raise_on_ignored" do
