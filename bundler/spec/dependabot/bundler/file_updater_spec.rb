@@ -882,9 +882,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:lockfile_fixture_name) { "git_source_with_version.lock" }
             let(:dependency) do
               Dependabot::Dependency.new(
-                name: "business",
-                version: "71083639645603d3bc25f7f5b11c96f0d07bf252",
-                previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+                name: "dependabot-test-ruby-package",
+                version: "1c6331732c41e4557a16dacb82534f1d1c831848",
+                previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
                 requirements: requirements,
                 previous_requirements: previous_requirements,
                 package_manager: "bundler"
@@ -893,11 +893,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.18.0",
+                requirement: "~> 1.0.1",
                 groups: [],
                 source: {
                   type: "git",
-                  url: "http://github.com/gocardless/business"
+                  url: "https://github.com/dependabot-fixtures/"\
+                  "dependabot-test-ruby-package"
                 }
               }]
             end
@@ -908,11 +909,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "http://github.com/gocardless/business"
+                  url: "https://github.com/dependabot-fixtures/"\
+                  "dependabot-test-ruby-package"
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.18.0)!" }
+            its(:content) do
+              is_expected.to include "dependabot-test-ruby-package (~> 1.0.1)!"
+            end
           end
         end
       end
