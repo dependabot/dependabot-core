@@ -65,6 +65,15 @@ RSpec.describe Dependabot::Python::FileParser do
       its(:length) { is_expected.to eq(4) }
     end
 
+    context "with jinja templates" do
+      let(:requirements_fixture_name) { "jinja_requirements.txt" }
+
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "with comments" do
       let(:requirements_fixture_name) { "comments.txt" }
       its(:length) { is_expected.to eq(2) }
