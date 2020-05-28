@@ -1,3 +1,8 @@
+## v0.117.11, 28 May 2020
+
+- Optionally raise Dependabot::AllVersionsIgnored when all potential updates are ignored
+- Update Python version to 3.8.3 and 2.8.18 (@ulgens)
+
 ## v0.117.10, 21 May 2020
 
 - Always use exact dependencies label if one exists
