@@ -1,3 +1,10 @@
+## v0.118.0, 29 May 2020
+
+- Remove support for jinja requimrents files
+- Upgrade python helpers to latest version of pip
+- Bump pip from 19.3.1 to 20.1.1
+- Bump pip-tools from 4.5.1 to 5.1.2 in /python/helpers
+
 ## v0.117.11, 28 May 2020
 
 - Optionally raise Dependabot::AllVersionsIgnored when all potential updates are ignored
