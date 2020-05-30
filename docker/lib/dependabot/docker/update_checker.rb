@@ -69,8 +69,8 @@ module Dependabot
         # If the tag isn't up-to-date then we can definitely update
         return false if version_tag_up_to_date? == false
 
-        # Otherwise, if the Dockerfile/docker-compose.yml specifies a digest
-        # check that that is up-to-date
+        # Otherwise, if the Dockerfile/docker-compose.yml specifies 
+        # a digest, check that digest is up to date
         digest_up_to_date?
       end
 
