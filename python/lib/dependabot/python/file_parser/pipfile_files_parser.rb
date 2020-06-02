@@ -141,14 +141,17 @@ module Dependabot
 
         def parsed_pipfile
           @parsed_pipfile ||= TomlRB.parse(pipfile.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pipfile.path
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+          msg = e.message.strip
+          raise Dependabot::DependencyFileNotParseable.new(pipfile.path, msg)
         end
 
         def parsed_pipfile_lock
           @parsed_pipfile_lock ||= JSON.parse(pipfile_lock.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, pipfile_lock.path
+        rescue JSON::ParserError => e
+          msg = e.message.strip
+          raise Dependabot::DependencyFileNotParseable.new(pipfile_lock.path,
+                                                           msg)
         end
 
         def pipfile

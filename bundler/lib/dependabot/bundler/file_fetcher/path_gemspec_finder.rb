@@ -18,8 +18,9 @@ module Dependabot
         def path_gemspec_paths
           ast = Parser::CurrentRuby.parse(gemfile.content)
           find_path_gemspec_paths(ast)
-        rescue Parser::SyntaxError
-          raise Dependabot::DependencyFileNotParseable, gemfile.path
+        rescue Parser::SyntaxError => e
+          msg = e.message.strip
+          raise Dependabot::DependencyFileNotParseable.new(gemfile.path, msg)
         end
 
         private

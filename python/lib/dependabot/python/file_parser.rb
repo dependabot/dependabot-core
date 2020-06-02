@@ -219,8 +219,9 @@ module Dependabot
         return true if poetry_lock || pyproject_lock
 
         !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, pyproject.path
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+        msg = e.message.strip
+        raise Dependabot::DependencyFileNotParseable.new(pyproject.path, msg)
       end
 
       def output_file_regex(filename)

@@ -190,14 +190,17 @@ module Dependabot
         return unless lockfile
 
         @parsed_lockfile ||= JSON.parse(lockfile.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, lockfile.path
+      rescue JSON::ParserError => e
+        msg = e.message.strip
+        raise Dependabot::DependencyFileNotParseable.new(lockfile.path, msg)
       end
 
       def parsed_composer_json
         @parsed_composer_json ||= JSON.parse(composer_json.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, composer_json.path
+      rescue JSON::ParserError => e
+        msg = e.message.strip
+        raise Dependabot::DependencyFileNotParseable.new(composer_json.path,
+                                                         msg)
       end
 
       def composer_json
