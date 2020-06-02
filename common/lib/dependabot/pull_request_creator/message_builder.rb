@@ -444,7 +444,7 @@ module Dependabot
       end
 
       def source_provider_supports_html?
-        !%w(azure codecommit).include?(source.provider)
+        !%w(azure codecommit bitbucket).include?(source.provider)
       end
 
       def serialized_vulnerability_details(details)
