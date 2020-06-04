@@ -353,7 +353,7 @@ def create_user_npmrc
 
   File.delete(npmrc_path) if File.exist?(npmrc_path)
 
-  npmrc = $fetcher.npmrc_content.gsub("\r\n", "\n").split("\n")
+  npmrc = $fetcher.npmrc_content.gsub("\r\n", "\n").gsub("\r", "\n").split("\n")
   registries = []
   npmrc.each do |registry| if !registry.start_with?("#") && registry.include?("registry=")
     registries.push(registry.split('=').at(1).gsub("https:", "").gsub("http:", ""))
