@@ -152,9 +152,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
           let(:gemfile_body) do
             fixture("ruby", "gemfiles", "git_source_with_version")
           end
-          let(:dependency_name) { "business" }
+          let(:dependency_name) { "dependabot-test-ruby-package" }
 
-          its(:content) { is_expected.to include(%("business", ">= 0", git:)) }
+          its(:content) do
+            is_expected.to include(
+              %("dependabot-test-ruby-package", ">= 0", git:)
+            )
+          end
         end
 
         context "that should be removed" do

@@ -19,11 +19,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:credentials) do
     [{
@@ -148,6 +150,20 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     context "when the lowest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.18, < 0.1.20"] }
       it { is_expected.to eq(Gem::Version.new("0.1.20")) }
+    end
+
+    context "when all versions are being ignored" do
+      let(:ignored_versions) { [">= 0"] }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the lowest fixed version is a pre-release" do

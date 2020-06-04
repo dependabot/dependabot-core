@@ -219,10 +219,16 @@ module Dependabot
               map { |release| version_class.new(release["version"]) }
 
             versions.reject!(&:prerelease?) unless wants_prerelease?
-            versions.reject! do |v|
+
+            filtered = versions.reject do |v|
               ignore_reqs.any? { |r| r.satisfied_by?(v) }
             end
-            versions.max
+
+            if @raise_on_ignored && filtered.empty? && versions.any?
+              raise AllVersionsIgnored
+            end
+
+            filtered.max
           end
       end
 

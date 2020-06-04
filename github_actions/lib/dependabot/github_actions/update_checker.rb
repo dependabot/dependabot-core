@@ -133,7 +133,8 @@ module Dependabot
         @git_commit_checker ||= Dependabot::GitCommitChecker.new(
           dependency: dependency,
           credentials: credentials,
-          ignored_versions: ignored_versions
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored
         )
       end
     end
