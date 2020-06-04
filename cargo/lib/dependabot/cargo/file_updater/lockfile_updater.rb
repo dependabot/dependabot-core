@@ -170,6 +170,8 @@ module Dependabot
 
             next if virtual_manifest?(file)
 
+            File.write(File.join(dir, "build.rs"), dummy_app_content)
+
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
             File.write(File.join(dir, "src/main.rs"), dummy_app_content)
