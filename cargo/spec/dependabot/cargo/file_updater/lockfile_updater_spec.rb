@@ -337,6 +337,16 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "when there is a linked dependency" do
+        let(:dependency_files) { [manifest, lockfile] }
+        let(:manifest_fixture_name) { "linked_dependency" }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "time"\nversion = "0.1.40"))
+        end
+      end
+
       context "when there is a workspace" do
         let(:dependency_files) { [manifest, lockfile, workspace_child] }
         let(:manifest_fixture_name) { "workspace_root" }
