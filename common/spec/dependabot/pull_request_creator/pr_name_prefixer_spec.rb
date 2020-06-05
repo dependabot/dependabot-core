@@ -119,6 +119,30 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
+      context "from Azure with no author email" do
+        let(:source) do
+          Dependabot::Source.new(provider: "azure",
+                                 repo: "org/gocardless/_git/bump")
+        end
+        let(:watched_repo_url) do
+          "https://dev.azure.com/org/gocardless/_apis/git/repositories/bump"
+        end
+
+        let(:commits_response) do
+          fixture("azure", "commits_no_author_email.json")
+        end
+        before do
+          stub_request(:get, watched_repo_url + "/commits").
+            to_return(
+              status: 200,
+              body: commits_response,
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq("") }
+      end
+
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
         it { is_expected.to eq("[Security] ") }

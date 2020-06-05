@@ -1,3 +1,9 @@
+## v0.118.1, 4 June 2020
+
+- Handle cargo native dependencies
+- Fix failing non-existing author email (@hsyn)
+- docker-dev-shell --rebuild no args
+
 ## v0.118.0, 29 May 2020
 
 - Remove support for jinja requimrents files

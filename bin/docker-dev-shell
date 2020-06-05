@@ -7,7 +7,7 @@ DOCKERFILE="Dockerfile.development"
 HELP=false
 REBUILD=false
 
-OPTS=`getopt -o hr: --long help,rebuild: -n 'parse-options' -- "$@"`
+OPTS=`getopt -o hr --long help,rebuild -n 'parse-options' -- "$@"`
 if [ $? != 0 ]; then
   echo "failed parsing options" >&2
   exit 1
