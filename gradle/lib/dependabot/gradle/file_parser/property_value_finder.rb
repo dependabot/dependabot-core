@@ -7,8 +7,19 @@ module Dependabot
     class FileParser
       class PropertyValueFinder
         # rubocop:disable Layout/LineLength
+        QUOTED_VALUE_REGEX =
+          /\s*['"][^\s]+['"]\s*/.freeze
+
+        # project.findProperty('property') ?:
+        FIND_PROPERTY_REGEX =
+          /\s*project\.findProperty\(#{QUOTED_VALUE_REGEX}\)\s*\?:/.freeze
+
+        # project.hasProperty('property') ? project.getProperty('property') :
+        HAS_PROPERTY_REGEX =
+          /\s*project\.hasProperty\(#{QUOTED_VALUE_REGEX}\)\s*\?\s*project\.getProperty\(#{QUOTED_VALUE_REGEX}\)\s*:/.freeze
+
         PROPERTY_DECLARATION_AS_DEFAULTS_REGEX =
-          /(?:\s*(?:project\.findProperty\(\s*['"][^\s]+['"]\s*\)\s*\?|project\.hasProperty\(\s*['"][^\s]+['"]\s*\)\s*\?\s*project\.getProperty\(\s*['"][^\s]+['"]\s*\)\s*):)?/.freeze
+          /(?:#{FIND_PROPERTY_REGEX}|#{HAS_PROPERTY_REGEX})?/.freeze
 
         SINGLE_PROPERTY_DECLARATION_REGEX =
           /(?:^|\s+|ext.)(?<name>[^\s=]+)\s*=#{PROPERTY_DECLARATION_AS_DEFAULTS_REGEX}\s*['"](?<value>[^\s]+)['"]/.freeze
