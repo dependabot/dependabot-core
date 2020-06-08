@@ -1226,16 +1226,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.19",
+            "version": "0.12.26",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d"
+                "reference": "f108dabe757a584fafc3baabc0fabf4d45e040f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d",
-                "reference": "054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/f108dabe757a584fafc3baabc0fabf4d45e040f1",
+                "reference": "f108dabe757a584fafc3baabc0fabf4d45e040f1",
                 "shasum": ""
             },
             "require": {
@@ -1264,7 +1264,7 @@
                 "MIT"
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
-            "time": "2020-04-19T20:35:10+00:00"
+            "time": "2020-06-07T22:01:45+00:00"
         },
         {
             "name": "symfony/event-dispatcher",
