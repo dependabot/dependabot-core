@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Kiln::FileFetcher, :vcr do
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
-      repo: "releen/kiln-lib",
+      repo: "releen/kiln-fixtures",
       directory: directory,
       branch: branch
     )

@@ -1,0 +1,297 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/releen/kiln-fixtures/git/refs/heads/master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 10 Jun 2020 21:27:22 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"7c88fcdc7b3cdf1133a7babff1fd0a99"
+      Last-Modified:
+      - Wed, 10 Jun 2020 21:23:01 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '59'
+      X-Ratelimit-Reset:
+      - '1591828042'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '223'
+      X-Github-Request-Id:
+      - D356:5F06:DA9F:1647D:5EE1503A
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/master","node_id":"MDM6UmVmMjcxMzg4MDgxOnJlZnMvaGVhZHMvbWFzdGVy","url":"https://api.github.com/repos/releen/kiln-fixtures/git/refs/heads/master","object":{"sha":"450e8c2be085998e4f9ce2428201c94bf223ad3f","type":"commit","url":"https://api.github.com/repos/releen/kiln-fixtures/git/commits/450e8c2be085998e4f9ce2428201c94bf223ad3f"}}'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 21:27:22 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/releen/kiln-fixtures/contents/?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 10 Jun 2020 21:27:22 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"1a5252e063cbce6200b864e1f4fdb015f66c4429"
+      Last-Modified:
+      - Wed, 10 Jun 2020 21:23:01 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '58'
+      X-Ratelimit-Reset:
+      - '1591828042'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '426'
+      X-Github-Request-Id:
+      - D357:59DA:E76E:177FD:5EE1503A
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":"Kilnfile","path":"Kilnfile","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1,"url":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","html_url":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile","git_url":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","download_url":"https://raw.githubusercontent.com/releen/kiln-fixtures/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile","type":"file","_links":{"self":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","git":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","html":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile"}},{"name":"Kilnfile.lock","path":"Kilnfile.lock","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1,"url":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile.lock?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","html_url":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock","git_url":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","download_url":"https://raw.githubusercontent.com/releen/kiln-fixtures/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock","type":"file","_links":{"self":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile.lock?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","git":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","html":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock"}},{"name":"README.md","path":"README.md","sha":"077444ee2743248801f78aa74bc527b073382386","size":15,"url":"https://api.github.com/repos/releen/kiln-fixtures/contents/README.md?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","html_url":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/README.md","git_url":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/077444ee2743248801f78aa74bc527b073382386","download_url":"https://raw.githubusercontent.com/releen/kiln-fixtures/450e8c2be085998e4f9ce2428201c94bf223ad3f/README.md","type":"file","_links":{"self":"https://api.github.com/repos/releen/kiln-fixtures/contents/README.md?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","git":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/077444ee2743248801f78aa74bc527b073382386","html":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/README.md"}}]'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 21:27:22 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 10 Jun 2020 21:27:22 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"8b137891791fe96927ad78e64b0aad7bded08bdc"
+      Last-Modified:
+      - Wed, 10 Jun 2020 21:22:58 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '57'
+      X-Ratelimit-Reset:
+      - '1591828042'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '312'
+      X-Github-Request-Id:
+      - D358:127C:375B:9133:5EE1503A
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"Kilnfile","path":"Kilnfile","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1,"url":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","html_url":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile","git_url":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","download_url":"https://raw.githubusercontent.com/releen/kiln-fixtures/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile","type":"file","content":"Cg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","git":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","html":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile"}}'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 21:27:22 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile.lock?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Wed, 10 Jun 2020 21:27:22 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"8b137891791fe96927ad78e64b0aad7bded08bdc"
+      Last-Modified:
+      - Wed, 10 Jun 2020 21:22:58 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '56'
+      X-Ratelimit-Reset:
+      - '1591828041'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '317'
+      X-Github-Request-Id:
+      - D359:42D6:D156:1629C:5EE1503A
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"Kilnfile.lock","path":"Kilnfile.lock","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1,"url":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile.lock?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","html_url":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock","git_url":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","download_url":"https://raw.githubusercontent.com/releen/kiln-fixtures/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock","type":"file","content":"Cg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/releen/kiln-fixtures/contents/Kilnfile.lock?ref=450e8c2be085998e4f9ce2428201c94bf223ad3f","git":"https://api.github.com/repos/releen/kiln-fixtures/git/blobs/8b137891791fe96927ad78e64b0aad7bded08bdc","html":"https://github.com/releen/kiln-fixtures/blob/450e8c2be085998e4f9ce2428201c94bf223ad3f/Kilnfile.lock"}}'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 21:27:22 GMT
+recorded_with: VCR 5.0.0
