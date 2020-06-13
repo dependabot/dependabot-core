@@ -22,11 +22,13 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:credentials) do
     [{
@@ -199,6 +201,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
+    end
+
+    context "when all versions are being ignored" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:raise_on_ignored) { true }
+      it "raises an error" do
+        expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+      end
     end
 
     context "with a git dependency" do

@@ -1,3 +1,34 @@
+## v0.118.1, 4 June 2020
+
+- Handle cargo native dependencies
+- Fix failing non-existing author email (@hsyn)
+- docker-dev-shell --rebuild no args
+
+## v0.118.0, 29 May 2020
+
+- Remove support for jinja requimrents files
+- Upgrade python helpers to latest version of pip
+- Bump pip from 19.3.1 to 20.1.1
+- Bump pip-tools from 4.5.1 to 5.1.2 in /python/helpers
+
+## v0.117.11, 28 May 2020
+
+- Optionally raise Dependabot::AllVersionsIgnored when all potential updates are ignored
+- Update Python version to 3.8.3 and 2.8.18 (@ulgens)
+
+## v0.117.10, 21 May 2020
+
+- Always use exact dependencies label if one exists
+- Bump cython from 0.29.18 to 0.29.19 in /python/helpers
+- go_modules: Handle multiline errors
+- docker-dev-shell: rebuild core image when passing `--rebuild` option
+
+## v0.117.9, 19 May 2020
+
+- Handle protected branches enforcing linear history
+- Bump cython from 0.29.17 to 0.29.18 in /python/helpers
+- Update rubocop requirement from ~> 0.82.0 to ~> 0.83.0 in /common
+
 ## v0.117.8, 12 May 2020
 
 - gradle: Fix version types in gradle to allow matching postfixed version types

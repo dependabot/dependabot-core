@@ -185,6 +185,7 @@ module Dependabot
             dependency: dependency,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
             requirement_class: Requirement,
             version_class: Version
           )

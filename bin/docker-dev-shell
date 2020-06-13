@@ -7,7 +7,7 @@ DOCKERFILE="Dockerfile.development"
 HELP=false
 REBUILD=false
 
-OPTS=`getopt -o hr: --long help,rebuild: -n 'parse-options' -- "$@"`
+OPTS=`getopt -o hr --long help,rebuild -n 'parse-options' -- "$@"`
 if [ $? != 0 ]; then
   echo "failed parsing options" >&2
   exit 1
@@ -28,6 +28,8 @@ if [ "$HELP" = "true" ]; then
 fi
 
 build_image() {
+  echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
+  docker build -t dependabot/dependabot-core .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
   docker build --build-arg "USER_UID=$UID" --build-arg "USER_GID=$(id -g)" -t "$IMAGE_NAME" -f "$DOCKERFILE" .
 }
@@ -64,7 +66,9 @@ fi
 
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot/dependabot-core"
+touch .core-bash_history
 docker run --rm -ti \
+  -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/common/Gemfile:$CODE_DIR/common/Gemfile" \

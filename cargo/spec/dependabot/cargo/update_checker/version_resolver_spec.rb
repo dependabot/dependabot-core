@@ -112,6 +112,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.1.41") }
     end
 
+    context "with a linked dependency" do
+      let(:manifest_fixture_name) { "linked_dependency" }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
     context "with a yanked version (for another dependency)" do
       let(:manifest_fixture_name) { "yanked_version" }
       let(:lockfile_fixture_name) { "yanked_version" }

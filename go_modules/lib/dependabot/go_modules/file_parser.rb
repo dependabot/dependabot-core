@@ -135,16 +135,16 @@ module Dependabot
         end
       end
 
-      GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/.freeze
+      GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/m.freeze
       def handle_parser_error(path, stderr)
         case stderr
-        when /go: .*: unknown revision/
+        when /go: .*: unknown revision/m
           line = stderr.lines.grep(/unknown revision/).first
           raise Dependabot::DependencyFileNotResolvable, line.strip
-        when /go: .*: unrecognized import path/
+        when /go: .*: unrecognized import path/m
           line = stderr.lines.grep(/unrecognized import/).first
           raise Dependabot::DependencyFileNotResolvable, line.strip
-        when /go: errors parsing go.mod/
+        when /go: errors parsing go.mod/m
           msg = stderr.gsub(path.to_s, "").strip
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
         when GIT_ERROR_REGEX

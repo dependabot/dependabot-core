@@ -86,6 +86,26 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             end
           end
 
+          context "and the property is using findProperty syntax" do
+            let(:property_name) { "findPropertyVersion" }
+            its([:value]) { is_expected.to eq("27.1.1") }
+            its([:declaration_string]) do
+              # rubocop:disable Layout/LineLength
+              is_expected.to eq("findPropertyVersion = project.findProperty('findPropertyVersion') ?: '27.1.1'")
+              # rubocop:enable Layout/LineLength
+            end
+          end
+
+          context "and the property is using hasProperty syntax" do
+            let(:property_name) { "hasPropertyVersion" }
+            its([:value]) { is_expected.to eq("27.1.1") }
+            its([:declaration_string]) do
+              # rubocop:disable Layout/LineLength
+              is_expected.to eq("hasPropertyVersion = project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'27.1.1'")
+              # rubocop:enable Layout/LineLength
+            end
+          end
+
           context "and the property is commented out" do
             let(:property_name) { "commentedVersion" }
             it { is_expected.to be_nil }
@@ -98,6 +118,25 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             its([:value]) { is_expected.to eq("3.12.1") }
             its([:declaration_string]) do
               is_expected.to eq("okhttp                 : '3.12.1'")
+            end
+            context "and the property is using findProperty syntax" do
+              let(:property_name) { "versions.findPropertyVersion" }
+              its([:value]) { is_expected.to eq("1.0.0") }
+              its([:declaration_string]) do
+                # rubocop:disable Layout/LineLength
+                is_expected.to eq("findPropertyVersion    : project.findProperty('findPropertyVersion') ?: '1.0.0'")
+                # rubocop:enable Layout/LineLength
+              end
+            end
+
+            context "and the property is using hasProperty syntax" do
+              let(:property_name) { "versions.hasPropertyVersion" }
+              its([:value]) { is_expected.to eq("1.0.0") }
+              its([:declaration_string]) do
+                # rubocop:disable Layout/LineLength
+                is_expected.to eq("hasPropertyVersion     : project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'1.0.0'")
+                # rubocop:enable Layout/LineLength
+              end
             end
           end
         end
