@@ -96,13 +96,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       context "when updating a dep blocked by a sub-dep" do
         let(:gemfile_fixture_name) { "blocked_by_subdep" }
         let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
-        let(:dependency_name) { "activesupport" }
-        let(:current_version) { "5.0.0.1" }
+        let(:dependency_name) { "dummy-pkg-a" }
+        let(:current_version) { "1.0.1" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("5.2.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
       context "that only appears in the lockfile" do
