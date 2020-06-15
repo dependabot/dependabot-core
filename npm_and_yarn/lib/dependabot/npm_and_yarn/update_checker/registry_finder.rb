@@ -78,7 +78,7 @@ module Dependabot
             { "Authorization" => "Basic #{encoded_token}" }
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
-            { "Authorization" => "Basic #{token.delete("\n")}" }
+              { "Authorization" => "Basic #{token.delete("\n")}" }
           else
             { "Authorization" => "Bearer #{token}" }
           end
