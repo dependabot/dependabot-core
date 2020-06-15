@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:python_version_file) do
         Dependabot::DependencyFile.new(
           name: ".python-version",
-          content: "2.7.17\n"
+          content: "2.7.18\n"
         )
       end
 
@@ -68,16 +68,9 @@ RSpec.describe Dependabot::Python::FileParser do
     context "with jinja templates" do
       let(:requirements_fixture_name) { "jinja_requirements.txt" }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
-      end
-
-      describe "the second dependency" do
-        subject(:dependency) { dependencies.last }
-        its(:name) { is_expected.to eq("gunicorn") }
-        its(:version) { is_expected.to eq("20.0.2") }
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 

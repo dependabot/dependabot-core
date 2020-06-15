@@ -167,6 +167,7 @@ module Dependabot
               unprepared_dependency_files: dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
               replacement_git_pin: tag
             ).latest_resolvable_version_details
             true
@@ -348,6 +349,7 @@ module Dependabot
               unprepared_dependency_files: dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
               remove_git_source: remove_git_source,
               unlock_requirement: unlock_requirement,
               latest_allowable_version: latest_version
@@ -369,6 +371,7 @@ module Dependabot
               dependency_files: prepared_dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
               security_advisories: security_advisories
             )
           end

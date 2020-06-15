@@ -19,3 +19,4 @@ vendor
 /npm_and_yarn/helpers/install-dir
 /dry-run
 **/bin/helper
+/.core-bash_history

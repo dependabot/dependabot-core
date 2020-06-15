@@ -79,8 +79,14 @@ module Dependabot
       end
 
       def candidate_versions
-        all_versions.
-          reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        filtered = all_versions.
+                   reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+
+        if @raise_on_ignored && filtered.empty? && all_versions.any?
+          raise AllVersionsIgnored
+        end
+
+        filtered
       end
 
       def all_versions

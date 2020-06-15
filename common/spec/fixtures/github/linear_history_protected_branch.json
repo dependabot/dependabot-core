@@ -1,0 +1,4 @@
+{
+  "message": "This branch must not contain merge commits. // See: https://help.github.com/articles/about-protected-branches",
+  "documentation_url": "https://help.github.com/articles/about-protected-branches"
+}

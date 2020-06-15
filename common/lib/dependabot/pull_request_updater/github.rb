@@ -163,7 +163,8 @@ module Dependabot
         return nil if e.message.match?(/Reference cannot be updated/i)
 
         if e.message.match?(/force\-push to a protected/i) ||
-           e.message.match?(/not authorized to push/i)
+           e.message.match?(/not authorized to push/i) ||
+           e.message.match?(/must not contain merge commits/)
           raise BranchProtected
         end
 

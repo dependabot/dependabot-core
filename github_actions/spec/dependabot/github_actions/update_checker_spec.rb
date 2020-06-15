@@ -13,10 +13,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       dependency: dependency,
       dependency_files: [],
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
     )
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -142,6 +144,20 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "and the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
         it { is_expected.to eq("fc9ff49b90869a686df00e922af871c12215986a") }
+      end
+
+      context "and all versions are being ignored" do
+        let(:ignored_versions) { [">= 0"] }
+        it "returns nil" do
+          expect(subject).to be_nil
+        end
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "raises an error" do
+            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          end
+        end
       end
     end
 

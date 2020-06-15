@@ -25,7 +25,7 @@ module Dependabot
   class OutOfMemory < DependabotError; end
 
   #####################
-  # Repo leval errors #
+  # Repo level errors #
   #####################
 
   class BranchNotFound < DependabotError
@@ -191,4 +191,7 @@ module Dependabot
       super(msg)
     end
   end
+
+  # Raised by UpdateChecker if all candidate updates are ignored
+  class AllVersionsIgnored < DependabotError; end
 end

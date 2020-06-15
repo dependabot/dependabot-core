@@ -6,6 +6,8 @@ module Dependabot
   class PullRequestCreator
     class Labeler
       DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i.freeze
+      DEFAULT_DEPENDENCIES_LABEL = "dependencies"
+      DEFAULT_SECURITY_LABEL = "security"
 
       @package_manager_labels = {}
 
@@ -170,10 +172,16 @@ module Dependabot
         if custom_labels then custom_labels & labels
         else
           [
-            labels.find { |l| l.match?(DEPENDENCIES_LABEL_REGEX) },
+            default_dependencies_label,
             label_language? ? language_label : nil
           ].compact
         end
+      end
+
+      # Find the exact match first and then fallback to *dependenc* label
+      def default_dependencies_label
+        labels.find { |l| l == DEFAULT_DEPENDENCIES_LABEL } ||
+          labels.find { |l| l.match?(DEPENDENCIES_LABEL_REGEX) }
       end
 
       def dependencies_label_exists?
@@ -260,7 +268,12 @@ module Dependabot
           self.class.label_details_for_package_manager(package_manager).
           fetch(:name)
 
-        @labels = [*@labels, "dependencies", "security", langauge_name].uniq
+        @labels = [
+          *@labels,
+          DEFAULT_DEPENDENCIES_LABEL,
+          DEFAULT_SECURITY_LABEL,
+          langauge_name
+        ].uniq
       end
 
       def create_dependencies_label
@@ -292,44 +305,44 @@ module Dependabot
 
       def create_github_dependencies_label
         github_client_for_source.add_label(
-          source.repo, "dependencies", "0366d6",
+          source.repo, DEFAULT_DEPENDENCIES_LABEL, "0366d6",
           description: "Pull requests that update a dependency file",
           accept: "application/vnd.github.symmetra-preview+json"
         )
-        @labels = [*@labels, "dependencies"].uniq
+        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
         raise unless e.errors.first.fetch(:code) == "already_exists"
 
-        @labels = [*@labels, "dependencies"].uniq
+        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       end
 
       def create_gitlab_dependencies_label
         gitlab_client_for_source.create_label(
-          source.repo, "dependencies", "#0366d6",
+          source.repo, DEFAULT_DEPENDENCIES_LABEL, "#0366d6",
           description: "Pull requests that update a dependency file"
         )
-        @labels = [*@labels, "dependencies"].uniq
+        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       end
 
       def create_github_security_label
         github_client_for_source.add_label(
-          source.repo, "security", "ee0701",
+          source.repo, DEFAULT_SECURITY_LABEL, "ee0701",
           description: "Pull requests that address a security vulnerability",
           accept: "application/vnd.github.symmetra-preview+json"
         )
-        @labels = [*@labels, "security"].uniq
+        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
         raise unless e.errors.first.fetch(:code) == "already_exists"
 
-        @labels = [*@labels, "security"].uniq
+        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       end
 
       def create_gitlab_security_label
         gitlab_client_for_source.create_label(
-          source.repo, "security", "#ee0701",
+          source.repo, DEFAULT_SECURITY_LABEL, "#ee0701",
           description: "Pull requests that address a security vulnerability"
         )
-        @labels = [*@labels, "security"].uniq
+        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       end
 
       def create_github_language_label

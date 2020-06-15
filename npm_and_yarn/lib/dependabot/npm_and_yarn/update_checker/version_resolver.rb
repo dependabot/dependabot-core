@@ -364,6 +364,7 @@ module Dependabot
         end
 
         def git_dependency?(dep)
+          # ignored_version/raise_on_ignored are irrelevant.
           GitCommitChecker.
             new(dependency: dep, credentials: credentials).
             git_dependency?

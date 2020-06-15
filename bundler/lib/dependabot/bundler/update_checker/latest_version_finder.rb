@@ -19,11 +19,13 @@ module Dependabot
         include SharedBundlerHelpers
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -57,8 +59,8 @@ module Dependabot
 
           relevant_versions = registry_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
-          relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_vulnerable_versions(relevant_versions)
+          relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
 
           relevant_versions.min
@@ -71,8 +73,13 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array.
+                     reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          if @raise_on_ignored && filtered.empty? && versions_array.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def filter_vulnerable_versions(versions_array)

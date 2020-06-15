@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
@@ -31,6 +32,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
@@ -582,6 +584,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         fixture("pypi", "pypi_simple_response_yanked.html")
       end
       it { is_expected.to eq(Gem::Version.new("2.2.0")) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { ["> 0"] }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the PyPI response includes data-requires-python entries" do

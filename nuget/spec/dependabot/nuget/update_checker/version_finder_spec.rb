@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
@@ -102,6 +104,20 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { ["> 0"] }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "with a custom repo in a nuget.config file" do

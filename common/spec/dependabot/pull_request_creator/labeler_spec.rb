@@ -472,6 +472,12 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         it { is_expected.to eq(["Dependency: Gems"]) }
       end
 
+      context "when a default and custom dependencies label exists" do
+        let(:labels_fixture_name) { "labels_with_custom_and_default.json" }
+
+        it { is_expected.to eq(["dependencies"]) }
+      end
+
       context "when asking for custom labels" do
         let(:custom_labels) { ["wontfix"] }
         it { is_expected.to eq(["wontfix"]) }
