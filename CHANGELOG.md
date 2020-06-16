@@ -1,3 +1,18 @@
+## v0.118.2, 16 June 2020
+
+- GitHub Actions: Handle multiple sources for the same action
+- Gradle: Add support for properties set as defaults, supports both the
+  findProperty and hasProperty syntax styles.
+- Nuget: Added support for <PackageVersion> elements with MSBuild projects
+- GitLab: Add pull_request_updater
+- Handle missing repo when fetching recent commits
+- Handle new protected branch error when updating PRs
+- Update rubocop requirement from ~> 0.83.0 to ~> 0.85.0 in /common
+- Upgrade poetry to 1.0.8
+- Update vcr requirement from = 5.0 to = 6.0.0 in /common
+- Update gitlab requirement from = 4.14.1 to = 4.15.0 in /common
+- Specs: Update rubygems index and stubbed info responses
+
 ## v0.118.1, 4 June 2020
 
 - Handle cargo native dependencies
