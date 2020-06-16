@@ -134,7 +134,7 @@ module Dependabot
               author: author_details,
               changes: files.map do |file|
                 {
-                  changeType: "edit",
+                  changeType: fetch_repo_contents(base_commit, file.path).length == 1 ? "edit": "add", #else "add", #"edit",
                   item: { path: file.path },
                   newContent: {
                     content: Base64.encode64(file.content),
