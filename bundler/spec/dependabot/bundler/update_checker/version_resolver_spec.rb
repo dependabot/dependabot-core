@@ -417,7 +417,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       context "with an implicit pre-release requirement" do
         let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
         let(:gemspec_fixture_name) { "implicit_pre" }
-        let(:latest_allowable_version) { "4.2.3" }
+        let(:latest_allowable_version) { "6.0.3.1" }
 
         let(:unlock_requirement) { true }
         let(:current_version) { nil }
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:requirements) do
           [{
             file: "example.gemspec",
-            requirement: ">= 4.0",
+            requirement: ">= 6.0",
             groups: [],
             source: nil
           }]
