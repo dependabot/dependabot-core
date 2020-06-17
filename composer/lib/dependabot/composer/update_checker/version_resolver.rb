@@ -460,7 +460,7 @@ module Dependabot
 
         def path_dependency_files
           @path_dependency_files ||=
-            dependency_files.select { |f| f.name =~ /.+composer.json\z/ }
+            dependency_files.select { |f| f.name.end_with?("/composer.json") }
         end
 
         def lockfile
