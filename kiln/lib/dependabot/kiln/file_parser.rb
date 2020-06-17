@@ -3,6 +3,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "yaml"
 
 module Dependabot
   module Kiln
@@ -12,6 +13,7 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
         dependency_set += kilnfile_dependencies
+        # dependency_set += kilnlock_dependencies
         dependency_set.dependencies
       end
 
@@ -21,21 +23,28 @@ module Dependabot
         return
       end
 
+      def kilnlock_dependencies
+
+
+      end
+
       def kilnfile_dependencies
         dependencies = DependencySet.new
 
+        kilnfile ||= get_original_file("Kilnfile")
+        kilnfile_content = YAML.load(kilnfile.content)["releases"][0]
+
         dependencies << Dependency.new(
-          name: "uaa",
-          version: "74.16.0",
-          requirements: [{
-                             requirement: "~> 74.16.0",
-                             file: "Kilnfile",
-                             groups: [:default],
-                             source: {
-                                 type: "bosh.io"
-                             },
-                         }],
-          package_manager: "kiln"
+            name: kilnfile_content["name"],
+                    requirements: [{
+                               requirement: kilnfile_content["version"],
+                               file: "Kilnfile",
+                               groups: [:default],
+                               source: {
+                                   type: "bosh.io"
+                               },
+                           }],
+            package_manager: "kiln"
         )
         dependencies
       end
