@@ -12,8 +12,7 @@ module Dependabot
 
       def parse
         dependency_set = DependencySet.new
-        dependency_set += kilnfile_dependencies
-        # dependency_set += kilnlock_dependencies
+        dependency_set += kiln_dependencies
         dependency_set.dependencies
       end
 
@@ -23,34 +22,33 @@ module Dependabot
         return
       end
 
-      def kilnlock_dependencies
-
-
-      end
-
-      def kilnfile_dependencies
+      def kiln_dependencies
         dependencies = DependencySet.new
 
         kilnfile ||= get_original_file("Kilnfile")
-        kilnfile_content = YAML.load(kilnfile.content)["releases"][0]
+        kilnlockfile ||= get_original_file("Kilnfile.lock")
 
-        dependencies << Dependency.new(
-            name: kilnfile_content["name"],
-                    requirements: [{
-                               requirement: kilnfile_content["version"],
-                               file: "Kilnfile",
-                               groups: [:default],
-                               source: {
-                                   type: "bosh.io"
-                               },
-                           }],
-            package_manager: "kiln"
-        )
-        dependencies
+        kilnfile_contents = YAML.load(kilnfile.content)["releases"]
+        kilnlockfile_contents = YAML.load(kilnlockfile.content)["releases"]
+
+        kilnfile_contents.each_with_index do |kilnfile_content, index|
+            dependencies << Dependency.new(
+                name: kilnfile_content["name"],
+                requirements: [{
+                                   requirement: kilnfile_content["version"],
+                                   file: kilnfile.name,
+                                   groups: [:default],
+                                   source: {
+                                       type: "bosh.io"
+                                   },
+                               }],
+                version: kilnlockfile_contents[index]["version"],
+                package_manager: "kiln"
+            )
+          end
+          dependencies
+        end
       end
-
     end
-  end
 end
-
 Dependabot::FileParsers.register("kiln", Dependabot::Kiln::FileParser)

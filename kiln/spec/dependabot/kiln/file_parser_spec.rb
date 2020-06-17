@@ -19,9 +19,9 @@ RSpec.describe Dependabot::Kiln::FileParser do
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
-      provider: "github",
-      repo: "releen/kiln-fixtures",
-      directory: "/"
+        provider: "github",
+        repo: "releen/kiln-fixtures",
+        directory: "/"
     )
   end
   let(:kilnfile_body) { fixture("kiln", kilnfile_fixture_name) }
@@ -35,25 +35,49 @@ RSpec.describe Dependabot::Kiln::FileParser do
     context "with a version specified" do
       let(:kilnfile_fixture_name) { "Kilnfile" }
 
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
 
-      describe "the first dependency" do
-        subject { dependencies.first }
+      describe "two dependencies" do
+        subject { dependencies }
         let(:expected_requirements) do
-          [{
-            requirement: "~> 74.16.0",
-            file: "Kilnfile",
-            source: {
-                type: "bosh.io"
-            },
-            groups: [:default]
-          }]
+          [[{
+                requirement: "~> 74.16.0",
+                file: "Kilnfile",
+                source: {
+                    type: "bosh.io"
+                },
+                groups: [:default]
+            }],
+           [{
+                requirement: "~> 74.17.0",
+                file: "Kilnfile",
+                source: {
+                    type: "bosh.io"
+                },
+                groups: [:default]
+            }]]
         end
 
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("uaa") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-          # its(:version) { is_expected.to eq("74.16.0") }
+        it 'is the right type' do
+          expect(subject[0]).to be_a(Dependabot::Dependency)
+          expect(subject[1]).to be_a(Dependabot::Dependency)
+        end
+
+        it 'has the right name' do
+          expect(subject[0].name).to eq("uaa")
+          expect(subject[1].name).to eq("uaab")
+        end
+
+        it 'has the right version' do
+          expect(subject[0].version).to eq("74.16.0")
+          expect(subject[1].version).to eq("74.17.0")
+        end
+
+        it 'has the right requirements' do
+          expect(subject[0].requirements).to eq(expected_requirements[0])
+          expect(subject[1].requirements).to eq(expected_requirements[1])
+        end
+
       end
     end
   end

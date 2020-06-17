@@ -23,3 +23,6 @@ releases:
 - name: uaa
   version: ~> 74.16.0
   source: bosh.io
+- name: uaab
+  version: ~> 74.17.0
+  source: final-pcf-bosh-releases

@@ -1,7 +1,12 @@
 releases:
 - name: uaa
-  sha1: 3a24f9120555c50b9ba0ab23c10d4b4a6ff0c279
+  sha1: somesha
   version: 74.16.0
+  remote_source: compiled-releases
+  remote_path: 2.10/uaa/uaa-74.16.0-ubuntu-xenial-621.64.tgz
+- name: uaab
+  sha1: somesha
+  version: 74.17.0
   remote_source: compiled-releases
   remote_path: 2.10/uaa/uaa-74.16.0-ubuntu-xenial-621.64.tgz
 stemcell_criteria:
