@@ -72,11 +72,7 @@ module Dependabot
         def fetch_latest_resolvable_version_string
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            write_dependency_file
-            write_path_dependency_files
-            write_lockfile
-            write_auth_file
-
+            write_dependency_files
             run_update_checker
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -84,6 +80,13 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
           handle_composer_errors(e)
+        end
+
+        def write_dependency_files
+          write_dependency_file
+          write_path_dependency_files
+          write_lockfile
+          write_auth_file
         end
 
         def write_dependency_file
@@ -352,17 +355,10 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            File.write(
-              "composer.json",
-              prepared_composer_json_content(unlock_requirement: false)
-            )
-            File.write("composer.lock", lockfile.content) if lockfile
-            File.write("auth.json", auth_json.content) if auth_json
+            write_dependency_files
 
             run_update_checker
           end
@@ -390,9 +386,6 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
-        # rubocop:enable Metrics/AbcSize
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def version_for_reqs(requirements)
           req_arrays =
