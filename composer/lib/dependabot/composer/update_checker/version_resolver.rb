@@ -72,7 +72,7 @@ module Dependabot
         def fetch_latest_resolvable_version_string
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            write_dependency_files
+            write_temporary_dependency_files
             run_update_checker
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
