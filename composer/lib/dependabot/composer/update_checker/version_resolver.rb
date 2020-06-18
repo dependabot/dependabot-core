@@ -82,15 +82,20 @@ module Dependabot
           handle_composer_errors(e)
         end
 
-        def write_temporary_dependency_files
-          write_dependency_file
+        def write_temporary_dependency_files(unlock_requirement: true)
+          write_dependency_file(unlock_requirement: unlock_requirement)
           write_path_dependency_files
           write_lockfile
           write_auth_file
         end
 
-        def write_dependency_file
-          File.write("composer.json", prepared_composer_json_content)
+        def write_dependency_file(unlock_requirement:)
+          File.write(
+            "composer.json",
+            prepared_composer_json_content(
+              unlock_requirement: unlock_requirement
+            )
+          )
         end
 
         def write_path_dependency_files
@@ -358,7 +363,7 @@ module Dependabot
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            write_temporary_dependency_files
+            write_temporary_dependency_files(unlock_requirement: false)
 
             run_update_checker
           end
