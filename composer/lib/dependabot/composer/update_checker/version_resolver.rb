@@ -82,7 +82,7 @@ module Dependabot
           handle_composer_errors(e)
         end
 
-        def write_dependency_files
+        def write_temporary_dependency_files
           write_dependency_file
           write_path_dependency_files
           write_lockfile
@@ -358,7 +358,7 @@ module Dependabot
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            write_dependency_files
+            write_temporary_dependency_files
 
             run_update_checker
           end
