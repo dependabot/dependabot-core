@@ -30,57 +30,95 @@ RSpec.describe Dependabot::Kiln::FileParser do
   let(:lockfile_fixture_name) { "Kilnfile.lock" }
 
   describe "parse" do
-    subject(:dependencies) { parser.parse }
+    context "when the required files are not present" do
+      context "without a Kilnfile" do
+        it "raises a helpful error" do
+          expect do
+            described_class.new(dependency_files: [kilnlockfile], source: source).
+            to raise_error(RuntimeError)
+          end
+        end
+      end
 
-    context "with a version specified" do
-      let(:kilnfile_fixture_name) { "Kilnfile" }
+      context "without a Kilnfile.lock" do
+        it "raises a helpful error" do
+          expect do
+            described_class.new(dependency_files: [kilnfile], source: source).
+            to raise_error(RuntimeError)
+          end
+        end
+      end
+    end
 
-      its(:length) { is_expected.to eq(2) }
+    context "when the required files are present" do
+      subject(:dependencies) { parser.parse }
 
-      describe "two dependencies" do
-        subject { dependencies }
-        let(:expected_requirements) do
-          [[{
+      context "with a version specified" do
+        let(:kilnfile_fixture_name) { "Kilnfile" }
+
+        its(:length) { is_expected.to eq(3) }
+
+        describe "dependencies" do
+          subject { dependencies }
+
+          it 'has the right dependencies' do
+            expect(subject).to include(Dependabot::Dependency.new(
+              name: "uaa",
+              requirements: [{
                 requirement: "~> 74.16.0",
                 file: "Kilnfile",
                 source: {
-                    type: "bosh.io"
+                  type: "bosh.io"
                 },
                 groups: [:default]
-            }],
-           [{
+              }],
+              version: "74.16.0",
+              package_manager: "kiln"
+            ))
+
+            expect(subject).to include(Dependabot::Dependency.new(
+              name: "uaab",
+              requirements: [{
                 requirement: "~> 74.17.0",
                 file: "Kilnfile",
                 source: {
-                    type: "bosh.io"
+                  type: "final-pcf-bosh-releases"
                 },
                 groups: [:default]
-            }]]
+              }],
+              version: "74.17.0",
+              package_manager: "kiln"
+            ))
+          end
+
+        end
         end
 
-        it 'is the right type' do
-          expect(subject[0]).to be_a(Dependabot::Dependency)
-          expect(subject[1]).to be_a(Dependabot::Dependency)
-        end
+    context "with a version not specified" do
+        let(:kilnfile_fixture_name) { "Kilnfile" }
 
-        it 'has the right name' do
-          expect(subject[0].name).to eq("uaa")
-          expect(subject[1].name).to eq("uaab")
-        end
+        its(:length) { is_expected.to eq(3) }
 
-        it 'has the right version' do
-          expect(subject[0].version).to eq("74.16.0")
-          expect(subject[1].version).to eq("74.17.0")
-        end
+        describe "dependencies" do
+          subject { dependencies }
 
-        it 'has the right requirements' do
-          expect(subject[0].requirements).to eq(expected_requirements[0])
-          expect(subject[1].requirements).to eq(expected_requirements[1])
+          it 'still adds the dependency' do
+            expect(subject).to include(Dependabot::Dependency.new(
+              name: "uaac",
+              requirements: [{
+                requirement: nil,
+                file: "Kilnfile",
+                source: {
+                  type: "bosh.io"
+                },
+                groups: [:default]
+              }],
+              version: "74.17.22",
+              package_manager: "kiln"
+            ))
+          end
         end
-
-      end
     end
   end
+  end
 end
-
-

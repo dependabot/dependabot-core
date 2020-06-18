@@ -19,7 +19,16 @@ module Dependabot
       private
 
       def check_required_files
-        return
+        raise "No Kilnfile!" unless kilnfile
+        raise "No Kilnfile.lock!" unless kilnlockfile
+      end
+
+      def kilnfile
+        @kilnfile ||= get_original_file("Kilnfile")
+      end
+
+      def kilnlockfile
+        @kilnlockfile ||= get_original_file("Kilnfile.lock")
       end
 
       def kiln_dependencies
@@ -39,7 +48,7 @@ module Dependabot
                                    file: kilnfile.name,
                                    groups: [:default],
                                    source: {
-                                       type: "bosh.io"
+                                       type: kilnfile_content["source"]
                                    },
                                }],
                 version: kilnlockfile_contents[index]["version"],
