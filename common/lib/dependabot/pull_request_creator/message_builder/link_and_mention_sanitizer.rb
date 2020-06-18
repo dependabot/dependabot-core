@@ -14,7 +14,7 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
-        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~()])@#{GITHUB_USERNAME}/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
         # We rely on GitHub to do the HTML sanitization

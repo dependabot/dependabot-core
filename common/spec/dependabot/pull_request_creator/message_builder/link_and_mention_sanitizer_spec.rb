@@ -83,6 +83,15 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
+      context "that appears in parens" do
+        let(:text) { "by Esben Sparre Andreasen (@esbena)" }
+        it do
+          is_expected.to eq(
+            "<p>by Esben Sparre Andreasen (<code>@esbena</code>)</p>\n"
+          )
+        end
+      end
+
       context "with unmatched single code ticks previously" do
         let(:text) { fixture("changelogs", "sentry.md") }
         it do
