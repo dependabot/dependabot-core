@@ -323,7 +323,7 @@ module Dependabot
         msg += commits_cascade(dep)
         msg += maintainer_changes_cascade(dep)
         msg += break_tag unless msg == ""
-        "\n" + sanitize_links_and_mentions(msg)
+        "\n" + sanitize_links_and_mentions(msg, unsafe: true)
       end
 
       def vulnerabilities_cascade(dep)
@@ -680,12 +680,12 @@ module Dependabot
         end
       end
 
-      def sanitize_links_and_mentions(text)
+      def sanitize_links_and_mentions(text, unsafe: false)
         return text unless source.provider == "github"
 
         LinkAndMentionSanitizer.
           new(github_redirection_service: github_redirection_service).
-          sanitize_links_and_mentions(text: text)
+          sanitize_links_and_mentions(text: text, unsafe: unsafe)
       end
 
       def sanitize_template_tags(text)
