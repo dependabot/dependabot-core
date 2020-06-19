@@ -1,3 +1,8 @@
+## v0.118.4, 19 June 2020
+
+- Safely output markdown from link_and_mention_sanitizer
+- Bump composer/composer from 1.10.6 to 1.10.7 in /composer/helpers
+
 ## v0.118.3, 18 June 2020
 
 - Correctly handle path dependencies in composer
