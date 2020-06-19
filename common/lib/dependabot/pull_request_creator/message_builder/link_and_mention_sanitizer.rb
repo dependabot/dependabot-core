@@ -19,7 +19,7 @@ module Dependabot
         EOS_REGEX = /\z/.freeze
         # We rely on GitHub to do the HTML sanitization
         COMMONMARKER_OPTIONS = %i(
-          UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING
+          DEFAULT GITHUB_PRE_LANG FULL_INFO_STRING
         ).freeze
         COMMONMARKER_EXTENSIONS = %i(
           table tasklist strikethrough autolink tagfilter
