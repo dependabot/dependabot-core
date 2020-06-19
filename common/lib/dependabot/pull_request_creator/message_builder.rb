@@ -437,7 +437,7 @@ module Dependabot
 
         build_details_tag(
           summary: "Maintainer changes",
-          body: maintainer_changes(dep) + "\n"
+          body: sanitize_links_and_mentions(maintainer_changes(dep)) + "\n"
         )
       end
 
