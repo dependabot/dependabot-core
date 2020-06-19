@@ -17,9 +17,8 @@ module Dependabot
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
-        # We rely on GitHub to do the HTML sanitization
         COMMONMARKER_OPTIONS = %i(
-          UNSAFE GITHUB_PRE_LANG FULL_INFO_STRING
+          GITHUB_PRE_LANG FULL_INFO_STRING
         ).freeze
         COMMONMARKER_EXTENSIONS = %i(
           table tasklist strikethrough autolink tagfilter
@@ -31,14 +30,15 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
-        def sanitize_links_and_mentions(text:)
+        def sanitize_links_and_mentions(text:, unsafe: false)
           doc = CommonMarker.render_doc(
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )
 
           sanitize_mentions(doc)
           sanitize_links(doc)
-          doc.to_html(COMMONMARKER_OPTIONS, COMMONMARKER_EXTENSIONS)
+          mode = unsafe ? :UNSAFE : :DEFAULT
+          doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
 
         private

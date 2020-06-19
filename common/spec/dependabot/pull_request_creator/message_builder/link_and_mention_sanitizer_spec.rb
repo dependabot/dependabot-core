@@ -307,5 +307,15 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
         is_expected.to eq(html)
       end
     end
+
+    context "with HTML tags" do
+      let(:text) { "This contains \"<option>\" and \"<select>\" tags" }
+      it do
+        is_expected.to eq(
+          "<p>This contains &quot;<!-- raw HTML omitted -->&quot; "\
+          "and &quot;<!-- raw HTML omitted -->&quot; tags</p>\n"
+        )
+      end
+    end
   end
 end
