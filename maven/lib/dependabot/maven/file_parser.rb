@@ -104,7 +104,7 @@ module Dependabot
         return unless dependency_node.at_xpath("./groupId")
         return unless dependency_node.at_xpath("./artifactId")
 
-        [
+        name = [
           evaluated_value(
             dependency_node.at_xpath("./groupId").content.strip,
             pom
@@ -114,6 +114,15 @@ module Dependabot
             pom
           )
         ].join(":")
+
+        if dependency_node.at_xpath("./classifier")
+          name += ":#{evaluated_value(
+            dependency_node.at_xpath('./classifier').content.strip,
+            pom
+          )}"
+        end
+
+        name
       end
 
       def plugin_name(dependency_node, pom)
@@ -185,7 +194,6 @@ module Dependabot
         return unless dependency_node.at_xpath("./version")
 
         version_content = dependency_node.at_xpath("./version").content.strip
-
         return unless version_content.match?(PROPERTY_REGEX)
 
         version_content.

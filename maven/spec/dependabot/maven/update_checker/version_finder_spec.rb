@@ -55,12 +55,22 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/maven-metadata.xml"
   end
+  let(:maven_central_metadata_url_mockk) do
+    "https://repo.maven.apache.org/maven2/io/mockk/mockk/maven-metadata.xml"
+  end
   let(:maven_central_releases) do
     fixture("maven_central_metadata", "with_release.xml")
+  end
+  let(:maven_central_releases_mockk) do
+    fixture("maven_central_metadata", "mockk_with_release.xml")
   end
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/"\
     "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+  end
+  let(:mockk_maven_central_version_files_url) do
+    "https://repo.maven.apache.org/maven2/"\
+    "io/mockk/mockk/1.10.0/mockk-1.10.0-sources.jar"
   end
 
   before do
@@ -68,6 +78,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       to_return(status: 200, body: maven_central_releases)
     stub_request(:head, maven_central_version_files_url).
       to_return(status: 200)
+    stub_request(:get, maven_central_metadata_url_mockk).
+      to_return(status: 200, body: maven_central_releases_mockk)
+    stub_request(:head, mockk_maven_central_version_files_url).
+      to_return(status: 200)
+  end
+
+  describe "#latest_version_details when the dependency has a classifier" do
+    let(:dependency_name) { "io.mockk:mockk:sources" }
+    let(:dependency_version) { "1.0.0" }
+    subject { finder.latest_version_details }
+
+    its([:version]) { is_expected.to eq(version_class.new("1.10.0")) }
   end
 
   describe "#latest_version_details" do
