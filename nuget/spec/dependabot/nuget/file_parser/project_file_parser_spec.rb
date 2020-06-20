@@ -133,6 +133,22 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         end
       end
 
+      context "with an updated package specified" do
+        let(:file_body) { fixture("csproj", "directory.packages.props") }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to match_array(
+              %w(
+                System.AskJeeves
+                System.Google
+                System.Lycos
+                System.WebCrawler
+              )
+            )
+        end
+      end
+
       context "with a property version" do
         let(:file_body) do
           fixture("csproj", "property_version.csproj")

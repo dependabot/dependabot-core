@@ -1,4 +1,6 @@
-source 'https://rubygems.org'
+# frozen_string_literal: true
 
-gem 'activesupport'
-gem 'rails_multitenant'
+source "https://rubygems.org"
+
+gem "dummy-pkg-a"
+gem "dummy-pkg-b"

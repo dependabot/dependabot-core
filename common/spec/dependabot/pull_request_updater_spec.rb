@@ -47,5 +47,35 @@ RSpec.describe Dependabot::PullRequestUpdater do
         updater.update
       end
     end
+
+    context "with a Gitlab source" do
+      let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
+      let(:dummy_updater) { instance_double(described_class::Gitlab) }
+
+      it "delegates to PullRequestUpdater::Gitlab with correct params" do
+        expect(described_class::Gitlab).
+          to receive(:new).
+          with(
+            source: source,
+            base_commit: base_commit,
+            old_commit: old_commit,
+            files: files,
+            credentials: credentials,
+            pull_request_number: pull_request_number
+          ).and_return(dummy_updater)
+        expect(dummy_updater).to receive(:update)
+        updater.update
+      end
+    end
+    context "with unsupported source" do
+      let(:source) do
+        Dependabot::Source.new(provider: "unknown", repo: "gc/bp")
+      end
+
+      it "raise an error" do
+        expect { updater.update }.
+          to raise_error(RuntimeError, "Unexpected provider 'unknown'")
+      end
+    end
   end
 end

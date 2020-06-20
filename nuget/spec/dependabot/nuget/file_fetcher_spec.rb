@@ -53,6 +53,9 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Packages.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
       stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
@@ -203,6 +206,9 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         )
 
       stub_request(:get, File.join(url, "Directory.Build.props?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(status: 404)
+      stub_request(:get, File.join(url, "Directory.Packages.props?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(status: 404)
       stub_request(:get, File.join(url, "Directory.Build.targets?ref=sha")).
@@ -470,6 +476,10 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           )
         stub_request(
           :get, File.join(url, "src/Validator/Directory.Build.props?ref=sha")
+        ).with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+        stub_request(
+          :get, File.join(url, "src/Validator/Directory.Packages.props?ref=sha")
         ).with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
         stub_request(

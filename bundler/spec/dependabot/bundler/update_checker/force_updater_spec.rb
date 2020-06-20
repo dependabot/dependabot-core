@@ -213,13 +213,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
 
     context "when another dependency would need to be downgraded" do
       let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "version_conflict_requires_downgrade")
+        fixture("ruby", "gemfiles", "subdep_blocked_by_subdep")
       end
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict_requires_downgrade.lock")
+        fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
       end
-      let(:target_version) { "0.8.6" }
-      let(:dependency_name) { "i18n" }
+      let(:target_version) { "2.0.0" }
+      let(:dependency_name) { "dummy-pkg-a" }
 
       it "raises a resolvability error" do
         expect { updater.updated_dependencies }.
