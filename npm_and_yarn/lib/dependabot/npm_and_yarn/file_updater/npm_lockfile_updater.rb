@@ -365,7 +365,9 @@ module Dependabot
         def write_temporary_dependency_files(lockfile_name,
                                              update_package_json: true)
           write_lockfiles(lockfile_name)
-          File.write(".npmrc", npmrc_content)
+
+          dir = Pathname.new(lockfile_name).dirname
+          File.write(File.join(dir, ".npmrc"), npmrc_content)
 
           package_files.each do |file|
             path = file.name

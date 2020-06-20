@@ -24,3 +24,4 @@
 2.0.2 bundler:>= 0,rake:>= 0,thor:>= 0.14.0|checksum:cafadebd70b16f666c34bb4d925858a10bbe64f2553c18bc708db2f0f444769d
 2.1.0 bundler:>= 0,rake:>= 0,thor:>= 0.14.0|checksum:77135863db8a1117e4cd77778e0591f26224f65b87450ee5f48d6b484100cf82
 2.2.0 bundler:>= 0,rake:>= 0,thor:>= 0.14.0|checksum:bbbcee978b7913e3000e08fb6a99bac2a5a9d8ba5ad9d81a35ad0915f6d852ba
+2.3.0 bundler:>= 0,rake:>= 0,thor:>= 0.14.0|checksum:36cf4ab68a4f54a12144f70b9d2bb18647f2f0bffab558a353663df785130948,ruby:>= 2.3.0

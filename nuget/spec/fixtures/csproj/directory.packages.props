@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageVersion Include="System.Lycos" Version="3.23.3" />
+    <PackageVersion Include="System.AskJeeves" Version="2.2.2" />
+    <PackageVersion Include="System.Google" Version="0.1.0-beta.3" />
+    <PackageVersion Include="System.WebCrawler" Version="1.1.1" />
+  </ItemGroup>
+</Project>

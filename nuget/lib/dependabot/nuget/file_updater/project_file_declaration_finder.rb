@@ -13,6 +13,8 @@ module Dependabot
             <PackageReference [^>]*?[^/]>.*?</PackageReference>|
             <GlobalPackageReference [^>]*?/>|
             <GlobalPackageReference [^>]*?[^/]>.*?</GlobalPackageReference>|
+            <PackageVersion [^>]*?/>|
+            <PackageVersion [^>]*?[^/]>.*?</PackageVersion>|
             <Dependency [^>]*?/>|
             <Dependency [^>]*?[^/]>.*?</Dependency>|
             <DevelopmentDependency [^>]*?/>|

@@ -394,16 +394,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       context "when the force updater raises" do
-        let(:gemfile_fixture_name) { "version_conflict_requires_downgrade" }
+        let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
         let(:lockfile_fixture_name) do
-          "version_conflict_requires_downgrade.lock"
+          "subdep_blocked_by_subdep.lock"
         end
-        let(:target_version) { "0.8.6" }
-        let(:dependency_name) { "i18n" }
+        let(:target_version) { "2.0.0" }
+        let(:dependency_name) { "dummy-pkg-a" }
         let(:requirements) do
           [{
             file: "Gemfile",
-            requirement: "~> 0.7.0",
+            requirement: "~> 1.0.0",
             groups: [],
             source: nil
           }]
@@ -1141,7 +1141,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:dependency_name) { "statesman" }
         let(:current_version) { "1.2" }
 
-        it { is_expected.to eq(Gem::Version.new("3.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("3.4.1")) }
 
         context "that is private" do
           let(:gemfile_fixture_name) { "private_git_source" }
@@ -1193,7 +1193,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           let(:gemfile_fixture_name) { "bad_branch" }
           let(:lockfile_fixture_name) { "bad_branch.lock" }
 
-          it { is_expected.to eq(Gem::Version.new("3.2.0")) }
+          it { is_expected.to eq(Gem::Version.new("3.4.1")) }
         end
       end
     end
@@ -1205,7 +1205,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         [{ file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("3.2.0")) }
+      it { is_expected.to eq(Gem::Version.new("3.4.1")) }
 
       context "that is old" do
         let(:gemfile_fixture_name) { "explicit_ruby_old" }

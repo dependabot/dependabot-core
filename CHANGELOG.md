@@ -1,3 +1,36 @@
+## v0.118.4, 19 June 2020
+
+- Safely output markdown from link_and_mention_sanitizer
+- Bump composer/composer from 1.10.6 to 1.10.7 in /composer/helpers
+
+## v0.118.3, 18 June 2020
+
+- Correctly handle path dependencies in composer
+- Bump eslint from 6.8.0 to 7.2.0 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.9.3 to 1.10.6 in /composer/helpers
+- Bump eslint-plugin-prettier from 3.1.3 to 3.1.4 in /npm_and_yarn/helpers
+- Bump cython from 0.29.19 to 0.29.20 in /python/helpers
+- Bump pip-tools from 5.1.2 to 5.2.1 in /python/helpers
+- Bump phpstan/phpstan from 0.12.19 to 0.12.29 in /composer/helpers
+- Bump poetry from 1.0.8 to 1.0.9 in /python/helpers
+- Bump hashin from 0.14.6 to 0.15.0 in /python/helpers
+- [Python] Add parsing of environment markers (@mayeut)
+
+## v0.118.2, 16 June 2020
+
+- GitHub Actions: Handle multiple sources for the same action
+- Gradle: Add support for properties set as defaults, supports both the
+  findProperty and hasProperty syntax styles.
+- Nuget: Added support for <PackageVersion> elements with MSBuild projects
+- GitLab: Add pull_request_updater
+- Handle missing repo when fetching recent commits
+- Handle new protected branch error when updating PRs
+- Update rubocop requirement from ~> 0.83.0 to ~> 0.85.0 in /common
+- Upgrade poetry to 1.0.8
+- Update vcr requirement from = 5.0 to = 6.0.0 in /common
+- Update gitlab requirement from = 4.14.1 to = 4.15.0 in /common
+- Specs: Update rubygems index and stubbed info responses
+
 ## v0.118.1, 4 June 2020
 
 - Handle cargo native dependencies

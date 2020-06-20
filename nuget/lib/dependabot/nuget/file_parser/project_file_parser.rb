@@ -16,6 +16,7 @@ module Dependabot
 
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, "\
                               "ItemGroup > GlobalPackageReference, "\
+                              "ItemGroup > PackageVersion, "\
                               "ItemGroup > Dependency, "\
                               "ItemGroup > DevelopmentDependency"
 

@@ -98,6 +98,15 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
+      context "that 404s when asked for commits" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
+            to_return(status: 404, headers: json_header)
+        end
+
+        it { is_expected.to eq("") }
+      end
+
       context "from GitLab" do
         let(:source) do
           Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
