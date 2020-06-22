@@ -64,10 +64,12 @@ module Dependabot
             old_declaration.
             gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
 
+          # Replace the old declaration that's preceded by a non-word character
+          # and followed by a whitespace character (comments) or EOL
           updated_content =
             updated_content.
             gsub(
-              /(?<=\W)#{Regexp.escape(old_declaration)}(?=\W)/,
+              /(?<=\W)#{Regexp.escape(old_declaration)}(?=\s|$)/,
               new_declaration
             )
         end
