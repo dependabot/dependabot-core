@@ -48,6 +48,27 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       package_manager: "maven"
     )
   end
+  let(:mockk_dependency) do
+    Dependabot::Dependency.new(
+      name: "io.mockk:mockk:sources",
+      version: "1.10.0",
+      requirements: [{
+        file: "pom.xml",
+        requirement: "1.10.0",
+        groups: [],
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      previous_requirements: [{
+        file: "pom.xml",
+        requirement: "1.0.0",
+        groups: [],
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      package_manager: "maven"
+    )
+  end
   let(:dependency_groups) { ["test"] }
 
   describe "#updated_dependency_files" do
@@ -70,6 +91,11 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       it "doesn't update the formatting of the POM" do
         expect(updated_pom_file.content).
           to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+      end
+
+      context "handles dependencies with classifiers" do
+        let(:dependencies) { [dependency, mockk_dependency] }
+        its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
       context "with rogue whitespace" do
