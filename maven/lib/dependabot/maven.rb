@@ -22,7 +22,7 @@ Dependabot::Dependency.
   register_display_name_builder(
     "maven",
     lambda { |name|
-      _, artifact_id, = name.split(":")
+      _group_id, artifact_id, _classifier = name.split(":")
       %w(bom library).include?(artifact_id) ? name : artifact_id
     }
   )
