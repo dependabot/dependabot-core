@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Kiln::FileParser do
         it "raises a helpful error" do
           expect do
             described_class.new(dependency_files: [kilnlockfile], source: source).
-            to raise_error(RuntimeError)
+                to raise_error(RuntimeError)
           end
         end
       end
@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Kiln::FileParser do
         it "raises a helpful error" do
           expect do
             described_class.new(dependency_files: [kilnfile], source: source).
-            to raise_error(RuntimeError)
+                to raise_error(RuntimeError)
           end
         end
       end
@@ -63,38 +63,38 @@ RSpec.describe Dependabot::Kiln::FileParser do
 
           it 'has the right dependencies' do
             expect(subject).to include(Dependabot::Dependency.new(
-              name: "uaa",
-              requirements: [{
-                requirement: "~> 74.16.0",
-                file: "Kilnfile",
-                source: {
-                  type: "bosh.io"
-                },
-                groups: [:default]
-              }],
-              version: "74.16.0",
-              package_manager: "kiln"
+                name: "uaa",
+                requirements: [{
+                                   requirement: "~> 74.16.0",
+                                   file: "Kilnfile",
+                                   source: {
+                                       type: "bosh.io"
+                                   },
+                                   groups: [:default]
+                               }],
+                version: "74.16.0",
+                package_manager: "kiln"
             ))
 
             expect(subject).to include(Dependabot::Dependency.new(
-              name: "uaab",
-              requirements: [{
-                requirement: "~> 74.17.0",
-                file: "Kilnfile",
-                source: {
-                  type: "final-pcf-bosh-releases"
-                },
-                groups: [:default]
-              }],
-              version: "74.17.0",
-              package_manager: "kiln"
+                name: "uaab",
+                requirements: [{
+                                   requirement: "~> 74.17.0",
+                                   file: "Kilnfile",
+                                   source: {
+                                       type: "final-pcf-bosh-releases"
+                                   },
+                                   groups: [:default]
+                               }],
+                version: "74.17.0",
+                package_manager: "kiln"
             ))
           end
 
         end
-        end
+      end
 
-    context "with a version not specified" do
+      context "with a version not specified" do
         let(:kilnfile_fixture_name) { "Kilnfile" }
 
         its(:length) { is_expected.to eq(3) }
@@ -104,21 +104,37 @@ RSpec.describe Dependabot::Kiln::FileParser do
 
           it 'still adds the dependency' do
             expect(subject).to include(Dependabot::Dependency.new(
-              name: "uaac",
-              requirements: [{
-                requirement: nil,
-                file: "Kilnfile",
-                source: {
-                  type: "bosh.io"
-                },
-                groups: [:default]
-              }],
-              version: "74.17.22",
-              package_manager: "kiln"
+                name: "uaac",
+                requirements: [{
+                                   requirement: nil,
+                                   file: "Kilnfile",
+                                   source: {
+                                       type: "bosh.io"
+                                   },
+                                   groups: [:default]
+                               }],
+                version: "74.17.22",
+                package_manager: "kiln"
             ))
           end
         end
+      end
+
+      context "when the number of releases in the kilnfile differs from the lockfile" do
+        let(:kilnfile_fixture_name) { "Kilnfile-with-two-releases" }
+
+        it 'raises an error' do
+          expect {subject}.to raise_error("Number of releases in Kilnfile and Kilnfile.lock does not match")
+        end
+      end
+
+      context "when kilnfile has invalid source" do
+        let(:kilnfile_fixture_name) { "Kilnfile-with-invalid-source" }
+
+        it 'raises an error' do
+          expect {subject}.to raise_error("The release source 'final-pcf' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}")
+        end
+      end
     end
-  end
   end
 end

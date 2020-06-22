@@ -8,6 +8,8 @@ require "yaml"
 module Dependabot
   module Kiln
     class FileParser < Dependabot::FileParsers::Base
+      VALID_SOURCES = ["bosh.io", "compiled-releases", "final-pcf-bosh-releases"]
+
       require "dependabot/file_parsers/base/dependency_set"
 
       def parse
@@ -34,30 +36,44 @@ module Dependabot
       def kiln_dependencies
         dependencies = DependencySet.new
 
+
         kilnfile ||= get_original_file("Kilnfile")
         kilnlockfile ||= get_original_file("Kilnfile.lock")
 
         kilnfile_contents = YAML.load(kilnfile.content)["releases"]
         kilnlockfile_contents = YAML.load(kilnlockfile.content)["releases"]
 
+        if (kilnfile_contents.length != kilnlockfile_contents.length)
+          raise "Number of releases in Kilnfile and Kilnfile.lock does not match"
+        end
+
         kilnfile_contents.each_with_index do |kilnfile_content, index|
-            dependencies << Dependency.new(
-                name: kilnfile_content["name"],
-                requirements: [{
-                                   requirement: kilnfile_content["version"],
-                                   file: kilnfile.name,
-                                   groups: [:default],
-                                   source: {
-                                       type: kilnfile_content["source"]
-                                   },
-                               }],
-                version: kilnlockfile_contents[index]["version"],
-                package_manager: "kiln"
-            )
-          end
-          dependencies
+
+          validate_source(kilnfile_content)
+
+          dependencies << Dependency.new(
+              name: kilnfile_content["name"],
+              requirements: [{
+                                 requirement: kilnfile_content["version"],
+                                 file: kilnfile.name,
+                                 groups: [:default],
+                                 source: {
+                                     type: kilnfile_content["source"]
+                                 },
+                             }],
+              version: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["version"],
+              package_manager: "kiln"
+          )
+        end
+        dependencies
+      end
+
+      def validate_source(release)
+        if (!VALID_SOURCES.include? release["source"])
+          raise "The release source '#{release["source"]}' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}"
         end
       end
     end
+  end
 end
 Dependabot::FileParsers.register("kiln", Dependabot::Kiln::FileParser)
