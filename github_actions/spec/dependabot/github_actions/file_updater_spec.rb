@@ -275,7 +275,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         it "updates both sources" do
           expect(subject.content).to include "actions/cache@v2 # comment"
-          expect(subject.content).to match /actions\/cache@v2$/
+          expect(subject.content).to match(%r{actions\/cache@v2$})
           expect(subject.content).not_to include "actions/cache@v1.1.2\n"
           expect(subject.content).not_to include "actions/cache@v2.1.2\n"
         end
