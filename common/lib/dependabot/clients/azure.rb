@@ -134,7 +134,7 @@ module Dependabot
               author: author_details,
               changes: files.map do |file|
                 {
-                  changeType: "edit",
+                  changeType: file_exists?(base_commit, file.path) ? "edit": "add",
                   item: { path: file.path },
                   newContent: {
                     content: Base64.encode64(file.content),
@@ -208,6 +208,21 @@ module Dependabot
 
       private
 
+      def file_exists?(commit, path)
+        # Get the file base and directory name
+        dir = File.dirname(path)
+        basename = File.basename(path)
+
+        # Fetch the contents for the dir and check if there exists any file that matches basename. 
+        # We ignore any sub-dir paths by rejecting "tree" gitObjectType (which is what ADO uses to specify a directory.)
+        fetch_repo_contents(commit, dir)
+            .reject { |f| f["gitObjectType"] == "tree" }
+            .one? { |f| f["relativePath"] == basename}
+
+      rescue Dependabot::Clients::Azure::NotFound
+        # ADO throws exception if dir not found. Return false
+        false
+      end
       attr_reader :credentials
       attr_reader :source
     end
