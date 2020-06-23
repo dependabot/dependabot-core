@@ -533,13 +533,56 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
+          context "for a patch release with build identifier" do
+            let(:version) { "1.4.1+10" }
+            it { is_expected.to include("patch") }
+
+            context "when the tags are for an auto-releasing tool" do
+              let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
+              it { is_expected.to_not include("patch") }
+            end
+          end
+
+          context "for a patch release when both have build identifers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "1.4.1+9" }
+            it { is_expected.to include("patch") }
+
+            context "when the tags are for an auto-releasing tool" do
+              let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
+              it { is_expected.to_not include("patch") }
+            end
+          end
+
           context "for a minor release" do
             let(:version) { "1.5.1" }
             it { is_expected.to include("minor") }
           end
 
+          context "for a minor release with build idenfitier" do
+            let(:version) { "1.5.1+1" }
+            it { is_expected.to include("minor") }
+          end
+
+          context "for a minor release when both have build identifiers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "1.5.1+1" }
+            it { is_expected.to include("minor") }
+          end
+
           context "for a major release" do
             let(:version) { "2.5.1" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a major release with build identifier" do
+            let(:version) { "2.5.1+100" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a major release when both have build identifiers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "2.5.1+100" }
             it { is_expected.to include("major") }
           end
 

@@ -70,6 +70,25 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
       end
     end
 
+    context "with a dependency that has a classifier" do
+      let(:dependency_name) { "io.mockk:mockk:sources" }
+      let(:dependency_version) { "1.0.0" }
+
+      it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).to eq("1.0.0")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("mockk")
+        expect(declaration_node.at_css("classifier").content).
+          to eq("sources")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("io.mockk")
+      end
+    end
+
     context "with a dependency in the dependency management node" do
       let(:pom_fixture_name) { "dependency_management_pom.xml" }
 

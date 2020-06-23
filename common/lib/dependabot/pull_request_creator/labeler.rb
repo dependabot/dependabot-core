@@ -89,20 +89,8 @@ module Dependabot
         @automerge_candidate
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def update_type
         return unless dependencies.any?(&:previous_version)
-
-        precision = dependencies.map do |dep|
-          new_version_parts = version(dep).split(".")
-          old_version_parts = previous_version(dep)&.split(".") || []
-          all_parts = new_version_parts.first(3) + old_version_parts.first(3)
-          next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
-          next 1 if new_version_parts[0] != old_version_parts[0]
-          next 2 if new_version_parts[1] != old_version_parts[1]
-
-          3
-        end.min
 
         case precision
         when 0 then "non-semver"
@@ -112,7 +100,18 @@ module Dependabot
         end
       end
 
-      # rubocop:enable Metrics/PerceivedComplexity
+      def precision
+        dependencies.map do |dep|
+          new_version_parts = version(dep).split(/[.+]/)
+          old_version_parts = previous_version(dep)&.split(/[.+]/) || []
+          all_parts = new_version_parts.first(3) + old_version_parts.first(3)
+          next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
+          next 1 if new_version_parts[0] != old_version_parts[0]
+          next 2 if new_version_parts[1] != old_version_parts[1]
+
+          3
+        end.min
+      end
 
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
