@@ -249,7 +249,7 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id, = dependency.name.split(":")
+          group_id, artifact_id, _classifier = dependency.name.split(":")
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
