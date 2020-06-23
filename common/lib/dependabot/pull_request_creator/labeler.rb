@@ -193,7 +193,8 @@ module Dependabot
       end
 
       def security_label
-        labels.find { |l| l.match?(/security/i) }
+        labels.find { |l| l == DEFAULT_SECURITY_LABEL } ||
+          labels.find { |l| l.match?(/security/i) }
       end
 
       def label_update_type?
