@@ -589,6 +589,16 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           it { is_expected.to eq(["dependencies"]) }
         end
       end
+
+      context "for an update that fixes a security vulnerability" do
+        let(:includes_security_fixes) { true }
+
+        context "when a default and custom dependencies label exists" do
+          let(:labels_fixture_name) { "labels_with_security_with_custom_and_default.json" }
+
+          it { is_expected.to eq(["dependencies", "security"]) }
+        end
+      end
     end
 
     context "with GitLab details" do
