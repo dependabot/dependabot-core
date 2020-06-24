@@ -192,7 +192,7 @@ module Dependabot
         !security_label.nil?
       end
 
-       # Find the exact match first and then fallback to * security* label
+      # Find the exact match first and then fallback to * security* label
       def security_label
         labels.find { |l| l == DEFAULT_SECURITY_LABEL } ||
           labels.find { |l| l.match?(/security/i) }
