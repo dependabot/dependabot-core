@@ -594,9 +594,11 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         let(:includes_security_fixes) { true }
 
         context "when a default and custom dependencies label exists" do
-          let(:labels_fixture_name) { "labels_with_security_with_custom_and_default.json" }
+          let(:labels_fixture_name) do
+            "labels_with_security_with_custom_and_default.json"
+          end
 
-          it { is_expected.to eq(["dependencies", "security"]) }
+          it { is_expected.to eq(%w(dependencies security)) }
         end
       end
     end
