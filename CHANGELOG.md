@@ -1,3 +1,14 @@
+## v0.118.5, 24 June 2020
+
+- Actions: Fix multiple sources matching major versions
+- Maven: Add support for dependency classifiers @a1flecke
+- Add support for `+` separator when calculating semver change @a1flecke
+- Bump eslint from 7.3.0 to 7.3.1 in /npm_and_yarn/helpers
+- Bump prettier from 2.0.4 to 2.0.5 in /npm_and_yarn/helpers
+- Bump jason from 1.2.0 to 1.2.1 in /hex/helpers
+- Bump eslint from 7.2.0 to 7.3.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.29 to 0.12.30 in /composer/helpers
+
 ## v0.118.4, 19 June 2020
 
 - Safely output markdown from link_and_mention_sanitizer
