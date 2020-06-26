@@ -30,6 +30,8 @@ RSpec.describe Dependabot::Paket::FileFetcher do
     }]
   end
 
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
 
@@ -44,6 +46,39 @@ RSpec.describe Dependabot::Paket::FileFetcher do
     context "with both a paket.dependencies and paket.lock" do
       let(:filenames) { %w(paket.lock paket.dependencies) }
       it { is_expected.to eq(true) }
+    end
+  end
+
+  context "with paket.dependencies and paket.lock" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "paket.dependencies?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_dotnet_paket_dependencies.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "paket.lock?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 200,
+        body: fixture("github", "contents_dotnet_paket_lock.json"),
+        headers: { "content-type" => "application/json" }
+      )
+    end
+
+    it "fetches the paket.dependencies and paket.lock" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(paket.dependencies paket.lock))
     end
   end
 
