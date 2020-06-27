@@ -3,3 +3,7 @@
 /tmp
 /dependabot-*.gem
 Gemfile.lock
+
+helpers/.ionide
+helpers/**/bin
+helpers/**/obj
