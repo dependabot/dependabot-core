@@ -4,7 +4,7 @@ module Dependabot
   module Paket
     module NativeHelpers
       def self.helper_path
-        clean_path(File.join(native_helpers_root, "src/bin/netcoreapp3.1/native-paket-helpers.dll"))
+        clean_path(File.join(native_helpers_root, "src/bin/Release/netcoreapp3.1/native-paket-helpers.dll"))
       end
 
       def self.native_helpers_root

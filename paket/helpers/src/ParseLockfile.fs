@@ -1,18 +1,22 @@
 namespace Dependabot
 
 module ParseLockfile =
+  open System.IO
   open Newtonsoft.Json
   type ParseLockFileArgs = {
     lockFilePath : string
   }
 
   let parseLockfile (args : ParseLockFileArgs) =
-    System.IO.File.ReadAllLines args.lockFilePath
+    let path =
+      if args.lockFilePath.EndsWith("paket.lock") then args.lockFilePath
+      else Path.Combine(args.lockFilePath, "paket.lock" )
+    System.IO.File.ReadAllLines path
     |> Paket.LockFileParser.Parse
-    |> Seq.map(fun x ->
+    |> List.map(fun x ->
       let packages =
         x.Packages
-        |> Seq.map(fun p ->
+        |> List.map(fun p ->
           {|Name = p.Name.Name; Version = p.Version.Normalize()|}
         )
       {|
@@ -20,5 +24,3 @@ module ParseLockfile =
         Packages = packages
       |}
     )
-    |> JsonConvert.SerializeObject
-    |> printfn "%s"
