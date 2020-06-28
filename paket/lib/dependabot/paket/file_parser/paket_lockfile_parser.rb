@@ -56,10 +56,9 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               File.write("paket.dependencies", paket_dependencies.content)
               File.write("paket.lock", paket_lock.content)
-              cmd = "dotnet %s" % [NativeHelpers.helper_path]
               SharedHelpers.run_helper_subprocess(
-                command: cmd,
-                function: "parseLockfile",
+                command: NativeHelpers.helper_path,
+                function: "parseDepedenciesAndLockFile",
                 args: {"dependencyPath" => Dir.pwd}
               )
             rescue SharedHelpers::HelperSubprocessFailed => ex

@@ -6,7 +6,7 @@ Paket support for [`dependabot-core`][core-repo].
 
 1. Install native helpers
   ```
-    cd helpers && ./build.sh && cd -
+    cd helpers && build "$(pwd)/helpers/install-dir/paket"  && cd -
   ```
 
 2. Install Ruby dependencies

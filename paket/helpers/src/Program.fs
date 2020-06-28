@@ -40,7 +40,7 @@ module Main =
 
         match helperParams.Function with
         // { "function" : "parseDepedenciesAndLockFile", "args" : {"dependencyPath" : "" } }
-        | "parseLockfile" ->
+        | "parseDepedenciesAndLockFile" ->
           helperParams.Args.ToObject<ParseDepedenciesAndLockFile.ParseDepedenciesAndLockFileArgs>()
           |> ParseDepedenciesAndLockFile.parseDepedenciesAndLockFile
           |> box

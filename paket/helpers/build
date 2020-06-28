@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
+
+set -e
+
+install_dir=$1
+if [ -z "$install_dir" ]; then
+  echo "usage: $0 INSTALL_DIR"
+  exit 1
+fi
+
+if ! [[ "$install_dir" =~ ^/ ]]; then
+  echo "$install_dir must be an absolute path"
+  exit 1
+fi
+
+if [ ! -d "$install_dir/bin" ]; then
+  mkdir -p "$install_dir/bin"
+fi
+
 dotnet tool restore
-dotnet build -c Release
+dotnet publish -c Release -o "$install_dir"
