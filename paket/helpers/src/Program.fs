@@ -6,23 +6,27 @@ module Main =
   open Newtonsoft.Json.Linq
 
   type HelperParams = {
-    ``function`` : string
-    args : JToken
+    [<JsonProperty("function")>]
+    Function : string
+    [<JsonProperty("args")>]
+    Args : JToken
   }
 
   type Output = {
-    result : JToken
-    error : string
+    [<JsonProperty("result")>]
+    Result : JToken
+    [<JsonProperty("error")>]
+    Error : string
   }
 
   let createError errorMsg = {
-    result = null
-    error = errorMsg
+    Result = null
+    Error = errorMsg
   }
 
   let createResult o = {
-    result = JToken.FromObject o
-    error = null
+    Result = JToken.FromObject o
+    Error = null
   }
 
   [<EntryPoint>]
@@ -34,18 +38,17 @@ module Main =
           System.Console.ReadLine()
           |> JsonConvert.DeserializeObject<HelperParams>
 
-        match helperParams.``function`` with
-        // { "function" : "parseLockfile", "args" : {"lockFilePath" : "" } }
+        match helperParams.Function with
+        // { "function" : "parseDepedenciesAndLockFile", "args" : {"dependencyPath" : "" } }
         | "parseLockfile" ->
-          helperParams.args.ToObject<ParseLockfile.ParseLockFileArgs>()
-          |> ParseLockfile.parseLockfile
-          |> ResizeArray
+          helperParams.Args.ToObject<ParseDepedenciesAndLockFile.ParseDepedenciesAndLockFileArgs>()
+          |> ParseDepedenciesAndLockFile.parseDepedenciesAndLockFile
           |> box
           |> Ok
         | unknown ->
           Error (sprintf "Unknown function %s" unknown)
       with e ->
-        Error e.Message
+        Error (sprintf "%A" e)
     let output, returnCode =
       match result with
       | Ok a -> createResult a, 0

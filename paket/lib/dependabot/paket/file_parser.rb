@@ -13,7 +13,7 @@ module Dependabot
   module Paket
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
-      require_relative "file_parser/paket_lock_parser"
+      require_relative "file_parser/paket_lockfile_parser"
 
       PAKET_DEPENDENCIES_FILE = "paket.dependencies"
       PAKET_LOCK_FILE = "paket.lock"
@@ -41,7 +41,7 @@ module Dependabot
       end
 
       def lockfile_parser
-        @lockfile_parser ||= PaketLockParser.new(
+        @lockfile_parser ||= PaketLockfileParser.new(
           dependency_files: dependency_files
         )
       end

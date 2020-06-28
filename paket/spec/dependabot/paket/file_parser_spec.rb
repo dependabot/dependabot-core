@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Paket::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(1) }
+    its(:length) { is_expected.to eq(13) }
 
     # describe "the first dependency" do
     #   subject(:dependency) { dependencies.first }

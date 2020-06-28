@@ -8,7 +8,7 @@ require "dependabot/paket/file_parser"
 module Dependabot
   module Paket
     class FileParser
-      class PaketLockParser
+      class PaketLockfileParser
 
         require "dependabot/file_parsers/base/dependency_set"
 
@@ -18,7 +18,7 @@ module Dependabot
 
         def parse
           dependency_set = Dependabot::Paket::FileParser::DependencySet.new
-          dependency_set += paket_lock_dependencies if paket_locks.any?
+          dependency_set += paket_lock_dependencies if paket_dependencies.any?
           dependency_set.dependencies
         end
 
@@ -27,43 +27,53 @@ module Dependabot
         def paket_lock_dependencies
           dependency_set = Dependabot::Paket::FileParser::DependencySet.new
 
-          paket_locks.each do |paket_lock|
-            # $stderr.puts parse_paket_lock(paket_lock)
-            parse_paket_lock(paket_lock).each do |details|
+          paket_dependencies.each do |paket_dependency|
+            paket_lock = paket_locks.find{|i| i.directory.eql? paket_dependency.directory}
+            parse_paket_dependency_and_lock(paket_dependency, paket_lock).each do |details|
               # next unless semver_version_for(details["version"])
               # next if alias_package?(req)
 
-              # # Note: The DependencySet will de-dupe our dependencies, so they
-              # # end up unique by name. That's not a perfect representation of
-              # # the nested nature of JS resolution, but it makes everything work
-              # # comparably to other flat-resolution strategies
-              # dependency_set << Dependency.new(
-              #   name: req.split(/(?<=\w)\@/).first,
-              #   version: semver_version_for(details["version"]),
-              #   package_manager: "npm_and_yarn",
-              #   requirements: []
-              # )
+              dependency_set << Dependency.new(
+                name: details["packageName"],
+                version: details["packageVersion"],
+                package_manager: "paket",
+                requirements: [{
+                  requirement: details["packageRequirement"],
+                  file: paket_lock.name,
+                  groups: [details["groupName"]],
+                  source: nil
+                }]
+              )
             end
           end
 
           dependency_set
         end
 
-        def parse_paket_lock(paket_lock)
-          @parsed_paket_lock ||= {}
-          @parsed_paket_lock[paket_lock.name] ||=
+        def parse_paket_dependency_and_lock(paket_dependencies, paket_lock)
+          @parsed_paket_dependencies ||= {}
+          @parsed_paket_dependencies[paket_dependencies.name] ||=
             SharedHelpers.in_a_temporary_directory do
+              File.write("paket.dependencies", paket_dependencies.content)
               File.write("paket.lock", paket_lock.content)
               cmd = "dotnet %s" % [NativeHelpers.helper_path]
               SharedHelpers.run_helper_subprocess(
                 command: cmd,
                 function: "parseLockfile",
-                args: {"lockFilePath" => Dir.pwd}
+                args: {"dependencyPath" => Dir.pwd}
               )
             rescue SharedHelpers::HelperSubprocessFailed => ex
+              $stderr.puts ex
               raise Dependabot::DependencyFileNotParseable, paket_lock.path
             end
         end
+
+        def paket_dependencies
+          @paket_dependencies ||=
+            @dependency_files.
+            select { |f| f.name.end_with?("paket.dependencies") }
+        end
+
 
         def paket_locks
           @paket_locks ||=

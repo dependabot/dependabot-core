@@ -4,12 +4,17 @@ Paket support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
-1. Install Ruby dependencies
+1. Install native helpers
+  ```
+    cd helpers && ./build.sh && cd -
+  ```
+
+2. Install Ruby dependencies
    ```
    $ bundle install
    ```
 
-2. Run tests
+3. Run tests
    ```
    $ bundle exec rspec spec
    ```
