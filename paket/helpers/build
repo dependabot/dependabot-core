@@ -19,5 +19,8 @@ if [ ! -d "$install_dir/bin" ]; then
   mkdir -p "$install_dir/bin"
 fi
 
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cd $helpers_dir
+
 dotnet tool restore
 dotnet publish -c Release -o "$install_dir"

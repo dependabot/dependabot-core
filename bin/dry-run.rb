@@ -27,6 +27,7 @@
 # - hex
 # - composer
 # - nuget
+# - paket
 # - dep
 # - go_modules
 # - elm
@@ -51,6 +52,7 @@ $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./paket/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./terraform/lib"
 
@@ -82,6 +84,7 @@ require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/paket"
 require "dependabot/python"
 require "dependabot/terraform"
 

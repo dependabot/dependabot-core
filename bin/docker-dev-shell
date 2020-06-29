@@ -106,6 +106,10 @@ docker run --rm -ti \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-core.gemspec" \
   -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
+  -v "$(pwd)/paket/Gemfile:$CODE_DIR/paket/Gemfile" \
+  -v "$(pwd)/paket/dependabot-paket.gemspec:$CODE_DIR/paket/dependabot-core.gemspec" \
+  -v "$(pwd)/paket/lib:$CODE_DIR/paket/lib" \
+  -v "$(pwd)/paket/spec:$CODE_DIR/paket/spec" \
   -v "$(pwd)/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-core.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \

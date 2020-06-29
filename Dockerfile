@@ -21,6 +21,7 @@ RUN apt-get update \
       gnupg2 \
       curl \
       wget \
+      zlib1g \
       zlib1g-dev \
       liblzma-dev \
       tzdata \
@@ -46,6 +47,12 @@ RUN apt-get update \
       libxmlsec1-dev \
       libgeos-dev \
       python3-enchant \
+      libc6 \
+      libgcc1 \
+      libgssapi-krb5-2 \
+      libicu60 \
+      libssl1.1 \
+      libstdc++6 \
     && locale-gen en_US.UTF-8
 
 
@@ -138,6 +145,29 @@ ENV RUSTUP_HOME=/opt/rust \
     PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
+### DOTNET
+
+ENV \
+    # Enable detection of running in a container
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    # Enable correct mode for dotnet watch (only mode supported in a container)
+    DOTNET_USE_POLLING_FILE_WATCHER=true \
+    # Skip extraction of XML docs - generally not useful within an image/container - helps performance
+    NUGET_XMLDOC_MODE=skip
+
+
+# Install .NET Core SDK
+RUN dotnet_sdk_version=3.1.301 \
+    && curl -SL --output dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
+    && dotnet_sha512='dd39931df438b8c1561f9a3bdb50f72372e29e5706d3fb4c490692f04a3d55f5acc0b46b8049bc7ea34dedba63c71b4c64c57032740cbea81eef1dce41929b4e' \
+    && echo "$dotnet_sha512 dotnet.tar.gz" | sha512sum -c - \
+    && mkdir -p /usr/share/dotnet \
+    && tar -ozxf dotnet.tar.gz -C /usr/share/dotnet \
+    && rm dotnet.tar.gz \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    # Trigger first run experience by running arbitrary cmd
+    && dotnet help
+
 
 ### NEW NATIVE HELPERS
 
@@ -148,6 +178,7 @@ COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY composer/helpers /opt/composer/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY paket/helpers /opt/paket/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
     PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
@@ -159,4 +190,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
     bash /opt/go_modules/helpers/build /opt/go_modules && \
     bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
     bash /opt/hex/helpers/build /opt/hex && \
+    bash /opt/paket/helpers/build /opt/paket && \
     bash /opt/composer/helpers/build /opt/composer
