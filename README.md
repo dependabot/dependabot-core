@@ -2,20 +2,22 @@
   <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v5" alt="Dependabot" width="336">
 </p>
 
-# Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
+# Dependabot
 
-Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise), GitLab and
-Azure DevOps.
+Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
-If you want to host your own automated dependency update bot then this repo
-should give you the tools you need. A reference implementation is available
-[here][dependabot-script].
+1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
+2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
 
-## Issue / contribution response times
+## Got feedback?
 
-Currently the Dependabot team is at reduced capacity, because of this our
-response times on issues and contributions will be slower than we'd like.
+Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+
+Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
+
+### Disclosing security issues
+
+If you believe you have found a security vulnerability in Dependabot please submit the vulnerability to GitHub Security [Bug Bounty](https://bounty.github.com/) so that we can resolve the issue before it is disclosed publicly.
 
 ## What's in this repo?
 
