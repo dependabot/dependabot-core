@@ -1,3 +1,9 @@
+## v0.118.6, 30 June 2020
+
+- Bump phpstan/phpstan from 0.12.30 to 0.12.31 in /composer/helpers
+- Bump composer/composer from 1.10.7 to 1.10.8 in /composer/helpers
+- Prefer exact match for 'security' label @qnighy
+
 ## v0.118.5, 24 June 2020
 
 - Actions: Fix multiple sources matching major versions
