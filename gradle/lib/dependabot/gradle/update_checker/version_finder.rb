@@ -97,7 +97,7 @@ module Dependabot
           filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(req.split(","))
+            ignore_req = Gradle::Requirement.new(req)
             filtered =
               filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }

@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     end
 
     context "when the user has asked to ignore a major version" do
-      let(:ignored_versions) { [">= 23.0, < 24"] }
+      let(:ignored_versions) { ["[23.0,24]"] }
       let(:dependency_version) { "17.0" }
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end

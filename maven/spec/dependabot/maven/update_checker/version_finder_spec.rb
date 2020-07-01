@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the user has asked to ignore a major version" do
-      let(:ignored_versions) { [">= 23.0, < 24"] }
+      let(:ignored_versions) { ["[23.0,24)"] }
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/"\
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the user has ignored all versions" do
-      let(:ignored_versions) { [">= 17.0, < 24"] }
+      let(:ignored_versions) { ["[17.0,)"] }
 
       it "returns nil" do
         expect(subject).to be_nil
