@@ -4,13 +4,12 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "yaml"
+require "dependabot/file_parsers/base/dependency_set"
 
 module Dependabot
   module Kiln
     class FileParser < Dependabot::FileParsers::Base
       VALID_SOURCES = ["bosh.io", "compiled-releases", "final-pcf-bosh-releases"]
-
-      require "dependabot/file_parsers/base/dependency_set"
 
       def parse
         dependency_set = DependencySet.new

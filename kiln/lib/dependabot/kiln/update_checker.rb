@@ -9,9 +9,17 @@ module Dependabot
 # def latest_version
 
       def latest_version
-        s, c = Open3.capture2("kiln fetch-latest-version uaa", nil)
-        return s
-        #latest_version_details&.fetch(:version)
+        args = ""
+        @credentials.each do |cred|
+          if cred["type"] == "kiln"
+            cred["variables"].each do |id, key|
+              args += " -vr #{id}=#{key}"
+            end
+          end
+        end
+
+        latest_version_details, c = Open3.capture2("kiln most-recent-release-version --r #{@dependency.name}" + args, nil)
+        JSON.parse(latest_version_details)["version"]
       end
 
       def latest_resolvable_version
