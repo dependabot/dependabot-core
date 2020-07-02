@@ -87,15 +87,15 @@ jobs:
               bash -c "rake ci:rspec"
 
       - run:
-          name: Push dependabot-core image to Docker hub, if on master
+          name: Push dependabot-core image to Docker hub, if on main
           command: |
             if [ -n "$DOCKER_USER" ] && [ -n "$DOCKER_PASSWORD" ]; then
-              if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              if [ "${CIRCLE_BRANCH}" == "main" ]; then
                 echo "Pushing dependabot-core:{latest,$VERSION}} to registry"
                 docker push "dependabot/dependabot-core:$VERSION"
                 docker push "dependabot/dependabot-core:latest"
               else
-                echo "Not on master, skipping deployment"
+                echo "Not on main, skipping deployment"
               fi
             else
               echo "No Docker credentials, skipping push"
@@ -121,7 +121,7 @@ jobs:
       - restore_cache:
           keys:
             - v1-dependencies-{{ .Branch }}
-            - v1-dependencies-master
+            - v1-dependencies-main
 
       # Install dependencies
       - run: cd npm_and_yarn/helpers && yarn install

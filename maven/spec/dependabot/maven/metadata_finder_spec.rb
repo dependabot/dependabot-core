@@ -45,9 +45,22 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       "guava/23.3-jre/guava-23.3-jre.pom"
     end
     let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
+    let(:mockk_url) do
+      "https://repo.maven.apache.org/maven2/io/mockk/"\
+      "mockk/1.10.0/mockk-1.10.0.pom"
+    end
+    let(:mockk_response) { fixture("poms", "mockk-1.10.0.pom.xml") }
 
     before do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
+      stub_request(:get, mockk_url).to_return(status: 200, body: mockk_response)
+    end
+
+    context "when the dependency name has a classifier" do
+      let(:dependency_name) { "io.mockk:mockk:sources" }
+      let(:dependency_version) { "1.10.0" }
+
+      it { is_expected.to eq("https://github.com/mockk/mockk") }
     end
 
     context "when the github link is buried in the pom" do

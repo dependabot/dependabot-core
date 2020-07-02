@@ -23,8 +23,7 @@ module Dependabot
         tmp_source = look_up_source_in_pom(parent)
         return unless tmp_source
 
-        artifact = dependency.name.split(":").last
-        return tmp_source if tmp_source.repo.end_with?(artifact)
+        return tmp_source if tmp_source.repo.end_with?(dependency_artifact_id)
         return tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
@@ -34,14 +33,13 @@ module Dependabot
           return @repo_has_subdir_for_dep[tmp_source]
         end
 
-        artifact = dependency.name.split(":").last
         fetcher =
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false).
           select { |f| f.type == "dir" }.
-          any? { |f| artifact.end_with?(f.name) }
+          any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         tmp_source.branch = nil
         retry
@@ -96,18 +94,17 @@ module Dependabot
 
         github_urls.find do |url|
           repo = Source.from_url(url).repo
-          repo.end_with?(dependency.name.split(":").last)
+          repo.end_with?(dependency_artifact_id)
         end
       end
 
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        artifact_id = dependency.name.split(":").last
         response = Excon.get(
           "#{maven_repo_dependency_url}/"\
           "#{dependency.version}/"\
-          "#{artifact_id}-#{dependency.version}.pom",
+          "#{dependency_artifact_id}-#{dependency.version}.pom",
           headers: auth_details,
           idempotent: true,
           **SharedHelpers.excon_defaults
@@ -116,6 +113,12 @@ module Dependabot
         @dependency_pom_file = Nokogiri::XML(response.body)
       rescue Excon::Error::Timeout
         @dependency_pom_file = Nokogiri::XML("")
+      end
+
+      def dependency_artifact_id
+        _group_id, artifact_id, _classifier = dependency.name.split(":")
+
+        artifact_id
       end
 
       def parent_pom_file(pom)
