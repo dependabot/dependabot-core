@@ -1,3 +1,7 @@
+## v0.118.7, 2 July 2020
+
+- Python: support binary path dependencies when using requirements.txt/in files
+
 ## v0.118.6, 30 June 2020
 
 - Bump phpstan/phpstan from 0.12.30 to 0.12.31 in /composer/helpers
