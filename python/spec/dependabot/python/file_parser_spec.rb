@@ -187,6 +187,42 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
+    context "with tarball path dependencies" do
+      let(:files) { [pyproject, requirements, tarball_path_dependency] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("requirements", "tarball_path_dependency")
+        )
+      end
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "tarball_path_dependency.toml")
+        )
+      end
+      let(:tarball_path_dependency) do
+        Dependabot::DependencyFile.new(
+          name: "taxtea-0.6.0.tar.gz",
+          content: fixture("path_dependencies", "taxtea-0.6.0.tar.gz")
+        )
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) do
+          dependencies.find do |dep|
+            dep.name == "taxtea"
+          end
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("taxtea")
+          expect(dependency.version).to be_nil
+        end
+      end
+    end
+
     context "that requires itself" do
       let(:files) { [requirements] }
       let(:requirements_fixture_name) { "cascading.txt" }
