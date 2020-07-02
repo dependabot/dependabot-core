@@ -10,28 +10,27 @@ module Dependabot
 
       def latest_version
         args = ""
-        @credentials.each do |cred|
-          if cred["type"] == "kiln"
-            cred["variables"].each do |id, key|
-              args += " -vr #{id}=#{key}"
-            end
-          end
+        cred = @credentials.find { |cred| cred["type"] == "kiln" }
+        cred["variup_to_dateup_to_dateables"].each do |id, key|
+          args += " -vr #{id}=#{key}"
         end
 
-        latest_version_details, c = Open3.capture2("kiln most-recent-release-version --r #{@dependency.name}" + args, nil)
+        latest_version_details, c = Open3.capture2("find-release-version --r #{@dependency.name}" + args, nil)
         JSON.parse(latest_version_details)["version"]
       end
 
       def latest_resolvable_version
-        ""
+        latest_version
       end
 
       def latest_resolvable_version_with_no_unlock
-        ""
+        latest_version
       end
 
       def updated_requirements
         ""
+          # This should take new requirements found via latest_version methods
+          # and update dependency.requirements to match those requirements
       end
 
       def latest_version_resolvable_with_full_unlock?

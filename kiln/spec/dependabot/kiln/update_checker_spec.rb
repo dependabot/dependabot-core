@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
          "host" => "github.com",
          "username" => "x-access-token",
          "password" => "token"
-     },{
+     }, {
          "type" => "kiln",
          "variables" => {
              "aws_access_key_id" => "foo",
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
   let(:directory) { "/" }
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
-  let(:command) { ["kiln most-recent-release-version --r uaa -vr aws_access_key_id=foo -vr aws_secret_access_key=foo", nil] }
+  let(:command) { ["kiln find-release-version --r uaa -vr aws_access_key_id=foo -vr aws_secret_access_key=foo", nil] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -62,30 +62,21 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
 
   describe 'latest version' do
     subject { checker.latest_version }
+    let(:process_status) { double }
 
     before do
-      response = []
-      response << '{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz"}'
-      response << '0'
-
-      # expect
-      allow(Open3).to receive(:capture2).with(*command).and_return(*response)
+      allow(process_status).to receive(:success?).and_return true
+      allow(Open3).to receive(:capture2).with(*command).and_return(response, process_status)
     end
 
-    context "with a version that exist on bosh.io" do
+    context "with a version that exist" do
+      let(:response) { '{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz"}' }
 
       it { is_expected.to eq('74.21.0') }
     end
 
     describe "not found release name" do
-      before do
-        response = []
-        response << '{"version":"","remote_path":""}'
-        response << '0'
-
-        # expect
-        allow(Open3).to receive(:capture2).with(*command).and_return(*response)
-      end
+      let(:response) { '{"version":"","remote_path":""}' }
 
       context "with no version at all" do
         it { is_expected.to eq('') }
