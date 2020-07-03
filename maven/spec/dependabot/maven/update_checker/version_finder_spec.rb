@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
-    context "when the user has asked to ignore a major version using Ruby syntax" do
+    context "when a version range is specified using Ruby syntax" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
