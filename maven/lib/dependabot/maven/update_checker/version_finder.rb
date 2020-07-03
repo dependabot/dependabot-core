@@ -13,6 +13,8 @@ module Dependabot
       class VersionFinder
         TYPE_SUFFICES = %w(jre android java).freeze
 
+        MAVEN_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:,
                        raise_on_ignored: false)
@@ -94,7 +96,7 @@ module Dependabot
           filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Maven::Requirement.new(req)
+            ignore_req = Maven::Requirement.new(parse_requirement_string(req))
             filtered =
               filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
@@ -105,6 +107,12 @@ module Dependabot
           end
 
           filtered
+        end
+
+        def parse_requirement_string(string)
+          return string if string.match?(MAVEN_RANGE_REGEX)
+
+          string.split(",").map(&:strip)
         end
 
         def filter_vulnerable_versions(possible_versions)
