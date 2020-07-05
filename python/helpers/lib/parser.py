@@ -1,3 +1,4 @@
+from distutils.core import run_setup
 from itertools import chain
 import glob
 import io
@@ -90,6 +91,21 @@ def parse_setup(directory):
             for key in extras_require_dict:
                 for req in extras_require_dict[key]:
                     parse_requirement(req, 'extras_require:{}'.format(key))
+
+        try:
+            # Use distutils.core.run_setup() - this will also parse setup.cfg
+            setup_result = run_setup(directory + "/setup.py", stop_after="init")
+        except Exception:
+            # Try with the original exec() method below
+            pass
+        else:
+            setup(
+                setup_requires=getattr(setup_result, "setup_requires", None),
+                install_requires=getattr(setup_result, "install_requires", None),
+                tests_requires=getattr(setup_result, "tests_requires", None),
+                extras_require=getattr(setup_result, "extras_require", None),
+            )
+
         setuptools.setup = setup
 
         def noop(*args, **kwargs):
@@ -132,7 +148,8 @@ def parse_setup(directory):
         # Run as main (since setup.py is a script)
         __name__ = '__main__'
 
-        # Exec the setup.py
-        exec(content) in globals(), locals()
+        # Exec the setup.py if distutils.core.run_setup() above didn't succeed
+        if not setup_packages:
+            exec(content) in globals(), locals()
 
     return json.dumps({ "result": setup_packages })
