@@ -72,4 +72,6 @@ module Dependabot
     end
   end
 end
+Dependabot::UpdateCheckers.register("kiln", Dependabot::Kiln::UpdateChecker)
+
 
