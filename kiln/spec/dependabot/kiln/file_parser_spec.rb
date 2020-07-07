@@ -68,7 +68,9 @@ RSpec.describe Dependabot::Kiln::FileParser do
                                    requirement: "~> 74.16.0",
                                    file: "Kilnfile",
                                    source: {
-                                       type: "bosh.io"
+                                       type: "bosh.io",
+                                       remote_path: "bosh.io/uaa",
+                                       sha: "somesha"
                                    },
                                    groups: [:default]
                                }],
@@ -82,7 +84,9 @@ RSpec.describe Dependabot::Kiln::FileParser do
                                    requirement: "~> 74.17.0",
                                    file: "Kilnfile",
                                    source: {
-                                       type: "final-pcf-bosh-releases"
+                                       type: "final-pcf-bosh-releases",
+                                       remote_path: "uaa/uaa-74.17.0.tgz",
+                                       sha: "somesha"
                                    },
                                    groups: [:default]
                                }],
@@ -109,7 +113,9 @@ RSpec.describe Dependabot::Kiln::FileParser do
                                    requirement: nil,
                                    file: "Kilnfile",
                                    source: {
-                                       type: "bosh.io"
+                                       type: "bosh.io",
+                                       remote_path: "2.10/uaa/uaa-74.17.22-ubuntu-xenial-621.64.tgz",
+                                       sha: "somesha"
                                    },
                                    groups: [:default]
                                }],

@@ -51,10 +51,24 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
   let(:current_version) { "74.16.0" }
   let(:requirements) {
     [{
-         requirement: "~> 74.16.0",
+         requirement: "~74.16.0",
          file: "Kilnfile",
          source: {
-             type: "bosh.io"
+             type: "bosh.io",
+             remote_path: "bosh.io/uaa",
+             sha: "sha"
+         },
+         groups: [:default]
+     }]
+  }
+  let(:updated_requirements) {
+    [{
+         requirement: "~74.16.0",
+         file: "Kilnfile",
+         source: {
+             type: "compiled-releases",
+             remote_path: "2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz",
+             sha: "updated-sha"
          },
          groups: [:default]
      }]
@@ -80,6 +94,31 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
 
       context "with no version at all" do
         it { is_expected.to eq('') }
+      end
+    end
+
+  end
+
+  describe 'update requirements' do
+    subject { checker.updated_requirements }
+    let(:process_status) { double }
+
+    before do
+      allow(process_status).to receive(:success?).and_return true
+      allow(Open3).to receive(:capture2).with(*command).and_return([response, process_status])
+    end
+
+    context "with a version that exist" do
+      let(:response) { '{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz","source":"compiled-releases","sha":"updated-sha"}' }
+
+      it { is_expected.to eq(updated_requirements) }
+    end
+
+    describe "not found release name" do
+      let(:response) { '{"version":"","remote_path":"","source":"","sha":""}' }
+
+      context "with no version at all" do
+        it { is_expected.to eq(dependency.requirements) }
       end
     end
 

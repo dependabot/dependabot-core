@@ -9,13 +9,7 @@ module Dependabot
 # def latest_version
 
       def latest_version
-        args = ""
-        cred = @credentials.find { |cred| cred["type"] == "kiln" }
-        cred["variup_to_dateup_to_dateables"].each do |id, key|
-          args += " -vr #{id}=#{key}"
-        end
-
-        latest_version_details, c = Open3.capture2("find-release-version --r #{@dependency.name}" + args, nil)
+        latest_version_details = find_release
         JSON.parse(latest_version_details)["version"]
       end
 
@@ -24,17 +18,46 @@ module Dependabot
       end
 
       def latest_resolvable_version_with_no_unlock
-        latest_version
+        nil
       end
 
       def updated_requirements
-        ""
-          # This should take new requirements found via latest_version methods
-          # and update dependency.requirements to match those requirements
+        # This should take new requirements found via latest_version methods
+        # and update dependency.requirements to match those requirements
+        latest_version_details = find_release
+        remote_path = JSON.parse(latest_version_details)["remote_path"]
+        source = JSON.parse(latest_version_details)["source"]
+        sha = JSON.parse(latest_version_details)["sha"]
+
+        if latest_version == ''
+          @dependency.requirements
+        end
+
+        @dependency.requirements[0][:source][:remote_path] = remote_path
+        @dependency.requirements[0][:source][:type] = source
+        @dependency.requirements[0][:source][:sha] = sha
+        @dependency.requirements
+      end
+
+      private
+
+      def find_release
+        args = ""
+        cred = @credentials.find { |cred| cred["type"] == "kiln" }
+        cred["variables"].each do |id, key|
+          args += " -vr #{id}=#{key}"
+        end
+
+        latest_version_details, c = Open3.capture2("kiln find-release-version --r #{@dependency.name}" + args, nil)
+        latest_version_details
       end
 
       def latest_version_resolvable_with_full_unlock?
         false
+      end
+
+      def updated_dependencies_after_full_unlock
+        raise NotImplementedError
       end
 
 # we think this is the most recent version that meets the version requirements

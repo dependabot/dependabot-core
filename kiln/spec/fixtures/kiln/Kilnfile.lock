@@ -2,8 +2,8 @@ releases:
 - name: uaa
   sha1: somesha
   version: 74.16.0
-  remote_source: compiled-releases
-  remote_path: 2.10/uaa/uaa-74.16.0-ubuntu-xenial-621.64.tgz
+  remote_source: bosh.io
+  remote_path: bosh.io/uaa
 - name: uaac
   sha1: somesha
   version: 74.17.22
@@ -12,8 +12,8 @@ releases:
 - name: uaab
   sha1: somesha
   version: 74.17.0
-  remote_source: compiled-releases
-  remote_path: 2.10/uaa/uaa-74.17.0-ubuntu-xenial-621.64.tgz
+  remote_source: final-pcf-bosh-releases
+  remote_path: uaa/uaa-74.17.0.tgz
 stemcell_criteria:
   os: ubuntu-xenial
   version: "621.64"

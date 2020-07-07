@@ -57,7 +57,9 @@ module Dependabot
                                  file: kilnfile.name,
                                  groups: [:default],
                                  source: {
-                                     type: kilnfile_content["source"]
+                                     type: kilnfile_content["source"],
+                                     remote_path: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["remote_path"],
+                                     sha: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["sha1"],
                                  },
                              }],
               version: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["version"],
