@@ -9,7 +9,8 @@ require "dependabot/file_parsers"
 require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
-
+require "dependabot/kiln/version"
+require "dependabot/kiln/requirement"
 
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
@@ -61,7 +62,6 @@ RSpec.describe "kiln integration" do
         new(source: source, credentials: github_credentials)
 
     files = fetcher.files
-    commit = fetcher.commit
 
     ##############################
     # Parse the dependency files #
@@ -75,6 +75,8 @@ RSpec.describe "kiln integration" do
     dependencies = parser.parse
     dep = dependencies.find { |d| d.name == dependency_name }
 
+    expect(dep.name).to eq('uaa')
+
     #########################################
     # Get update details for the dependency #
     #########################################
@@ -84,12 +86,14 @@ RSpec.describe "kiln integration" do
         credentials: credentials,
     )
 
-    checker.up_to_date?
-    checker.can_update?(requirements_to_unlock: :own)
+    # checker.up_to_date?
+    # checker.can_update?(requirements_to_unlock: :own)
     updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
 
+    expect(updated_deps[0].version).not_to eq(dep.version)
+
     # Temporary assertions until we implement next two steps
-    expect(dep.name).to eq('uaa')
-    expect(dep.requirements.first[:requirement]).to eq('~> 74.16.0')
+    # expect(dep.name).to eq('uaa')
+    # expect(dep.requirements.first[:requirement]).to eq('~> 74.16.0')
   end
 end

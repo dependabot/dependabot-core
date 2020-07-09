@@ -10,7 +10,7 @@ module Dependabot
 
       def latest_version
         latest_version_details = find_release
-        JSON.parse(latest_version_details)["version"]
+        version_class.new(JSON.parse(latest_version_details)["version"])
       end
 
       def latest_resolvable_version
@@ -28,15 +28,22 @@ module Dependabot
         remote_path = JSON.parse(latest_version_details)["remote_path"]
         source = JSON.parse(latest_version_details)["source"]
         sha = JSON.parse(latest_version_details)["sha"]
+        version = JSON.parse(latest_version_details)["version"]
 
-        if latest_version == ''
-          @dependency.requirements
+        if version == ''
+          return @dependency.requirements
         end
 
-        @dependency.requirements[0][:source][:remote_path] = remote_path
-        @dependency.requirements[0][:source][:type] = source
-        @dependency.requirements[0][:source][:sha] = sha
-        @dependency.requirements
+        [{
+             requirement: @dependency.requirements[0][:requirement],
+             file: @dependency.requirements[0][:file],
+             groups: @dependency.requirements[0][:groups],
+             source: {
+                 type: source,
+                 remote_path: remote_path,
+                 sha: sha,
+             }
+         }]
       end
 
       private
@@ -48,8 +55,8 @@ module Dependabot
           args += " -vr #{id}=#{key}"
         end
 
-        latest_version_details, c = Open3.capture2("kiln find-release-version --r #{@dependency.name}" + args, nil)
-        latest_version_details
+        latest_version_details, stderr, status_code = Open3.capture3("kiln find-release-version --r #{@dependency.name} -kf spec/fixtures/kiln/Kilnfile" + args)
+        latest_version_details.split('\\n')[1]
       end
 
       def latest_version_resolvable_with_full_unlock?

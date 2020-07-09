@@ -2,6 +2,8 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/kiln/update_checker"
+require "dependabot/kiln/requirement"
+require "dependabot/kiln/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Kiln::UpdateChecker do
@@ -15,7 +17,6 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
         ignored_versions: nil,
         security_advisories: nil
     )
-
   end
 
   let(:credentials) do
@@ -37,7 +38,7 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
   let(:directory) { "/" }
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
-  let(:command) { ["kiln find-release-version --r uaa -vr aws_access_key_id=foo -vr aws_secret_access_key=foo", nil] }
+  let(:command) { ["kiln find-release-version --r uaa -kf spec/fixtures/kiln/Kilnfile -vr aws_access_key_id=foo -vr aws_secret_access_key=foo"] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -80,20 +81,20 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
 
     before do
       allow(process_status).to receive(:success?).and_return true
-      allow(Open3).to receive(:capture2).with(*command).and_return(response, process_status)
+      allow(Open3).to receive(:capture3).with(*command).and_return(response, '', process_status)
     end
 
     context "with a version that exist" do
-      let(:response) { '{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz"}' }
+      let(:response) { '... \\n{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz"}' }
 
-      it { is_expected.to eq('74.21.0') }
+      it { is_expected.to eq(Dependabot::Kiln::Version.new('74.21.0')) }
     end
 
     describe "not found release name" do
-      let(:response) { '{"version":"","remote_path":""}' }
+      let(:response) { '... \\n{"version":"","remote_path":""}' }
 
       context "with no version at all" do
-        it { is_expected.to eq('') }
+        it { is_expected.to eq(Dependabot::Kiln::Version.new('')) }
       end
     end
 
@@ -105,17 +106,17 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
 
     before do
       allow(process_status).to receive(:success?).and_return true
-      allow(Open3).to receive(:capture2).with(*command).and_return([response, process_status])
+      allow(Open3).to receive(:capture3).with(*command).and_return(response, nil, process_status)
     end
 
     context "with a version that exist" do
-      let(:response) { '{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz","source":"compiled-releases","sha":"updated-sha"}' }
+      let(:response) { '... \\n{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz","source":"compiled-releases","sha":"updated-sha"}' }
 
       it { is_expected.to eq(updated_requirements) }
     end
 
     describe "not found release name" do
-      let(:response) { '{"version":"","remote_path":"","source":"","sha":""}' }
+      let(:response) { '... \\n{"version":"","remote_path":"","source":"","sha":""}' }
 
       context "with no version at all" do
         it { is_expected.to eq(dependency.requirements) }
