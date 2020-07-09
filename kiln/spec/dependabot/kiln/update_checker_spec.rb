@@ -85,13 +85,13 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
     end
 
     context "with a version that exist" do
-      let(:response) { '... \\n{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz"}' }
+      let(:response) { "... \n{\"version\":\"74.21.0\",\"remote_path\":\"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz\"}" }
 
       it { is_expected.to eq(Dependabot::Kiln::Version.new('74.21.0')) }
     end
 
     describe "not found release name" do
-      let(:response) { '... \\n{"version":"","remote_path":""}' }
+      let(:response) { "... \n{\"version\":\"\",\"remote_path\":\"\"}" }
 
       context "with no version at all" do
         it { is_expected.to eq(Dependabot::Kiln::Version.new('')) }
@@ -110,13 +110,13 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
     end
 
     context "with a version that exist" do
-      let(:response) { '... \\n{"version":"74.21.0","remote_path":"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz","source":"compiled-releases","sha":"updated-sha"}' }
+      let(:response) { "... \n{\"version\":\"74.21.0\",\"remote_path\":\"2.11/uaa/uaa-74.21.0-ubuntu-xenial-621.76.tgz\",\"source\":\"compiled-releases\",\"sha\":\"updated-sha\"}" }
 
       it { is_expected.to eq(updated_requirements) }
     end
 
     describe "not found release name" do
-      let(:response) { '... \\n{"version":"","remote_path":"","source":"","sha":""}' }
+      let(:response) { "... \n{\"version\":\"\",\"remote_path\":\"\",\"source\":\"\",\"sha\":\"\"}" }
 
       context "with no version at all" do
         it { is_expected.to eq(dependency.requirements) }

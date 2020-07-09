@@ -56,7 +56,7 @@ module Dependabot
         end
 
         latest_version_details, stderr, status_code = Open3.capture3("kiln find-release-version --r #{@dependency.name} -kf spec/fixtures/kiln/Kilnfile" + args)
-        latest_version_details.split('\\n')[1]
+        latest_version_details.split("\n")[1]
       end
 
       def latest_version_resolvable_with_full_unlock?
