@@ -2,15 +2,11 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/kiln/helpers"
 
 module Dependabot
   module Kiln
     class FileUpdater < Dependabot::FileUpdaters::Base
-      def initialize(dependencies:, lockfile:, dependency_files:, credentials:)
-        @lockfile = lockfile
-        super dependencies: dependencies, dependency_files: dependency_files, credentials: credentials
-      end
-
       def self.updated_files_regex
         [
             /^Kilnfile\.lock$/
@@ -24,8 +20,7 @@ module Dependabot
           updated_files <<
               updated_file(
                   file: lockfile,
-                  content: ""
-              #content: file_updater.updated_lockfile_content
+                  content: updated_lockfile_content
               )
         end
         # raise "No files changed!" if updated_files.none?
@@ -35,22 +30,29 @@ module Dependabot
 
       private
 
-      def file_updater
-        @file_updater ||=
-            FileUpdater.new(
-                dependencies: dependencies,
-                dependency_files: dependency_files,
-                lockfile: lockfile,
-                credentials: credentials
-            )
-      end
-
       def lockfile
         @lockfile ||= get_original_file("Kilnfile.lock")
       end
 
       def updated_lockfile_content
-        ""
+        return @updated_lockfile_content if @updated_lockfile_content
+
+
+        Helpers.dir_with_dependencies(dependency_files) do |kilnfile_path, lockfile_path|
+          @dependencies.each do |dependency|
+            update_release(dependency, kilnfile_path)
+          end
+          @updated_lockfile_content = File.read(lockfile_path)
+        end
+      end
+
+      def update_release (dep, kilnfile_path)
+        args = ""
+        cred = @credentials.find { |cred| cred["type"] == "kiln" }
+        cred["variables"].each do |id, key|
+          args += " -vr #{id}=#{key}"
+        end
+        latest_version_details, stderr, status_code = Open3.capture3("kiln update-release --name #{dep.name} --version #{dep.version} -kf #{kilnfile_path}" + args)
       end
 
       def check_required_files
@@ -60,5 +62,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters.
-    register("kiln", Dependabot::Kiln::FileUpdater)
+Dependabot::FileUpdaters.register("kiln", Dependabot::Kiln::FileUpdater)

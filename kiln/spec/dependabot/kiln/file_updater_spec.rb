@@ -2,6 +2,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/kiln/file_updater"
+require "dependabot/kiln/helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Kiln::FileUpdater do
@@ -12,7 +13,6 @@ RSpec.describe Dependabot::Kiln::FileUpdater do
         dependencies: dependencies,
         dependency_files: dependency_files,
         credentials: credentials,
-        lockfile: lockfile,
     )
   end
 
@@ -70,7 +70,8 @@ RSpec.describe Dependabot::Kiln::FileUpdater do
          groups: [:default]
      }]
   }
-  let(:directory) { "/" }
+  let(:tmp_path) { Dir.mktmpdir }
+  let(:directory) { tmp_path }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
         name: "Kilnfile.lock",
@@ -86,32 +87,43 @@ RSpec.describe Dependabot::Kiln::FileUpdater do
     )
   end
   let(:lockfile_body) { fixture("kiln", lockfile_fixture_name) }
+  let(:updated_lockfile_body) { fixture("kiln/expected", lockfile_fixture_name) }
   let(:kilnfile_body) { fixture("kiln", kilnfile_fixture_name) }
-  let(:expected_lockfile_body) { fixture("kiln", "expected", lockfile_fixture_name) }
   let(:lockfile_fixture_name) { "Kilnfile.lock" }
   let(:kilnfile_fixture_name) { "Kilnfile" }
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before do
+    lockfile_path = File.join(tmp_path, lockfile_fixture_name)
+    kilnfile_path = File.join(tmp_path, kilnfile_fixture_name)
+    File.write(lockfile_path, updated_lockfile_body)
+    File.write(kilnfile_path, kilnfile_body)
+
+    allow(Dependabot::Kiln::Helpers).to receive(:dir_with_dependencies).and_yield(kilnfile_path, lockfile_path)
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+    let(:process_status) { double }
+    let(:command) { /kiln update-release --name uaa --version #{current_version} -kf .*\/Kilnfile -vr aws_access_key_id=foo -vr aws_secret_access_key=foo/ }
 
-    it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+    before do
+      allow(process_status).to receive(:success?).and_return true
+      allow(Open3).to receive(:capture3).and_return('', '', process_status)
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-      its(:length) { is_expected.to eq(1) }
+    its(:length) { is_expected.to eq(1) }
 
     it "has updated dependency" do
-      expect(updated_files[0].content).to eq(expected_lockfile_body)
+      expect(updated_files[0].content).to eq(updated_lockfile_body)
     end
 
+    it "calls kiln to update the dependency" do
+      updated_files
+      expect(Open3).to have_received(:capture3).with(command)
+    end
   end
 end
-
-

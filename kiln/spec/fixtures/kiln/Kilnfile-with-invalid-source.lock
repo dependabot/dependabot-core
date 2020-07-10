@@ -1,9 +1,9 @@
 releases:
 - name: uaa
-  sha1: 991f8aca30ed1bada8a7a1a3582d0dea1ef8017e
-  version: 74.16.0
+  sha1: somesha
+  version: 74.15.0
   remote_source: bosh.io
-  remote_path: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.16.0
+  remote_path: bosh.io/uaa
 - name: uaac
   sha1: somesha
   version: 74.17.22
@@ -12,7 +12,7 @@ releases:
 - name: uaab
   sha1: somesha
   version: 74.17.0
-  remote_source: final-pcf-bosh-releases
+  remote_source: final-pcf
   remote_path: uaa/uaa-74.17.0.tgz
 stemcell_criteria:
   os: ubuntu-xenial

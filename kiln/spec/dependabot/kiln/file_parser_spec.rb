@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Kiln::FileParser do
             expect(subject).to include(Dependabot::Dependency.new(
                 name: "uaa",
                 requirements: [{
-                                   requirement: "~> 74.16.0",
+                                   requirement: "~74.16.0",
                                    file: "Kilnfile",
                                    source: {
                                        type: "bosh.io",
@@ -74,14 +74,14 @@ RSpec.describe Dependabot::Kiln::FileParser do
                                    },
                                    groups: [:default]
                                }],
-                version: "74.16.0",
+                version: "74.15.0",
                 package_manager: "kiln"
             ))
 
             expect(subject).to include(Dependabot::Dependency.new(
                 name: "uaab",
                 requirements: [{
-                                   requirement: "~> 74.17.0",
+                                   requirement: "~74.17.0",
                                    file: "Kilnfile",
                                    source: {
                                        type: "final-pcf-bosh-releases",
@@ -112,12 +112,12 @@ RSpec.describe Dependabot::Kiln::FileParser do
                 requirements: [{
                                    requirement: nil,
                                    file: "Kilnfile",
+                                   groups: [:default],
                                    source: {
-                                       type: "bosh.io",
+                                       type: "compiled-releases",
                                        remote_path: "2.10/uaa/uaa-74.17.22-ubuntu-xenial-621.64.tgz",
                                        sha: "somesha"
                                    },
-                                   groups: [:default]
                                }],
                 version: "74.17.22",
                 package_manager: "kiln"
@@ -134,8 +134,8 @@ RSpec.describe Dependabot::Kiln::FileParser do
         end
       end
 
-      context "when kilnfile has invalid source" do
-        let(:kilnfile_fixture_name) { "Kilnfile-with-invalid-source" }
+      context "when kilnfile.lock has invalid source" do
+        let(:lockfile_fixture_name) { "Kilnfile-with-invalid-source.lock" }
 
         it 'raises an error' do
           expect {subject}.to raise_error("The release source 'final-pcf' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}")

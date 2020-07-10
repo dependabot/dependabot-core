@@ -1,5 +1,6 @@
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/kiln/helpers"
 
 module Dependabot
   module Kiln
@@ -49,14 +50,17 @@ module Dependabot
       private
 
       def find_release
+        return @latest_version_details if @latest_version_details
         args = ""
         cred = @credentials.find { |cred| cred["type"] == "kiln" }
         cred["variables"].each do |id, key|
           args += " -vr #{id}=#{key}"
         end
 
-        latest_version_details, stderr, status_code = Open3.capture3("kiln find-release-version --r #{@dependency.name} -kf spec/fixtures/kiln/Kilnfile" + args)
-        latest_version_details.split("\n")[1]
+        Helpers.dir_with_dependencies(dependency_files) do |kilnfile_path, lockfile_path|
+          latest_version_details, stderr, status_code = Open3.capture3("kiln find-release-version --r #{@dependency.name} -kf #{kilnfile_path}" + args)
+          @latest_version_details = latest_version_details.lines.last
+        end
       end
 
       def latest_version_resolvable_with_full_unlock?

@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/kiln/file_fetcher"
 require "dependabot/kiln/file_parser"
 require "dependabot/kiln/update_checker"
+require "dependabot/kiln/file_updater"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
@@ -11,6 +12,7 @@ require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 require "dependabot/kiln/version"
 require "dependabot/kiln/requirement"
+require "dependabot/kiln/metadata_finder"
 
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
@@ -62,6 +64,8 @@ RSpec.describe "kiln integration" do
         new(source: source, credentials: github_credentials)
 
     files = fetcher.files
+    commit = fetcher.commit
+    lockfile_contents = files.find {|f| f.name == "Kilnfile.lock"}.content
 
     ##############################
     # Parse the dependency files #
@@ -101,7 +105,11 @@ RSpec.describe "kiln integration" do
 
     updated_files = updater.updated_dependency_files
 
-    expect(updated_files.length).is eq(1)
-    expect(updated_files[0].file).is eq("Kilnfile.lock")
+    expect(updated_files.length).to eq(1)
+    expect(updated_files[0].name).to eq("Kilnfile.lock")
+    expect(updated_files[0].content).to_not eq(lockfile_contents)
+    expect(updated_files[0].content).to eq(fixture("kiln/expected", "Kilnfile.lock"))
+
+  
   end
 end

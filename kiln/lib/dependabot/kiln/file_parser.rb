@@ -47,8 +47,9 @@ module Dependabot
         end
 
         kilnfile_contents.each_with_index do |kilnfile_content, index|
+          lockfile_content = kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }
 
-          validate_source(kilnfile_content)
+          validate_source(lockfile_content)
 
           dependencies << Dependency.new(
               name: kilnfile_content["name"],
@@ -57,12 +58,12 @@ module Dependabot
                                  file: kilnfile.name,
                                  groups: [:default],
                                  source: {
-                                     type: kilnfile_content["source"],
-                                     remote_path: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["remote_path"],
-                                     sha: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["sha1"],
+                                     type: lockfile_content["remote_source"],
+                                     remote_path: lockfile_content["remote_path"],
+                                     sha: lockfile_content["sha1"],
                                  },
                              }],
-              version: kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }["version"],
+              version: lockfile_content["version"],
               package_manager: "kiln"
           )
         end
@@ -70,8 +71,8 @@ module Dependabot
       end
 
       def validate_source(release)
-        if (!VALID_SOURCES.include? release["source"])
-          raise "The release source '#{release["source"]}' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}"
+        if (!VALID_SOURCES.include? release["remote_source"])
+          raise "The release source '#{release["remote_source"]}' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}"
         end
       end
     end
