@@ -86,14 +86,22 @@ RSpec.describe "kiln integration" do
         credentials: credentials,
     )
 
-    # checker.up_to_date?
-    # checker.can_update?(requirements_to_unlock: :own)
     updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
 
     expect(updated_deps[0].version).not_to eq(dep.version)
 
-    # Temporary assertions until we implement next two steps
-    # expect(dep.name).to eq('uaa')
-    # expect(dep.requirements.first[:requirement]).to eq('~> 74.16.0')
+    #####################################
+    # Generate updated dependency files #
+    #####################################
+    updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
+        dependencies: updated_deps,
+        dependency_files: files,
+        credentials: credentials,
+        )
+
+    updated_files = updater.updated_dependency_files
+
+    expect(updated_files.length).is eq(1)
+    expect(updated_files[0].file).is eq("Kilnfile.lock")
   end
 end
