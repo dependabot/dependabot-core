@@ -14,16 +14,28 @@ module Dependabot
       end
 
       def latest_resolvable_version
+        if dependency.package_manager == "docker"
+          return @docker_deps.latest_resolvable_version
+        end
+
         # Resolvability isn't an issue for GitHub Actions.
         latest_version
       end
 
       def latest_resolvable_version_with_no_unlock
+        if dependency.package_manager == "docker"
+          return @docker_deps.latest_resolvable_version_with_no_unlock
+        end
+
         # No concept of "unlocking" for GitHub Actions (since no lockfile)
         dependency.version
       end
 
       def updated_requirements
+        if dependency.package_manager == "docker"
+          return @docker_deps.updated_requirements
+        end
+
         if updated_source == dependency_source_details
           return dependency.requirements
         end
@@ -32,6 +44,41 @@ module Dependabot
       end
 
       private
+
+      def version_up_to_date?
+        if dependency.package_manager == "docker"
+          return @docker_deps.send(:version_up_to_date?)
+        end
+
+        super
+      end
+
+      def version_can_update?(*)
+        if dependency.package_manager == "docker"
+          return !@docker_deps.send(:version_up_to_date?)
+        end
+
+        super
+      end
+
+      # copied from base class
+      def vulnerable?
+        return false if security_advisories.none?
+
+        # Can't (currently) detect whether dependencies without a version
+        # (i.e., for repos without a lockfile) are vulnerable
+        return false unless dependency.version
+
+        # Can't (currently) detect whether git dependencies are vulnerable
+        return false if existing_version_is_sha?
+
+        if dependency.package_manager == "docker"
+          # dirty hack
+          @security_advisories = []
+        end
+        version = version_class.new(dependency.version)
+        security_advisories.any? { |a| a.vulnerable?(version) }
+      end
 
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't relevant for GitHub Actions
@@ -44,9 +91,25 @@ module Dependabot
 
       def fetch_latest_version
         # TODO: Support Docker sources
-        return unless git_dependency?
-
-        fetch_latest_version_for_git_dependency
+        # return unless git_dependency?
+        if dependency.package_manager == "github_actions"
+          fetch_latest_version_for_git_dependency
+        elsif dependency.package_manager == "docker"
+          @docker_deps = Docker::UpdateChecker.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            requirements_update_strategy: requirements_update_strategy,
+            ignored_versions: ignored_versions,
+            security_advisories: Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency.name,
+              package_manager: "docker",
+              vulnerable_versions: [],
+              safe_versions: []
+            )
+          )
+          @docker_deps.latest_version
+        end
       end
 
       def fetch_latest_version_for_git_dependency
