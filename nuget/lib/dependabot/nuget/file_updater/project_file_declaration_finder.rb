@@ -46,6 +46,7 @@ module Dependabot
         def get_element_from_node(node)
           node.at_xpath("/PackageReference") ||
             node.at_xpath("/GlobalPackageReference") ||
+            node.at_xpath("/PackageVersion") ||
             node.at_xpath("/Dependency") ||
             node.at_xpath("/DevelopmentDependency")
         end
