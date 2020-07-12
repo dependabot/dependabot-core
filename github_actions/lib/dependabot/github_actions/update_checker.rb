@@ -96,25 +96,6 @@ module Dependabot
         super
       end
 
-      # # copied from base class
-      # def vulnerable?
-      #   return false if security_advisories.none?
-
-      #   # Can't (currently) detect whether dependencies without a version
-      #   # (i.e., for repos without a lockfile) are vulnerable
-      #   return false unless dependency.version
-
-      #   # Can't (currently) detect whether git dependencies are vulnerable
-      #   return false if existing_version_is_sha?
-
-      #   if dependency.package_manager == "docker"
-      #     # dirty hack
-      #     @security_advisories = []
-      #   end
-      #   version = version_class.new(dependency.version)
-      #   security_advisories.any? { |a| a.vulnerable?(version) }
-      # end
-
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't relevant for GitHub Actions
         false
