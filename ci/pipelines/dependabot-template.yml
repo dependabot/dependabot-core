@@ -46,9 +46,9 @@ resources:
     icon: git
     source:
       uri: https://github.com/dependabot/dependabot-core.git
-      branch: master
+      branch: main
       tag_filter: v*
-  
+
   - name: pix4d_build_tools.git
     type: git
     icon: git
