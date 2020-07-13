@@ -12,12 +12,16 @@ COPY docker /home/dependabot/docker
 RUN apk update && \
   apk add --no-cache \
   g++ \
+  libxslt-dev \
+  libxml2-dev \
   make && \
   gem update --system && \
   gem install bundler --no-document
 
+
 WORKDIR /home/dependabot/docker/
 
+RUN bundle config build.nokogiri --use-system-libraries
 RUN bundle install
 
 FROM build AS tests
