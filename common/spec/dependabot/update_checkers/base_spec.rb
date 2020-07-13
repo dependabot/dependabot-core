@@ -98,6 +98,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       it { is_expected.to be_falsey }
     end
 
+    context "when the latest version is vendored commit string" do
+      let(:latest_version) { "1.5.0.0.gcafecafe" }
+      it { is_expected.to be_truthy }
+    end
+
     context "when the dependency has a SHA-1 hash version" do
       let(:dependency) do
         Dependabot::Dependency.new(

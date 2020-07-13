@@ -213,7 +213,12 @@ module Dependabot
         # this case we treat the version as up-to-date so that it's ignored.
         return true if latest_version.to_s.match?(/^[0-9a-f]{40}$/)
 
-        latest_version <= version_class.new(dependency.version)
+        latest = if latest_version.is_a?(String)
+                   version_class.new(latest_version)
+                 else
+                   latest_version
+                 end
+        latest <= version_class.new(dependency.version)
       end
 
       def numeric_version_can_update?(requirements_to_unlock:)
