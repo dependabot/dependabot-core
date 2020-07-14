@@ -32,7 +32,7 @@ repo.config_writer().set_value("user", "name", COMMITER).release()
 
 git.Repo(os.curdir).create_remote("upstream", url="../upstream-dependabot-core.git")
 repo.git.checkout("-b", branch_name)
-repo.git.pull("upstream", "master")
+repo.git.pull("upstream", "main")
 
 changed_files = [item.a_path for item in repo.head.commit.diff('HEAD~1')]
 
