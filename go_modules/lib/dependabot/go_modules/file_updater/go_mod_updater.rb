@@ -121,7 +121,7 @@ module Dependabot
           File.write("go.sum", go_sum.content) if go_sum
           File.write("main.go", dummy_main_go)
 
-          _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
+          _, stderr, status = Open3.capture3(ENVIRONMENT, "go mod tidy")
           handle_subprocess_error(stderr) unless status.success?
 
           updated_go_sum = go_sum ? File.read("go.sum") : nil
