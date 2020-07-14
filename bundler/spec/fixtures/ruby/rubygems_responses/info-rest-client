@@ -107,3 +107,8 @@
 2.1.0.rc1-x86-mingw32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:686f59372b32bb2143d2912947a0c543fd5dc2fb3988fc39f10d7d628425a5da,ruby:>= 2.0.0,rubygems:> 1.3.1
 2.1.0.rc1-x64-mingw32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:32320098fd4381f4dc7c30f4050be9db26ba498849eef39c8206caf3d5ec56fb,ruby:>= 2.0.0,rubygems:> 1.3.1
 2.1.0.rc1-x86-mswin32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:15096f079fe0d422e92cfbe3e076734d235e257cecedd0d953abe8f97b4d03db,ruby:>= 2.0.0,rubygems:> 1.3.1
+1.6.14 mime-types:~> 1.16|checksum:6f29acef8475fc7dcc1f9f40d33044e14c751184fbe54d0d4c65179727b4f77b
+2.1.0 http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:35a6400bdb14fae28596618e312776c158f7ebbb0ccad752ff4fa142bf2747e3,ruby:>= 2.0.0
+2.1.0-x64-mingw32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:7cd156496196d90b7d8f5b8de521ef67d8a9e03f06862da80b9b5912ab05a470,ruby:>= 2.0.0
+2.1.0-x86-mingw32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:fb543caf36cb555c05c6186aeb1273c6a1b059896e4cfd394e7269b20c40ca01,ruby:>= 2.0.0
+2.1.0-x86-mswin32 ffi:~> 1.9,http-accept:< 2.0&>= 1.7.0,http-cookie:< 2.0&>= 1.0.2,mime-types:< 4.0&>= 1.16,netrc:~> 0.8|checksum:a35a3bb8d16ca39d110a946a2c805267f98ce07a0ae890e4512a45eadea47a6e,ruby:>= 2.0.0

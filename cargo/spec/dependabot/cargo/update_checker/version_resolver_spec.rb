@@ -220,8 +220,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
-              expect(error.message).
-                to include("Invalid character `;` in package name")
+              expect(error.message.downcase).
+                to include("invalid character `;` in package name")
             end
         end
       end

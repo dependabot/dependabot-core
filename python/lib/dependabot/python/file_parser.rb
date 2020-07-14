@@ -181,12 +181,14 @@ module Dependabot
           each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, remove_imports(file.content))
+            File.write(path, remove_imports(file))
           end
       end
 
-      def remove_imports(content)
-        content.lines.
+      def remove_imports(file)
+        return file.content if file.path.end_with?(".tar.gz", ".whl", ".zip")
+
+        file.content.lines.
           reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }.
           reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }.
           join

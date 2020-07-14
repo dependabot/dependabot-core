@@ -90,19 +90,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "Gemfile.lock" }
         let(:requirement_string) { "~> 1.4" }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
       end
 
       context "when updating a dep blocked by a sub-dep" do
         let(:gemfile_fixture_name) { "blocked_by_subdep" }
         let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
-        let(:dependency_name) { "activesupport" }
-        let(:current_version) { "5.0.0.1" }
+        let(:dependency_name) { "dummy-pkg-a" }
+        let(:current_version) { "1.0.1" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("5.2.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
 
       context "that only appears in the lockfile" do
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:dependency_name) { "nokogiri" }
           let(:requirements) { [] }
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.7.1")) }
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.10.9")) }
         end
       end
 
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "default_gem_specified.lock" }
         let(:requirement_string) { "~> 1.4" }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
       end
 
       context "with a version conflict at the latest version" do
@@ -166,9 +166,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_name) { "ibandit" }
         let(:requirement_string) { "~> 0.1" }
 
-        # The latest version of ibandit is 0.8.5, but 0.3.4 is the latest
+        # The latest version of ibandit is 0.8.5, but 0.11.28 is the latest
         # version compatible with the version of i18n in the Gemfile.lock.
-        its([:version]) { is_expected.to eq(Gem::Version.new("0.3.4")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("0.11.28")) }
 
         context "with a gems.rb and gems.locked" do
           let(:gemfile) do
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             }]
           end
 
-          its([:version]) { is_expected.to eq(Gem::Version.new("0.3.4")) }
+          its([:version]) { is_expected.to eq(Gem::Version.new("0.11.28")) }
         end
       end
 
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:requirement_string) { "~> 1.4" }
 
         context "and it's that gem that we're attempting to bump" do
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
+          its([:version]) { is_expected.to eq(Gem::Version.new("1.18.0")) }
         end
 
         context "and it's another gem" do
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:gemfile_fixture_name) { "git_source_circular" }
         let(:lockfile_fixture_name) { "git_source_circular.lock" }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.13.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("2.1.0")) }
       end
 
       context "with a ruby exec command that fails" do
@@ -402,9 +402,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         }]
       end
 
-      it "doesn't just fall back to latest_version" do
+      it "unlocks the latest version" do
         expect(resolver.latest_resolvable_version_details[:version]).
-          to eq(Gem::Version.new("1.13.0"))
+          to eq(Gem::Version.new("2.1.0"))
       end
 
       context "with an upper bound that is lower than the current req" do
@@ -417,7 +417,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       context "with an implicit pre-release requirement" do
         let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
         let(:gemspec_fixture_name) { "implicit_pre" }
-        let(:latest_allowable_version) { "4.2.3" }
+        let(:latest_allowable_version) { "6.0.3.1" }
 
         let(:unlock_requirement) { true }
         let(:current_version) { nil }
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:requirements) do
           [{
             file: "example.gemspec",
-            requirement: ">= 4.0",
+            requirement: ">= 6.0",
             groups: [],
             source: nil
           }]
@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           it "ignores the minimum ruby version in the gemspec" do
             expect(resolver.latest_resolvable_version_details[:version]).
-              to eq(Gem::Version.new("3.2.0"))
+              to eq(Gem::Version.new("7.2.0"))
           end
         end
       end

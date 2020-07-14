@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/github_actions/version"
 
 module Dependabot
   module GithubActions

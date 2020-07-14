@@ -355,7 +355,7 @@ module Dependabot
       def recent_github_commits
         @recent_github_commits ||=
           github_client_for_source.commits(source.repo, per_page: 100)
-      rescue Octokit::Conflict
+      rescue Octokit::Conflict, Octokit::NotFound
         @recent_github_commits ||= []
       end
 

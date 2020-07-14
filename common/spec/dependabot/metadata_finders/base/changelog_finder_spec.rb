@@ -15,14 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       dependency: dependency
     )
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -59,6 +52,70 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     allow(dummy_commits_finder).to receive(:new_tag).and_return("v1.4.0")
   end
 
+  shared_context "with multiple git sources" do
+    let(:package_manager) { "github_actions" }
+    let(:dependency_name) { "actions/checkout" }
+    let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+    let(:dependency_previous_version) { nil }
+    let(:dependency_requirements) do
+      [{
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@v2.1.0" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.2.0",
+          branch: nil
+        }
+      }, {
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@master" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.2.0",
+          branch: nil
+        }
+      }]
+    end
+    let(:dependency_previous_requirements) do
+      [{
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@v2.1.0" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.1.0",
+          branch: nil
+        }
+      }, {
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@master" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "master",
+          branch: nil
+        }
+      }]
+    end
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "actions/checkout"
+      )
+    end
+    let(:github_response) { nil }
+  end
+
   describe "#changelog_url" do
     subject { finder.changelog_url }
 
@@ -71,12 +128,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       before do
         stub_request(:get, github_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: changelog_body,
                     headers: { "Content-Type" => "application/json" })
@@ -118,7 +173,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             suggested_github_url =
               "https://api.github.com/repos/mperham/sidekiq/contents/"
             stub_request(:get, suggested_github_url).
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: 200,
                         body: suggested_github_response,
                         headers: { "Content-Type" => "application/json" })
@@ -136,7 +190,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               suggested_github_url =
                 "https://api.github.com/repos/mperham/sidekiq/contents/"
               stub_request(:get, suggested_github_url).
-                with(headers: { "Authorization" => "token token" }).
                 to_return(status: 404)
             end
 
@@ -158,7 +211,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         before do
           stub_request(:get, github_url + "?ref=v1.4.0").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: github_response,
                       headers: { "Content-Type" => "application/json" })
@@ -169,12 +221,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         context "but with a changelog on the tag" do
           before do
             stub_request(:get, github_url + "?ref=v1.4.0").
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: fixture("github", "business_files_v1.4.0.json"),
                         headers: { "Content-Type" => "application/json" })
             stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
-              with(headers: { "Authorization" => "token token" }).
               to_return(
                 status: github_status,
                 body: fixture("github", "changelog_contents.json"),
@@ -203,7 +253,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:github_response) { fixture("github", "scrapy_files.json") }
         before do
           stub_request(:get, github_url + "docs").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: fixture("github", "scrapy_docs_files.json"),
                       headers: { "Content-Type" => "application/json" })
@@ -220,12 +269,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           before do
             stub_request(:get, github_url + "NEWS?ref=master").
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: changelog_body_without_version,
                         headers: { "Content-Type" => "application/json" })
             stub_request(:get, github_url + "docs/news.rst?ref=master").
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: changelog_body,
                         headers: { "Content-Type" => "application/json" })
@@ -272,17 +319,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
         before do
           stub_request(:get, github_url + "packages/stryker").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: fixture("github", "business_module_files.json"),
                       headers: { "Content-Type" => "application/json" })
           stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: changelog_body_without_version,
                       headers: { "Content-Type" => "application/json" })
           stub_request(:get, github_url + "module/CHANGELOG.md?ref=master").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: changelog_body,
                       headers: { "Content-Type" => "application/json" })
@@ -303,17 +347,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         context "that isn't a directory" do
           before do
             stub_request(:get, github_url + "packages/stryker").
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: fixture("github", "changelog_contents.json"),
                         headers: { "Content-Type" => "application/json" })
             stub_request(:get, github_url).
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: fixture("github", "business_files.json"),
                         headers: { "Content-Type" => "application/json" })
             stub_request(:get, github_url + "CHANGELOG.md?ref=master").
-              with(headers: { "Authorization" => "token token" }).
               to_return(status: github_status,
                         body: changelog_body,
                         headers: { "Content-Type" => "application/json" })
@@ -333,7 +374,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         before do
           stub_request(:get, github_url + "?ref=v1.4.0").
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: github_status,
                       body: github_response,
                       headers: { "Content-Type" => "application/json" })
@@ -381,6 +421,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               to eq("https://github.com/gocardless/business/blob/master/"\
                     "CHANGELOG.md")
           end
+        end
+      end
+
+      context "for a git dependency with multiple sources", :vcr do
+        include_context "with multiple git sources"
+
+        before do
+          allow(dummy_commits_finder).to receive(:new_tag).and_return("2.2.0")
+        end
+
+        it "finds the changelog" do
+          is_expected.to eq(
+            "https://github.com/actions/checkout/blob/master/CHANGELOG.md"
+          )
         end
       end
 
@@ -623,22 +677,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       before do
         stub_request(:get, github_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_changelog_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: changelog_body,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_url + "?ref=v1.4.0").
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_url + "CHANGELOG.md?ref=v1.4.0").
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: changelog_body,
                     headers: { "Content-Type" => "application/json" })
@@ -712,6 +762,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
+        context "for a git dependency with multiple sources", :vcr do
+          include_context "with multiple git sources"
+
+          let(:expected_pruned_changelog) do
+            "## v2.2.0\n"\
+            "- [Fetch all history for all tags and branches when "\
+            "fetch-depth=0](https://github.com/actions/checkout/pull/258)\n"\
+          end
+
+          context "when there's a new ref" do
+            it { is_expected.to start_with(expected_pruned_changelog) }
+          end
+        end
+
         context "that uses restructured text format" do
           let(:github_contents_response) do
             fixture("github", "scrapy_docs_files.json")
@@ -777,7 +841,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           suggested_github_url =
             "https://api.github.com/repos/mperham/sidekiq/contents/"
           stub_request(:get, suggested_github_url).
-            with(headers: { "Authorization" => "token token" }).
             to_return(status: 200,
                       body: suggested_github_response,
                       headers: { "Content-Type" => "application/json" })
@@ -912,7 +975,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       before do
         stub_request(:get, github_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })
@@ -978,12 +1040,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       before do
         stub_request(:get, github_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: github_contents_response,
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, github_upgrade_guide_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: 200,
                     body: fixture("github", "upgrade_guide_contents.json"),
                     headers: { "Content-Type" => "application/json" })

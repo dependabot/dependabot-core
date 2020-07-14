@@ -117,6 +117,8 @@ module Dependabot
           possible_paths += [
             "Directory.Build.props",
             "Directory.build.props",
+            "Directory.Packages.props",
+            "Directory.packages.props",
             "Directory.Build.targets",
             "Directory.build.targets"
           ]
@@ -137,6 +139,8 @@ module Dependabot
         [
           Pathname.new(base + "/Directory.Build.props").cleanpath.to_path,
           Pathname.new(base + "/Directory.build.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.packages.props").cleanpath.to_path,
           Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path,
           Pathname.new(base + "/Directory.build.targets").cleanpath.to_path
         ]

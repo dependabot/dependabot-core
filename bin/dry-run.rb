@@ -383,8 +383,9 @@ end
 def generate_dependency_files_for(updated_dependencies)
   if updated_dependencies.count == 1
     updated_dependency = updated_dependencies.first
-    puts " => updating #{updated_dependency.name} from " \
-         "#{updated_dependency.previous_version} to " \
+    prev_v = updated_dependency.previous_version
+    prev_v_msg = prev_v ? "from #{prev_v} " : ""
+    puts " => updating #{updated_dependency.name} #{prev_v_msg}to " \
          "#{updated_dependency.version}"
   else
     dependency_names = updated_dependencies.map(&:name)

@@ -38,6 +38,12 @@ module Dependabot
             )
 
           node_details ||=
+            find_property_in_directory_build_packages(
+              property: property_name,
+              callsite_file: callsite_file
+            )
+
+          node_details ||=
             find_property_in_packages_props(property: property_name)
 
           return unless node_details
@@ -112,6 +118,13 @@ module Dependabot
           deep_find_prop_node(property: property, file: file)
         end
 
+        def find_property_in_directory_build_packages(property:, callsite_file:)
+          file = build_packages_file_for_project(callsite_file)
+          return unless file
+
+          deep_find_prop_node(property: property, file: file)
+        end
+
         def find_property_in_packages_props(property:)
           file = packages_props_file
           return unless file
@@ -148,6 +161,22 @@ module Dependabot
           path =
             possible_paths.uniq.
             find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
+
+          dependency_files.find { |f| f.name == path }
+        end
+
+        def build_packages_file_for_project(project_file)
+          dir = File.dirname(project_file.name)
+
+          # Nuget walks up the directory structure looking for a
+          # Directory.Packages.props file
+          possible_paths = dir.split("/").map.with_index do |_, i|
+            base = dir.split("/").first(i + 1).join("/")
+            Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
+          end.reverse + ["Directory.Packages.props"]
+
+          path = possible_paths.uniq.
+                 find { |p| dependency_files.find { |f| f.name == p } }
 
           dependency_files.find { |f| f.name == path }
         end

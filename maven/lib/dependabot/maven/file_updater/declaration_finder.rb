@@ -57,6 +57,11 @@ module Dependabot
               evaluated_value(node.at_xpath("./*/artifactId").content.strip)
             ].compact.join(":")
 
+            if node.at_xpath("./*/classifier")
+              node_name += ":#{evaluated_value(node.at_xpath('./*/classifier').
+                content.strip)}"
+            end
+
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
             next false unless scope_matches?(node)

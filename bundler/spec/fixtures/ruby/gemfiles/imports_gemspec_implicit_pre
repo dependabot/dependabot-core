@@ -3,4 +3,4 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "activerecord", "5.0.0.beta1"
+gem "activerecord", "6.0.0.beta1"
