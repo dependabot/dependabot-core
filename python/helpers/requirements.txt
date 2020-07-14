@@ -1,9 +1,9 @@
 pip==20.1.1
-pip-tools==5.1.2
-hashin==0.14.6
+pip-tools==5.2.1
+hashin==0.15.0
 pipenv==2018.11.26
 pipfile==0.0.2
-poetry==1.0.5
+poetry==1.0.9
 
 # Some dependencies will only install if Cython is present
-Cython==0.29.19
+Cython==0.29.20

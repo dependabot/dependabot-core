@@ -11,7 +11,7 @@ require "dependabot/composer/file_parser"
 module Dependabot
   module Composer
     class UpdateChecker
-      class VersionResolver
+      class VersionResolver # rubocop:disable Metrics/ClassLength
         class MissingExtensions < StandardError
           attr_reader :extensions
 
@@ -72,10 +72,7 @@ module Dependabot
         def fetch_latest_resolvable_version_string
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            File.write("composer.json", prepared_composer_json_content)
-            File.write("composer.lock", lockfile.content) if lockfile
-            File.write("auth.json", auth_json.content) if auth_json
-
+            write_temporary_dependency_files
             run_update_checker
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -83,6 +80,37 @@ module Dependabot
           retry_count += 1
           retry if transitory_failure?(e) && retry_count < 2
           handle_composer_errors(e)
+        end
+
+        def write_temporary_dependency_files(unlock_requirement: true)
+          write_dependency_file(unlock_requirement: unlock_requirement)
+          write_path_dependency_files
+          write_lockfile
+          write_auth_file
+        end
+
+        def write_dependency_file(unlock_requirement:)
+          File.write(
+            "composer.json",
+            prepared_composer_json_content(
+              unlock_requirement: unlock_requirement
+            )
+          )
+        end
+
+        def write_path_dependency_files
+          path_dependency_files.each do |file|
+            FileUtils.mkdir_p(Pathname.new(file.name).dirname)
+            File.write(file.name, file.content)
+          end
+        end
+
+        def write_lockfile
+          File.write("composer.lock", lockfile.content) if lockfile
+        end
+
+        def write_auth_file
+          File.write("auth.json", auth_json.content) if auth_json
         end
 
         def transitory_failure?(error)
@@ -332,17 +360,10 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def check_original_requirements_resolvable
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
-            File.write(
-              "composer.json",
-              prepared_composer_json_content(unlock_requirement: false)
-            )
-            File.write("composer.lock", lockfile.content) if lockfile
-            File.write("auth.json", auth_json.content) if auth_json
+            write_temporary_dependency_files(unlock_requirement: false)
 
             run_update_checker
           end
@@ -370,9 +391,6 @@ module Dependabot
 
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
-        # rubocop:enable Metrics/AbcSize
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def version_for_reqs(requirements)
           req_arrays =
@@ -443,6 +461,11 @@ module Dependabot
         def composer_file
           @composer_file ||=
             dependency_files.find { |f| f.name == "composer.json" }
+        end
+
+        def path_dependency_files
+          @path_dependency_files ||=
+            dependency_files.select { |f| f.name.end_with?("/composer.json") }
         end
 
         def lockfile

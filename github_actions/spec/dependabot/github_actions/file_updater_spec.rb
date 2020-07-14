@@ -148,6 +148,138 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         its(:content) { is_expected.to_not include "actions/aws/ec2@master" }
         its(:content) { is_expected.to include "actions/checkout@master\n" }
       end
+
+      context "with multiple sources" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "multiple_sources.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: nil,
+            package_manager: "github_actions",
+            previous_version: nil,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/checkout@v2.1.0" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.1.0",
+                branch: nil
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/checkout@master" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "master",
+                branch: nil
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/checkout@v2.2.0" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.2.0",
+                branch: nil
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/checkout@master" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/checkout",
+                ref: "v2.2.0",
+                branch: nil
+              }
+            }]
+          )
+        end
+
+        it "updates both sources" do
+          expect(subject.content).to include "actions/checkout@v2.2.0\n"
+          expect(subject.content).not_to include "actions/checkout@master\n"
+        end
+      end
+
+      context "with multiple sources matching major version" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "multiple_sources_matching_major.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/cache",
+            version: nil,
+            package_manager: "github_actions",
+            previous_version: nil,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v1" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v1",
+                branch: nil
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v1.1.2" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v1.1.2",
+                branch: nil
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v2" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v2",
+                branch: nil
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v1.1.2" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v2",
+                branch: nil
+              }
+            }]
+          )
+        end
+
+        it "updates both sources" do
+          expect(subject.content).to include "actions/cache@v2 # comment"
+          expect(subject.content).to match(%r{actions\/cache@v2$})
+          expect(subject.content).not_to include "actions/cache@v1.1.2\n"
+          expect(subject.content).not_to include "actions/cache@v2.1.2\n"
+        end
+      end
     end
   end
 end

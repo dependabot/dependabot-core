@@ -2,20 +2,22 @@
   <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v5" alt="Dependabot" width="336">
 </p>
 
-# Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
+# Dependabot
 
-Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise), GitLab and
-Azure DevOps.
+Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
-If you want to host your own automated dependency update bot then this repo
-should give you the tools you need. A reference implementation is available
-[here][dependabot-script].
+1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
+2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
 
-## Issue / contribution response times
+## Got feedback?
 
-Currently the Dependabot team is at reduced capacity, because of this our
-response times on issues and contributions will be slower than we'd like.
+Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+
+Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
+
+### Disclosing security issues
+
+If you believe you have found a security vulnerability in Dependabot please submit the vulnerability to GitHub Security [Bug Bounty](https://bounty.github.com/) so that we can resolve the issue before it is disclosed publicly.
 
 ## What's in this repo?
 
@@ -127,7 +129,7 @@ Feel free to place breakpoints on the code.
 
 Triggering the jobs that will push the new gems is done by following the steps below.
 
-- Ensure you have the latest merged changes:  `git checkout master` and `git pull`
+- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
 - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
 - Edit the `CHANGELOG` file and remove any entries that aren't needed
 - Run the commands that were output by running `bin/bump-version.rb patch`
@@ -154,13 +156,13 @@ classes:
 
 | Service          | Description                                                                                   |
 |------------------|-----------------------------------------------------------------------------------------------|
-| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_fetchers/README.md) for more details. |
-| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_parsers/README.md) for more details. |
-| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/update_checkers/README.md) for more details. |
-| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/file_updaters/README.md) for more details. |
-| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/metadata_finders/README.md) for more details. |
-| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/version.rb) for an example. |
-| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/requirement.rb) for an example. |
+| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_fetchers/README.md) for more details. |
+| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_parsers/README.md) for more details. |
+| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/update_checkers/README.md) for more details. |
+| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/file_updaters/README.md) for more details. |
+| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/metadata_finders/README.md) for more details. |
+| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/version.rb) for an example. |
+| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/requirement.rb) for an example. |
 
 The high-level flow looks like this:
 

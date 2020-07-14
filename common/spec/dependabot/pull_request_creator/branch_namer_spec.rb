@@ -18,14 +18,16 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "business",
-      version: "1.5.0",
+      name: dependency_name,
+      version: dependency_version,
       previous_version: previous_version,
       package_manager: "dummy",
       requirements: requirements,
       previous_requirements: previous_requirements
     )
   end
+  let(:dependency_name) { "business" }
+  let(:dependency_version) { "1.5.0" }
   let(:requirements) do
     [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
   end
@@ -442,6 +444,134 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         it "includes the tag rather than the SHA" do
           expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10")
         end
+      end
+    end
+
+    context "with multiple previous source refs" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+      let(:previous_version) { nil }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          }
+        }]
+      end
+
+      it "includes the new ref" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/actions/checkout-v2.2.0"
+        )
+      end
+    end
+
+    context "when going from a git ref to a version requirement" do
+      let(:dependency_name) { "business" }
+      let(:dependency_version) { "v2.0.0" }
+      let(:previous_version) { nil }
+      let(:requirements) do
+        [{
+          requirement: "~> 2.0.0",
+          groups: [],
+          file: "Gemfile",
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "Gemfile",
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            ref: "v1.2.0",
+            branch: nil
+          }
+        }]
+      end
+
+      it "includes the new version" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/business-tw-2.0.0"
+        )
+      end
+    end
+
+    context "when going from a version requirement to a git ref" do
+      let(:dependency_name) { "business" }
+      let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+      let(:previous_version) { "v2.0.0" }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "Gemfile",
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: "~> 2.0.0",
+          groups: [],
+          file: "Gemfile",
+          source: nil
+        }]
+      end
+
+      it "includes the new ref" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/business-v2.2.0"
+        )
       end
     end
   end

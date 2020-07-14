@@ -271,5 +271,35 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
     end
+
+    context "with a directory.packages.props file" do
+      let(:files) { [csproj_file, packages_file] }
+      let(:packages_file) do
+        Dependabot::DependencyFile.new(
+          name: "directory.packages.props",
+          content: fixture("csproj", "directory.packages.props")
+        )
+      end
+
+      its(:length) { is_expected.to eq(9) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("System.WebCrawler")
+          expect(dependency.version).to eq("1.1.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.1.1",
+              file: "directory.packages.props",
+              groups: [],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
   end
 end

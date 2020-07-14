@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Maven::FileParser do
     subject(:dependencies) { parser.parse }
 
     context "for top-level dependencies" do
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -60,6 +60,25 @@ RSpec.describe Dependabot::Maven::FileParser do
               requirement: "4.5.3",
               file: "pom.xml",
               groups: ["test"],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+
+      describe "the third dependency" do
+        subject(:dependency) { dependencies[2] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("io.mockk:mockk:sources")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.0",
+              file: "pom.xml",
+              groups: [],
               source: nil,
               metadata: { packaging_type: "jar" }
             }]

@@ -38,14 +38,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
@@ -102,6 +95,63 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "compare/#{base}...#{head}\">compare view</a></li>\n"\
     "</ul>\n"\
     "</details>\n"
+  end
+
+  shared_context "with multiple git sources" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "actions/checkout",
+        version: "aabbfeb2ce60b5bd82389903509092c4648a9713",
+        previous_version: nil,
+        package_manager: "dummy",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          }
+        }]
+      )
+    end
   end
 
   describe "#pr_name" do
@@ -445,6 +495,16 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
           it { is_expected.to start_with("⬆️🔒 Bump business") }
+        end
+      end
+
+      context "with multiple git source requirements", :vcr do
+        include_context "with multiple git sources"
+
+        it do
+          is_expected.to eq(
+            "Update actions/checkout requirement to v2.2.0"
+          )
         end
       end
     end
@@ -1455,6 +1515,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "Bumps `springframework.version` from 1.4.0 to 1.5.0.\n"
               )
           end
+        end
+      end
+
+      context "with multiple git source requirements", :vcr do
+        include_context "with multiple git sources"
+
+        it do
+          expect(pr_message).to start_with(
+            "Updates the requirements on "\
+            "[actions/checkout](https://github.com/gocardless/actions) "\
+            "to permit the latest version."
+          )
         end
       end
     end

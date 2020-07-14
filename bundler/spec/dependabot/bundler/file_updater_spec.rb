@@ -305,13 +305,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "which is blocked by another sub-dep" do
           let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
           let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
-          let(:dependency_name) { "activesupport" }
-          let(:dependency_version) { "5.2.0" }
-          let(:dependency_previous_version) { "5.0.0.1" }
+          let(:dependency_name) { "dummy-pkg-a" }
+          let(:dependency_version) { "1.1.0" }
+          let(:dependency_previous_version) { "1.0.1" }
 
           it "updates the lockfile correctly" do
-            expect(file.content).to include("activesupport (5.2.0)")
-            expect(file.content).to_not include("\n  activesupport (= 5.2.0)")
+            expect(file.content).to include("dummy-pkg-a (1.1.0)")
+            expect(file.content).to_not include("\n  dummy-pkg-a (= 1.1.0)")
           end
         end
       end
@@ -319,15 +319,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       context "when updating a dep blocked by a sub-dep" do
         let(:gemfile_fixture_name) { "blocked_by_subdep" }
         let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
-        let(:dependency_name) { "activesupport" }
-        let(:dependency_version) { "5.2.0" }
-        let(:dependency_previous_version) { "5.0.0.1" }
+        let(:dependency_name) { "dummy-pkg-a" }
+        let(:dependency_version) { "1.1.0" }
+        let(:dependency_previous_version) { "1.0.1" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
         let(:previous_requirements) { requirements }
 
-        its(:content) { is_expected.to include("activesupport (5.2.0)") }
+        its(:content) { is_expected.to include("dummy-pkg-a (1.1.0)") }
       end
 
       context "when a gem has been yanked" do
@@ -363,7 +363,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include("business (1.13.0)")
+            expect(file.content).to include("business (1.18.0)")
             expect(file.content).to include("statesman (1.3.1)")
           end
         end

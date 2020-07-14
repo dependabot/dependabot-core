@@ -314,24 +314,29 @@ module Dependabot
         end
 
         def new_version
-          @new_version ||= git_source? ? new_ref : dependency.version
-          @new_version&.gsub(/^v/, "")
+          return @new_version if defined?(@new_version)
+
+          new_version = git_source? && new_ref ? new_ref : dependency.version
+          @new_version = new_version&.gsub(/^v/, "")
         end
 
         def previous_ref
-          dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.compact.uniq
+          return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
-          dependency.requirements.map do |r|
+          new_refs = dependency.requirements.map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.compact.uniq
+          return new_refs.first if new_refs.count == 1
         end
 
         def ref_changed?
-          previous_ref && new_ref && previous_ref != new_ref
+          # We could go from multiple previous refs (nil) to a single new ref
+          previous_ref != new_ref
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
@@ -343,10 +348,8 @@ module Dependabot
           requirements = dependency.requirements
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
-          source_type = sources.first[:type] || sources.first.fetch("type")
-          source_type == "git"
+          sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
         end
 
         def major_version_upgrade?

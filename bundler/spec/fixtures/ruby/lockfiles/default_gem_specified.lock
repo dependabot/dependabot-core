@@ -1,11 +1,9 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    business (1.4.0)
-    ipaddr (1.2.2)
+    business (1.18.0)
     openssl (2.1.2)
-      ipaddr
-    statesman (1.2.5)
+    statesman (1.3.1)
 
 PLATFORMS
   ruby
