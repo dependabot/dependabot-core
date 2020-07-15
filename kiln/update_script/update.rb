@@ -46,7 +46,7 @@ source = Dependabot::Source.new(
     provider: "github",
     repo: repo_name,
     directory: directory,
-    branch: "master",
+    branch: "test-branch-notrepo05",
 )
 
 ##############################
