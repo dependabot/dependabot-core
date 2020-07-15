@@ -14,6 +14,8 @@ module Dependabot
       class VersionFinder
         require_relative "repository_finder"
 
+        NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -67,7 +69,7 @@ module Dependabot
           filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = requirement_class.new(req.split(","))
+            ignore_req = requirement_class.new(parse_requirement_string(req))
             filtered =
               filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
@@ -96,6 +98,12 @@ module Dependabot
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
+        end
+
+        def parse_requirement_string(string)
+          return string if string.match?(NUGET_RANGE_REGEX)
+
+          string.split(",").map(&:strip)
         end
 
         def available_v3_versions
@@ -169,7 +177,7 @@ module Dependabot
           end
 
           dependency.requirements.any? do |req|
-            reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
+            reqs = parse_requirement_string(req.fetch(:requirement) || "")
             next unless reqs.any? { |r| r.include?("-") }
 
             requirement_class.

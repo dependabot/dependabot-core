@@ -15,6 +15,8 @@ module Dependabot
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         TYPE_SUFFICES = %w(jre android java).freeze
 
+        GRADLE_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -97,7 +99,7 @@ module Dependabot
           filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(req.split(","))
+            ignore_req = Gradle::Requirement.new(parse_requirement_string(req))
             filtered =
               filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
@@ -126,6 +128,12 @@ module Dependabot
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
+        end
+
+        def parse_requirement_string(string)
+          return string if string.match?(GRADLE_RANGE_REGEX)
+
+          string.split(",").map(&:strip)
         end
 
         def wants_prerelease?

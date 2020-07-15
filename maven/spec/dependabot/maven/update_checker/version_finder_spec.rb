@@ -176,6 +176,19 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the user has asked to ignore a major version" do
+      let(:ignored_versions) { ["[23.0,24)"] }
+      let(:dependency_version) { "17.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/22.0/guava-22.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when a version range is specified using Ruby syntax" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
@@ -373,7 +386,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     context "when the user has ignored all versions" do
-      let(:ignored_versions) { [">= 17.0, < 24"] }
+      let(:ignored_versions) { ["[17.0,)"] }
 
       it "returns nil" do
         expect(subject).to be_nil
