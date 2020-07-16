@@ -84,7 +84,7 @@ dependencies.select(&:top_level?).each do |dep|
   )
 
   updated_deps = checker.updated_dependencies(
-      requirements_to_unlock: requirements_to_unlock
+      requirements_to_unlock: :own
   )
 
   #####################################

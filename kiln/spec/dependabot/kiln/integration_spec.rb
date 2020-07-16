@@ -110,6 +110,6 @@ RSpec.describe "kiln integration" do
     expect(updated_files[0].content).to_not eq(lockfile_contents)
     expect(updated_files[0].content).to eq(fixture("kiln/expected", "Kilnfile.lock"))
 
-  
+
   end
 end
