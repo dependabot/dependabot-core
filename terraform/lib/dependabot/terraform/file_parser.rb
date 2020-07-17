@@ -190,7 +190,6 @@ module Dependabot
         end&.attributes&.fetch("content", nil)&.value
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
         return :path if source_string.start_with?(".")
@@ -213,7 +212,6 @@ module Dependabot
 
         raise "HTTP source, but not an archive!"
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       def parsed_file(file)

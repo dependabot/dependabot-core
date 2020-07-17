@@ -47,7 +47,6 @@ module Dependabot
 
     attr_reader :url, :credentials
 
-    # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
       response = fetch_raw_upload_pack_for(uri)
@@ -79,7 +78,6 @@ module Dependabot
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity
 
     def fetch_raw_upload_pack_for(uri)
