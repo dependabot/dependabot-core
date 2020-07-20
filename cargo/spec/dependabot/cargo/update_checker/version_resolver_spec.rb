@@ -118,6 +118,37 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.2.10") }
     end
 
+    context "with a missing version (for another dependency)" do
+      let(:manifest_fixture_name) { "missing_version" }
+      let(:lockfile_fixture_name) { "missing_version" }
+
+      let(:dependency_name) { "time" }
+      let(:dependency_version) { "0.1.38" }
+      let(:string_req) { "0.1.12" }
+
+      it "raises a helpful error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).
+              to include("version for the requirement `regex = \"=99.0.0\"`")
+          end
+      end
+
+      context "without a lockfile" do
+        let(:unprepared_dependency_files) { [manifest] }
+
+        it "raises a helpful error" do
+          expect { resolver.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+              expect(error.message).
+                to include("version for the requirement `regex = \"^99.0.0\"`")
+            end
+        end
+      end
+    end
+
     context "with a missing rust-toolchain file" do
       let(:manifest_fixture_name) { "requires_nightly" }
       let(:lockfile_fixture_name) { "bare_version_specified" }
