@@ -14,9 +14,7 @@
         }
     },
     "scripts": {
-        "lint": [
-            "php-cs-fixer fix --diff --verbose"
-        ],
+        "lint": "php-cs-fixer fix --diff --verbose",
         "stan": "phpstan analyse"
     },
     "config": {
