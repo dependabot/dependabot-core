@@ -17,7 +17,7 @@
         "lint": [
             "php-cs-fixer fix --diff --verbose"
         ],
-        "stan": "phpstan analyse -l 5"
+        "stan": "phpstan analyse"
     },
     "config": {
         "sort-packages": true
