@@ -74,6 +74,20 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(error.message).to include("failed to select a version")
           end
       end
+
+      context "because an existing requirement is no good" do
+        let(:manifest_fixture_name) { "yanked_version" }
+        let(:lockfile_fixture_name) { "yanked_version" }
+
+        it "raises a helpful error" do
+          expect { updater.updated_lockfile_content }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+              expect(error.message).
+                to include("version for the requirement `regex = \"^99.0.0\"`")
+            end
+        end
+      end
     end
 
     describe "the updated lockfile" do
