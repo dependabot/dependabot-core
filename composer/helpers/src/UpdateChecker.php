@@ -8,7 +8,7 @@ use Composer\Factory;
 use Composer\Installer;
 use Composer\Package\PackageInterface;
 
-class UpdateChecker
+final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {

@@ -11,7 +11,7 @@ use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
 use Composer\Repository\RepositoryInterface;
 
-class DependabotInstallationManager extends InstallationManager
+final class DependabotInstallationManager extends InstallationManager
 {
     private $installed = [];
     private $updated = [];
