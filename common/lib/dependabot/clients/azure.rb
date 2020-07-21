@@ -164,9 +164,7 @@ module Dependabot
           end_index = get_description_end_index(pr_description, truncate_length)
           pr_description = end_index == -1 ? "" : pr_description[0..end_index]  + truncated_msg
         end
-
-        puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
-        puts "PR name:#{pr_name}"
+       
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
