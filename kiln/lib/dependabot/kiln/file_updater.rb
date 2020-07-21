@@ -52,7 +52,7 @@ module Dependabot
         cred["variables"].each do |id, key|
           args += " -vr #{id}=#{key}"
         end
-        latest_version_details, stderr, status_code = Open3.capture3("kiln update-release --name #{dep.name} --version #{dep.version} -kf #{kilnfile_path}" + args)
+        latest_version_details, stderr, status_code = Open3.capture3("kiln update-release --name #{dep.name} --version #{dep.version} -kf #{kilnfile_path} -rd #{kilnfile_path.gsub('Kilnfile', '')}" + args)
       end
 
       def check_required_files

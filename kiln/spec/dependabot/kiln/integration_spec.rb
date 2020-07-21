@@ -29,15 +29,18 @@ RSpec.describe "kiln integration" do
          "type" => "git_source",
          "host" => "github.com",
          "username" => "x-access-token",
-         "password" => "token"
-     }, {
+         "password" => "placeholder"
+     },
+     {
          "type" => "kiln",
          "variables" => {
-             "aws_access_key_id" => "foo",
-             "aws_secret_access_key" => "foo"
+             "aws_access_key_id" => "placeholder",
+             "aws_secret_access_key" => "placeholder"
          }
      }]
   end
+
+  let(:github_credentials) { credentials }
   let(:repo_name) { "releen/kiln-fixtures" }
   let(:branch) { "master" }
 
@@ -55,7 +58,7 @@ RSpec.describe "kiln integration" do
   let(:package_manager) { "kiln" }
 
 
-  it "fetches and parses a kiln source" do
+  it "fetches, parses, updates the kilnfiles. ending with an autobump PR to the kilnfile.lock" do
 
     ##############################
     # Fetch the dependency files #
@@ -65,7 +68,7 @@ RSpec.describe "kiln integration" do
 
     files = fetcher.files
     commit = fetcher.commit
-    lockfile_contents = files.find {|f| f.name == "Kilnfile.lock"}.content
+    lockfile_contents = files.find { |f| f.name == "Kilnfile.lock" }.content
 
     ##############################
     # Parse the dependency files #
@@ -101,7 +104,7 @@ RSpec.describe "kiln integration" do
         dependencies: updated_deps,
         dependency_files: files,
         credentials: credentials,
-        )
+    )
 
     updated_files = updater.updated_dependency_files
 
@@ -110,6 +113,14 @@ RSpec.describe "kiln integration" do
     expect(updated_files[0].content).to_not eq(lockfile_contents)
     expect(updated_files[0].content).to eq(fixture("kiln/expected", "Kilnfile.lock"))
 
+    pr_creator = Dependabot::PullRequestCreator.new(
+        source: source,
+        base_commit: commit,
+        dependencies: updated_deps,
+        files: updated_files,
+        credentials: credentials,
+    )
+    pr_creator.create
 
   end
 end

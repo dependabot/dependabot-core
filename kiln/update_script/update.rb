@@ -46,7 +46,7 @@ source = Dependabot::Source.new(
     provider: "github",
     repo: repo_name,
     directory: directory,
-    branch: "test-branch-notrepo05",
+    branch: "master",
 )
 
 ##############################
@@ -55,7 +55,7 @@ source = Dependabot::Source.new(
 puts "Fetching #{package_manager} dependency files for #{repo_name}"
 fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).new(
     source: source,
-    credentials: credentials,
+    credentials: credentials[0],
 )
 
 files = fetcher.files
@@ -68,12 +68,13 @@ puts "Parsing dependencies information"
 parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
     dependency_files: files,
     source: source,
-    credentials: credentials,
+    credentials: credentials[0],
 )
 
 dependencies = parser.parse
-
-dependencies.select(&:top_level?).each do |dep|
+dep = dependencies.find { |d| d.name == 'uaa' }
+# dependencies.select(&:top_level?).each do |dep|
+#   if dep.name != 'uaa' continue
   #########################################
   # Get update details for the dependency #
   #########################################
@@ -112,7 +113,7 @@ dependencies.select(&:top_level?).each do |dep|
   pull_request = pr_creator.create
   puts " submitted"
 
-  next unless pull_request
+  # next unless pull_request
 
   # Enable GitLab "merge when pipeline succeeds" feature.
   # Merge requests created and successfully tested will be merge automatically.
@@ -128,4 +129,4 @@ dependencies.select(&:top_level?).each do |dep|
   #       should_remove_source_branch: true
   #   )
   # end
-end
+# end

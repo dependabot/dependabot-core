@@ -1,9 +1,9 @@
 releases:
 - name: uaa
-  sha1: 991f8aca30ed1bada8a7a1a3582d0dea1ef8017e
-  version: 74.16.0
+  sha1: 7137d5b137b48c0f56bd76b49169595a9f4a9467
+  version: 74.23.0
   remote_source: bosh.io
-  remote_path: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.16.0
+  remote_path: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.23.0
 - name: uaac
   sha1: somesha
   version: 74.17.22
