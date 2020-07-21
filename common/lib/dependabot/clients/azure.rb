@@ -152,17 +152,21 @@ module Dependabot
           "/pushes?api-version=5.0", content.to_json)
       end
 
-      def create_pull_request(pr_name, source_branch, target_branch,
+     def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels)
-        # Azure DevOps only support descriptions up to 4000 characters
+        # Azure DevOps only support descriptions up to 4000 characters in UTF-16 encoding
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         azure_max_length = 3999
-        if pr_description.length > azure_max_length
+
+        if get_pr_description_length(pr_description) > azure_max_length
           truncated_msg = "...\n\n_Description has been truncated_"
           truncate_length = azure_max_length - truncated_msg.length
-          pr_description = pr_description[0..truncate_length] + truncated_msg
+          end_index = get_description_end_index(pr_description, truncate_length)
+          pr_description = end_index == -1 ? "" : pr_description[0..end_index]  + truncated_msg
         end
 
+        puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
+        puts "PR name:#{pr_name}"
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -205,6 +209,32 @@ module Dependabot
         raise NotFound if response.status == 404
 
         response
+      end
+      
+      # Get pr description length in UTF-16 encoding.
+      def get_pr_description_length(pr_description)
+        length = 0
+        pr_description.each_char{|c|
+          length += (c.bytesize/2 + c.bytesize%2)
+        }
+        length
+      end
+
+      # Get the end index for pr description according to the maximum length in UTF-16 encoding.
+      def get_description_end_index(description, max_length)
+        length = 0
+        index = -1
+        description.each_char{|c|
+          character_length = c.bytesize/2 + c.bytesize%2
+          if length + character_length > max_length
+            break
+          end
+
+          length += character_length
+          index += 1
+        }
+
+        index
       end
 
       private
