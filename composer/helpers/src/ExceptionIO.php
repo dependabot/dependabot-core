@@ -8,7 +8,7 @@ use Composer\IO\NullIO;
 
 class ExceptionIO extends NullIO
 {
-    private $raise_next_error = false;
+    private bool $raise_next_error = false;
 
     public function writeError($messages, $newline = true, $verbosity = self::NORMAL): void
     {

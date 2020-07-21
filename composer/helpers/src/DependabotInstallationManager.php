@@ -13,9 +13,9 @@ use Composer\Repository\RepositoryInterface;
 
 class DependabotInstallationManager extends InstallationManager
 {
-    private $installed = [];
-    private $updated = [];
-    private $uninstalled = [];
+    private array $installed = [];
+    private array $updated = [];
+    private array $uninstalled = [];
 
     public function install(RepositoryInterface $repo, InstallOperation $operation): void
     {
