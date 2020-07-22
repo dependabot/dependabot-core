@@ -74,9 +74,7 @@ parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
 )
 
 dependencies = parser.parse
-dep = dependencies.find { |d| d.name == 'uaa' }
-# dependencies.select(&:top_level?).each do |dep|
-#   if dep.name != 'uaa' continue
+dependencies.select(&:top_level?).each do |dep|
   #########################################
   # Get update details for the dependency #
   #########################################
@@ -136,4 +134,4 @@ dep = dependencies.find { |d| d.name == 'uaa' }
   #       should_remove_source_branch: true
   #   )
   # end
-# end
+end
