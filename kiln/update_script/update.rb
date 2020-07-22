@@ -17,6 +17,7 @@ require "dependabot/kiln/metadata_finder"
 
 # Full name of the repo you want to create pull requests for.
 repo_name = ENV["DEPENDABOT_TARGET_REPO"] # pivotal-cf/p-runtime
+repo_branch = ENV["DEPENDABOT_TARGET_REPO_BRANCH"] # master
 
 credentials = [
     {
@@ -47,7 +48,7 @@ source = Dependabot::Source.new(
     provider: "github",
     repo: repo_name,
     directory: directory,
-    branch: "test-branch-notrepo05",
+    branch: repo_branch,
 )
 
 ##############################
