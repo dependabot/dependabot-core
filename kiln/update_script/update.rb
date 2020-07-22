@@ -92,8 +92,8 @@ dependencies.select(&:top_level?).each do |dep|
   # Generate updated dependency files #
   #####################################
   if updated_deps == []
-    puts "Nothing to update. Bailing out early!"
-    return
+    puts "Nothing to update for #{dep.name}. Bailing out early!"
+    next
   end
 
   print "  - Updating #{dep.name} (from #{dep.version})…"
