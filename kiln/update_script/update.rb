@@ -23,7 +23,7 @@ credentials = [
     {
         "type" => "git_source",
         "host" => "github.com",
-        "username" => "releen",
+        "username" => "x-access-token",
         "password" => ENV["GITHUB_RELENG_CI_BOT_PERSONAL_ACCESS_TOKEN"] # A GitHub access token with read access to public repos
     },
     {
@@ -57,7 +57,7 @@ source = Dependabot::Source.new(
 puts "Fetching #{package_manager} dependency files for #{repo_name}"
 fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).new(
     source: source,
-    credentials: credentials[0],
+    credentials: [credentials[0]],
 )
 
 files = fetcher.files
@@ -70,7 +70,7 @@ puts "Parsing dependencies information"
 parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
     dependency_files: files,
     source: source,
-    credentials: credentials[0],
+    credentials: [credentials[0]],
 )
 
 dependencies = parser.parse
