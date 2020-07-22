@@ -113,6 +113,11 @@ RSpec.describe Dependabot::Kiln::UpdateChecker do
       it { is_expected.to eq(Dependabot::Kiln::Version.new('74.21.0')) }
     end
 
+    context "when no new version satifies the version constaint" do
+      let(:response) { "{\"version\":\"74.16.0\",\"remote_path\":\"https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.16.0\",\"source\":\"bosh.io\",\"sha\":\"991f8aca30ed1bada8a7a1a3582d0dea1ef8017e\"}" }
+
+      it { is_expected.to eq(Dependabot::Kiln::Version.new('74.16.0')) }
+    end
     describe "not found release name" do
       let(:response) { "{\"version\":\"\",\"remote_path\":\"\"}" }
 

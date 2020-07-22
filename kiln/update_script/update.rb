@@ -91,6 +91,11 @@ dep = dependencies.find { |d| d.name == 'uaa' }
   #####################################
   # Generate updated dependency files #
   #####################################
+  if updated_deps == []
+    puts "Nothing to update. Bailing out early!"
+    return
+  end
+
   print "  - Updating #{dep.name} (from #{dep.version})…"
   updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
       dependencies: updated_deps,
