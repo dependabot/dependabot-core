@@ -136,5 +136,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
       it { is_expected.to include("geopy = \"^1.13\"\n") }
     end
+
+    context "with directory dependencies" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "path_dependency.lock" }
+      let(:pyproject_fixture_name) { "path_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+      it "does not include the version for path deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "path = \"../toml\"\n"\
+          "version = \"0.10.0\"\n"
+        )
+      end
+    end
   end
 end
