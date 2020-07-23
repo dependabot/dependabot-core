@@ -67,10 +67,10 @@ RUN apt-get install -y software-properties-common \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout bdfed51d72cad887302bcb6caf3d5f9b6d529e25 && cd - \
-    && pyenv install 3.8.4 \
+    && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
+    && pyenv install 3.8.5 \
     && pyenv install 2.7.18 \
-    && pyenv global 3.8.4
+    && pyenv global 3.8.5
 
 
 ### JAVASCRIPT
