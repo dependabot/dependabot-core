@@ -138,13 +138,13 @@ RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 ### NEW NATIVE HELPERS
 
-COPY terraform/helpers /opt/terraform/helpers
-COPY python/helpers /opt/python/helpers
+COPY composer/helpers /opt/composer/helpers
 COPY dep/helpers /opt/dep/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
-COPY composer/helpers /opt/composer/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY python/helpers /opt/python/helpers
+COPY terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
     PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
