@@ -43,6 +43,9 @@ RSpec.describe "kiln integration" do
   let(:github_credentials) { credentials }
   let(:repo_name) { "releen/kiln-fixtures" }
   let(:branch) { "master" }
+  let(:directory) { "/bosh/" }
+  let(:dependency_name) { "uaa" }
+  let(:package_manager) { "kiln" }
 
   let(:source) do
     Dependabot::Source.new(
@@ -52,10 +55,6 @@ RSpec.describe "kiln integration" do
         branch: branch
     )
   end
-
-  let(:directory) { "/" }
-  let(:dependency_name) { "uaa" }
-  let(:package_manager) { "kiln" }
 
 
   it "fetches, parses, updates the kilnfiles. ending with an autobump PR to the kilnfile.lock" do
@@ -111,7 +110,7 @@ RSpec.describe "kiln integration" do
     expect(updated_files.length).to eq(1)
     expect(updated_files[0].name).to eq("Kilnfile.lock")
     expect(updated_files[0].content).to_not eq(lockfile_contents)
-    expect(updated_files[0].content).to eq(fixture("kiln/expected", "Kilnfile.lock"))
+    expect(updated_files[0].content).to eq(fixture("kiln/expected/bosh.io", "Kilnfile.lock"))
 
     pr_creator = Dependabot::PullRequestCreator.new(
         source: source,

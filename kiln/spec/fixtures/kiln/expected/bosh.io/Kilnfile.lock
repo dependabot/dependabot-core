@@ -1,0 +1,9 @@
+releases:
+- name: uaa
+  sha1: 991f8aca30ed1bada8a7a1a3582d0dea1ef8017e
+  version: 74.16.0
+  remote_source: bosh.io
+  remote_path: https://bosh.io/d/github.com/cloudfoundry/uaa-release?v=74.16.0
+stemcell_criteria:
+  os: ubuntu-xenial
+  version: "621.64"

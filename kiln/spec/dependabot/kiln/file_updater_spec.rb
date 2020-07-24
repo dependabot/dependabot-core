@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Kiln::FileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
     let(:process_status) { double }
-    let(:command) { /kiln update-release --name uaa --version #{current_version} -kf .*\/Kilnfile -vr aws_access_key_id=foo -vr aws_secret_access_key=foo/ }
+    let(:command) { /kiln update-release --name uaa --version #{current_version} -kf .*\/Kilnfile -rd .*\/ -vr aws_access_key_id=foo -vr aws_secret_access_key=foo/ }
 
     before do
       allow(process_status).to receive(:success?).and_return true

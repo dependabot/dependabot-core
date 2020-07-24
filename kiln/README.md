@@ -14,4 +14,6 @@ Kiln support for [`dependabot-core`][core-repo].
    $ bundle exec rspec spec
    ```
 
+**Note:** Integration tests will not pass without environment variables set or passed in.
+
 [core-repo]: https://github.com/dependabot/dependabot-core
