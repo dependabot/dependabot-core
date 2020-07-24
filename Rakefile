@@ -41,7 +41,7 @@ namespace :ci do
     packages = changed_packages
     puts "Running rubocop on: #{packages.join(', ')}"
     packages.each do |package|
-      run_command("cd #{package} && bundle exec rubocop")
+      run_command("cd #{package} && bundle exec rubocop -c ../.rubocop.yml")
     end
   end
 

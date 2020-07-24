@@ -76,8 +76,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
 
       context "because an existing requirement is no good" do
-        let(:manifest_fixture_name) { "yanked_version" }
-        let(:lockfile_fixture_name) { "yanked_version" }
+        let(:manifest_fixture_name) { "missing_version" }
+        let(:lockfile_fixture_name) { "missing_version" }
 
         it "raises a helpful error" do
           expect { updater.updated_lockfile_content }.
