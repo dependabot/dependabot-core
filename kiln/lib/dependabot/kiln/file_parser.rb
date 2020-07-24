@@ -9,8 +9,6 @@ require "dependabot/file_parsers/base/dependency_set"
 module Dependabot
   module Kiln
     class FileParser < Dependabot::FileParsers::Base
-      VALID_SOURCES = ["bosh.io", "compiled-releases", "final-pcf-bosh-releases"]
-
       def parse
         dependency_set = DependencySet.new
         dependency_set += kiln_dependencies
@@ -49,7 +47,9 @@ module Dependabot
         kilnfile_contents.each_with_index do |kilnfile_content, index|
           lockfile_content = kilnlockfile_contents.find { |release| release["name"] == kilnfile_content["name"] }
 
-          validate_source(lockfile_content)
+          if lockfile_content.nil?
+            raise "The release '#{kilnfile_content["name"]}' does not match any release in Kilnfile.lock"
+          end
 
           dependencies << Dependency.new(
               name: kilnfile_content["name"],
@@ -68,12 +68,6 @@ module Dependabot
           )
         end
         dependencies
-      end
-
-      def validate_source(release)
-        if (!VALID_SOURCES.include? release["remote_source"])
-          raise "The release source '#{release["remote_source"]}' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}"
-        end
       end
     end
   end

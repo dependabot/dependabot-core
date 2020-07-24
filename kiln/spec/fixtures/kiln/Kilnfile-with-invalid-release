@@ -1,0 +1,27 @@
+release_sources:
+- type: s3
+  bucket: compiled-releases
+  publishable: true
+  path_template: 2.10/{{trimSuffix .Name "-release"}}/{{.Name}}-{{.Version}}-{{.StemcellOS}}-{{.StemcellVersion}}.tgz
+  region: us-west-1
+  access_key_id: $(variable "aws_access_key_id")
+  secret_access_key: $(variable "aws_secret_access_key")
+- type: bosh.io
+- type: s3
+  bucket: final-pcf-bosh-releases
+  path_template: '{{.Name}}/{{.Name}}-{{.Version}}.tgz'
+  region: us-west-1
+  access_key_id: $(variable "aws_access_key_id")
+  secret_access_key: $(variable "aws_secret_access_key")
+slug: elastic-runtime
+pre_ga_user_groups:
+- vmware Early Access for PCF ERT/OM
+- Dell/EMC Early Access Group
+- Master Pipeline
+- ISV EAP
+releases:
+- name: uaa-this-is-not-a-release
+  version: ~74.16.0
+- name: uaab
+  version: ~74.17.0
+- name: uaac

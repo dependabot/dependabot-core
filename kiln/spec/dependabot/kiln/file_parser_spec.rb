@@ -134,11 +134,11 @@ RSpec.describe Dependabot::Kiln::FileParser do
         end
       end
 
-      context "when kilnfile.lock has invalid source" do
-        let(:lockfile_fixture_name) { "Kilnfile-with-invalid-source.lock" }
+      context "when kilnfile has an invalid release name" do
+        let(:kilnfile_fixture_name) { "Kilnfile-with-invalid-release" }
 
         it 'raises an error' do
-          expect {subject}.to raise_error("The release source 'final-pcf' is invalid, source must be one of: #{Dependabot::Kiln::FileParser::VALID_SOURCES.join(', ')}")
+          expect {subject}.to raise_error("The release 'uaa-this-is-not-a-release' does not match any release in Kilnfile.lock")
         end
       end
     end
