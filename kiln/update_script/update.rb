@@ -48,7 +48,7 @@ source = Dependabot::Source.new(
     provider: "github",
     repo: repo_name,
     directory: directory,
-    branch: repo_branch,
+    branch: repo_branch
 )
 
 ##############################
@@ -57,7 +57,7 @@ source = Dependabot::Source.new(
 puts "Fetching #{package_manager} dependency files for #{repo_name}"
 fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).new(
     source: source,
-    credentials: [credentials[0]],
+    credentials: credentials
 )
 
 files = fetcher.files
@@ -70,7 +70,7 @@ puts "Parsing dependencies information"
 parser = Dependabot::FileParsers.for_package_manager(package_manager).new(
     dependency_files: files,
     source: source,
-    credentials: [credentials[0]],
+    credentials: credentials,
 )
 
 dependencies = parser.parse

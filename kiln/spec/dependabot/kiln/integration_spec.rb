@@ -29,13 +29,13 @@ RSpec.describe "kiln integration" do
          "type" => "git_source",
          "host" => "github.com",
          "username" => "x-access-token",
-         "password" => "placeholder"
+         "password" => ENV["GITHUB_RELENG_CI_BOT_PERSONAL_ACCESS_TOKEN"] # A GitHub access token with read access to public repos
      },
      {
          "type" => "kiln",
          "variables" => {
-             "aws_access_key_id" => "placeholder",
-             "aws_secret_access_key" => "placeholder"
+             "aws_access_key_id" => ENV["S3_ACCESS_KEY_ID"],
+             "aws_secret_access_key" => ENV["S3_SECRET_ACCESS_KEY"]
          }
      }]
   end
