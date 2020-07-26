@@ -77,6 +77,12 @@ COPY nuget/Gemfile \
      /home/dependabot/dependabot-core/nuget/
 RUN cd nuget && bundle install
 
+RUN mkdir -p /home/dependabot/dependabot-core/paket
+COPY paket/Gemfile \
+     paket/dependabot-paket.gemspec \
+     /home/dependabot/dependabot-core/paket/
+RUN cd paket && bundle install
+
 RUN mkdir -p /home/dependabot/dependabot-core/composer
 COPY composer/Gemfile \
      composer/dependabot-composer.gemspec \

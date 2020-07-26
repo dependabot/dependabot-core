@@ -1,0 +1,12 @@
+/.bundle/
+/.env
+/tmp
+/dependabot-*.gem
+Gemfile.lock
+
+# Ionide cache
+.ionide/
+.vscode/
+.yardoc
+
+helpers/install-dir/paket
