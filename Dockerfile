@@ -51,10 +51,10 @@ RUN apt-get update \
 
 ### RUBY
 
-# Install Ruby 2.6.5, update RubyGems, and install Bundler
+# Install Ruby 2.6.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
-    && echo "deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu bionic main" > /etc/apt/sources.list.d/brightbox.list \
+RUN apt-get install -y software-properties-common \
+    && apt-add-repository ppa:brightbox/ruby-ng \
     && apt-get update \
     && apt-get install -y ruby2.6 ruby2.6-dev \
     && gem update --system 3.0.3 \
@@ -67,10 +67,10 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6 \
 ENV PYENV_ROOT=/usr/local/.pyenv \
     PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-    && cd /usr/local/.pyenv && git checkout cf81e5a0c47ab09d8f760e2bb9172196d9602fde && cd - \
-    && pyenv install 3.8.3 \
+    && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
+    && pyenv install 3.8.5 \
     && pyenv install 2.7.18 \
-    && pyenv global 3.8.3
+    && pyenv global 3.8.5
 
 
 ### JAVASCRIPT
@@ -98,13 +98,10 @@ RUN npm install elm@0.18.0 \
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN echo "deb http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
-    && echo "deb-src http://ppa.launchpad.net/ondrej/php/ubuntu bionic main" >> /etc/apt/sources.list.d/ondrej-php.list \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4F4EA0AAE5267A6C \
+COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer
+RUN add-apt-repository ppa:ondrej/php \
     && apt-get update \
-    && apt-get install -y php7.4 php7.4-cli php7.4-xml php7.4-json php7.4-zip php7.4-mbstring php7.4-intl php7.4-common php7.4-gettext php7.4-curl php7.4-bcmath php7.4-gmp php7.4-imagick php7.4-gd php7.4-redis php7.4-soap php7.4-ldap php7.4-memcached php7.4-sqlite3 php7.4-apcu php7.4-tidy php7.4-mongodb php7.4-zmq php7.4-mysql php7.4-imap php7.4-geoip \
-    && curl -sS https://getcomposer.org/installer | php \
-    && mv composer.phar /usr/local/bin/composer
+    && apt-get install -y php7.4 php7.4-cli php7.4-xml php7.4-json php7.4-zip php7.4-mbstring php7.4-intl php7.4-common php7.4-gettext php7.4-curl php7.4-bcmath php7.4-gmp php7.4-imagick php7.4-gd php7.4-redis php7.4-soap php7.4-ldap php7.4-memcached php7.4-sqlite3 php7.4-apcu php7.4-tidy php7.4-mongodb php7.4-zmq php7.4-mysql php7.4-imap php7.4-geoip
 
 
 ### GO

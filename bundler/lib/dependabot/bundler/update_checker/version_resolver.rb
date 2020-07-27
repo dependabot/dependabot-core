@@ -71,7 +71,6 @@ module Dependabot
             ).prepared_dependency_files
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
@@ -117,7 +116,6 @@ module Dependabot
           @gemspec_ruby_unlocked = true
           regenerate_dependency_files_without_ruby_lock && retry
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def circular_dependency_at_new_version?(error)

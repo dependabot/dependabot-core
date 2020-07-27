@@ -114,7 +114,6 @@ module Dependabot
       # TODO: Delete this once we're using a version of Rubygems that includes
       # https://github.com/rubygems/rubygems/pull/2651
       #
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Style/CaseEquality
       # rubocop:disable Layout/LineLength
@@ -146,7 +145,6 @@ module Dependabot
 
         return 0
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Style/CaseEquality
       # rubocop:enable Layout/LineLength
