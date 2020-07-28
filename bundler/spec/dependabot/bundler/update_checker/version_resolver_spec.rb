@@ -113,16 +113,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
 
-        context "that will be removed if other sub-dependencies are updated" do
-          let(:gemfile_fixture_name) { "subdependency_change" }
-          let(:lockfile_fixture_name) { "subdependency_change.lock" }
-          let(:dependency_name) { "nokogiri" }
-          let(:requirements) { [] }
+        # rubocop:disable Layout/LineLength
+        # TODO: https://github.com/dependabot/dependabot-core/issues/2364
+        # context "that will be removed if other sub-dependencies are updated" do
+        #   let(:gemfile_fixture_name) { "subdependency_change" }
+        #   let(:lockfile_fixture_name) { "subdependency_change.lock" }
+        #   let(:dependency_name) { "nokogiri" }
+        #   let(:requirements) { [] }
 
-          pending "is updated" do
-            expect(subject.version).to eq(Gem::Version.new("1.10.9"))
-          end
-        end
+        #   pending "is updated" do
+        #     expect(subject.version).to eq(Gem::Version.new("1.10.9"))
+        #   end
+        # end
+        # rubocop:enable Layout/LineLength
       end
 
       context "with a Bundler version specified" do
@@ -143,14 +146,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
           end
 
-          context "and required by another dependency" do
-            let(:gemfile_fixture_name) { "bundler_specified_and_required" }
-            let(:lockfile_fixture_name) do
-              "bundler_specified_and_required.lock"
-            end
+          # TODO: https://github.com/dependabot/dependabot-core/issues/2364
+          # context "and required by another dependency" do
+          #   let(:gemfile_fixture_name) { "bundler_specified_and_required" }
+          #   let(:lockfile_fixture_name) do
+          #     "bundler_specified_and_required.lock"
+          #   end
 
-            pending { is_expected.to be_nil }
-          end
+          #   pending { is_expected.to be_nil }
+          # end
         end
       end
 
@@ -416,25 +420,25 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         it { is_expected.to be_nil }
       end
 
-      context "with an implicit pre-release requirement" do
-        let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
-        let(:gemspec_fixture_name) { "implicit_pre" }
-        let(:latest_allowable_version) { "6.0.3.1" }
+      # TODO: https://github.com/dependabot/dependabot-core/issues/2364
+      # context "with an implicit pre-release requirement" do
+      #   let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
+      #   let(:gemspec_fixture_name) { "implicit_pre" }
+      #   let(:latest_allowable_version) { "6.0.3.1" }
 
-        let(:unlock_requirement) { true }
-        let(:current_version) { nil }
-        let(:dependency_name) { "activesupport" }
-        let(:requirements) do
-          [{
-            file: "example.gemspec",
-            requirement: ">= 6.0",
-            groups: [],
-            source: nil
-          }]
-        end
-
-        pending { is_expected.to be_nil }
-      end
+      #   let(:unlock_requirement) { true }
+      #   let(:current_version) { nil }
+      #   let(:dependency_name) { "activesupport" }
+      #   let(:requirements) do
+      #     [{
+      #       file: "example.gemspec",
+      #       requirement: ">= 6.0",
+      #       groups: [],
+      #       source: nil
+      #     }]
+      #   end
+      #   pending { is_expected.to be_nil }
+      # end
 
       context "when an old required ruby is specified in the gemspec" do
         let(:gemspec_fixture_name) { "old_required_ruby" }
