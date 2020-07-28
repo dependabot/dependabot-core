@@ -1,5 +1,7 @@
 name: CI
-on: [push]
+on:
+  - push
+  - pull_request
 
 jobs:
   ci-image:
@@ -8,9 +10,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Log in to the Docker registry
-        run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
       - name: Prepare environment variables
         run: |
           echo ::set-env name=VERSION::$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)
@@ -19,20 +18,11 @@ jobs:
           docker pull ubuntu:18.04
           docker pull "dependabot/dependabot-core:latest"
           docker pull "dependabot/dependabot-core-ci:latest" || true
-      - name: Build dependabot-core image
-        run: |
-          docker build \
-            -t "dependabot/dependabot-core:latest" \
-            -t "dependabot/dependabot-core:${{ env.VERSION }}" \
-            --cache-from ubuntu:18.04 \
-            --cache-from "dependabot/dependabot-core:latest" \
-            .
       - name: Build dependabot-core-ci image
         run: |
           rm .dockerignore
           docker build \
-            -t "dependabot/dependabot-core-ci:${{ github.sha }}" \
-            -t "dependabot/dependabot-core-ci:latest" \
+            -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
             --cache-from ubuntu:18.04 \
             --cache-from "dependabot/dependabot-core:latest" \
@@ -40,13 +30,13 @@ jobs:
             .
       - name: Push dependabot-core-ci image to CI cache repo
         run: |
-          docker push "dependabot/dependabot-core-ci:latest"
-          docker push "dependabot/dependabot-core-ci:${{ github.sha }}"
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
   rubocop:
     name: Rubocop
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run Rubocop linting
@@ -56,7 +46,7 @@ jobs:
   bundler:
     name: Bundler
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run bundler tests
@@ -66,7 +56,7 @@ jobs:
   cargo:
     name: Cargo
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run cargo tests
@@ -76,7 +66,7 @@ jobs:
   common:
     name: Common
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run common tests
@@ -86,7 +76,7 @@ jobs:
   composer:
     name: Composer
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run composer tests
@@ -96,7 +86,7 @@ jobs:
   dep:
     name: Dep
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run dep tests
@@ -106,7 +96,7 @@ jobs:
   docker:
     name: Docker
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run docker tests
@@ -116,7 +106,7 @@ jobs:
   elm:
     name: Elm
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run elm tests
@@ -126,7 +116,7 @@ jobs:
   git-submodules:
     name: Git submodules
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run git submodules tests
@@ -136,7 +126,7 @@ jobs:
   go-modules:
     name: Go modules
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run go modules tests
@@ -146,7 +136,7 @@ jobs:
   gradle:
     name: Gradle
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run gradle tests
@@ -156,7 +146,7 @@ jobs:
   hex:
     name: Hex
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run hex tests
@@ -166,7 +156,7 @@ jobs:
   maven:
     name: Maven
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run maven tests
@@ -176,7 +166,7 @@ jobs:
   npm-and-yarn:
     name: npm and yarn
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run npn and yarn tests
@@ -186,7 +176,7 @@ jobs:
   npm-and-yarn-js:
     name: npm and yarn js
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run js linting
@@ -199,7 +189,7 @@ jobs:
   nuget:
     name: Nuget
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run nuget tests
@@ -209,7 +199,7 @@ jobs:
   omnibus:
     name: Omnibus
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run omnibus tests
@@ -219,7 +209,7 @@ jobs:
   python:
     name: Python
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run python tests
@@ -229,7 +219,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
+    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
       - name: Run terraform tests
