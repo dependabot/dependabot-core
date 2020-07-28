@@ -28,41 +28,39 @@ jobs:
             --cache-from "dependabot/dependabot-core:latest" \
             --cache-from "dependabot/dependabot-core-ci:latest" \
             .
-          docker image save -o dependabot-core-ci-image.tar "dependabot/dependabot-core-ci:${{ github.sha }}"
-      - name: Save image as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: dependabot-core-ci-image.tar
-          path: dependabot-core-ci-image.tar
+      - name: Push ci image
+        run: |
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
   rubocop:
     name: Rubocop
     runs-on: ubuntu-latest
     needs: ci-image
     steps:
-      - name: Load docker image from artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: dependabot-core-ci-image.tar
-      - name: Restore image
+      - name: Pull ci image
         run: |
-          docker image import dependabot-core-ci-image.tar "dependabot/dependabot-core-ci:${{ github.sha }}"
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run Rubocop linting
         run: |
-          docker run --rm dependabot/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core && rake ci:rubocop"
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core && rake ci:rubocop"
 
   js-tests:
     name: npm and yarn js
     runs-on: ubuntu-latest
-    container: docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
     steps:
+      - name: Pull ci image
+        run: |
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run js linting
-        run: yarn lint
-        working-directory: /opt/npm_and_yarn
+        run: |
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c  "cd /opt/npm_and_yarn && yarn lint"
       - name: Run js tests
-        run: yarn test
-        working-directory: /opt/npm_and_yarn
+        run: |
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c  "cd /opt/npm_and_yarn && yarn test"
 
   rspec:
     name: Rspec
@@ -89,13 +87,10 @@ jobs:
           - python
           - terraform
     steps:
-      - name: Load docker image from artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: dependabot-core-ci-image.tar
-      - name: Restore image
+      - name: Pull ci image
         run: |
-          docker image import dependabot-core-ci-image.tar "dependabot/dependabot-core-ci:${{ github.sha }}"
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
-          docker run --rm dependabot/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
