@@ -22,7 +22,7 @@ jobs:
         run: |
           rm .dockerignore
           docker build \
-            -t "dependabot/dependabot-core-ci:${{ github.sha }}" \
+            -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
             --cache-from ubuntu:18.04 \
             --cache-from "dependabot/dependabot-core:latest" \
