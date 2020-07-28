@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:requirements) { [] }
 
           pending "is updated" do
-            expect(subject.version).to eq(Gem::Version.new("1.10.9")) }
+            expect(subject.version).to eq(Gem::Version.new("1.10.9"))
           end
         end
       end
