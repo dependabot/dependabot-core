@@ -53,135 +53,35 @@ jobs:
         run: |
           cd /home/dependabot/dependabot-core && rake ci:rubocop
 
-  bundler:
-    name: Bundler
+  rspec:
+    name: Rspec
     runs-on: ubuntu-latest
     container: dependabot/dependabot-core-ci:${{ github.sha }}
     needs: ci-image
-    steps:
-      - name: Run bundler tests
-        run: |
-          bash -c "cd /home/dependabot/dependabot-core/bundler && bundle exec rspec spec"
+    strategy:
+      matrix:
+        suite:
+          - bundler
+          - cargo
+          - common
+          - composer
+          - dep
+          - docker
+          - elm
+          - git_submodules
+          - go_modules
+          - gradle
+          - hex
+          - maven
+          - npm_and_yarn
+          - nuget
+          - omnibus
+          - python
+          - terraform
 
-  cargo:
-    name: Cargo
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
     steps:
-      - name: Run cargo tests
-        run: |
-          cd /home/dependabot/dependabot-core/cargo && bundle exec rspec spec
-
-  common:
-    name: Common
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run common tests
-        run: |
-          cd /home/dependabot/dependabot-core/common && bundle exec rspec spec
-
-  composer:
-    name: Composer
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run composer tests
-        run: |
-          cd /home/dependabot/dependabot-core/composer && bundle exec rspec spec
-
-  dep:
-    name: Dep
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run dep tests
-        run: |
-          cd /home/dependabot/dependabot-core/dep && bundle exec rspec spec
-
-  docker:
-    name: Docker
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run docker tests
-        run: |
-          cd /home/dependabot/dependabot-core/docker && bundle exec rspec spec
-
-  elm:
-    name: Elm
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run elm tests
-        run: |
-          cd /home/dependabot/dependabot-core/elm && bundle exec rspec spec
-
-  git-submodules:
-    name: Git submodules
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run git submodules tests
-        run: |
-          cd /home/dependabot/dependabot-core/git_submodules && bundle exec rspec spec
-
-  go-modules:
-    name: Go modules
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run go modules tests
-        run: |
-          cd /home/dependabot/dependabot-core/go_modules && bundle exec rspec spec
-
-  gradle:
-    name: Gradle
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run gradle tests
-        run: |
-          cd /home/dependabot/dependabot-core/gradle && bundle exec rspec spec
-
-  hex:
-    name: Hex
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run hex tests
-        run: |
-          cd /home/dependabot/dependabot-core/hex && bundle exec rspec spec
-
-  maven:
-    name: Maven
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run maven tests
-        run: |
-          cd /home/dependabot/dependabot-core/maven && bundle exec rspec spec
-
-  npm-and-yarn:
-    name: npm and yarn
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run npn and yarn tests
-        run: |
-          cd /home/dependabot/dependabot-core/npm_and_yarn && bundle exec rspec spec
+      - name: Run ${{ matrix.suite }} tests with rspec
+        run: cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec
 
   npm-and-yarn-js:
     name: npm and yarn js
@@ -195,43 +95,3 @@ jobs:
       - name: Run js tests
         run: yarn test
         working-directory: /opt/npm_and_yarn
-
-  nuget:
-    name: Nuget
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run nuget tests
-        run: |
-          cd /home/dependabot/dependabot-core/nuget && bundle exec rspec spec
-
-  omnibus:
-    name: Omnibus
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run omnibus tests
-        run: |
-          cd /home/dependabot/dependabot-core/omnibus && bundle exec rspec spec
-
-  python:
-    name: Python
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run python tests
-        run: |
-          cd /home/dependabot/dependabot-core/python && bundle exec rspec spec
-
-  terraform:
-    name: Terraform
-    runs-on: ubuntu-latest
-    container: dependabot/dependabot-core-ci:${{ github.sha }}
-    needs: ci-image
-    steps:
-      - name: Run terraform tests
-        run: |
-          cd /home/dependabot/dependabot-core/terraform && bundle exec rspec spec
