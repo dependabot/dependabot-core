@@ -6,7 +6,7 @@ namespace Dependabot\Composer;
 
 use Composer\IO\NullIO;
 
-class ExceptionIO extends NullIO
+final class ExceptionIO extends NullIO
 {
     private bool $raise_next_error = false;
 

@@ -7,7 +7,7 @@ namespace Dependabot\Composer;
 use Composer\Factory;
 use Composer\Installer;
 
-class Updater
+final class Updater
 {
     /**
      * @throws \RuntimeException
