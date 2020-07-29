@@ -76,7 +76,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog
           return unless changelog_from_suggested_url || source
@@ -98,7 +97,6 @@ module Dependabot
           # Fall back to the changelog (or nil) from the default branch
           default_branch_changelog
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_from_suggested_url

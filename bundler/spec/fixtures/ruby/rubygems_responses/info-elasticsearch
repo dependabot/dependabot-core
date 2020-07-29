@@ -1,0 +1,79 @@
+---
+0.0.2 elasticsearch-api:= 0.0.2,elasticsearch-transport:= 0.0.2|checksum:70b7ce9a18d1b4e0dac58a356db93b14338b5ff2b62eaacd6595f09319afc748
+0.4.0 elasticsearch-api:= 0.4.0,elasticsearch-transport:= 0.4.0|checksum:efb569b0a166a28976f74170e83aca25a478950e546bdd790f5d7496798b4e53
+0.4.1 elasticsearch-api:= 0.4.1,elasticsearch-transport:= 0.4.1|checksum:baf9ba8d7d62a283a8d603a63a45ef7f07bcba95137394b46b7903f4bfa042d7
+0.4.2 elasticsearch-api:= 0.4.1,elasticsearch-transport:= 0.4.1|checksum:82eaaef9be3ef005ab3c4e7839f0ca5bc4d2a6cfd5d79e93da1dc5cb98aa12ef
+0.4.3 elasticsearch-api:= 0.4.3,elasticsearch-transport:= 0.4.3|checksum:856b2cb8a2b5a5c69d44a43c7716cff630a42c942f8bcc428d47ee9709b1ede7
+0.4.4 elasticsearch-api:= 0.4.4,elasticsearch-transport:= 0.4.4|checksum:86c2c6340cf60dbba73fc686b5669dc032798e7deb610ba825dfcabbc51d6b8d
+0.4.5 elasticsearch-api:= 0.4.5,elasticsearch-transport:= 0.4.5|checksum:b98e99026806670c20f357a04ad3f15c67b3e43999b7ec9a64ae41be43a1792e
+0.4.6 elasticsearch-api:= 0.4.6,elasticsearch-transport:= 0.4.6|checksum:5bbf979a0656db6bbb4f9f96c0d9f181e6b92c79e2670b5d7be916f255e1b380
+0.4.7 elasticsearch-api:= 0.4.7,elasticsearch-transport:= 0.4.7|checksum:025604520aec3922105aebc5025e5ab05602ea91ddc18aadb95526182f9b2a33
+0.4.8 elasticsearch-api:= 0.4.8,elasticsearch-transport:= 0.4.8|checksum:4681cab9e8918c19eebf472f105c74e96797437ea29737c7352cceda09bc5864
+1.0.0.rc1 elasticsearch-api:= 1.0.0.rc1,elasticsearch-transport:= 1.0.0.rc1|checksum:bc26a4ee9b6d30fa6bb2dcc53f18d0e49592e3cf35d5e6f106215d93f3a84202,rubygems:> 1.3.1
+1.0.0.rc2 elasticsearch-api:= 1.0.0.rc2,elasticsearch-transport:= 1.0.0.rc2|checksum:589697242866090b16ba3f8b05ae381ce8f8d9928b803f4e0bd4df59aefbcd71,rubygems:> 1.3.1
+0.4.9 elasticsearch-api:= 0.4.9,elasticsearch-transport:= 0.4.9|checksum:45ddfd1e0dd310b09eaa61afb62a6ab7b223f269f325672c5eb31ec74757dc45
+0.4.10 elasticsearch-api:= 0.4.10,elasticsearch-transport:= 0.4.10|checksum:708a9fdce5147aee7a37fcfa1c35052601f549394c45f69e16ee4ca8698a724e
+0.4.11 elasticsearch-api:= 0.4.11,elasticsearch-transport:= 0.4.11|checksum:3daaaae1c52a60a3305c7a7557c0d6e42ecff037b8869d5e81b818a573ab67b0
+1.0.0 elasticsearch-api:= 1.0.0,elasticsearch-transport:= 1.0.0|checksum:e868765f25cfcb3d2b62089ae43706afc0cb92924b12f2a5e88ebbb962ff6f9a
+1.0.1 elasticsearch-api:= 1.0.1,elasticsearch-transport:= 1.0.1|checksum:5487583f1963ebada7f4e1d41f2617b828b56af97b65530af6994627b320ef87
+1.0.2 elasticsearch-api:= 1.0.2,elasticsearch-transport:= 1.0.2|checksum:a6d137e779c04b92e2dab40e30f2dc3a6ef0d5743e161c3228a9e015a3d7e203
+1.0.3 elasticsearch-api:= 1.0.2,elasticsearch-transport:= 1.0.2|checksum:e6927f09fb04c92c4ff161c3785c484fb17fbdf51004b15cd475a365943a1a20
+1.0.4 elasticsearch-api:= 1.0.4,elasticsearch-transport:= 1.0.4|checksum:de01ce960f5b51b1be7a375f1a0d9bdc3d7d44a6a0249f5c1cb903622d02236d
+1.0.5 elasticsearch-api:= 1.0.5,elasticsearch-transport:= 1.0.5|checksum:95e3e04f297d4718046b73e36c5fd254ff3edefe2e258352e94014fb7c60e7f5
+1.0.6 elasticsearch-api:= 1.0.6,elasticsearch-transport:= 1.0.6|checksum:00505ded9ae5b8c1df30604812afe4396e64c3716ce69a636119cde74cb35542
+1.0.7 elasticsearch-api:= 1.0.6,elasticsearch-transport:= 1.0.6|checksum:b06aaf3c4aec178d98bd2bdbffc92dfd2cc39ab63e573889a6a6f2f50c555763
+1.0.8 elasticsearch-api:= 1.0.7,elasticsearch-transport:= 1.0.7|checksum:14aa51d9145e0a1dd44ac843789620fef173b8cfc428d01e86eca17493fad14d
+1.0.9 elasticsearch-api:= 1.0.9,elasticsearch-transport:= 1.0.9|checksum:86cc7aad5880224bc8b2d64eb3dbc3380d360ec23ea66c09a65262ce4974d92b
+1.0.10 elasticsearch-api:= 1.0.10,elasticsearch-transport:= 1.0.10|checksum:2076dbfe2f717614dc450cb09abd2db964888c423d2f27e0469eb30b0a68e084
+1.0.11 elasticsearch-api:= 1.0.11,elasticsearch-transport:= 1.0.11|checksum:468442417d1e4c1ab500b79f466338dbd658ffb3d99c09fe2aa403f66bdfd9e5
+1.0.12 elasticsearch-api:= 1.0.12,elasticsearch-transport:= 1.0.12|checksum:a0c6386797fd2809c0cd03150e82f50fad9bc60f690decdd945b8a6cc48807aa
+1.0.13 elasticsearch-api:= 1.0.13,elasticsearch-transport:= 1.0.13|checksum:dfff648b01024c4a70a1ae991eab0671d82bfdc48181ca2c30f4099ce608a0bd
+1.0.14 elasticsearch-api:= 1.0.14,elasticsearch-transport:= 1.0.14|checksum:38463d314b467cb46e80b59511e3e4e35ab1ff9a6143f4b8536914a798770fa1
+1.0.15 elasticsearch-api:= 1.0.15,elasticsearch-transport:= 1.0.15|checksum:9e0b3c4496f5b394b869b0b9c37b16e8d231379a6c85632940fad2d8011afc87
+1.0.16.pre elasticsearch-api:= 1.0.16.pre,elasticsearch-transport:= 1.0.16.pre|checksum:547003baebd1ccb947e88360eff1dfd0d1f994ad9893a8e1393cff37a126a84b,rubygems:> 1.3.1
+1.0.16.pre2 elasticsearch-api:= 1.0.16.pre2,elasticsearch-transport:= 1.0.16.pre2|checksum:fef733867b7fc827f58c3987c34f068148d7addf5c937bcd10b953713ad8715c,rubygems:> 1.3.1
+1.0.16 elasticsearch-api:= 1.0.16,elasticsearch-transport:= 1.0.16|checksum:749a5910779bf2bb946858f1298a58a17b39ae0fc3437991fca0b03c0eff13a3
+1.0.17 elasticsearch-api:= 1.0.17,elasticsearch-transport:= 1.0.17|checksum:851be34a15c8fa5e4f38e94bba73266cfe343c557ab99c6be1c850934657fbbc
+1.0.18 elasticsearch-api:= 1.0.18,elasticsearch-transport:= 1.0.18|checksum:80c2105610b215807bacf02a0ec4f91e3ab851b65bf973a73a952c53e209bef1
+1.1.pre elasticsearch-api:= 1.1.pre,elasticsearch-transport:= 1.1.pre|checksum:84b4017e3015c3e8824fbfb9550eb45bd8cc04b532d4f094ca7beba3e6712f91,rubygems:> 1.3.1
+2.0.0.pre elasticsearch-api:= 2.0.0.pre,elasticsearch-transport:= 2.0.0.pre|checksum:dca5193227d21ee6a562985ff81b0c1f55f0bb15440a4f4ae98e18c3720374e5,rubygems:> 1.3.1
+1.1.0 elasticsearch-api:= 1.1.0,elasticsearch-transport:= 1.1.0|checksum:bd62d4dfec720a0efeb10e9ddcaf71881c068bfe90c1b08086d73736f3d4da08
+2.0.0 elasticsearch-api:= 2.0.0,elasticsearch-transport:= 2.0.0|checksum:d0a8a4fa94d6a86ef264fd1709c062fc3c483c527ab3a51dfb520595c55d906c
+5.0.0.pre elasticsearch-api:= 5.0.0.pre,elasticsearch-transport:= 5.0.0.pre|checksum:8ac6eb042e27bea27803a5d55bb03027e393e1ba829d1a95ba517306f22f9bda,rubygems:> 1.3.1
+5.0.0 elasticsearch-api:= 5.0.0,elasticsearch-transport:= 5.0.0|checksum:58f3b30717681c4132cf198c209cab44c23ca9966d0127a061c7872a8e2c5b0b
+1.1.2 elasticsearch-api:= 1.1.2,elasticsearch-transport:= 1.1.2|checksum:0c5eb48e63cb2d7b3192665e1015ea22759a34afa7b03b263895e2bdea3123ac
+2.0.1 elasticsearch-api:= 2.0.1,elasticsearch-transport:= 2.0.1|checksum:5f6afcface9a8f575b14866b0fc786a26046655a08194f41e64838fc98ae3819
+5.0.1 elasticsearch-api:= 5.0.1,elasticsearch-transport:= 5.0.1|checksum:3383d8d240646c8a16eb5ff06a3c4a44c8be564741a426786b602f1fba582e1b
+5.0.2 elasticsearch-api:= 5.0.2,elasticsearch-transport:= 5.0.2|checksum:f54a1e684b3f97608edb3bcd00571f8bace9b3e065ebaa50ebcd965d638c6371
+5.0.3 elasticsearch-api:= 5.0.3,elasticsearch-transport:= 5.0.3|checksum:443d424d6b3a3b5cad5e3bb3a95fa83ab80becf39944de83ff4844dfb325333a
+2.0.2 elasticsearch-api:= 2.0.2,elasticsearch-transport:= 2.0.2|checksum:f03defe73766f05028553f0ad2585c20d70db15ad7d8f95c8a49073c40b65642
+5.0.4 elasticsearch-api:= 5.0.4,elasticsearch-transport:= 5.0.4|checksum:9188dede93d5f2f485365937986d483bcb300344707159413e121aed2119feca
+1.1.3 elasticsearch-api:= 1.1.3,elasticsearch-transport:= 1.1.3|checksum:5b3258746f3ee393873ab3e36a20f907d69eaaac9ad05a8563ed7e507f50b7d6
+6.0.0 elasticsearch-api:= 6.0.0,elasticsearch-transport:= 6.0.0|checksum:4a44b82fc6f17e605fb11ae2778e37e1c45d5485df36c8a5b47cf938c5204a96
+6.0.1 elasticsearch-api:= 6.0.1,elasticsearch-transport:= 6.0.1|checksum:39a37616d17bb6123f4180a3c3107ffa2ee1fbfb74b5a038ff30e503013ec484,ruby:>= 1.9
+6.0.2 elasticsearch-api:= 6.0.2,elasticsearch-transport:= 6.0.2|checksum:48c2df7e730dc689872663a9e0454dea45457696efe26645759495dfb7f50828,ruby:>= 1.9
+5.0.5 elasticsearch-api:= 5.0.5,elasticsearch-transport:= 5.0.5|checksum:15efc3d416092ba306904b048920545b00b8e2f7400f2e7fe890e51fd17619e1
+6.0.3 elasticsearch-api:= 6.0.3,elasticsearch-transport:= 6.0.3|checksum:be32aba9307c85c7ae01dae5332b9e8b9b2d18dc806c3f9aee8b969b1f5ac198,ruby:>= 1.9
+6.1.0 elasticsearch-api:= 6.1.0,elasticsearch-transport:= 6.1.0|checksum:e9d23df1c29e529042119d7102429df09f195b94c60731551efc68a9a23a4a98,ruby:>= 1.9
+6.2.0 elasticsearch-api:= 6.2.0,elasticsearch-transport:= 6.2.0|checksum:916db1ffaf09dbfce0f9cafce0e5453c0c4aa8b3abf49729c411fd3d6a412761,ruby:>= 1.9
+6.3.0 elasticsearch-api:= 6.3.0,elasticsearch-transport:= 6.3.0|checksum:16fb0d6404bcca967b372eb4dd710afb56593547d0a0faf873b9da06121fa1cf,ruby:>= 1.9
+7.0.0.pre elasticsearch-api:= 7.0.0.pre,elasticsearch-transport:= 7.0.0.pre|checksum:8fbf4e2ba0c97d9dbf51dad7d01dcc8835023785fd94c09ac42f0b9787dbfcf2,ruby:>= 1.9,rubygems:> 1.3.1
+7.0.0 elasticsearch-api:= 7.0.0,elasticsearch-transport:= 7.0.0|checksum:e82fa0eabf775d8e83a88e6d17b36cbd125d97a1f7a268eecd30e2c53eab4c2b,ruby:>= 1.9
+6.3.1 elasticsearch-api:= 6.3.1,elasticsearch-transport:= 6.3.1|checksum:a354c6faaccd37d901a013545f72d18447e9844ad70318e65ffdf002f33bc752,ruby:>= 1.9
+6.8.0 elasticsearch-api:= 6.8.0,elasticsearch-transport:= 6.8.0|checksum:00bf8a12ef595d1246da7edd6e9ab8caad09e76f3f7bc0c7530d85495755e7ca,ruby:>= 1.9
+7.1.0 elasticsearch-api:= 7.1.0,elasticsearch-transport:= 7.1.0|checksum:097260d225ef06d90f2ebd49522537c572b76297b58af222e35084e7ab8defca,ruby:>= 1.9
+7.2.0 elasticsearch-api:= 7.2.0,elasticsearch-transport:= 7.2.0|checksum:31e002f26e7f02f4c0942240e2c29ea73bb5c66bb51a564dec5d3748d2b87281,ruby:>= 1.9
+7.2.1 elasticsearch-api:= 7.2.1,elasticsearch-transport:= 7.2.1|checksum:c86027dabebba7e18142866a300c5d8e05ea6973ac9782c08dcdbf281f5500a0,ruby:>= 1.9
+7.3.0 elasticsearch-api:= 7.3.0,elasticsearch-transport:= 7.3.0|checksum:305c37aecc660040f0d8e2f5efdfcb72215bdab8e125cdcfa40bbd27a7be8f64,ruby:>= 1.9
+7.4.0 elasticsearch-api:= 7.4.0,elasticsearch-transport:= 7.4.0|checksum:ae105056c10721ff1e4e2a3d4c7af26018bf389148e99a4afed68c166d661ace,ruby:>= 1.9
+6.8.1 elasticsearch-api:= 6.8.1,elasticsearch-transport:= 6.8.1|checksum:befbed0d33a6cced936d8762fe1aff1322b881a3bf4967d3166ccb7e35662d39,ruby:>= 1.9
+7.5.0.pre.pre elasticsearch-api:= 7.5.0.pre.pre,elasticsearch-transport:= 7.5.0.pre.pre|checksum:2ce160a63ec5adce0fd2d67ae9f2d07425fb451a2222a591f2b5bed59d9015e8,ruby:>= 1.9,rubygems:> 1.3.1
+7.5.0 elasticsearch-api:= 7.5.0,elasticsearch-transport:= 7.5.0|checksum:44774def0375f0946767ae3e599592a859558c78c5eaeabef8737393d587e892,ruby:>= 1.9
+7.6.0.pre elasticsearch-api:= 7.6.0.pre,elasticsearch-transport:= 7.6.0.pre|checksum:0751a34a270b16800a515482c536e6da00aacc6e0821cfe638762d4e14f3da04,ruby:>= 2.4,rubygems:> 1.3.1
+7.6.0 elasticsearch-api:= 7.6.0,elasticsearch-transport:= 7.6.0|checksum:2c3ad99561d15bd7a5e9d60ede5a9535c3bcfba78d113c57fb6279786d65e5b7,ruby:>= 2.4
+7.7.0.pre elasticsearch-api:= 7.7.0.pre,elasticsearch-transport:= 7.7.0.pre|checksum:aef6de72240f3e83e6bf1b2a88d0982ffa98c8de39e21e75bdde3fc7dc8f7fee,ruby:>= 2.4,rubygems:> 1.3.1
+6.8.2 elasticsearch-api:= 6.8.2,elasticsearch-transport:= 6.8.2|checksum:6ea83d0601ba30ddaa312e4693339f6c361f2ef086a1ba3256be7a71b5395f94,ruby:>= 2.4
+7.7.0 elasticsearch-api:= 7.7.0,elasticsearch-transport:= 7.7.0|checksum:e9cc8e7f279496c0b08eb356966babc1adf3a38209aea4faa6a5932269e2ffaa,ruby:>= 2.4
+7.8.0.pre elasticsearch-api:= 7.8.0.pre,elasticsearch-transport:= 7.8.0.pre|checksum:e17d5ed628329de0d964b90a64e14a935e09ca337ff73903d060bd8407d9d85d,ruby:>= 2.4,rubygems:> 1.3.1
+7.8.0 elasticsearch-api:= 7.8.0,elasticsearch-transport:= 7.8.0|checksum:5c13f90d22bcaeb9ea2b87eed564fe4fc97113edf83361aa6494b75cae131756,ruby:>= 2.4
+7.9.0.pre elasticsearch-api:= 7.9.0.pre,elasticsearch-transport:= 7.9.0.pre|checksum:b1dce484e826de7cf91f5090d07d4dff86022af5a0fd7512d53b2feeb7a65db1,ruby:>= 2.4,rubygems:> 1.3.1

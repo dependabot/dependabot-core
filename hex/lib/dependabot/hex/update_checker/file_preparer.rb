@@ -94,6 +94,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements.
                          find { |r| r.fetch(:file) == filename }&.
@@ -120,6 +121,7 @@ module Dependabot
             ">= #{parts.join('.')}"
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
