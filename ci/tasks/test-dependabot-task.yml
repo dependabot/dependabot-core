@@ -26,4 +26,4 @@ run:
       cd dependabot-core.git/docker
       bundle install
       bundle exec rspec ./spec/
-      bundle exec rubocop ../
+      bundle exec rubocop -c ../.rubocop.yml ../

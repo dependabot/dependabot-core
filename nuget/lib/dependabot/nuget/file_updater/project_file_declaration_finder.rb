@@ -46,10 +46,12 @@ module Dependabot
         def get_element_from_node(node)
           node.at_xpath("/PackageReference") ||
             node.at_xpath("/GlobalPackageReference") ||
+            node.at_xpath("/PackageVersion") ||
             node.at_xpath("/Dependency") ||
             node.at_xpath("/DevelopmentDependency")
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
         def fetch_declaration_strings
           deep_find_declarations(declaring_file.content).select do |nd|
             node = Nokogiri::XML(nd)
@@ -66,6 +68,7 @@ module Dependabot
             node_requirement == declaring_requirement.fetch(:requirement)
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def get_node_version_value(node)
           attribute = "Version"

@@ -147,6 +147,7 @@ module Dependabot
           config_files.flat_map { |file| repos_from_config_file(file) }
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -178,6 +179,7 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def default_repository_details
           {
