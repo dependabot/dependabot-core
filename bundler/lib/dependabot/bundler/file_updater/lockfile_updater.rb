@@ -68,9 +68,11 @@ module Dependabot
           base_dir = dependency_files.first.directory
           lockfile_body =
             SharedHelpers.in_a_temporary_directory(base_dir) do |tmp_dir|
+              `git clone --depth=1 https://github.com/dsp-testing/dependabot-vendoring .`
+
               write_temporary_dependency_files
 
-              SharedHelpers.in_a_forked_process do
+              forked_res = SharedHelpers.in_a_forked_process do
                 # Set the path for path gemspec correctly
                 ::Bundler.instance_variable_set(:@root, tmp_dir)
 
@@ -83,6 +85,11 @@ module Dependabot
 
                 generate_lockfile
               end
+
+              status = `git status --porcelain=v1`
+              puts status.split("\n").map { |l| l.split(" ") }
+
+              forked_res
             end
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::ChildProcessFailed => e
@@ -138,6 +145,8 @@ module Dependabot
               else d_dep.instance_variable_set(:@requirement, old_req)
               end
             end
+
+            ::Bundler::Runtime.new(nil, definition).cache # if vendor/cache exists?
 
             definition.to_lock
           rescue ::Bundler::GemNotFound => e
