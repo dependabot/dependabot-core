@@ -8,24 +8,6 @@ jobs:
     name: Build CI image
     runs-on: ubuntu-latest
     steps:
-      - name: echo context
-        run: |
-          echo "-----------"
-          echo "github.event.repository.name "
-          echo ${{ github.event.repository.name }}
-
-          echo "github.event.repository.full_name "
-          echo ${{ github.event.repository.full_name }}
-
-          echo "github.event.pull_request.head.repo.full_name"
-          echo ${{ github.event.pull_request.head.repo.full_name }}
-
-          echo "github.event.pull_request.base.repo.full_name"
-          echo ${{ github.event.pull_request.base.repo.full_name }}
-
-          echo "github.repository"
-          echo ${{ github.repository }}
-          echo "-----------"
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Prepare environment variables
@@ -40,7 +22,7 @@ jobs:
         run: |
           rm .dockerignore
           docker build \
-            -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
+            -t "docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
             --cache-from ubuntu:18.04 \
             --cache-from "dependabot/dependabot-core:latest" \
@@ -49,7 +31,7 @@ jobs:
       - name: Push image to packages
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker push "docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
   rubocop:
     name: Rubocop
@@ -59,10 +41,10 @@ jobs:
       - name: Pull image from packages
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker pull "docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run Rubocop linting
         run: |
-          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core && rake ci:rubocop"
+          docker run --rm docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core && rake ci:rubocop"
 
   rspec:
     name: Rspec
@@ -94,10 +76,10 @@ jobs:
       - name: Pull image from packages
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker pull "docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
-          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --rm docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
 
   npm-and-yarn-js:
     name: npm and yarn js
@@ -107,10 +89,10 @@ jobs:
       - name: Pull image from packages
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker pull "docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run js linting
         run: |
-           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn lint"
+           docker run --rm docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn lint"
       - name: Run js tests
         run: |
-           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn test"
+           docker run --rm docker.pkg.github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn test"
