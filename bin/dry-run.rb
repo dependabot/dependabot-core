@@ -167,6 +167,8 @@ end
 $package_manager, $repo_name = ARGV
 
 def show_diff(original_file, updated_file)
+  return unless original_file
+
   if original_file.content == updated_file.content
     puts "    no change to #{original_file.name}"
     return
@@ -457,7 +459,9 @@ dependencies.each do |dep|
     updated_files.each do |updated_file|
       path = File.join(dependency_files_cache_dir, updated_file.name)
       puts " => writing updated file ./#{path}"
-      File.write(path, updated_file.content)
+      dirname = File.dirname(path)
+      FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
+      File.write(path, updated_file.content) if updated_file.content
     end
   end
 
