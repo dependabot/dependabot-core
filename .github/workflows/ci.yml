@@ -8,15 +8,21 @@ jobs:
     name: Build CI image
     runs-on: ubuntu-latest
     steps:
-      - name: ecoh context
+      - name: echo context
         run: |
           echo "-----------"
           echo "github.event.repository.name "
           echo ${{ github.event.repository.name }}
-          echo "github.event.head.repo.full_name"
-          echo ${{ github.event.head.repo.full_name }}
-          echo "github.event.base.repo.full_name"
-          echo ${{ github.event.base.repo.full_name }}
+
+          echo "github.event.repository.full_name "
+          echo ${{ github.event.repository.full_name }}
+
+          echo "github.event.pull_request.head.repo.full_name"
+          echo ${{ github.event.pull_request.head.repo.full_name }}
+
+          echo "github.event.pull_request.base.repo.full_name"
+          echo ${{ github.event.pull_request.base.repo.full_name }}
+
           echo "github.repository"
           echo ${{ github.repository }}
           echo "-----------"
