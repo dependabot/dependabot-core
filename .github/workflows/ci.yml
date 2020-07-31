@@ -8,6 +8,18 @@ jobs:
     name: Build CI image
     runs-on: ubuntu-latest
     steps:
+      - name: echo context
+        run: |
+          echo "-----------"
+          echo "github.event.repository.name "
+          echo ${{ github.event.repository.name }}
+          echo "github.event.head.repo.full_name"
+          echo ${{ github.event.head.repo.full_name }}
+          echo "github.event.base.repo.full_name"
+          echo ${{ github.event.base.repo.full_name }}
+          echo "github.repository"
+          echo ${{ github.repository }}
+          echo "-----------"
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Prepare environment variables
