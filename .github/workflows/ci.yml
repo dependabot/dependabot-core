@@ -17,7 +17,6 @@ jobs:
         run: |
           docker pull ubuntu:18.04
           docker pull "dependabot/dependabot-core:latest"
-          docker pull "dependabot/dependabot-core-ci:latest" || true
       - name: Build dependabot-core-ci image
         run: |
           rm .dockerignore
@@ -26,7 +25,6 @@ jobs:
             -f Dockerfile.ci \
             --cache-from ubuntu:18.04 \
             --cache-from "dependabot/dependabot-core:latest" \
-            --cache-from "dependabot/dependabot-core-ci:latest" \
             .
       - name: Push image to packages
         run: |
@@ -37,6 +35,27 @@ jobs:
     name: Rubocop
     runs-on: ubuntu-latest
     needs: ci-image
+    strategy:
+      matrix:
+        suite:
+          - bundler
+          - cargo
+          - common
+          - composer
+          - dep
+          - docker
+          - elm
+          - git_submodules
+          - github_actions
+          - go_modules
+          - gradle
+          - hex
+          - maven
+          - npm_and_yarn
+          - nuget
+          - omnibus
+          - python
+          - terraform
     steps:
       - name: Pull image from packages
         run: |
@@ -44,7 +63,7 @@ jobs:
           docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run Rubocop linting
         run: |
-          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core && rake ci:rubocop"
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
 
   rspec:
     name: Rspec
