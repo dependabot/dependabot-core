@@ -1,3 +1,9 @@
+## v0.118.10, 3 August 2020
+
+- Bump jest from 26.2.1 to 26.2.2 in /npm_and_yarn/helpers
+- Bump eslint from 7.5.0 to 7.6.0 in /npm_and_yarn/helpers
+- Encode '@' in python HTTP basic auth passwords
+
 ## v0.118.9, 3 August 2020
 
 - CI: Move from Circle CI to actions
