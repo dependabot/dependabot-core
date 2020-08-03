@@ -16,6 +16,8 @@ module Dependabot
           else token
           end
 
+        basic_auth_details = basic_auth_details.gsub("@", "%40")
+
         url.sub("://", "://#{basic_auth_details}@")
       end
     end
