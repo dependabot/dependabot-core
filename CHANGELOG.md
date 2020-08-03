@@ -1,3 +1,14 @@
+## v0.118.9, 3 August 2020
+
+- CI: Move from Circle CI to actions
+- CI: Use job matrix @localheinz
+- Composer: Best practices for 7.4 @localheinz
+- Composer: Explicitly require latest stable version of composer/composer @localheinz
+- Actions: Fix updating actions that are quoted
+- Bump jest from 26.1.0 to 26.2.1 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.33 to 0.12.34 in /composer/helpers
+- Bump pip-tools from 5.2.1 to 5.3.0 in /python/helpers
+
 ## v0.118.8, 24 July 2020
 
 - Upgrade Python version to 3.8.5 (@ulgens)
