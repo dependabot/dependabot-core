@@ -20,27 +20,27 @@ jobs:
           echo ::set-env name=VERSION::$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)
       - name: Pull Docker base images & warm Docker cache
         run: |
-          docker pull ubuntu:18.04
+          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
           docker pull "dependabot/dependabot-core:latest"
+          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
       - name: Build dependabot-core image
         run: |
           docker build \
             -t "dependabot/dependabot-core:latest" \
-            --cache-from ubuntu:18.04 \
             --cache-from "dependabot/dependabot-core:latest" \
             .
       - name: Build dependabot-core-ci image
         run: |
           rm .dockerignore
           docker build \
+            -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
-            --cache-from ubuntu:18.04 \
-            --cache-from "dependabot/dependabot-core:latest" \
+            --cache-from "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             .
       - name: Push image to packages
         run: |
-          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
+          docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
           docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
   rubocop:
@@ -123,7 +123,7 @@ jobs:
           docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run js linting
         run: |
-           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn lint"
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn lint"
       - name: Run js tests
         run: |
-           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn test"
+          docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn test"
