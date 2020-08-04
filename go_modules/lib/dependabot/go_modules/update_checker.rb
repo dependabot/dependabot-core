@@ -17,6 +17,8 @@ module Dependabot
         # dependency to the go.mod file forcing the resolver to pick this
         # version (possibly as # indirect)
         unless dependency.top_level?
+          return unless dependency.version
+
           return version_class.new(dependency.version)
         end
 
