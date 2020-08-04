@@ -67,6 +67,11 @@ module Dependabot
         raise unless e.message.include?("Repository is empty")
       end
 
+      # Returns the path to the cloned repo
+      def fetch_repo
+        @fetch_repo ||= _fetch_repo
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
@@ -417,6 +422,18 @@ module Dependabot
         linked_dirs.
           select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }.
           max_by(&:length)
+      end
+
+      def _fetch_repo
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          path = File.join("tmp", source.repo)
+          FileUtils.mkdir_p(path) unless Dir.exist?(path)
+          br_opt = " --branch=#{source.branch} --single-branch" if source.branch
+          SharedHelpers.run_shell_command(
+            "git clone --depth=1#{br_opt} #{source.url} #{path}"
+          )
+          path
+        end
       end
 
       def client_for_provider
