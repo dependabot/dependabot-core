@@ -9,8 +9,6 @@ on:
     branches:
       - "actions/*"
   pull_request_target:
-    branches:
-      - "**"
     branches-ignore:
       - "actions/*"
 jobs:
