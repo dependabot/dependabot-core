@@ -96,6 +96,7 @@ $options = {
   branch: nil,
   cache_steps: [],
   write: false,
+  clone: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
   commit: nil
@@ -153,6 +154,10 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
     $options[:commit] = value
+  end
+
+  opts.on("--clone", "clone the repo") do |_value|
+    $options[:clone] = true
   end
 end
 
@@ -296,11 +301,17 @@ source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
+$repo_path = nil
 $files = cached_dependency_files_read do
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
             new(source: source, credentials: $options[:credentials])
+
+  if $options[:clone]
+    $repo_path = fetcher.fetch_repo
+  end
   fetcher.files
 end
+
 
 # Parse the dependency files
 puts "=> parsing dependency files"
@@ -323,6 +334,7 @@ def update_checker_for(dependency)
     dependency: dependency,
     dependency_files: $files,
     credentials: $options[:credentials],
+    repo_path: $repo_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
     security_advisories: security_advisories_for(dependency)
@@ -378,6 +390,7 @@ def file_updater_for(dependencies)
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
+    repo_path: $repo_path,
     credentials: $options[:credentials]
   )
 end

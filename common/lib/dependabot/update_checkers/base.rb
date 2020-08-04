@@ -7,17 +7,29 @@ require "dependabot/security_advisory"
 module Dependabot
   module UpdateCheckers
     class Base
+<<<<<<< HEAD
       attr_reader :dependency, :dependency_files, :repo_contents_path,
                   :credentials, :ignored_versions, :raise_on_ignored,
                   :security_advisories, :requirements_update_strategy
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
+=======
+      attr_reader :dependency, :dependency_files, :repo_path, :credentials,
+                  :ignored_versions, :raise_on_ignored,
+                  :security_advisories, :requirements_update_strategy
+
+      def initialize(dependency:, dependency_files:, repo_path: nil,
+>>>>>>> Add cloned repo to updater checker and file updater
                      credentials:, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil)
         @dependency = dependency
         @dependency_files = dependency_files
+<<<<<<< HEAD
         @repo_contents_path = repo_contents_path
+=======
+        @repo_path = repo_path
+>>>>>>> Add cloned repo to updater checker and file updater
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions

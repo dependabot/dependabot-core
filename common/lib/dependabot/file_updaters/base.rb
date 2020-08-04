@@ -3,18 +3,30 @@
 module Dependabot
   module FileUpdaters
     class Base
+<<<<<<< HEAD
       attr_reader :dependencies, :dependency_files, :repo_contents_path,
                   :credentials
+=======
+      attr_reader :dependencies, :dependency_files, :repo_path, :credentials
+>>>>>>> Add cloned repo to updater checker and file updater
 
       def self.updated_files_regex
         raise NotImplementedError
       end
 
+<<<<<<< HEAD
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
                      credentials:)
         @dependencies = dependencies
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
+=======
+      def initialize(dependencies:, dependency_files:, repo_path: nil,
+                     credentials:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+        @repo_path = repo_path
+>>>>>>> Add cloned repo to updater checker and file updater
         @credentials = credentials
 
         check_required_files
