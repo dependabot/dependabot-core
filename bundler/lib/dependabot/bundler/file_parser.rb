@@ -118,7 +118,7 @@ module Dependabot
 
       def parsed_gemfile
         @parsed_gemfile ||=
-          SharedHelpers.in_a_temporary_directory(base_directory) do
+          SharedHelpers.in_a_temporary_directory(base_directory, repo_path) do
             write_temporary_dependency_files
 
             SharedHelpers.in_a_forked_process do
@@ -150,7 +150,7 @@ module Dependabot
       def parsed_gemspec(file)
         @parsed_gemspecs ||= {}
         @parsed_gemspecs[file.name] ||=
-          SharedHelpers.in_a_temporary_directory(base_directory) do
+          SharedHelpers.in_a_temporary_directory(base_directory, repo_path) do
             [file, *imported_ruby_files].each do |f|
               path = f.name
               FileUtils.mkdir_p(Pathname.new(path).dirname)
