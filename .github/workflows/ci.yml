@@ -2,11 +2,17 @@ name: CI
 on:
   push:
     branches:
-      - wip*
-      - main
+      - "actions/*"
+      - "wip/*"
+      - "main"
+  pull_request:
+    branches:
+      - "actions/*"
   pull_request_target:
     branches:
       - "**"
+    branches-ignore:
+      - "actions/*"
 jobs:
   ci-image:
     name: Build CI image
