@@ -17,30 +17,22 @@ jobs:
       - name: Prepare environment variables
         run: |
           echo ::set-env name=VERSION::$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)
-      - name: Pull Docker base images & warm Docker cache
-        run: |
-          docker pull ubuntu:18.04
-          docker pull "dependabot/dependabot-core:latest"
       - name: Build dependabot-core image
-        run: |
-          docker build \
-            -t "dependabot/dependabot-core:latest" \
-            --cache-from ubuntu:18.04 \
-            --cache-from "dependabot/dependabot-core:latest" \
-            .
+        uses: whoan/docker-build-with-cache-action@v5
+        with:
+          image_name: "dependabot/dependabot-core"
+          push_image_and_stages: false
+      - name: Remove .dockerignore for dependabot-core-ci image build
+        run: rm .dockerignore
       - name: Build dependabot-core-ci image
-        run: |
-          rm .dockerignore
-          docker build \
-            -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
-            -f Dockerfile.ci \
-            --cache-from ubuntu:18.04 \
-            --cache-from "dependabot/dependabot-core:latest" \
-            .
-      - name: Push image to packages
-        run: |
-          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+        uses: whoan/docker-build-with-cache-action@v5
+        with:
+          username: x
+          password: "${{ secrets.GITHUB_TOKEN }}"
+          image_name: "${{ github.repository }}/dependabot-core-ci"
+          image_tag: "${{ github.sha }},latest"
+          registry: docker.pkg.github.com
+          dockerfile: Dockerfile.ci
 
   rubocop:
     name: Rubocop
