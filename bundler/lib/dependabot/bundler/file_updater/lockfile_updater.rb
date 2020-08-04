@@ -41,9 +41,11 @@ module Dependabot
           ]
         end
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, repo_path: nil,
+                       credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
+          @repo_path = repo_path
           @credentials = credentials
         end
 
@@ -62,27 +64,28 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies, :dependency_files, :repo_path, :credentials
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
           lockfile_body =
-            SharedHelpers.in_a_temporary_directory(base_dir) do |tmp_dir|
-              write_temporary_dependency_files
+            SharedHelpers.
+              in_a_temporary_directory(base_dir, repo_path) do |tmp_dir|
+                write_temporary_dependency_files
 
-              SharedHelpers.in_a_forked_process do
-                # Set the path for path gemspec correctly
-                ::Bundler.instance_variable_set(:@root, tmp_dir)
+                SharedHelpers.in_a_forked_process do
+                  # Set the path for path gemspec correctly
+                  ::Bundler.instance_variable_set(:@root, tmp_dir)
 
-                # Remove installed gems from the default Rubygems index
-                ::Gem::Specification.all =
-                  ::Gem::Specification.send(:default_stubs, "*.gemspec")
+                  # Remove installed gems from the default Rubygems index
+                  ::Gem::Specification.all =
+                    ::Gem::Specification.send(:default_stubs, "*.gemspec")
 
-                # Set flags and credentials
-                set_bundler_flags_and_credentials
+                  # Set flags and credentials
+                  set_bundler_flags_and_credentials
 
-                generate_lockfile
-              end
+                  generate_lockfile
+                end
             end
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::ChildProcessFailed => e
@@ -137,6 +140,10 @@ module Dependabot
               if old_req == :none then definition.dependencies.delete(d_dep)
               else d_dep.instance_variable_set(:@requirement, old_req)
               end
+            end
+
+            if ::Bundler.app_cache.exist? && !::Bundler.frozen_bundle?
+              ::Bundler::Runtime.new(nil, definition).cache
             end
 
             definition.to_lock

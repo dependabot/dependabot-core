@@ -51,34 +51,9 @@ module Dependabot
         end
 
         check_updated_files(updated_files)
+
         base_dir = updated_files.first.directory
-        SharedHelpers.in_a_temporary_directory(base_dir) do |tmp_dir|
-          `git clone --depth=1 https://github.com/dsp-testing/dependabot-vendoring .`
-
-          updated_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
-          end
-
-          SharedHelpers.in_a_forked_process do
-            # Set the path for path gemspec correctly
-            ::Bundler.instance_variable_set(:@root, tmp_dir)
-            return unless ::Bundler.app_cache.exist? && !::Bundler.frozen_bundle?
-
-            # Remove installed gems from the default Rubygems index
-            ::Gem::Specification.all =
-              ::Gem::Specification.send(:default_stubs, "*.gemspec")
-
-            definition = ::Bundler::Definition.build(
-              gemfile.name,
-              lockfile&.name,
-              nil
-            )
-            definition.resolve_remotely!
-            ::Bundler::Runtime.new(nil, definition).cache
-          end
-
+        Dir.chdir(repo_path) do
           status = `git status --porcelain=v1`
           paths = status.split("\n").map { |l| l.split(" ") }
           paths.each do |type, path|
@@ -158,6 +133,7 @@ module Dependabot
           LockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
+            repo_path: repo_path,
             credentials: credentials
           ).updated_lockfile_content
       end

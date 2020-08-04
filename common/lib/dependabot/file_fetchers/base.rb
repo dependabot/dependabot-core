@@ -427,7 +427,9 @@ module Dependabot
       def _fetch_repo
         SharedHelpers.with_git_configured(credentials: credentials) do
           path = File.join("tmp", source.repo)
-          FileUtils.mkdir_p(path) unless Dir.exist?(path)
+          return path if Dir.exist?(File.join(path, ".git")) 
+
+          FileUtils.mkdir_p(path)
           br_opt = " --branch=#{source.branch} --single-branch" if source.branch
           SharedHelpers.run_shell_command(
             "git clone --depth=1#{br_opt} #{source.url} #{path}"

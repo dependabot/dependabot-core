@@ -29,12 +29,18 @@ module Dependabot
       end
     end
 
-    def self.in_a_temporary_directory(directory = "/")
-      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
-      Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
-        path = Pathname.new(File.join(dir, directory)).expand_path
-        FileUtils.mkpath(path)
+    def self.in_a_temporary_directory(directory = "/", repo_path = nil)
+      if repo_path
+        path = Pathname.new(File.join(repo_path, directory)).expand_path
+        reset_git_repo(repo_path)
         Dir.chdir(path) { yield(path) }
+      else
+        Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
+        Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
+          path = Pathname.new(File.join(dir, directory)).expand_path
+          FileUtils.mkpath(path)
+          Dir.chdir(path) { yield(path) }
+        end
       end
     end
 
@@ -207,6 +213,12 @@ module Dependabot
 
       # Save the file
       File.write("git.store", git_store_content)
+    end
+
+    def self.reset_git_repo(path)
+      Dir.chdir(path) do
+        run_shell_command("git reset HEAD --hard && git clean -fx")
+      end
     end
 
     def self.stash_global_git_config

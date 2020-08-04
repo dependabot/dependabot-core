@@ -317,6 +317,7 @@ end
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
+  repo_path: $repo_path,
   source: source,
   credentials: $options[:credentials]
 )
@@ -470,6 +471,8 @@ dependencies.each do |dep|
 
   if $options[:write]
     updated_files.each do |updated_file|
+      next unless updated_file.content
+
       path = File.join(dependency_files_cache_dir, updated_file.name)
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
