@@ -32,8 +32,6 @@ jobs:
             --cache-from "dependabot/dependabot-core:latest" \
             .
       - name: Build dependabot-core-ci image
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
           rm .dockerignore
           docker build \
