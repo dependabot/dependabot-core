@@ -25,5 +25,5 @@ jobs:
             .
       - name: Push image to packages
         run: |
-          docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker push "dependabot/dependabot-core:latest"
