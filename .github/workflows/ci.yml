@@ -22,7 +22,6 @@ jobs:
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
           docker pull "dependabot/dependabot-core:latest"
-          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
       - name: Build dependabot-core image
         env:
           DOCKER_BUILDKIT: 1
@@ -41,7 +40,6 @@ jobs:
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
       - name: Push image to packages
         run: |
