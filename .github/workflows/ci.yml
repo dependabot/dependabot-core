@@ -42,7 +42,6 @@ jobs:
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             .
       - name: Push image to packages
         run: |
