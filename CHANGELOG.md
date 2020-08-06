@@ -1,3 +1,11 @@
+## v0.118.11, 6 August 2020
+
+- common: increase default http client read timeout
+- go_modules: always return a Version object for indirect dependencies
+- Bump composer/composer from 1.10.9 to 1.10.10 in /composer/helpers
+- Bump pip-tools from 5.3.0 to 5.3.1 in /python/helpers
+- CI: performance improvements
+
 ## v0.118.10, 3 August 2020
 
 - Bump jest from 26.2.1 to 26.2.2 in /npm_and_yarn/helpers
