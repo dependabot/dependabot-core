@@ -21,6 +21,7 @@ jobs:
           docker build \
             -t "dependabot/dependabot-core:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "dependabot/dependabot-core:latest" \
             .
       - name: Push image to packages
         run: |
