@@ -23,5 +23,7 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
       - name: Push image to packages
+        if: ${{ secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD }}
         run: |
+          docker login docker.pkg.github.com -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker push "dependabot/dependabot-core:latest"
