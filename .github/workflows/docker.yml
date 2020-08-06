@@ -11,10 +11,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build and push Docker images
-        uses: whoan/docker-build-with-cache-action@v5
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image_name: "dependabot/dependabot-core"
-          image_tag: "latest"
+      - name: Pull Docker base image & warm Docker cache
+        run: |
+          docker pull "dependabot/dependabot-core:latest"
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1
+            --cache-from "dependabot/dependabot-core:latest" \
+            .
+      - name: Push image to packages
+        run: |
+          docker push "dependabot/dependabot-core:latest"

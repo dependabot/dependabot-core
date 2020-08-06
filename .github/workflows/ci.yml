@@ -6,8 +6,8 @@ on:
       - "wip/**"
       - "main"
   pull_request_target:
-    branches-ignore:
-      - "actions/**"
+    branches:
+      - "**"
 jobs:
   ci-image:
     name: Build CI image
@@ -24,18 +24,24 @@ jobs:
           docker pull "dependabot/dependabot-core:latest"
           docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
       - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
           docker build \
             -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1
             --cache-from "dependabot/dependabot-core:latest" \
             .
       - name: Build dependabot-core-ci image
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
           rm .dockerignore
           docker build \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
+            --build-arg BUILDKIT_INLINE_CACHE=1
             --cache-from "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             .
       - name: Push image to packages
