@@ -17,7 +17,7 @@ ARG USER_GID=$USER_UID
 ARG USERNAME=dependabot
 
 RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
-    useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
+  useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
 RUN chown -R "${USERNAME}":"${USERNAME}" \
   /usr/local/.pyenv \
   /opt/go/gopath \
@@ -27,36 +27,37 @@ USER $USERNAME
 ARG CODE_DIR=/home/$USERNAME/dependabot-core
 
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/master/vimrc-vanilla.vim && \
-    echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
+  echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
 RUN mkdir -p ${CODE_DIR}/common/lib/dependabot
 WORKDIR ${CODE_DIR}
 
 ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
-    BUNDLE_BIN=".bundle/binstubs"
+  BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 
 COPY common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
 RUN cd common && bundle install
 
-RUN mkdir -p ${CODE_DIR}/bundler \
-             ${CODE_DIR}/cargo \
-             ${CODE_DIR}/composer \
-             ${CODE_DIR}/dep \
-             ${CODE_DIR}/docker \
-             ${CODE_DIR}/elm \
-             ${CODE_DIR}/git_submodules \
-             ${CODE_DIR}/github_actions \
-             ${CODE_DIR}/go_modules \
-             ${CODE_DIR}/gradle \
-             ${CODE_DIR}/hex \
-             ${CODE_DIR}/maven \
-             ${CODE_DIR}/npm_and_yarn \
-             ${CODE_DIR}/nuget \
-             ${CODE_DIR}/omnibus \
-             ${CODE_DIR}/python \
-             ${CODE_DIR}/terraform
+RUN mkdir -p \
+  ${CODE_DIR}/bundler \
+  ${CODE_DIR}/cargo \
+  ${CODE_DIR}/composer \
+  ${CODE_DIR}/dep \
+  ${CODE_DIR}/docker \
+  ${CODE_DIR}/elm \
+  ${CODE_DIR}/git_submodules \
+  ${CODE_DIR}/github_actions \
+  ${CODE_DIR}/go_modules \
+  ${CODE_DIR}/gradle \
+  ${CODE_DIR}/hex \
+  ${CODE_DIR}/maven \
+  ${CODE_DIR}/npm_and_yarn \
+  ${CODE_DIR}/nuget \
+  ${CODE_DIR}/omnibus \
+  ${CODE_DIR}/python \
+  ${CODE_DIR}/terraform
 
 COPY bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
@@ -77,16 +78,16 @@ COPY python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
 
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
-    for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-                   -not -path "${CODE_DIR}/omnibus/Gemfile" \
-                   -not -path "${CODE_DIR}/common/Gemfile" \
-                   -name 'Gemfile' | xargs dirname`; do \
-      echo && \
-      echo "---------------------------------------------------------------------------" && \
-      echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-      echo "---------------------------------------------------------------------------" && \
-      cd $d && bundle install; \
-    done
+  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
+    -not -path "${CODE_DIR}/omnibus/Gemfile" \
+    -not -path "${CODE_DIR}/common/Gemfile" \
+    -name 'Gemfile' | xargs dirname`; do \
+    echo && \
+    echo "---------------------------------------------------------------------------" && \
+    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+    echo "---------------------------------------------------------------------------" && \
+    cd $d && bundle install; \
+  done
 
 RUN cd omnibus && bundle install
 # Make omnibus gems available to bundler in root directory
@@ -97,4 +98,4 @@ RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
 
 # Declare pass-thru environment variables used for debugging
 ENV LOCAL_GITHUB_ACCESS_TOKEN="" \
-    LOCAL_CONFIG_VARIABLES=""
+  LOCAL_CONFIG_VARIABLES=""

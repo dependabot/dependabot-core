@@ -3,29 +3,30 @@ ARG CODE_DIR=/home/dependabot/dependabot-core
 WORKDIR ${CODE_DIR}
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-    BUNDLE_BIN=".bundle/binstubs" \
-    PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
+  BUNDLE_BIN=".bundle/binstubs" \
+  PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
 
 COPY .rubocop.yml /home/dependabot/dependabot-core/
 
-RUN mkdir -p ${CODE_DIR}/composer \
-             ${CODE_DIR}/bundler \
-             ${CODE_DIR}/cargo \
-             ${CODE_DIR}/common \
-             ${CODE_DIR}/dep \
-             ${CODE_DIR}/docker \
-             ${CODE_DIR}/elm \
-             ${CODE_DIR}/git_submodules \
-             ${CODE_DIR}/github_actions \
-             ${CODE_DIR}/go_modules \
-             ${CODE_DIR}/gradle \
-             ${CODE_DIR}/hex \
-             ${CODE_DIR}/maven \
-             ${CODE_DIR}/npm_and_yarn \
-             ${CODE_DIR}/nuget \
-             ${CODE_DIR}/omnibus \
-             ${CODE_DIR}/python \
-             ${CODE_DIR}/terraform
+RUN mkdir -p \
+  ${CODE_DIR}/composer \
+  ${CODE_DIR}/bundler \
+  ${CODE_DIR}/cargo \
+  ${CODE_DIR}/common \
+  ${CODE_DIR}/dep \
+  ${CODE_DIR}/docker \
+  ${CODE_DIR}/elm \
+  ${CODE_DIR}/git_submodules \
+  ${CODE_DIR}/github_actions \
+  ${CODE_DIR}/go_modules \
+  ${CODE_DIR}/gradle \
+  ${CODE_DIR}/hex \
+  ${CODE_DIR}/maven \
+  ${CODE_DIR}/npm_and_yarn \
+  ${CODE_DIR}/nuget \
+  ${CODE_DIR}/omnibus \
+  ${CODE_DIR}/python \
+  ${CODE_DIR}/terraform
 
 COPY common/ ${CODE_DIR}/common/
 COPY bundler/ ${CODE_DIR}/bundler/
@@ -49,15 +50,15 @@ COPY terraform/ ${CODE_DIR}/terraform/
 RUN cd common && bundle install
 
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
-    for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-                   -not -path "${CODE_DIR}/omnibus/Gemfile" \
-                   -not -path "${CODE_DIR}/common/Gemfile" \
-                   -name 'Gemfile' | xargs dirname`; do \
-      echo && \
-      echo "---------------------------------------------------------------------------" && \
-      echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-      echo "---------------------------------------------------------------------------" && \
-      cd $d && bundle install; \
-    done
+  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
+    -not -path "${CODE_DIR}/omnibus/Gemfile" \
+    -not -path "${CODE_DIR}/common/Gemfile" \
+    -name 'Gemfile' | xargs dirname`; do \
+    echo && \
+    echo "---------------------------------------------------------------------------" && \
+    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+    echo "---------------------------------------------------------------------------" && \
+    cd $d && bundle install; \
+  done
 
 RUN cd omnibus && bundle install
