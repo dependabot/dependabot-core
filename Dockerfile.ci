@@ -9,10 +9,10 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
 COPY .rubocop.yml /home/dependabot/dependabot-core/
 
 RUN mkdir -p \
-  ${CODE_DIR}/composer \
   ${CODE_DIR}/bundler \
   ${CODE_DIR}/cargo \
   ${CODE_DIR}/common \
+  ${CODE_DIR}/composer \
   ${CODE_DIR}/dep \
   ${CODE_DIR}/docker \
   ${CODE_DIR}/elm \
