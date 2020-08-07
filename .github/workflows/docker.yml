@@ -38,3 +38,4 @@ jobs:
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
           docker tag "dependabot/dependabot-core:latest" "dependabot/dependabot-core:$VERSION"
           docker push "dependabot/dependabot-core:$VERSION"
+          docker logout
