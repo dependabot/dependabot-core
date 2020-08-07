@@ -44,8 +44,8 @@ jobs:
           docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
           docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
-  rubocop:
-    name: Rubocop
+  helper:
+    name: Helper
     runs-on: ubuntu-latest
     needs: ci-image
     strategy:
@@ -77,38 +77,6 @@ jobs:
       - name: Run Rubocop linting
         run: |
           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
-
-  rspec:
-    name: Rspec
-    runs-on: ubuntu-latest
-    needs: ci-image
-    strategy:
-      matrix:
-        suite:
-          - bundler
-          - cargo
-          - common
-          - composer
-          - dep
-          - docker
-          - elm
-          - git_submodules
-          - github_actions
-          - go_modules
-          - gradle
-          - hex
-          - maven
-          - npm_and_yarn
-          - nuget
-          - omnibus
-          - python
-          - terraform
-
-    steps:
-      - name: Pull image from packages
-        run: |
-          docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
-          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
