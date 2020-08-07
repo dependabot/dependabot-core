@@ -23,9 +23,15 @@ const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
+const { Manifest, structUtils } = require("@yarnpkg/core");
 const fixDuplicates = require("./fix-duplicates");
 const replaceDeclaration = require("./replace-lockfile-declaration");
-const { LightweightAdd, LightweightInstall } = require("./helpers");
+const {
+  LightweightAdd,
+  LightweightInstall,
+  findProject,
+  lightweightBerryInstall,
+} = require("./helpers");
 
 function flattenAllDependencies(manifest) {
   return Object.assign(
@@ -100,6 +106,35 @@ function installArgsWithVersion(
   }
 }
 
+function getVersion(desiredVersion, requirements, existingVersionRequirement) {
+  const source = requirements.source;
+
+  if (source && source.type === "git") {
+    if (!existingVersionRequirement) {
+      existingVersionRequirement = source.url;
+    }
+
+    // Git is configured to auth over https while updating
+    existingVersionRequirement = existingVersionRequirement.replace(
+      /git\+ssh:\/\/git@(.*?)[:/]/,
+      "git+https://$1/"
+    );
+
+    // Keep any semver range that has already been updated in the package
+    // requirement when installing the new version
+    if (existingVersionRequirement.match(desiredVersion)) {
+      return existingVersionRequirement;
+    } else {
+      return `${existingVersionRequirement.replace(
+        /#.*/,
+        ""
+      )}#${desiredVersion}`;
+    }
+  } else {
+    return desiredVersion;
+  }
+}
+
 async function updateDependencyFiles(directory, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
@@ -117,6 +152,72 @@ async function updateDependencyFiles(directory, dependencies) {
   return updateRunResults;
 }
 
+async function updateBerryDependencyFile(
+  directory,
+  depName,
+  desiredVersion,
+  requirements,
+  originalYarnLock,
+  originalPackageJson
+) {
+  const readFile = (fileName) =>
+    fs.readFileSync(path.join(directory, fileName)).toString();
+  const cwd = path.join(directory, path.dirname(requirements.file));
+
+  const { project, cache, manifest } = await findProject(cwd);
+  const depIdent = structUtils.parseIdent(depName);
+  const identHash = depIdent.identHash;
+
+  for (const dependencyType of Manifest.allDependencies) {
+    const dependencies = manifest.getForScope(dependencyType);
+    if (dependencies.has(identHash)) {
+      const existingVersionRequirement = dependencies.get(identHash).range;
+      const version = getVersion(
+        desiredVersion,
+        requirements,
+        existingVersionRequirement
+      );
+      dependencies.set(
+        identHash,
+        structUtils.makeDescriptor(depIdent, version)
+      );
+      break;
+    }
+  }
+
+  await lightweightBerryInstall(project);
+
+  // const dedupedYarnLock = fixDuplicates(readFile("yarn.lock"), depName);
+
+  const newVersionRequirement = requirements.requirement;
+
+  // Replace the version requirement in the lockfile (which will currently be an
+  // exact version, not a requirement range)
+  // If we don't have new requirement (e.g. git source) use the existing version
+  // requirement from the package manifest
+  // const replacedDeclarationYarnLock = replaceDeclaration(
+  //   originalYarnLock,
+  //   dedupedYarnLock,
+  //   depName,
+  //   newVersionRequirement,
+  //   existingVersionRequirement
+  // );
+
+  // Do a normal install to ensure the lockfile doesn't change when we do
+  // fs.writeFileSync(
+  //   path.join(directory, "yarn.lock"),
+  //   replacedDeclarationYarnLock
+  // );
+  fs.writeFileSync(
+    path.join(directory, requirements.file),
+    originalPackageJson
+  );
+
+  await lightweightBerryInstall(project);
+
+  return readFile("yarn.lock");
+}
+
 async function updateDependencyFile(
   directory,
   depName,
@@ -127,6 +228,19 @@ async function updateDependencyFile(
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
   const originalPackageJson = readFile(requirements.file);
+
+  if (originalYarnLock.indexOf("__metadata:\n") > -1) {
+    return {
+      "yarn.lock": await updateBerryDependencyFile(
+        directory,
+        depName,
+        desiredVersion,
+        requirements,
+        originalYarnLock,
+        originalPackageJson
+      ),
+    };
+  }
 
   const flags = {
     ignoreScripts: true,

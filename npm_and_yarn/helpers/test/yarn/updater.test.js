@@ -41,6 +41,21 @@ describe("updater", () => {
     });
   });
 
+  it("generates an updated yarn.lock for Yarn 2", async () => {
+    copyDependencies("original-berry", tempDir);
+
+    const result = await updateDependencyFiles(tempDir, [
+      {
+        name: "left-pad",
+        version: "1.1.3",
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
+    ]);
+    expect(result).toEqual({
+      "yarn.lock": helpers.loadFixture("updater/updated-berry/yarn.lock"),
+    });
+  });
+
   it("doesn't modify existing version comments", async () => {
     copyDependencies("with-version-comments", tempDir);
 
@@ -71,6 +86,24 @@ describe("updater", () => {
 
   it("doesn't show an interactive prompt when resolution fails", async () => {
     copyDependencies("original", tempDir);
+
+    expect.assertions(1);
+    try {
+      // Change this test if left-pad ever reaches v99.99.99
+      await updateDependencyFiles(tempDir, [
+        {
+          name: "left-pad",
+          version: "99.99.99",
+          requirements: [{ file: "package.json", groups: ["dependencies"] }],
+        },
+      ]);
+    } catch (error) {
+      expect(error).not.toBeNull();
+    }
+  });
+
+  it("doesn't show an interactive prompt when resolution fails for Yarn 2", async () => {
+    copyDependencies("original-berry", tempDir);
 
     expect.assertions(1);
     try {

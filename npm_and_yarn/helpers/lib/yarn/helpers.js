@@ -1,5 +1,7 @@
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
+const { Cache, Configuration, Project, ThrowReport } = require("@yarnpkg/core");
+const { getPluginConfiguration } = require("@yarnpkg/cli");
 
 function isString(value) {
   return Object.prototype.toString.call(value) === "[object String]";
@@ -44,4 +46,31 @@ class LightweightInstall extends Install {
   }
 }
 
-module.exports = { isString, LightweightAdd, LightweightInstall };
+async function findProject(cwd) {
+  const configuration = await Configuration.find(
+    cwd,
+    getPluginConfiguration(), // load default plugins for CLI
+    { strict: false }
+  );
+  const { project, workspace } = await Project.find(configuration, cwd);
+  const cache = await Cache.find(configuration);
+  const manifest = workspace.manifest;
+  return { project, cache, manifest };
+}
+
+async function lightweightBerryInstall(project, cache) {
+  await project.resolveEverything({
+    cache,
+    report: new ThrowReport(),
+  });
+
+  await project.persist();
+}
+
+module.exports = {
+  isString,
+  LightweightAdd,
+  LightweightInstall,
+  findProject,
+  lightweightBerryInstall,
+};
