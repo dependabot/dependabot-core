@@ -32,7 +32,7 @@ fi
 
 build_image() {
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
-  docker build -t dependabot/dependabot-core --cache-from dependabot/dependabot-core --build-arg BUILDKIT_INLINE_CACHE=1 .
+  docker build -t dependabot/dependabot-core --build-arg BUILDKIT_INLINE_CACHE=1 .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
   docker build --build-arg "USER_UID=$UID" --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg "USER_GID=$(id -g)" -t "$IMAGE_NAME" -f "$DOCKERFILE" .
 }
