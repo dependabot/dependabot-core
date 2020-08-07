@@ -23,11 +23,11 @@ jobs:
         run: |
           echo "lol1"
       - name: Push image to packages (latest)
-        if: '!contains(github.ref, "refs/tags")'
+        if: "!contains(github.ref, 'refs/tags')"
         run: |
           echo "lol2"
       - name: Push image to packages (tagged)
-        if: contains(github.ref, "refs/tags")
+        if: "contains(github.ref, 'refs/tags')"
         run: |
           echo "lol3"
 
