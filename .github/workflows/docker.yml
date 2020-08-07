@@ -2,7 +2,7 @@ name: Push docker images
 on:
   push:
     branches:
-    - main
+    - '*'
   create:
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
@@ -21,21 +21,13 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
         run: |
-          docker build \
-            -t "dependabot/dependabot-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            .
+          echo "lol1"
       - name: Push image to packages (latest)
         if: '!contains(github.ref, "refs/tags")'
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker push "dependabot/dependabot-core:latest"
-          docker logout
+          echo "lol2"
       - name: Push image to packages (tagged)
         if: contains(github.ref, "refs/tags")
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
-          docker tag "dependabot/dependabot-core:latest" "dependabot/dependabot-core:$VERSION"
-          docker push "dependabot/dependabot-core:$VERSION"
-          docker logout
+          echo "lol3"
+
