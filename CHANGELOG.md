@@ -1,3 +1,10 @@
+## v0.118.12, 7 August 2020
+
+- docker: consistent indentation of Dockerfile (@localheinz)
+- python: properly escape username nad password in auth URL
+- CI: publish versioned images to DockerHub
+- CI: performance improvements
+
 ## v0.118.11, 6 August 2020
 
 - common: increase default http client read timeout
