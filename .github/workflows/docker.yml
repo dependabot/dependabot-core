@@ -31,6 +31,7 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker push "dependabot/dependabot-core:latest"
+          docker logout
       - name: Push image to packages (tagged)
         if: contains(github.ref, "refs/tags")
         run: |

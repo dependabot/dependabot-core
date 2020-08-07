@@ -1,84 +1,63 @@
 FROM dependabot/dependabot-core
-WORKDIR /home/dependabot/dependabot-core
+ARG CODE_DIR=/home/dependabot/dependabot-core
+WORKDIR ${CODE_DIR}
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs" \
     PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
 
-RUN gem install rake
+COPY .rubocop.yml /home/dependabot/dependabot-core/
 
-COPY Rakefile \
-     .rubocop.yml \
-     /home/dependabot/dependabot-core/
+RUN mkdir -p ${CODE_DIR}/composer \
+             ${CODE_DIR}/bundler \
+             ${CODE_DIR}/cargo \
+             ${CODE_DIR}/common \
+             ${CODE_DIR}/dep \
+             ${CODE_DIR}/docker \
+             ${CODE_DIR}/elm \
+             ${CODE_DIR}/git_submodules \
+             ${CODE_DIR}/github_actions \
+             ${CODE_DIR}/go_modules \
+             ${CODE_DIR}/gradle \
+             ${CODE_DIR}/hex \
+             ${CODE_DIR}/maven \
+             ${CODE_DIR}/npm_and_yarn \
+             ${CODE_DIR}/nuget \
+             ${CODE_DIR}/omnibus \
+             ${CODE_DIR}/python \
+             ${CODE_DIR}/terraform
 
-RUN mkdir -p /home/dependabot/dependabot-core/common
-COPY common/ /home/dependabot/dependabot-core/common/
+COPY common/ ${CODE_DIR}/common/
+COPY bundler/ ${CODE_DIR}/bundler/
+COPY cargo/ ${CODE_DIR}/cargo/
+COPY composer/ ${CODE_DIR}/composer/
+COPY dep/ ${CODE_DIR}/dep/
+COPY docker/ ${CODE_DIR}/docker/
+COPY elm/ ${CODE_DIR}/elm/
+COPY git_submodules/ ${CODE_DIR}/git_submodules/
+COPY github_actions/ ${CODE_DIR}/github_actions/
+COPY go_modules/ ${CODE_DIR}/go_modules/
+COPY gradle/ ${CODE_DIR}/gradle/
+COPY hex/ ${CODE_DIR}/hex/
+COPY maven/ ${CODE_DIR}/maven/
+COPY npm_and_yarn/ ${CODE_DIR}/npm_and_yarn/
+COPY nuget/ ${CODE_DIR}/nuget/
+COPY omnibus/ ${CODE_DIR}/omnibus/
+COPY python/ ${CODE_DIR}/python/
+COPY terraform/ ${CODE_DIR}/terraform/
+
 RUN cd common && bundle install
 
-RUN mkdir -p /home/dependabot/dependabot-core/terraform
-COPY terraform/ /home/dependabot/dependabot-core/terraform/
-RUN cd terraform && bundle install
+RUN GREEN='\033[0;32m'; NC='\033[0m'; \
+    for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
+                   -not -path "${CODE_DIR}/omnibus/Gemfile" \
+                   -not -path "${CODE_DIR}/common/Gemfile" \
+                   -name 'Gemfile' | xargs dirname`; do \
+      echo && \
+      echo "---------------------------------------------------------------------------" && \
+      echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+      echo "---------------------------------------------------------------------------" && \
+      cd $d && bundle install; \
+    done
 
-RUN mkdir -p /home/dependabot/dependabot-core/elm
-COPY elm/ /home/dependabot/dependabot-core/elm/
-RUN cd elm && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/python
-COPY python/ /home/dependabot/dependabot-core/python/
-RUN cd python && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/docker
-COPY docker/ /home/dependabot/dependabot-core/docker/
-RUN cd docker && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/git_submodules
-COPY git_submodules/ /home/dependabot/dependabot-core/git_submodules/
-RUN cd git_submodules && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/github_actions
-COPY github_actions/ /home/dependabot/dependabot-core/github_actions/
-RUN cd github_actions && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/maven
-COPY maven/ /home/dependabot/dependabot-core/maven/
-RUN cd maven && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/gradle
-COPY gradle/ /home/dependabot/dependabot-core/gradle/
-RUN cd gradle && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/hex
-COPY hex/ /home/dependabot/dependabot-core/hex/
-RUN cd hex && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/nuget
-COPY nuget/ /home/dependabot/dependabot-core/nuget/
-RUN cd nuget && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/composer
-COPY composer/ /home/dependabot/dependabot-core/composer/
-RUN cd composer && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/cargo
-COPY cargo/ /home/dependabot/dependabot-core/cargo/
-RUN cd cargo && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/dep
-COPY dep/ /home/dependabot/dependabot-core/dep/
-RUN cd dep && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/go_modules
-COPY go_modules/ /home/dependabot/dependabot-core/go_modules/
-RUN cd go_modules && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/npm_and_yarn
-COPY npm_and_yarn/ /home/dependabot/dependabot-core/npm_and_yarn/
-RUN cd npm_and_yarn && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/bundler
-COPY bundler/ /home/dependabot/dependabot-core/bundler/
-RUN cd bundler && bundle install
-
-RUN mkdir -p /home/dependabot/dependabot-core/omnibus
-COPY omnibus/ /home/dependabot/dependabot-core/omnibus/
 RUN cd omnibus && bundle install

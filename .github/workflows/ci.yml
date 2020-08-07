@@ -22,6 +22,8 @@ jobs:
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
           docker pull "dependabot/dependabot-core:latest"
+          docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
+          docker logout
       - name: Build dependabot-core image
         env:
           DOCKER_BUILDKIT: 1
@@ -32,20 +34,24 @@ jobs:
             --cache-from "dependabot/dependabot-core:latest" \
             .
       - name: Build dependabot-core-ci image
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
           rm .dockerignore
           docker build \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             -t "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}" \
             -f Dockerfile.ci \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest" \
             .
       - name: Push image to packages
         run: |
           docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:latest"
           docker push "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
 
-  helper:
-    name: Helper
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     needs: ci-image
     strategy:
@@ -74,6 +80,7 @@ jobs:
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
           docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker logout
       - name: Run Rubocop linting
         run: |
           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
@@ -90,6 +97,7 @@ jobs:
         run: |
           docker login docker.pkg.github.com -u x -p ${{ secrets.GITHUB_TOKEN }}
           docker pull "docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }}"
+          docker logout
       - name: Run js linting
         run: |
           docker run --rm docker.pkg.github.com/${{ github.repository }}/dependabot-core-ci:${{ github.sha }} bash -c "cd /opt/npm_and_yarn && yarn lint"
