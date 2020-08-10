@@ -2,7 +2,7 @@
   <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v5" alt="Dependabot" width="336">
 </p>
 
-# Dependabot
+# Dependabot test
 
 Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
