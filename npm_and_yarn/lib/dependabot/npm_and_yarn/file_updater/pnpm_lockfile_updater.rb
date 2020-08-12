@@ -39,27 +39,21 @@ module Dependabot
                             lockfile_name: lockfile_name
                         )
                         Dir.chdir(original_path)
-                        return response
-                        # updated_files.fetch(lockfile_name)
-                rescue SharedHelpers::HelperSubprocessFailed => e
-                    puts "#{e}"
-                #     handle_pnpm_lock_updater_error(e, pnpm_lock)
+
+                        response
                 end
                 
                 # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml). Update the params to take a list of file paths that need to be reread 
                 # after we run rush update.
                 def run_rush_updater(path:, lockfile_name:)
-                    #puts "#{Dir.pwd}"
                     SharedHelpers.run_helper_subprocess(
                         command: NativeHelpers.helper_path,
                         function: "rush:update",
                         args: [
                             Dir.pwd,
                             path+"/"+lockfile_name
-                        # top_level_dependency_updates
                         ]
                     )
-
                 end
 
                 def run_current_rush_update(path:, lockfile_name:)
@@ -93,10 +87,6 @@ module Dependabot
                     end
                     
                 end
-                
-                # def package_files
-                #     dependency_files.select { |f| f.name.end_with?("package.json") }
-                # end
 
                 def top_level_dependencies
                     @dependencies.select(&:top_level?)
