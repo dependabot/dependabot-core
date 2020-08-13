@@ -237,7 +237,7 @@ module Dependabot
       def auth_token
         credentials.
           select { |cred| cred["type"] == "npm_registry" }.
-          find { |cred| cred["registry"].include?(dependency_registry) }&.
+          find { |cred| cred["registry"].start_with?(dependency_registry) }&.
           fetch("token", nil)
       end
 
