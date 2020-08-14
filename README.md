@@ -4,14 +4,19 @@
 
 # Dependabot
 
-Welcome to the public home of Dependabot. This repository serves 2 purposes:
+Welcome to the public home of Dependabot.
+This repository serves 2 purposes:
 
-1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
+1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. 
+Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps.
+If you want to host your own automated dependency update bot then this repo should give you the tools you need.
+A reference implementation is available [here][dependabot-script].
 2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
 
 ## Got feedback?
 
-Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+Please file an issue.
+Bug reports, feature requests, and general feedback are all welcome.
 
 Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
 
@@ -21,13 +26,11 @@ If you believe you have found a security vulnerability in Dependabot please subm
 
 ## What's in this repo?
 
-Dependabot Core is a collection of packages for automating dependency updating
-in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
-.NET. It can also update git submodules, Docker files, and Terraform files.
+Dependabot Core is a collection of packages for automating dependency updating in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and .NET.
+It can also update git submodules, Docker files, and Terraform files.
 Highlights include:
 
-- Logic to check for the latest version of a dependency *that's resolvable given
-  a project's other dependencies*
+- Logic to check for the latest version of a dependency *that's resolvable given a project's other dependencies*
 - Logic to generate updated manifest and lockfiles for a new dependency version
 - Logic to find changelogs, release notes, and commits for a dependency update
 
@@ -35,20 +38,15 @@ Highlights include:
 
 In addition to this library, you may be interested in:
 
-- The [dependabot-script][dependabot-script] repo, which provides a collection
-  of scripts that use this library to update dependencies on GitHub Enterprise,
-  GitLab or Azure DevOps
+- The [dependabot-script][dependabot-script] repo, which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab or Azure DevOps
 - The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
 
 ## Setup
 
-To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
-Elm, and Rust installed. However, if you just wish to run it for a single
-language you can get away with just having that language and Ruby.
+To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go, Elm, and Rust installed.
+However, if you just wish to run it for a single language you can get away with just having that language and Ruby.
 
-The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
-Elixir, Go, and Rust are required for dealing with updates for their respective
-languages.
+The main library is written in Ruby, while JavaScript, Python, PHP, Elm, Elixir, Go, and Rust are required for dealing with updates for their respective languages.
 
 To install the helpers for each language:
 
@@ -61,31 +59,26 @@ To install the helpers for each language:
 
 ## Local development
 
-Run the tests by running `rspec spec` inside each of the packages. Style is
-enforced by RuboCop. To check for style violations, simply run `rubocop` in
-each of the packages.
+Run the tests by running `rspec spec` inside each of the packages.
+Style is enforced by RuboCop.
+To check for style violations, simply run `rubocop` in each of the packages.
 
 ### Running with Docker
 
-While you can run Dependabot Core without Docker, we also provide a development
-Dockerfile. In most cases, you'll be better off running Dependabot in the
-development Docker container as it bakes in all required dependencies.
+While you can run Dependabot Core without Docker, we also provide a development Dockerfile.
+In most cases, you'll be better off running Dependabot in the development Docker container as it bakes in all required dependencies.
 
-Start by building the initial Dependabot Core image, or pull it from the
-Docker registry.
+Start by building the initial Dependabot Core image, or pull it from the Docker registry.
 
 ```shell
 $ docker pull dependabot/dependabot-core # OR
 $ docker build -f Dockerfile -t dependabot/dependabot-core . # This may take a while
 ```
 
-Once you have the base Docker image, you can build and run the development
-container using the `docker-dev-shell` script. The script will automatically
-build the container if it's not present and can be forced to rebuild with the
-`--rebuild` flag. The image includes all dependencies, and the script runs the
-image, mounting the local copy of Dependabot Core so changes made locally will
-be reflected inside the container. This means you can continue to use your
-editor of choice while running the tests inside the container.
+Once you have the base Docker image, you can build and run the development container using the `docker-dev-shell` script.
+The script will automatically build the container if it's not present and can be forced to rebuild with the `--rebuild` flag.
+The image includes all dependencies, and the script runs the image, mounting the local copy of Dependabot Core so changes made locally will be reflected inside the container.
+This means you can continue to use your editor of choice while running the tests inside the container.
 
 ```shell
 $ bin/docker-dev-shell
@@ -96,13 +89,10 @@ $ bin/docker-dev-shell
 
 ### Dry run script
 
-*Note: you must have run `bundle install` in the `omnibus` directory before
-running this script.*
+*Note: you must have run `bundle install` in the `omnibus` directory before running this script.*
 
-You can use the "dry-run" script to simulate a dependency update job, printing
-the diff that would be generated to the terminal. It takes two positional
-arguments: the package manager and the GitHub repo name (including the
-account):
+You can use the "dry-run" script to simulate a dependency update job, printing the diff that would be generated to the terminal.
+It takes two positional arguments: the package manager and the GitHub repo name (including the account):
 
 ```bash
 $ cd omnibus && bundle install && cd -
@@ -115,14 +105,11 @@ $ bin/dry-run.rb go_modules rsc/quote
 
 ## Debugging with Visual Studio Code and Docker
 
-There's built-in support for leveraging Visual Studio Code's [ability for
-debugging](https://code.visualstudio.com/docs/remote/containers) inside a Docker container.
-After installing the recommended [`Remote - Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
-simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Remote-Containers: Reopen in Container`.
+There's built-in support for leveraging Visual Studio Code's [ability for debugging](https://code.visualstudio.com/docs/remote/containers) inside a Docker container.
+After installing the recommended [`Remote - Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers), simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Remote-Containers: Reopen in Container`.
 You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
 If the development Docker image isn't present on your machine, it will be built automatically.
-Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted
-to select a package manager and a repository to perform a dry run on.
+Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
 
 ## Releasing
@@ -136,23 +123,18 @@ Triggering the jobs that will push the new gems is done by following the steps b
 
 ## Architecture
 
-Dependabot Core is a collection of Ruby packages (gems), which contain the
-logic for updating dependencies in several languages.
+Dependabot Core is a collection of Ruby packages (gems), which contain the logic for updating dependencies in several languages.
 
 ### `dependabot-common`
 
-The `common` package contains all general-purpose/shared functionality. For
-instance, the code for creating pull requests via GitHub's API lives here, as
-does most of the logic for handling Git dependencies (as most languages support
-Git dependencies in one way or another). There are also base classes defined for
-each of the major concerns required to implement support for a language or
-package manager.
+The `common` package contains all general-purpose/shared functionality.
+For instance, the code for creating pull requests via GitHub's API lives here, as does most of the logic for handling Git dependencies (as most languages support Git dependencies in one way or another).
+There are also base classes defined for each of the major concerns required to implement support for a language or package manager.
 
 ### `dependabot-{package-manager}`
 
-There is a gem for each package manager or language that Dependabot
-supports. At a minimum, each of these gems will implement the following
-classes:
+There is a gem for each package manager or language that Dependabot supports.
+At a minimum, each of these gems will implement the following classes:
 
 | Service          | Description                                                                                   |
 |------------------|-----------------------------------------------------------------------------------------------|
@@ -172,47 +154,33 @@ The high-level flow looks like this:
 
 ### `dependabot-omnibus`
 
-This is a "meta" gem, that simply depends on all the others. If you want to
-automatically include support for all languages, you can just include this gem
-and you'll get all you need.
+This is a "meta" gem, that simply depends on all the others.
+If you want to automatically include support for all languages, you can just include this gem and you'll get all you need.
 
 ## Why is this public?
 
-As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
-app is pretty much just a UI and database). If we were paranoid about someone
-stealing our business then we'd be keeping it under lock and key.
+As the name suggests, Dependabot Core is the core of Dependabot (the rest of the app is pretty much just a UI and database).
+If we were paranoid about someone stealing our business then we'd be keeping it under lock and key.
 
-Dependabot Core is public because we're more interested in it having an
-impact than we are in making a buck from it. We'd love you to use
-[Dependabot][dependabot] so that we can continue to develop it, but if you want
-to build and host your own version then this library should make doing so a
-*lot* easier.
+Dependabot Core is public because we're more interested in it having an impact than we are in making a buck from it.
+We'd love you to use [Dependabot][dependabot] so that we can continue to develop it, but if you want to build and host your own version then this library should make doing so a *lot* easier.
 
 If you use Dependabot Core then we'd love to hear what you build!
 
 ## License
 
-We use the License Zero Prosperity Public License, which essentially enshrines
-the following:
-- If you would like to use Dependabot Core in a non-commercial capacity, such as
-  to host a bot at your workplace, then we give you full permission to do so. In
-  fact, we'd love you to and will help and support you however we can.
-- If you would like to add Dependabot's functionality to your for-profit
-  company's offering then we DO NOT give you permission to use Dependabot Core
-  to do so. Please contact us directly to discuss a partnership or licensing
-  arrangement.
+We use the License Zero Prosperity Public License, which essentially enshrines the following:
+- If you would like to use Dependabot Core in a non-commercial capacity, such as to host a bot at your workplace, then we give you full permission to do so.
+  In fact, we'd love you to and will help and support you however we can.
+- If you would like to add Dependabot's functionality to your for-profit company's offering then we DO NOT give you permission to use Dependabot Core to do so. 
+  Please contact us directly to discuss a partnership or licensing arrangement.
 
-If you make a significant contribution to Dependabot Core then you will be asked
-to transfer the IP of that contribution to Dependabot Ltd so that it can be
-licensed in the same way as the above.
+If you make a significant contribution to Dependabot Core then you will be asked to transfer the IP of that contribution to Dependabot Ltd so that it can be licensed in the same way as the above.
 
 ## History
 
-Dependabot and Dependabot Core started life as [Bump][bump] and
-[Bump Core][bump-core], back when Harry and Grey were working at
-[GoCardless][gocardless]. We remain grateful for the help and support of
-GoCardless in helping make Dependabot possible - if you need to collect
-recurring payments from Europe, check them out.
+Dependabot and Dependabot Core started life as [Bump][bump] and [Bump Core][bump-core], back when Harry and Grey were working at [GoCardless][gocardless].
+We remain grateful for the help and support of GoCardless in helping make Dependabot possible - if you need to collect recurring payments from Europe, check them out.
 
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
