@@ -53,25 +53,51 @@ module Dependabot
         check_updated_files(updated_files)
 
         base_dir = updated_files.first.directory
-        Dir.chdir(repo_path) do
-          status = `git status --porcelain=v1`
-          paths = status.split("\n").map { |l| l.split(" ") }
-          paths.each do |type, path|
-            next if updated_files.any? { |f| f.name == path }
-
-            content = type == "D" ? nil : File.read(path)
-            updated_file = Dependabot::DependencyFile.new(
-              name: path,
-              content: content,
-              directory: base_dir
-            )
-            updated_files << updated_file
-          end
+        updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
         end
+
         updated_files
       end
 
       private
+
+      # Dynamically fetch the vendor cache folder from bundler
+      def vendor_cache_dir
+        return @vendor_cache_dir if defined?(@vendor_cache_dir)
+
+        @vendor_cache_dir =
+          SharedHelpers.in_a_forked_process do
+            # Set the path for path gemspec correctly
+            ::Bundler.instance_variable_set(:@root, repo_contents_path)
+            ::Bundler.app_cache
+          end
+      end
+
+      # Returns changed files in the vendor/cache folder
+      #
+      # @param base_directory [String] Update config base directory
+      # @return [Array<Dependabot::DependencyFile>]
+      def updated_vendor_cache_files(base_directory:)
+        return [] unless repo_contents_path && vendor_cache_dir
+
+        Dir.chdir(repo_contents_path) do
+          relative_dir = vendor_cache_dir.sub("#{repo_contents_path}/", "")
+          status = SharedHelpers.run_shell_command(
+            "git status --porcelain=v1 #{relative_dir}"
+          )
+          changed_paths = status.split("\n").map { |l| l.split(" ") }
+          changed_paths.map do |type, path|
+            content = type == "D" ? nil : File.read(path)
+
+            Dependabot::DependencyFile.new(
+              name: path,
+              content: content,
+              directory: base_directory
+            )
+          end
+        end
+      end
 
       def check_required_files
         file_names = dependency_files.map(&:name)
@@ -133,7 +159,7 @@ module Dependabot
           LockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
-            repo_path: repo_path,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           ).updated_lockfile_content
       end

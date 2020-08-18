@@ -29,18 +29,24 @@ module Dependabot
       end
     end
 
-    def self.in_a_temporary_directory(directory = "/", repo_path = nil)
-      if repo_path
-        path = Pathname.new(File.join(repo_path, directory)).expand_path
-        reset_git_repo(repo_path)
+    def self.in_a_temporary_repo_directory(directory = "/",
+                                           repo_contents_path = nil,
+                                           &block)
+      if repo_contents_path
+        path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+        reset_git_repo(repo_contents_path)
         Dir.chdir(path) { yield(path) }
       else
-        Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
-        Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
-          path = Pathname.new(File.join(dir, directory)).expand_path
-          FileUtils.mkpath(path)
-          Dir.chdir(path) { yield(path) }
-        end
+        in_a_temporary_directory(directory, &block)
+      end
+    end
+
+    def self.in_a_temporary_directory(directory = "/")
+      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
+      Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
+        path = Pathname.new(File.join(dir, directory)).expand_path
+        FileUtils.mkpath(path)
+        Dir.chdir(path) { yield(path) }
       end
     end
 
@@ -246,7 +252,7 @@ module Dependabot
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return if process.success?
+      return stdout if process.success?
 
       error_context = {
         command: command,

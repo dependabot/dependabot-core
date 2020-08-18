@@ -18,12 +18,12 @@ module Dependabot
         require_relative "shared_bundler_helpers"
         include SharedBundlerHelpers
 
-        def initialize(dependency:, dependency_files:, repo_path: nil,
+        def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
-          @repo_path           = repo_path
+          @repo_contents_path  = repo_contents_path
           @credentials         = credentials
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
@@ -40,8 +40,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :repo_path, :credentials,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency, :dependency_files, :repo_contents_path,
+                    :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
           if dependency_source.is_a?(::Bundler::Source::Git)

@@ -15,13 +15,13 @@ module Dependabot
   module Bundler
     class UpdateChecker
       class ForceUpdater
-        def initialize(dependency:, dependency_files:, repo_path: nil,
+        def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, target_version:,
                        requirements_update_strategy:,
                        update_multiple_dependencies: true)
           @dependency                   = dependency
           @dependency_files             = dependency_files
-          @repo_path                    = repo_path
+          @repo_contents_path           = repo_contents_path
           @credentials                  = credentials
           @target_version               = target_version
           @requirements_update_strategy = requirements_update_strategy
@@ -34,8 +34,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :repo_path, :credentials,
-                    :target_version, :requirements_update_strategy
+        attr_reader :dependency, :dependency_files, :repo_contents_path,
+                    :credentials, :target_version, :requirements_update_strategy
 
         def update_multiple_dependencies?
           @update_multiple_dependencies
@@ -76,7 +76,8 @@ module Dependabot
 
         def in_a_temporary_bundler_context
           base_directory = dependency_files.first.directory
-          SharedHelpers.in_a_temporary_directory(base_directory, repo_path) do
+          SharedHelpers.in_a_temporary_repo_directory(base_directory,
+                                                      repo_contents_path) do
             write_temporary_dependency_files
 
             SharedHelpers.in_a_forked_process do
