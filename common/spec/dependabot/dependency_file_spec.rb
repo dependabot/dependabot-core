@@ -76,7 +76,9 @@ RSpec.describe Dependabot::DependencyFile do
           "content" => "a",
           "directory" => "/",
           "type" => "file",
-          "support_file" => false
+          "support_file" => false,
+          "binary" => false,
+          "deleted" => false
         )
       end
     end
@@ -98,7 +100,9 @@ RSpec.describe Dependabot::DependencyFile do
           "directory" => "/",
           "type" => "symlink",
           "support_file" => false,
-          "symlink_target" => "nested/Gemfile"
+          "symlink_target" => "nested/Gemfile",
+          "binary" => false,
+          "deleted" => false
         )
       end
     end
