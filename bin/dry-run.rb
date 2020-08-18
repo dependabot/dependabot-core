@@ -482,8 +482,16 @@ dependencies.each do |dep|
   end
 
   updated_files.each do |updated_file|
-    original_file = $files.find { |f| f.name == updated_file.name }
-    show_diff(original_file, updated_file)
+    if updated_file.content.nil?
+      puts "deleted #{updated_file.name}"
+    else
+      original_file = $files.find { |f| f.name == updated_file.name }
+      if original_file
+        show_diff(original_file, updated_file)
+      else
+        puts "added #{updated_file.name}"
+      end
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength
