@@ -53,19 +53,31 @@ module Dependabot
         check_updated_files(updated_files)
 
         base_dir = updated_files.first.directory
-        Dir.chdir(repo_path) do
-          status = `git status --porcelain=v1`
-          paths = status.split("\n").map { |l| l.split(" ") }
-          paths.each do |type, path|
-            next if updated_files.any? { |f| f.name == path }
+        if repo_path
+          Dir.chdir(repo_path) do
+            app_cache_dir = SharedHelpers.in_a_forked_process do
+              # Set the path for path gemspec correctly
+              ::Bundler.instance_variable_set(:@root, repo_path)
+              ::Bundler.app_cache
+            end
+            app_cache_dir = app_cache_dir&.sub("#{repo_path}/", "")
 
-            content = type == "D" ? nil : File.read(path)
-            updated_file = Dependabot::DependencyFile.new(
-              name: path,
-              content: content,
-              directory: base_dir
-            )
-            updated_files << updated_file
+            status = `git status --porcelain=v1`
+            paths = status.split("\n").map { |l| l.split(" ") }
+            paths.each do |type, path|
+              if app_cache_dir && !path.start_with?(app_cache_dir.to_s)
+                next
+              end
+              next if updated_files.any? { |f| f.name == path }
+
+              content = type == "D" ? nil : File.read(path)
+              updated_file = Dependabot::DependencyFile.new(
+                name: path,
+                content: content,
+                directory: base_dir
+              )
+              updated_files << updated_file
+            end
           end
         end
         updated_files
