@@ -5,17 +5,22 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target, :binary, :deleted
+                  :symlink_target, :content_encoding, :deleted
+
+    class ContentEncoding
+      UTF_8 = "utf-8"
+      BASE64 = "base64"
+    end
 
     def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, symlink_target: nil, binary: false,
-                   deleted: false)
+                   support_file: false, symlink_target: nil,
+                   content_encoding: ContentEncoding::UTF_8, deleted: false)
       @name = name
       @content = content
       @directory = clean_directory(directory)
       @symlink_target = symlink_target
       @support_file = support_file
-      @binary = binary
+      @content_encoding = content_encoding
       @deleted = deleted
 
       # Type is used *very* sparingly. It lets the git_modules updater know that
@@ -38,7 +43,7 @@ module Dependabot
         "directory" => directory,
         "type" => type,
         "support_file" => support_file,
-        "binary" => binary,
+        "content_encoding" => content_encoding,
         "deleted" => deleted
       }
 
@@ -68,10 +73,6 @@ module Dependabot
 
     def support_file?
       @support_file
-    end
-
-    def binary?
-      @binary
     end
 
     def deleted?
