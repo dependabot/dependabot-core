@@ -88,17 +88,7 @@ module Dependabot
                 # Set flags and credentials
                 set_bundler_flags_and_credentials
 
-                dependencies_to_unlock = dependencies.map(&:name)
-                definition = build_definition(dependencies_to_unlock)
-
-                lockfile_content = generate_lockfile(
-                  dependencies_to_unlock,
-                  definition
-                )
-
-                cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
-
-                lockfile_content
+                generate_lockfile
               end
             end
           post_process_lockfile(lockfile_body)
@@ -139,30 +129,40 @@ module Dependabot
           end
         end
 
-        def generate_lockfile(dependencies_to_unlock, definition)
-          old_reqs = lock_deps_being_updated_to_exact_versions(definition)
+        # rubocop:disable Metrics/PerceivedComplexity
+        def generate_lockfile
+          dependencies_to_unlock = dependencies.map(&:name)
 
-          definition.resolve_remotely!
+          begin
+            definition = build_definition(dependencies_to_unlock)
 
-          old_reqs.each do |dep_name, old_req|
-            d_dep = definition.dependencies.find { |d| d.name == dep_name }
-            if old_req == :none then definition.dependencies.delete(d_dep)
-            else d_dep.instance_variable_set(:@requirement, old_req)
+            old_reqs = lock_deps_being_updated_to_exact_versions(definition)
+
+            definition.resolve_remotely!
+
+            old_reqs.each do |dep_name, old_req|
+              d_dep = definition.dependencies.find { |d| d.name == dep_name }
+              if old_req == :none then definition.dependencies.delete(d_dep)
+              else d_dep.instance_variable_set(:@requirement, old_req)
+              end
             end
+
+            cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
+
+            definition.to_lock
+          rescue ::Bundler::GemNotFound => e
+            unlock_yanked_gem(dependencies_to_unlock, e) && retry
+          rescue ::Bundler::VersionConflict => e
+            unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
+          rescue *RETRYABLE_ERRORS
+            raise if @retrying
+
+            @retrying = true
+            sleep(rand(1.0..5.0))
+            retry
           end
-
-          definition.to_lock
-        rescue ::Bundler::GemNotFound => e
-          unlock_yanked_gem(dependencies_to_unlock, e) && retry
-        rescue ::Bundler::VersionConflict => e
-          unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
-        rescue *RETRYABLE_ERRORS
-          raise if @retrying
-
-          @retrying = true
-          sleep(rand(1.0..5.0))
-          retry
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def cache_vendored_gems(definition)
           # Dependencies that have been unlocked for the update (including
