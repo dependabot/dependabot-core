@@ -52,12 +52,13 @@ module Dependabot
 
         check_updated_files(updated_files)
 
-        base_directory = updated_files.first.directory
         if repo_contents_path && vendor_cache_dir
+          base_directory = updated_files.first.directory
           updated_files.concat(
             updated_vendor_cache_files(base_directory: base_directory)
           )
         end
+
         updated_files
       end
 
@@ -75,14 +76,18 @@ module Dependabot
           end
       end
 
+      # Returns changed files in the vendor/cache folder
+      #
+      # @param base_directory [String] Update config base directory
+      # @return [Array<Dependabot::DependencyFile>]
       def updated_vendor_cache_files(base_directory:)
         Dir.chdir(repo_contents_path) do
           relative_dir = vendor_cache_dir.sub("#{repo_contents_path}/", "")
           status = SharedHelpers.run_shell_command(
             "git status --porcelain=v1 #{relative_dir}"
           )
-          paths = status.split("\n").map { |l| l.split(" ") }
-          paths.map do |type, path|
+          changed_paths = status.split("\n").map { |l| l.split(" ") }
+          changed_paths.map do |type, path|
             content = type == "D" ? nil : File.read(path)
 
             Dependabot::DependencyFile.new(

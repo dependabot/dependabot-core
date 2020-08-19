@@ -160,7 +160,8 @@ module Dependabot
         end
 
         def cache_vendored_gems(definition)
-          # Dependencies that have been unlocked for the update
+          # Dependencies that have been unlocked for the update (including
+          # sub-dependencies)
           unlocked_gems = definition.instance_variable_get(:@unlock).
             fetch(:gems)
           bundler_opts = {
@@ -169,11 +170,11 @@ module Dependabot
           }
 
           ::Bundler.settings.temporary(**bundler_opts) do
-            # Cache gems without pruning
+            # Fetch and cache gems on all platforms without pruning
             ::Bundler::Runtime.new(nil, definition).cache
 
-            # Only prune unlocked gems - original implementation is in
-            # Bundler::Runtime
+            # Only prune unlocked gems (the original implementation is in
+            # Bundler::Runtime)
             cache_path = ::Bundler.app_cache
             resolve = definition.resolve
             prune_gem_cache(resolve, cache_path, unlocked_gems)
