@@ -5,6 +5,7 @@ on:
       - "actions/**"
       - "wip/**"
       - "main"
+      - "hack-git-clone"
   pull_request:
     branches:
       - "**"
