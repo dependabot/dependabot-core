@@ -140,7 +140,7 @@ module Dependabot
       {
         connect_timeout: 5,
         write_timeout: 5,
-        read_timeout: 5,
+        read_timeout: 20,
         omit_default_port: true,
         middlewares: excon_middleware
       }
