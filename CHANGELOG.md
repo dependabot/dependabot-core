@@ -1,3 +1,13 @@
+## v0.118.13, 19 August 2020
+
+- Add deleted and content_encoding properties to dependency_file
+- Bump npm from 6.14.4 to 6.14.8 in /npm_and_yarn/helpers
+- Bump eslint from 7.6.0 to 7.7.0 in /npm_and_yarn/helpers
+- Bump jest from 26.2.2 to 26.4.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.34 to 0.12.37 in /composer/helpers
+- Add python 3.7.8
+- Test caching strategy from old circle config
+
 ## v0.118.12, 7 August 2020
 
 - docker: consistent indentation of Dockerfile (@localheinz)
