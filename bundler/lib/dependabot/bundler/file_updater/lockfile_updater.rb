@@ -91,7 +91,10 @@ module Dependabot
                 dependencies_to_unlock = dependencies.map(&:name)
                 definition = build_definition(dependencies_to_unlock)
 
-                lockfile_content = generate_lockfile(definition)
+                lockfile_content = generate_lockfile(
+                  dependencies_to_unlock,
+                  definition
+                )
 
                 cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
 
@@ -136,7 +139,7 @@ module Dependabot
           end
         end
 
-        def generate_lockfile(definition)
+        def generate_lockfile(dependencies_to_unlock, definition)
           old_reqs = lock_deps_being_updated_to_exact_versions(definition)
 
           definition.resolve_remotely!
