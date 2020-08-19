@@ -41,11 +41,11 @@ module Dependabot
           ]
         end
 
-        def initialize(dependencies:, dependency_files:, repo_path: nil,
-                       credentials:)
+        def initialize(dependencies:, dependency_files:,
+                       repo_contents_path: nil, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
-          @repo_path = repo_path
+          @repo_contents_path = repo_contents_path
           @credentials = credentials
         end
 
@@ -64,13 +64,14 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_path, :credentials
+        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
           lockfile_body =
             SharedHelpers.
-              in_a_temporary_directory(base_dir, repo_path) do |tmp_dir|
+              in_a_temporary_repo_directory(base_dir,
+                                            repo_contents_path) do |tmp_dir|
                 write_temporary_dependency_files
 
                 SharedHelpers.in_a_forked_process do
@@ -142,26 +143,7 @@ module Dependabot
               end
             end
 
-            if ::Bundler.app_cache.exist?
-              # Dependencies that have been unlocked for the update
-              unlocked_gems = definition.instance_variable_get(:@unlock).
-                fetch(:gems)
-              bundler_opts = {
-                cache_all_platforms: true,
-                no_prune: true,
-              }
-              ::Bundler.settings.temporary(**bundler_opts) do
-                # Cache gems without pruning
-                ::Bundler::Runtime.new(nil, definition).cache
-
-                # Only prune unlocked gems - original implementation is in
-                # Bundler::Runtime
-                cache_path = ::Bundler.app_cache
-                resolve = definition.resolve
-                prune_gem_cache(resolve, cache_path, unlocked_gems)
-                prune_git_and_path_cache(resolve, cache_path)
-              end
-            end
+            cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
 
             definition.to_lock
           rescue ::Bundler::GemNotFound => e
@@ -177,12 +159,34 @@ module Dependabot
           end
         end
 
+        def cache_vendored_gems(definition)
+          # Dependencies that have been unlocked for the update
+          unlocked_gems = definition.instance_variable_get(:@unlock).
+            fetch(:gems)
+          bundler_opts = {
+            cache_all_platforms: true,
+            no_prune: true,
+          }
+
+          ::Bundler.settings.temporary(**bundler_opts) do
+            # Cache gems without pruning
+            ::Bundler::Runtime.new(nil, definition).cache
+
+            # Only prune unlocked gems - original implementation is in
+            # Bundler::Runtime
+            cache_path = ::Bundler.app_cache
+            resolve = definition.resolve
+            prune_gem_cache(resolve, cache_path, unlocked_gems)
+            prune_git_and_path_cache(resolve, cache_path)
+          end
+        end
+
         # Copied from Bundler::Runtime: Modified to only prune gems that have
         # been unlocked
         def prune_gem_cache(resolve, cache_path, unlocked_gems)
-          cached = Dir["#{cache_path}/*.gem"]
+          cached_gems = Dir["#{cache_path}/*.gem"]
 
-          cached = cached.delete_if do |path|
+          outdated_gems = cached_gems.reject do |path|
             spec = ::Bundler.rubygems.spec_from_gem path
 
             !unlocked_gems.include?(spec.name) || resolve.any? do |s|
@@ -191,12 +195,11 @@ module Dependabot
             end
           end
 
-          if cached.any?
-            ::Bundler.ui.info "Removing outdated .gem files from "\
-                              "#{::Bundler.settings.app_cache_path}"
+          if outdated_gems.any?
+            puts "Removing outdated .gem files from #{cache_path}"
 
-            cached.each do |path|
-              ::Bundler.ui.info "  * #{File.basename(path)}"
+            outdated_gems.each do |path|
+              puts "  * #{File.basename(path)}"
               File.delete(path)
             end
           end
@@ -204,25 +207,23 @@ module Dependabot
 
         # Copied from Bundler::Runtime
         def prune_git_and_path_cache(resolve, cache_path)
-          cached = Dir["#{cache_path}/*/.bundlecache"]
+          cached_git_and_path = Dir["#{cache_path}/*/.bundlecache"]
 
-          cached = cached.delete_if do |path|
+          outdated_git_and_path = cached_git_and_path.reject do |path|
             name = File.basename(File.dirname(path))
 
             resolve.any? do |s|
-              source = s.source
-              source.respond_to?(:app_cache_dirname) &&
-                source.app_cache_dirname == name
+              s.source.respond_to?(:app_cache_dirname) &&
+                s.source.app_cache_dirname == name
             end
           end
 
-          if cached.any?
-            ::Bundler.ui.info "Removing outdated git and path gems from "\
-                              "#{::Bundler.settings.app_cache_path}"
+          if outdated_git_and_path.any?
+            puts "Removing outdated git and path gems from #{cache_path}"
 
-            cached.each do |path|
+            outdated_git_and_path.each do |path|
               path = File.dirname(path)
-              ::Bundler.ui.info "  * #{File.basename(path)}"
+              puts "  * #{File.basename(path)}"
               FileUtils.rm_rf(path)
             end
           end

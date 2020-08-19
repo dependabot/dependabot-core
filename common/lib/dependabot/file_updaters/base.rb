@@ -3,17 +3,17 @@
 module Dependabot
   module FileUpdaters
     class Base
-      attr_reader :dependencies, :dependency_files, :repo_path, :credentials
+      attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
 
       def self.updated_files_regex
         raise NotImplementedError
       end
 
-      def initialize(dependencies:, dependency_files:, repo_path: nil,
+      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
                      credentials:)
         @dependencies = dependencies
         @dependency_files = dependency_files
-        @repo_path = repo_path
+        @repo_contents_path = repo_contents_path
         @credentials = credentials
 
         check_required_files

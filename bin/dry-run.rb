@@ -301,23 +301,24 @@ source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-$repo_path = nil
-$files = cached_dependency_files_read do
-  fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-            new(source: source, credentials: $options[:credentials])
+$repo_contents_path = nil
 
-  if $options[:clone]
-    $repo_path = fetcher.fetch_repo
-  end
-  fetcher.files
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
+  new(source: source, credentials: $options[:credentials])
+
+if $options[:clone]
+  $repo_contents_path = fetcher.clone_repo_contents
 end
 
+$files = cached_dependency_files_read do
+  fetcher.files
+end
 
 # Parse the dependency files
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
-  repo_path: $repo_path,
+  repo_contents_path: $repo_contents_path,
   source: source,
   credentials: $options[:credentials]
 )
@@ -335,7 +336,7 @@ def update_checker_for(dependency)
     dependency: dependency,
     dependency_files: $files,
     credentials: $options[:credentials],
-    repo_path: $repo_path,
+    repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
     security_advisories: security_advisories_for(dependency)
@@ -391,7 +392,7 @@ def file_updater_for(dependencies)
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
-    repo_path: $repo_path,
+    repo_contents_path: $repo_contents_path,
     credentials: $options[:credentials]
   )
 end

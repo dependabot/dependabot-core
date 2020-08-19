@@ -145,7 +145,7 @@ module Dependabot
             ForceUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
-              repo_path: repo_path,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               target_version: version,
               requirements_update_strategy: requirements_update_strategy,
@@ -166,7 +166,7 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               unprepared_dependency_files: dependency_files,
-              repo_path: repo_path,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
@@ -327,7 +327,7 @@ module Dependabot
           ForceUpdater.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            repo_path: repo_path,
+            repo_contents_path: repo_contents_path,
             credentials: credentials,
             target_version: latest_version,
             requirements_update_strategy: requirements_update_strategy
@@ -350,7 +350,7 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               unprepared_dependency_files: dependency_files,
-              repo_path: repo_path,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
@@ -373,7 +373,7 @@ module Dependabot
             LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: prepared_dependency_files,
-              repo_path: repo_path,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
