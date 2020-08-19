@@ -68,8 +68,9 @@ module Dependabot
       end
 
       # Returns the path to the cloned repo
-      def clone_repo_contents
-        @clone_repo_contents ||= _clone_repo_contents
+      def clone_repo_contents(target_directory: nil)
+        @clone_repo_contents ||=
+          _clone_repo_contents(target_directory: target_directory)
       end
 
       private
@@ -424,9 +425,9 @@ module Dependabot
           max_by(&:length)
       end
 
-      def _clone_repo_contents
+      def _clone_repo_contents(target_directory:)
         SharedHelpers.with_git_configured(credentials: credentials) do
-          path = File.join("tmp", source.repo)
+          path = target_directory || File.join("tmp", source.repo)
           return path if Dir.exist?(File.join(path, ".git"))
 
           FileUtils.mkdir_p(path)

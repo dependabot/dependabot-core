@@ -33,7 +33,8 @@ module Dependabot
                                            repo_contents_path = nil,
                                            &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+        path = Pathname.new(File.join(repo_contents_path, directory)).
+               expand_path
         reset_git_repo(repo_contents_path)
         Dir.chdir(path) { yield(path) }
       else
