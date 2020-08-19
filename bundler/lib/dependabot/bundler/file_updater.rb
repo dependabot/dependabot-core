@@ -52,11 +52,9 @@ module Dependabot
 
         check_updated_files(updated_files)
 
-        if repo_contents_path && vendor_cache_dir
-          base_directory = updated_files.first.directory
-          updated_files.concat(
-            updated_vendor_cache_files(base_directory: base_directory)
-          )
+        base_dir = updated_files.first.directory
+        updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
         end
 
         updated_files
@@ -81,6 +79,8 @@ module Dependabot
       # @param base_directory [String] Update config base directory
       # @return [Array<Dependabot::DependencyFile>]
       def updated_vendor_cache_files(base_directory:)
+        return [] unless repo_contents_path && vendor_cache_dir
+
         Dir.chdir(repo_contents_path) do
           relative_dir = vendor_cache_dir.sub("#{repo_contents_path}/", "")
           status = SharedHelpers.run_shell_command(

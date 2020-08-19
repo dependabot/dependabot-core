@@ -48,9 +48,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :unprepared_dependency_files, :repo_contents_path,
-                    :credentials, :ignored_versions, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency, :unprepared_dependency_files,
+                    :repo_contents_path, :credentials, :ignored_versions,
+                    :replacement_git_pin, :latest_allowable_version
 
         def remove_git_source?
           @remove_git_source

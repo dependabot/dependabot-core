@@ -13,6 +13,7 @@ require "dependabot/git_commit_checker"
 module Dependabot
   module Bundler
     class FileUpdater
+      # rubocop:disable Metrics/ClassLength
       class LockfileUpdater
         require_relative "gemfile_updater"
         require_relative "gemspec_updater"
@@ -64,29 +65,38 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependencies, :dependency_files, :repo_contents_path,
+                    :credentials
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
           lockfile_body =
-            SharedHelpers.
-              in_a_temporary_repo_directory(base_dir,
-                                            repo_contents_path) do |tmp_dir|
-                write_temporary_dependency_files
+            SharedHelpers.in_a_temporary_repo_directory(
+              base_dir,
+              repo_contents_path
+            ) do |tmp_dir|
+              write_temporary_dependency_files
 
-                SharedHelpers.in_a_forked_process do
-                  # Set the path for path gemspec correctly
-                  ::Bundler.instance_variable_set(:@root, tmp_dir)
+              SharedHelpers.in_a_forked_process do
+                # Set the path for path gemspec correctly
+                ::Bundler.instance_variable_set(:@root, tmp_dir)
 
-                  # Remove installed gems from the default Rubygems index
-                  ::Gem::Specification.all =
-                    ::Gem::Specification.send(:default_stubs, "*.gemspec")
+                # Remove installed gems from the default Rubygems index
+                ::Gem::Specification.all =
+                  ::Gem::Specification.send(:default_stubs, "*.gemspec")
 
-                  # Set flags and credentials
-                  set_bundler_flags_and_credentials
+                # Set flags and credentials
+                set_bundler_flags_and_credentials
 
-                  generate_lockfile
-                end
+                dependencies_to_unlock = dependencies.map(&:name)
+                definition = build_definition(dependencies_to_unlock)
+
+                lockfile_content = generate_lockfile(definition)
+
+                cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
+
+                lockfile_content
+              end
             end
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::ChildProcessFailed => e
@@ -126,47 +136,39 @@ module Dependabot
           end
         end
 
-        def generate_lockfile
-          dependencies_to_unlock = dependencies.map(&:name)
+        def generate_lockfile(definition)
+          old_reqs = lock_deps_being_updated_to_exact_versions(definition)
 
-          begin
-            definition = build_definition(dependencies_to_unlock)
+          definition.resolve_remotely!
 
-            old_reqs = lock_deps_being_updated_to_exact_versions(definition)
-
-            definition.resolve_remotely!
-
-            old_reqs.each do |dep_name, old_req|
-              d_dep = definition.dependencies.find { |d| d.name == dep_name }
-              if old_req == :none then definition.dependencies.delete(d_dep)
-              else d_dep.instance_variable_set(:@requirement, old_req)
-              end
+          old_reqs.each do |dep_name, old_req|
+            d_dep = definition.dependencies.find { |d| d.name == dep_name }
+            if old_req == :none then definition.dependencies.delete(d_dep)
+            else d_dep.instance_variable_set(:@requirement, old_req)
             end
-
-            cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
-
-            definition.to_lock
-          rescue ::Bundler::GemNotFound => e
-            unlock_yanked_gem(dependencies_to_unlock, e) && retry
-          rescue ::Bundler::VersionConflict => e
-            unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
-          rescue *RETRYABLE_ERRORS
-            raise if @retrying
-
-            @retrying = true
-            sleep(rand(1.0..5.0))
-            retry
           end
+
+          definition.to_lock
+        rescue ::Bundler::GemNotFound => e
+          unlock_yanked_gem(dependencies_to_unlock, e) && retry
+        rescue ::Bundler::VersionConflict => e
+          unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
+        rescue *RETRYABLE_ERRORS
+          raise if @retrying
+
+          @retrying = true
+          sleep(rand(1.0..5.0))
+          retry
         end
 
         def cache_vendored_gems(definition)
           # Dependencies that have been unlocked for the update (including
           # sub-dependencies)
           unlocked_gems = definition.instance_variable_get(:@unlock).
-            fetch(:gems)
+                          fetch(:gems)
           bundler_opts = {
             cache_all_platforms: true,
-            no_prune: true,
+            no_prune: true
           }
 
           ::Bundler.settings.temporary(**bundler_opts) do
@@ -196,13 +198,13 @@ module Dependabot
             end
           end
 
-          if outdated_gems.any?
-            puts "Removing outdated .gem files from #{cache_path}"
+          return unless outdated_gems.any?
 
-            outdated_gems.each do |path|
-              puts "  * #{File.basename(path)}"
-              File.delete(path)
-            end
+          puts "Removing outdated .gem files from #{cache_path}"
+
+          outdated_gems.each do |path|
+            puts "  * #{File.basename(path)}"
+            File.delete(path)
           end
         end
 
@@ -219,14 +221,14 @@ module Dependabot
             end
           end
 
-          if outdated_git_and_path.any?
-            puts "Removing outdated git and path gems from #{cache_path}"
+          return unless outdated_git_and_path.any?
 
-            outdated_git_and_path.each do |path|
-              path = File.dirname(path)
-              puts "  * #{File.basename(path)}"
-              FileUtils.rm_rf(path)
-            end
+          puts "Removing outdated git and path gems from #{cache_path}"
+
+          outdated_git_and_path.each do |path|
+            path = File.dirname(path)
+            puts "  * #{File.basename(path)}"
+            FileUtils.rm_rf(path)
           end
         end
 
@@ -530,6 +532,7 @@ module Dependabot
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

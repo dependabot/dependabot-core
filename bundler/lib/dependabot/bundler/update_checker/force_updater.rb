@@ -34,8 +34,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :repo_contents_path, :credentials,
-                    :target_version, :requirements_update_strategy
+        attr_reader :dependency, :dependency_files, :repo_contents_path,
+                    :credentials, :target_version, :requirements_update_strategy
 
         def update_multiple_dependencies?
           @update_multiple_dependencies
