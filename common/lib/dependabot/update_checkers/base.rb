@@ -7,8 +7,8 @@ require "dependabot/security_advisory"
 module Dependabot
   module UpdateCheckers
     class Base
-      attr_reader :dependency, :dependency_files, :repo_contents_path, :credentials,
-                  :ignored_versions, :raise_on_ignored,
+      attr_reader :dependency, :dependency_files, :repo_contents_path,
+                  :credentials, :ignored_versions, :raise_on_ignored,
                   :security_advisories, :requirements_update_strategy
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
