@@ -478,12 +478,19 @@ dependencies.each do |dep|
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
       FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
-      File.write(path, updated_file.content) if updated_file.content
+      if updated_file.content
+        base64 = Dependabot::DependencyFile::ContentEncoding::BASE64
+        content = updated_file.content
+        if updated_file.content_encoding == base64
+          content = Base64.decode64(content)
+        end
+        File.write(path, content)
+      end
     end
   end
 
   updated_files.each do |updated_file|
-    if updated_file.content.nil?
+    if updated_file.deleted?
       puts "deleted #{updated_file.name}"
     else
       original_file = $files.find { |f| f.name == updated_file.name }

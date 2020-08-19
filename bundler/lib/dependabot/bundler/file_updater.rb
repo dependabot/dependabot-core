@@ -88,12 +88,15 @@ module Dependabot
           )
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
-            content = type == "D" ? nil : File.read(path)
-
+            deleted = type == "D"
+            encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+            encoded_content = Base64.encode64(File.read(path)) unless deleted
             Dependabot::DependencyFile.new(
               name: path,
-              content: content,
-              directory: base_directory
+              content: encoded_content,
+              directory: base_directory,
+              deleted: deleted,
+              content_encoding: encoding
             )
           end
         end
