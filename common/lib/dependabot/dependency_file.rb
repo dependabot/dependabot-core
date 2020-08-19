@@ -79,6 +79,10 @@ module Dependabot
       @deleted
     end
 
+    def binary?
+      content_encoding == ContentEncoding::BASE64
+    end
+
     private
 
     def clean_directory(directory)
