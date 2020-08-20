@@ -2,7 +2,7 @@
 name: "\U0001F41B Bug report"
 about: Report a bug in Dependabot to help us fix it
 title: ''
-labels: bug
+labels: 'T: bug 🐞'
 assignees: ''
 
 ---
@@ -14,7 +14,7 @@ response times on issues will be slower than we'd like. -->
 
 <!-- The more information you can provide, the easier it will be to reproduce the issue and find a fix -->
 
-**Package manage/ecosystem**
+**Package manager/ecosystem**
 <!-- ruby:bundler, javascript, docker.. etc -->
 **Manifest contents prior to update**
 <!-- If applicable, link to package.json, Gemfile.. etc -->

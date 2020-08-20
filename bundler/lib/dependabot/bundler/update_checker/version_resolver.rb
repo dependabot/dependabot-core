@@ -25,6 +25,7 @@ module Dependabot
 
         def initialize(dependency:, unprepared_dependency_files:,
                        credentials:, ignored_versions:,
+                       raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
                        latest_allowable_version: nil)
@@ -32,6 +33,7 @@ module Dependabot
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
           @ignored_versions            = ignored_versions
+          @raise_on_ignored            = raise_on_ignored
           @replacement_git_pin         = replacement_git_pin
           @remove_git_source           = remove_git_source
           @unlock_requirement          = unlock_requirement
@@ -69,7 +71,6 @@ module Dependabot
             ).prepared_dependency_files
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
@@ -115,7 +116,6 @@ module Dependabot
           @gemspec_ruby_unlocked = true
           regenerate_dependency_files_without_ruby_lock && retry
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def circular_dependency_at_new_version?(error)
@@ -270,6 +270,7 @@ module Dependabot
               dependency_files: dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              raise_on_ignored: @raise_on_ignored,
               security_advisories: []
             ).latest_version_details
         end

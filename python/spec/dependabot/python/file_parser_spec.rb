@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:python_version_file) do
         Dependabot::DependencyFile.new(
           name: ".python-version",
-          content: "2.7.17\n"
+          content: "2.7.18\n"
         )
       end
 
@@ -68,16 +68,9 @@ RSpec.describe Dependabot::Python::FileParser do
     context "with jinja templates" do
       let(:requirements_fixture_name) { "jinja_requirements.txt" }
 
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
-        its(:name) { is_expected.to eq("psycopg2") }
-        its(:version) { is_expected.to eq("2.6.1") }
-      end
-
-      describe "the second dependency" do
-        subject(:dependency) { dependencies.last }
-        its(:name) { is_expected.to eq("gunicorn") }
-        its(:version) { is_expected.to eq("20.0.2") }
+      it "raises a Dependabot::DependencyFileNotEvaluatable error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
 
@@ -191,6 +184,42 @@ RSpec.describe Dependabot::Python::FileParser do
       it "raises a Dependabot::DependencyFileNotEvaluatable error" do
         expect { parser.parse }.
           to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "with tarball path dependencies" do
+      let(:files) { [pyproject, requirements, tarball_path_dependency] }
+      let(:requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: fixture("requirements", "tarball_path_dependency")
+        )
+      end
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "tarball_path_dependency.toml")
+        )
+      end
+      let(:tarball_path_dependency) do
+        Dependabot::DependencyFile.new(
+          name: "taxtea-0.6.0.tar.gz",
+          content: fixture("path_dependencies", "taxtea-0.6.0.tar.gz")
+        )
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) do
+          dependencies.find do |dep|
+            dep.name == "taxtea"
+          end
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("taxtea")
+          expect(dependency.version).to be_nil
+        end
       end
     end
 

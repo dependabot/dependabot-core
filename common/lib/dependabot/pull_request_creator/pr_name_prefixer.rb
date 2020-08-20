@@ -314,7 +314,7 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          reject { |c| c.fetch("author").fetch("email") == dependabot_email }.
+          reject { |c| azure_commit_author_email(c) == dependabot_email }.
           reject { |c| c.fetch("comment")&.start_with?("Merge") }.
           map { |c| c.fetch("comment") }.
           compact.
@@ -355,7 +355,7 @@ module Dependabot
       def recent_github_commits
         @recent_github_commits ||=
           github_client_for_source.commits(source.repo, per_page: 100)
-      rescue Octokit::Conflict
+      rescue Octokit::Conflict, Octokit::NotFound
         @recent_github_commits ||= []
       end
 
@@ -374,7 +374,7 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          find { |c| c.fetch("author").fetch("email") == dependabot_email }&.
+          find { |c| azure_commit_author_email(c) == dependabot_email }&.
           message&.
           strip
       end
@@ -387,6 +387,10 @@ module Dependabot
           find { |c| c.author.email == dependabot_email }&.
           message&.
           strip
+      end
+
+      def azure_commit_author_email(commit)
+        commit.fetch("author").fetch("email", "")
       end
 
       def github_client_for_source

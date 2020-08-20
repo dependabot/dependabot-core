@@ -1,6 +1,6 @@
 GIT
-  remote: https://github.com/gocardless/business
-  revision: c5bf1bd47935504072ac0eba1006cf4d67af6a7a
+  remote: https://github.com/dependabot-fixtures/dependabot-test-ruby-package
+  revision: 81073f9462f228c6894e3e384d0718def310d99f
   specs:
     business (1.0.0)
 
@@ -12,7 +12,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  business (~> 1.0.0)!
+  dependabot-test-ruby-package (~> 1.0.0)!
 
 BUNDLED WITH
    1.16.0.pre.2

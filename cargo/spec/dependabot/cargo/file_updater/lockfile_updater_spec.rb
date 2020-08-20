@@ -76,8 +76,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
 
       context "because an existing requirement is no good" do
-        let(:manifest_fixture_name) { "yanked_version" }
-        let(:lockfile_fixture_name) { "yanked_version" }
+        let(:manifest_fixture_name) { "missing_version" }
+        let(:lockfile_fixture_name) { "missing_version" }
 
         it "raises a helpful error" do
           expect { updater.updated_lockfile_content }.
@@ -334,6 +334,16 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content).to_not include(
             "bc2a4457b0c25dae6fee3dcd631ccded31e97d689b892c26554e096aa08dd136"
           )
+        end
+      end
+
+      context "when there is a linked dependency" do
+        let(:dependency_files) { [manifest, lockfile] }
+        let(:manifest_fixture_name) { "linked_dependency" }
+
+        it "updates the dependency version in the lockfile" do
+          expect(updated_lockfile_content).
+            to include(%(name = "time"\nversion = "0.1.40"))
         end
       end
 

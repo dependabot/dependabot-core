@@ -367,6 +367,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: [],
+            raise_on_ignored: false,
             target_version_details: {
               version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"
@@ -432,6 +433,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: [],
+            raise_on_ignored: false,
             target_version_details: {
               version: version_class.new("23.0"),
               source_url: "https://jcenter.bintray.com"
@@ -492,6 +494,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: [],
+            raise_on_ignored: false,
             target_version_details: {
               version: version_class.new("23.0"),
               source_url: "https://repo.maven.apache.org/maven2"

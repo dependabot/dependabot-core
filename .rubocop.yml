@@ -11,10 +11,28 @@ AllCops:
 Layout/DotPosition:
   EnforcedStyle: trailing
 
+Layout/EmptyLinesAroundAttributeAccessor:
+  Enabled: false
+
 Layout/LineLength:
   Max: 80
 
 Layout/RescueEnsureAlignment:
+  Enabled: false
+
+Layout/SpaceAroundMethodCallOperator:
+  Enabled: false
+
+Lint/DeprecatedOpenSSLConstant:
+  Enabled: false
+
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+
+Lint/RaiseException:
+  Enabled: false
+
+Lint/StructNewOverride:
   Enabled: false
 
 Metrics/ClassLength:
@@ -24,7 +42,7 @@ Metrics/ModuleLength:
   Max: 350
 
 Metrics/CyclomaticComplexity:
-  Max: 10
+  Max: 15
 
 Metrics/AbcSize:
   Max: 35
@@ -54,9 +72,60 @@ Style/SignalException:
 Style/Documentation:
   Enabled: false
 
+Style/HashEachMethods:
+  Enabled: false
+
+Style/HashTransformKeys:
+  Enabled: false
+
+Style/HashTransformValues:
+  Enabled: false
+
 Style/PercentLiteralDelimiters:
   PreferredDelimiters:
     '%i': ()
     '%I': ()
     '%w': ()
     '%W': ()
+
+Style/ExponentialNotation:
+  Enabled: false
+
+Style/RedundantRegexpCharacterClass:
+  Enabled: false
+
+Style/RedundantRegexpEscape:
+  Enabled: false
+
+Style/SlicingWithRange:
+  Enabled: false
+
+Style/RedundantFetchBlock:
+  Enabled: false
+
+Lint/DuplicateElsifCondition:
+  Enabled: false
+
+Style/AccessorGrouping:
+  Enabled: false
+
+Style/ArrayCoercion:
+  Enabled: false
+
+Style/BisectedAttrAccessor:
+  Enabled: false
+
+Style/CaseLikeIf:
+  Enabled: false
+
+Style/HashAsLastArrayItem:
+  Enabled: false
+
+Style/HashLikeCase:
+  Enabled: false
+
+Style/RedundantAssignment:
+  Enabled: false
+
+Style/RedundantFileExtensionInRequire:
+  Enabled: false

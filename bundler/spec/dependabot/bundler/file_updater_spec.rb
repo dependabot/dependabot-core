@@ -305,13 +305,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "which is blocked by another sub-dep" do
           let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
           let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
-          let(:dependency_name) { "activesupport" }
-          let(:dependency_version) { "5.2.0" }
-          let(:dependency_previous_version) { "5.0.0.1" }
+          let(:dependency_name) { "dummy-pkg-a" }
+          let(:dependency_version) { "1.1.0" }
+          let(:dependency_previous_version) { "1.0.1" }
 
           it "updates the lockfile correctly" do
-            expect(file.content).to include("activesupport (5.2.0)")
-            expect(file.content).to_not include("\n  activesupport (= 5.2.0)")
+            expect(file.content).to include("dummy-pkg-a (1.1.0)")
+            expect(file.content).to_not include("\n  dummy-pkg-a (= 1.1.0)")
           end
         end
       end
@@ -319,15 +319,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       context "when updating a dep blocked by a sub-dep" do
         let(:gemfile_fixture_name) { "blocked_by_subdep" }
         let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
-        let(:dependency_name) { "activesupport" }
-        let(:dependency_version) { "5.2.0" }
-        let(:dependency_previous_version) { "5.0.0.1" }
+        let(:dependency_name) { "dummy-pkg-a" }
+        let(:dependency_version) { "1.1.0" }
+        let(:dependency_previous_version) { "1.0.1" }
         let(:requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
         let(:previous_requirements) { requirements }
 
-        its(:content) { is_expected.to include("activesupport (5.2.0)") }
+        its(:content) { is_expected.to include("dummy-pkg-a (1.1.0)") }
       end
 
       context "when a gem has been yanked" do
@@ -363,7 +363,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include("business (1.13.0)")
+            expect(file.content).to include("business (1.18.0)")
             expect(file.content).to include("statesman (1.3.1)")
           end
         end
@@ -882,9 +882,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:lockfile_fixture_name) { "git_source_with_version.lock" }
             let(:dependency) do
               Dependabot::Dependency.new(
-                name: "business",
-                version: "71083639645603d3bc25f7f5b11c96f0d07bf252",
-                previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+                name: "dependabot-test-ruby-package",
+                version: "1c6331732c41e4557a16dacb82534f1d1c831848",
+                previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
                 requirements: requirements,
                 previous_requirements: previous_requirements,
                 package_manager: "bundler"
@@ -893,11 +893,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             let(:requirements) do
               [{
                 file: "Gemfile",
-                requirement: "~> 1.18.0",
+                requirement: "~> 1.0.1",
                 groups: [],
                 source: {
                   type: "git",
-                  url: "http://github.com/gocardless/business"
+                  url: "https://github.com/dependabot-fixtures/"\
+                  "dependabot-test-ruby-package"
                 }
               }]
             end
@@ -908,11 +909,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "http://github.com/gocardless/business"
+                  url: "https://github.com/dependabot-fixtures/"\
+                  "dependabot-test-ruby-package"
                 }
               }]
             end
-            its(:content) { is_expected.to include "business (~> 1.18.0)!" }
+            its(:content) do
+              is_expected.to include "dependabot-test-ruby-package (~> 1.0.1)!"
+            end
           end
         end
       end

@@ -218,11 +218,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
     context "with a gem that has a git source" do
       let(:gemfile_fixture_name) { "git_source_with_version" }
       let(:lockfile_fixture_name) { "git_source_with_version.lock" }
+      let(:dependency_name) { "dependabot-test-ruby-package" }
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "business",
-          version: "c170ea081c121c00ed6fe8764e3557e731454b9d",
-          previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+          name: "dependabot-test-ruby-package",
+          version: "1c6331732c41e4557a16dacb82534f1d1c831848",
+          previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
           requirements: requirements,
           previous_requirements: previous_requirements,
           package_manager: "bundler"
@@ -231,11 +232,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
       let(:requirements) do
         [{
           file: "Gemfile",
-          requirement: "~> 1.14.0",
+          requirement: "~> 1.1.0",
           groups: [],
           source: {
             type: "git",
-            url: "http://github.com/gocardless/business"
+            url: "http://github.com/dependabot-fixtures/"\
+            "dependabot-test-ruby-package"
           }
         }]
       end
@@ -246,34 +248,42 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
           groups: [],
           source: {
             type: "git",
-            url: "http://github.com/gocardless/business"
+            url: "http://github.com/dependabot-fixtures/"\
+            "dependabot-test-ruby-package"
           }
         }]
       end
 
-      it { is_expected.to include "\"business\", \"~> 1.14.0\", git" }
+      it do
+        is_expected.to include(
+          "\"dependabot-test-ruby-package\", \"~> 1.1.0\", git"
+        )
+      end
 
       context "that should have its tag updated" do
         let(:gemfile_body) do
-          %(gem "business", "~> 1.0.0", ) +
-            %(git: "https://github.com/gocardless/business", tag: "v1.0.0")
+          %(gem "dependabot-test-ruby-package", "~> 1.0.0", ) +
+            %(git: "https://github.com/dependabot-fixtures/\
+          dependabot-test-ruby-package", tag: "v1.0.0")
         end
         let(:requirements) do
           [{
             file: "Gemfile",
-            requirement: "~> 1.8.0",
+            requirement: "~> 1.1.0",
             groups: [],
             source: {
               type: "git",
-              url: "http://github.com/gocardless/business",
-              ref: "v1.8.0"
+              url: "http://github.com/dependabot-fixtures/"\
+              "dependabot-test-ruby-package",
+              ref: "v1.1.0"
             }
           }]
         end
 
         let(:expected_string) do
-          %(gem "business", "~> 1.8.0", ) +
-            %(git: "https://github.com/gocardless/business", tag: "v1.8.0")
+          %(gem "dependabot-test-ruby-package", "~> 1.1.0", ) +
+            %(git: "https://github.com/dependabot-fixtures/\
+          dependabot-test-ruby-package", tag: "v1.1.0")
         end
 
         it { is_expected.to eq(expected_string) }
@@ -282,9 +292,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
       context "that should be removed" do
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "business",
-            version: "1.8.0",
-            previous_version: "c5bf1bd47935504072ac0eba1006cf4d67af6a7a",
+            name: "dependabot-test-ruby-package",
+            version: "1.1.0",
+            previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
             requirements: requirements,
             previous_requirements: previous_requirements,
             package_manager: "bundler"
@@ -293,65 +303,90 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
         let(:requirements) do
           [{
             file: "Gemfile",
-            requirement: "~> 1.8.0",
+            requirement: "~> 1.1.0",
             groups: [],
             source: nil
           }]
         end
 
-        it { is_expected.to include "\"business\", \"~> 1.8.0\"\n" }
+        it do
+          is_expected.to include(
+            "\"dependabot-test-ruby-package\", \"~> 1.1.0\""
+          )
+        end
 
         context "with a tag (i.e., multiple git-related arguments)" do
           let(:gemfile_body) do
-            %(gem "business", git: "git_url", tag: "old_tag")
+            %(gem "dependabot-test-ruby-package",) +
+              %(git: "git_url", tag: "old_tag")
           end
-          it { is_expected.to eq(%(gem "business")) }
+          it { is_expected.to eq(%(gem "dependabot-test-ruby-package")) }
         end
 
         context "with non-git args at the start" do
           let(:gemfile_body) do
-            %(gem "business", "1.0.0", require: false, git: "git_url")
+            %(gem "dependabot-test-ruby-package", "1.0.0", ) +
+              %(require: false, git: "git_url")
           end
           it do
-            is_expected.to eq(%(gem "business", "~> 1.8.0", require: false))
+            is_expected.to eq(
+              %(gem "dependabot-test-ruby-package", "~> 1.1.0", require: false)
+            )
           end
         end
 
         context "with non-git args at the end" do
           let(:gemfile_body) do
-            %(gem "business", "1.0.0", git: "git_url", require: false)
+            %(gem "dependabot-test-ruby-package", "1.0.0", ) +
+              %(git: "git_url", require: false)
           end
           it do
-            is_expected.to eq(%(gem "business", "~> 1.8.0", require: false))
+            is_expected.to eq(
+              %(gem "dependabot-test-ruby-package", "~> 1.1.0", require: false)
+            )
           end
         end
 
         context "with non-git args on a subsequent line" do
           let(:gemfile_body) do
-            %(gem("business", "1.0.0", git: "git_url",\nrequire: false))
+            %{gem("dependabot-test-ruby-package", "1.0.0", } +
+              %{git: "git_url",\nrequire: false)}
           end
           it do
-            is_expected.to eq(%(gem("business", "~> 1.8.0", require: false)))
+            is_expected.to eq(
+              %(gem("dependabot-test-ruby-package", "~> 1.1.0", require: false))
+            )
           end
         end
 
         context "with git args on a subsequent line" do
           let(:gemfile_body) do
-            %(gem "business", '1.0.0', require: false,\ngit: "git_url")
+            %(gem "dependabot-test-ruby-package", '1.0.0', ) +
+              %(require: false,\ngit: "git_url")
           end
           it do
-            is_expected.to eq(%(gem "business", '~> 1.8.0', require: false))
+            is_expected.to eq(
+              %(gem "dependabot-test-ruby-package", '~> 1.1.0', require: false)
+            )
           end
         end
 
         context "with a custom arg" do
-          let(:gemfile_body) { %(gem "business", "1.0.0", github: "git_url") }
-          it { is_expected.to eq(%(gem "business", "~> 1.8.0")) }
+          let(:gemfile_body) do
+            %(gem "dependabot-test-ruby-package", "1.0.0", github: "git_url")
+          end
+          it do
+            is_expected.to eq(%(gem "dependabot-test-ruby-package", "~> 1.1.0"))
+          end
         end
 
         context "with a comment" do
-          let(:gemfile_body) { %(gem "business", git: "git_url" # My gem) }
-          it { is_expected.to eq(%(gem "business" # My gem)) }
+          let(:gemfile_body) do
+            %(gem "dependabot-test-ruby-package", git: "git_url" # My gem)
+          end
+          it do
+            is_expected.to eq(%(gem "dependabot-test-ruby-package" # My gem))
+          end
         end
       end
     end

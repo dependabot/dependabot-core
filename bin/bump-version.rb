@@ -49,7 +49,7 @@ puts "commit, tag, and push the release:"
 puts
 puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
 puts "git commit -m 'v#{new_version}'"
-puts "git push origin master"
+puts "git push origin main"
 puts "git tag 'v#{new_version}'"
-puts "git push --tags origin master"
+puts "git push --tags origin main"
 puts

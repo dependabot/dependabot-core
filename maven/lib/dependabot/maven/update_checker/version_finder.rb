@@ -13,12 +13,16 @@ module Dependabot
       class VersionFinder
         TYPE_SUFFICES = %w(jre android java).freeze
 
+        MAVEN_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, security_advisories:,
+                       raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = []
         end
@@ -40,8 +44,8 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
           possible_versions.find { |v| released?(v.fetch(:version)) }
@@ -89,16 +93,26 @@ module Dependabot
         end
 
         def filter_ignored_versions(possible_versions)
-          versions_array = possible_versions
+          filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Maven::Requirement.new(req.split(","))
-            versions_array =
-              versions_array.
+            ignore_req = Maven::Requirement.new(parse_requirement_string(req))
+            filtered =
+              filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          versions_array
+          if @raise_on_ignored && filtered.empty? && possible_versions.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
+        end
+
+        def parse_requirement_string(string)
+          return string if string.match?(MAVEN_RANGE_REGEX)
+
+          string.split(",").map(&:strip)
         end
 
         def filter_vulnerable_versions(possible_versions)
@@ -167,6 +181,7 @@ module Dependabot
                 **Dependabot::SharedHelpers.excon_defaults
               )
               check_response(response, repository_details.fetch("url"))
+
               Nokogiri::XML(response.body)
             rescue URI::InvalidURIError
               Nokogiri::XML("")
@@ -242,7 +257,7 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id = dependency.name.split(":")
+          group_id, artifact_id, _classifier = dependency.name.split(":")
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
@@ -251,15 +266,16 @@ module Dependabot
         end
 
         def dependency_files_url(repository_url, version)
-          group_id, artifact_id = dependency.name.split(":")
+          group_id, artifact_id, classifier = dependency.name.split(":")
           type = dependency.requirements.first.
                  dig(:metadata, :packaging_type)
 
+          actual_classifier = classifier.nil? ? "" : "-#{classifier}"
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
           "#{artifact_id}/"\
           "#{version}/"\
-          "#{artifact_id}-#{version}.#{type}"
+          "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 
         def version_class

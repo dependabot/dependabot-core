@@ -17,6 +17,7 @@ Gem::Specification.new do |spec|
   spec.homepage     = common_gemspec.homepage
   spec.license      = common_gemspec.license
 
+  spec.required_ruby_version = ">= 2.5.0"
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
@@ -28,8 +29,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-dep", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
-  spec.add_dependency "dependabot-git_submodules", Dependabot::VERSION
   spec.add_dependency "dependabot-github_actions", Dependabot::VERSION
+  spec.add_dependency "dependabot-git_submodules", Dependabot::VERSION
   spec.add_dependency "dependabot-go_modules", Dependabot::VERSION
   spec.add_dependency "dependabot-gradle", Dependabot::VERSION
   spec.add_dependency "dependabot-hex", Dependabot::VERSION

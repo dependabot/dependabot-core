@@ -21,11 +21,13 @@ module Dependabot
       )$
     /ix.freeze
 
-    def initialize(dependency:, credentials:, ignored_versions: [],
+    def initialize(dependency:, credentials:,
+                   ignored_versions: [], raise_on_ignored: false,
                    requirement_class: nil, version_class: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
+      @raise_on_ignored = raise_on_ignored
       @requirement_class = requirement_class
       @version_class = version_class
     end
@@ -85,15 +87,22 @@ module Dependabot
     end
 
     def local_tag_for_latest_version
-      tag =
+      tags =
         local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }.
-        reject { |t| tag_included_in_ignore_reqs?(t) }.
-        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
-        max_by do |t|
-          version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-          version_class.new(version)
-        end
+        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags.
+                 reject { |t| tag_included_in_ignore_reqs?(t) }
+      if @raise_on_ignored && tags.any? && filtered.empty?
+        raise Dependabot::AllVersionsIgnored
+      end
+
+      tag = filtered.
+            reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
+            max_by do |t|
+              version = t.name.match(VERSION_REGEX).named_captures.
+                        fetch("version")
+              version_class.new(version)
+            end
 
       return unless tag
 

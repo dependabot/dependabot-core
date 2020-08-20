@@ -1,4 +1,4 @@
 # frozen_string_literal: true
 source "https://rubygems.org"
 
-gem "business", "~> 1.0.0", git: "https://github.com/gocardless/business", ref: "b12c186"
+gem "dependabot-test-ruby-package", "~> 1.0.0", git: "https://github.com/dependabot-fixtures/dependabot-test-ruby-package"

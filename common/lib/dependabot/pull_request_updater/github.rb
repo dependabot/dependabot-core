@@ -124,14 +124,7 @@ module Dependabot
 
       def create_tree
         file_trees = files.map do |file|
-          if %w(file symlink).include?(file.type)
-            {
-              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob",
-              content: file.content
-            }
-          elsif file.type == "submodule"
+          if file.type == "submodule"
             {
               path: file.path.sub(%r{^/}, ""),
               mode: "160000",
@@ -139,7 +132,23 @@ module Dependabot
               sha: file.content
             }
           else
-            raise "Unknown file type #{file.type}"
+            content = if file.binary?
+                        sha = github_client_for_source.create_blob(
+                          source.repo, file.content, "base64"
+                        )
+                        { sha: sha }
+                      elsif file.deleted?
+                        { sha: nil }
+                      else
+                        { content: file.content }
+                      end
+
+            {
+              path: (file.symlink_target ||
+                     file.path).sub(%r{^/}, ""),
+              mode: "100644",
+              type: "blob"
+            }.merge(content)
           end
         end
 
@@ -162,8 +171,9 @@ module Dependabot
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
 
-        if e.message.match?(/force\-push to a protected/i) ||
-           e.message.match?(/not authorized to push/i)
+        if e.message.match?(/protected branch/i) ||
+           e.message.match?(/not authorized to push/i) ||
+           e.message.match?(/must not contain merge commits/)
           raise BranchProtected
         end
 

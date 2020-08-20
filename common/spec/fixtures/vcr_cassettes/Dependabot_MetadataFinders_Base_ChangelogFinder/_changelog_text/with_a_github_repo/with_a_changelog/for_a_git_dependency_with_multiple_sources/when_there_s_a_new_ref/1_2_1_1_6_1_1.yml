@@ -1,0 +1,149 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/actions/checkout/contents/
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 10 Jun 2020 13:11:00 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"8c3a736ebde044e68e88f6b489693a02fd74792d"
+      Last-Modified:
+      - Wed, 10 Jun 2020 03:31:39 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '59'
+      X-Ratelimit-Reset:
+      - '1591798260'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - E252:2C5A7:12C60A1:1693900:5EE0DBE4
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":".eslintignore","path":".eslintignore","sha":"6de9a76115d1983525536c96b7ba905e6b1d7467","size":25,"url":"https://api.github.com/repos/actions/checkout/contents/.eslintignore?ref=master","html_url":"https://github.com/actions/checkout/blob/master/.eslintignore","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/6de9a76115d1983525536c96b7ba905e6b1d7467","download_url":"https://raw.githubusercontent.com/actions/checkout/master/.eslintignore","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.eslintignore?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/6de9a76115d1983525536c96b7ba905e6b1d7467","html":"https://github.com/actions/checkout/blob/master/.eslintignore"}},{"name":".eslintrc.json","path":".eslintrc.json","sha":"02c79de1a03806372f363ca2eeeed1c21d2bdda3","size":2540,"url":"https://api.github.com/repos/actions/checkout/contents/.eslintrc.json?ref=master","html_url":"https://github.com/actions/checkout/blob/master/.eslintrc.json","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/02c79de1a03806372f363ca2eeeed1c21d2bdda3","download_url":"https://raw.githubusercontent.com/actions/checkout/master/.eslintrc.json","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.eslintrc.json?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/02c79de1a03806372f363ca2eeeed1c21d2bdda3","html":"https://github.com/actions/checkout/blob/master/.eslintrc.json"}},{"name":".github","path":".github","sha":"444452e53f0a6b4d7e16c67d57962ca1674098b8","size":0,"url":"https://api.github.com/repos/actions/checkout/contents/.github?ref=master","html_url":"https://github.com/actions/checkout/tree/master/.github","git_url":"https://api.github.com/repos/actions/checkout/git/trees/444452e53f0a6b4d7e16c67d57962ca1674098b8","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.github?ref=master","git":"https://api.github.com/repos/actions/checkout/git/trees/444452e53f0a6b4d7e16c67d57962ca1674098b8","html":"https://github.com/actions/checkout/tree/master/.github"}},{"name":".gitignore","path":".gitignore","sha":"2f909c0f4aa78547fb740408001c23711d6b09bd","size":33,"url":"https://api.github.com/repos/actions/checkout/contents/.gitignore?ref=master","html_url":"https://github.com/actions/checkout/blob/master/.gitignore","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/2f909c0f4aa78547fb740408001c23711d6b09bd","download_url":"https://raw.githubusercontent.com/actions/checkout/master/.gitignore","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.gitignore?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/2f909c0f4aa78547fb740408001c23711d6b09bd","html":"https://github.com/actions/checkout/blob/master/.gitignore"}},{"name":".prettierignore","path":".prettierignore","sha":"2186947299cfa1b6f7cff87b03944518cfea920b","size":24,"url":"https://api.github.com/repos/actions/checkout/contents/.prettierignore?ref=master","html_url":"https://github.com/actions/checkout/blob/master/.prettierignore","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/2186947299cfa1b6f7cff87b03944518cfea920b","download_url":"https://raw.githubusercontent.com/actions/checkout/master/.prettierignore","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.prettierignore?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/2186947299cfa1b6f7cff87b03944518cfea920b","html":"https://github.com/actions/checkout/blob/master/.prettierignore"}},{"name":".prettierrc.json","path":".prettierrc.json","sha":"386485a7669de54ba6ac7c0de972aaf5f47c1d84","size":205,"url":"https://api.github.com/repos/actions/checkout/contents/.prettierrc.json?ref=master","html_url":"https://github.com/actions/checkout/blob/master/.prettierrc.json","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/386485a7669de54ba6ac7c0de972aaf5f47c1d84","download_url":"https://raw.githubusercontent.com/actions/checkout/master/.prettierrc.json","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/.prettierrc.json?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/386485a7669de54ba6ac7c0de972aaf5f47c1d84","html":"https://github.com/actions/checkout/blob/master/.prettierrc.json"}},{"name":"CHANGELOG.md","path":"CHANGELOG.md","sha":"d3d2627600e370c61bc619d29920231ae9056e47","size":2125,"url":"https://api.github.com/repos/actions/checkout/contents/CHANGELOG.md?ref=master","html_url":"https://github.com/actions/checkout/blob/master/CHANGELOG.md","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/d3d2627600e370c61bc619d29920231ae9056e47","download_url":"https://raw.githubusercontent.com/actions/checkout/master/CHANGELOG.md","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/CHANGELOG.md?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/d3d2627600e370c61bc619d29920231ae9056e47","html":"https://github.com/actions/checkout/blob/master/CHANGELOG.md"}},{"name":"LICENSE","path":"LICENSE","sha":"a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5","size":1097,"url":"https://api.github.com/repos/actions/checkout/contents/LICENSE?ref=master","html_url":"https://github.com/actions/checkout/blob/master/LICENSE","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5","download_url":"https://raw.githubusercontent.com/actions/checkout/master/LICENSE","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/LICENSE?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5","html":"https://github.com/actions/checkout/blob/master/LICENSE"}},{"name":"README.md","path":"README.md","sha":"9104f8b3b1dde9545e2d1098add32e1532394251","size":7045,"url":"https://api.github.com/repos/actions/checkout/contents/README.md?ref=master","html_url":"https://github.com/actions/checkout/blob/master/README.md","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/9104f8b3b1dde9545e2d1098add32e1532394251","download_url":"https://raw.githubusercontent.com/actions/checkout/master/README.md","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/README.md?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/9104f8b3b1dde9545e2d1098add32e1532394251","html":"https://github.com/actions/checkout/blob/master/README.md"}},{"name":"__test__","path":"__test__","sha":"dd7a9eaf201839c442045db93b1b16278b42556c","size":0,"url":"https://api.github.com/repos/actions/checkout/contents/__test__?ref=master","html_url":"https://github.com/actions/checkout/tree/master/__test__","git_url":"https://api.github.com/repos/actions/checkout/git/trees/dd7a9eaf201839c442045db93b1b16278b42556c","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/__test__?ref=master","git":"https://api.github.com/repos/actions/checkout/git/trees/dd7a9eaf201839c442045db93b1b16278b42556c","html":"https://github.com/actions/checkout/tree/master/__test__"}},{"name":"action.yml","path":"action.yml","sha":"58e11b7c0ad118ad41462c855938bdb771483d5d","size":3118,"url":"https://api.github.com/repos/actions/checkout/contents/action.yml?ref=master","html_url":"https://github.com/actions/checkout/blob/master/action.yml","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/58e11b7c0ad118ad41462c855938bdb771483d5d","download_url":"https://raw.githubusercontent.com/actions/checkout/master/action.yml","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/action.yml?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/58e11b7c0ad118ad41462c855938bdb771483d5d","html":"https://github.com/actions/checkout/blob/master/action.yml"}},{"name":"adrs","path":"adrs","sha":"75a4ca48dee3c1f35485f4b9d08e2c83635e40f8","size":0,"url":"https://api.github.com/repos/actions/checkout/contents/adrs?ref=master","html_url":"https://github.com/actions/checkout/tree/master/adrs","git_url":"https://api.github.com/repos/actions/checkout/git/trees/75a4ca48dee3c1f35485f4b9d08e2c83635e40f8","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/adrs?ref=master","git":"https://api.github.com/repos/actions/checkout/git/trees/75a4ca48dee3c1f35485f4b9d08e2c83635e40f8","html":"https://github.com/actions/checkout/tree/master/adrs"}},{"name":"dist","path":"dist","sha":"7b4b6fb1154e2f1b4042d9fc874ff85e4f92cef7","size":0,"url":"https://api.github.com/repos/actions/checkout/contents/dist?ref=master","html_url":"https://github.com/actions/checkout/tree/master/dist","git_url":"https://api.github.com/repos/actions/checkout/git/trees/7b4b6fb1154e2f1b4042d9fc874ff85e4f92cef7","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/dist?ref=master","git":"https://api.github.com/repos/actions/checkout/git/trees/7b4b6fb1154e2f1b4042d9fc874ff85e4f92cef7","html":"https://github.com/actions/checkout/tree/master/dist"}},{"name":"jest.config.js","path":"jest.config.js","sha":"563d4ccb83243b5db814d0d9a8bf160d0adf494a","size":235,"url":"https://api.github.com/repos/actions/checkout/contents/jest.config.js?ref=master","html_url":"https://github.com/actions/checkout/blob/master/jest.config.js","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/563d4ccb83243b5db814d0d9a8bf160d0adf494a","download_url":"https://raw.githubusercontent.com/actions/checkout/master/jest.config.js","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/jest.config.js?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/563d4ccb83243b5db814d0d9a8bf160d0adf494a","html":"https://github.com/actions/checkout/blob/master/jest.config.js"}},{"name":"package-lock.json","path":"package-lock.json","sha":"536022545fc5daa5c932ae9af0a3d497d1a7e9cf","size":262493,"url":"https://api.github.com/repos/actions/checkout/contents/package-lock.json?ref=master","html_url":"https://github.com/actions/checkout/blob/master/package-lock.json","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/536022545fc5daa5c932ae9af0a3d497d1a7e9cf","download_url":"https://raw.githubusercontent.com/actions/checkout/master/package-lock.json","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/package-lock.json?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/536022545fc5daa5c932ae9af0a3d497d1a7e9cf","html":"https://github.com/actions/checkout/blob/master/package-lock.json"}},{"name":"package.json","path":"package.json","sha":"f413218effe07ef566f0711a80b6d182f8af3073","size":1338,"url":"https://api.github.com/repos/actions/checkout/contents/package.json?ref=master","html_url":"https://github.com/actions/checkout/blob/master/package.json","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/f413218effe07ef566f0711a80b6d182f8af3073","download_url":"https://raw.githubusercontent.com/actions/checkout/master/package.json","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/package.json?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/f413218effe07ef566f0711a80b6d182f8af3073","html":"https://github.com/actions/checkout/blob/master/package.json"}},{"name":"src","path":"src","sha":"4973a3ae8994a473f7163244837c55fb68d1d8ec","size":0,"url":"https://api.github.com/repos/actions/checkout/contents/src?ref=master","html_url":"https://github.com/actions/checkout/tree/master/src","git_url":"https://api.github.com/repos/actions/checkout/git/trees/4973a3ae8994a473f7163244837c55fb68d1d8ec","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/src?ref=master","git":"https://api.github.com/repos/actions/checkout/git/trees/4973a3ae8994a473f7163244837c55fb68d1d8ec","html":"https://github.com/actions/checkout/tree/master/src"}},{"name":"tsconfig.json","path":"tsconfig.json","sha":"1f0f0044ea2509b683b4d69fd29a3b5613fd8aab","size":308,"url":"https://api.github.com/repos/actions/checkout/contents/tsconfig.json?ref=master","html_url":"https://github.com/actions/checkout/blob/master/tsconfig.json","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/1f0f0044ea2509b683b4d69fd29a3b5613fd8aab","download_url":"https://raw.githubusercontent.com/actions/checkout/master/tsconfig.json","type":"file","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/tsconfig.json?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/1f0f0044ea2509b683b4d69fd29a3b5613fd8aab","html":"https://github.com/actions/checkout/blob/master/tsconfig.json"}}]'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 13:11:00 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/actions/checkout/contents/CHANGELOG.md?ref=master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 10 Jun 2020 13:11:00 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"d3d2627600e370c61bc619d29920231ae9056e47"
+      Last-Modified:
+      - Sun, 31 May 2020 21:48:51 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '58'
+      X-Ratelimit-Reset:
+      - '1591798260'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - E253:4516D:13F063E:17D2480:5EE0DBE4
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"CHANGELOG.md","path":"CHANGELOG.md","sha":"d3d2627600e370c61bc619d29920231ae9056e47","size":2125,"url":"https://api.github.com/repos/actions/checkout/contents/CHANGELOG.md?ref=master","html_url":"https://github.com/actions/checkout/blob/master/CHANGELOG.md","git_url":"https://api.github.com/repos/actions/checkout/git/blobs/d3d2627600e370c61bc619d29920231ae9056e47","download_url":"https://raw.githubusercontent.com/actions/checkout/master/CHANGELOG.md","type":"file","content":"IyBDaGFuZ2Vsb2cKCiMjIHYyLjIuMAotIFtGZXRjaCBhbGwgaGlzdG9yeSBm\nb3IgYWxsIHRhZ3MgYW5kIGJyYW5jaGVzIHdoZW4gZmV0Y2gtZGVwdGg9MF0o\naHR0cHM6Ly9naXRodWIuY29tL2FjdGlvbnMvY2hlY2tvdXQvcHVsbC8yNTgp\nCgojIyB2Mi4xLjEKLSBDaGFuZ2VzIHRvIHN1cHBvcnQgR0hFUyAoW2hlcmVd\nKGh0dHBzOi8vZ2l0aHViLmNvbS9hY3Rpb25zL2NoZWNrb3V0L3B1bGwvMjM2\nKSBhbmQgW2hlcmVdKGh0dHBzOi8vZ2l0aHViLmNvbS9hY3Rpb25zL2NoZWNr\nb3V0L3B1bGwvMjQ4KSkKCiMjIHYyLjEuMAoKLSBbR3JvdXAgb3V0cHV0XSho\ndHRwczovL2dpdGh1Yi5jb20vYWN0aW9ucy9jaGVja291dC9wdWxsLzE5MSkK\nLSBbQ2hhbmdlcyB0byBzdXBwb3J0IEdIRVMgYWxwaGEgcmVsZWFzZV0oaHR0\ncHM6Ly9naXRodWIuY29tL2FjdGlvbnMvY2hlY2tvdXQvcHVsbC8xOTkpCi0g\nW1BlcnNpc3QgY29yZS5zc2hDb21tYW5kIGZvciBzdWJtb2R1bGVzXShodHRw\nczovL2dpdGh1Yi5jb20vYWN0aW9ucy9jaGVja291dC9wdWxsLzE4NCkKLSBb\nQWRkIHN1cHBvcnQgc3NoXShodHRwczovL2dpdGh1Yi5jb20vYWN0aW9ucy9j\naGVja291dC9wdWxsLzE2MykKLSBbQ29udmVydCBzdWJtb2R1bGUgU1NIIFVS\nTCB0byBIVFRQUywgd2hlbiBub3QgdXNpbmcgU1NIXShodHRwczovL2dpdGh1\nYi5jb20vYWN0aW9ucy9jaGVja291dC9wdWxsLzE3OSkKLSBbQWRkIHN1Ym1v\nZHVsZSBzdXBwb3J0XShodHRwczovL2dpdGh1Yi5jb20vYWN0aW9ucy9jaGVj\na291dC9wdWxsLzE1NykKLSBbRm9sbG93IHByb3h5IHNldHRpbmdzXShodHRw\nczovL2dpdGh1Yi5jb20vYWN0aW9ucy9jaGVja291dC9wdWxsLzE0NCkKLSBb\nRml4IHJlZiBmb3IgcHIgY2xvc2VkIGV2ZW50IHdoZW4gYSBwciBpcyBtZXJn\nZWRdKGh0dHBzOi8vZ2l0aHViLmNvbS9hY3Rpb25zL2NoZWNrb3V0L3B1bGwv\nMTQxKQotIFtGaXggaXNzdWUgY2hlY2tpbmcgZGV0YWNoZWQgd2hlbiBnaXQg\nbGVzcyB0aGFuIDIuMjJdKGh0dHBzOi8vZ2l0aHViLmNvbS9hY3Rpb25zL2No\nZWNrb3V0L3B1bGwvMTI4KQoKIyMgdjIuMC4wCgotIFtEbyBub3QgcGFzcyBj\ncmVkIG9uIGNvbW1hbmQgbGluZV0oaHR0cHM6Ly9naXRodWIuY29tL2FjdGlv\nbnMvY2hlY2tvdXQvcHVsbC8xMDgpCi0gW0FkZCBpbnB1dCBwZXJzaXN0LWNy\nZWRlbnRpYWxzXShodHRwczovL2dpdGh1Yi5jb20vYWN0aW9ucy9jaGVja291\ndC9wdWxsLzEwNykKLSBbRmFsbGJhY2sgdG8gUkVTVCBBUEkgdG8gZG93bmxv\nYWQgcmVwb10oaHR0cHM6Ly9naXRodWIuY29tL2FjdGlvbnMvY2hlY2tvdXQv\ncHVsbC8xMDQpCgojIyB2MiAoYmV0YSkKCi0gSW1wcm92ZWQgZmV0Y2ggcGVy\nZm9ybWFuY2UKICAtIFRoZSBkZWZhdWx0IGJlaGF2aW9yIG5vdyBmZXRjaGVz\nIG9ubHkgdGhlIFNIQSBiZWluZyBjaGVja2VkLW91dAotIFNjcmlwdCBhdXRo\nZW50aWNhdGVkIGdpdCBjb21tYW5kcwogIC0gUGVyc2lzdHMgYHdpdGgudG9r\nZW5gIGluIHRoZSBsb2NhbCBnaXQgY29uZmlnCiAgLSBFbmFibGVzIHlvdXIg\nc2NyaXB0cyB0byBydW4gYXV0aGVudGljYXRlZCBnaXQgY29tbWFuZHMKICAt\nIFBvc3Qtam9iIGNsZWFudXAgcmVtb3ZlcyB0aGUgdG9rZW4KICAtIENvbWlu\nZyBzb29uOiBPcHQgb3V0IGJ5IHNldHRpbmcgYHdpdGgucGVyc2lzdC1jcmVk\nZW50aWFsc2AgdG8gYGZhbHNlYAotIENyZWF0ZXMgYSBsb2NhbCBicmFuY2gK\nICAtIE5vIGxvbmdlciBkZXRhY2hlZCBIRUFEIHdoZW4gY2hlY2tpbmcgb3V0\nIGEgYnJhbmNoCiAgLSBBIGxvY2FsIGJyYW5jaCBpcyBjcmVhdGVkIHdpdGgg\ndGhlIGNvcnJlc3BvbmRpbmcgdXBzdHJlYW0gYnJhbmNoIHNldAotIEltcHJv\ndmVkIGxheW91dAogIC0gYHdpdGgucGF0aGAgaXMgYWx3YXlzIHJlbGF0aXZl\nIHRvIGBnaXRodWIud29ya3NwYWNlYAogIC0gQWxpZ25zIGJldHRlciB3aXRo\nIGNvbnRhaW5lciBhY3Rpb25zLCB3aGVyZSBgZ2l0aHViLndvcmtzcGFjZWAg\nZ2V0cyBtYXBwZWQgaW4KLSBSZW1vdmVkIGlucHV0IGBzdWJtb2R1bGVzYAoK\nCiMjIHYxCgpSZWZlciBbaGVyZV0oaHR0cHM6Ly9naXRodWIuY29tL2FjdGlv\nbnMvY2hlY2tvdXQvYmxvYi92MS9DSEFOR0VMT0cubWQpIGZvciB0aGUgVjEg\nY2hhbmdlbG9nCg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/actions/checkout/contents/CHANGELOG.md?ref=master","git":"https://api.github.com/repos/actions/checkout/git/blobs/d3d2627600e370c61bc619d29920231ae9056e47","html":"https://github.com/actions/checkout/blob/master/CHANGELOG.md"}}'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 13:11:00 GMT
+recorded_with: VCR 5.0.0

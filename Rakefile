@@ -37,24 +37,6 @@ def run_command(command)
   exit 1 unless system(command)
 end
 
-namespace :ci do
-  task :rubocop do
-    packages = changed_packages
-    puts "Running rubocop on: #{packages.join(', ')}"
-    packages.each do |package|
-      run_command("cd #{package} && bundle exec rubocop")
-    end
-  end
-
-  task :rspec do
-    packages = changed_packages
-    puts "Running rspec on: #{packages.join(', ')}"
-    packages.each do |package|
-      run_command("cd #{package} && bundle exec rspec spec")
-    end
-  end
-end
-
 # rubocop:disable Metrics/BlockLength
 namespace :gems do
   task build: :clean do

@@ -16,7 +16,11 @@ module Dependabot
         # To update indirect dependencies we'll need to promote the indirect
         # dependency to the go.mod file forcing the resolver to pick this
         # version (possibly as # indirect)
-        return dependency.version unless dependency.top_level?
+        unless dependency.top_level?
+          return unless dependency.version
+
+          return version_class.new(dependency.version)
+        end
 
         @latest_resolvable_version ||=
           version_class.new(find_latest_resolvable_version.gsub(/^v/, ""))
@@ -125,7 +129,8 @@ module Dependabot
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored
           )
       end
     end

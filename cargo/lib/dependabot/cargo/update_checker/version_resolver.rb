@@ -79,6 +79,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -107,7 +108,7 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
-
+        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_spec
@@ -169,7 +170,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_cargo_errors(error)
@@ -238,7 +238,6 @@ module Dependabot
           raise error
         end
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
 
@@ -336,6 +335,8 @@ module Dependabot
             File.write(file.name, sanitized_manifest_content(file.content))
 
             next if virtual_manifest?(file)
+
+            File.write(File.join(dir, "build.rs"), dummy_app_content)
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)

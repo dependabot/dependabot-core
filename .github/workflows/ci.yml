@@ -1,0 +1,103 @@
+name: CI
+on:
+  push:
+    branches:
+      - "actions/**"
+      - "wip/**"
+      - "main"
+  pull_request:
+    branches:
+      - "**"
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite:
+          - bundler
+          - cargo
+          - common
+          - composer
+          - dep
+          - docker
+          - elm
+          - git_submodules
+          - github_actions
+          - go_modules
+          - gradle
+          - hex
+          - maven
+          - npm_and_yarn
+          - nuget
+          - omnibus
+          - python
+          - terraform
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Prepare environment variables
+        run: |
+          echo ::set-env name=BRANCH_REF::"$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')"
+          echo ::set-env name=BASE_IMAGE::ubuntu:18.04
+          echo ::set-env name=CORE_IMAGE::dependabot/dependabot-core
+          echo ::set-env name=CORE_CI_IMAGE::dependabot/dependabot-core-ci
+      - name: Log in to Docker registry
+        run: |
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+            echo ::set-env name=DOCKER_LOGGED_IN::true
+          else
+            echo "No Docker credentials, skipping login"
+          fi
+      - name: Pull Docker base images & warm Docker cache
+        run: |
+          docker pull "$BASE_IMAGE"
+          docker pull "$CORE_CI_IMAGE:core--$BRANCH_REF" ||
+            docker pull "$CORE_IMAGE:latest"
+          docker pull "$CORE_CI_IMAGE:ci--$BRANCH_REF" ||
+            "$CORE_CI_IMAGE:latest" || true
+      - name: Build dependabot-core image
+        run: |
+          docker build \
+            -t "$CORE_IMAGE:latest" \
+            -t "$CORE_CI_IMAGE:core--$BRANCH_REF" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$CORE_CI_IMAGE:core--$BRANCH_REF" \
+            --cache-from "$CORE_IMAGE:latest" \
+            .
+      - name: Push dependabot-core image to Docker registry
+        if: env.DOCKER_LOGGED_IN == 'true'
+        run: |
+          docker push "$CORE_CI_IMAGE:core--$BRANCH_REF"
+      - name: Build dependabot-core-ci image
+        run: |
+          rm .dockerignore
+          docker build \
+            -t "$CORE_CI_IMAGE:latest" \
+            -t "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
+            -f Dockerfile.ci \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$CORE_CI_IMAGE:latest" \
+            --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
+            .
+      - name: Push dependabot-core-ci image to Docker registry
+        if: env.DOCKER_LOGGED_IN == 'true'
+        run: |
+          docker push "$CORE_CI_IMAGE:latest"
+          docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
+      - name: Run Rubocop linting
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
+      - name: Run js linting and tests
+        if: matrix.suite == 'npm_and_yarn'
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn lint"
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
+      - name: Run ${{ matrix.suite }} tests with rspec
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"

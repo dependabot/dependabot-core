@@ -8,17 +8,19 @@ module Dependabot
   module UpdateCheckers
     class Base
       attr_reader :dependency, :dependency_files, :credentials,
-                  :ignored_versions, :security_advisories,
-                  :requirements_update_strategy
+                  :ignored_versions, :raise_on_ignored,
+                  :security_advisories, :requirements_update_strategy
 
       def initialize(dependency:, dependency_files:, credentials:,
-                     ignored_versions: [], security_advisories: [],
+                     ignored_versions: [], raise_on_ignored: false,
+                     security_advisories: [],
                      requirements_update_strategy: nil)
         @dependency = dependency
         @dependency_files = dependency_files
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions
+        @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
       end
 

@@ -36,6 +36,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
 
@@ -53,6 +54,8 @@ module Dependabot
 
               next unless (locked_version = locked_details&.fetch("version"))
 
+              next if locked_details&.dig("source", "type") == "directory"
+
               if locked_details&.dig("source", "type") == "git"
                 poetry_object[key][dep_name] = {
                   "git" => locked_details&.dig("source", "url"),
@@ -69,6 +72,7 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         private
 

@@ -15,12 +15,16 @@ module Dependabot
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         TYPE_SUFFICES = %w(jre android java).freeze
 
+        GRADLE_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
+
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = []
         end
@@ -42,8 +46,8 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
           possible_versions.first
@@ -92,16 +96,20 @@ module Dependabot
         end
 
         def filter_ignored_versions(possible_versions)
-          versions_array = possible_versions
+          filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(req.split(","))
-            versions_array =
-              versions_array.
+            ignore_req = Gradle::Requirement.new(parse_requirement_string(req))
+            filtered =
+              filtered.
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          versions_array
+          if @raise_on_ignored && filtered.empty? && possible_versions.any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def filter_vulnerable_versions(possible_versions)
@@ -120,6 +128,12 @@ module Dependabot
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
+        end
+
+        def parse_requirement_string(string)
+          return string if string.match?(GRADLE_RANGE_REGEX)
+
+          string.split(",").map(&:strip)
         end
 
         def wants_prerelease?

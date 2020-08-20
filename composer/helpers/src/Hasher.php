@@ -6,7 +6,7 @@ namespace Dependabot\Composer;
 
 use Composer\Package\Locker;
 
-class Hasher
+final class Hasher
 {
     /**
      * @throws \RuntimeException

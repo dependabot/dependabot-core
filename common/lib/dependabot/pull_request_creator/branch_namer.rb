@@ -36,7 +36,7 @@ module Dependabot
 
             dep = dependencies.first
 
-            if library? && ref_changed?(dependencies.first)
+            if library? && ref_changed?(dep) && new_ref(dep)
               "#{dependency_name_part}-#{new_ref(dep)}"
             elsif library?
               "#{dependency_name_part}-#{sanitized_requirement(dep)}"
@@ -116,9 +116,14 @@ module Dependabot
           gsub(",", "-and-")
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def new_version(dependency)
+        # Version looks like a git SHA and we could be updating to a specific
+        # ref in which case we return that otherwise we return a shorthand sha
         if dependency.version.match?(/^[0-9a-f]{40}$/)
-          return new_ref(dependency) if ref_changed?(dependency)
+          if ref_changed?(dependency) && new_ref(dependency)
+            return new_ref(dependency)
+          end
 
           dependency.version[0..6]
         elsif dependency.version == dependency.previous_version &&
@@ -130,22 +135,25 @@ module Dependabot
           dependency.version
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def previous_ref(dependency)
-        dependency.previous_requirements.map do |r|
+        previous_refs = dependency.previous_requirements.map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.first
+        end.compact.uniq
+        return previous_refs.first if previous_refs.count == 1
       end
 
       def new_ref(dependency)
-        dependency.requirements.map do |r|
+        new_refs = dependency.requirements.map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.first
+        end.compact.uniq
+        return new_refs.first if new_refs.count == 1
       end
 
       def ref_changed?(dependency)
-        previous_ref(dependency) && new_ref(dependency) &&
-          previous_ref(dependency) != new_ref(dependency)
+        # We could go from multiple previous refs (nil) to a single new ref
+        previous_ref(dependency) != new_ref(dependency)
       end
 
       def new_library_requirement(dependency)
@@ -159,6 +167,9 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
+      # TODO: Look into bringing this in line with existing library checks that
+      # we do in the update checkers, which are also overriden by passing an
+      # explicit `requirements_update_strategy`.
       def library?
         return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
 

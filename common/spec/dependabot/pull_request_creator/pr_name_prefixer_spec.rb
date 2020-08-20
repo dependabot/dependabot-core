@@ -98,6 +98,15 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("") }
       end
 
+      context "that 404s when asked for commits" do
+        before do
+          stub_request(:get, watched_repo_url + "/commits?per_page=100").
+            to_return(status: 404, headers: json_header)
+        end
+
+        it { is_expected.to eq("") }
+      end
+
       context "from GitLab" do
         let(:source) do
           Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
@@ -107,6 +116,30 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
           "#{CGI.escape(source.repo)}/repository"
         end
         let(:commits_response) { fixture("gitlab", "commits.json") }
+        before do
+          stub_request(:get, watched_repo_url + "/commits").
+            to_return(
+              status: 200,
+              body: commits_response,
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq("") }
+      end
+
+      context "from Azure with no author email" do
+        let(:source) do
+          Dependabot::Source.new(provider: "azure",
+                                 repo: "org/gocardless/_git/bump")
+        end
+        let(:watched_repo_url) do
+          "https://dev.azure.com/org/gocardless/_apis/git/repositories/bump"
+        end
+
+        let(:commits_response) do
+          fixture("azure", "commits_no_author_email.json")
+        end
         before do
           stub_request(:get, watched_repo_url + "/commits").
             to_return(

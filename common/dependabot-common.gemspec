@@ -28,8 +28,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "cocoapods-core", "~> 1.9.1"
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.22.0"
   spec.add_dependency "docker_registry2", "~> 1.7", ">= 1.7.1"
-  spec.add_dependency "excon", "~> 0.66"
-  spec.add_dependency "gitlab", "4.14.1"
+  spec.add_dependency "excon", "~> 0.75"
+  spec.add_dependency "gitlab", "4.16.1"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", "~> 4.6"
   spec.add_dependency "pandoc-ruby", "~> 2.0"
@@ -42,9 +42,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
-  spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
-  spec.add_development_dependency "rubocop", "~> 0.82.0"
-  spec.add_development_dependency "vcr", "5.0"
+  spec.add_development_dependency "rubocop", "~> 0.88.0"
+  spec.add_development_dependency "vcr", "6.0.0"
   spec.add_development_dependency "webmock", "~> 3.4"
 
   next unless File.exist?("../.gitignore")
