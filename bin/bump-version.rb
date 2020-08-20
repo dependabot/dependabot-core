@@ -51,5 +51,5 @@ puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
 puts "git commit -m 'v#{new_version}'"
 puts "git push origin main"
 puts "git tag 'v#{new_version}'"
-puts "git push --tags origin main"
+puts "git push --follow-tags origin main"
 puts
