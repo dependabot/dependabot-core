@@ -1,8 +1,11 @@
 name: Release gems
 on:
   push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+    branches:
+      - hack-git-clone
+    # TOOD: restore
+    # tags:
+    #   - v[0-9]+.[0-9]+.[0-9]+
 
 jobs:
   release-gems:
