@@ -1,3 +1,7 @@
+## v0.118.15, 20 August 2020
+
+- Handle deleting binary files in the PR creator/updater
+
 ## v0.118.14, 20 August 2020
 
 - Support binary and deleted files in PR updater/creator
