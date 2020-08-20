@@ -17,6 +17,7 @@ jobs:
         suite:
           - bundler
           - cargo
+          - cocoapods
           - common
           - composer
           - dep
