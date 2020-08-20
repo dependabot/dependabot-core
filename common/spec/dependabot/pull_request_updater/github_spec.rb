@@ -81,6 +81,10 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       to_return(status: 200,
                 body: fixture("github", "update_ref.json"),
                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/git/blobs").
+      to_return(status: 200,
+                body: fixture("github", "create_blob.json"),
+                headers: json_header)
   end
 
   describe "#update" do
@@ -180,6 +184,83 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
                    mode: "100644",
                    type: "blob",
                    content: "codes"
+                 }]
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
+    context "with a binary file" do
+      let(:gem_content) do
+        Base64.encode64(fixture("ruby", "gems", "addressable-2.7.0.gem"))
+      end
+
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "addressable-2.7.0.gem",
+            directory: "vendor/cache",
+            content: gem_content,
+            content_encoding:
+              Dependabot::DependencyFile::ContentEncoding::BASE64
+          )
+        ]
+      end
+      let(:sha) { "3a0f86fb8db8eea7ccbb9a95f325ddbedfb25e15" }
+
+      it "creates a git blob and pushes a commit to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/blobs").
+          with(body: {
+                 content: gem_content,
+                 encoding: "base64"
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [{
+                   path: "vendor/cache/addressable-2.7.0.gem",
+                   mode: "100644",
+                   type: "blob",
+                   sha: sha
+                 }]
+               })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
+    context "with a deleted file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "addressable-2.7.0.gem",
+            directory: "vendor/cache",
+            content: nil,
+            deleted: true
+          )
+        ]
+      end
+
+      it "pushes a commit to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+                 base_tree: "basecommitsha",
+                 tree: [{
+                   path: "vendor/cache/addressable-2.7.0.gem",
+                   mode: "100644",
+                   type: "blob",
+                   sha: nil
                  }]
                })
 
