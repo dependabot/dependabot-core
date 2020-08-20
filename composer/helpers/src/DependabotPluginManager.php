@@ -7,7 +7,7 @@ namespace Dependabot\Composer;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginManager;
 
-class DependabotPluginManager extends PluginManager
+final class DependabotPluginManager extends PluginManager
 {
     public function registerPackage(PackageInterface $package, $failOnMissingClasses = false): void
     {

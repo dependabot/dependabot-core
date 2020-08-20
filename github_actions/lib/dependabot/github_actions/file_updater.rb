@@ -69,7 +69,7 @@ module Dependabot
           updated_content =
             updated_content.
             gsub(
-              /(?<=\W)#{Regexp.escape(old_declaration)}(?=\s|$)/,
+              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?=\s|"|'|$)/,
               new_declaration
             )
         end

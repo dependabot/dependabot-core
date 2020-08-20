@@ -8,7 +8,7 @@ use Composer\Factory;
 use Composer\Installer;
 use Composer\Package\PackageInterface;
 
-class UpdateChecker
+final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
@@ -65,8 +65,8 @@ class UpdateChecker
             ->setDryRun(true)
             ->setUpdate(true)
             ->setDevMode(true)
-            ->setUpdateWhitelist([$dependencyName])
-            ->setWhitelistTransitiveDependencies(true)
+            ->setUpdateAllowList([$dependencyName])
+            ->setAllowListTransitiveDependencies(true)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)

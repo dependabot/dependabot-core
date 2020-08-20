@@ -124,14 +124,7 @@ module Dependabot
 
       def create_tree
         file_trees = files.map do |file|
-          if %w(file symlink).include?(file.type)
-            {
-              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob",
-              content: file.content
-            }
-          elsif file.type == "submodule"
+          if file.type == "submodule"
             {
               path: file.path.sub(%r{^/}, ""),
               mode: "160000",
@@ -139,7 +132,23 @@ module Dependabot
               sha: file.content
             }
           else
-            raise "Unknown file type #{file.type}"
+            content = if file.deleted?
+                        { sha: nil }
+                      elsif file.binary?
+                        sha = github_client_for_source.create_blob(
+                          source.repo, file.content, "base64"
+                        )
+                        { sha: sha }
+                      else
+                        { content: file.content }
+                      end
+
+            {
+              path: (file.symlink_target ||
+                     file.path).sub(%r{^/}, ""),
+              mode: "100644",
+              type: "blob"
+            }.merge(content)
           end
         end
 

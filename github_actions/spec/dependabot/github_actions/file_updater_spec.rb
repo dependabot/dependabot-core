@@ -80,8 +80,21 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         updated_files.find { |f| f.name == ".github/workflows/workflow.yml" }
       end
 
-      its(:content) { is_expected.to include "actions/setup-node@v1.1.0\n" }
-      its(:content) { is_expected.to_not include "actions/setup-node@master" }
+      its(:content) do
+        is_expected.to include "\"actions/setup-node@v1.1.0\"\n"
+        is_expected.to_not include "\"actions/setup-node@master\""
+      end
+
+      its(:content) do
+        is_expected.to include "'actions/setup-node@v1.1.0'\n"
+        is_expected.to_not include "'actions/setup-node@master'"
+      end
+
+      its(:content) do
+        is_expected.to include "actions/setup-node@v1.1.0\n"
+        is_expected.to_not include "actions/setup-node@master"
+      end
+
       its(:content) { is_expected.to include "actions/checkout@master\n" }
 
       context "with a path" do
