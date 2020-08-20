@@ -1,3 +1,7 @@
+## v0.118.16, 20 August 2020
+
+- Add a optional repo_contents_path attribute to the file parser/fetcher/updater
+
 ## v0.118.15, 20 August 2020
 
 - Handle deleting binary files in the PR creator/updater
