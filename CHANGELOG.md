@@ -1,3 +1,7 @@
+## v0.118.14, 20 August 2020
+
+- Support binary and deleted files in PR updater/creator
+
 ## v0.118.13, 19 August 2020
 
 - Add deleted and content_encoding properties to dependency_file
