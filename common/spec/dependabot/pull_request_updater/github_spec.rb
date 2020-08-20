@@ -244,7 +244,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             name: "addressable-2.7.0.gem",
             directory: "vendor/cache",
             content: nil,
-            deleted: true
+            deleted: true,
+            content_encoding:
+              Dependabot::DependencyFile::ContentEncoding::BASE64
           )
         ]
       end
