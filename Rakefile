@@ -36,6 +36,8 @@ def run_command(command)
   exit 1 unless system(command)
 end
 
+<<<<<<< HEAD
+=======
 namespace :ci do
   task :rubocop do
     packages = changed_packages
@@ -54,6 +56,7 @@ namespace :ci do
   end
 end
 
+>>>>>>> 72cbcd4474c99cc7b16df1f8cb329d63ec53503f
 # rubocop:disable Metrics/BlockLength
 namespace :gems do
   task build: :clean do

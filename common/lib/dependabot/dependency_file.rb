@@ -5,15 +5,23 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target
+                  :symlink_target, :content_encoding, :deleted
+
+    class ContentEncoding
+      UTF_8 = "utf-8"
+      BASE64 = "base64"
+    end
 
     def initialize(name:, content:, directory: "/", type: "file",
-                   support_file: false, symlink_target: nil)
+                   support_file: false, symlink_target: nil,
+                   content_encoding: ContentEncoding::UTF_8, deleted: false)
       @name = name
       @content = content
       @directory = clean_directory(directory)
       @symlink_target = symlink_target
       @support_file = support_file
+      @content_encoding = content_encoding
+      @deleted = deleted
 
       # Type is used *very* sparingly. It lets the git_modules updater know that
       # a "file" is actually a submodule, and lets our Go updaters know which
@@ -34,7 +42,9 @@ module Dependabot
         "content" => content,
         "directory" => directory,
         "type" => type,
-        "support_file" => support_file
+        "support_file" => support_file,
+        "content_encoding" => content_encoding,
+        "deleted" => deleted
       }
 
       details["symlink_target"] = symlink_target if symlink_target
@@ -63,6 +73,14 @@ module Dependabot
 
     def support_file?
       @support_file
+    end
+
+    def deleted?
+      @deleted
+    end
+
+    def binary?
+      content_encoding == ContentEncoding::BASE64
     end
 
     private

@@ -67,6 +67,10 @@ module Dependabot
         raise unless e.message.include?("Repository is empty")
       end
 
+      def clone_repo_contents(target_directory: nil)
+        # TODO: add implementation
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)

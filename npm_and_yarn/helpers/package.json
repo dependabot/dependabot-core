@@ -11,13 +11,17 @@
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
     "detect-indent": "^6.0.0",
-    "npm": "6.14.4",
+    "npm": "6.14.8",
     "semver": "^7.3.2"
   },
   "devDependencies": {
+<<<<<<< HEAD
+    "eslint": "^7.7.0",
+=======
     "eslint": "^7.5.0",
+>>>>>>> 72cbcd4474c99cc7b16df1f8cb329d63ec53503f
     "eslint-plugin-prettier": "^3.1.4",
-    "jest": "^25.4.0",
+    "jest": "^26.4.0",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2"
   }
