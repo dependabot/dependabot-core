@@ -22,12 +22,18 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
-          freeze
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /'\['git',\s+'clone',\s+'(?<url>.+?)'.*\s+exit\s+status\s+128/m.
-          freeze
+        GIT_REFERENCE_NOT_FOUND_REGEX = /
+          'git'.*pypoetry-git-(?<name>.+?).{8}',
+          'checkout',
+          '(?<tag>.+?)'
+        /x.freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /
+            '\['git',
+            \s+'clone',
+            \s+'--recurse-submodules',
+            \s+'(?<url>.+?)'.*
+            \s+exit\s+status\s+128
+          /mx.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
