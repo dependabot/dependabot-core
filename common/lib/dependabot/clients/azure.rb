@@ -17,7 +17,6 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "git_source" }.
           find { |cred| cred["host"] == source.hostname }
-
         new(source, credential)
       end
 
@@ -125,7 +124,7 @@ module Dependabot
 
       def create_commit(branch_name, base_commit, commit_message, files,
                         author_details)
-        content = {
+         content = {
           refUpdates: [
             { name: "refs/heads/" + branch_name, oldObjectId: base_commit }
           ],
@@ -163,6 +162,8 @@ module Dependabot
           pr_description = pr_description[0..truncate_length] + truncated_msg
         end
 
+        puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
+        puts "PR name:#{pr_name}"
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -180,7 +181,6 @@ module Dependabot
       def get(url)
         response = Excon.get(
           url,
-          user: credentials&.fetch("username"),
           password: credentials&.fetch("password"),
           idempotent: true,
           **SharedHelpers.excon_defaults
@@ -194,10 +194,9 @@ module Dependabot
         response = Excon.post(
           url,
           headers: {
-            "Content-Type" => "application/json"
+            "Content-Type" => "application/json",
           },
           body: json,
-          user: credentials&.fetch("username"),
           password: credentials&.fetch("password"),
           idempotent: true,
           **SharedHelpers.excon_defaults

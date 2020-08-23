@@ -85,6 +85,7 @@ module Dependabot
 
         fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
       rescue *CLIENT_NOT_FOUND_ERRORS
+        return unless repo_includes_basename
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -245,7 +246,7 @@ module Dependabot
 
           OpenStruct.new(
             name: File.basename(entry.fetch("relativePath")),
-            path: entry.fetch("relativePath"),
+            path: path + "/" + entry.fetch("relativePath"),
             type: type,
             size: entry.fetch("size")
           )

@@ -88,6 +88,7 @@ module Dependabot
       stdin_data = JSON.dump(function: function, args: args)
       cmd = escape_command_str ? escape_command(command) : command
       env_cmd = [env, cmd].compact
+      puts "Running function #{function}"
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
@@ -127,9 +128,15 @@ module Dependabot
 
     def self.excon_defaults
       {
+<<<<<<< HEAD
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
+=======
+        connect_timeout: 25,
+        write_timeout: 10,
+        read_timeout: 25,
+>>>>>>> 72cbcd4474c99cc7b16df1f8cb329d63ec53503f
         omit_default_port: true,
         middlewares: excon_middleware
       }

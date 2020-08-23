@@ -60,7 +60,6 @@ RUN apt-get install -y software-properties-common \
   && gem update --system 3.0.3 \
   && gem install bundler -v 1.17.3 --no-document
 
-
 ### PYTHON
 
 # Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
@@ -71,7 +70,6 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && pyenv install 3.8.5 \
   && pyenv install 2.7.18 \
   && pyenv global 3.8.5
-
 
 ### JAVASCRIPT
 
@@ -128,7 +126,6 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-xml \
     php7.4-zip \
     php7.4-zmq
-
 
 ### GO
 
