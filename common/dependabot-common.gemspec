@@ -40,10 +40,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
-<<<<<<< HEAD
-=======
-  spec.add_development_dependency "rspec_junit_formatter", "~> 0.4"
->>>>>>> 72cbcd4474c99cc7b16df1f8cb329d63ec53503f
   spec.add_development_dependency "rubocop", "~> 0.88.0"
   spec.add_development_dependency "vcr", "6.0.0"
   spec.add_development_dependency "webmock", "~> 3.4"
