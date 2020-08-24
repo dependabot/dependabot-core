@@ -1584,6 +1584,29 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
         expect(file.deleted?).to eq true
       end
+
+      context "with dependencies that are not unlocked by the update" do
+        let(:repo_contents_path) { build_tmp_repo("conditional") }
+
+        before do
+          stub_request(:get, "https://rubygems.org/gems/statesman-1.2.1.gem").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "gems", "statesman-1.2.1.gem")
+            )
+        end
+
+        it "does not delete the cached file" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "vendor/cache/addressable-7.2.0.gem"
+          end
+          vendor_files =
+            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+
+          expect(file).to be_nil
+          expect(vendor_files).to include("statesman-7.2.0.gem")
+        end
+      end
     end
   end
 end
