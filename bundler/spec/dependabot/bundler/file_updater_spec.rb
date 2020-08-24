@@ -19,7 +19,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       credentials: [{
         "type" => "git_source",
         "host" => "github.com"
-      }]
+      }],
+      repo_contents_path: repo_contents_path
     )
   end
   let(:dependencies) { [dependency] }
@@ -63,6 +64,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
     [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
   end
   let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:repo_contents_path) { nil }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -1538,6 +1540,49 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
       it "raises on initialization" do
         expect { updater }.to raise_error(/Gemfile must be provided/)
+      end
+    end
+
+    context "vendoring" do
+      let(:repo_contents_path) { build_tmp_repo("vendored_gems") }
+
+      before do
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem").
+          to_return(
+            status: 200,
+            body: fixture("ruby", "gems", "business-1.5.0.gem")
+          )
+      end
+
+      after do
+        FileUtils.remove_entry repo_contents_path
+      end
+
+      it "vendors the new dependency" do
+        expect(updater.updated_dependency_files.map(&:name)).to match_array(
+          [
+            "vendor/cache/business-1.4.0.gem",
+            "vendor/cache/business-1.5.0.gem",
+            "Gemfile",
+            "Gemfile.lock"
+          ]
+        )
+      end
+
+      it "base64 encodes vendored gems" do
+        file = updater.updated_dependency_files.find do |f|
+          f.name == "vendor/cache/business-1.5.0.gem"
+        end
+
+        expect(file.content_encoding).to eq("base64")
+      end
+
+      it "deletes the old vendored gem" do
+        file = updater.updated_dependency_files.find do |f|
+          f.name == "vendor/cache/business-1.4.0.gem"
+        end
+
+        expect(file.deleted?).to eq true
       end
     end
   end

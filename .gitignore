@@ -4,8 +4,10 @@
 /tmp
 /pkg
 /dependabot-*.gem
+!bundler/spec/fixtures/projects/**/Gemfile.lock
 Gemfile.lock
 vendor
+!bundler/spec/fixtures/vendored_gems/vendor
 .DS_Store
 *.pyc
 *git.store

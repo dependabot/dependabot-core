@@ -36,6 +36,47 @@ def fixture(*name)
   File.read(File.join("spec", "fixtures", File.join(*name)))
 end
 
+# Creates a temporary directory and copies in any files from the specified
+# project path. The project path will typically contain a dependency file and a
+# lockfile, but it may also include a vendor directory. A git repo will be
+# initialized in the tmp directory.
+#
+# @param project [String] the project directory, located in
+# "spec/fixtures/projects"
+# @return [String] the path to the new temp repo.
+def build_tmp_repo(project)
+  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+
+  tmp_dir = Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
+  prefix = Dependabot::SharedHelpers::BUMP_TMP_FILE_PREFIX
+  Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
+  dir = Dir.mktmpdir(prefix, tmp_dir)
+  path = Pathname.new(dir).expand_path
+  FileUtils.mkpath(path)
+
+  FileUtils.cp_r("#{project_path}/.", path)
+
+  Dir.chdir(path) do
+    Dependabot::SharedHelpers.run_shell_command(
+      <<~CMD
+        git config --global user.name || \
+          git config --global user.email no-reply@github.com
+      CMD
+    )
+    Dependabot::SharedHelpers.run_shell_command(
+      <<~CMD
+        git config --global user.name || \
+          git config --global user.name dependabot-ci
+      CMD
+    )
+    Dependabot::SharedHelpers.run_shell_command("git init")
+    Dependabot::SharedHelpers.run_shell_command("git add --all")
+    Dependabot::SharedHelpers.run_shell_command("git commit -m 'Init'")
+  end
+
+  path
+end
+
 def capture_stderr
   previous_stderr = $stderr
   $stderr = StringIO.new
