@@ -57,18 +57,6 @@ def build_tmp_repo(project)
   FileUtils.cp_r("#{project_path}/.", path)
 
   Dir.chdir(path) do
-    Dependabot::SharedHelpers.run_shell_command(
-      <<~CMD
-        git config --global user.name || \
-          git config --global user.email no-reply@github.com
-      CMD
-    )
-    Dependabot::SharedHelpers.run_shell_command(
-      <<~CMD
-        git config --global user.name || \
-          git config --global user.name dependabot-ci
-      CMD
-    )
     Dependabot::SharedHelpers.run_shell_command("git init")
     Dependabot::SharedHelpers.run_shell_command("git add --all")
     Dependabot::SharedHelpers.run_shell_command("git commit -m 'Init'")
