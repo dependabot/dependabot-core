@@ -1,3 +1,57 @@
+## v0.118.16, 20 August 2020
+
+- Add a optional repo_contents_path attribute to the file parser/fetcher/updater
+
+## v0.118.15, 20 August 2020
+
+- Handle deleting binary files in the PR creator/updater
+
+## v0.118.14, 20 August 2020
+
+- Support binary and deleted files in PR updater/creator
+
+## v0.118.13, 19 August 2020
+
+- Add deleted and content_encoding properties to dependency_file
+- Bump npm from 6.14.4 to 6.14.8 in /npm_and_yarn/helpers
+- Bump eslint from 7.6.0 to 7.7.0 in /npm_and_yarn/helpers
+- Bump jest from 26.2.2 to 26.4.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.34 to 0.12.37 in /composer/helpers
+- Add python 3.7.8
+- Test caching strategy from old circle config
+
+## v0.118.12, 7 August 2020
+
+- docker: consistent indentation of Dockerfile (@localheinz)
+- python: properly escape username nad password in auth URL
+- CI: publish versioned images to DockerHub
+- CI: performance improvements
+
+## v0.118.11, 6 August 2020
+
+- common: increase default http client read timeout
+- go_modules: always return a Version object for indirect dependencies
+- Bump composer/composer from 1.10.9 to 1.10.10 in /composer/helpers
+- Bump pip-tools from 5.3.0 to 5.3.1 in /python/helpers
+- CI: performance improvements
+
+## v0.118.10, 3 August 2020
+
+- Bump jest from 26.2.1 to 26.2.2 in /npm_and_yarn/helpers
+- Bump eslint from 7.5.0 to 7.6.0 in /npm_and_yarn/helpers
+- Encode '@' in python HTTP basic auth passwords
+
+## v0.118.9, 3 August 2020
+
+- CI: Move from Circle CI to actions
+- CI: Use job matrix @localheinz
+- Composer: Best practices for 7.4 @localheinz
+- Composer: Explicitly require latest stable version of composer/composer @localheinz
+- Actions: Fix updating actions that are quoted
+- Bump jest from 26.1.0 to 26.2.1 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.33 to 0.12.34 in /composer/helpers
+- Bump pip-tools from 5.2.1 to 5.3.0 in /python/helpers
+
 ## v0.118.8, 24 July 2020
 
 - Upgrade Python version to 3.8.5 (@ulgens)

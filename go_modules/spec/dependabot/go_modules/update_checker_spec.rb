@@ -94,12 +94,18 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     end
 
     it "doesn't update regular releases to newer pre-releases" do
-      expect(latest_resolvable_version).to_not eq("1.2.0-pre2")
+      expect(latest_resolvable_version).to_not eq(
+        Dependabot::GoModules::Version.new("1.2.0-pre2")
+      )
     end
 
     context "doesn't update indirect dependencies (not supported)" do
       let(:requirements) { [] }
-      it { is_expected.to eq(dependency.version) }
+      it do
+        is_expected.to eq(
+          Dependabot::GoModules::Version.new(dependency.version)
+        )
+      end
     end
 
     it "updates v2+ modules"

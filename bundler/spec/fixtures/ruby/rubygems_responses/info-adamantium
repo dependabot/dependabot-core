@@ -1,0 +1,14 @@
+---
+0.0.1 backports:~> 2.6.1,ice_nine:~> 0.4.0|checksum:6b5e7c7548022269529fda9736d115ea715b52199390729131dc579991692aa3
+0.0.2 backports:~> 2.6.4,ice_nine:~> 0.5.0|checksum:9e5ef7cc4d9cd62bfc8340ca08bac450fa3d0f0ed40b32b93d5b8f67743febef
+0.0.3 backports:~> 2.6.4,ice_nine:~> 0.5.0|checksum:cba53cea1d45985a5f2734342c89a5b71b54a8d26d0ae211ebcb766998c3862a
+0.0.4 backports:~> 2.6.4,ice_nine:~> 0.6.0|checksum:d0c5ecacd7938054b96d5593768243db4e8c712a4385a8d03ff40370efd09ff0
+0.0.5 backports:~> 2.7.0,ice_nine:~> 0.6.0|checksum:33d0bd78e7f7a31640c019744cb599c82a9913eaaacbec03e42933a91bc65724
+0.0.6 backports:~> 2.8.2,ice_nine:~> 0.7.0|checksum:7f591debf4f663508c3f1356cc24d6b1e9a10c015e1744aa7e3eb9babf53d6a2
+0.0.7 backports:>= 3.0.3&~> 3.0,ice_nine:~> 0.7.0|checksum:a1b0c3c233ebf0e89995ce5289ef54c03a0f6eae8f608489d61afab276deb675
+0.0.8 ice_nine:~> 0.8.0|checksum:1d71afaed37fe5a0e8a7c24e77ce786be9fc3d2567f242463f296766256f885e
+0.0.9 ice_nine:~> 0.8.0|checksum:b291271d3365a59417f7406296b195ade81ac65a86565d0a47a00b6651d2003f
+0.0.10 ice_nine:~> 0.8.0|checksum:14eaf208883bf028dda9fa150a7f81ad638804fcff8eabc967d1efd288486cd6
+0.0.11 ice_nine:~> 0.8.0|checksum:861a2974439be1fe144f6a7e995ad6aaf8d78cb9f095e0c181034a0843be4eb8
+0.1.0 ice_nine:~> 0.9,thread_safe:~> 0.1.2|checksum:4102b3487f197d44f2ea4f4fb8ab440c17ffa356aa586d2014ab65605941acf6
+0.2.0 ice_nine:~> 0.11.0,memoizable:~> 0.4.0|checksum:5379dc1090ec6ce115eaed4271a2056f3b72ee94d1ff866a169bbb37a3c8c504
