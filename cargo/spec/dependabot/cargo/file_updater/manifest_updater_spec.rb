@@ -99,6 +99,35 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         end
       end
 
+      context "with a dependency name that includes the version range" do
+        let(:manifest_fixture_name) { "version_in_name" }
+        let(:dependency_name) { "curve25519-dalek" }
+        let(:dependency_version) { "3" }
+        let(:dependency_previous_version) { "2" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "3",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "2",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "includes the new requirement" do
+          expect(updated_manifest_content).to include(
+            %(curve25519-dalek = "3")
+          )
+        end
+      end
+
       context "with a repeated dependency when only one req has changed" do
         let(:manifest_fixture_name) { "repeated_dependency" }
         let(:requirements) do
