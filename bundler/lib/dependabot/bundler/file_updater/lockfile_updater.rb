@@ -203,10 +203,7 @@ module Dependabot
 
           return unless outdated_gems.any?
 
-          puts "Removing outdated .gem files from #{cache_path}"
-
           outdated_gems.each do |path|
-            puts "  * #{File.basename(path)}"
             File.delete(path)
           end
         end
@@ -226,11 +223,8 @@ module Dependabot
 
           return unless outdated_git_and_path.any?
 
-          puts "Removing outdated git and path gems from #{cache_path}"
-
           outdated_git_and_path.each do |path|
             path = File.dirname(path)
-            puts "  * #{File.basename(path)}"
             FileUtils.rm_rf(path)
           end
         end
