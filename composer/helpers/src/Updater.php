@@ -7,7 +7,7 @@ namespace Dependabot\Composer;
 use Composer\Factory;
 use Composer\Installer;
 
-class Updater
+final class Updater
 {
     /**
      * @throws \RuntimeException
@@ -78,8 +78,8 @@ class Updater
             ->setWriteLock(true)
             ->setUpdate(true)
             ->setDevMode(true)
-            ->setUpdateWhitelist([$dependencyName])
-            ->setWhitelistTransitiveDependencies(true)
+            ->setUpdateAllowList([$dependencyName])
+            ->setAllowListTransitiveDependencies(true)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)

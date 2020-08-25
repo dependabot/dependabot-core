@@ -128,9 +128,9 @@ module Dependabot
 
     def self.excon_defaults
       {
-        connect_timeout: 25,
-        write_timeout: 10,
-        read_timeout: 25,
+        connect_timeout: 5,
+        write_timeout: 5,
+        read_timeout: 20,
         omit_default_port: true,
         middlewares: excon_middleware
       }

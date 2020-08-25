@@ -174,12 +174,23 @@ module Dependabot
               sha: file.content
             }
           else
+            content = if file.deleted?
+                        { sha: nil }
+                      elsif file.binary?
+                        sha = github_client_for_source.create_blob(
+                          source.repo, file.content, "base64"
+                        )
+                        { sha: sha }
+                      else
+                        { content: file.content }
+                      end
+
             {
-              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
+              path: (file.symlink_target ||
+                     file.path).sub(%r{^/}, ""),
               mode: "100644",
-              type: "blob",
-              content: file.content
-            }
+              type: "blob"
+            }.merge(content)
           end
         end
 
