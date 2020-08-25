@@ -433,7 +433,9 @@ module Dependabot
           FileUtils.mkdir_p(path)
           br_opt = " --branch=#{source.branch} --single-branch" if source.branch
           SharedHelpers.run_shell_command(
-            "git clone --depth=1#{br_opt} #{source.url} #{path}"
+            <<~CMD
+              git clone --no-tags --no-recurse-submodules --depth=1#{br_opt} #{source.url} #{path}
+            CMD
           )
           path
         end
