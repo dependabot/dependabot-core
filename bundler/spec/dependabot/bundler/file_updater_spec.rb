@@ -1607,6 +1607,73 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(vendor_files).to include("statesman-7.2.0.gem")
         end
       end
+
+      context "with a git dependency" do
+        let(:repo_contents_path) { build_tmp_repo("vendored_git") }
+        let(:gemfile_fixture_name) { "git_source_with_version" }
+        let(:lockfile_fixture_name) { "git_source_with_version.lock" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dependabot-test-ruby-package",
+            version: "1c6331732c41e4557a16dacb82534f1d1c831848",
+            previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
+            requirements: requirements,
+            previous_requirements: previous_requirements,
+            package_manager: "bundler"
+          )
+        end
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.1",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+              "dependabot-test-ruby-package"
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/"\
+              "dependabot-test-ruby-package"
+            }
+          }]
+        end
+
+        it "vendors the new dependency" do
+          expect(updater.updated_dependency_files.map(&:name)).to match_array(
+            [
+              # removed:
+              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/.bundlecache",
+              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/README.md",
+              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/test-ruby-package.gemspec",
+              # added:
+              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/.bundlecache",
+              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/.gitignore",
+              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/README.md",
+              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/dependabot-test-ruby-package.gemspec",
+              # modified:
+              "Gemfile",
+              "Gemfile.lock"
+            ]
+          )
+        end
+
+        it "deletes the old vendored repo" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "vendor/cache/dependabot-test-ruby-package-81073f9462f2/.bundlecache"
+          end
+
+          expect(file&.deleted?).to eq true
+        end
+      end
     end
   end
 end
