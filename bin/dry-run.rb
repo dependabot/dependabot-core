@@ -304,11 +304,9 @@ source = Dependabot::Source.new(
 $repo_contents_path = nil
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-  new(source: source, credentials: $options[:credentials])
+          new(source: source, credentials: $options[:credentials])
 
-if $options[:clone]
-  $repo_contents_path = fetcher.clone_repo_contents
-end
+$repo_contents_path = fetcher.clone_repo_contents if $options[:clone]
 
 $files = cached_dependency_files_read do
   fetcher.files
@@ -472,13 +470,13 @@ dependencies.each do |dep|
 
   if $options[:write]
     updated_files.each do |updated_file|
-      next unless updated_file.content
-
       path = File.join(dependency_files_cache_dir, updated_file.name)
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
       FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
-      if updated_file.content
+      if updated_file.deleted?
+        File.delete(path) if File.exist?(path)
+      else
         base64 = Dependabot::DependencyFile::ContentEncoding::BASE64
         content = updated_file.content
         if updated_file.content_encoding == base64
