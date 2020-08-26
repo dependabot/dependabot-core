@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "mimemagic"
+
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
@@ -89,8 +91,12 @@ module Dependabot
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
             deleted = type == "D"
-            encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-            encoded_content = Base64.encode64(File.read(path)) unless deleted
+            encoding = ""
+            encoded_content = File.read(path) unless deleted
+            if binary_file?(path)
+              encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+              encoded_content = Base64.encode64(encoded_content) unless deleted
+            end
             Dependabot::DependencyFile.new(
               name: path,
               content: encoded_content,
@@ -100,6 +106,13 @@ module Dependabot
             )
           end
         end
+      end
+
+      def binary_file?(path)
+        magic = MimeMagic.by_path(path)
+        return true unless magic
+
+        !magic.text?
       end
 
       def check_required_files

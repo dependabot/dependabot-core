@@ -1650,9 +1650,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         removed = "vendor/cache/dependabot-test-ruby-package-81073f9462f2"
+        added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
 
         it "vendors the new dependency" do
-          added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
           expect(updater.updated_dependency_files.map(&:name)).to match_array(
             [
               "#{removed}/.bundlecache",
@@ -1675,6 +1675,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           expect(file&.deleted?).to eq true
+        end
+
+        it "does not base64 encode vendored code" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "#{added}/README.md"
+          end
+
+          expect(file.content_encoding).to eq("")
         end
       end
     end
