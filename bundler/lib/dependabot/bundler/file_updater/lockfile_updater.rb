@@ -170,6 +170,7 @@ module Dependabot
           unlocked_gems = definition.instance_variable_get(:@unlock).
                           fetch(:gems)
           bundler_opts = {
+            cache_all: true,
             cache_all_platforms: true,
             no_prune: true
           }

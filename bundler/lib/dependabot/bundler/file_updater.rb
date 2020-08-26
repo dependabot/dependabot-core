@@ -84,7 +84,7 @@ module Dependabot
         Dir.chdir(repo_contents_path) do
           relative_dir = vendor_cache_dir.sub("#{repo_contents_path}/", "")
           status = SharedHelpers.run_shell_command(
-            "git status --porcelain=v1 #{relative_dir}"
+            "git status --untracked-files=all --porcelain=v1 #{relative_dir}"
           )
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
