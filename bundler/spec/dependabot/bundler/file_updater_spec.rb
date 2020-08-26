@@ -1589,7 +1589,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       context "with dependencies that are not unlocked by the update" do
-        let(:repo_contents_path) { build_tmp_repo("conditional") }
+        let(:project_name) { "conditional" }
 
         before do
           stub_request(:get, "https://rubygems.org/gems/statesman-1.2.1.gem").
@@ -1612,9 +1612,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       context "with a git dependency" do
-        let(:repo_contents_path) { build_tmp_repo("vendored_git") }
-        let(:gemfile_fixture_name) { "git_source_with_version" }
-        let(:lockfile_fixture_name) { "git_source_with_version.lock" }
+        let(:project_name) { "vendored_git" }
+
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "dependabot-test-ruby-package",
