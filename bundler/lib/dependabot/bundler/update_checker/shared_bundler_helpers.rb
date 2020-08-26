@@ -29,14 +29,16 @@ module Dependabot
           Bundler::Fetcher::FallbackError
         ).freeze
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files, :repo_contents_path, :credentials
 
         #########################
         # Bundler context setup #
         #########################
 
         def in_a_temporary_bundler_context(error_handling: true)
-          SharedHelpers.in_a_temporary_directory(base_directory) do |tmp_dir|
+          SharedHelpers.
+            in_a_temporary_repo_directory(base_directory,
+                                          repo_contents_path) do |tmp_dir|
             write_temporary_dependency_files
 
             SharedHelpers.in_a_forked_process do

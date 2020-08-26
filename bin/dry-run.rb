@@ -96,6 +96,7 @@ $options = {
   branch: nil,
   cache_steps: [],
   write: false,
+  clone: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
   commit: nil
@@ -154,6 +155,10 @@ option_parse = OptionParser.new do |opts|
   opts.on("--commit COMMIT", "Commit to fetch dependency files from") do |value|
     $options[:commit] = value
   end
+
+  opts.on("--clone", "clone the repo") do |_value|
+    $options[:clone] = true
+  end
 end
 
 option_parse.parse!
@@ -167,6 +172,8 @@ end
 $package_manager, $repo_name = ARGV
 
 def show_diff(original_file, updated_file)
+  return unless original_file
+
   if original_file.content == updated_file.content
     puts "    no change to #{original_file.name}"
     return
@@ -294,9 +301,14 @@ source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
+$repo_contents_path = nil
+
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
+          new(source: source, credentials: $options[:credentials])
+
+$repo_contents_path = fetcher.clone_repo_contents if $options[:clone]
+
 $files = cached_dependency_files_read do
-  fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-            new(source: source, credentials: $options[:credentials])
   fetcher.files
 end
 
@@ -304,6 +316,7 @@ end
 puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
+  repo_contents_path: $repo_contents_path,
   source: source,
   credentials: $options[:credentials]
 )
@@ -321,6 +334,7 @@ def update_checker_for(dependency)
     dependency: dependency,
     dependency_files: $files,
     credentials: $options[:credentials],
+    repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
     security_advisories: security_advisories_for(dependency)
@@ -376,6 +390,7 @@ def file_updater_for(dependencies)
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
+    repo_contents_path: $repo_contents_path,
     credentials: $options[:credentials]
   )
 end
@@ -457,13 +472,27 @@ dependencies.each do |dep|
     updated_files.each do |updated_file|
       path = File.join(dependency_files_cache_dir, updated_file.name)
       puts " => writing updated file ./#{path}"
-      File.write(path, updated_file.content)
+      dirname = File.dirname(path)
+      FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
+      if updated_file.deleted?
+        File.delete(path) if File.exist?(path)
+      else
+        File.write(path, updated_file.decoded_content)
+      end
     end
   end
 
   updated_files.each do |updated_file|
-    original_file = $files.find { |f| f.name == updated_file.name }
-    show_diff(original_file, updated_file)
+    if updated_file.deleted?
+      puts "deleted #{updated_file.name}"
+    else
+      original_file = $files.find { |f| f.name == updated_file.name }
+      if original_file
+        show_diff(original_file, updated_file)
+      else
+        puts "added #{updated_file.name}"
+      end
+    end
   end
 end
 # rubocop:enable Metrics/BlockLength
