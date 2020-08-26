@@ -1544,7 +1544,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
     end
 
     context "vendoring" do
-      let(:repo_contents_path) { build_tmp_repo("vendored_gems") }
+      let(:project_name) { "vendored_gems" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+      let(:gemfile_body) { fixture("projects", project_name, "Gemfile") }
+      let(:lockfile_body) { fixture("projects", project_name, "Gemfile.lock") }
 
       before do
         stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem").

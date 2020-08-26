@@ -50,19 +50,19 @@ def build_tmp_repo(project)
   tmp_dir = Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
   prefix = Dependabot::SharedHelpers::BUMP_TMP_FILE_PREFIX
   Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
-  dir = Dir.mktmpdir(prefix, tmp_dir)
-  path = Pathname.new(dir).expand_path
-  FileUtils.mkpath(path)
+  tmp_repo = Dir.mktmpdir(prefix, tmp_dir)
+  tmp_repo_path = Pathname.new(tmp_repo).expand_path
+  FileUtils.mkpath(tmp_repo_path)
 
-  FileUtils.cp_r("#{project_path}/.", path)
+  FileUtils.cp_r("#{project_path}/.", tmp_repo_path)
 
-  Dir.chdir(path) do
+  Dir.chdir(tmp_repo_path) do
     Dependabot::SharedHelpers.run_shell_command("git init")
     Dependabot::SharedHelpers.run_shell_command("git add --all")
     Dependabot::SharedHelpers.run_shell_command("git commit -m 'Init'")
   end
 
-  path
+  tmp_repo_path
 end
 
 def capture_stderr
