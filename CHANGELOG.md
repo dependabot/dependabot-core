@@ -1,3 +1,8 @@
+## v0.119.0, 26 August 2020
+
+- Only replace version part of cargo line
+- Add beta support for vendoring dependencies in Bundler
+
 ## v0.118.16, 20 August 2020
 
 - Add a optional repo_contents_path attribute to the file parser/fetcher/updater
