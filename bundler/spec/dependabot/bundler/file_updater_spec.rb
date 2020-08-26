@@ -1650,18 +1650,19 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           }]
         end
 
+        removed = "vendor/cache/dependabot-test-ruby-package-81073f9462f2"
+
         it "vendors the new dependency" do
+          added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
           expect(updater.updated_dependency_files.map(&:name)).to match_array(
             [
-              # removed:
-              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/.bundlecache",
-              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/README.md",
-              "vendor/cache/dependabot-test-ruby-package-81073f9462f2/test-ruby-package.gemspec",
-              # added:
-              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/.bundlecache",
-              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/.gitignore",
-              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/README.md",
-              "vendor/cache/dependabot-test-ruby-package-1c6331732c41/dependabot-test-ruby-package.gemspec",
+              "#{removed}/.bundlecache",
+              "#{removed}/README.md",
+              "#{removed}/test-ruby-package.gemspec",
+              "#{added}/.bundlecache",
+              "#{added}/.gitignore",
+              "#{added}/README.md",
+              "#{added}/dependabot-test-ruby-package.gemspec",
               # modified:
               "Gemfile",
               "Gemfile.lock"
@@ -1671,7 +1672,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
         it "deletes the old vendored repo" do
           file = updater.updated_dependency_files.find do |f|
-            f.name == "vendor/cache/dependabot-test-ruby-package-81073f9462f2/.bundlecache"
+            f.name == "#{removed}/.bundlecache"
           end
 
           expect(file&.deleted?).to eq true
