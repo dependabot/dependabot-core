@@ -477,12 +477,7 @@ dependencies.each do |dep|
       if updated_file.deleted?
         File.delete(path) if File.exist?(path)
       else
-        base64 = Dependabot::DependencyFile::ContentEncoding::BASE64
-        content = updated_file.content
-        if updated_file.content_encoding == base64
-          content = Base64.decode64(content)
-        end
-        File.write(path, content)
+        File.write(path, updated_file.decoded_content)
       end
     end
   end
