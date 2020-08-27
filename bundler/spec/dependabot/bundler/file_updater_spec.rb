@@ -1678,11 +1678,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         it "does not base64 encode vendored code" do
-          file = updater.updated_dependency_files.find do |f|
-            f.name == "#{added}/README.md"
-          end
-
-          expect(file.content_encoding).to eq("")
+          updater.updated_dependency_files.
+            select { |f| f.name.start_with?(added) }.
+            each { |f| expect(f.content_encoding).to eq("") }
         end
       end
     end

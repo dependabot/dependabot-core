@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "mimemagic"
-
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 
@@ -108,11 +106,37 @@ module Dependabot
         end
       end
 
-      def binary_file?(path)
-        magic = MimeMagic.by_path(path)
-        return true unless magic
+      # notable filenames without a reliable extension:
+      TEXT_FILE_NAMES = [
+        "Gemfile",
+        "Gemfile.lock",
+        ".bundlecache",
+        ".gitignore"
+      ].freeze
 
-        !magic.text?
+      TEXT_FILE_EXTS = [
+        # code
+        ".rb",
+        ".erb",
+        ".gemspec",
+        ".js",
+        ".html",
+        # config
+        ".json",
+        ".xml",
+        ".toml",
+        ".yaml",
+        ".yml",
+        # docs
+        ".md",
+        ".txt"
+      ].freeze
+
+      def binary_file?(path)
+        return false if TEXT_FILE_NAMES.include?(File.basename(path))
+        return false if TEXT_FILE_EXTS.include?(File.extname(path))
+
+        true
       end
 
       def check_required_files
