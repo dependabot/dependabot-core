@@ -132,4 +132,33 @@ RSpec.describe Dependabot::DependencyFile do
       specify { expect(file1).to_not eq(file2) }
     end
   end
+
+  describe "#decoded_content" do
+    context "for base64 encoded content" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content_encoding: described_class::ContentEncoding::BASE64,
+          content: "YWJj\n"
+        )
+      end
+
+      it "decodes the content to its original encoding" do
+        expect(file.decoded_content).to eq("abc")
+      end
+    end
+
+    context "for utf-8 encoded content" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content: "abc"
+        )
+      end
+
+      it "returns the unencoded content" do
+        expect(file.decoded_content).to eq("abc")
+      end
+    end
+  end
 end

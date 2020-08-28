@@ -24,7 +24,7 @@ module Dependabot
         GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
 
         def initialize(dependency:, unprepared_dependency_files:,
-                       credentials:, ignored_versions:,
+                       repo_contents_path: nil, credentials:, ignored_versions:,
                        raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
@@ -32,6 +32,7 @@ module Dependabot
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
+          @repo_contents_path          = repo_contents_path
           @ignored_versions            = ignored_versions
           @raise_on_ignored            = raise_on_ignored
           @replacement_git_pin         = replacement_git_pin
@@ -47,9 +48,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :unprepared_dependency_files, :credentials,
-                    :ignored_versions, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency, :unprepared_dependency_files,
+                    :repo_contents_path, :credentials, :ignored_versions,
+                    :replacement_git_pin, :latest_allowable_version
 
         def remove_git_source?
           @remove_git_source
@@ -268,6 +269,7 @@ module Dependabot
             LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,

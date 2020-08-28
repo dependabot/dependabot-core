@@ -7,6 +7,7 @@ AllCops:
     - '*/tmp/**/*'
     - 'tmp/**/*'
     - '*/helpers/**/*'
+    - '*/spec/fixtures/**/*'
 
 Layout/DotPosition:
   EnforcedStyle: trailing
