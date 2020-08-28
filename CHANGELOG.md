@@ -1,3 +1,9 @@
+## v0.119.1, 28 August 2020
+
+- Bump phpstan/phpstan from 0.12.37 to 0.12.39 in /composer/helpers
+- Update to poetry to 1.0.10
+- Add beta support for vendoring git dependencies in Bundler
+
 ## v0.119.0, 26 August 2020
 
 - Only replace version part of cargo line
