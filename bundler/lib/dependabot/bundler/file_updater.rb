@@ -89,8 +89,12 @@ module Dependabot
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
             deleted = type == "D"
-            encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-            encoded_content = Base64.encode64(File.read(path)) unless deleted
+            encoding = ""
+            encoded_content = File.read(path) unless deleted
+            if binary_file?(path)
+              encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+              encoded_content = Base64.encode64(encoded_content) unless deleted
+            end
             Dependabot::DependencyFile.new(
               name: path,
               content: encoded_content,
@@ -100,6 +104,39 @@ module Dependabot
             )
           end
         end
+      end
+
+      # notable filenames without a reliable extension:
+      TEXT_FILE_NAMES = [
+        "Gemfile",
+        "Gemfile.lock",
+        ".bundlecache",
+        ".gitignore"
+      ].freeze
+
+      TEXT_FILE_EXTS = [
+        # code
+        ".rb",
+        ".erb",
+        ".gemspec",
+        ".js",
+        ".html",
+        # config
+        ".json",
+        ".xml",
+        ".toml",
+        ".yaml",
+        ".yml",
+        # docs
+        ".md",
+        ".txt"
+      ].freeze
+
+      def binary_file?(path)
+        return false if TEXT_FILE_NAMES.include?(File.basename(path))
+        return false if TEXT_FILE_EXTS.include?(File.extname(path))
+
+        true
       end
 
       def check_required_files
