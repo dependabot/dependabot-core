@@ -117,7 +117,7 @@ module Dependabot
       def pnpm_locks
         @pnpm_locks ||=
           dependency_files
-          .select { |f| f.name.end_with?("pnpm-lock.yaml", "shrinkwrap.yaml") }
+          .select { |f| ["common/config/rush/pnpm-lock.yaml", "common/config/rush/shrinkwrap.yaml"].include?(f.name) } # Check for Rush pnpm lock file paths. We do not support non-Rush pnpm projects yet.
       end
 
       def yarn_lock_changed?(yarn_lock)

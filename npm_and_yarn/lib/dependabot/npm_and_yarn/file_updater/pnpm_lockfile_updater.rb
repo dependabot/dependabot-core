@@ -22,9 +22,6 @@ module Dependabot
                     end
             
                     updated_pnpm_lock(pnpm_lock_file)
-            
-                    # @updated_pnpm_lock_content[pnpm_lock_file.name] =
-                    #     post_process_pnpm_lock_file(new_content)
                 end
 
 
@@ -40,10 +37,12 @@ module Dependabot
                         )
                         Dir.chdir(original_path)
 
+                        raise "Failed to update #{lockfile_name}: Content not changed." if response == pnpm_lock.content
+
                         response
                 end
                 
-                # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml). Update the params to take a list of file paths that need to be reread 
+                # TODO: Currently works only for a single file (pnpms's shrinkwrap.yaml/pnpm-lock.yaml). Update the params to take a list of file paths that need to be reread
                 # after we run rush update.
                 def run_rush_updater(path:, lockfile_name:)
                     SharedHelpers.run_helper_subprocess(
