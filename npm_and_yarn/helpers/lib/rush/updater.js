@@ -5,7 +5,8 @@ var exec = require('child_process').exec, child;
 async function runRushUpdate(rootPath, shrinkwrapFilePath){
 
     return new Promise( (resolve, reject)  => {
-    
+
+        process.env["RUSH_ALLOW_UNSUPPORTED_NODEJS"] = "true"; // bypass node engine compatibility check
         exec('node common/scripts/install-run-rush.js update --bypass-policy', { maxBuffer: 1024 * 1024 * 50 }, function(err, stdout, stderr) {
             if(err){ 
                 reject(err);
