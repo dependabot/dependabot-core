@@ -276,7 +276,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: "v1.1.0",
+              ref: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
               source: {
                 type: "git",
                 url: "https://github.com/actions/setup-node",
-                ref: "v1.0.4",
+                ref: "fc9ff49b90869a686df00e922af871c12215986a",
                 branch: nil
               },
               metadata: { declaration_string: "actions/setup-node@master" }
