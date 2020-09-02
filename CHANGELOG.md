@@ -1,3 +1,9 @@
+## v0.119.2, 2 September 2020
+
+- Support cargo 1.46.0 ref not found message
+- Don't downgrade a pinned commit to a tag. (@reitermarkus)
+- Dockerfile.dev: set git author
+
 ## v0.119.1, 28 August 2020
 
 - Bump phpstan/phpstan from 0.12.37 to 0.12.39 in /composer/helpers
