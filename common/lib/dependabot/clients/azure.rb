@@ -28,6 +28,7 @@ module Dependabot
       def initialize(source, credentials)
         @source = source
         @credentials = credentials
+        @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
 
       def fetch_commit(_repo, branch)
@@ -152,19 +153,17 @@ module Dependabot
           "/pushes?api-version=5.0", content.to_json)
       end
 
-     def create_pull_request(pr_name, source_branch, target_branch,
+      def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels)
-        # Azure DevOps only support descriptions up to 4000 characters in UTF-16 encoding
+        # Azure DevOps only support descriptions up to 4000 characters
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         azure_max_length = 3999
-
-        if get_pr_description_length(pr_description) > azure_max_length
+        if pr_description.length > azure_max_length
           truncated_msg = "...\n\n_Description has been truncated_"
           truncate_length = azure_max_length - truncated_msg.length
-          end_index = get_description_end_index(pr_description, truncate_length)
-          pr_description = end_index == -1 ? "" : pr_description[0..end_index]  + truncated_msg
+          pr_description = pr_description[0..truncate_length] + truncated_msg
         end
-       
+
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -182,8 +181,9 @@ module Dependabot
       def get(url)
         response = Excon.get(
           url,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          headers: auth_header,
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -195,12 +195,12 @@ module Dependabot
       def post(url, json)
         response = Excon.post(
           url,
-          headers: {
+          headers: auth_header.merge({
             "Content-Type" => "application/json"
-          },
+          }),
           body: json,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -208,35 +208,24 @@ module Dependabot
 
         response
       end
-      
-      # Get pr description length in UTF-16 encoding.
-      def get_pr_description_length(pr_description)
-        length = 0
-        pr_description.each_char{|c|
-          length += (c.bytesize/2 + c.bytesize%2)
-        }
-        length
-      end
-
-      # Get the end index for pr description according to the maximum length in UTF-16 encoding.
-      def get_description_end_index(description, max_length)
-        length = 0
-        index = -1
-        description.each_char{|c|
-          character_length = c.bytesize/2 + c.bytesize%2
-          if length + character_length > max_length
-            break
-          end
-
-          length += character_length
-          index += 1
-        }
-
-        index
-      end
 
       private
 
+      def auth_header_for(token)
+        return {} unless token
+
+        if token.include?(":")
+          encoded_token = Base64.encode64(token).delete("\n")
+          { "Authorization" => "Basic #{encoded_token}" }
+        elsif Base64.decode64(token).ascii_only? &&
+              Base64.decode64(token).include?(":")
+            { "Authorization" => "Basic #{token.delete("\n")}" }
+        else
+          { "Authorization" => "Bearer #{token}" }
+        end
+      end
+
+      attr_reader :auth_header
       attr_reader :credentials
       attr_reader :source
     end
