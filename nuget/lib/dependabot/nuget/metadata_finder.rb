@@ -32,7 +32,8 @@ module Dependabot
 
       def source_from_anywhere_in_nuspec(nuspec)
         github_urls = []
-        nuspec.to_s.scan(Source::SOURCE_REGEX) do
+        nuspec.to_s.force_encoding(Encoding::UTF_8).
+          scan(Source::SOURCE_REGEX) do
           github_urls << Regexp.last_match.to_s
         end
 
