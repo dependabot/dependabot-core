@@ -195,9 +195,11 @@ module Dependabot
       def post(url, json)
         response = Excon.post(
           url,
-          headers: auth_header.merge({
-            "Content-Type" => "application/json"
-          }),
+          headers: auth_header.merge(
+            {
+              "Content-Type" => "application/json"
+            }
+          ),
           body: json,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
@@ -219,7 +221,7 @@ module Dependabot
           { "Authorization" => "Basic #{encoded_token}" }
         elsif Base64.decode64(token).ascii_only? &&
               Base64.decode64(token).include?(":")
-            { "Authorization" => "Basic #{token.delete("\n")}" }
+          { "Authorization" => "Basic #{token.delete("\n")}" }
         else
           { "Authorization" => "Bearer #{token}" }
         end
