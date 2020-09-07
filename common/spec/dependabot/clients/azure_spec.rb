@@ -3,8 +3,7 @@
 require "spec_helper"
 require "dependabot/clients/azure"
 
-RSpec.shared_examples "#get using auth headers" do
-|credential|
+RSpec.shared_examples "#get using auth headers" do |credential|
   before do
     stub_request(:get, base_url).
       with(headers: credential["headers"]).
