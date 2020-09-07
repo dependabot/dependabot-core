@@ -3,7 +3,7 @@
 require "spec_helper"
 require "dependabot/clients/azure"
 
-RSpec.shared_examples "Successfully completes get request with auth headers"do 
+RSpec.shared_examples "Successfully completes get request with auth headers" do
 |credential|
   before do
     stub_request(:get, base_url).
@@ -12,8 +12,10 @@ RSpec.shared_examples "Successfully completes get request with auth headers"do
   end
 
   it "Using #{credential['token_type']} token in credentials" do
-    client = described_class.for_source(source: source,
-             credentials: credential["credentials"])
+    client = described_class.for_source(
+             source: source,
+             credentials: credential["credentials"]
+            )
     response = JSON.parse(client.get(base_url).body)
     expect(response["result"]).to eq("Success")
   end
@@ -131,28 +133,48 @@ RSpec.describe Dependabot::Clients::Azure do
       token = ":test_token"
       encoded_token = Base64.encode64(":test_token").delete("\n")
       bearer_token = "test_token"
-      basic_non_encoded_token_test_hash = 
+      basic_non_encoded_token_test_hash =
       { "token_type" => "basic non encoded",
-        "credentials" => [{"type" => "git_source", "host" => "dev.azure.com", "token" => token}],
-        "headers" => { "Authorization" => "Basic #{encoded_token}"}
-      }
-      basic_encoded_token_test_hash = 
-      {
-        "token_type" => "basic encoded",
-        "credentials" => [{"type" => "git_source", "host" => "dev.azure.com", "token" => "#{encoded_token}"}],
+        "credentials" => [
+          {
+            "type" => "git_source",
+            "host" => "dev.azure.com",
+            "token" => token
+          }
+        ],
         "headers" => { "Authorization" => "Basic #{encoded_token}" }
       }
-      bearer_token_test_hash = 
+      basic_encoded_token_test_hash =
+      {
+        "token_type" => "basic encoded",
+        "credentials" => [
+          {
+            "type" => "git_source",
+            "host" => "dev.azure.com",
+            "token" => "#{encoded_token}"
+          }
+        ],
+        "headers" => { "Authorization" => "Basic #{encoded_token}" }
+      }
+      bearer_token_test_hash =
       {
         "token_type" => "bearer",
-        "credentials" => [{"type" => "git_source", "host" => "dev.azure.com", "token" => "#{bearer_token}"}],
+        "credentials" => [
+          {
+            "type" => "git_source",
+            "host" => "dev.azure.com",
+            "token" => "#{bearer_token}"
+          }
+        ],
         "headers" => { "Authorization" => "Bearer #{bearer_token}" }
       }
 
-        include_examples "Successfully completes get request with auth headers", basic_non_encoded_token_test_hash
-        include_examples "Successfully completes get request with auth headers", basic_encoded_token_test_hash
-        include_examples "Successfully completes get request with auth headers", bearer_token_test_hash
+      include_examples "Successfully completes get request with auth headers",
+                        basic_non_encoded_token_test_hash
+      include_examples "Successfully completes get request with auth headers",
+                        basic_encoded_token_test_hash
+      include_examples "Successfully completes get request with auth headers",
+                        bearer_token_test_hash
     end
-
   end
 end
