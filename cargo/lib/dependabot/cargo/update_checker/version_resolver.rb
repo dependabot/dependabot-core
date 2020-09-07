@@ -15,8 +15,10 @@ module Dependabot
           /Unable to update (?<url>.*?)$/.freeze
         BRANCH_NOT_FOUND_REGEX =
           /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m.freeze
+        REVSPEC_PATTERN = /revspec '.*' not found/.freeze
+        OBJECT_PATTERN = /object not found - no match for id \(.*\)/.freeze
         REF_NOT_FOUND_REGEX =
-          /#{UNABLE_TO_UPDATE}.*revspec '.*' not found/m.freeze
+          /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m.freeze
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)

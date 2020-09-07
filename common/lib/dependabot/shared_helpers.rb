@@ -29,6 +29,19 @@ module Dependabot
       end
     end
 
+    def self.in_a_temporary_repo_directory(directory = "/",
+                                           repo_contents_path = nil,
+                                           &block)
+      if repo_contents_path
+        path = Pathname.new(File.join(repo_contents_path, directory)).
+               expand_path
+        reset_git_repo(repo_contents_path)
+        Dir.chdir(path) { yield(path) }
+      else
+        in_a_temporary_directory(directory, &block)
+      end
+    end
+
     def self.in_a_temporary_directory(directory = "/")
       Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
       Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
@@ -210,6 +223,12 @@ module Dependabot
       File.write("git.store", git_store_content)
     end
 
+    def self.reset_git_repo(path)
+      Dir.chdir(path) do
+        run_shell_command("git reset HEAD --hard && git clean -fx")
+      end
+    end
+
     def self.stash_global_git_config
       return unless File.exist?(GIT_CONFIG_GLOBAL_PATH)
 
@@ -235,7 +254,7 @@ module Dependabot
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return if process.success?
+      return stdout if process.success?
 
       error_context = {
         command: command,
