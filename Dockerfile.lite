@@ -68,7 +68,9 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && apt-get update && apt-get install -y yarn
 
-COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+# Copy src for only the gems we need.
+COPY npm_and_yarn/ /opt/npm_and_yarn/
+COPY common/ /opt/common
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
