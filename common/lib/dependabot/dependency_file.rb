@@ -83,6 +83,12 @@ module Dependabot
       content_encoding == ContentEncoding::BASE64
     end
 
+    def decoded_content
+      return Base64.decode64(content) if binary?
+
+      content
+    end
+
     private
 
     def clean_directory(directory)

@@ -61,4 +61,5 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     cd $d && bundle install; \
   done
 
+RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 RUN cd omnibus && bundle install

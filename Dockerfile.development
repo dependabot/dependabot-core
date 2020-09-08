@@ -23,6 +23,7 @@ RUN chown -R "${USERNAME}":"${USERNAME}" \
   /opt/go/gopath \
   /opt/rust/
 USER $USERNAME
+RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 
 ARG CODE_DIR=/home/$USERNAME/dependabot-core
 

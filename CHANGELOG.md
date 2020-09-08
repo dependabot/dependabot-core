@@ -1,3 +1,20 @@
+## v0.119.2, 2 September 2020
+
+- Support cargo 1.46.0 ref not found message
+- Don't downgrade a pinned commit to a tag. (@reitermarkus)
+- Dockerfile.dev: set git author
+
+## v0.119.1, 28 August 2020
+
+- Bump phpstan/phpstan from 0.12.37 to 0.12.39 in /composer/helpers
+- Update to poetry to 1.0.10
+- Add beta support for vendoring git dependencies in Bundler
+
+## v0.119.0, 26 August 2020
+
+- Only replace version part of cargo line
+- Add beta support for vendoring dependencies in Bundler
+
 ## v0.118.16, 20 August 2020
 
 - Add a optional repo_contents_path attribute to the file parser/fetcher/updater
