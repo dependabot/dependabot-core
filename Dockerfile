@@ -144,11 +144,14 @@ ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
+ARG ELIXIR_VERSION=v1.10.0
+ARG ELIXIR_CHECKSUM=1e9286391281cd53e5cc5452cdf9ee586c50648800701a1ab80ef7a5a4ef4052f75149235ba348e560d8d5247a0f476c27f481f53e05cbe29244d0b1a25d6586
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
   && apt-get update \
   && apt-get install -y esl-erlang \
-  && wget https://github.com/elixir-lang/elixir/releases/download/v1.10.0/Precompiled.zip \
+  && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
+  && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
   && rm -f Precompiled.zip \
   && mix local.hex --force
