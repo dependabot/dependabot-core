@@ -214,7 +214,7 @@ module Dependabot
 
       private
 
-\      def auth_header_for(token)
+      def auth_header_for(token)
         return {} unless token
 
         if token.include?(":")
