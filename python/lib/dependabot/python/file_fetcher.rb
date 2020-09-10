@@ -350,14 +350,14 @@ module Dependabot
       def parse_path_setup_paths(req_file)
         uneditable_reqs =
           req_file.content.
-          scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
+          scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") }
 
         editable_reqs =
           req_file.content.
-          scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
+          scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") || p.include?("git@") }
