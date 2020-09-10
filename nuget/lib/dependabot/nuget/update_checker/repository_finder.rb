@@ -93,10 +93,12 @@ module Dependabot
 
         def build_v2_url(response, repo_details)
           doc = Nokogiri::XML(response.body)
+
           doc.remove_namespaces!
           base_url = doc.at_xpath("service")&.attributes&.
                      fetch("base", nil)&.value
-          return unless base_url
+
+          base_url ||= repo_details.fetch(:url)
 
           {
             repository_url: base_url,
