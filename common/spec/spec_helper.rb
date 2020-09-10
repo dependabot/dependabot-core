@@ -19,6 +19,10 @@ VCR.configure do |config|
   config.hook_into :webmock
   config.configure_rspec_metadata!
 
+  unless ENV["DEPENDABOT_TEST_DEBUG_LOGGER"].nil?
+    config.debug_logger = File.open(ENV["DEPENDABOT_TEST_DEBUG_LOGGER"], "w")
+  end
+
   # Prevent access tokens being written to VCR cassettes
   unless ENV["DEPENDABOT_TEST_ACCESS_TOKEN"].nil?
     config.filter_sensitive_data("<TOKEN>") do
