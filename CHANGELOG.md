@@ -1,3 +1,12 @@
+## v0.119.3, 10 September 2020
+
+- Fix for nuget v2 responses that don't specify a base (@ppejovic)
+- formatting changes to avoid linting errors
+- Upgrade elixir/mix to 1.10.0
+- Add OAuth support to Azure client
+- Bump eslint from 7.7.0 to 7.8.1 in /npm_and_yarn/helpers
+- Bump prettier from 2.0.5 to 2.1.1 in /npm_and_yarn/helpers
+
 ## v0.119.2, 2 September 2020
 
 - Support cargo 1.46.0 ref not found message

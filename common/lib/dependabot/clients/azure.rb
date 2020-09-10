@@ -28,6 +28,7 @@ module Dependabot
       def initialize(source, credentials)
         @source = source
         @credentials = credentials
+        @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
 
       def fetch_commit(_repo, branch)
@@ -180,8 +181,9 @@ module Dependabot
       def get(url)
         response = Excon.get(
           url,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          headers: auth_header,
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -193,12 +195,14 @@ module Dependabot
       def post(url, json)
         response = Excon.post(
           url,
-          headers: {
-            "Content-Type" => "application/json"
-          },
+          headers: auth_header.merge(
+            {
+              "Content-Type" => "application/json"
+            }
+          ),
           body: json,
-          user: credentials&.fetch("username"),
-          password: credentials&.fetch("password"),
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
@@ -209,6 +213,21 @@ module Dependabot
 
       private
 
+      def auth_header_for(token)
+        return {} unless token
+
+        if token.include?(":")
+          encoded_token = Base64.encode64(token).delete("\n")
+          { "Authorization" => "Basic #{encoded_token}" }
+        elsif Base64.decode64(token).ascii_only? &&
+              Base64.decode64(token).include?(":")
+          { "Authorization" => "Basic #{token.delete("\n")}" }
+        else
+          { "Authorization" => "Bearer #{token}" }
+        end
+      end
+
+      attr_reader :auth_header
       attr_reader :credentials
       attr_reader :source
     end
