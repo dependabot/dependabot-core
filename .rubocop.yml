@@ -97,7 +97,7 @@ Metrics/BlockLength:
   Max: 35
   Exclude:
     - '*/Rakefile'
-    - '*/spec/**/*'
+    - '**/spec/**/*'
     - '*/dependabot-*.gemspec'
 
 Metrics/ParameterLists:
