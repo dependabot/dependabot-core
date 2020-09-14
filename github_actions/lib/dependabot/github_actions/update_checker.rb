@@ -78,7 +78,6 @@ module Dependabot
         dependency.version
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def updated_source
         # TODO: Support Docker sources
         return dependency_source_details unless git_dependency?
@@ -100,8 +99,6 @@ module Dependabot
         # Otherwise return the original source
         dependency_source_details
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_source_details
         sources =
