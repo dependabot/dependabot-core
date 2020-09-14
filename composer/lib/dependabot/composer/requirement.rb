@@ -35,7 +35,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_php_constraint_to_ruby_constraint(req_string)
         req_string = req_string.strip.gsub(/v(?=\d)/, "").gsub(/\.$/, "")
 
@@ -52,8 +51,6 @@ module Dependabot
         else req_string
         end
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_wildcard_req(req_string)
         if req_string.start_with?(">", "<")
@@ -87,7 +84,6 @@ module Dependabot
       end
 
       def convert_hyphen_req(req_string)
-        req_string = req_string
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
         if upper_bound.split(".").count < 3
           upper_bound_parts = upper_bound.split(".")
