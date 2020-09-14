@@ -166,6 +166,7 @@ module Dependabot
             end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def version_details_from_link(link)
           doc = Nokogiri::XML(link)
           filename = doc.at_css("a")&.content
@@ -181,6 +182,7 @@ module Dependabot
             yanked: link&.include?("data-yanked")
           }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def get_version_from_filename(filename)
           filename.

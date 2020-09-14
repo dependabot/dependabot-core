@@ -142,6 +142,7 @@ module Dependabot
             freeze_top_level_dependencies_except(dependencies)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def freeze_dependencies_being_updated(pipfile_content)
           pipfile_object = TomlRB.parse(pipfile_content)
 
@@ -163,6 +164,7 @@ module Dependabot
 
           TomlRB.dump(pipfile_object)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type?(type)
           return false if dependency.top_level?

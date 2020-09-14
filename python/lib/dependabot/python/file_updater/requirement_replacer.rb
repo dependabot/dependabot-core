@@ -30,8 +30,8 @@ module Dependabot
               updated_dependency_declaration_string
             end
 
-          unless old_requirement == new_requirement
-            raise "Expected content to change!" if content == updated_content
+          if old_requirement != new_requirement && content == updated_content
+            raise "Expected content to change!"
           end
 
           updated_content
