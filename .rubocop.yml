@@ -55,7 +55,7 @@ Lint/FloatComparison:
   Enabled: true
 
 Lint/MissingSuper:
-  Enabled: true
+  Enabled: false
 
 Lint/OutOfRangeRegexpRef:
   Enabled: true
