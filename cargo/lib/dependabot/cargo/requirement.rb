@@ -53,8 +53,6 @@ module Dependabot
       private
 
       def convert_rust_constraint_to_ruby_constraint(req_string)
-        req_string = req_string
-
         if req_string.include?("*")
           ruby_range(req_string.gsub(/(?:\.|^)[*]/, "").gsub(/^[^\d]/, ""))
         elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
