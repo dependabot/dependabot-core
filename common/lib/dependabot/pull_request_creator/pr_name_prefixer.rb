@@ -172,6 +172,7 @@ module Dependabot
         last_dependabot_commit_message&.split(/[:(]/)&.first
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def using_angular_commit_messages?
         return false if recent_commit_messages.none?
 
@@ -202,6 +203,7 @@ module Dependabot
 
         true
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def using_eslint_commit_messages?
         return false if recent_commit_messages.none?
