@@ -36,6 +36,45 @@ Lint/RaiseException:
 Lint/StructNewOverride:
   Enabled: false
 
+Lint/BinaryOperatorWithIdenticalOperands:
+  Enabled: true
+
+Lint/DuplicateRequire:
+  Enabled: true
+
+Lint/DuplicateRescueException:
+  Enabled: true
+
+Lint/EmptyConditionalBody:
+  Enabled: true
+
+Lint/EmptyFile:
+  Enabled: true
+
+Lint/FloatComparison:
+  Enabled: true
+
+Lint/MissingSuper:
+  Enabled: true
+
+Lint/OutOfRangeRegexpRef:
+  Enabled: true
+
+Lint/SelfAssignment:
+  Enabled: true
+
+Lint/TopLevelReturnWithArgument:
+  Enabled: true
+
+Lint/TrailingCommaInAttributeDeclaration:
+  Enabled: true
+
+Lint/UnreachableLoop:
+  Enabled: true
+
+Lint/UselessMethodDefinition:
+  Enabled: true
+
 Metrics/ClassLength:
   Max: 350
 
@@ -45,6 +84,9 @@ Metrics/ModuleLength:
 Metrics/CyclomaticComplexity:
   Max: 15
 
+Metrics/PerceivedComplexity:
+  Max: 10 # default: 8
+  
 Metrics/AbcSize:
   Max: 35
 
@@ -129,4 +171,31 @@ Style/RedundantAssignment:
   Enabled: false
 
 Style/RedundantFileExtensionInRequire:
+  Enabled: false
+
+Style/CombinableLoops:
+  Enabled: true
+
+Style/ExplicitBlockArgument:
+  Enabled: true
+
+Style/GlobalStdStream:
+  Enabled: true
+
+Style/KeywordParametersOrder:
+  Enabled: false
+
+Style/OptionalBooleanParameter:
+  Enabled: false
+
+Style/RedundantSelfAssignment:
+  Enabled: true
+
+Style/SingleArgumentDig:
+  Enabled: true
+
+Style/SoleNestedConditional:
+  Enabled: true
+
+Style/StringConcatenation:
   Enabled: false
