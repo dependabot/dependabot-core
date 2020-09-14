@@ -86,6 +86,7 @@ module Dependabot
         source.fetch("source_url")
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def auth_header
         source = dependency.requirements.
                  find { |r| r&.fetch(:source) }&.fetch(:source)
@@ -108,6 +109,7 @@ module Dependabot
           { "Authorization" => "Bearer #{token}" }
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end
