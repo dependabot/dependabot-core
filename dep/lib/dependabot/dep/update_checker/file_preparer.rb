@@ -168,6 +168,7 @@ module Dependabot
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def lower_bound_version
           @lower_bound_version ||=
             if version_from_lockfile
@@ -185,6 +186,7 @@ module Dependabot
               version_from_requirement || 0
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def version_from_lockfile
           return unless lockfile
