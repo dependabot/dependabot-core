@@ -113,6 +113,7 @@ module Dependabot
         end.min
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
 
@@ -127,7 +128,9 @@ module Dependabot
 
         version_from_ref
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def previous_version(dep)
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
@@ -144,6 +147,7 @@ module Dependabot
 
         version_from_ref
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def create_default_dependencies_label_if_required
         return if custom_labels

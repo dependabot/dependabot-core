@@ -33,6 +33,7 @@ module Dependabot
 
         attr_reader :requirements, :latest_resolvable_version, :updated_source
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_mixfile_requirement(req)
           req = update_source(req)
           return req unless latest_resolvable_version && req[:requirement]
@@ -59,7 +60,7 @@ module Dependabot
 
           req.merge(requirement: new_requirement)
         end
-
+        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
         def update_source(requirement_hash)

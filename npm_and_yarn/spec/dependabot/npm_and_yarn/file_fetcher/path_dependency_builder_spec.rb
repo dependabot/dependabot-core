@@ -49,7 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
+            to eq('{"name":"etag","version":"0.0.1"}')
         end
       end
 
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
+            to eq('{"name":"etag","version":"1.8.0"}')
         end
       end
 
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
+            to eq('{"name":"etag","version":"1.8.0"}')
         end
       end
     end

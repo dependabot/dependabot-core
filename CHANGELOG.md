@@ -1,3 +1,10 @@
+## v0.119.4, 15 September 2020
+
+- hex: fix lockfile updating transitive dependencies
+- python: fix python path dependencies with file (@lfdebrux)
+- Upgrade elixir/mix to 1.10.4
+- Bump rubocop from ~> 0.88.0 to ~> 0.90.0 in /common
+
 ## v0.119.3, 10 September 2020
 
 - Fix for nuget v2 responses that don't specify a base (@ppejovic)

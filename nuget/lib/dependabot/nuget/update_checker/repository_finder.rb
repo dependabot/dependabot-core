@@ -150,6 +150,8 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -181,6 +183,8 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
 
         def default_repository_details
@@ -195,6 +199,7 @@ module Dependabot
           }
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def add_config_file_credentials(sources:, doc:)
           sources.each do |source_details|
             key = source_details.fetch(:key)
@@ -227,6 +232,7 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_wrapping_zero_width_chars(string)
           string.force_encoding("UTF-8").encode.

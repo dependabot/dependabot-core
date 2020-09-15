@@ -3,7 +3,6 @@
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/dependency_file"
-require "dependabot/source"
 require "dependabot/npm_and_yarn/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 

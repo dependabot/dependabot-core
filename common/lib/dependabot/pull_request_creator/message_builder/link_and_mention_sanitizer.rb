@@ -58,7 +58,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -81,7 +80,6 @@ module Dependabot
             end
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def replace_github_host(text)
           text.gsub(
