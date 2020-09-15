@@ -178,6 +178,7 @@ module Dependabot
       )
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
@@ -221,6 +222,7 @@ module Dependabot
       # Save the file
       File.write("git.store", git_store_content)
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def self.reset_git_repo(path)
       Dir.chdir(path) do

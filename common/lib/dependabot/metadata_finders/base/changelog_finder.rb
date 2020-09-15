@@ -143,6 +143,7 @@ module Dependabot
           select_best_changelog(files)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def select_best_changelog(files)
           CHANGELOG_NAMES.each do |name|
             candidates = files.select { |f| f.name =~ /#{name}/i }
@@ -163,6 +164,7 @@ module Dependabot
 
           nil
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def tag_for_new_version
           @tag_for_new_version ||=

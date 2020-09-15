@@ -51,6 +51,7 @@ module Dependabot
         @require_up_to_date_base
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
@@ -66,6 +67,7 @@ module Dependabot
         retrying = true
         retry
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def unmerged_pull_request_exists?
         pull_requests_for_branch.reject(&:merged).any?

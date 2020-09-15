@@ -82,7 +82,6 @@ module Dependabot
           version_class.new(updated_version)
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def run_yarn_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -106,8 +105,6 @@ module Dependabot
 
           sleep(rand(3.0..10.0)) && retry
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def run_npm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do

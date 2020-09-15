@@ -21,7 +21,6 @@ module Dependabot
           !old_version_changelog_line.nil?
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def pruned_text
           changelog_lines = changelog_text.split("\n")
 
@@ -51,7 +50,6 @@ module Dependabot
 
           changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 

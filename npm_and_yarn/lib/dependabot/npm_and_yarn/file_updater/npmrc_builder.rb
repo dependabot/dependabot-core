@@ -127,7 +127,6 @@ module Dependabot
           build_npmrc_content_from_lockfile
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
@@ -154,8 +153,8 @@ module Dependabot
           # Work around a suspected yarn bug
           ["always-auth = true"] + lines
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
@@ -182,6 +181,7 @@ module Dependabot
 
           scopes.map { |scope| "@#{scope}:registry=https://#{registry}" }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def registry_credentials
           credentials.select { |cred| cred.fetch("type") == "npm_registry" }

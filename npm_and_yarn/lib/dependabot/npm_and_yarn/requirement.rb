@@ -56,7 +56,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_js_constraint_to_ruby_constraint(req_string)
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
@@ -72,7 +71,6 @@ module Dependabot
         else ruby_range(req_string)
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?[\s=]*/, "")
@@ -112,11 +110,10 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^[\s=]*/, "")
         parts = version.split(".")
-        parts = parts.fill("x", parts.length...3)
+        parts.fill("x", parts.length...3)
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
@@ -133,7 +130,6 @@ module Dependabot
 
         [">= #{version}", "< #{upper_bound}"]
       end
-      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end
