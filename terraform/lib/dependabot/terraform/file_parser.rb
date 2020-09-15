@@ -163,7 +163,7 @@ module Dependabot
         ref.match(version_regex).named_captures.fetch("version")
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity:
+      # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
       def get_proxied_source(raw_source)
@@ -190,7 +190,7 @@ module Dependabot
           tag.attributes&.fetch("name", nil)&.value == "terraform-get"
         end&.attributes&.fetch("content", nil)&.value
       end
-      # rubocop:enable Metrics/PerceivedComplexity:
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
