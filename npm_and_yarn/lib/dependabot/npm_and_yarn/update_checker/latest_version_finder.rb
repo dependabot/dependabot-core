@@ -167,6 +167,7 @@ module Dependabot
           wants_latest_dist_tag?(latest) ? latest : nil
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
           current_version = dependency.version
           if current_version &&
@@ -188,6 +189,7 @@ module Dependabot
             false
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|

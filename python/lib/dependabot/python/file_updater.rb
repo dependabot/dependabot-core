@@ -44,6 +44,7 @@ module Dependabot
 
       private
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependencies.flat_map(&:requirements)
         changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements)).
@@ -64,6 +65,7 @@ module Dependabot
 
         :requirements
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
         return :pipfile if pipfile_lock

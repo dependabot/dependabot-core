@@ -96,6 +96,7 @@ module Dependabot
           req.merge(requirement: new_req)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def widen_requirement(req, or_separator)
           current_requirement = req[:requirement]
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
@@ -115,6 +116,7 @@ module Dependabot
 
           req.merge(requirement: updated_requirement)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_requirement_version(req, or_separator)
           current_requirement = req[:requirement]

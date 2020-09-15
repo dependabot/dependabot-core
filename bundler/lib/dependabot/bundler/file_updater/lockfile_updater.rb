@@ -240,6 +240,7 @@ module Dependabot
           dependencies_to_unlock << gem_name
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def unlock_blocking_subdeps(dependencies_to_unlock, error)
           all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
                       specs.map(&:name).map(&:to_s)
@@ -268,6 +269,7 @@ module Dependabot
           # information to chart the full path through all conflicts unwound
           dependencies_to_unlock.append(*allowed_new_unlocks)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def build_definition(dependencies_to_unlock)
           defn = ::Bundler::Definition.build(
@@ -407,6 +409,7 @@ module Dependabot
             rewrite(gemspec_content)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
@@ -423,6 +426,7 @@ module Dependabot
           spec = gemspec_specs.find { |s| s.name == gem_name }
           spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def relevant_credentials
           credentials.

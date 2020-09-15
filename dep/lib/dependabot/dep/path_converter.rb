@@ -21,6 +21,7 @@ module Dependabot
         )
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       # Used in dependabot-backend, which doesn't have access to any Go
       # helpers.
       # TODO: remove the need for this.
@@ -52,6 +53,7 @@ module Dependabot
 
         import_details[2]
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def self.fetch_path_metadata(path)
         # TODO: This is not robust! Instead, we should shell out to Go and

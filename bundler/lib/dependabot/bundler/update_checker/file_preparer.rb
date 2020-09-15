@@ -214,6 +214,7 @@ module Dependabot
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements.
                          find { |r| r.fetch(:file) == filename }&.
@@ -234,6 +235,7 @@ module Dependabot
             ">= #{version_for_requirement || 0}"
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_git_source(content)
           FileUpdater::GitSourceRemover.new(
@@ -261,6 +263,7 @@ module Dependabot
           @lock_ruby_version && file == gemfile
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
@@ -278,6 +281,7 @@ module Dependabot
           spec = gemspec_specs.find { |s| s.name == gem_name }
           spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING

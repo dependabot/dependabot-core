@@ -152,11 +152,14 @@ module Dependabot
             check_original_requirements_resolvable
           end
 
-          if error.message.include?('Command "python setup.py egg_info"') ||
-             error.message.include?("exit status 1: python setup.py egg_info")
+          if (error.message.include?('Command "python setup.py egg_info"') ||
+              error.message.include?(
+                "exit status 1: python setup.py egg_info"
+              )) &&
+             check_original_requirements_resolvable
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
-            return if check_original_requirements_resolvable
+            return
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
@@ -332,6 +335,7 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def set_target_dependency_req(pipfile_content, updated_requirement)
           return pipfile_content unless updated_requirement
 
@@ -352,6 +356,7 @@ module Dependabot
 
           TomlRB.dump(pipfile_object)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type?(type)
           return false if dependency.top_level?

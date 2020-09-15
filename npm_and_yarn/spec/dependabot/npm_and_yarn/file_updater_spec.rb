@@ -643,7 +643,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                     "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19")
 
             expect(updated_yarn_lock.content).
-              to include("gitlab:kornelski/babel-preset-php#master\":")
+              to include('gitlab:kornelski/babel-preset-php#master":')
             expect(updated_yarn_lock.content).to include(
               "https://gitlab.com/kornelski/babel-preset-php/repository/archive.tar.gz?ref=5fbc24ccc37bd72052ce71ceae5b4934feb3ac19"
             )
@@ -662,7 +662,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
             expect(updated_yarn_lock.content).
-              to include("is-number@github:jonschlinkert/is-number#master\":")
+              to include('is-number@github:jonschlinkert/is-number#master":')
             expect(updated_yarn_lock.content).to include(
               "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
             )
@@ -711,7 +711,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
           expect(updated_yarn_lock.content).
-            to include("\"is-number@jonschlinkert/is-number#semver:^4.0.0\":")
+            to include('"is-number@jonschlinkert/is-number#semver:^4.0.0":')
           expect(updated_yarn_lock.content).
             to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
@@ -840,8 +840,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                     "1c62524db6e156050552fa4938c2de363d3116df")
 
             expect(updated_yarn_lock.content).to include(
-              "\"@reach/router@reach/router"\
-              "#1c62524db6e156050552fa4938c2de363d3116df\":"
+              '"@reach/router@reach/router'\
+              '#1c62524db6e156050552fa4938c2de363d3116df":'
             )
             expect(updated_yarn_lock.content).to include(
               "https://codeload.github.com/reach/router/tar.gz/"\
@@ -892,7 +892,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
             expect(updated_yarn_lock.content).
-              to include("is-number@github:jonschlinkert/is-number#4.0.0\":")
+              to include('is-number@github:jonschlinkert/is-number#4.0.0":')
             expect(updated_yarn_lock.content).to include(
               "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
             )
@@ -1051,9 +1051,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         expect(updated_yarn_lock.content).to include("lodash@^1.3.1")
 
         expect(updated_package_json.content).
-          to include("\"lodash\": \"^1.3.1\"")
+          to include('"lodash": "^1.3.1"')
         expect(updated_package_json.content).
-          to include("\"etag\": \"file:./deps/etag\"")
+          to include('"etag": "file:./deps/etag"')
       end
     end
 
@@ -1406,7 +1406,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
         expect(updated_yarn_lock.content).
           to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n"\
-                     "  version \"3.12.0\"")
+                     '  version "3.12.0"')
       end
     end
 
@@ -2743,10 +2743,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(lockfile.content).to_not include("lodash@^1.2.1:")
           expect(lockfile.content).to_not include("workspace-aggregator")
 
-          expect(package.content).to include("\"lodash\": \"1.3.1\"")
+          expect(package.content).to include('"lodash": "1.3.1"')
           expect(package.content).to include("\"./packages/*\",\n")
-          expect(package1.content).to include("\"lodash\": \"^1.3.1\"")
-          expect(other_package.content).to include("\"lodash\": \"^1.3.1\"")
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
         end
 
         context "with a dependency that doesn't appear in all the workspaces" do
@@ -2872,7 +2872,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           # version
           expect(updated_yarn_lock.content).to include(
             "graphql@0.11.7, "\
-            "\"graphql@git://github.com/graphql/graphql-js.git#npm\":"
+            '"graphql@git://github.com/graphql/graphql-js.git#npm":'
           )
           expect(updated_yarn_lock.content).
             to include("241058716a075a04fd6a84cd76151cd94c3ffd3a")

@@ -56,6 +56,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def manifest_dependencies
         dependency_set = DependencySet.new
 
@@ -82,6 +83,7 @@ module Dependabot
 
         dependency_set
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def build_dependency(name, requirement, type, file)
         Dependency.new(
