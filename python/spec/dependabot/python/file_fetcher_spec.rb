@@ -814,6 +814,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "file:./setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
           end
 
           it "fetches the path dependencies" do

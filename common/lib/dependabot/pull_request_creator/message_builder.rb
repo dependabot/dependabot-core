@@ -567,7 +567,6 @@ module Dependabot
           )
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def previous_version(dependency)
         # If we don't have a previous version, we *may* still be able to figure
         # one out if a ref was provided and has been changed (in which case the
@@ -590,7 +589,6 @@ module Dependabot
           dependency.previous_version
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)

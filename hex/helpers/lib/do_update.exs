@@ -31,6 +31,22 @@ dependency = String.to_atom(dependency_name)
 {dependency_lock, rest_lock} = Map.split(Mix.Dep.Lock.read(), [dependency])
 Mix.Dep.Fetcher.by_name([dependency_name], dependency_lock, rest_lock, [])
 
+System.cmd(
+  "mix",
+  [
+    "deps.get",
+    "--no-compile",
+    "--no-elixir-version-check",
+  ],
+  [
+    env: %{
+      "MIX_EXS" => nil,
+      "MIX_LOCK" => nil,
+      "MIX_DEPS" => nil
+    }
+  ]
+)
+
 lockfile_content =
   "mix.lock"
   |> File.read()

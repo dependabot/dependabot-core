@@ -86,6 +86,7 @@ module Dependabot
           property_name.sub(/^pom\./, "").sub(/^project\./, "")
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def parent_pom(pom)
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
@@ -106,6 +107,7 @@ module Dependabot
 
           fetch_remote_parent_pom(group_id, artifact_id, version, pom)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def parent_repository_urls(pom)
           repositories_finder.repository_urls(

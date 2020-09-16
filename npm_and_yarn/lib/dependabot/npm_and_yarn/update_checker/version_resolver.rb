@@ -130,6 +130,7 @@ module Dependabot
             )
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def resolve_latest_previous_version(dep, updated_version)
           return dep.version if dep.version
 
@@ -160,6 +161,7 @@ module Dependabot
             latest_previous_version
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def part_of_tightly_locked_monorepo?
           monorepo_dep_names =
