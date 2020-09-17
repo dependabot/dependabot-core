@@ -15,3 +15,5 @@ composer validate --no-check-publish
 composer install
 composer run lint -- --dry-run
 composer run stan
+
+rm -Rf ~/.composer/cache
