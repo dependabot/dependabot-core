@@ -36,10 +36,6 @@ resources:
       uri: git@github.com:Pix4D/dependabot-core.git
       private_key: ((concourse_janus_ssh_key))
       branch: ((branch))
-      paths:
-        - ci/*
-        - common/*
-        - docker/*
 
   - name: upstream-dependabot-core.git
     type: git
@@ -115,5 +111,7 @@ jobs:
     - get: known-hosts.s3
     - get: upstream-dependabot-core.git
       trigger: ((trigger))
+    - task: check-upstream-status
+      file: dependabot-core.git/ci/tasks/check-upstream-status-task.yml
     - task: merge-upstream
       file: dependabot-core.git/ci/tasks/merge-upstream-task.yml

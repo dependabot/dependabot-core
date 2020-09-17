@@ -1,0 +1,24 @@
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    repository: python
+    tag: 3.8
+
+params:
+  REPOSITORY_ACCESS_TOKEN: ((dependabot_github_access_token))
+
+inputs:
+  - name: upstream-dependabot-core.git
+  - name: dependabot-core.git
+
+run:
+  path: bash
+  args:
+    - -c
+    - |
+      set -o errexit
+      pip install requests
+      cd dependabot-core.git
+      COMMIT=$(cat ../upstream-dependabot-core.git/.git/HEAD)
+      python ci/tasks/check-upstream-status.py --commit=$COMMIT --token=$REPOSITORY_ACCESS_TOKEN
