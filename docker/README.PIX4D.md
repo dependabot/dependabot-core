@@ -62,21 +62,22 @@ contains two jobs:
 
 1. merge-upstream job is automatically triggered
     * fetches a new upstream version
+    * verify that all checks jobs finished successfully in the upstream repository
     * creates a feature branch in the forked repository
     * merges upstream changes
     * creates a PR in the forked repository
-       - PR title: [no-changes-to-pix4d-dependabot] - no review needed if tests are passing, otherwise reject the PR with explanation
+       - PR title: [no-changes-to-pix4d-dependabot] - no review needed. If tests are passing, this PR will be automerged in later steps
        - PR title: [changes-to-pix4d-dependabot] - more detailed review required. Review is necessary only for files in the `docker` folder. Suggestion: filter them in Github GUI
 
 2. The depenabot-core repository is monitored by set-pipeline job in Github-automation-tools pipeline - since the new PR is opened by the merge-upstream job,, PR resource detects it, sets a new featured pipeline, writes a comment in the PR with the pipeline URL and triggers the test-dependabot job
 
 3. Test-dependabot job runs unit tests that contain both upstream tests and our Pix4D modifications. Additionally it also runs rubocop a Ruby static code analyzer and code formatter
 
-4. If tests are green (passing test-dependabot is required) and PR gets 2 approvals, it can be merged to the master branch
+4. If tests are green (passing test-dependabot is required) and the PR title is [no-changes-to-pix4d-dependabot], the PR is automerged. Otherwise PR needs to get 2 approvals from PCI team members. Afterwhich, it can be merged to the master branch
 
 5. Any change in docker package manager folder or Pix4D Dockerfile, that is merged to master branch, triggers the build of new Docker image by linux-image-build-master pipeline
 
-Recently (August 2020), Github actions were activated in the upstream repository. This added 18 more checks to the repository. None of this checks are required for merging, but if they are not passing we should at least confirm that the checks are really failling upstream. We can verify this by checking lastest Actions workflows in the [upstream repository](https://github.com/dependabot/dependabot-core/actions) and finding the tag (18 CI jobs) that triggered the [Concourse job](https://builder.ci.pix4d.com/teams/developers/pipelines/dependabot-master/resources/upstream-dependabot-core.git). If we confirm that checks are failing upstream, we should probably wait for an upstream fix, especially if the cause for failing is related to rubocop. Otherwise, we should pull the feature branch from our forked repo and try to fix it.  
+Recently (August 2020), Github actions were activated in the upstream repository. The Github actions are disabled for Pix4D forked repository, so we added a step in the merge-upstream pipeline job to verify all the checks are passing upstream. If any of the checks fail upstream we do not merge the upstream changes into Pix4D forked repository.
 
 _CASE:_ upstream changes are merged in the feature branch, PR is opened, but the tests (rspec for `docker` package manager or rubocop) fail. What should I do?
 

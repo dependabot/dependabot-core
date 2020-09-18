@@ -4,8 +4,12 @@ image_resource:
   source:
     repository: ruby
     tag: 2.7-alpine
+params:
+  REPOSITORY_ACCESS_TOKEN: ((dependabot_github_access_token))
+
 inputs:
 - name: dependabot-core.git
+
 run:
   path: /bin/sh
   args:
@@ -27,3 +31,5 @@ run:
       bundle install
       bundle exec rspec ./spec/
       bundle exec rubocop -c ../.rubocop.yml ../
+      export COMMIT_HASH=$(cat ../.git/ref)
+      bundle exec ruby ../ci/tasks/pr_auto_merge.rb

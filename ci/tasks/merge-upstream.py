@@ -34,13 +34,13 @@ git.Repo(os.curdir).create_remote("upstream", url="../upstream-dependabot-core.g
 repo.git.checkout("-b", branch_name)
 repo.git.pull("upstream", "main")
 
-changed_files = [item.a_path for item in repo.head.commit.diff('HEAD~1')]
+changed_files = [item.a_path for item in repo.head.commit.diff("HEAD~1")]
 
 if not changed_files:
     print("No files were changed.")
     sys.exit(0)
 
-correct_files = any([filename.startswith('docker/') for filename in changed_files])
+correct_files = any([filename.startswith("docker/") for filename in changed_files])
 
 if correct_files:
     pr_title = "[changes-to-pix4d-dependabot] Merge the upstream changes"
@@ -52,6 +52,11 @@ repo.git.push("--set-upstream", "origin", branch_name)
 pr = (
     Github(access_token)
     .get_repo(MONITORED_REPO)
-    .create_pull(title=pr_title, base="master", head=branch_name, body=PR_MESSAGE,)
+    .create_pull(
+        title=pr_title,
+        base="master",
+        head=branch_name,
+        body=PR_MESSAGE,
+    )
 )
 print(pr.html_url)
