@@ -313,17 +313,19 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dep)
-        break_tag = source_provider_supports_html? ? "\n<br />" : "\n\n"
+        return ""
 
-        msg = ""
-        msg += vulnerabilities_cascade(dep)
-        msg += release_cascade(dep)
-        msg += changelog_cascade(dep)
-        msg += upgrade_guide_cascade(dep)
-        msg += commits_cascade(dep)
-        msg += maintainer_changes_cascade(dep)
-        msg += break_tag unless msg == ""
-        "\n" + sanitize_links_and_mentions(msg, unsafe: true)
+        # break_tag = source_provider_supports_html? ? "\n<br />" : "\n\n"
+
+        # msg = ""
+        # msg += vulnerabilities_cascade(dep)
+        # msg += release_cascade(dep)
+        # msg += changelog_cascade(dep)
+        # msg += upgrade_guide_cascade(dep)
+        # msg += commits_cascade(dep)
+        # msg += maintainer_changes_cascade(dep)
+        # msg += break_tag unless msg == ""
+        # "\n" + sanitize_links_and_mentions(msg, unsafe: true)
       end
 
       def vulnerabilities_cascade(dep)
