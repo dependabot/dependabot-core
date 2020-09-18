@@ -34,7 +34,7 @@ module Dependabot
 
         def to_s
           msg = ""
-          msg += vulnerabilities_cascade(dependency)
+          msg += vulnerabilities_cascade
           msg += release_cascade(dependency)
           msg += changelog_cascade(dependency)
           msg += upgrade_guide_cascade(dependency)
@@ -46,12 +46,14 @@ module Dependabot
 
         private
 
-        def vulnerabilities_cascade(dep)
-          fixed_vulns = vulnerabilities_fixed
-          return "" unless fixed_vulns&.any?
+        def vulnerabilities_cascade
+          return "" unless vulnerabilities_fixed&.any?
 
           msg = ""
-          fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
+          vulnerabilities_fixed.each do|v|
+            msg += serialized_vulnerability_details(v)
+          end
+
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
 
