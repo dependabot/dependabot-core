@@ -32,18 +32,14 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
-        def dep
-          dependency
-        end
-
         def to_s
           msg = ""
-          msg += vulnerabilities_cascade(dep)
-          msg += release_cascade(dep)
-          msg += changelog_cascade(dep)
-          msg += upgrade_guide_cascade(dep)
-          msg += commits_cascade(dep)
-          msg += maintainer_changes_cascade(dep)
+          msg += vulnerabilities_cascade(dependency)
+          msg += release_cascade(dependency)
+          msg += changelog_cascade(dependency)
+          msg += upgrade_guide_cascade(dependency)
+          msg += commits_cascade(dependency)
+          msg += maintainer_changes_cascade(dependency)
           msg += break_tag unless msg == ""
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
         end
