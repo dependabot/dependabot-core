@@ -36,7 +36,7 @@ module Dependabot
           msg = ""
           msg += vulnerabilities_cascade
           msg += release_cascade
-          msg += changelog_cascade(dependency)
+          msg += changelog_cascade
           msg += upgrade_guide_cascade(dependency)
           msg += commits_cascade(dependency)
           msg += maintainer_changes_cascade(dependency)
@@ -85,11 +85,11 @@ module Dependabot
           build_details_tag(summary: "Release notes", body: msg)
         end
 
-        def changelog_cascade(dep)
+        def changelog_cascade
           return "" unless changelog_url && changelog_text
 
           msg = "*Sourced from "\
-                "[#{dep.display_name}'s changelog](#{changelog_url}).*\n\n"
+                "[#{dependency.display_name}'s changelog](#{changelog_url}).*\n\n"
           msg +=
             begin
               changelog_lines = changelog_text.split("\n").first(50)
@@ -97,7 +97,7 @@ module Dependabot
               changelog_lines << truncated_line if changelog_lines.count == 50
               changelog_lines.join
             end
-          msg = link_issues(text: msg, dependency: dep)
+          msg = link_issues(text: msg, dependency: dependency)
           msg = fix_relative_links(text: msg, base_url: changelog_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
