@@ -19,7 +19,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       assignees: assignees,
       milestone: milestone,
       author_details: author_details,
-      signature_key: signature_key
+      signature_key: signature_key,
+      work_item: work_item
     )
   end
 
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
+  let(:work_item) { 123 }
   let(:credentials) do
     [{
       "type" => "git_source",
