@@ -313,65 +313,18 @@ module Dependabot
         end.join
       end
 
-      def metadata_cascades_for_dep(dep)
-        return ""
-
-        # break_tag = source_provider_supports_html? ? "\n<br />" : "\n\n"
-
-        # msg = ""
-        # msg += vulnerabilities_cascade(dep)
-        # msg += release_cascade(dep)
-        # msg += changelog_cascade(dep)
-        # msg += upgrade_guide_cascade(dep)
-        # msg += commits_cascade(dep)
-        # msg += maintainer_changes_cascade(dep)
-        # msg += break_tag unless msg == ""
-        # "\n" + sanitize_links_and_mentions(msg, unsafe: true)
+      def metadata_cascades_for_dep(dependency)
+        MetadataPresenter.new(
+          dependency: dependency,
+          provider: source.provider,
+          metadata_finder: metadata_finder(dependency),
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          github_redirection_service: github_redirection_service).to_s
       end
-
-      # def releases_url(dependency)
-      #   metadata_finder(dependency).releases_url
-      # end
-
-      # def releases_text(dependency)
-      #   metadata_finder(dependency).releases_text
-      # end
-
-      # def changelog_url(dependency)
-      #   metadata_finder(dependency).changelog_url
-      # end
-
-      # def changelog_text(dependency)
-      #   metadata_finder(dependency).changelog_text
-      # end
-
-      # def upgrade_url(dependency)
-      #   metadata_finder(dependency).upgrade_guide_url
-      # end
-
-      # def upgrade_text(dependency)
-      #   metadata_finder(dependency).upgrade_guide_text
-      # end
-
-      # def commits_url(dependency)
-      #   metadata_finder(dependency).commits_url
-      # end
-
-      # def commits(dependency)
-      #   metadata_finder(dependency).commits
-      # end
-
-      # def maintainer_changes(dependency)
-      #   metadata_finder(dependency).maintainer_changes
-      # end
 
       def source_url(dependency)
         metadata_finder(dependency).source_url
       end
-
-      # def homepage_url(dependency)
-      #   metadata_finder(dependency).homepage_url
-      # end
 
       def metadata_finder(dependency)
         @metadata_finder ||= {}
@@ -479,28 +432,6 @@ module Dependabot
         end
 
         raise "No new requirement!"
-      end
-
-      def link_issues(text:, dependency:)
-        IssueLinker.
-          new(source_url: source_url(dependency)).
-          link_issues(text: text)
-      end
-
-      def fix_relative_links(text:, base_url:)
-        text.gsub(/\[.*?\]\([^)]+\)/) do |link|
-          next link if link.include?("://")
-
-          relative_path = link.match(/\((.*?)\)/).captures.last
-          base = base_url.split("://").last.gsub(%r{[^/]*$}, "")
-          path = File.join(base, relative_path)
-          absolute_path =
-            base_url.sub(
-              %r{(?<=://).*$},
-              Pathname.new(path).cleanpath.to_s
-            )
-          link.gsub(relative_path, absolute_path)
-        end
       end
 
       def ref_changed?(dependency)

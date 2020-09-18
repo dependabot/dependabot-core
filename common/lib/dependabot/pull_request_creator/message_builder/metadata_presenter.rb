@@ -6,12 +6,40 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class MetadataPresenter
-        attr_reader :dependency, :provider, :metadata_finder
+        extend Forwardable
 
-        def initialize(dependency:, provider:, metadata_finder:)
+        attr_reader :dependency, :provider, :metadata_finder,
+                    :vulnerabilities_fixed, :github_redirection_service
+
+        def_delegators :metadata_finder,
+                       :changelog_url,
+                       :changelog_text,
+                       :commits_url,
+                       :commits,
+                       :maintainer_changes,
+                       :releases_url,
+                       :releases_text,
+                       :source_url
+
+        def upgrade_url
+          metadata_finder.upgrade_guide_url
+        end
+
+        def upgrade_text
+          metadata_finder.upgrade_guide_text
+        end
+
+        def initialize(dependency:, provider:, metadata_finder:,
+                       vulnerabilities_fixed:, github_redirection_service:)
           @dependency = dependency
           @provider = provider
           @metadata_finder = metadata_finder
+          @vulnerabilities_fixed = vulnerabilities_fixed
+          @github_redirection_service = github_redirection_service
+        end
+
+        def dep
+          dependency
         end
 
         def to_s
@@ -41,13 +69,13 @@ module Dependabot
         end
 
         def release_cascade(dep)
-          return "" unless releases_text(dep) && releases_url(dep)
+          return "" unless releases_text && releases_url
 
           msg = "*Sourced from [#{dep.display_name}'s releases]"\
-                "(#{releases_url(dep)}).*\n\n"
+                "(#{releases_url}).*\n\n"
           msg +=
             begin
-              release_note_lines = releases_text(dep).split("\n").first(50)
+              release_note_lines = releases_text.split("\n").first(50)
               release_note_lines = release_note_lines.map { |line| "> #{line}\n" }
               if release_note_lines.count == 50
                 release_note_lines << truncated_line
@@ -57,7 +85,7 @@ module Dependabot
           msg = link_issues(text: msg, dependency: dep)
           msg = fix_relative_links(
             text: msg,
-            base_url: source_url(dep) + "/blob/HEAD/"
+            base_url: source_url + "/blob/HEAD/"
           )
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
@@ -66,19 +94,19 @@ module Dependabot
         end
 
         def changelog_cascade(dep)
-          return "" unless changelog_url(dep) && changelog_text(dep)
+          return "" unless changelog_url && changelog_text
 
           msg = "*Sourced from "\
-                "[#{dep.display_name}'s changelog](#{changelog_url(dep)}).*\n\n"
+                "[#{dep.display_name}'s changelog](#{changelog_url}).*\n\n"
           msg +=
             begin
-              changelog_lines = changelog_text(dep).split("\n").first(50)
+              changelog_lines = changelog_text.split("\n").first(50)
               changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
               changelog_lines << truncated_line if changelog_lines.count == 50
               changelog_lines.join
             end
           msg = link_issues(text: msg, dependency: dep)
-          msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
+          msg = fix_relative_links(text: msg, base_url: changelog_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
 
@@ -86,20 +114,20 @@ module Dependabot
         end
 
         def upgrade_guide_cascade(dep)
-          return "" unless upgrade_url(dep) && upgrade_text(dep)
+          return "" unless upgrade_url && upgrade_text
 
           msg = "*Sourced from "\
                 "[#{dep.display_name}'s upgrade guide]"\
-                "(#{upgrade_url(dep)}).*\n\n"
+                "(#{upgrade_url}).*\n\n"
           msg +=
             begin
-              upgrade_lines = upgrade_text(dep).split("\n").first(50)
+              upgrade_lines = upgrade_text.split("\n").first(50)
               upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
               upgrade_lines << truncated_line if upgrade_lines.count == 50
               upgrade_lines.join
             end
           msg = link_issues(text: msg, dependency: dep)
-          msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
+          msg = fix_relative_links(text: msg, base_url: upgrade_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
 
@@ -107,11 +135,11 @@ module Dependabot
         end
 
         def commits_cascade(dep)
-          return "" unless commits_url(dep) && commits(dep)
+          return "" unless commits_url && commits
 
           msg = ""
 
-          commits(dep).reverse.first(10).each do |commit|
+          commits.reverse.first(10).each do |commit|
             title = commit[:message].strip.split("\n").first
             title = title.slice(0..76) + "..." if title && title.length > 80
             title = title&.gsub(/(?<=[^\w.-])([_*`~])/, '\\1')
@@ -122,11 +150,11 @@ module Dependabot
           msg = msg.gsub(/\<.*?\>/) { |tag| "\\#{tag}" }
 
           msg +=
-            if commits(dep).count > 10
+            if commits.count > 10
               "- Additional commits viewable in "\
-              "[compare view](#{commits_url(dep)})\n"
+              "[compare view](#{commits_url})\n"
             else
-              "- See full diff in [compare view](#{commits_url(dep)})\n"
+              "- See full diff in [compare view](#{commits_url})\n"
             end
           msg = link_issues(text: msg, dependency: dep)
           msg = sanitize_links_and_mentions(msg)
@@ -135,11 +163,11 @@ module Dependabot
         end
 
         def maintainer_changes_cascade(dep)
-          return "" unless maintainer_changes(dep)
+          return "" unless maintainer_changes
 
           build_details_tag(
             summary: "Maintainer changes",
-            body: sanitize_links_and_mentions(maintainer_changes(dep)) + "\n"
+            body: sanitize_links_and_mentions(maintainer_changes) + "\n"
           )
         end
 
@@ -197,6 +225,28 @@ module Dependabot
           msg
         end
 
+        def link_issues(text:, dependency:)
+          IssueLinker.
+            new(source_url: source_url).
+            link_issues(text: text)
+        end
+
+        def fix_relative_links(text:, base_url:)
+          text.gsub(/\[.*?\]\([^)]+\)/) do |link|
+            next link if link.include?("://")
+
+            relative_path = link.match(/\((.*?)\)/).captures.last
+            base = base_url.split("://").last.gsub(%r{[^/]*$}, "")
+            path = File.join(base, relative_path)
+            absolute_path =
+              base_url.sub(
+                %r{(?<=://).*$},
+                Pathname.new(path).cleanpath.to_s
+              )
+            link.gsub(relative_path, absolute_path)
+          end
+        end
+
         def truncated_line
           # Tables can spill out of truncated details, so we close them
           "></tr></table> ... (truncated)\n"
@@ -211,7 +261,7 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          return text unless source.provider == "github"
+          return text unless provider == "github"
 
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
