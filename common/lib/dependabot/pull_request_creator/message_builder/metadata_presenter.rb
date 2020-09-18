@@ -39,7 +39,7 @@ module Dependabot
           msg += changelog_cascade
           msg += upgrade_guide_cascade
           msg += commits_cascade
-          msg += maintainer_changes_cascade(dependency)
+          msg += maintainer_changes_cascade
           msg += break_tag unless msg == ""
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
         end
@@ -154,7 +154,7 @@ module Dependabot
           build_details_tag(summary: "Commits", body: msg)
         end
 
-        def maintainer_changes_cascade(dep)
+        def maintainer_changes_cascade
           return "" unless maintainer_changes
 
           build_details_tag(
