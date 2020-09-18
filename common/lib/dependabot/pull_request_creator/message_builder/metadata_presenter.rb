@@ -37,7 +37,7 @@ module Dependabot
           msg += vulnerabilities_cascade
           msg += release_cascade
           msg += changelog_cascade
-          msg += upgrade_guide_cascade(dependency)
+          msg += upgrade_guide_cascade
           msg += commits_cascade(dependency)
           msg += maintainer_changes_cascade(dependency)
           msg += break_tag unless msg == ""
@@ -105,11 +105,11 @@ module Dependabot
           build_details_tag(summary: "Changelog", body: msg)
         end
 
-        def upgrade_guide_cascade(dep)
+        def upgrade_guide_cascade
           return "" unless upgrade_guide_url && upgrade_guide_text
 
           msg = "*Sourced from "\
-                "[#{dep.display_name}'s upgrade guide]"\
+                "[#{dependency.display_name}'s upgrade guide]"\
                 "(#{upgrade_guide_url}).*\n\n"
           msg +=
             begin
@@ -118,7 +118,7 @@ module Dependabot
               upgrade_lines << truncated_line if upgrade_lines.count == 50
               upgrade_lines.join
             end
-          msg = link_issues(text: msg, dependency: dep)
+          msg = link_issues(text: msg, dependency: dependency)
           msg = fix_relative_links(text: msg, base_url: upgrade_guide_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
