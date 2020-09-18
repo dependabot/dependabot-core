@@ -38,7 +38,7 @@ module Dependabot
           msg += release_cascade
           msg += changelog_cascade
           msg += upgrade_guide_cascade
-          msg += commits_cascade(dependency)
+          msg += commits_cascade
           msg += maintainer_changes_cascade(dependency)
           msg += break_tag unless msg == ""
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
@@ -126,7 +126,7 @@ module Dependabot
           build_details_tag(summary: "Upgrade guide", body: msg)
         end
 
-        def commits_cascade(dep)
+        def commits_cascade
           return "" unless commits_url && commits
 
           msg = ""
@@ -148,7 +148,7 @@ module Dependabot
             else
               "- See full diff in [compare view](#{commits_url})\n"
             end
-          msg = link_issues(text: msg, dependency: dep)
+          msg = link_issues(text: msg, dependency: dependency)
           msg = sanitize_links_and_mentions(msg)
 
           build_details_tag(summary: "Commits", body: msg)
