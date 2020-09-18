@@ -57,7 +57,7 @@ module Dependabot
         private
 
         def vulnerabilities_cascade(dep)
-          fixed_vulns = vulnerabilities_fixed[dep.name]
+          fixed_vulns = vulnerabilities_fixed
           return "" unless fixed_vulns&.any?
 
           msg = ""
