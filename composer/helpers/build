@@ -16,4 +16,5 @@ composer install
 composer run lint -- --dry-run
 composer run stan
 
+# Composer caches source zips and repo metadata, none of which is useful. Save space in this layer
 rm -Rf ~/.composer/cache
