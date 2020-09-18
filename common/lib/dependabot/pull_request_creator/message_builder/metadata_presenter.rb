@@ -19,15 +19,9 @@ module Dependabot
                        :maintainer_changes,
                        :releases_url,
                        :releases_text,
-                       :source_url
-
-        def upgrade_url
-          metadata_finder.upgrade_guide_url
-        end
-
-        def upgrade_text
-          metadata_finder.upgrade_guide_text
-        end
+                       :source_url,
+                       :upgrade_guide_url,
+                       :upgrade_guide_text
 
         def initialize(dependency:, provider:, metadata_finder:,
                        vulnerabilities_fixed:, github_redirection_service:)
@@ -114,20 +108,20 @@ module Dependabot
         end
 
         def upgrade_guide_cascade(dep)
-          return "" unless upgrade_url && upgrade_text
+          return "" unless upgrade_guide_url && upgrade_guide_text
 
           msg = "*Sourced from "\
                 "[#{dep.display_name}'s upgrade guide]"\
-                "(#{upgrade_url}).*\n\n"
+                "(#{upgrade_guide_url}).*\n\n"
           msg +=
             begin
-              upgrade_lines = upgrade_text.split("\n").first(50)
+              upgrade_lines = upgrade_guide_text.split("\n").first(50)
               upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
               upgrade_lines << truncated_line if upgrade_lines.count == 50
               upgrade_lines.join
             end
           msg = link_issues(text: msg, dependency: dep)
-          msg = fix_relative_links(text: msg, base_url: upgrade_url)
+          msg = fix_relative_links(text: msg, base_url: upgrade_guide_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
 
