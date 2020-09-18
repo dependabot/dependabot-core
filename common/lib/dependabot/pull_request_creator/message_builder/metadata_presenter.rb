@@ -35,7 +35,7 @@ module Dependabot
         def to_s
           msg = ""
           msg += vulnerabilities_cascade
-          msg += release_cascade(dependency)
+          msg += release_cascade
           msg += changelog_cascade(dependency)
           msg += upgrade_guide_cascade(dependency)
           msg += commits_cascade(dependency)
@@ -60,10 +60,10 @@ module Dependabot
           build_details_tag(summary: "Vulnerabilities fixed", body: msg)
         end
 
-        def release_cascade(dep)
+        def release_cascade
           return "" unless releases_text && releases_url
 
-          msg = "*Sourced from [#{dep.display_name}'s releases]"\
+          msg = "*Sourced from [#{dependency.display_name}'s releases]"\
                 "(#{releases_url}).*\n\n"
           msg +=
             begin
@@ -74,7 +74,7 @@ module Dependabot
               end
               release_note_lines.join
             end
-          msg = link_issues(text: msg, dependency: dep)
+          msg = link_issues(text: msg, dependency: dependency)
           msg = fix_relative_links(
             text: msg,
             base_url: source_url + "/blob/HEAD/"
