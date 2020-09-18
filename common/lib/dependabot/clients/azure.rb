@@ -170,7 +170,7 @@ module Dependabot
           title: pr_name,
           description: pr_description,
           labels: labels.map { |label| { name: label } },
-          workItemRefs: [{id: work_item}]
+          workItemRefs: [{ id: work_item }]
         }
 
         post(source.api_endpoint +

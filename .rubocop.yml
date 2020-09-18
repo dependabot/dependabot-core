@@ -101,6 +101,7 @@ Metrics/BlockLength:
     - '*/dependabot-*.gemspec'
 
 Metrics/ParameterLists:
+  Max: 6
   CountKeywordArgs: false
 
 Naming/FileName:
