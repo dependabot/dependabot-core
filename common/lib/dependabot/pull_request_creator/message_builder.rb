@@ -442,7 +442,6 @@ module Dependabot
       end
 
       def build_details_tag(summary:, body:)
-        # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
         # CodeCommit does not support the <details> tag (no url available)
         if source_provider_supports_html?
           msg = "<details>\n<summary>#{summary}</summary>\n\n"
@@ -454,7 +453,7 @@ module Dependabot
       end
 
       def source_provider_supports_html?
-        !%w(azure codecommit).include?(source.provider)
+        !%w(codecommit).include?(source.provider)
       end
 
       def serialized_vulnerability_details(details)
