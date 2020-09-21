@@ -1,3 +1,9 @@
+## v0.119.5, 21 September 2020
+
+- Fix missing notice in PR content when source text is truncated
+- composer: remove root cache
+- nuget: Force encode nuspec files to utf-8 for regex matching
+
 ## v0.119.4, 15 September 2020
 
 - hex: fix lockfile updating transitive dependencies
