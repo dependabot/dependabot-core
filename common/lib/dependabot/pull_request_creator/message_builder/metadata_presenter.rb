@@ -225,10 +225,11 @@ module Dependabot
         end
 
         def quote_and_truncate(text, limit: 50)
-          lines = text.split("\n").first(limit)
-          lines = lines.map { |line| "> #{line}\n" }
-          lines << truncated_line if lines.count == limit
-          lines.join
+          lines = text.split("\n")
+          lines.first(limit).tap do |limited_lines|
+            limited_lines.map! { |line| "> #{line}\n" }
+            limited_lines << truncated_line if lines.count > limit
+          end.join
         end
 
         def truncated_line
