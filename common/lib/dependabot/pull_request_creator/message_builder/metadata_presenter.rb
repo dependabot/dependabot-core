@@ -241,7 +241,7 @@ module Dependabot
 
         def truncated_line
           # Tables can spill out of truncated details, so we close them
-          "></tr></table> ... (truncated)\n"
+          "></tr></table> \n ... (truncated)\n"
         end
 
         def break_tag
