@@ -319,7 +319,8 @@ module Dependabot
           source: source,
           metadata_finder: metadata_finder(dependency),
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
-          github_redirection_service: github_redirection_service).to_s
+          github_redirection_service: github_redirection_service
+        ).to_s
       end
 
       def source_url(dependency)

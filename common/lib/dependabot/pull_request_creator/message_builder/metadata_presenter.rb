@@ -50,7 +50,7 @@ module Dependabot
           return "" unless vulnerabilities_fixed&.any?
 
           msg = ""
-          vulnerabilities_fixed.each do|v|
+          vulnerabilities_fixed.each do |v|
             msg += serialized_vulnerability_details(v)
           end
 
@@ -68,7 +68,8 @@ module Dependabot
           msg +=
             begin
               release_note_lines = releases_text.split("\n").first(50)
-              release_note_lines = release_note_lines.map { |line| "> #{line}\n" }
+              release_note_lines =
+                release_note_lines.map { |line| "> #{line}\n" }
               if release_note_lines.count == 50
                 release_note_lines << truncated_line
               end
@@ -89,7 +90,8 @@ module Dependabot
           return "" unless changelog_url && changelog_text
 
           msg = "*Sourced from "\
-                "[#{dependency.display_name}'s changelog](#{changelog_url}).*\n\n"
+                "[#{dependency.display_name}'s changelog]"\
+                "(#{changelog_url}).*\n\n"
           msg +=
             begin
               changelog_lines = changelog_text.split("\n").first(50)
@@ -206,7 +208,11 @@ module Dependabot
 
         def vulnerability_version_range_lines(details)
           msg = ""
-          %w(patched_versions unaffected_versions affected_versions).each do |tp|
+          %w(
+            patched_versions
+            unaffected_versions
+            affected_versions
+          ).each do |tp|
             type = tp.split("_").first.capitalize
             next unless details[tp]
 
