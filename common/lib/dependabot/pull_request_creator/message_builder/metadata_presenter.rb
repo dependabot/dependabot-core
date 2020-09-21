@@ -75,7 +75,7 @@ module Dependabot
               end
               release_note_lines.join
             end
-          msg = link_issues(text: msg, dependency: dependency)
+          msg = link_issues(text: msg)
           msg = fix_relative_links(
             text: msg,
             base_url: source_url + "/blob/HEAD/"
@@ -99,7 +99,7 @@ module Dependabot
               changelog_lines << truncated_line if changelog_lines.count == 50
               changelog_lines.join
             end
-          msg = link_issues(text: msg, dependency: dependency)
+          msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: changelog_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
@@ -120,7 +120,7 @@ module Dependabot
               upgrade_lines << truncated_line if upgrade_lines.count == 50
               upgrade_lines.join
             end
-          msg = link_issues(text: msg, dependency: dependency)
+          msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: upgrade_guide_url)
           msg = sanitize_template_tags(msg)
           msg = sanitize_links_and_mentions(msg)
@@ -150,7 +150,7 @@ module Dependabot
             else
               "- See full diff in [compare view](#{commits_url})\n"
             end
-          msg = link_issues(text: msg, dependency: dependency)
+          msg = link_issues(text: msg)
           msg = sanitize_links_and_mentions(msg)
 
           build_details_tag(summary: "Commits", body: msg)
@@ -223,7 +223,7 @@ module Dependabot
           msg
         end
 
-        def link_issues(text:, dependency:)
+        def link_issues(text:)
           IssueLinker.
             new(source_url: source_url).
             link_issues(text: text)
