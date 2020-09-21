@@ -65,16 +65,7 @@ module Dependabot
 
           msg = "*Sourced from [#{dependency.display_name}'s releases]"\
                 "(#{releases_url}).*\n\n"
-          msg +=
-            begin
-              release_note_lines = releases_text.split("\n").first(50)
-              release_note_lines =
-                release_note_lines.map { |line| "> #{line}\n" }
-              if release_note_lines.count == 50
-                release_note_lines << truncated_line
-              end
-              release_note_lines.join
-            end
+          msg += quote_and_truncate(releases_text)
           msg = link_issues(text: msg)
           msg = fix_relative_links(
             text: msg,
@@ -92,13 +83,7 @@ module Dependabot
           msg = "*Sourced from "\
                 "[#{dependency.display_name}'s changelog]"\
                 "(#{changelog_url}).*\n\n"
-          msg +=
-            begin
-              changelog_lines = changelog_text.split("\n").first(50)
-              changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
-              changelog_lines << truncated_line if changelog_lines.count == 50
-              changelog_lines.join
-            end
+          msg += quote_and_truncate(changelog_text)
           msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: changelog_url)
           msg = sanitize_template_tags(msg)
@@ -113,13 +98,7 @@ module Dependabot
           msg = "*Sourced from "\
                 "[#{dependency.display_name}'s upgrade guide]"\
                 "(#{upgrade_guide_url}).*\n\n"
-          msg +=
-            begin
-              upgrade_lines = upgrade_guide_text.split("\n").first(50)
-              upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
-              upgrade_lines << truncated_line if upgrade_lines.count == 50
-              upgrade_lines.join
-            end
+          msg += quote_and_truncate(upgrade_guide_text)
           msg = link_issues(text: msg)
           msg = fix_relative_links(text: msg, base_url: upgrade_guide_url)
           msg = sanitize_template_tags(msg)
@@ -243,6 +222,14 @@ module Dependabot
               )
             link.gsub(relative_path, absolute_path)
           end
+        end
+
+        def quote_and_truncate(text, limit: 50)
+          lines = text.split("\n")
+          lines.first(limit).tap do |limited_lines|
+            limited_lines.map! { |line| "> #{line}\n" }
+            limited_lines << truncated_line if lines.count > limit
+          end.join
         end
 
         def truncated_line
