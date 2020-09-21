@@ -323,8 +323,28 @@ module Dependabot
         ).to_s
       end
 
+      def changelog_url(dependency)
+        metadata_finder(dependency).changelog_url
+      end
+
+      def commits_url(dependency)
+        metadata_finder(dependency).commits_url
+      end
+
+      def homepage_url(dependency)
+        metadata_finder(dependency).homepage_url
+      end
+
+      def releases_url(dependency)
+        metadata_finder(dependency).releases_url
+      end
+
       def source_url(dependency)
         metadata_finder(dependency).source_url
+      end
+
+      def upgrade_url(dependency)
+        metadata_finder(dependency).upgrade_guide_url
       end
 
       def metadata_finder(dependency)
