@@ -327,6 +327,10 @@ module Dependabot
         metadata_finder(dependency).source_url
       end
 
+      def homepage_url(dependency)
+        metadata_finder(dependency).homepage_url
+      end
+
       def metadata_finder(dependency)
         @metadata_finder ||= {}
         @metadata_finder[dependency.name] ||=
