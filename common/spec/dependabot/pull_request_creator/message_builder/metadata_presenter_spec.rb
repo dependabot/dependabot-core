@@ -22,15 +22,6 @@ RSpec.describe namespace::MetadataPresenter do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-
   class MockMetadataFinder < Dependabot::MetadataFinders::Base
     def look_up_source
       Dependabot::Source.new(provider: "github", repo: "gocardless/business")
