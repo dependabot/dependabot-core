@@ -58,7 +58,7 @@ RSpec.describe namespace::MetadataPresenter do
   subject(:presenter) do
     described_class.new(
       dependency: dependency,
-      provider: source.provider,
+      source: source,
       metadata_finder: metadata_finder,
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service

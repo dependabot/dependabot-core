@@ -316,7 +316,7 @@ module Dependabot
       def metadata_cascades_for_dep(dependency)
         MetadataPresenter.new(
           dependency: dependency,
-          provider: source.provider,
+          source: source,
           metadata_finder: metadata_finder(dependency),
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service).to_s

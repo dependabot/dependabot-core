@@ -8,7 +8,7 @@ module Dependabot
       class MetadataPresenter
         extend Forwardable
 
-        attr_reader :dependency, :provider, :metadata_finder,
+        attr_reader :dependency, :source, :metadata_finder,
                     :vulnerabilities_fixed, :github_redirection_service
 
         def_delegators :metadata_finder,
@@ -23,10 +23,10 @@ module Dependabot
                        :upgrade_guide_url,
                        :upgrade_guide_text
 
-        def initialize(dependency:, provider:, metadata_finder:,
+        def initialize(dependency:, source:, metadata_finder:,
                        vulnerabilities_fixed:, github_redirection_service:)
           @dependency = dependency
-          @provider = provider
+          @source = source
           @metadata_finder = metadata_finder
           @vulnerabilities_fixed = vulnerabilities_fixed
           @github_redirection_service = github_redirection_service
@@ -249,11 +249,11 @@ module Dependabot
         end
 
         def source_provider_supports_html?
-          !%w(azure codecommit).include?(provider)
+          !%w(azure codecommit).include?(source.provider)
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          return text unless provider == "github"
+          return text unless source.provider == "github"
 
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
