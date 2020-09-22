@@ -12,7 +12,7 @@ module Dependabot
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, work_item:)
+                     author_details:, labeler:, work_item: nil)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
