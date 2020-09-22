@@ -17,6 +17,16 @@ module Dependabot
     class RepoDisabled < StandardError; end
     class NoHistoryInCommon < StandardError; end
 
+    # AnnotationError is raised if a PR was created, but failed annotation
+    class AnnotationError < StandardError
+      attr_reader :cause, :pull_request
+      def initialize(cause, pull_request)
+        super(cause.message)
+        @cause = cause
+        @pull_request = pull_request
+      end
+    end
+
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_header, :pr_message_footer,
                 :custom_labels, :author_details, :signature_key,
