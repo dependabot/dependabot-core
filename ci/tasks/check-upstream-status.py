@@ -1,6 +1,6 @@
 """ For a commit that triggered the job, verify that all the checks successfully
 finished before trying to merge the upstream changes. Upstream checks can take up
-to 30 minutes, so we check multiple times (max 10), and wait 150 sec between the 
+to 30 minutes, so we check multiple times (max 12), and wait 300 sec between the 
 attempts.
 """
 
@@ -11,7 +11,7 @@ import time
 
 import requests
 
-WAIT_TIME = 150
+WAIT_TIME = 300
 
 logger = logging.getLogger("check-upstream-status")
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +23,7 @@ parser.add_argument("--token", required=True, help="Github repository access tok
 args = parser.parse_args()
 
 num_check = 0
-max_checks = 10
+max_checks = 12
 
 while num_check < max_checks:
     num_check += 1

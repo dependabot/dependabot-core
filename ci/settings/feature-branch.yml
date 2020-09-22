@@ -3,3 +3,4 @@ gchat_hook:
 trigger: false
 pr_bot_triggered_jobs:
     - test-dependabot
+disable_on_feature: true

@@ -94,7 +94,7 @@ jobs:
       file: dependabot-core.git/ci/tasks/test-dependabot-task.yml
 
   - name: merge-upstream
-    disable_manual_trigger: true
+    disable_manual_trigger: ((disable_on_feature))
     on_error:
       do:
       - put: google-chat
