@@ -1,3 +1,14 @@
+## v0.119.6, 21 September 2020
+
+- Fix a bug generating commit messages introduced in v0.119.5
+- bundler: add temporary support for persistent_gems_after_clean
+
+## v0.119.5, 21 September 2020
+
+- Fix missing notice in PR content when source text is truncated
+- composer: remove root cache
+- nuget: Force encode nuspec files to utf-8 for regex matching
+
 ## v0.119.4, 15 September 2020
 
 - hex: fix lockfile updating transitive dependencies
