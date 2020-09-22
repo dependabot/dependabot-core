@@ -155,7 +155,7 @@ module Dependabot
 
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
-                              pr_description, labels, work_item)
+                              pr_description, labels, work_item = nil)
         # Azure DevOps only support descriptions up to 4000 characters
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         azure_max_length = 3999
