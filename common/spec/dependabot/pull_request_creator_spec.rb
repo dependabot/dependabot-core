@@ -46,7 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
-  let(:provider_metadata) { { work_item: 123 } }
+  let(:provider_metadata) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -237,6 +237,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with an Azure source" do
       let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Azure) }
+      let(:provider_metadata) { { work_item: 123 } }
 
       it "delegates to PullRequestCreator::Azure with correct params" do
         expect(described_class::Azure).
