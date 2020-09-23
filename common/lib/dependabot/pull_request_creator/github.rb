@@ -422,27 +422,38 @@ module Dependabot
       end
 
       def handle_error(err)
-        cause = case err
-                when AnnotationError
-                  err.cause
-                else
-                  err
-                end
+        case err
+        when AnnotationError
+          cause = err.cause
+          raiser = lambda do |type, message|
+            raise AnnotationError.new(
+              type.new(message),
+              err.pull_request
+            )
+          end
+        else
+          cause = err
+          raiser = ->(e, m) { raise e, m }
+        end
 
         case cause
         when Octokit::Forbidden
-          raise RepoDisabled, err.message if err.message.include?("disabled")
-          raise RepoArchived, err.message if err.message.include?("archived")
+          if err.message.include?("disabled")
+            raiser.call RepoDisabled, err.message
+          elsif err.message.include?("archived")
+            raiser.call RepoArchived, err.message
+          end
 
           raise err
         when Octokit::NotFound
           raise err if repo_exists?
 
-          raise RepoNotFound, err.message
+          raiser.call RepoNotFound, err.message
         when Octokit::UnprocessableEntity
-          raise err unless err.message.include?("no history in common")
-
-          raise NoHistoryInCommon, err.message
+          if err.message.include?("no history in common")
+            raiser.call NoHistoryInCommon, err.message
+          end
+          raise err
         else
           raise err
         end
