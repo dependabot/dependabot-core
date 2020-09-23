@@ -2,7 +2,7 @@
 
 require "octokit"
 
-github_token = ENV["GITHUB_ACCESS_TOKEN"]
+github_token = ENV["REPOSITORY_ACCESS_TOKEN"]
 commit_hash = ENV["COMMIT_HASH"]
 project_path = "pix4d/dependabot-core"
 
