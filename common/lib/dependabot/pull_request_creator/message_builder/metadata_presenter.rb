@@ -242,7 +242,7 @@ module Dependabot
         end
 
         def source_provider_supports_html?
-          !%w(azure codecommit).include?(source.provider)
+          source.provider != "codecommit"
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
