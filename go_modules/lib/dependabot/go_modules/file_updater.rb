@@ -62,7 +62,8 @@ module Dependabot
             dependencies: dependencies,
             go_mod: go_mod,
             go_sum: go_sum,
-            credentials: credentials
+            credentials: credentials,
+            repo_contents_path: repo_contents_path
           )
       end
     end

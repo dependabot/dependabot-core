@@ -18,22 +18,24 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      }],
+      repo_contents_path: repo_contents_path
     )
   end
 
   let(:files) { [go_mod, go_sum] }
+  let(:project_name) { "go_sum" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
-  let(:go_mod_body) { fixture("go_mods", go_mod_fixture_name) }
-  let(:go_mod_fixture_name) { "go.mod" }
+  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
 
   let(:go_sum) do
     Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
   end
-  let(:go_sum_body) { fixture("go_mods", go_sum_fixture_name) }
-  let(:go_sum_fixture_name) { "go.sum" }
+  let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -70,17 +72,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       }
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
-
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
-
-    it "doesn't store the files permanently, and returns DependencyFiles" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-    end
 
     it { expect { updated_files }.to_not output.to_stdout }
 
@@ -93,6 +87,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "without a go.sum" do
+      let(:project_name) { "simple" }
       let(:files) { [go_mod] }
 
       it "doesn't include a go.sum" do
