@@ -83,7 +83,7 @@ module Dependabot
         dependencies = DependencySet.new
 
         gemspecs.each do |gemspec|
-          parsed_gemspec(gemspec).dependencies.each do |dependency|
+          parsed_gemspec(gemspec).each do |dependency|
             dependencies <<
               Dependency.new(
                 name: dependency.name,
@@ -135,24 +135,13 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.run_helper_subprocess(command: NativeHelpers.helper_path,
-                                                function: "parse_gemfile",
+                                                function: "parsed_gemfile",
                                                 args: {
                                                   gemfile_name: gemfile.name,
                                                   dir: Dir.pwd
                                                 }).map do |dep_hash|
                                                   OpenStruct.new(dep_hash)
                                                 end
-
-            # SharedHelpers.in_a_forked_process do
-            #   ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-            #   ::Bundler::Definition.build(gemfile.name, nil, {}).
-            #     dependencies.
-            #     select(&:current_platform?).
-            #     # We can't dump gemspec sources, and we wouldn't bump them
-            #     # anyway, so we filter them out.
-            #     reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
-            # end
           end
       rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
         handle_marshall_error(e) if e.is_a?(ArgumentError)
@@ -180,10 +169,14 @@ module Dependabot
               File.write(path, f.content)
             end
 
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-              ::Bundler.load_gemspec_uncached(file.name)
-            end
+            SharedHelpers.run_helper_subprocess(command: NativeHelpers.helper_path,
+              function: "parsed_gemspec",
+              args: {
+                gemspec_name: file.name,
+                dir: Dir.pwd
+              }).map do |dep_hash|
+                OpenStruct.new(dep_hash)
+              end
           end
       rescue SharedHelpers::ChildProcessFailed => e
         msg = e.error_class + " with message: " + e.error_message
