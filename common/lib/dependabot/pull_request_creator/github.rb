@@ -7,6 +7,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 module Dependabot
   class PullRequestCreator
+    # rubocop:disable Metrics/ClassLength
     class Github
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
@@ -41,7 +42,7 @@ module Dependabot
         return if require_up_to_date_base? && !base_commit_is_up_to_date?
 
         create_annotated_pull_request
-      rescue Octokit::Error => e
+      rescue AnnotationError, Octokit::Error => e
         handle_error(e)
       end
 
@@ -111,7 +112,11 @@ module Dependabot
         pull_request = create_pull_request
         return unless pull_request
 
-        annotate_pull_request(pull_request)
+        begin
+          annotate_pull_request(pull_request)
+        rescue StandardError => e
+          raise AnnotationError.new(e, pull_request)
+        end
 
         pull_request
       end
@@ -417,24 +422,49 @@ module Dependabot
       end
 
       def handle_error(err)
-        case err
+        cause = case err
+                when AnnotationError
+                  err.cause
+                else
+                  err
+                end
+
+        case cause
         when Octokit::Forbidden
-          raise RepoDisabled, err.message if err.message.include?("disabled")
-          raise RepoArchived, err.message if err.message.include?("archived")
+          if err.message.include?("disabled")
+            raise_custom_error err, RepoDisabled, err.message
+          elsif err.message.include?("archived")
+            raise_custom_error err, RepoArchived, err.message
+          end
 
           raise err
         when Octokit::NotFound
           raise err if repo_exists?
 
-          raise RepoNotFound, err.message
+          raise_custom_error err, RepoNotFound, err.message
         when Octokit::UnprocessableEntity
-          raise err unless err.message.include?("no history in common")
+          if err.message.include?("no history in common")
+            raise_custom_error err, NoHistoryInCommon, err.message
+          end
 
-          raise NoHistoryInCommon, err.message
+          raise err
         else
           raise err
         end
       end
+
+      def raise_custom_error(base_err, type, message)
+        case base_err
+        when AnnotationError
+          raise AnnotationError.new(
+            type.new(message),
+            base_err.pull_request
+          )
+        else
+          raise type, message
+        end
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

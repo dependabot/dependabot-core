@@ -17,7 +17,8 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       pr_description: pr_description,
       pr_name: pr_name,
       author_details: author_details,
-      labeler: labeler
+      labeler: labeler,
+      work_item: work_item
     )
   end
 
@@ -53,6 +54,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       automerge_candidate: false
     )
   end
+  let(:work_item) { 123 }
   let(:custom_labels) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
