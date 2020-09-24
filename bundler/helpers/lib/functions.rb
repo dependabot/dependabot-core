@@ -9,6 +9,14 @@ module Functions
 
     ::Bundler::Definition.build(gemfile_name, nil, {}).
       dependencies.select(&:current_platform?).
-      reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
+      reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }.
+      map do |dep|
+        {
+          name: dep.name,
+          requirement: dep.requirement,
+          groups: dep.groups,
+          source: dep.source,
+        }
+      end
   end
 end

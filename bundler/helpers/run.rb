@@ -8,12 +8,12 @@ def output(obj)
 end
 
 begin
-  request = JSON.parse(ARGV.join(""))
+  request = JSON.parse($stdin.read)
 
   function = request["function"]
   args = request["args"].transform_keys(&:to_sym)
 
-  output Functions.send(function, **args)
+  output({ result: Functions.send(function, **args) })
 rescue => error
   output({ error: error.message })
   exit(1)

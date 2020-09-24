@@ -1,9 +1,21 @@
 # frozen_string_literal: true
 
+# TODO: Remove/Replace?
+#
+# Right now we are using OpenStructs to 'stand in' for Bundler::Dependency or
+# Gem::Dependency objects we used to get via the Bundler API and now get
+# from a marshalled JSON object retrieved from the native helper script
+#
+# The final version is refacor anywhere we use these classes to use
+# Dependabot::Dependency objects and instantiate them from the JSON object
+# retrieved via the shell-out to the native helper
+require "ostruct"
+
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -122,16 +134,25 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+            SharedHelpers.run_helper_subprocess(command: NativeHelpers.helper_path,
+                                                function: "parse_gemfile",
+                                                args: {
+                                                  gemfile_name: gemfile.name,
+                                                  dir: Dir.pwd
+                                                }).map do |dep_hash|
+                                                  OpenStruct.new(dep_hash)
+                                                end
 
-              ::Bundler::Definition.build(gemfile.name, nil, {}).
-                dependencies.
-                select(&:current_platform?).
-                # We can't dump gemspec sources, and we wouldn't bump them
-                # anyway, so we filter them out.
-                reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
-            end
+            # SharedHelpers.in_a_forked_process do
+            #   ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
+
+            #   ::Bundler::Definition.build(gemfile.name, nil, {}).
+            #     dependencies.
+            #     select(&:current_platform?).
+            #     # We can't dump gemspec sources, and we wouldn't bump them
+            #     # anyway, so we filter them out.
+            #     reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
+            # end
           end
       rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
         handle_marshall_error(e) if e.is_a?(ArgumentError)
