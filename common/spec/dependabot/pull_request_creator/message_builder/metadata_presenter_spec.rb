@@ -67,6 +67,10 @@ RSpec.describe namespace::MetadataPresenter do
         expect(presenter.to_s).to include("(truncated)")
       end
 
+      it "does not include a closing table fragment" do
+        expect(presenter.to_s).not_to include("></tr></table>")
+      end
+
       it "removes all content after the 50th line" do
         expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
       end
