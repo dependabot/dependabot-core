@@ -8,10 +8,8 @@ module Dependabot
       end
 
       def self.native_helpers_root
-        # TODO: Remove?
-        #
-        # helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
-        # return File.join(helpers_root, "npm_and_yarn") unless helpers_root.nil?
+        helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+        return File.join(helpers_root, "bundler") unless helpers_root.nil?
 
         File.join(__dir__, "../../../helpers")
       end

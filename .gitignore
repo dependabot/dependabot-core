@@ -15,10 +15,11 @@ vendor
 /.vscode-server/
 /.vscode-server-insiders/
 .byebug_history
-/terraform/helpers/install-dir
-/go_modules/helpers/install-dir
+/bundler/helpers/install-dir
 /npm_and_yarn/helpers/node_modules
 /npm_and_yarn/helpers/install-dir
+/go_modules/helpers/install-dir
+/terraform/helpers/install-dir
 /dry-run
 **/bin/helper
 /.core-bash_history
