@@ -19,4 +19,10 @@ module Functions
         }
       end
   end
+
+  def self.vendor_cache_dir(dir:)
+    # Set the path for path gemspec correctly
+    ::Bundler.instance_variable_set(:@root, dir)
+    ::Bundler.app_cache
+  end
 end

@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/bundler/native_helpers"
 
 module Dependabot
   module Bundler
@@ -69,11 +70,12 @@ module Dependabot
         return @vendor_cache_dir if defined?(@vendor_cache_dir)
 
         @vendor_cache_dir =
-          SharedHelpers.in_a_forked_process do
-            # Set the path for path gemspec correctly
-            ::Bundler.instance_variable_set(:@root, repo_contents_path)
-            ::Bundler.app_cache
-          end
+          SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path,
+            function: "vendor_cache_dir",
+            args: {
+              dir: repo_contents_path
+            })
       end
 
       # Returns changed files in the vendor/cache folder
