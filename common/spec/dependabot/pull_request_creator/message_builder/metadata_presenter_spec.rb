@@ -22,12 +22,6 @@ RSpec.describe namespace::MetadataPresenter do
     )
   end
 
-  class MockMetadataFinder < Dependabot::MetadataFinders::Base
-    def look_up_source
-      Dependabot::Source.new(provider: "github", repo: "gocardless/business")
-    end
-  end
-
   let(:metadata_finder) do
     instance_double(Dependabot::MetadataFinders::Base,
                     changelog_url: "http://localhost/changelog.md",
@@ -73,6 +67,22 @@ RSpec.describe namespace::MetadataPresenter do
 
       it "removes all content after the 50th line" do
         expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
+      end
+
+      context "with an azure source" do
+        let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
+
+        it "adds a truncation notice" do
+          expect(presenter.to_s).to include("(truncated)")
+        end
+
+        it "does not include a closing table fragment" do
+          expect(presenter.to_s).not_to include("></tr></table>")
+        end
+
+        it "removes all content after the 50th line" do
+          expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
+        end
       end
     end
   end
