@@ -1,3 +1,7 @@
+## v0.120.1, 25 September 2020
+
+- Default to pypi.org instead of pypi.python.org
+
 ## v0.120.0, 24 September 2020
 
 - BREAKING: New exception `Dependabot::PullRequestCreator::AnnotationError`

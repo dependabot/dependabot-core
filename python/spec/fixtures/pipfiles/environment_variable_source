@@ -1,5 +1,5 @@
 [[source]]
-url = "https://pypi.python.org/${ENV_VAR}"
+url = "https://pypi.org/${ENV_VAR}"
 verify_ssl = true
 
 [dev-packages]

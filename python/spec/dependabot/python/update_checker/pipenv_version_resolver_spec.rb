@@ -403,7 +403,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             "password" => "token"
           }, {
             "type" => "python_index",
-            "index-url" => "https://pypi.python.org/simple"
+            "index-url" => "https://pypi.org/simple"
           }]
         end
 
