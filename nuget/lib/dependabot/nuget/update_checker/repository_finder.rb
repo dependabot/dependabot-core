@@ -71,9 +71,10 @@ module Dependabot
         def get_repo_metadata(repo_details)
           Excon.get(
             repo_details.fetch(:url),
-            headers: auth_header_for_token(repo_details.fetch(:token)),
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(
+              headers: auth_header_for_token(repo_details.fetch(:token))
+            )
           )
         end
 

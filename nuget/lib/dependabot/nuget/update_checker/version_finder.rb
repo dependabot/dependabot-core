@@ -215,9 +215,10 @@ module Dependabot
             map do |url_details|
               response = Excon.get(
                 url_details[:versions_url],
-                headers: url_details[:auth_header],
                 idempotent: true,
-                **excon_defaults
+                **SharedHelpers.excon_defaults(
+                  excon_options.merge(headers: url_details[:auth_header])
+                )
               )
               next unless response.status == 200
 
@@ -237,9 +238,10 @@ module Dependabot
           elsif repository_details[:versions_url]
             response = Excon.get(
               repository_details[:versions_url],
-              headers: repository_details[:auth_header],
               idempotent: true,
-              **excon_defaults
+              **SharedHelpers.excon_defaults(
+                excon_options.merge(headers: repository_details[:auth_header])
+              )
             )
             return unless response.status == 200
 
@@ -251,9 +253,10 @@ module Dependabot
         def fetch_versions_from_search_url(repository_details)
           response = Excon.get(
             repository_details[:search_url],
-            headers: repository_details[:auth_header],
             idempotent: true,
-            **excon_defaults
+            **SharedHelpers.excon_defaults(
+              excon_options.merge(headers: repository_details[:auth_header])
+            )
           )
           return unless response.status == 200
 
@@ -301,16 +304,16 @@ module Dependabot
             gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
-        def excon_defaults
+        def excon_options
           # For large JSON files we sometimes need a little longer than for
           # other languages. For example, see:
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
           # q=microsoft.aspnetcore.mvc&prerelease=true
-          SharedHelpers.excon_defaults.merge(
+          {
             connect_timeout: 30,
             write_timeout: 30,
-            read_timeout: 30
-          )
+            read_timeout: 30,
+          }
         end
       end
     end

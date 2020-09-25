@@ -156,9 +156,8 @@ module Dependabot
 
         response = Excon.get(
           "#{dependency_url}/latest",
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
         if response.status == 200
@@ -184,9 +183,8 @@ module Dependabot
 
         response = Excon.get(
           dependency_url,
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
         return @npm_listing = {} if response.status >= 500

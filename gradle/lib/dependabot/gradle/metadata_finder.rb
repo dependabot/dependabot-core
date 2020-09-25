@@ -111,9 +111,8 @@ module Dependabot
           "#{maven_repo_dependency_url}/"\
           "#{dependency.version}/"\
           "#{artifact_id}-#{dependency.version}.pom",
-          headers: auth_details,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -135,9 +134,8 @@ module Dependabot
           "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"\
           "#{version}/"\
           "#{artifact_id}-#{version}.pom",
-          headers: auth_details,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         Nokogiri::XML(response.body)

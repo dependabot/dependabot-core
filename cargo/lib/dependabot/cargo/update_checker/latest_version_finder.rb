@@ -86,7 +86,6 @@ module Dependabot
           response = Excon.get(
             "https://crates.io/api/v1/crates/#{dependency.name}",
             idempotent: true,
-            headers: { "User-Agent" => "Dependabot (dependabot.com)" },
             **SharedHelpers.excon_defaults
           )
 
