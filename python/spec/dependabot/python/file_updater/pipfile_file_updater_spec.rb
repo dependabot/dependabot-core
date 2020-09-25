@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           },
           {
             "type" => "python_index",
-            "index-url" => "https://pypi.python.org/simple"
+            "index-url" => "https://pypi.org/simple"
           }
         ]
       end
@@ -302,14 +302,14 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         json_lockfile = JSON.parse(updated_lockfile.content)
 
         expect(updated_pipfile.content).
-          to include("pypi.python.org/${ENV_VAR}")
+          to include("pypi.org/${ENV_VAR}")
         expect(json_lockfile["default"]["requests"]["version"]).
           to eq("==2.18.4")
         expect(json_lockfile["_meta"]["sources"]).
-          to eq([{ "url" => "https://pypi.python.org/${ENV_VAR}",
+          to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
                    "verify_ssl" => true }])
         expect(updated_lockfile.content).
-          to_not include("pypi.python.org/simple")
+          to_not include("pypi.org/simple")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
       end
     end
