@@ -505,7 +505,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       context "for a library" do
         before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
             to_return(
               status: 200,
               body: fixture("pypi", "pypi_response_pendulum.json")
@@ -517,7 +517,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       context "for a non-library" do
         before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
             to_return(status: 404)
         end
 

@@ -131,9 +131,8 @@ module Dependabot
         response =
           Excon.get(
             gemspec_uri,
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
 
         if response.status >= 400
@@ -152,9 +151,8 @@ module Dependabot
         response =
           Excon.get(
             "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
         return @rubygems_api_response = {} if response.status >= 400
 

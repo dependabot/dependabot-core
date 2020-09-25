@@ -135,4 +135,11 @@ RSpec.describe Dependabot::SharedHelpers do
       it { is_expected.to eq("") }
     end
   end
+
+  describe ".excon_defaults" do
+    it "sets useful User-Agent header" do
+      ua = Dependabot::SharedHelpers.excon_defaults[:headers]["User-Agent"]
+      expect(ua).to include("dependabot-core/#{Dependabot::VERSION}")
+    end
+  end
 end
