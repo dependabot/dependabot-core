@@ -1,3 +1,9 @@
+## v0.120.2, 25 September 2020
+
+- Add trailing slash to pypi.org index requests
+- Add a default User-Agent header to excon requests
+- Bump phpstan/phpstan from 0.12.43 to 0.12.44 in /composer/helpers
+
 ## v0.120.1, 25 September 2020
 
 - Default to pypi.org instead of pypi.python.org
