@@ -1,4 +1,5 @@
 module Functions
+  require_relative "functions/lockfile_updater"
 
   def self.bundler_version
     Bundler::VERSION
@@ -33,5 +34,16 @@ module Functions
     # Set the path for path gemspec correctly
     ::Bundler.instance_variable_set(:@root, dir)
     ::Bundler.app_cache
+  end
+
+  def self.update_lockfile(gemfile_name:, lockfile_name:, dir:, credentials:,
+                           dependencies:)
+    LockfileUpdater.new(
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name,
+      dir: dir,
+      credentials: credentials,
+      dependencies: dependencies,
+    ).run
   end
 end
