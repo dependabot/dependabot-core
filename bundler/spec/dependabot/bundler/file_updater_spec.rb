@@ -1559,6 +1559,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
       after do
         FileUtils.remove_entry repo_contents_path
+        ::Bundler.settings.temporary(persistent_gems_after_clean: nil)
       end
 
       it "vendors the new dependency" do
@@ -1586,6 +1587,27 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         expect(file.deleted?).to eq true
+      end
+
+      context "persistent gems after clean" do
+        let(:project_name) { "vendored_persistent_gems" }
+        let(:repo_contents_path) { build_tmp_repo(project_name) }
+        let(:gemfile_body) { fixture("projects", project_name, "Gemfile") }
+        let(:lockfile_body) do
+          fixture("projects", project_name, "Gemfile.lock")
+        end
+
+        it "does not delete cached files marked as persistent" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "vendor/cache/business-1.4.0.gem"
+          end
+
+          vendor_files =
+            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+
+          expect(file).to be_nil
+          expect(vendor_files).to include("business-1.4.0.gem")
+        end
       end
 
       context "with dependencies that are not unlocked by the update" do

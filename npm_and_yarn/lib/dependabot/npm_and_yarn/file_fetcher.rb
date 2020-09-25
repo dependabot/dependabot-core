@@ -35,7 +35,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def fetch_files
         fetched_files = []
         fetched_files << package_json
@@ -52,8 +51,6 @@ module Dependabot
 
         fetched_files.uniq
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def package_json
         @package_json ||= fetch_file_from_host("package.json")
@@ -209,6 +206,7 @@ module Dependabot
         ].uniq
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def path_dependency_details_from_manifest(file)
         return [] unless file.name.end_with?("package.json")
@@ -244,6 +242,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, file.path
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_details_from_npm_lockfile(parsed_lockfile)
         path_starts = NPM_PATH_DEPENDENCY_STARTS

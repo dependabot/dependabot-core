@@ -20,6 +20,7 @@ module Dependabot
         ]
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def updated_dependency_files
         updated_files = []
 
@@ -59,6 +60,7 @@ module Dependabot
 
         updated_files
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 

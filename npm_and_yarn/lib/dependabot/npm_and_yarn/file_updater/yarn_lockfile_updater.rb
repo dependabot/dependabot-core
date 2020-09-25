@@ -171,7 +171,7 @@ module Dependabot
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
-          sub_dep_local_path_err = "Package \"\" refers to a non-existing file"
+          sub_dep_local_path_err = 'Package "" refers to a non-existing file'
           if error_message.match?(INVALID_PACKAGE) ||
              error_message.start_with?(sub_dep_local_path_err)
             raise_resolvability_error(error_message, yarn_lock)

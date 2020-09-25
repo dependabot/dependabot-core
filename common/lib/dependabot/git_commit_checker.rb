@@ -86,6 +86,7 @@ module Dependabot
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     def local_tag_for_latest_version
       tags =
         local_tags.
@@ -114,6 +115,7 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def git_repo_reachable?
       local_upload_pack

@@ -252,7 +252,6 @@ module Dependabot
 
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
-        # rubocop:disable Metrics/PerceivedComplexity
         def update_greatest_version(requirement, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted = Gem::Version.new(version_to_be_permitted)
@@ -278,8 +277,6 @@ module Dependabot
 
           Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end

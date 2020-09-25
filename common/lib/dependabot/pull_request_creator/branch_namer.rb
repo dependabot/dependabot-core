@@ -116,7 +116,6 @@ module Dependabot
           gsub(",", "-and-")
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def new_version(dependency)
         # Version looks like a git SHA and we could be updating to a specific
         # ref in which case we return that otherwise we return a shorthand sha
@@ -135,7 +134,6 @@ module Dependabot
           dependency.version
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def previous_ref(dependency)
         previous_refs = dependency.previous_requirements.map do |r|

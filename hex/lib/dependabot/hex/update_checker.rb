@@ -209,6 +209,7 @@ module Dependabot
         ).prepared_dependency_files
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def latest_release_from_hex_registry
         @latest_release_from_hex_registry ||=
           begin
@@ -231,6 +232,7 @@ module Dependabot
             filtered.max
           end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def hex_registry_response
         return @hex_registry_response if @hex_registry_requested

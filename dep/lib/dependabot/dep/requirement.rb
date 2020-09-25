@@ -60,7 +60,6 @@ module Dependabot
       private
 
       def convert_go_constraint_to_ruby_constraint(req_string)
-        req_string = req_string
         req_string = convert_wildcard_characters(req_string)
 
         if req_string.match?(WILDCARD_REGEX)

@@ -52,6 +52,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_declaration_strings
           deep_find_declarations(declaring_file.content).select do |nd|
             node = Nokogiri::XML(nd)
@@ -68,8 +69,10 @@ module Dependabot
             node_requirement == declaring_requirement.fetch(:requirement)
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def get_node_version_value(node)
           attribute = "Version"
           node.attribute(attribute)&.value&.strip ||
@@ -77,6 +80,7 @@ module Dependabot
             node.attribute(attribute.downcase)&.value&.strip ||
             node.at_xpath("./#{attribute.downcase}")&.content&.strip
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def deep_find_declarations(string)
           string.scan(DECLARATION_REGEX).flat_map do |matching_node|

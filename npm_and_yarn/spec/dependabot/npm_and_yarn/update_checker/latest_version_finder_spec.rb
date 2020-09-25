@@ -213,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       before do
         body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           body = fixture("npm_responses", "prerelease.json")
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
             to_return(status: 200, body: body)
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       before do
         body = fixture("gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
@@ -402,7 +402,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(
               status: 200,
-              body: "user \"undefined\" is not a member of \"KaterTech\""
+              body: 'user "undefined" is not a member of "KaterTech"'
             )
         end
 
@@ -648,7 +648,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the npm link resolves to a 403" do
       before do
         stub_request(:get, registry_listing_url).
-          to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
+          to_return(status: 403, body: '{"error":"Forbidden"}')
 
         # Speed up spec by stopping any sleep logic
         allow(version_finder).to receive(:sleep).and_return(true)
@@ -663,7 +663,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the npm link resolves to a 404" do
       before do
         stub_request(:get, registry_listing_url).
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
 
         # Speed up spec by stopping any sleep logic
         allow(version_finder).to receive(:sleep).and_return(true)
@@ -701,7 +701,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       context "for a namespaced dependency" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
             to_return(status: 200, body: login_form)
         end
