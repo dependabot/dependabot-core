@@ -29,8 +29,6 @@ module Dependabot
         # the repo content
         def initialize(dependencies:, credentials:, repo_contents_path:)
           @dependencies = dependencies
-          @go_mod = go_mod
-          @go_sum = go_sum
           @credentials = credentials
           @repo_contents_path = repo_contents_path
         end
@@ -52,9 +50,11 @@ module Dependabot
         end
 
         def update_files
-          SharedHelpers.
-            in_a_temporary_repo_directory("/", repo_contents_path) do
+          in_repo_path do
             # Map paths in local replace directives to path hashes
+
+            original_go_mod = File.read("go.mod")
+
             substitutions = replace_directive_substitutions
             build_module_stubs(substitutions.values)
 
@@ -74,7 +74,7 @@ module Dependabot
             # undesirable ways (such as injecting the current Go version), so we
             # need to update the original go.mod with the updated set of
             # requirements rather than using the regenerated file directly
-            original_reqs = parse_manifest_requirements(go_mod.content)
+            original_reqs = parse_manifest_requirements(original_go_mod)
             updated_reqs = parse_manifest_requirements(File.read("go.mod"))
 
             original_paths = original_reqs.map { |r| r["Path"] }
@@ -83,7 +83,7 @@ module Dependabot
 
             # Put back the original content before we replace just the updated
             # dependencies.
-            write_go_mod(go_mod.content)
+            write_go_mod(original_go_mod)
 
             remove_requirements(req_paths_to_remove)
             deps = updated_reqs.map { |r| requirement_to_dependency_obj(r) }
@@ -92,7 +92,7 @@ module Dependabot
             # put the old replace directives back again
             substitute_all(substitutions.invert)
 
-            updated_go_sum = go_sum ? File.read("go.sum") : nil
+            updated_go_sum = File.exist?("go.sum") ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -125,7 +125,9 @@ module Dependabot
         end
 
         def run_go_get
-          File.write("main.go", dummy_main_go) unless Dir.glob("*.go").any?
+          unless Dir.glob("*.go").any?
+            File.write("main.go", "package dummypkg\n")
+          end
 
           _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
           handle_subprocess_error(stderr) unless status.success?
@@ -161,16 +163,23 @@ module Dependabot
           end
         end
 
-        def build_module_stubs(stub_paths)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            # Create a fake empty module for each local module so that
-            # `go get -d` works, even if some modules have been `replace`d
-            # with a local module that we don't have access to.
-            stub_paths.each do |stub_path|
-              Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
-              FileUtils.touch(File.join(stub_path, "go.mod"))
-              FileUtils.touch(File.join(stub_path, "main.go"))
+        def in_repo_path(&block)
+          SharedHelpers.
+            in_a_temporary_repo_directory("/", repo_contents_path) do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              block.call
             end
+          end
+        end
+
+        def build_module_stubs(stub_paths)
+          # Create a fake empty module for each local module so that
+          # `go get -d` works, even if some modules have been `replace`d
+          # with a local module that we don't have access to.
+          stub_paths.each do |stub_path|
+            Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+            FileUtils.touch(File.join(stub_path, "main.go"))
           end
         end
 
@@ -213,7 +222,8 @@ module Dependabot
         end
 
         def handle_subprocess_error(stderr)
-          stderr = stderr.gsub(Dir.getwd, "")
+          current_path = Dir.getwd
+          stderr = stderr.gsub(current_path, "")
 
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
@@ -225,28 +235,11 @@ module Dependabot
           if path_regex
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
-              new(go_mod.path, match[1], match[2])
+              new(current_path, match[1], match[2])
           end
 
           msg = stderr.lines.last(10).join.strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
-        end
-
-        def dummy_main_go
-          # If we use `main` as the package name, running `go get -d` seems to
-          # invoke the build systems, which can cause problems. For instance,
-          # if the go.mod includes a module that doesn't have a top-level
-          # package, we have no way of working out the import path, so the
-          # build step fails.
-          #
-          # In due course, if we end up fetching the full repo, it might be
-          # good to switch back to `main` so we can surface more errors.
-          lines = ["package dummypkg", "import ("]
-          dependencies.each do |dep|
-            lines << "_ \"#{dep.name}\"" unless dep.requirements.empty?
-          end
-          lines << ")"
-          lines.join("\n")
+          raise Dependabot::DependencyFileNotParseable.new(current_path, msg)
         end
 
         def requirement_to_dependency_obj(req)

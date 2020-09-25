@@ -9,6 +9,13 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/go_mod_updater"
 
+      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
+                     credentials:)
+        raise "No repo_contents_path passed" if repo_contents_path.nil?
+
+        super
+      end
+
       def self.updated_files_regex
         [
           /^go\.mod$/,
@@ -60,8 +67,6 @@ module Dependabot
         @file_updater ||=
           GoModUpdater.new(
             dependencies: dependencies,
-            go_mod: go_mod,
-            go_sum: go_sum,
             credentials: credentials,
             repo_contents_path: repo_contents_path
           )

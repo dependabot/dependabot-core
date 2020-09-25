@@ -73,6 +73,10 @@ module Dependabot
           _clone_repo_contents(target_directory: target_directory)
       end
 
+      def repo_contents_path
+        File.join(clone_repo_contents, directory)
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)

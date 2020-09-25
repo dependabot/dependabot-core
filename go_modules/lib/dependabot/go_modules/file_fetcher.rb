@@ -17,6 +17,10 @@ module Dependabot
       private
 
       def fetch_files
+        # Ensure we always check out the full repo contents for go_module
+        # updates.
+        SharedHelpers.reset_git_repo(clone_repo_contents)
+
         unless go_mod
           raise(
             Dependabot::DependencyFileNotFound,
@@ -42,6 +46,22 @@ module Dependabot
 
       def go_sum
         @go_sum ||= fetch_file_if_present("go.sum")
+      end
+
+      def fetch_file_if_present(filename)
+        path = Pathname.new(File.join(repo_contents_path, filename)).
+               cleanpath.to_path
+        content = File.read(path) if File.exist?(path)
+        cleaned_path = path.gsub(%r{^/}, "")
+        type = @linked_paths.key?(cleaned_path) ? "symlink" : type
+
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: @linked_paths.dig(cleaned_path, :path)
+        )
       end
 
       def main
