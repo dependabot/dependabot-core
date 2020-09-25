@@ -13,8 +13,9 @@ module Dependabot
     BUMP_TMP_FILE_PREFIX = "dependabot_"
     BUMP_TMP_DIR_PATH = "tmp"
     GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
-    USER_AGENT = "dependabot/#{Dependabot::VERSION} #{Excon::USER_AGENT} "\
-                 "ruby/#{RUBY_VERSION} (#{RUBY_PLATFORM}) "\
+    USER_AGENT = "dependabot-core/#{Dependabot::VERSION} "\
+                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
+                 "(#{RUBY_PLATFORM}) "\
                  "(+https://github.com/dependabot/dependabot-core)"
 
     class ChildProcessFailed < StandardError
