@@ -152,8 +152,9 @@ module Dependabot
           "/pushes?api-version=5.0", content.to_json)
       end
 
+      # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
-                              pr_description, labels)
+                              pr_description, labels, work_item = nil)
         # Azure DevOps only support descriptions up to 4000 characters
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         azure_max_length = 3999
@@ -162,6 +163,7 @@ module Dependabot
           truncate_length = azure_max_length - truncated_msg.length
           pr_description = pr_description[0..truncate_length] + truncated_msg
         end
+        # rubocop:enable Metrics/ParameterLists
 
         puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
         puts "PR name:#{pr_name}"
@@ -170,7 +172,8 @@ module Dependabot
           targetRefName: "refs/heads/" + target_branch,
           title: pr_name,
           description: pr_description,
-          labels: labels.map { |label| { name: label } }
+          labels: labels.map { |label| { name: label } },
+          workItemRefs: [{ id: work_item }]
         }
 
         post(source.api_endpoint +

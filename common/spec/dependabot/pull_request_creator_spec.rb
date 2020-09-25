@@ -19,7 +19,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       assignees: assignees,
       milestone: milestone,
       author_details: author_details,
-      signature_key: signature_key
+      signature_key: signature_key,
+      provider_metadata: provider_metadata
     )
   end
 
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
+  let(:provider_metadata) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -235,6 +237,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with an Azure source" do
       let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Azure) }
+      let(:provider_metadata) { { work_item: 123 } }
 
       it "delegates to PullRequestCreator::Azure with correct params" do
         expect(described_class::Azure).
@@ -249,7 +252,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_description: "PR msg",
             pr_name: "PR name",
             author_details: author_details,
-            labeler: instance_of(described_class::Labeler)
+            labeler: instance_of(described_class::Labeler),
+            work_item: 123
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create

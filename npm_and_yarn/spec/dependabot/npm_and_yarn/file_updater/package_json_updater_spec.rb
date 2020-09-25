@@ -45,8 +45,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     subject(:updated_package_json) { package_json_updater.updated_package_json }
 
     its(:content) { is_expected.to include "{{ name }}" }
-    its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-    its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
+    its(:content) { is_expected.to include '"fetch-factory": "^0.0.2"' }
+    its(:content) { is_expected.to include '"etag" : "^1.0.0"' }
 
     context "when the minor version is specified" do
       let(:dependency) do
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
       let(:manifest_fixture_name) { "minor_version_specified.json" }
 
-      its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      its(:content) { is_expected.to include '"fetch-factory": "0.2.x"' }
     end
 
     context "when the requirement hasn't changed" do
@@ -388,14 +388,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         end
 
         its(:content) do
-          is_expected.to include("\"jonschlinkert/is-number#semver:^4.0.0\"")
+          is_expected.to include('"jonschlinkert/is-number#semver:^4.0.0"')
         end
 
         context "without the `semver:` marker" do
           let(:manifest_fixture_name) { "github_dependency_yarn_semver.json" }
 
           its(:content) do
-            is_expected.to include("\"jonschlinkert/is-number#^4.0.0\"")
+            is_expected.to include('"jonschlinkert/is-number#^4.0.0"')
           end
         end
       end
@@ -423,9 +423,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         )
       end
 
-      its(:content) { is_expected.to include "\"lodash\": \"^1.3.1\"" }
+      its(:content) { is_expected.to include '"lodash": "^1.3.1"' }
       its(:content) do
-        is_expected.to include "\"etag\": \"file:./deps/etag\""
+        is_expected.to include '"etag": "file:./deps/etag"'
       end
     end
 

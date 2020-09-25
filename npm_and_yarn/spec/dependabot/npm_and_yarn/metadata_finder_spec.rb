@@ -293,7 +293,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       context "that is private" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: npm_all_versions_response)
@@ -334,13 +334,13 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         before do
           body = fixture("gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
-          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          ).to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
-          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          ).to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: body)

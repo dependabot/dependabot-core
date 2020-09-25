@@ -150,6 +150,42 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with upgrade to transitive dependencies" do
+      let(:mixfile_fixture_name) { "deep_upgrade" }
+      let(:lockfile_fixture_name) { "deep_upgrade" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix_ecto",
+          version: "4.2.0",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.2.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "4.1.0",
+          previous_requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include ':hex, :phoenix_ecto, "4.2'
+      end
+
+      it "retains management info for transitive dependencies" do
+        decimal_lock_line = updated_lockfile_content.
+                            split("\n").
+                            find { |l| l.include?('"decimal":') }
+        expect(decimal_lock_line).to include ", [:mix], ["
+      end
+    end
+
     context "with a mix.exs that opens another file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }

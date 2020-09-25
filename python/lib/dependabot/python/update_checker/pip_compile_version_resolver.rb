@@ -97,7 +97,6 @@ module Dependabot
             end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
@@ -114,11 +113,14 @@ module Dependabot
             check_original_requirements_resolvable
           end
 
-          if error.message.include?('Command "python setup.py egg_info') ||
-             error.message.include?("exit status 1: python setup.py egg_info")
+          if (error.message.include?('Command "python setup.py egg_info') ||
+              error.message.include?(
+                "exit status 1: python setup.py egg_info"
+              )) &&
+             check_original_requirements_resolvable
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
-            return if check_original_requirements_resolvable
+            return
           end
 
           if error.message.include?("Could not find a version ") &&
@@ -143,7 +145,6 @@ module Dependabot
           raise
         end
 
-        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
 
         # Needed because pip-compile's resolver isn't perfect.
