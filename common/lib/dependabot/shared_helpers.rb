@@ -144,7 +144,7 @@ module Dependabot
     def self.excon_headers(headers = nil)
       headers ||= {}
       {
-        "User-Agent" => USER_AGENT,
+        "User-Agent" => USER_AGENT
       }.merge(headers)
     end
 
@@ -156,8 +156,8 @@ module Dependabot
         read_timeout: 20,
         omit_default_port: true,
         middlewares: excon_middleware,
-        headers: excon_headers(options[:headers]),
-     }.merge(options)
+        headers: excon_headers(options[:headers])
+      }.merge(options)
     end
 
     def self.with_git_configured(credentials:)

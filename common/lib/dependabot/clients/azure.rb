@@ -188,7 +188,7 @@ module Dependabot
           password: credentials&.fetch("password", nil),
           idempotent: true,
           **SharedHelpers.excon_defaults(
-            headers: auth_header,
+            headers: auth_header
           )
         )
         raise NotFound if response.status == 404
@@ -208,7 +208,7 @@ module Dependabot
               {
                 "Content-Type" => "application/json"
               }
-            ),
+            )
           )
         )
         raise NotFound if response.status == 404
