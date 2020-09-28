@@ -25,8 +25,6 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
-        # TODO: No need to pass go_mod and go_sum anymore, we can grab them from
-        # the repo content
         def initialize(dependencies:, credentials:, repo_contents_path:)
           @dependencies = dependencies
           @credentials = credentials
