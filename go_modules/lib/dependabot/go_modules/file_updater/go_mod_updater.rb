@@ -52,8 +52,9 @@ module Dependabot
             # Map paths in local replace directives to path hashes
 
             original_go_mod = File.read("go.mod")
+            original_manifest = parse_manifest
 
-            substitutions = replace_directive_substitutions
+            substitutions = replace_directive_substitutions(original_manifest)
             build_module_stubs(substitutions.values)
 
             # Replace full paths with path hashes in the go.mod
@@ -72,8 +73,8 @@ module Dependabot
             # undesirable ways (such as injecting the current Go version), so we
             # need to update the original go.mod with the updated set of
             # requirements rather than using the regenerated file directly
-            original_reqs = parse_manifest_requirements(original_go_mod)
-            updated_reqs = parse_manifest_requirements(File.read("go.mod"))
+            original_reqs = original_manifest["Require"] || []
+            updated_reqs = parse_manifest["Require"] || []
 
             original_paths = original_reqs.map { |r| r["Path"] }
             updated_paths = updated_reqs.map { |r| r["Path"] }
@@ -131,16 +132,12 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def parse_manifest_requirements(go_mod_content)
-          SharedHelpers.in_a_temporary_directory do
-            File.write("go.mod", go_mod_content)
+        def parse_manifest
+          command = "go mod edit -json"
+          stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
 
-            command = "go mod edit -json"
-            stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
-            handle_subprocess_error(stderr) unless status.success?
-
-            JSON.parse(stdout)["Require"] || []
-          end
+          JSON.parse(stdout) || {}
         end
 
         def remove_requirements(requirement_paths)
@@ -189,20 +186,14 @@ module Dependabot
         # the layout of the filesystem with a structure we can reproduce (i.e.
         # no paths such as ../../../foo), run the Go tooling, then reverse the
         # process afterwards.
-        def replace_directive_substitutions
+        def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
             begin
-              # Parse the go.mod to get a JSON representation of the replace
-              # directives
-              command = "go mod edit -json"
-              stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
-              handle_subprocess_error(stderr) unless status.success?
-
               # Find all the local replacements, and return them with a stub
               # path we can use in their place. Using generated paths is safer
               # as it means we don't need to worry about references to parent
               # directories, etc.
-              (JSON.parse(stdout)["Replace"] || []).
+              (manifest["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
                 compact.
                 select { |p| p.start_with?(".") || p.start_with?("/") }.
