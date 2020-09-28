@@ -11,9 +11,20 @@ module Dependabot
 
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
                      credentials:)
-        raise "No repo_contents_path passed" if repo_contents_path.nil?
-
         super
+        return unless repo_contents_path.nil?
+
+        # masquerade repo_contents_path for GoModUpdater during transition
+        tmp = Dir.mktmpdir
+        Dir.chdir(tmp) do
+          dependency_files.each do |file|
+            File.write(file.name, file.content)
+          end
+          `git init .`
+          `git add .`
+          `git commit -m'fake repo_contents_path'`
+        end
+        @repo_contents_path = tmp
       end
 
       def self.updated_files_regex
@@ -73,7 +84,8 @@ module Dependabot
             dependencies: dependencies,
             credentials: credentials,
             repo_contents_path: repo_contents_path,
-            directory: directory
+            directory: directory,
+            tidy: !@repo_contents_stub
           )
       end
     end
