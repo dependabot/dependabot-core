@@ -134,14 +134,17 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(command: NativeHelpers.helper_path,
-                                                function: "parsed_gemfile",
-                                                args: {
-                                                  gemfile_name: gemfile.name,
-                                                  dir: Dir.pwd
-                                                }).map do |dep_hash|
-                                                  OpenStruct.new(dep_hash)
-                                                end
+            deps = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "parsed_gemfile",
+              args: {
+                gemfile_name: gemfile.name,
+                dir: Dir.pwd
+              }
+            )
+            deps.map do |dep_hash|
+              OpenStruct.new(dep_hash)
+            end
           end
       rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
         handle_marshall_error(e) if e.is_a?(ArgumentError)
@@ -169,14 +172,17 @@ module Dependabot
               File.write(path, f.content)
             end
 
-            SharedHelpers.run_helper_subprocess(command: NativeHelpers.helper_path,
+            deps = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
               function: "parsed_gemspec",
               args: {
                 gemspec_name: file.name,
                 dir: Dir.pwd
-              }).map do |dep_hash|
-                OpenStruct.new(dep_hash)
-              end
+              }
+            )
+            deps.map do |dep_hash|
+              OpenStruct.new(dep_hash)
+            end
           end
       rescue SharedHelpers::ChildProcessFailed => e
         msg = e.error_class + " with message: " + e.error_message

@@ -75,7 +75,8 @@ module Dependabot
             function: "vendor_cache_dir",
             args: {
               dir: repo_contents_path
-            })
+            }
+          )
       end
 
       # Returns changed files in the vendor/cache folder

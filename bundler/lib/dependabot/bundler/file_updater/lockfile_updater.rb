@@ -10,7 +10,6 @@ require "dependabot/bundler/native_helpers"
 module Dependabot
   module Bundler
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
       class LockfileUpdater
         require_relative "gemfile_updater"
         require_relative "gemspec_updater"
@@ -75,8 +74,9 @@ module Dependabot
                   lockfile_name: lockfile.name,
                   dir: tmp_dir,
                   credentials: relevant_credentials,
-                  dependencies: dependencies.map(&:to_h),
-                })
+                  dependencies: dependencies.map(&:to_h)
+                }
+              )
             end
           post_process_lockfile(lockfile_body)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -307,7 +307,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".specification") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
