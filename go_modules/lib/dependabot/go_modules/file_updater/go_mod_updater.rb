@@ -70,9 +70,9 @@ module Dependabot
             run_go_mod_tidy
 
             # At this point, the go.mod returned from run_go_get contains the
-            # correct set of modules, but running `go get` can change the file in
-            # undesirable ways (such as injecting the current Go version), so we
-            # need to update the original go.mod with the updated set of
+            # correct set of modules, but running `go get` can change the file
+            # in undesirable ways (such as injecting the current Go version),
+            # so we need to update the original go.mod with the updated set of
             # requirements rather than using the regenerated file directly
             original_reqs = original_manifest["Require"] || []
             updated_reqs = parse_manifest["Require"] || []
