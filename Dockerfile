@@ -66,8 +66,9 @@ RUN apt-get install -y software-properties-common \
 # Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
+# Install pyenv that includes 3.7.9 
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
+  && cd /usr/local/.pyenv && git checkout dd62b0d && cd - \
   && pyenv install 3.8.5 \
   && pyenv install 2.7.18 \
   && pyenv global 3.8.5
