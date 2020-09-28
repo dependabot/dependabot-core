@@ -133,10 +133,14 @@ RUN add-apt-repository ppa:ondrej/php \
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -xz -C /opt \
+ARG GOLANG_VERSION=1.15.2
+ARG GOLANG_CHECKSUM=b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552
+RUN curl -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
+  && tar -xzf go.tar.gz -C /opt \
+  && mkdir /opt/go/gopath \
   && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep \
-  && mkdir /opt/go/gopath
+  && chmod +x /opt/go/bin/dep
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
