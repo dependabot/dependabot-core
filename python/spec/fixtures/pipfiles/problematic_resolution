@@ -15,5 +15,5 @@ python_version = "2.7"
 
 [[source]]
 name = "pypi"
-url = "https://pypi.python.org/simple/"
+url = "https://pypi.org/simple/"
 verify_ssl = true

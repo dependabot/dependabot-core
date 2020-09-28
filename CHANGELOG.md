@@ -1,3 +1,33 @@
+## v0.120.3, 28 September 2020
+
+- Fix uninitialized constant error (`Dependabot::VERSION`) when using `SharedHelpers`
+- Fix `SharedHelpers.excon_defaults` when passing in extra headers
+- Bump phpstan/phpstan from 0.12.44 to 0.12.45 in /composer/helpers
+- Bump eslint from 7.9.0 to 7.10.0 in /npm_and_yarn/helpers
+
+## v0.120.2, 25 September 2020
+
+- Add trailing slash to pypi.org index requests
+- Add a default User-Agent header to excon requests
+- Bump phpstan/phpstan from 0.12.43 to 0.12.44 in /composer/helpers
+
+## v0.120.1, 25 September 2020
+
+- Default to pypi.org instead of pypi.python.org
+
+## v0.120.0, 24 September 2020
+
+- BREAKING: New exception `Dependabot::PullRequestCreator::AnnotationError`
+  Raised when a pull request is created but fails further steps (e.g. assigning reviewer)
+  Code that rescues from `PullRequestCreator` can use the `pull_request` property for the
+  incomplete PR, and the `cause` property for the original error.
+- Allow Azure client to set linked work item (@JamieMagee)
+- Bump eslint from 7.8.1 to 7.9.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.42 to 0.12.43 in /composer/helpers
+- Bump prettier from 2.1.1 to 2.1.2 in /npm_and_yarn/helpers
+- Bump rubocop from ~> 0.90.0 to ~> 0.91.0 in /common
+- Bump jason from 1.2.1 to 1.2.2 in /hex/helpers
+
 ## v0.119.6, 21 September 2020
 
 - Fix a bug generating commit messages introduced in v0.119.5

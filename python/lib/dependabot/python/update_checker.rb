@@ -277,7 +277,7 @@ module Dependabot
         return false unless details
 
         index_response = Excon.get(
-          "https://pypi.org/pypi/#{normalised_name(details['name'])}/json",
+          "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/",
           idempotent: true,
           **SharedHelpers.excon_defaults
         )

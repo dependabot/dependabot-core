@@ -67,13 +67,19 @@ module Dependabot
       def main
         return @main if @main
 
-        go_files = repo_contents.select { |f| f.name.end_with?(".go") }
+        go_files = Dir.glob("*.go")
 
-        go_files.each do |go_file|
-          file = fetch_file_from_host(go_file.name, type: "package_main")
-          next unless file.content.match?(/\s*package\s+main/)
+        go_files.each do |filename|
+          file_content = File.read(filename)
+          next unless file_content.match?(/\s*package\s+main/)
 
-          return @main = file.tap { |f| f.support_file = true }
+          return @main = DependencyFile.new(
+            name: filename,
+            directory: "/",
+            type: "file",
+            support_file: true,
+            content: file_content
+          )
         end
 
         nil

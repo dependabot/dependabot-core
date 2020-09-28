@@ -135,4 +135,78 @@ RSpec.describe Dependabot::SharedHelpers do
       it { is_expected.to eq("") }
     end
   end
+
+  describe ".excon_headers" do
+    it "includes dependabot user-agent header" do
+      expect(described_class.excon_headers).to include(
+        "User-Agent" => %r{
+          dependabot-core/#{Dependabot::VERSION}\s|
+          excon/[\.0-9]+\s|
+          ruby/[\.0-9]+\s\(.+\)\s|
+          (|
+          \+https://github.com/dependabot/|dependabot-core|
+          )|
+        }x
+      )
+    end
+
+    it "allows extra headers" do
+      expect(
+        described_class.excon_headers(
+          "Accept" => "text/html"
+        )
+      ).to include(
+        "User-Agent" => /dependabot/,
+        "Accept" => "text/html"
+      )
+    end
+
+    it "allows overriding user-agent headers" do
+      expect(
+        described_class.excon_headers(
+          "User-Agent" => "custom"
+        )
+      ).to include(
+        "User-Agent" => "custom"
+      )
+    end
+  end
+
+  describe ".excon_defaults" do
+    subject(:excon_defaults) do
+      described_class.excon_defaults
+    end
+
+    it "includes the defaults" do
+      expect(subject).to eq(
+        connect_timeout: 5,
+        write_timeout: 5,
+        read_timeout: 20,
+        omit_default_port: true,
+        middlewares: described_class.excon_middleware,
+        headers: described_class.excon_headers
+      )
+    end
+
+    it "allows overriding options and merges headers" do
+      expect(
+        described_class.excon_defaults(
+          read_timeout: 30,
+          headers: {
+            "Accept" => "text/html"
+          }
+        )
+      ).to include(
+        connect_timeout: 5,
+        write_timeout: 5,
+        read_timeout: 30,
+        omit_default_port: true,
+        middlewares: described_class.excon_middleware,
+        headers: {
+          "User-Agent" => /dependabot/,
+          "Accept" => "text/html"
+        }
+      )
+    end
+  end
 end
