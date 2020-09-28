@@ -153,13 +153,14 @@ module Dependabot
 
     def self.excon_defaults(options = nil)
       options ||= {}
+      headers = options.delete(:headers)
       {
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
         omit_default_port: true,
         middlewares: excon_middleware,
-        headers: excon_headers(options[:headers])
+        headers: excon_headers(headers)
       }.merge(options)
     end
 
