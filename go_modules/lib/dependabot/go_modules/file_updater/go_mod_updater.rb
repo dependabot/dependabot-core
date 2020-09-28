@@ -53,6 +53,7 @@ module Dependabot
 
             original_go_mod = File.read("go.mod")
             original_manifest = parse_manifest
+            original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
             substitutions = replace_directive_substitutions(original_manifest)
             build_module_stubs(substitutions.values)
@@ -91,7 +92,7 @@ module Dependabot
             # put the old replace directives back again
             substitute_all(substitutions.invert)
 
-            updated_go_sum = File.exist?("go.sum") ? File.read("go.sum") : nil
+            updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -211,8 +212,10 @@ module Dependabot
         end
 
         def handle_subprocess_error(stderr)
-          current_path = Dir.getwd
-          stderr = stderr.gsub(current_path, "")
+          # TODO: pass in directory or go_mod Dependency file to show the right
+          # path in these errors.
+
+          stderr = stderr.gsub(Dir.getwd, "")
 
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
@@ -224,11 +227,11 @@ module Dependabot
           if path_regex
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
-              new(current_path, match[1], match[2])
+              new("go.mod", match[1], match[2])
           end
 
           msg = stderr.lines.last(10).join.strip
-          raise Dependabot::DependencyFileNotParseable.new(current_path, msg)
+          raise Dependabot::DependencyFileNotParseable.new("go.mod", msg)
         end
 
         def requirement_to_dependency_obj(req)
