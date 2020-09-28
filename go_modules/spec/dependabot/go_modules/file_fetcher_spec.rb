@@ -22,6 +22,10 @@ RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
   end
   let(:directory) { "/" }
 
+  after do
+    FileUtils.rm_rf(file_fetcher_instance.repo_contents_path)
+  end
+
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name)).
       to include("go.mod", "go.sum")

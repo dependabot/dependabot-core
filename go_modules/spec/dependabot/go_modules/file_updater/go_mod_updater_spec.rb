@@ -8,8 +8,6 @@ require "dependabot/go_modules/file_updater/go_mod_updater"
 RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
-      go_mod: go_mod,
-      go_sum: go_sum,
       dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
@@ -23,12 +21,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
   let(:project_name) { "simple" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:go_sum) { nil }
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-  end
-  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+  let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -62,7 +55,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       context "if no files have changed" do
-        it { is_expected.to eq(go_mod.content) }
+        it { is_expected.to eq(go_mod_content) }
       end
 
       context "when the requirement has changed" do
@@ -131,12 +124,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          let(:go_sum) do
-            Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
-          end
           let(:project_name) { "go_sum" }
-          let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
-          subject(:updated_go_sum_content) { updater.updated_go_sum_content }
+          subject(:updated_go_mod_content) { updater.updated_go_sum_content }
 
           it "adds new entries to the go.sum" do
             is_expected.
@@ -145,11 +134,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
-          # This happens via `go mod tidy`, which we currently can't run, as we
-          # need to the whole source repo
-          pending "removes old entries from the go.sum" do
+          it "removes old entries from the go.sum" do
             is_expected.
-              to include(%(rsc.io/quote v1.4.0 h1:))
+              to_not include(%(rsc.io/quote v1.4.0 h1:))
             is_expected.
               to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
@@ -190,6 +177,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "without a go.sum" do
+          let(:project_name) { "simple" }
+
           it "doesn't return a go.sum" do
             expect(updater.updated_go_sum_content).to be_nil
           end
@@ -233,7 +222,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       let(:previous_requirements) { [] }
 
       context "if no files have changed" do
-        it { is_expected.to eq(go_mod.content) }
+        it { is_expected.to eq(go_mod_content) }
       end
 
       context "when the version has changed" do

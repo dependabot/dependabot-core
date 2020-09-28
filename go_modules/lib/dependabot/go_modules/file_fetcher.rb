@@ -19,25 +19,29 @@ module Dependabot
       def fetch_files
         # Ensure we always check out the full repo contents for go_module
         # updates.
-        SharedHelpers.reset_git_repo(clone_repo_contents)
+        SharedHelpers.in_a_temporary_repo_directory(
+          "/",
+          repo_contents_path,
+          source.branch
+        ) do
+          unless go_mod
+            raise(
+              Dependabot::DependencyFileNotFound,
+              File.join(directory, "go.mod")
+            )
+          end
 
-        unless go_mod
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "go.mod")
-          )
+          fetched_files = [go_mod]
+
+          # Fetch the (optional) go.sum
+          fetched_files << go_sum if go_sum
+
+          # Fetch the main.go file if present, as this will later identify
+          # this repo as an app.
+          fetched_files << main if main
+
+          fetched_files
         end
-
-        fetched_files = [go_mod]
-
-        # Fetch the (optional) go.sum
-        fetched_files << go_sum if go_sum
-
-        # Fetch the main.go file if present, as this will later identify
-        # this repo as an app.
-        fetched_files << main if main
-
-        fetched_files
       end
 
       def go_mod
@@ -49,10 +53,10 @@ module Dependabot
       end
 
       def fetch_file_if_present(filename)
-        path = Pathname.new(File.join(repo_contents_path, filename)).
-               cleanpath.to_path
-        content = File.read(path) if File.exist?(path)
-        cleaned_path = path.gsub(%r{^/}, "")
+        return unless File.exist?(filename)
+
+        content = File.read(filename)
+        cleaned_path = filename.gsub(%r{^/}, "")
         type = @linked_paths.key?(cleaned_path) ? "symlink" : type
 
         DependencyFile.new(
@@ -74,9 +78,9 @@ module Dependabot
           next unless file_content.match?(/\s*package\s+main/)
 
           return @main = DependencyFile.new(
-            name: filename,
+            name: Pathname.new(filename).cleanpath.to_path,
             directory: "/",
-            type: "file",
+            type: "package_main",
             support_file: true,
             content: file_content
           )
