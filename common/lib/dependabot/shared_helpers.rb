@@ -8,6 +8,8 @@ require "digest"
 require "open3"
 require "shellwords"
 
+require "dependabot/version"
+
 module Dependabot
   module SharedHelpers
     BUMP_TMP_FILE_PREFIX = "dependabot_"
