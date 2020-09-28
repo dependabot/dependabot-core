@@ -145,7 +145,6 @@ module Dependabot
         end
 
         def build_details_tag(summary:, body:)
-          # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
           # CodeCommit does not support the <details> tag (no url available)
           if source_provider_supports_html?
             msg = "<details>\n<summary>#{summary}</summary>\n\n"
@@ -246,11 +245,16 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          return text unless source.provider == "github"
-
-          LinkAndMentionSanitizer.
-            new(github_redirection_service: github_redirection_service).
-            sanitize_links_and_mentions(text: text, unsafe: unsafe)
+          case source.provider
+          when "github"
+            html_sanitizer.
+              sanitize_github_links_and_mentions(text: text, unsafe: unsafe)
+          when "azure"
+            html_sanitizer.
+              sanitize_html_only(text: text, unsafe: unsafe)
+          else
+            text
+          end
         end
 
         def sanitize_template_tags(text)
@@ -263,6 +267,12 @@ module Dependabot
 
             tag
           end
+        end
+
+        def html_sanitizer
+          @html_sanitizer ||= HtmlSanitizer.new(
+            github_redirection_service: github_redirection_service
+          )
         end
       end
     end

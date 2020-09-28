@@ -7,7 +7,7 @@ require "dependabot/pull_request_creator/message_builder"
 module Dependabot
   class PullRequestCreator
     class MessageBuilder
-      class LinkAndMentionSanitizer
+      class HtmlSanitizer
         GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i.freeze
         GITHUB_REF_REGEX = %r{
           (?:https?://)?
@@ -30,7 +30,16 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
-        def sanitize_links_and_mentions(text:, unsafe: false)
+        def sanitize_html_only(text:, unsafe: false)
+          doc = CommonMarker.render_doc(
+            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
+          )
+
+          mode = unsafe ? :UNSAFE : :DEFAULT
+          doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
+        end
+
+        def sanitize_github_links_and_mentions(text:, unsafe: false)
           doc = CommonMarker.render_doc(
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )

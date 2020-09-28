@@ -12,7 +12,7 @@ module Dependabot
     class MessageBuilder
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
-      require_relative "message_builder/link_and_mention_sanitizer"
+      require_relative "message_builder/html_sanitizer"
       require_relative "pr_name_prefixer"
 
       attr_reader :source, :dependencies, :files, :credentials,

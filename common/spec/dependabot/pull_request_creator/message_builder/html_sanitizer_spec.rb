@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/pull_request_creator/message_builder/"\
-        "link_and_mention_sanitizer"
+require "dependabot/pull_request_creator/message_builder/html_sanitizer"
 
 namespace = Dependabot::PullRequestCreator::MessageBuilder
-RSpec.describe namespace::LinkAndMentionSanitizer do
+RSpec.describe namespace::HtmlSanitizer do
   subject(:sanitizer) do
     described_class.new(github_redirection_service: github_redirection_service)
   end
   let(:github_redirection_service) { "github-redirect.com" }
 
-  describe "#sanitize_links_and_mentions" do
+  describe "#sanitize_github_links_and_mentions" do
     subject(:sanitize_links_and_mentions) do
-      sanitizer.sanitize_links_and_mentions(text: text)
+      sanitizer.sanitize_github_links_and_mentions(text: text)
     end
 
     context "with an @-mention" do
