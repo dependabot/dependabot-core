@@ -36,11 +36,12 @@ module Functions
     Bundler.app_cache
   end
 
-  def self.update_lockfile(gemfile_name:, lockfile_name:, dir:, credentials:,
-                           dependencies:)
+  def self.update_lockfile(gemfile_name:, lockfile_name:, using_bundler_2:,
+                           dir:, credentials:, dependencies:)
     LockfileUpdater.new(
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
+      using_bundler_2: using_bundler_2,
       dir: dir,
       credentials: credentials,
       dependencies: dependencies,
