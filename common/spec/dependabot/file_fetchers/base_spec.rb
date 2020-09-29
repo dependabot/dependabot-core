@@ -1322,11 +1322,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
     # prepare a checkout to spoof `git clone`
+    let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
     let(:mock_clone) do
       tmp = Dir.mktmpdir
-      contents = fixture("ruby", "gemfiles", "Gemfile")
-      File.write(File.join(tmp, "requirements.txt"), contents)
       `git init #{tmp}`
+      File.write(File.join(tmp, "requirements.txt"), contents)
       `git -C #{tmp} add .`
       `git -C #{tmp} commit -m'fake fetched clone'`
       tmp
@@ -1349,6 +1349,48 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("business") }
+        end
+      end
+
+      context "file not found" do
+        let(:mock_clone) do
+          tmp = Dir.mktmpdir
+          `git init #{tmp}`
+          `git -C #{tmp} commit --allow-empty -m'fake fetched clone'`
+          tmp
+        end
+
+        it "raises DependencyFileNotFound" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("requirements.txt")
+          end
+        end
+      end
+
+      context "symlink" do
+        let(:mock_clone) do
+          tmp = Dir.mktmpdir
+          `git init #{tmp}`
+          `mkdir -p #{tmp}/symlinked`
+          file_path = File.join(tmp, "symlinked", "requirements.txt")
+          File.write(file_path, contents)
+          link_path = File.join(tmp, "requirements.txt")
+          `ln -s #{file_path} #{link_path}`
+          `git -C #{tmp} add .`
+          `git -C #{tmp} commit -m'fake fetched clone'`
+          tmp
+        end
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("business") }
+          its(:type) { is_expected.to include("symlink") }
+          its(:symlink_target) do
+            is_expected.to include("symlinked/requirements.txt")
+          end
         end
       end
     end

@@ -98,19 +98,23 @@ module Dependabot
       def load_cloned_file_if_present(filename)
         path = File.join(clone_repo_contents, filename)
         unless File.exist?(path)
-          raise Dependabot::DependencyFileNotFound, path
+          raise Dependabot::DependencyFileNotFound, filename
         end
 
         content = File.read(path)
-        cleaned_path = filename.gsub(%r{^/}, "")
-        type = @linked_paths.key?(cleaned_path) ? "symlink" : type
+        type = if File.symlink?(path)
+                 symlink_target = File.readlink(path)
+                 "symlink"
+               else
+                 "file"
+               end
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
-          symlink_target: @linked_paths.dig(cleaned_path, :path)
+          symlink_target: symlink_target
         )
       end
 
