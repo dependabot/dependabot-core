@@ -155,11 +155,7 @@ module Dependabot
         @parsed_gemspecs[file.name] ||=
           SharedHelpers.in_a_temporary_repo_directory(base_directory,
                                                       repo_contents_path) do
-            [file, *imported_ruby_files].each do |f|
-              path = f.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, f.content)
-            end
+            write_temporary_dependency_files
 
             deps = SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
