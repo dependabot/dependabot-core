@@ -13,4 +13,4 @@ require (
 	rsc.io/quote v1.4.0
 )
 
-replace rsc.io/qr => github.com/rsc/qr v0.2.0
+replace rsc.io/qr => ../../qr

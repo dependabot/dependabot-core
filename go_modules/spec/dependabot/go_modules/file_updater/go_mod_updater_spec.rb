@@ -76,7 +76,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
 
-        context "when a replace directive is present" do
+        context "when a path-based replace directive is present" do
           let(:project_name) { "replace" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
