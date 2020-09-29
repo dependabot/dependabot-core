@@ -65,6 +65,16 @@ module Dependabot
           error_handling ? handle_bundler_errors(e) : raise
         end
 
+        def in_a_native_bundler_context(error_handling: true)
+          SharedHelpers.
+            in_a_temporary_repo_directory(base_directory,
+                                          repo_contents_path) do |tmp_dir|
+            write_temporary_dependency_files
+
+            yield
+          end
+        end
+
         def base_directory
           dependency_files.first.directory
         end
