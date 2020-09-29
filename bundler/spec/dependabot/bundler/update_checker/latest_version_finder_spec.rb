@@ -536,5 +536,22 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
     end
+
+    context "with a git source" do
+      let(:gemfile_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source.lock" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with a path source" do
+      let(:gemfile_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source.lock" }
+
+      let(:dependency_name) { "example" }
+      let(:source) { { type: "path" } }
+
+      it { is_expected.to be_nil }
+    end
   end
 end
