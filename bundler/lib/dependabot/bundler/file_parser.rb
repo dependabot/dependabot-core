@@ -67,8 +67,8 @@ module Dependabot
                 version: dependency_version(dep.name)&.to_s,
                 requirements: [{
                   requirement: gemfile_declaration_finder.enhanced_req_string,
-                  groups: dep.groups,
-                  source: source_for(dep),
+                  groups: dep.groups.map(&:to_sym),
+                  source: dep.source&.transform_keys(&:to_sym),
                   file: file.name
                 }],
                 package_manager: "bundler"
@@ -95,7 +95,7 @@ module Dependabot
                           else
                             ["development"]
                           end,
-                  source: source_for(dependency),
+                  source: dependency.source&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
                 package_manager: "bundler"
@@ -143,6 +143,7 @@ module Dependabot
               function: "parsed_gemfile",
               args: {
                 gemfile_name: gemfile.name,
+                lockfile_name: lockfile&.name,
                 dir: Dir.pwd
               }
             )
@@ -181,6 +182,7 @@ module Dependabot
               function: "parsed_gemspec",
               args: {
                 gemspec_name: file.name,
+                lockfile_name: lockfile&.name,
                 dir: Dir.pwd
               }
             )
@@ -223,42 +225,6 @@ module Dependabot
         raise "A gemspec or Gemfile must be provided!"
       end
 
-      def source_for(dependency)
-        source = dependency.source
-        if lockfile && default_rubygems?(source)
-          # If there's a lockfile and the Gemfile doesn't have anything
-          # interesting to say about the source, check that.
-          source = source_from_lockfile(dependency.name)
-        end
-        raise "Bad source: #{source}" unless sources.include?(source.class)
-
-        return nil if default_rubygems?(source)
-
-        details = { type: source.class.name.split("::").last.downcase }
-        if source.is_a?(::Bundler::Source::Git)
-          details.merge!(git_source_details(source))
-        end
-        if source.is_a?(::Bundler::Source::Rubygems)
-          details[:url] = source.remotes.first.to_s
-        end
-        details
-      end
-
-      def git_source_details(source)
-        {
-          url: source.uri,
-          branch: source.branch || "master",
-          ref: source.ref
-        }
-      end
-
-      def default_rubygems?(source)
-        return true if source.nil?
-        return false unless source.is_a?(::Bundler::Source::Rubygems)
-
-        source.remotes.any? { |r| r.to_s.include?("rubygems.org") }
-      end
-
       def dependency_version(dependency_name)
         return unless lockfile
 
@@ -277,10 +243,6 @@ module Dependabot
         end
 
         spec.version
-      end
-
-      def source_from_lockfile(dependency_name)
-        parsed_lockfile.specs.find { |s| s.name == dependency_name }&.source
       end
 
       def gemfile

@@ -1,34 +1,15 @@
 require "functions/lockfile_updater"
+require "functions/file_parser"
 
 module Functions
-  def self.bundler_version
-    Bundler::VERSION
+  def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
+    FileParser.new(dir: dir, lockfile_name: lockfile_name).
+      parsed_gemfile(gemfile_name: gemfile_name)
   end
 
-  def self.parsed_gemfile(gemfile_name:, dir:)
-    Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-    Bundler::Definition.build(gemfile_name, nil, {}).
-      dependencies.select(&:current_platform?).
-      reject { |dep| dep.source.is_a?(Bundler::Source::Gemspec) }.
-      map(&method(:serialize_bundler_dependency))
-  end
-
-  def self.parsed_gemspec(gemspec_name:, dir:)
-    Bundler.instance_variable_set(:@root, dir)
-    Bundler.load_gemspec_uncached(gemspec_name).
-      dependencies.
-      map(&method(:serialize_bundler_dependency))
-  end
-
-  def self.serialize_bundler_dependency(dependency)
-    {
-      name: dependency.name,
-      requirement: dependency.requirement,
-      groups: dependency.groups,
-      source: dependency.source,
-      type: dependency.type
-    }
+  def self.parsed_gemspec(lockfile_name:, gemspec_name:, dir:)
+    FileParser.new(dir: dir, lockfile_name: lockfile_name).
+      parsed_gemspec(gemspec_name: gemspec_name)
   end
 
   def self.vendor_cache_dir(dir:)
