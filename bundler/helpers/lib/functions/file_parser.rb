@@ -1,5 +1,11 @@
 module Functions
   class FileParser
+    # TODO: Remove the need to sanitize BUNDLED WITH (requires multiple
+    # installed bundler versions)
+    #
+    # Note: Copied from FileUpdater::LockfileUpdater
+    LOCKFILE_ENDING =  /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+
     def initialize(dir:, lockfile_name:)
       @dir = dir
       @lockfile_name = lockfile_name
@@ -29,14 +35,18 @@ module Functions
       Dir.chdir(dir) do
         return unless lockfile_name && File.exist?(lockfile_name)
 
-        @lockfile ||= Dir.chdir(dir) { File.read(lockfile_name) }
+        @lockfile ||= File.read(lockfile_name)
       end
+    end
+
+    def sanitized_lockfile
+      lockfile.gsub(LOCKFILE_ENDING, "")
     end
 
     def parsed_lockfile
       return unless lockfile
 
-      @parsed_lockfile ||= ::Bundler::LockfileParser.new(lockfile)
+      @parsed_lockfile ||= ::Bundler::LockfileParser.new(sanitized_lockfile)
     end
 
     def source_from_lockfile(dependency_name)

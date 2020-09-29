@@ -37,19 +37,6 @@ module Dependabot
 
       private
 
-      # Can't be a constant because some of these don't exist in bundler
-      # 1.15, which Heroku uses, which causes an exception on boot.
-      def sources
-        [
-          NilClass,
-          ::Bundler::Source::Rubygems,
-          ::Bundler::Source::Git,
-          ::Bundler::Source::Path,
-          ::Bundler::Source::Gemspec,
-          ::Bundler::Source::Metadata
-        ]
-      end
-
       def gemfile_dependencies
         dependencies = DependencySet.new
 
@@ -151,17 +138,14 @@ module Dependabot
               OpenStruct.new(dep_hash)
             end
           end
-      rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
-        handle_marshall_error(e) if e.is_a?(ArgumentError)
+      rescue SharedHelpers::HelperSubprocessFailed, ArgumentError => e
+        handle_marshall_error(e) if e.message == "marshal data too short"
 
-        msg = e.error_class + " with message: " +
-              e.error_message.force_encoding("UTF-8").encode
+        msg = e.message.force_encoding("UTF-8").encode
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
       def handle_marshall_error(err)
-        raise err unless err.message == "marshal data too short"
-
         msg = "Error evaluating your dependency files: #{err.message}"
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
@@ -190,9 +174,8 @@ module Dependabot
               OpenStruct.new(dep_hash)
             end
           end
-      rescue SharedHelpers::ChildProcessFailed => e
-        msg = e.error_class + " with message: " + e.error_message
-        raise Dependabot::DependencyFileNotEvaluatable, msg
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        raise Dependabot::DependencyFileNotEvaluatable, e.message
       end
 
       def base_directory
