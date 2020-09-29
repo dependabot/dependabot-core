@@ -310,7 +310,7 @@ $repo_contents_path = nil
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
           new(source: source, credentials: $options[:credentials])
 
-$repo_contents_path = fetcher.repo_contents_path if $options[:clone]
+$repo_contents_path = fetcher.clone_repo_contents if $options[:clone]
 
 $files = cached_dependency_files_read do
   fetcher.files
@@ -395,6 +395,7 @@ def file_updater_for(dependencies)
     dependencies: dependencies,
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
+    directory: $options[:directory],
     credentials: $options[:credentials]
   )
 end

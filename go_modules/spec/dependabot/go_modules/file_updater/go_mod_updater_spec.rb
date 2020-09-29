@@ -16,7 +16,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         "password" => "token"
       }],
       repo_contents_path: repo_contents_path,
-      go_mod_path: go_mod_path
+      directory: "/"
     )
   end
 

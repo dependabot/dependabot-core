@@ -26,11 +26,11 @@ module Dependabot
         ].freeze
 
         def initialize(dependencies:, credentials:, repo_contents_path:,
-                       go_mod_path:)
+                       directory:)
           @dependencies = dependencies
           @credentials = credentials
           @repo_contents_path = repo_contents_path
-          @go_mod_path = go_mod_path
+          @directory = directory
         end
 
         def updated_go_mod_content
@@ -44,7 +44,7 @@ module Dependabot
         private
 
         attr_reader :dependencies, :credentials, :repo_contents_path,
-                    :go_mod_path
+                    :directory
 
         def updated_files
           @updated_files ||= update_files
@@ -164,7 +164,7 @@ module Dependabot
 
         def in_repo_path(&block)
           SharedHelpers.
-            in_a_temporary_repo_directory("/", repo_contents_path) do
+            in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               block.call
             end
@@ -233,6 +233,12 @@ module Dependabot
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependencyFileNotParseable.
             new(go_mod_path, msg)
+        end
+
+        def go_mod_path
+          return "go.mod" if directory == "/"
+
+          File.join(directory, "go.mod")
         end
 
         def requirement_to_dependency_obj(req)

@@ -23,7 +23,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
   let(:directory) { "/" }
 
   after do
-    FileUtils.rm_rf(file_fetcher_instance.repo_contents_path)
+    FileUtils.rm_rf(file_fetcher_instance.clone_repo_contents)
   end
 
   it "fetches the go.mod and go.sum" do

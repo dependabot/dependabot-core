@@ -20,8 +20,8 @@ module Dependabot
         # Ensure we always check out the full repo contents for go_module
         # updates.
         SharedHelpers.in_a_temporary_repo_directory(
-          "/",
-          repo_contents_path,
+          directory,
+          clone_repo_contents,
           source.branch
         ) do
           unless go_mod
