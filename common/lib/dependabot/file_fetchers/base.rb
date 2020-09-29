@@ -97,7 +97,9 @@ module Dependabot
 
       def load_cloned_file_if_present(filename)
         path = File.join(clone_repo_contents, filename)
-        return unless File.exist?(path)
+        unless File.exist?(path)
+          raise Dependabot::DependencyFileNotFound, path
+        end
 
         content = File.read(path)
         cleaned_path = filename.gsub(%r{^/}, "")
