@@ -1,6 +1,6 @@
 module Functions
   class LockfileUpdater
-    RETRYABLE_ERRORS = [::Bundler::HTTPError].freeze
+    RETRYABLE_ERRORS = [Bundler::HTTPError].freeze
     GEM_NOT_FOUND_ERROR_REGEX =
     /
       locked\sto\s(?<name>[^\s]+)\s\(|
@@ -19,11 +19,11 @@ module Functions
 
     def run
       # Set the path for path gemspec correctly
-      ::Bundler.instance_variable_set(:@root, dir)
+      Bundler.instance_variable_set(:@root, dir)
 
       # Remove installed gems from the default Rubygems index
-      ::Gem::Specification.all =
-        ::Gem::Specification.send(:default_stubs, "*.gemspec")
+      Gem::Specification.all =
+        Gem::Specification.send(:default_stubs, "*.gemspec")
 
       # Set flags and credentials
       set_bundler_flags_and_credentials
@@ -49,16 +49,18 @@ module Functions
         old_reqs.each do |dep_name, old_req|
           d_dep = definition.dependencies.find { |d| d.name == dep_name }
           if old_req == :none then definition.dependencies.delete(d_dep)
-          else d_dep.instance_variable_set(:@requirement, old_req)
+          else
+            req = Gem::Requirement.new(old_req)
+            d_dep.instance_variable_set(:@requirement, req)
           end
         end
 
-        cache_vendored_gems(definition) if ::Bundler.app_cache.exist?
+        cache_vendored_gems(definition) if Bundler.app_cache.exist?
 
         definition.to_lock
-      rescue ::Bundler::GemNotFound => e
+      rescue BundlerGemNotFound => e
         unlock_yanked_gem(dependencies_to_unlock, e) && retry
-      rescue ::Bundler::VersionConflict => e
+      rescue Bundler::VersionConflict => e
         unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
       rescue *RETRYABLE_ERRORS
         raise if @retrying
@@ -80,13 +82,13 @@ module Functions
         no_prune: true
       }
 
-      ::Bundler.settings.temporary(**bundler_opts) do
+      Bundler.settings.temporary(**bundler_opts) do
         # Fetch and cache gems on all platforms without pruning
-        ::Bundler::Runtime.new(nil, definition).cache
+        Bundler::Runtime.new(nil, definition).cache
 
         # Only prune unlocked gems (the original implementation is in
         # Bundler::Runtime)
-        cache_path = ::Bundler.app_cache
+        cache_path = Bundler.app_cache
         resolve = definition.resolve
         prune_gem_cache(resolve, cache_path, unlocked_gems)
         prune_git_and_path_cache(resolve, cache_path)
@@ -95,7 +97,7 @@ module Functions
 
     # This is not officially supported and may be removed without notice.
     def __keep_on_prune?(spec_name)
-      unless (specs = ::Bundler.settings[:persistent_gems_after_clean])
+      unless (specs = Bundler.settings[:persistent_gems_after_clean])
         return false
       end
 
@@ -108,11 +110,11 @@ module Functions
       cached_gems = Dir["#{cache_path}/*.gem"]
 
       outdated_gems = cached_gems.reject do |path|
-        spec = ::Bundler.rubygems.spec_from_gem path
+        spec = Bundler.rubygems.spec_from_gem path
 
         !unlocked_gems.include?(spec.name) || resolve.any? do |s|
           s.name == spec.name && s.version == spec.version &&
-            !s.source.is_a?(::Bundler::Source::Git)
+            !s.source.is_a?(Bundler::Source::Git)
         end
       end
 
@@ -156,7 +158,7 @@ module Functions
 
     # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
-      all_deps =  ::Bundler::LockfileParser.new(lockfile).
+      all_deps =  Bundler::LockfileParser.new(lockfile).
                   specs.map(&:name).map(&:to_s)
       top_level = build_definition([]).dependencies.
                   map(&:name).map(&:to_s)
@@ -186,7 +188,7 @@ module Functions
     # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
-      defn = ::Bundler::Definition.build(
+      defn = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
         gems: dependencies_to_unlock
@@ -210,10 +212,10 @@ module Functions
 
         if defn_dep.nil?
           definition.dependencies <<
-            ::Bundler::Dependency.new(dep["name"], dep["version"])
+            Bundler::Dependency.new(dep["name"], dep["version"])
           old_reqs[dep["name"]] = :none
         elsif git_dependency?(dep) &&
-              defn_dep.source.is_a?(::Bundler::Source::Git)
+              defn_dep.source.is_a?(Bundler::Source::Git)
           defn_dep.source.unlock!
         elsif Gem::Version.correct?(dep["version"])
           new_req = Gem::Requirement.create("= #{dep["version"]}")
@@ -234,21 +236,19 @@ module Functions
         token = cred["token"] ||
                 "#{cred['username']}:#{cred['password']}"
 
-        ::Bundler.settings.set_command_option(
+        Bundler.settings.set_command_option(
           cred.fetch("host"),
           token.gsub("@", "%40F").gsub("?", "%3F")
         )
       end
-
-      ::Bundler.settings.set_command_option("disable_platform_warnings", "true")
 
       # Use HTTPS for GitHub if lockfile was generated by Bundler 2
       set_bundler_2_flags if using_bundler_2?
     end
 
     def set_bundler_2_flags
-      ::Bundler.settings.set_command_option("forget_cli_options", "true")
-      ::Bundler.settings.set_command_option("github.https", "true")
+      Bundler.settings.set_command_option("forget_cli_options", "true")
+      Bundler.settings.set_command_option("github.https", "true")
     end
 
     def lockfile
