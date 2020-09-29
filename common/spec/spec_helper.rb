@@ -5,8 +5,26 @@ require "webmock/rspec"
 require "vcr"
 require "byebug"
 require "simplecov"
+require "simplecov-console"
 
 require_relative "dummy_package_manager/dummy"
+
+SimpleCov::Formatter::Console.output_style = "block"
+SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new(
+  [
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::Console
+  ]
+)
+
+SimpleCov.start do
+  add_filter "/spec/"
+
+  enable_coverage :branch
+  minimum_coverage line: 80, branch: 70
+  minimum_coverage_by_file 80
+  refuse_coverage_drop
+end
 
 RSpec.configure do |config|
   config.color = true
