@@ -25,10 +25,12 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
-        def initialize(dependencies:, credentials:, repo_contents_path:)
+        def initialize(dependencies:, credentials:, repo_contents_path:,
+                       go_mod_path:)
           @dependencies = dependencies
           @credentials = credentials
           @repo_contents_path = repo_contents_path
+          @go_mod_path = go_mod_path
         end
 
         def updated_go_mod_content
@@ -41,7 +43,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :credentials, :repo_contents_path
+        attr_reader :dependencies, :credentials, :repo_contents_path,
+                    :go_mod_path
 
         def updated_files
           @updated_files ||= update_files
@@ -224,28 +227,12 @@ module Dependabot
           if path_regex
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
-              new(relative_go_mod_path, match[1], match[2])
+              new(go_mod_path, match[1], match[2])
           end
 
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependencyFileNotParseable.
-            new(relative_go_mod_path, msg)
-        end
-
-        def relative_go_mod_path
-          # This grabs the path to the go.mod file, relatively to the git root
-          # path, we use this in error messages to signal which go.mod file in a
-          # project ran into issues.
-          return @relative_go_mod_path if @relative_go_mod_path
-
-          git_root = SharedHelpers.
-                     run_shell_command("git rev-parse --show-toplevel").strip
-          root_path = Pathname.new(git_root).cleanpath.to_s
-          absolute_path = Pathname.new(Dir.getwd).cleanpath.to_s
-          directory = absolute_path.gsub(root_path, "")
-
-          @relative_go_mod_path =
-            File.join([directory, "go.mod"].reject(&:empty?))
+            new(go_mod_path, msg)
         end
 
         def requirement_to_dependency_obj(req)

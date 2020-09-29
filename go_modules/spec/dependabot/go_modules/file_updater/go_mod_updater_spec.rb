@@ -15,13 +15,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      repo_contents_path: repo_contents_path
+      repo_contents_path: repo_contents_path,
+      go_mod_path: go_mod_path
     )
   end
 
   let(:project_name) { "simple" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+  let(:go_mod_path) { "go.mod" }
 
   let(:dependency) do
     Dependabot::Dependency.new(

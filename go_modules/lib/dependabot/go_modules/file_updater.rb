@@ -68,7 +68,8 @@ module Dependabot
           GoModUpdater.new(
             dependencies: dependencies,
             credentials: credentials,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            go_mod_path: go_mod.path
           )
       end
     end
