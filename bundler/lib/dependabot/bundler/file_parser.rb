@@ -138,7 +138,7 @@ module Dependabot
               OpenStruct.new(dep_hash)
             end
           end
-      rescue SharedHelpers::HelperSubprocessFailed, ArgumentError => e
+      rescue SharedHelpers::HelperSubprocessFailed => e
         handle_marshall_error(e) if e.message == "marshal data too short"
 
         msg = e.message.force_encoding("UTF-8").encode
