@@ -69,7 +69,7 @@ module Dependabot
       end
 
       def main
-        return @main if @main
+        return @main if defined?(@main)
 
         go_files = Dir.glob("*.go")
 
