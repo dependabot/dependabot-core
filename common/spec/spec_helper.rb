@@ -4,6 +4,7 @@ require "rspec/its"
 require "webmock/rspec"
 require "vcr"
 require "byebug"
+require "simplecov"
 
 require_relative "dummy_package_manager/dummy"
 
