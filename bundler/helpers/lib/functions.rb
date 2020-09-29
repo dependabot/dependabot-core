@@ -27,6 +27,7 @@ module Functions
       requirement: dependency.requirement,
       groups: dependency.groups,
       source: dependency.source,
+      type: dependency.type
     }
   end
 
