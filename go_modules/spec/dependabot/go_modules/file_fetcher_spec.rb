@@ -4,7 +4,7 @@ require "spec_helper"
 require "dependabot/go_modules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
+RSpec.describe Dependabot::GoModules::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:repo) { "dependabot-fixtures/go-modules-lib" }
