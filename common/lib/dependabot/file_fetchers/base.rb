@@ -76,6 +76,10 @@ module Dependabot
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
+        unless @repo_contents_path.nil?
+          return load_cloned_file_if_present(filename)
+        end
+
         dir = File.dirname(filename)
         basename = File.basename(filename)
 
@@ -91,7 +95,28 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      def load_cloned_file_if_present(filename)
+        path = File.join(clone_repo_contents, filename)
+        return unless File.exist?(path)
+
+        content = File.read(path)
+        cleaned_path = filename.gsub(%r{^/}, "")
+        type = @linked_paths.key?(cleaned_path) ? "symlink" : type
+
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: @linked_paths.dig(cleaned_path, :path)
+        )
+      end
+
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        unless @repo_contents_path.nil?
+          return load_cloned_file_if_present(filename)
+        end
+
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
         type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type

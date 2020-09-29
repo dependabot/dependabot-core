@@ -1321,22 +1321,35 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
+    # prepare a checkout to spoof `git clone`
+    let(:mock_clone) do
+      tmp = Dir.mktmpdir
+      contents = fixture("ruby", "gemfiles", "Gemfile")
+      File.write(File.join(tmp, "requirements.txt"), contents)
+      `git init #{tmp}`
+      `git -C #{tmp} add .`
+      `git -C #{tmp} commit -m'fake fetched clone'`
+      tmp
+    end
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      allow(file_fetcher_instance).
+        to receive(:_clone_repo_contents).and_return(mock_clone)
+    end
 
     describe "#files" do
       subject(:files) { file_fetcher_instance.files }
 
-      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
-      before do
-        allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-        stub_request(:get, url + "requirements.txt?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(status: 200,
-                    body: fixture("github", "gemfile_content.json"),
-                    headers: { "content-type" => "application/json" })
-      end
-
       context "with a GitHub source" do
         its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to include("business") }
+        end
       end
     end
   end
