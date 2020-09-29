@@ -1322,21 +1322,23 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
-    # prepare a checkout to spoof `git clone`
-    let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
-    let(:mock_clone) do
-      `git init #{repo_contents_path}`
-      path = File.join(repo_contents_path, "requirements.txt")
-      File.write(path, contents)
-      `git -C #{repo_contents_path} add .`
-      `git -C #{repo_contents_path} commit -m'fake clone'`
-      repo_contents_path
-    end
-
     after { FileUtils.rm_rf(repo_contents_path) }
 
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    end
+
+    # lazily spoof `git clone` on _clone_repo_contents
+    let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
+    let(:fill_repo) {}
+    let(:mock_clone) do
+      `git init #{repo_contents_path}`
+      fill_repo
+      `git -C #{repo_contents_path} add .`
+      `git -C #{repo_contents_path} commit --allow-empty -m'fake clone'`
+      repo_contents_path
+    end
+    before do
       allow(file_fetcher_instance).
         to receive(:_clone_repo_contents).and_return(mock_clone)
     end
@@ -1345,6 +1347,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
       subject(:files) { file_fetcher_instance.files }
 
       context "with a GitHub source" do
+        let(:fill_repo) do
+          path = File.join(repo_contents_path, "requirements.txt")
+          File.write(path, contents)
+        end
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the file" do
@@ -1356,12 +1363,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "file not found" do
-        let(:mock_clone) do
-          `git init #{repo_contents_path}`
-          `git -C #{repo_contents_path} commit --allow-empty -m'fake clone'`
-          repo_contents_path
-        end
-
         it "raises DependencyFileNotFound" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
@@ -1371,17 +1372,13 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "symlink" do
-        let(:mock_clone) do
-          `git init #{repo_contents_path}`
+        let(:fill_repo) do
           dir_path = File.join(repo_contents_path, "symlinked")
           Dir.mkdir(dir_path)
           file_path = File.join(dir_path, "requirements.txt")
           File.write(file_path, contents)
           link_path = File.join(repo_contents_path, "requirements.txt")
-          `ln -s #{file_path} #{link_path}`
-          `git -C #{repo_contents_path} add .`
-          `git -C #{repo_contents_path} commit -m'fake clone'`
-          repo_contents_path
+          File.symlink(file_path, link_path)
         end
 
         describe "the file" do
