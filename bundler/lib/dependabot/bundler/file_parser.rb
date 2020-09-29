@@ -90,8 +90,11 @@ module Dependabot
                 version: dependency_version(dependency.name)&.to_s,
                 requirements: [{
                   requirement: dependency.requirement.to_s,
-                  groups: dependency.type == "runtime" ?
-                    ["runtime"] : ["development"],
+                  groups: if dependency.type == "runtime"
+                            ["runtime"]
+                          else
+                            ["development"]
+                          end,
                   source: source_for(dependency),
                   file: gemspec.name
                 }],
