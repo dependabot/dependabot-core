@@ -2,6 +2,7 @@
 
 require "aws-sdk-codecommit"
 require "octokit"
+require "fileutils"
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
@@ -1324,13 +1325,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
     # prepare a checkout to spoof `git clone`
     let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
     let(:mock_clone) do
-      tmp = Dir.mktmpdir
-      `git init #{tmp}`
-      File.write(File.join(tmp, "requirements.txt"), contents)
-      `git -C #{tmp} add .`
-      `git -C #{tmp} commit -m'fake fetched clone'`
-      tmp
+      `git init #{repo_contents_path}`
+      path = File.join(repo_contents_path, "requirements.txt")
+      File.write(path, contents)
+      `git -C #{repo_contents_path} add .`
+      `git -C #{repo_contents_path} commit -m'fake clone'`
+      repo_contents_path
     end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
 
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -1354,10 +1357,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "file not found" do
         let(:mock_clone) do
-          tmp = Dir.mktmpdir
-          `git init #{tmp}`
-          `git -C #{tmp} commit --allow-empty -m'fake fetched clone'`
-          tmp
+          `git init #{repo_contents_path}`
+          `git -C #{repo_contents_path} commit --allow-empty -m'fake clone'`
+          repo_contents_path
         end
 
         it "raises DependencyFileNotFound" do
@@ -1370,16 +1372,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "symlink" do
         let(:mock_clone) do
-          tmp = Dir.mktmpdir
-          `git init #{tmp}`
-          `mkdir -p #{tmp}/symlinked`
-          file_path = File.join(tmp, "symlinked", "requirements.txt")
+          `git init #{repo_contents_path}`
+          dir_path = File.join(repo_contents_path, "symlinked")
+          Dir.mkdir(dir_path)
+          file_path = File.join(dir_path, "requirements.txt")
           File.write(file_path, contents)
-          link_path = File.join(tmp, "requirements.txt")
+          link_path = File.join(repo_contents_path, "requirements.txt")
           `ln -s #{file_path} #{link_path}`
-          `git -C #{tmp} add .`
-          `git -C #{tmp} commit -m'fake fetched clone'`
-          tmp
+          `git -C #{repo_contents_path} add .`
+          `git -C #{repo_contents_path} commit -m'fake clone'`
+          repo_contents_path
         end
 
         describe "the file" do
