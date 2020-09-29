@@ -20,7 +20,7 @@ module Dependabot
         def enhanced_req_string
           return unless gemfile_includes_dependency?
 
-          fallback_string = dependency.requirement.to_s
+          fallback_string = dependency.requirement
           req_nodes = declaration_node.children[3..-1]
           req_nodes = req_nodes.reject { |child| child.type == :hash }
 
@@ -28,7 +28,9 @@ module Dependabot
           return fallback_string unless req_nodes.all? { |n| n.type == :str }
 
           original_req_string = req_nodes.map { |n| n.children.last }
-          if dependency.requirement == Gem::Requirement.new(original_req_string)
+          fallback_requirement =
+            Gem::Requirement.new(fallback_string.split(", "))
+          if fallback_requirement == Gem::Requirement.new(original_req_string)
             original_req_string.join(", ")
           else
             fallback_string
