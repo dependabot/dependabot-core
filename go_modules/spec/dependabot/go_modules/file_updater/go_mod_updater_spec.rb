@@ -24,8 +24,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
   end
-  let(:go_mod_body) { fixture("go_mods", go_mod_fixture_name) }
-  let(:go_mod_fixture_name) { "go.mod" }
+  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+
+  let(:project_name) { "simple" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -79,18 +81,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
 
         context "when a replace directive is present" do
-          let(:go_mod_body) do
-            fixture("go_mods", go_mod_fixture_name) +
-              "\nreplace github.com/fatih/Color => ../../../../../../foo"
-          end
+          let(:project_name) { "replace" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
 
         context "for a go 1.11 go.mod" do
-          let(:go_mod_body) do
-            fixture("go_mods", go_mod_fixture_name).sub(/go 1.12/, "")
-          end
+          let(:project_name) { "go_1.11" }
+
           it { is_expected.to_not include("go 1.") }
         end
 
@@ -99,18 +97,42 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "for a go 1.13 go.mod" do
-          let(:go_mod_body) do
-            fixture("go_mods", go_mod_fixture_name).sub(/go 1.12/, "go 1.13")
-          end
+          let(:project_name) { "go_1.13" }
+
           it { is_expected.to include("go 1.13") }
+        end
+
+        describe "a dependency who's module path has changed (inc version)" do
+          let(:project_name) { "module_path_and_version_changed" }
+
+          it "raises the correct error" do
+            error_class = Dependabot::GoModulePathMismatch
+            expect { updater.updated_go_sum_content }.
+              to raise_error(error_class) do |error|
+              expect(error.message).to include("github.com/DATA-DOG")
+            end
+          end
+        end
+
+        describe "a dependency who's module path has changed" do
+          let(:project_name) { "module_path_changed" }
+
+          it "raises the correct error" do
+            error_class = Dependabot::GoModulePathMismatch
+            expect { updater.updated_go_sum_content }.
+              to raise_error(error_class) do |error|
+              expect(error.message).to include("github.com/Sirupsen")
+              expect(error.message).to include("github.com/sirupsen")
+            end
+          end
         end
 
         context "with a go.sum" do
           let(:go_sum) do
             Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
           end
-          let(:go_sum_body) { fixture("go_mods", go_sum_fixture_name) }
-          let(:go_sum_fixture_name) { "go.sum" }
+          let(:project_name) { "go_sum" }
+          let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
           subject(:updated_go_sum_content) { updater.updated_go_sum_content }
 
           it "adds new entries to the go.sum" do
@@ -130,12 +152,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           end
 
           describe "a non-existent dependency with a pseudo-version" do
-            let(:go_mod_body) do
-              fixture("go_mods", go_mod_fixture_name).sub(
-                "rsc.io/quote v1.4.0",
-                "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159"
-              )
-            end
+            let(:project_name) { "non_existent_dependency" }
 
             it "raises the correct error" do
               error_class = Dependabot::DependencyFileNotResolvable
@@ -146,48 +163,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          describe "a dependency who's module path has changed" do
-            let(:go_mod_body) do
-              fixture("go_mods", go_mod_fixture_name).sub(
-                "rsc.io/quote v1.4.0",
-                "github.com/Sirupsen/logrus v1.3.0"
-              )
-            end
-
-            it "raises the correct error" do
-              error_class = Dependabot::GoModulePathMismatch
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
-                  expect(error.message).to include("github.com/Sirupsen")
-                  expect(error.message).to include("github.com/sirupsen")
-                end
-            end
-          end
-
-          describe "a dependency who's module path has changed (inc version)" do
-            let(:go_mod_body) do
-              fixture("go_mods", go_mod_fixture_name).sub(
-                "rsc.io/quote v1.4.0",
-                "gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.2"
-              )
-            end
-
-            it "raises the correct error" do
-              error_class = Dependabot::GoModulePathMismatch
-              expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
-                  expect(error.message).to include("github.com/DATA-DOG")
-                end
-            end
-          end
-
           describe "a dependency with a checksum mismatch" do
-            let(:go_sum_body) do
-              fixture("go_mods", go_sum_fixture_name).sub(
-                "h1:sh3dZUZxJqMHuwt2YwWXqUUIe6N9gJlzZZH0eFduGkw=",
-                "h1:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx="
-              )
-            end
+            let(:project_name) { "checksum_mismatch" }
 
             it "raises the correct error" do
               error_class = Dependabot::DependencyFileNotResolvable
@@ -201,14 +178,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           describe "a dependency that has no top-level package" do
             let(:dependency_name) { "github.com/prometheus/client_golang" }
             let(:dependency_version) { "v0.9.3" }
-            let(:go_mod_body) do
-              fixture("go_mods", go_mod_fixture_name).sub(
-                "rsc.io/quote v1.4.0",
-                "github.com/prometheus/client_golang v0.9.3"
-              )
-            end
+            let(:project_name) { "no_top_level_package" }
 
-            it "raises the correct error" do
+            it "does not raise an error" do
               expect { updater.updated_go_sum_content }.to_not raise_error
             end
           end
