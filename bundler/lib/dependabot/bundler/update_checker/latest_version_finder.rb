@@ -44,7 +44,7 @@ module Dependabot
                     :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
-          if dependency_source.is_a?(::Bundler::Source::Git)
+          if dependency_source_type == "git"
             return latest_git_version_details
           end
 
@@ -56,7 +56,7 @@ module Dependabot
         end
 
         def fetch_lowest_security_fix_version
-          return if dependency_source.is_a?(::Bundler::Source::Git)
+          return if dependency_source_type == "git"
 
           relevant_versions = registry_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
@@ -95,14 +95,14 @@ module Dependabot
 
         def registry_versions
           return rubygems_versions if dependency.name == "bundler"
-          return rubygems_versions unless dependency_source
-          return [] unless dependency_source.is_a?(::Bundler::Source::Rubygems)
+          return rubygems_versions unless gemfile
+          return [] if dependency_source_type == "unknown"
 
-          remote = dependency_source.remotes.first
-          return rubygems_versions if remote.nil?
-          return rubygems_versions if remote.to_s == "https://rubygems.org/"
-
-          private_registry_versions
+          if dependency_source_type == "private"
+            private_registry_versions
+          else
+            rubygems_versions
+          end
         end
 
         def rubygems_versions
@@ -186,6 +186,22 @@ module Dependabot
 
               specified_source || definition.send(:sources).default_source
             end
+        end
+
+        def dependency_source_type
+          case dependency_source
+          when ::Bundler::Source::Rubygems
+            remote = dependency_source.remotes.first
+            if remote.nil? || remote.to_s == "https://rubygems.org/"
+              "rubygems"
+            else
+              "private"
+            end
+          when ::Bundler::Source::Git
+            "git"
+          else
+            "unknown"
+          end
         end
 
         def ignore_reqs
