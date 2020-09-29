@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "bundler/definition"
+
 module BundlerDefinitionRubyVersionPatch
   def index
     @index ||= super.tap do
@@ -14,4 +16,5 @@ module BundlerDefinitionRubyVersionPatch
     end
   end
 end
+
 Bundler::Definition.prepend(BundlerDefinitionRubyVersionPatch)

@@ -1,10 +1,15 @@
 require "bundler"
 require "json"
 
-require_relative "monkey_patches/bundler/definition_ruby_version_patch"
-require_relative "monkey_patches/bundler/definition_bundler_version_patch"
-require_relative "monkey_patches/bundler/git_source_patch"
-require_relative "lib/functions"
+$LOAD_PATH.unshift(File.expand_path("../lib", __FILE__))
+$LOAD_PATH.unshift(File.expand_path("../monkey_patches", __FILE__))
+
+# Bundler monkey patches
+require "definition_ruby_version_patch"
+require "definition_bundler_version_patch"
+require "git_source_patch"
+
+require "functions"
 
 def output(obj)
   print JSON.dump(obj)

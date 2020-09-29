@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "bundler/source"
+
 module Bundler
   class Source
     class Git

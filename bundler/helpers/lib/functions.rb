@@ -1,6 +1,6 @@
-module Functions
-  require_relative "functions/lockfile_updater"
+require "functions/lockfile_updater"
 
+module Functions
   def self.bundler_version
     Bundler::VERSION
   end
