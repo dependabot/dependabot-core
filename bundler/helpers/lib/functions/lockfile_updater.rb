@@ -50,8 +50,7 @@ module Functions
           d_dep = definition.dependencies.find { |d| d.name == dep_name }
           if old_req == :none then definition.dependencies.delete(d_dep)
           else
-            req = Gem::Requirement.new(old_req)
-            d_dep.instance_variable_set(:@requirement, req)
+            d_dep.instance_variable_set(:@requirement, old_req)
           end
         end
 
