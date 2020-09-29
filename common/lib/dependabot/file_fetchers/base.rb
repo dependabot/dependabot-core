@@ -14,7 +14,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials
+      attr_reader :source, :credentials, :repo_contents_path
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -32,10 +32,10 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(source:, credentials:)
+      def initialize(source:, credentials:, repo_contents_path: nil)
         @source = source
         @credentials = credentials
-
+        @repo_contents_path = repo_contents_path
         @linked_paths = {}
       end
 
@@ -68,9 +68,9 @@ module Dependabot
       end
 
       # Returns the path to the cloned repo
-      def clone_repo_contents(target_directory: nil)
+      def clone_repo_contents
         @clone_repo_contents ||=
-          _clone_repo_contents(target_directory: target_directory)
+          _clone_repo_contents(target_directory: @repo_contents_path)
       end
 
       private

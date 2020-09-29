@@ -37,6 +37,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
+  let(:repo_contents_path) { nil }
 
   let(:child_class) do
     Class.new(described_class) do
@@ -56,7 +57,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
   end
   let(:file_fetcher_instance) do
-    child_class.new(source: source, credentials: credentials)
+    child_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
 
   describe "#commit" do
@@ -1310,6 +1315,28 @@ RSpec.describe Dependabot::FileFetchers::Base do
           files
           expect(WebMock).to have_requested(:get, file_url)
         end
+      end
+    end
+  end
+
+  context "with repo_contents_path" do
+    let(:repo_contents_path) { Dir.mktmpdir }
+
+    describe "#files" do
+      subject(:files) { file_fetcher_instance.files }
+
+      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+      before do
+        allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+        stub_request(:get, url + "requirements.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200,
+                    body: fixture("github", "gemfile_content.json"),
+                    headers: { "content-type" => "application/json" })
+      end
+
+      context "with a GitHub source" do
+        its(:length) { is_expected.to eq(1) }
       end
     end
   end
