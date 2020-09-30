@@ -22,7 +22,8 @@ SimpleCov.start do
 
   enable_coverage :branch
   minimum_coverage line: 80, branch: 70
-  minimum_coverage_by_file 80
+  # TODO: Enable minimum coverage per file once outliers have been increased
+  # minimum_coverage_by_file 80
   refuse_coverage_drop
 end
 
