@@ -74,10 +74,6 @@ module Dependabot
 
           private
 
-          def other?
-            source_type == OTHER
-          end
-
           def rubygems_versions
             @rubygems_versions ||=
               begin
