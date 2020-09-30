@@ -176,6 +176,30 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               expect { updater.updated_go_sum_content }.to_not raise_error
             end
           end
+
+          describe "with a main.go that is not in the root directory" do
+            let(:project_name) { "not_root" }
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(rsc.io/quote v1.5.2\n)
+              )
+            end
+
+            it "adds new entries to the go.sum" do
+              is_expected.
+                to include(%(rsc.io/quote v1.5.2 h1:))
+              is_expected.
+                to include(%(rsc.io/quote v1.5.2/go.mod h1:))
+            end
+
+            it "removes old entries from the go.sum" do
+              is_expected.
+                to_not include(%(rsc.io/quote v1.4.0 h1:))
+              is_expected.
+                to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+            end
+          end
         end
 
         context "without a go.sum" do
