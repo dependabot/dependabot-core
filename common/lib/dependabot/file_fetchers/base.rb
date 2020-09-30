@@ -80,6 +80,8 @@ module Dependabot
       def clone_repo_contents
         @clone_repo_contents ||=
           _clone_repo_contents(target_directory: repo_contents_path)
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+        raise Dependabot::RepoNotFound, source
       end
 
       private

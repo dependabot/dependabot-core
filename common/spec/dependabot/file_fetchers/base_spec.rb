@@ -1339,10 +1339,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
 
-    let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
-
     describe "#files" do
       subject(:files) { file_fetcher_instance.files }
+
+      let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
 
       context "with a git source" do
         let(:fill_repo) do
@@ -1357,6 +1357,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("business") }
+        end
+      end
+
+      context "with a invalid source" do
+        before do
+          allow(source).
+            to receive(:url).and_return("file://does/not/exist")
+        end
+
+        it "raises RepoNotFound" do
+          expect { subject }.
+            to raise_error(Dependabot::RepoNotFound)
         end
       end
 
