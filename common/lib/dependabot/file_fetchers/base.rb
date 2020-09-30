@@ -70,13 +70,13 @@ module Dependabot
       # Returns the path to the cloned repo
       def clone_repo_contents
         @clone_repo_contents ||=
-          _clone_repo_contents(target_directory: @repo_contents_path)
+          _clone_repo_contents(target_directory: repo_contents_path)
       end
 
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
-        unless @repo_contents_path.nil?
+        unless repo_contents_path.nil?
           return load_cloned_file_if_present(filename)
         end
 
@@ -96,7 +96,8 @@ module Dependabot
       end
 
       def load_cloned_file_if_present(filename)
-        path = File.join(clone_repo_contents, filename)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        repo_path = File.join(clone_repo_contents, path)
         unless File.exist?(path)
           raise Dependabot::DependencyFileNotFound, filename
         end
@@ -119,7 +120,7 @@ module Dependabot
       end
 
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
-        unless @repo_contents_path.nil?
+        unless repo_contents_path.nil?
           return load_cloned_file_if_present(filename)
         end
 
