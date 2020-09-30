@@ -102,9 +102,9 @@ module Dependabot
           raise Dependabot::DependencyFileNotFound, filename
         end
 
-        content = File.read(path)
-        type = if File.symlink?(path)
-                 symlink_target = File.readlink(path)
+        content = File.read(repo_path)
+        type = if File.symlink?(repo_path)
+                 symlink_target = File.readlink(repo_path)
                  "symlink"
                else
                  "file"
