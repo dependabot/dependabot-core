@@ -1364,7 +1364,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "raises DependencyFileNotFound" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_path).to eq("requirements.txt")
+            expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
