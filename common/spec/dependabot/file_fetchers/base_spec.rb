@@ -1324,31 +1324,29 @@ RSpec.describe Dependabot::FileFetchers::Base do
     let(:repo_contents_path) { Dir.mktmpdir }
     after { FileUtils.rm_rf(repo_contents_path) }
 
+    # `git clone` against a file:// URL that is filled by the test
+    let(:repo_path) { Dir.mktmpdir }
+    after { FileUtils.rm_rf(repo_path) }
+    let(:fill_repo) {}
     before do
+      `git init #{repo_path}`
+      fill_repo
+      `git -C #{repo_path} add .`
+      `git -C #{repo_path} commit --allow-empty -m'fake clone source'`
+
+      allow(source).
+        to receive(:url).and_return("file://#{repo_path}")
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
 
-    # lazily spoof `git clone` on _clone_repo_contents
     let(:contents) { fixture("ruby", "gemfiles", "Gemfile") }
-    let(:fill_repo) {}
-    let(:mock_clone) do
-      `git init #{repo_contents_path}`
-      fill_repo
-      `git -C #{repo_contents_path} add .`
-      `git -C #{repo_contents_path} commit --allow-empty -m'fake clone'`
-      repo_contents_path
-    end
-    before do
-      allow(file_fetcher_instance).
-        to receive(:_clone_repo_contents).and_return(mock_clone)
-    end
 
     describe "#files" do
       subject(:files) { file_fetcher_instance.files }
 
-      context "with a GitHub source" do
+      context "with a git source" do
         let(:fill_repo) do
-          path = File.join(repo_contents_path, "requirements.txt")
+          path = File.join(repo_path, "requirements.txt")
           File.write(path, contents)
         end
 
@@ -1373,11 +1371,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "symlink" do
         let(:fill_repo) do
-          dir_path = File.join(repo_contents_path, "symlinked")
+          dir_path = File.join(repo_path, "symlinked")
           Dir.mkdir(dir_path)
           file_path = File.join(dir_path, "requirements.txt")
           File.write(file_path, contents)
-          link_path = File.join(repo_contents_path, "requirements.txt")
+          link_path = File.join(repo_path, "requirements.txt")
           File.symlink(file_path, link_path)
         end
 

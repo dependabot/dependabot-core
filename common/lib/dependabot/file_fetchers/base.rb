@@ -32,6 +32,15 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Creates a new FileFetcher for retrieving `DependencyFile`s.
+      #
+      # Files are typically grabbed individually via the source's API.
+      # repo_contents_path is an optional empty directory that will be used
+      # to clone the entire source repository on first read.
+      #
+      # If provided, file _data_ will be loaded from the clone.
+      # Submodules and directory listings are _not_ currently supported
+      # by repo_contents_path and still use an API trip.
       def initialize(source:, credentials:, repo_contents_path: nil)
         @source = source
         @credentials = credentials
