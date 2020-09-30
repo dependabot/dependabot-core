@@ -6,3 +6,6 @@ import (
 	_ "github.com/mattn/go-isatty"
 	_ "rsc.io/qr"
 )
+
+func main() {
+}
