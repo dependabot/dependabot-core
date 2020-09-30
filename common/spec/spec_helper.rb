@@ -10,12 +10,11 @@ require "simplecov-console"
 require_relative "dummy_package_manager/dummy"
 
 SimpleCov::Formatter::Console.output_style = "block"
-SimpleCov.formatter = SimpleCov::Formatter::MultiFormatter.new(
-  [
-    SimpleCov::Formatter::HTMLFormatter,
-    SimpleCov::Formatter::Console
-  ]
-)
+SimpleCov.formatter = if ENV["CI"]
+                        SimpleCov::Formatter::Console
+                      else
+                        SimpleCov::Formatter::HTMLFormatter
+                      end
 
 SimpleCov.start do
   add_filter "/spec/"
