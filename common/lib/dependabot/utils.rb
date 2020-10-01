@@ -30,7 +30,7 @@ module Dependabot
       @requirement_classes[package_manager] = requirement_class
     end
 
-    @cloning_package_managers = []
+    @cloning_package_managers = Set[]
 
     def self.always_clone_for_package_manager?(package_manager)
       @cloning_package_managers.include?(package_manager)
