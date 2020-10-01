@@ -1,6 +1,7 @@
 require "functions/file_parser"
 require "functions/force_updater"
 require "functions/lockfile_updater"
+require "functions/dependency_source"
 
 module Functions
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
@@ -44,5 +45,15 @@ module Functions
       credentials: credentials,
       update_multiple_dependencies: update_multiple_dependencies,
     ).run
+  end
+
+  def self.dependency_source_type(gemfile_name:, dependency_name:, dir:,
+                                  credentials:)
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name,
+      dir: dir,
+      credentials: credentials
+    ).type
   end
 end

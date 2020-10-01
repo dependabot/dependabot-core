@@ -125,19 +125,25 @@ module Dependabot
           end
 
           def source_type
-            @source_type ||= case bundler_source
-                             when ::Bundler::Source::Rubygems
-                               remote = bundler_source.remotes.first
-                               if remote.nil? || remote.to_s == "https://rubygems.org/"
-                                 RUBYGEMS
-                               else
-                                 PRIVATE_REGISTRY
-                               end
-                             when ::Bundler::Source::Git
-                               GIT
-                             else
-                               OTHER
-                             end
+            return @source_type if defined? @source_type
+            return @source_type = RUBYGEMS unless gemfile
+
+            @source_type = in_a_native_bundler_context do |tmp_dir|
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "dependency_source_type",
+                args: {
+                  dir: tmp_dir,
+                  gemfile_name: gemfile.name,
+                  dependency_name: dependency.name,
+                  credentials: credentials,
+                }
+              )
+            end
+
+            puts @source_type
+
+            @source_type
           end
 
           def gemfile
