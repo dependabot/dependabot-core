@@ -17,13 +17,16 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       branch: branch
     )
   end
+  let(:repo_contents_path) { Dir.mktmpdir }
+  after { FileUtils.rm_rf(repo_contents_path) }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: github_credentials)
+    described_class.new(source: source, credentials: github_credentials,
+                        repo_contents_path: repo_contents_path)
   end
   let(:directory) { "/" }
 
   after do
-    FileUtils.rm_rf(file_fetcher_instance.clone_repo_contents)
+    FileUtils.rm_rf(repo_contents_path)
   end
 
   it "fetches the go.mod and go.sum" do
