@@ -37,12 +37,10 @@ module Dependabot
 
     def self.in_a_temporary_repo_directory(directory = "/",
                                            repo_contents_path = nil,
-                                           branch = nil,
                                            &block)
       if repo_contents_path
         path = Pathname.new(File.join(repo_contents_path, directory)).
                expand_path
-        checkout_git_branch(repo_contents_path, branch) if branch
         reset_git_repo(repo_contents_path)
         Dir.chdir(path) { yield(path) }
       else
@@ -245,12 +243,6 @@ module Dependabot
     def self.reset_git_repo(path)
       Dir.chdir(path) do
         run_shell_command("git reset HEAD --hard && git clean -fx")
-      end
-    end
-
-    def self.checkout_git_branch(path, branch)
-      Dir.chdir(path) do
-        run_shell_command("git checkout #{branch}")
       end
     end
 

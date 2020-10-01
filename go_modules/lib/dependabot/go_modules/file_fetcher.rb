@@ -21,8 +21,7 @@ module Dependabot
         # updates.
         SharedHelpers.in_a_temporary_repo_directory(
           directory,
-          clone_repo_contents,
-          source.branch
+          clone_repo_contents
         ) do
           unless go_mod
             raise(
