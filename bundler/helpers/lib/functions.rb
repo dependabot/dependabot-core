@@ -71,4 +71,14 @@ module Functions
       dependency_source_branch: dependency_source_branch
     )
   end
+
+  def self.private_registry_versions(gemfile_name:, dependency_name:, dir:,
+                                     credentials:)
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name,
+      dir: dir,
+      credentials: credentials
+    ).private_registry_versions
+  end
 end

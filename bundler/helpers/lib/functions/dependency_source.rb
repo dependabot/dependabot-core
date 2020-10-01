@@ -37,6 +37,20 @@ module Functions
       { version: spec.version, commit_sha: spec.source.revision }
     end
 
+    def private_registry_versions
+      setup_bundler
+
+      bundler_source = specified_source || default_source
+
+      bundler_source.
+        fetchers.flat_map do |fetcher|
+          fetcher.
+            specs_with_retry([dependency_name], bundler_source).
+            search_all(dependency_name)
+        end.
+        map(&:version)
+    end
+
     private
 
     def setup_bundler
