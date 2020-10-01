@@ -51,22 +51,6 @@ module Dependabot
         @go_sum ||= fetch_file_if_present("go.sum")
       end
 
-      def fetch_file_if_present(filename)
-        return unless File.exist?(filename)
-
-        content = File.read(filename)
-        cleaned_path = filename.gsub(%r{^/}, "")
-        type = @linked_paths.key?(cleaned_path) ? "symlink" : type
-
-        DependencyFile.new(
-          name: Pathname.new(filename).cleanpath.to_path,
-          directory: directory,
-          type: type,
-          content: content,
-          symlink_target: @linked_paths.dig(cleaned_path, :path)
-        )
-      end
-
       def main
         return @main if defined?(@main)
 

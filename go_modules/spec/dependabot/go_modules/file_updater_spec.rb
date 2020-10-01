@@ -94,5 +94,28 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         expect(updated_files.find { |f| f.name == "go.sum" }).to be_nil
       end
     end
+
+    context "without repo_contents_path" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: [dependency],
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        )
+      end
+
+      it "includes an updated go.mod" do
+        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+      end
+
+      it "includes an updated go.sum" do
+        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+      end
+    end
   end
 end

@@ -26,11 +26,12 @@ module Dependabot
         ].freeze
 
         def initialize(dependencies:, credentials:, repo_contents_path:,
-                       directory:)
+                       directory:, tidy:)
           @dependencies = dependencies
           @credentials = credentials
           @repo_contents_path = repo_contents_path
           @directory = directory
+          @tidy = tidy
         end
 
         def updated_go_mod_content
@@ -103,6 +104,8 @@ module Dependabot
         end
 
         def run_go_mod_tidy
+          return unless tidy?
+
           command = "go mod tidy"
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
@@ -261,6 +264,10 @@ module Dependabot
 
         def write_go_mod(body)
           File.write("go.mod", body)
+        end
+
+        def tidy?
+          !!@tidy
         end
       end
     end
