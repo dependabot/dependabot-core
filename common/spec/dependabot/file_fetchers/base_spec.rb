@@ -1360,6 +1360,40 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to eq(contents) }
           its(:directory) { is_expected.to eq("/") }
         end
+
+        context "with an optional file" do
+          let(:child_class) do
+            Class.new(described_class) do
+              def self.required_files_in?(filenames)
+                filenames.include?("requirements.txt")
+              end
+
+              def self.required_files_message
+                "Repo must contain a requirements.txt."
+              end
+
+              private
+
+              def fetch_files
+                files = [fetch_file_from_host("requirements.txt")]
+                files << optional if optional
+                files
+              end
+
+              def optional
+                @optional ||= fetch_file_if_present("not-present.txt")
+              end
+            end
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the file" do
+            subject { files.find { |file| file.name == "requirements.txt" } }
+
+            it { is_expected.to be_a(Dependabot::DependencyFile) }
+          end
+        end
       end
 
       context "with an invalid source" do
