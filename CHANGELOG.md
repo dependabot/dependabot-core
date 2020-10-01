@@ -1,3 +1,11 @@
+## v0.120.4, 1 October 2020
+
+- Go: Bump golang to v1.15.2 (thanks, @chenrui333!)
+- Bump phpstan/phpstan from 0.12.45 to 0.12.47 in /composer/helpers
+- Upgrade Python to 3.8.6 (@ulgens)
+- Handle empty pipfile requirement string
+- Teach FileFetcher to fetch from disk if local repository clone is present
+
 ## v0.120.3, 28 September 2020
 
 - Fix uninitialized constant error (`Dependabot::VERSION`) when using `SharedHelpers`
