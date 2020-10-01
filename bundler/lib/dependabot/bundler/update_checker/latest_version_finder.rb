@@ -108,10 +108,9 @@ module Dependabot
         end
 
         def dependency_source
-          @dependency_source = DependencySource.new(
+          @dependency_source ||= DependencySource.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            repo_contents_path: repo_contents_path,
             credentials: credentials
           )
         end

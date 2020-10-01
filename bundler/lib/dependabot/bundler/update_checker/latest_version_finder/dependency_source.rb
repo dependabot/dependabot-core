@@ -18,23 +18,22 @@ module Dependabot
 
           def initialize(dependency:,
                          dependency_files:,
-                         repo_contents_path: nil,
                          credentials:)
             @dependency          = dependency
             @dependency_files    = dependency_files
-            @repo_contents_path  = repo_contents_path
             @credentials         = credentials
           end
 
+          # The latest version details for the dependency from a registry
+          #
+          # @return [Array<Gem::Version>]
           def versions
             return rubygems_versions if dependency.name == "bundler"
             return rubygems_versions unless gemfile
 
             case source_type
-            when OTHER
+            when OTHER, GIT
               []
-            when GIT
-              latest_git_version_details
             when PRIVATE_REGISTRY
               private_registry_versions
             else
@@ -42,6 +41,9 @@ module Dependabot
             end
           end
 
+          # The latest version details for the dependency from a git repo
+          #
+          # @return [Hash{Symbol => String}, nil]
           def latest_git_version_details
             return unless git?
 
