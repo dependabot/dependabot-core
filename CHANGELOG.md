@@ -1,3 +1,19 @@
+## v0.120.4, 1 October 2020
+
+- Go: Bump golang to v1.15.2
+- Bump phpstan/phpstan from 0.12.45 to 0.12.47 in /composer/helpers
+- Upgrade Python to 3.8.6 (@ulgens)
+- Handle empty pipfile requirement string
+- Teach FileFetcher to fetch from disk if local repository clone is present
+- Bundler: refactor DependencySource from LatestVersionFinder
+
+## v0.120.3, 28 September 2020
+
+- Fix uninitialized constant error (`Dependabot::VERSION`) when using `SharedHelpers`
+- Fix `SharedHelpers.excon_defaults` when passing in extra headers
+- Bump phpstan/phpstan from 0.12.44 to 0.12.45 in /composer/helpers
+- Bump eslint from 7.9.0 to 7.10.0 in /npm_and_yarn/helpers
+
 ## v0.120.2, 25 September 2020
 
 - Add trailing slash to pypi.org index requests
