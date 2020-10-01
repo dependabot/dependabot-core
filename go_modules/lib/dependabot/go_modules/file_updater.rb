@@ -10,7 +10,7 @@ module Dependabot
       require_relative "file_updater/go_mod_updater"
 
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
-                     directory: "/", credentials:)
+                     credentials:)
         raise "No repo_contents_path passed" if repo_contents_path.nil?
 
         super
@@ -61,6 +61,10 @@ module Dependabot
 
       def go_sum
         @go_sum ||= get_original_file("go.sum")
+      end
+
+      def directory
+        dependency_files.first.directory
       end
 
       def file_updater
