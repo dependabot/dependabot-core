@@ -17,6 +17,14 @@ module Dependabot
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/.freeze
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./.freeze
         PATH_REGEX = /The path `(?<path>.*)` does not exist/.freeze
+
+        module BundlerErrorPatterns
+          MISSING_AUTH_REGEX = /bundle config (?<source>.*) username:password/
+          BAD_AUTH_REGEX =  /Bad username or password for (?<source>.*)\.$/
+          BAD_CERT_REGEX = /verify the SSL certificate for (?<source>.*)\.$/
+          HTTP_ERR_REGEX = /Could not fetch specs from (?<source>.*)$/
+        end
+
         RETRYABLE_ERRORS = %w(
           Bundler::HTTPError
           Bundler::Fetcher::FallbackError
@@ -144,19 +152,19 @@ module Dependabot
             # - the gem was specified at an incompatible version
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Fetcher::AuthenticationRequiredError"
-            regex = /bundle config (?<source>.*) username:password/
+            regex = BundlerErrorPatterns::MISSING_AUTH_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::BadAuthenticationError"
-            regex = /Bad username or password for (?<source>.*)\.$/
+            regex = BundlerErrorPatterns::BAD_AUTH_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::CertificateFailureError"
-            regex = /verify the SSL certificate for (?<source>.*)\.$/
+            regex = BundlerErrorPatterns::BAD_CERT_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceCertificateFailure, source
           when "Bundler::HTTPError"
-            regex = /Could not fetch specs from (?<source>.*)$/
+            regex = BundlerErrorPatterns::HTTP_ERR_REGEX
             if error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
               raise if source.end_with?("rubygems.org/")
