@@ -56,4 +56,19 @@ module Functions
       credentials: credentials
     ).type
   end
+
+  def self.depencency_source_latest_git_version(gemfile_name:, dependency_name:,
+                                                dir:, credentials:,
+                                                dependency_source_url:,
+                                                dependency_source_branch:)
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name,
+      dir: dir,
+      credentials: credentials
+    ).latest_git_version(
+      dependency_source_url: dependency_source_url,
+      dependency_source_branch: dependency_source_branch
+    )
+  end
 end

@@ -20,6 +20,23 @@ module Functions
       type_of(bundler_source)
     end
 
+    def latest_git_version(dependency_source_url:, dependency_source_branch:)
+      setup_bundler
+
+      source = ::Bundler::Source::Git.new(
+        "uri" => dependency_source_url,
+        "branch" => dependency_source_branch,
+        "name" => dependency_name,
+        "submodules" => true
+      )
+
+      # Tell Bundler we're fine with fetching the source remotely
+      source.instance_variable_set(:@allow_remote, true)
+
+      spec = source.specs.first
+      { version: spec.version, commit_sha: spec.source.revision }
+    end
+
     private
 
     def setup_bundler
