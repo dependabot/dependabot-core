@@ -108,7 +108,7 @@ module Dependabot
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         repo_path = File.join(clone_repo_contents, path)
         unless File.exist?(repo_path)
-          raise Dependabot::DependencyFileNotFound, filename
+          raise Dependabot::DependencyFileNotFound, path
         end
 
         content = File.read(repo_path)
