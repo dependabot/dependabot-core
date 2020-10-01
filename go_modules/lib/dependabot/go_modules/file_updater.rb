@@ -25,6 +25,7 @@ module Dependabot
           `git commit -m'fake repo_contents_path'`
         end
         @repo_contents_path = tmp
+        @repo_contents_stub = true
       end
 
       def self.updated_files_regex
