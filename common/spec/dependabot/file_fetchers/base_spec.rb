@@ -1450,6 +1450,39 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
       end
+
+      context "with a directory specified" do
+        let(:directory) { "/nested" }
+
+        context "file not found" do
+          it "raises DependencyFileNotFound" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/nested/requirements.txt")
+            end
+          end
+        end
+
+        context "with a git source" do
+          let(:fill_repo) do
+            Dir.mkdir("nested")
+            path = File.join("nested", "requirements.txt")
+            File.write(path, contents)
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the file" do
+            subject do
+              files.find { |file| file.name == "requirements.txt" }
+            end
+
+            it { is_expected.to be_a(Dependabot::DependencyFile) }
+            its(:content) { is_expected.to eq(contents) }
+            its(:directory) { is_expected.to eq(directory) }
+          end
+        end
+      end
     end
   end
 end
