@@ -17,14 +17,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       }],
       repo_contents_path: repo_contents_path,
       directory: "/",
-      tidy: true
+      tidy: tidy
     )
   end
 
   let(:project_name) { "simple" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
-  let(:go_mod_path) { "go.mod" }
+  let(:tidy) { true }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -301,6 +301,58 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it do
         is_expected.to_not include("github.com/pkg/errors")
+      end
+    end
+  end
+
+  describe "#updated_go_sum_content" do
+    let(:project_name) { "go_sum" }
+    subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+    context "for a top level dependency" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.4.0" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.4.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+
+      context "if no files have changed" do
+        let(:go_sum_content) { fixture("projects", project_name, "go.sum") }
+        it { is_expected.to eq(go_sum_content) }
+      end
+
+      context "when the requirement has changed" do
+        let(:dependency_version) { "v1.5.2" }
+        let(:requirements) do
+          [{
+            file: "go.mod",
+            requirement: "v1.5.2",
+            groups: [],
+            source: {
+              type: "default",
+              source: "rsc.io/quote"
+            }
+          }]
+        end
+
+        it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
+        it { is_expected.not_to include(%(rsc.io/quote v1.4.0)) }
+
+        context "but tidying is disabled" do
+          let(:tidy) { false }
+          it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
+          it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+        end
       end
     end
   end
