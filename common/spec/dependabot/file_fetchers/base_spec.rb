@@ -1330,10 +1330,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
     after { FileUtils.rm_rf(repo_path) }
     let(:fill_repo) {}
     before do
-      `git init #{repo_path}`
-      fill_repo
-      `git -C #{repo_path} add .`
-      `git -C #{repo_path} commit --allow-empty -m'fake clone source'`
+      Dir.chdir(repo_path) do
+        `git init .`
+        fill_repo
+        `git add .`
+        `git commit --allow-empty -m'fake clone source'`
+      end
 
       allow(source).
         to receive(:url).and_return("file://#{repo_path}")
