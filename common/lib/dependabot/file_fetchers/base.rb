@@ -14,7 +14,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials
+      attr_reader :source, :credentials, :repo_contents_path
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -32,10 +32,19 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(source:, credentials:)
+      # Creates a new FileFetcher for retrieving `DependencyFile`s.
+      #
+      # Files are typically grabbed individually via the source's API.
+      # repo_contents_path is an optional empty directory that will be used
+      # to clone the entire source repository on first read.
+      #
+      # If provided, file _data_ will be loaded from the clone.
+      # Submodules and directory listings are _not_ currently supported
+      # by repo_contents_path and still use an API trip.
+      def initialize(source:, credentials:, repo_contents_path: nil)
         @source = source
         @credentials = credentials
-
+        @repo_contents_path = repo_contents_path
         @linked_paths = {}
       end
 
@@ -68,14 +77,20 @@ module Dependabot
       end
 
       # Returns the path to the cloned repo
-      def clone_repo_contents(target_directory: nil)
+      def clone_repo_contents
         @clone_repo_contents ||=
-          _clone_repo_contents(target_directory: target_directory)
+          _clone_repo_contents(target_directory: repo_contents_path)
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+        raise Dependabot::RepoNotFound, source
       end
 
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
+        unless repo_contents_path.nil?
+          return load_cloned_file_if_present(filename)
+        end
+
         dir = File.dirname(filename)
         basename = File.basename(filename)
 
@@ -91,7 +106,35 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      def load_cloned_file_if_present(filename)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        repo_path = File.join(clone_repo_contents, path)
+        unless File.exist?(repo_path)
+          raise Dependabot::DependencyFileNotFound, path
+        end
+
+        content = File.read(repo_path)
+        type = if File.symlink?(repo_path)
+                 symlink_target = File.readlink(repo_path)
+                 "symlink"
+               else
+                 "file"
+               end
+
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: symlink_target
+        )
+      end
+
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        unless repo_contents_path.nil?
+          return load_cloned_file_if_present(filename)
+        end
+
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
         type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type

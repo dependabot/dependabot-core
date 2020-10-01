@@ -2,6 +2,7 @@
 
 require "aws-sdk-codecommit"
 require "octokit"
+require "fileutils"
 require "spec_helper"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
@@ -37,6 +38,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
+  let(:repo_contents_path) { nil }
 
   let(:child_class) do
     Class.new(described_class) do
@@ -56,7 +58,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
   end
   let(:file_fetcher_instance) do
-    child_class.new(source: source, credentials: credentials)
+    child_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
 
   describe "#commit" do
@@ -1309,6 +1315,172 @@ RSpec.describe Dependabot::FileFetchers::Base do
         it "hits the right GitHub URL" do
           files
           expect(WebMock).to have_requested(:get, file_url)
+        end
+      end
+    end
+  end
+
+  context "with repo_contents_path" do
+    let(:repo_contents_path) { Dir.mktmpdir }
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    # `git clone` against a file:// URL that is filled by the test
+    let(:repo_path) { Dir.mktmpdir }
+    after { FileUtils.rm_rf(repo_path) }
+    let(:fill_repo) {}
+    before do
+      Dir.chdir(repo_path) do
+        `git init .`
+        fill_repo
+        `git add .`
+        `git commit --allow-empty -m'fake clone source'`
+      end
+
+      allow(source).
+        to receive(:url).and_return("file://#{repo_path}")
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+    end
+
+    describe "#files" do
+      subject(:files) { file_fetcher_instance.files }
+
+      let(:contents) { "foo=1.0.0" }
+
+      context "with a git source" do
+        let(:fill_repo) do
+          File.write("requirements.txt", contents)
+        end
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:content) { is_expected.to eq(contents) }
+          its(:directory) { is_expected.to eq("/") }
+        end
+      end
+
+      context "with an invalid source" do
+        before do
+          allow(source).
+            to receive(:url).and_return("file://does/not/exist")
+        end
+
+        it "raises RepoNotFound" do
+          expect { subject }.
+            to raise_error(Dependabot::RepoNotFound)
+        end
+      end
+
+      context "file not found" do
+        it "raises DependencyFileNotFound" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/requirements.txt")
+          end
+        end
+      end
+
+      context "symlink" do
+        let(:fill_repo) do
+          Dir.mkdir("symlinked")
+          file_path = File.join("symlinked", "requirements.txt")
+          File.write(file_path, contents)
+          File.symlink(file_path, "requirements.txt")
+        end
+
+        describe "the file" do
+          subject { files.find { |file| file.name == "requirements.txt" } }
+
+          it { is_expected.to be_a(Dependabot::DependencyFile) }
+          its(:type) { is_expected.to include("symlink") }
+          its(:symlink_target) do
+            is_expected.to include("symlinked/requirements.txt")
+          end
+        end
+      end
+
+      context "when the file is in a directory" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files_in?(filenames)
+              filenames.include?("nested/requirements.txt")
+            end
+
+            def self.required_files_message
+              "Repo must contain a nested/requirements.txt."
+            end
+
+            private
+
+            def fetch_files
+              [fetch_file_from_host("nested/requirements.txt")]
+            end
+          end
+        end
+
+        context "file not found" do
+          it "raises DependencyFileNotFound" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/nested/requirements.txt")
+            end
+          end
+        end
+
+        context "with a git source" do
+          let(:fill_repo) do
+            Dir.mkdir("nested")
+            path = File.join("nested", "requirements.txt")
+            File.write(path, contents)
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the file" do
+            subject do
+              files.find { |file| file.name == "nested/requirements.txt" }
+            end
+
+            it { is_expected.to be_a(Dependabot::DependencyFile) }
+            its(:content) { is_expected.to eq(contents) }
+            its(:directory) { is_expected.to eq("/") }
+          end
+        end
+      end
+
+      context "with a directory specified" do
+        let(:directory) { "/nested" }
+
+        context "file not found" do
+          it "raises DependencyFileNotFound" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/nested/requirements.txt")
+            end
+          end
+        end
+
+        context "with a git source" do
+          let(:fill_repo) do
+            Dir.mkdir("nested")
+            path = File.join("nested", "requirements.txt")
+            File.write(path, contents)
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the file" do
+            subject do
+              files.find { |file| file.name == "requirements.txt" }
+            end
+
+            it { is_expected.to be_a(Dependabot::DependencyFile) }
+            its(:content) { is_expected.to eq(contents) }
+            its(:directory) { is_expected.to eq(directory) }
+          end
         end
       end
     end

@@ -10,14 +10,13 @@ require "dependabot/bundler/update_checker"
 require "dependabot/bundler/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/bundler/update_checker/latest_version_finder/" \
+        "dependency_source"
 
 module Dependabot
   module Bundler
     class UpdateChecker
       class LatestVersionFinder
-        require_relative "shared_bundler_helpers"
-        include SharedBundlerHelpers
-
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -44,11 +43,11 @@ module Dependabot
                     :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
-          if dependency_source.is_a?(::Bundler::Source::Git)
-            return latest_git_version_details
+          if dependency_source.git?
+            return dependency_source.latest_git_version_details
           end
 
-          relevant_versions = registry_versions
+          relevant_versions = dependency_source.versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)
 
@@ -56,9 +55,9 @@ module Dependabot
         end
 
         def fetch_lowest_security_fix_version
-          return if dependency_source.is_a?(::Bundler::Source::Git)
+          return if dependency_source.git?
 
-          relevant_versions = registry_versions
+          relevant_versions = dependency_source.versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_vulnerable_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)
@@ -93,71 +92,6 @@ module Dependabot
             select { |version| version > Gem::Version.new(dependency.version) }
         end
 
-        def registry_versions
-          return rubygems_versions if dependency.name == "bundler"
-          return rubygems_versions unless dependency_source
-          return [] unless dependency_source.is_a?(::Bundler::Source::Rubygems)
-
-          remote = dependency_source.remotes.first
-          return rubygems_versions if remote.nil?
-          return rubygems_versions if remote.to_s == "https://rubygems.org/"
-
-          private_registry_versions
-        end
-
-        def rubygems_versions
-          @rubygems_versions ||=
-            begin
-              response = Excon.get(
-                "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              )
-
-              JSON.parse(response.body).
-                map { |d| Gem::Version.new(d["number"]) }
-            end
-        rescue JSON::ParserError, Excon::Error::Timeout
-          @rubygems_versions = []
-        end
-
-        def private_registry_versions
-          @private_registry_versions ||=
-            in_a_temporary_bundler_context do
-              dependency_source.
-                fetchers.flat_map do |fetcher|
-                  fetcher.
-                    specs_with_retry([dependency.name], dependency_source).
-                    search_all(dependency.name)
-                end.
-                map(&:version)
-            end
-        end
-
-        def latest_git_version_details
-          dependency_source_details =
-            dependency.requirements.map { |r| r.fetch(:source) }.
-            uniq.compact.first
-
-          in_a_temporary_bundler_context do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              # Note: we don't set `ref`, as we want to unpin the dependency
-              source = ::Bundler::Source::Git.new(
-                "uri" => dependency_source_details[:url],
-                "branch" => dependency_source_details[:branch],
-                "name" => dependency.name,
-                "submodules" => true
-              )
-
-              # Tell Bundler we're fine with fetching the source remotely
-              source.instance_variable_set(:@allow_remote, true)
-
-              spec = source.specs.first
-              { version: spec.version, commit_sha: spec.source.revision }
-            end
-          end
-        end
-
         def wants_prerelease?
           @wants_prerelease ||=
             begin
@@ -174,18 +108,11 @@ module Dependabot
         end
 
         def dependency_source
-          return nil unless gemfile
-
-          @dependency_source ||=
-            in_a_temporary_bundler_context do
-              definition = ::Bundler::Definition.build(gemfile.name, nil, {})
-
-              specified_source =
-                definition.dependencies.
-                find { |dep| dep.name == dependency.name }&.source
-
-              specified_source || definition.send(:sources).default_source
-            end
+          @dependency_source ||= DependencySource.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          )
         end
 
         def ignore_reqs

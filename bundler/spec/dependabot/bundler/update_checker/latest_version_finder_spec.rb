@@ -390,12 +390,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       let(:gemfile_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source.lock" }
 
-      before do
-        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
-      end
-
       context "that is the gem we're checking for" do
         let(:dependency_name) { "business" }
         let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
@@ -541,6 +535,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
+
+    context "with a git source" do
+      let(:gemfile_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source.lock" }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with a path source" do
+      let(:gemfile_fixture_name) { "path_source" }
+      let(:lockfile_fixture_name) { "path_source.lock" }
+
+      let(:dependency_name) { "example" }
+      let(:source) { { type: "path" } }
+
+      it { is_expected.to be_nil }
     end
   end
 end
