@@ -171,10 +171,6 @@ end
 
 $package_manager, $repo_name = ARGV
 
-if Dependabot::Utils.always_clone_for_package_manager?($package_manager)
-  $options[:clone] = true
-end
-
 def show_diff(original_file, updated_file)
   return unless original_file
 
