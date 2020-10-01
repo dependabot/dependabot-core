@@ -61,5 +61,9 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     cd $d && bundle install; \
   done
 
+COPY bin/install_python_versions bin/
+COPY python/lib/dependabot/python/python_versions.rb bin/
+RUN ./bin/install_python_versions
+
 RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 RUN cd omnibus && bundle install

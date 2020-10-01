@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "./python_versions"
+
+Dependabot::Python::PythonVersions::SUPPORTED_VERSIONS.each do |version|
+  `pyenv install #{version}`
+end
