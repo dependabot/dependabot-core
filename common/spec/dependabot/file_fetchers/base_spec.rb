@@ -40,20 +40,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
   end
   let(:repo_contents_path) { nil }
 
+  let(:fetched_path) { "requirements.txt" }
   let(:child_class) do
     Class.new(described_class) do
       def self.required_files_in?(filenames)
-        filenames.include?("requirements.txt")
+        filenames.include?(fetched_path)
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt."
+        "Repo must contain a #{fetched_path}."
       end
 
       private
 
       def fetch_files
-        [fetch_file_from_host("requirements.txt")]
+        [fetch_file_from_host(fetched_path)]
       end
     end
   end
@@ -1357,10 +1358,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("business") }
+          its(:directory) { is_expected.to eq("") }
         end
       end
 
-      context "with a invalid source" do
+      context "with an invalid source" do
         before do
           allow(source).
             to receive(:url).and_return("file://does/not/exist")
@@ -1399,6 +1401,37 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:type) { is_expected.to include("symlink") }
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
+          end
+        end
+      end
+
+      context "with file in directory" do
+        let(:fetched_path) { "nested/requirements.txt" }
+
+        context "file not found" do
+          it "raises DependencyFileNotFound" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/nested/requirements.txt")
+            end
+          end
+        end
+
+        context "with a git source" do
+          let(:fill_repo) do
+            nested = File.mkdir(File.join(repo_path, "nested"))
+            path = File.join(nested, "requirements.txt")
+            File.write(path, contents)
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the file" do
+            subject { files.find { |file| file.name == "requirements.txt" } }
+
+            it { is_expected.to be_a(Dependabot::DependencyFile) }
+            its(:content) { is_expected.to include("business") }
+            its(:directory) { is_expected.to eq("nested") }
           end
         end
       end
