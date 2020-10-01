@@ -88,7 +88,11 @@ module Dependabot
 
       def fetch_file_if_present(filename, fetch_submodules: false)
         unless repo_contents_path.nil?
-          return load_cloned_file_if_present(filename)
+          begin
+            return load_cloned_file_if_present(filename)
+          rescue Dependabot::DependencyFileNotFound
+            return
+          end
         end
 
         dir = File.dirname(filename)
