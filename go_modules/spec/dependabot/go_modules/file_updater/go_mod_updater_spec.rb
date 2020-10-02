@@ -200,6 +200,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               is_expected.
                 to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
             end
+
+            it "does not leave a temporary file lingering in the repo" do
+              updater.updated_go_mod_content
+
+              go_files = Dir.glob("#{repo_contents_path}/*.go")
+              expect(go_files).to be_empty
+            end
           end
         end
 
