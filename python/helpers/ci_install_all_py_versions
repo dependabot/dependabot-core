@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# This is executed on CI where we manually copy in this script and the python
+# versions from python/lib/dependabot/python/python_versions.
 require_relative "./python_versions"
 
 Dependabot::Python::PythonVersions::SUPPORTED_VERSIONS.each do |version|

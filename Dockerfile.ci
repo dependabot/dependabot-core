@@ -8,6 +8,12 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
 
 COPY .rubocop.yml /home/dependabot/dependabot-core/
 
+# install all supported python versions
+# We do this before pulling in any code for efficient caching layers.
+COPY python/lib/dependabot/python/python_versions.rb bin/
+COPY python/helpers/ci_install_all_py_versions bin/
+RUN bin/ci_install_all_py_versions
+
 RUN mkdir -p \
   ${CODE_DIR}/bundler \
   ${CODE_DIR}/cargo \
@@ -61,9 +67,6 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     cd $d && bundle install; \
   done
 
-COPY bin/install_python_versions bin/
-COPY python/lib/dependabot/python/python_versions.rb bin/
-RUN ./bin/install_python_versions
 
 RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 RUN cd omnibus && bundle install
