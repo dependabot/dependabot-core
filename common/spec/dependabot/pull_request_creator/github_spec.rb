@@ -1021,5 +1021,61 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         end
       end
     end
+
+    context "when labelling fails" do
+      context "with internal server error" do
+        before do
+          stub_request(:post, "#{repo_api_url}/issues/1347/labels").
+            to_return(status: 500,
+                      body: "{}",
+                      headers: json_header)
+        end
+
+        it "raises helpful error" do
+          msg = "POST https://api.github.com/repos/gocardless/bump/issues/"\
+                "1347/labels: 500 - "
+          expect { creator.create }.to raise_error(
+            (an_instance_of(Dependabot::PullRequestCreator::AnnotationError).
+              and having_attributes(message: msg).
+              and having_attributes(
+                cause: an_instance_of(Octokit::InternalServerError)
+              ).
+              and having_attributes(
+                pull_request: having_attributes(number: 1347)
+              )
+            )
+          )
+        end
+      end
+
+      context "with disabled account error" do
+        before do
+          stub_request(:post, "#{repo_api_url}/issues/1347/labels").
+            to_return(status: 403,
+                      body: '{"error":"Account `gocardless\' is disabled. '\
+                            'Please ask the owner to check their account."}',
+                      headers: json_header)
+        end
+
+        it "raises helpful error" do
+          msg = "POST https://api.github.com/repos/gocardless/bump/issues/"\
+                "1347/labels: 403 - Error: Account `gocardless' is disabled. "\
+                "Please ask the owner to check their account."
+          expect { creator.create }.to raise_error(
+            (an_instance_of(Dependabot::PullRequestCreator::AnnotationError).
+              and having_attributes(message: msg).
+              and having_attributes(
+                cause: an_instance_of(
+                  Dependabot::PullRequestCreator::RepoDisabled
+                )
+              ).
+              and having_attributes(
+                pull_request: having_attributes(number: 1347)
+              )
+            )
+          )
+        end
+      end
+    end
   end
 end

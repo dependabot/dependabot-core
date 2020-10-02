@@ -17,13 +17,23 @@ module Dependabot
     class RepoDisabled < StandardError; end
     class NoHistoryInCommon < StandardError; end
 
+    # AnnotationError is raised if a PR was created, but failed annotation
+    class AnnotationError < StandardError
+      attr_reader :cause, :pull_request
+      def initialize(cause, pull_request)
+        super(cause.message)
+        @cause = cause
+        @pull_request = pull_request
+      end
+    end
+
     attr_reader :source, :dependencies, :files, :base_commit,
                 :credentials, :pr_message_header, :pr_message_footer,
                 :custom_labels, :author_details, :signature_key,
                 :commit_message_options, :vulnerabilities_fixed,
                 :reviewers, :assignees, :milestone, :branch_name_separator,
                 :branch_name_prefix, :github_redirection_service,
-                :custom_headers
+                :custom_headers, :provider_metadata
 
     def initialize(source:, base_commit:, dependencies:, files:, credentials:,
                    pr_message_header: nil, pr_message_footer: nil,
@@ -33,7 +43,8 @@ module Dependabot
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: "github-redirect.dependabot.com",
-                   custom_headers: nil, require_up_to_date_base: false)
+                   custom_headers: nil, require_up_to_date_base: false,
+                   provider_metadata: {})
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -56,6 +67,7 @@ module Dependabot
       @github_redirection_service = github_redirection_service
       @custom_headers             = custom_headers
       @require_up_to_date_base    = require_up_to_date_base
+      @provider_metadata          = provider_metadata
 
       check_dependencies_have_previous_version
     end
@@ -142,7 +154,8 @@ module Dependabot
         pr_description: message_builder.pr_message,
         pr_name: message_builder.pr_name,
         author_details: author_details,
-        labeler: labeler
+        labeler: labeler,
+        work_item: provider_metadata&.fetch(:work_item, nil)
       )
     end
 

@@ -8,11 +8,17 @@ require "digest"
 require "open3"
 require "shellwords"
 
+require "dependabot/version"
+
 module Dependabot
   module SharedHelpers
     BUMP_TMP_FILE_PREFIX = "dependabot_"
     BUMP_TMP_DIR_PATH = "tmp"
     GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
+    USER_AGENT = "dependabot-core/#{Dependabot::VERSION} "\
+                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
+                 "(#{RUBY_PLATFORM}) "\
+                 "(+https://github.com/dependabot/dependabot-core)"
 
     class ChildProcessFailed < StandardError
       attr_reader :error_class, :error_message, :error_backtrace
@@ -138,14 +144,24 @@ module Dependabot
         [Excon::Middleware::RedirectFollower]
     end
 
-    def self.excon_defaults
+    def self.excon_headers(headers = nil)
+      headers ||= {}
+      {
+        "User-Agent" => USER_AGENT
+      }.merge(headers)
+    end
+
+    def self.excon_defaults(options = nil)
+      options ||= {}
+      headers = options.delete(:headers)
       {
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
         omit_default_port: true,
-        middlewares: excon_middleware
-      }
+        middlewares: excon_middleware,
+        headers: excon_headers(headers)
+      }.merge(options)
     end
 
     def self.with_git_configured(credentials:)
