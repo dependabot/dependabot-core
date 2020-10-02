@@ -17,6 +17,18 @@ module Dependabot
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/.freeze
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./.freeze
         PATH_REGEX = /The path `(?<path>.*)` does not exist/.freeze
+
+        module BundlerErrorPatterns
+          MISSING_AUTH_REGEX =
+            /bundle config (?<source>.*) username:password/.freeze
+          BAD_AUTH_REGEX =
+            /Bad username or password for (?<source>.*)\.$/.freeze
+          BAD_CERT_REGEX =
+            /verify the SSL certificate for (?<source>.*)\.$/.freeze
+          HTTP_ERR_REGEX =
+            /Could not fetch specs from (?<source>.*)$/.freeze
+        end
+
         RETRYABLE_ERRORS = %w(
           Bundler::HTTPError
           Bundler::Fetcher::FallbackError
@@ -63,6 +75,17 @@ module Dependabot
           end
 
           error_handling ? handle_bundler_errors(e) : raise
+        end
+
+        # TODO: Use/remove argument
+        def in_a_native_bundler_context(_error_handling: true)
+          SharedHelpers.
+            in_a_temporary_repo_directory(base_directory,
+                                          repo_contents_path) do |_tmp_dir|
+            write_temporary_dependency_files
+
+            yield
+          end
         end
 
         def base_directory
@@ -134,19 +157,19 @@ module Dependabot
             # - the gem was specified at an incompatible version
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Fetcher::AuthenticationRequiredError"
-            regex = /bundle config (?<source>.*) username:password/
+            regex = BundlerErrorPatterns::MISSING_AUTH_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::BadAuthenticationError"
-            regex = /Bad username or password for (?<source>.*)\.$/
+            regex = BundlerErrorPatterns::BAD_AUTH_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::CertificateFailureError"
-            regex = /verify the SSL certificate for (?<source>.*)\.$/
+            regex = BundlerErrorPatterns::BAD_CERT_REGEX
             source = error.error_message.match(regex)[:source]
             raise Dependabot::PrivateSourceCertificateFailure, source
           when "Bundler::HTTPError"
-            regex = /Could not fetch specs from (?<source>.*)$/
+            regex = BundlerErrorPatterns::HTTP_ERR_REGEX
             if error.error_message.match?(regex)
               source = error.error_message.match(regex)[:source]
               raise if source.end_with?("rubygems.org/")

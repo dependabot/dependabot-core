@@ -47,27 +47,32 @@ module Dependabot
           def latest_git_version_details
             return unless git?
 
-            dependency_source_details =
+            source_details =
               dependency.requirements.map { |r| r.fetch(:source) }.
               uniq.compact.first
 
-            in_a_temporary_bundler_context do
-              SharedHelpers.with_git_configured(credentials: credentials) do
-                # Note: we don't set `ref`, as we want to unpin the dependency
-                source = ::Bundler::Source::Git.new(
-                  "uri" => dependency_source_details[:url],
-                  "branch" => dependency_source_details[:branch],
-                  "name" => dependency.name,
-                  "submodules" => true
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              in_a_native_bundler_context do |tmp_dir|
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "depencency_source_latest_git_version",
+                  args: {
+                    dir: tmp_dir,
+                    gemfile_name: gemfile.name,
+                    dependency_name: dependency.name,
+                    credentials: credentials,
+                    dependency_source_url: source_details[:url],
+                    dependency_source_branch: source_details[:branch]
+                  }
                 )
-
-                # Tell Bundler we're fine with fetching the source remotely
-                source.instance_variable_set(:@allow_remote, true)
-
-                spec = source.specs.first
-                { version: spec.version, commit_sha: spec.source.revision }
               end
+            end.transform_keys(&:to_sym)
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+            if e.message =~ GIT_REF_REGEX
+              raise GitDependencyReferenceNotFound, dependency.name
             end
+
+            raise
           end
 
           def git?
@@ -98,46 +103,53 @@ module Dependabot
 
           def private_registry_versions
             @private_registry_versions ||=
-              in_a_temporary_bundler_context do
-                bundler_source.
-                  fetchers.flat_map do |fetcher|
-                    fetcher.
-                      specs_with_retry([dependency.name], bundler_source).
-                      search_all(dependency.name)
-                  end.
-                  map(&:version)
+              in_a_native_bundler_context do |tmp_dir|
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "private_registry_versions",
+                  args: {
+                    dir: tmp_dir,
+                    gemfile_name: gemfile.name,
+                    dependency_name: dependency.name,
+                    credentials: credentials
+                  }
+                ).map do |version_string|
+                  Gem::Version.new(version_string)
+                end
               end
-          end
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+            if e.message.match(BundlerErrorPatterns::MISSING_AUTH_REGEX)
+              source = Regexp.last_match(:source)
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
+            elsif e.message.match(BundlerErrorPatterns::BAD_AUTH_REGEX)
+              source = Regexp.last_match(:source)
+              raise Dependabot::PrivateSourceAuthenticationFailure, source
+            elsif e.message.match(BundlerErrorPatterns::HTTP_ERR_REGEX)
+              source = Regexp.last_match(:source)
+              raise Dependabot::PrivateSourceTimedOut, source
+            end
 
-          def bundler_source
-            return nil unless gemfile
+            # TODO: Add testing and further exception case handling
 
-            @bundler_source ||=
-              in_a_temporary_bundler_context do
-                definition = ::Bundler::Definition.build(gemfile.name, nil, {})
-
-                specified_source =
-                  definition.dependencies.
-                  find { |dep| dep.name == dependency.name }&.source
-
-                specified_source || definition.send(:sources).default_source
-              end
+            raise
           end
 
           def source_type
-            @source_type ||= case bundler_source
-                             when ::Bundler::Source::Rubygems
-                               remote = bundler_source.remotes.first
-                               if remote.nil? || remote.to_s == "https://rubygems.org/"
-                                 RUBYGEMS
-                               else
-                                 PRIVATE_REGISTRY
-                               end
-                             when ::Bundler::Source::Git
-                               GIT
-                             else
-                               OTHER
-                             end
+            return @source_type if defined? @source_type
+            return @source_type = RUBYGEMS unless gemfile
+
+            @source_type = in_a_native_bundler_context do |tmp_dir|
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "dependency_source_type",
+                args: {
+                  dir: tmp_dir,
+                  gemfile_name: gemfile.name,
+                  dependency_name: dependency.name,
+                  credentials: credentials
+                }
+              )
+            end
           end
 
           def gemfile
