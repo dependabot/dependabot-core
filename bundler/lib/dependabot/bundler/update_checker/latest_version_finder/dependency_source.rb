@@ -62,7 +62,7 @@ module Dependabot
                     dependency_name: dependency.name,
                     credentials: credentials,
                     dependency_source_url: source_details[:url],
-                    dependency_source_branch: source_details[:branch],
+                    dependency_source_branch: source_details[:branch]
                   }
                 )
               end
@@ -70,9 +70,9 @@ module Dependabot
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             if e.message =~ GIT_REF_REGEX
               raise GitDependencyReferenceNotFound, dependency.name
-            else
-              raise
             end
+
+            raise
           end
 
           def git?
@@ -111,11 +111,11 @@ module Dependabot
                     dir: tmp_dir,
                     gemfile_name: gemfile.name,
                     dependency_name: dependency.name,
-                    credentials: credentials,
+                    credentials: credentials
                   }
-                )
-              end.map do |version_string|
-                Gem::Version.new(version_string)
+                ).map do |version_string|
+                  Gem::Version.new(version_string)
+                end
               end
           rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
             if e.message.match(BundlerErrorPatterns::MISSING_AUTH_REGEX)
@@ -146,7 +146,7 @@ module Dependabot
                   dir: tmp_dir,
                   gemfile_name: gemfile.name,
                   dependency_name: dependency.name,
-                  credentials: credentials,
+                  credentials: credentials
                 }
               )
             end

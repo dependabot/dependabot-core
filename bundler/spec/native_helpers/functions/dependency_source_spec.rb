@@ -21,7 +21,9 @@ RSpec.describe Functions::DependencySource do
   end
 
   let(:fixture_directory) do
-    File.join(File.dirname(__FILE__), "..", "..", "fixtures", "ruby", "gemfiles")
+    File.join(
+      File.dirname(__FILE__), "..", "..", "fixtures", "ruby", "gemfiles"
+    )
   end
   let(:gemfile_name) do
     File.join(fixture_directory, gemfile_fixture_name)
@@ -53,10 +55,10 @@ RSpec.describe Functions::DependencySource do
 
     it "returns all versions from the private source" do
       is_expected.to eq([
-        Gem::Version.new("1.5.0"),
-        Gem::Version.new("1.9.0"),
-        Gem::Version.new("1.10.0.beta"),
-      ])
+                          Gem::Version.new("1.5.0"),
+                          Gem::Version.new("1.9.0"),
+                          Gem::Version.new("1.10.0.beta")
+                        ])
     end
 
     context "specified as the default source" do
@@ -64,10 +66,10 @@ RSpec.describe Functions::DependencySource do
 
       it "returns all versions from the private source" do
         is_expected.to eq([
-          Gem::Version.new("1.5.0"),
-          Gem::Version.new("1.9.0"),
-          Gem::Version.new("1.10.0.beta"),
-        ])
+                            Gem::Version.new("1.5.0"),
+                            Gem::Version.new("1.9.0"),
+                            Gem::Version.new("1.10.0.beta")
+                          ])
       end
     end
 

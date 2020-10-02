@@ -241,19 +241,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       before do
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::SharedHelpers)
-          .to receive(:run_helper_subprocess).with({
-            command: Dependabot::Bundler::NativeHelpers.helper_path,
-            function: "dependency_source_type",
-            args: anything
-          }).and_call_original
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
 
-        allow(Dependabot::SharedHelpers)
-          .to receive(:run_helper_subprocess).with({
-            command: Dependabot::Bundler::NativeHelpers.helper_path,
-            function: "private_registry_versions",
-            args: anything
-          }).
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
           and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
@@ -283,19 +285,20 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that we don't have authentication details for" do
         let(:error_message) do
           <<~ERR
-          Authentication is required for repo.fury.io.
-          Please supply credentials for this source. You can do this by running:
-            bundle config repo.fury.io username:password
+            Authentication is required for repo.fury.io.
+            Please supply credentials for this source. You can do this by running:
+              bundle config repo.fury.io username:password
           ERR
         end
 
         before do
-          allow(Dependabot::SharedHelpers)
-            .to receive(:run_helper_subprocess).with({
-              command: Dependabot::Bundler::NativeHelpers.helper_path,
-              function: "private_registry_versions",
-              args: anything
-            }).
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
             and_raise(subprocess_error)
         end
 
@@ -312,18 +315,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that we have bad authentication details for" do
         let(:error_message) do
           <<~ERR
-          Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
-          Please double-check your credentials and correct them.
+            Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
+            Please double-check your credentials and correct them.
           ERR
         end
 
         before do
-          allow(Dependabot::SharedHelpers)
-            .to receive(:run_helper_subprocess).with({
-              command: Dependabot::Bundler::NativeHelpers.helper_path,
-              function: "private_registry_versions",
-              args: anything
-            }).
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
             and_raise(subprocess_error)
         end
 
@@ -341,17 +345,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that bad-requested, but was a private repo" do
         let(:error_message) do
           <<~ERR
-          Could not fetch specs from https://repo.fury.io/greysteil/
+            Could not fetch specs from https://repo.fury.io/greysteil/
           ERR
         end
 
         before do
-          allow(Dependabot::SharedHelpers)
-            .to receive(:run_helper_subprocess).with({
-              command: Dependabot::Bundler::NativeHelpers.helper_path,
-              function: "private_registry_versions",
-              args: anything
-            }).
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
             and_raise(subprocess_error)
         end
 
@@ -367,15 +372,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       context "that doesn't have details of the gem" do
         before do
-          allow(Dependabot::SharedHelpers)
-          .to receive(:run_helper_subprocess).with({
-            command: Dependabot::Bundler::NativeHelpers.helper_path,
-            function: "private_registry_versions",
-            args: anything
-          }).
-          and_return(
-            []
-          )
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_return(
+              []
+            )
         end
 
         it { is_expected.to be_nil }
@@ -522,19 +528,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       before do
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::SharedHelpers)
-          .to receive(:run_helper_subprocess).with({
-            command: Dependabot::Bundler::NativeHelpers.helper_path,
-            function: "dependency_source_type",
-            args: anything
-          }).and_call_original
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
 
-        allow(Dependabot::SharedHelpers)
-          .to receive(:run_helper_subprocess).with({
-            command: Dependabot::Bundler::NativeHelpers.helper_path,
-            function: "private_registry_versions",
-            args: anything
-          }).
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
           and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )

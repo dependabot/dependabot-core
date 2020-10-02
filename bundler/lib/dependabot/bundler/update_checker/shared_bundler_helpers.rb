@@ -19,10 +19,14 @@ module Dependabot
         PATH_REGEX = /The path `(?<path>.*)` does not exist/.freeze
 
         module BundlerErrorPatterns
-          MISSING_AUTH_REGEX = /bundle config (?<source>.*) username:password/
-          BAD_AUTH_REGEX =  /Bad username or password for (?<source>.*)\.$/
-          BAD_CERT_REGEX = /verify the SSL certificate for (?<source>.*)\.$/
-          HTTP_ERR_REGEX = /Could not fetch specs from (?<source>.*)$/
+          MISSING_AUTH_REGEX =
+            /bundle config (?<source>.*) username:password/.freeze
+          BAD_AUTH_REGEX =
+            /Bad username or password for (?<source>.*)\.$/.freeze
+          BAD_CERT_REGEX =
+            /verify the SSL certificate for (?<source>.*)\.$/.freeze
+          HTTP_ERR_REGEX =
+            /Could not fetch specs from (?<source>.*)$/.freeze
         end
 
         RETRYABLE_ERRORS = %w(
@@ -73,10 +77,11 @@ module Dependabot
           error_handling ? handle_bundler_errors(e) : raise
         end
 
-        def in_a_native_bundler_context(error_handling: true)
+        # TODO: Use/remove argument
+        def in_a_native_bundler_context(_error_handling: true)
           SharedHelpers.
             in_a_temporary_repo_directory(base_directory,
-                                          repo_contents_path) do |tmp_dir|
+                                          repo_contents_path) do |_tmp_dir|
             write_temporary_dependency_files
 
             yield
