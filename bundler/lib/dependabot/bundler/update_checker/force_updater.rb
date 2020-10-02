@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
 require "dependabot/monkey_patches/bundler/definition_bundler_version_patch"
 require "dependabot/monkey_patches/bundler/git_source_patch"
@@ -42,152 +44,36 @@ module Dependabot
         end
 
         def force_update
-          in_a_temporary_bundler_context do
-            other_updates = []
-
-            begin
-              definition = build_definition(other_updates: other_updates)
-              definition.resolve_remotely!
-              specs = definition.resolve
-              dependencies_from([dependency] + other_updates, specs)
-            rescue ::Bundler::VersionConflict => e
-              raise unless update_multiple_dependencies?
-
-              # TODO: Not sure this won't unlock way too many things...
-              new_dependencies_to_unlock =
-                new_dependencies_to_unlock_from(
-                  error: e,
-                  already_unlocked: other_updates
-                )
-
-              raise if new_dependencies_to_unlock.none?
-
-              other_updates += new_dependencies_to_unlock
-              retry
-            end
-          end
-        rescue SharedHelpers::ChildProcessFailed => e
-          raise_unresolvable_error(e)
-        end
-
-        #########################
-        # Bundler context setup #
-        #########################
-
-        def in_a_temporary_bundler_context
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_repo_directory(base_directory,
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.in_a_forked_process do
-              # Remove installed gems from the default Rubygems index
-              ::Gem::Specification.all =
-                ::Gem::Specification.send(:default_stubs, "*.gemspec")
-
-              # Set flags and credentials
-              set_bundler_flags_and_credentials
-
-              yield
+            updated_deps, specs = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "force_update",
+              args: {
+                dir: Dir.pwd,
+                dependency_name: dependency.name,
+                target_version: target_version,
+                credentials: relevant_credentials,
+                gemfile_name: gemfile.name,
+                lockfile_name: lockfile.name,
+                using_bundler_2: using_bundler_2?,
+                update_multiple_dependencies: update_multiple_dependencies?
+              }
+            )
+            updated_deps = updated_deps.map do |dep_hash|
+              OpenStruct.new(dep_hash)
             end
+            specs = specs.map do |spec_hash|
+              OpenStruct.new(spec_hash)
+            end
+            dependencies = [dependency] + updated_deps
+            dependencies_from(dependencies, specs)
           end
-        end
-
-        def new_dependencies_to_unlock_from(error:, already_unlocked:)
-          potentials_deps =
-            relevant_conflicts(error, already_unlocked).
-            flat_map(&:requirement_trees).
-            reject do |tree|
-              # If the final requirement wasn't specific, it can't be binding
-              next true if tree.last.requirement == Gem::Requirement.new(">= 0")
-
-              # If the conflict wasn't for the dependency we're updating then
-              # we don't have enough info to reject it
-              next false unless tree.last.name == dependency.name
-
-              # If the final requirement *was* for the dependency we're updating
-              # then we can ignore the tree if it permits the target version
-              tree.last.requirement.satisfied_by?(
-                Gem::Version.new(target_version)
-              )
-            end.map(&:first)
-
-          potentials_deps.
-            reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
-            reject { |dep| [dependency.name, "ruby\0"].include?(dep.name) }.
-            uniq
-        end
-
-        def relevant_conflicts(error, dependencies_being_unlocked)
-          names = [*dependencies_being_unlocked.map(&:name), dependency.name]
-
-          # For a conflict to be relevant to the updates we're making it must be
-          # 1) caused by a new requirement introduced by our unlocking, or
-          # 2) caused by an old requirement that prohibits the update.
-          # Hence, we look at the beginning and end of the requirement trees
-          error.cause.conflicts.values.
-            select do |conflict|
-              conflict.requirement_trees.any? do |t|
-                names.include?(t.last.name) || names.include?(t.first.name)
-              end
-            end
-        end
-
-        def raise_unresolvable_error(error)
-          msg = error.error_class + " with message: " + error.error_message
-          raise Dependabot::DependencyFileNotResolvable, msg
-        end
-
-        def build_definition(other_updates:)
-          gems_to_unlock = other_updates.map(&:name) + [dependency.name]
-          definition = ::Bundler::Definition.build(
-            gemfile.name,
-            lockfile&.name,
-            gems: gems_to_unlock + subdependencies,
-            lock_shared_dependencies: true
-          )
-
-          # Remove the Gemfile / gemspec requirements on the gems we're
-          # unlocking (i.e., completely unlock them)
-          gems_to_unlock.each do |gem_name|
-            unlock_gem(definition: definition, gem_name: gem_name)
-          end
-
-          # Set the requirement for the gem we're forcing an update of
-          new_req = Gem::Requirement.create("= #{target_version}")
-          definition.dependencies.
-            find { |d| d.name == dependency.name }.
-            tap do |dep|
-              dep.instance_variable_set(:@requirement, new_req)
-              dep.source = nil if dep.source.is_a?(::Bundler::Source::Git)
-            end
-
-          definition
-        end
-
-        def subdependencies
-          # If there's no lockfile we don't need to worry about
-          # subdependencies
-          return [] unless lockfile
-
-          all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
-                      specs.map(&:name).map(&:to_s)
-          top_level = ::Bundler::Definition.
-                      build(gemfile.name, lockfile.name, {}).
-                      dependencies.map(&:name).map(&:to_s)
-
-          all_deps - top_level
-        end
-
-        def unlock_gem(definition:, gem_name:)
-          dep = definition.dependencies.find { |d| d.name == gem_name }
-          version = definition.locked_gems.specs.
-                    find { |d| d.name == gem_name }.version
-
-          dep&.instance_variable_set(
-            :@requirement,
-            Gem::Requirement.create(">= #{version}")
-          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
         def original_dependencies
@@ -221,14 +107,14 @@ module Dependabot
         def build_dependency(original_dep, updated_spec)
           Dependency.new(
             name: updated_spec.name,
-            version: updated_spec.version.to_s,
+            version: updated_spec.version,
             requirements:
               RequirementsUpdater.new(
                 requirements: original_dep.requirements,
                 update_strategy: requirements_update_strategy,
                 updated_source: source_for(original_dep),
-                latest_version: updated_spec.version.to_s,
-                latest_resolvable_version: updated_spec.version.to_s
+                latest_version: updated_spec.version,
+                latest_resolvable_version: updated_spec.version
               ).updated_requirements,
             previous_version: original_dep.version,
             previous_requirements: original_dep.requirements,
@@ -265,34 +151,6 @@ module Dependabot
           end
 
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
-        end
-
-        def set_bundler_flags_and_credentials
-          # Set auth details
-          relevant_credentials.each do |cred|
-            token = cred["token"] ||
-                    "#{cred['username']}:#{cred['password']}"
-
-            ::Bundler.settings.set_command_option(
-              cred.fetch("host"),
-              token.gsub("@", "%40F").gsub("?", "%3F")
-            )
-          end
-
-          # Only allow upgrades. Otherwise it's unlikely that this
-          # resolution will be found by the FileUpdater
-          ::Bundler.settings.set_command_option(
-            "only_update_to_newer_versions",
-            true
-          )
-
-          # Use HTTPS for GitHub if lockfile was generated by Bundler 2
-          set_bundler_2_flags if using_bundler_2?
-        end
-
-        def set_bundler_2_flags
-          ::Bundler.settings.set_command_option("forget_cli_options", "true")
-          ::Bundler.settings.set_command_option("github.https", "true")
         end
 
         def relevant_credentials
