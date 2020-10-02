@@ -141,7 +141,8 @@ module Dependabot
       rescue SharedHelpers::HelperSubprocessFailed => e
         handle_marshall_error(e) if e.message == "marshal data too short"
 
-        msg = e.message.force_encoding("UTF-8").encode
+        msg = e.error_class + " with message: " +
+              e.message.force_encoding("UTF-8").encode
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
@@ -171,7 +172,8 @@ module Dependabot
             end
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
-        raise Dependabot::DependencyFileNotEvaluatable, e.message
+        msg = e.error_class + " with message: " + e.message
+        raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
       def base_directory

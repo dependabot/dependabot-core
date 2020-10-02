@@ -65,7 +65,8 @@ module Dependabot
             dependencies_from(updated_deps, specs)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise Dependabot::DependencyFileNotResolvable, e.message
+          msg = e.error_class + " with message: " + e.message
+          raise Dependabot::DependencyFileNotResolvable, msg
         end
 
         def original_dependencies
