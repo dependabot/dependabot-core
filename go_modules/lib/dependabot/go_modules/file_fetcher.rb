@@ -26,7 +26,8 @@ module Dependabot
           unless go_mod
             raise(
               Dependabot::DependencyFileNotFound,
-              File.join(directory, "go.mod")
+              Pathname.new(File.join(directory, "go.mod")).
+              cleanpath.to_path
             )
           end
 
