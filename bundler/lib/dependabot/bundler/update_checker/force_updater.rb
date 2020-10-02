@@ -1,17 +1,16 @@
 # frozen_string_literal: true
 
-require "ostruct"
-
-require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
 require "dependabot/monkey_patches/bundler/definition_bundler_version_patch"
+require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
 require "dependabot/monkey_patches/bundler/git_source_patch"
 
+require "dependabot/bundler/file_parser"
+require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/update_checker/requirements_updater"
-require "dependabot/bundler/file_updater/lockfile_updater"
-require "dependabot/bundler/file_parser"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Bundler
@@ -63,14 +62,7 @@ module Dependabot
                 update_multiple_dependencies: update_multiple_dependencies?
               }
             )
-            updated_deps = updated_deps.map do |dep_hash|
-              OpenStruct.new(dep_hash)
-            end
-            specs = specs.map do |spec_hash|
-              OpenStruct.new(spec_hash)
-            end
-            dependencies = [dependency] + updated_deps
-            dependencies_from(dependencies, specs)
+            dependencies_from(updated_deps, specs)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise Dependabot::DependencyFileNotResolvable, e.message
@@ -95,10 +87,10 @@ module Dependabot
           # but resolving it won't necessarily be easy.
           updated_deps.map do |dep|
             original_dep =
-              original_dependencies.find { |d| d.name == dep.name }
-            spec = specs.find { |d| d.name == dep.name }
+              original_dependencies.find { |d| d.name == dep.fetch("name") }
+            spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
 
-            next if spec.version.to_s == original_dep.version
+            next if spec.fetch("version") == original_dep.version
 
             build_dependency(original_dep, spec)
           end.compact
@@ -106,15 +98,15 @@ module Dependabot
 
         def build_dependency(original_dep, updated_spec)
           Dependency.new(
-            name: updated_spec.name,
-            version: updated_spec.version,
+            name: updated_spec.fetch("name"),
+            version: updated_spec.fetch("version"),
             requirements:
               RequirementsUpdater.new(
                 requirements: original_dep.requirements,
                 update_strategy: requirements_update_strategy,
                 updated_source: source_for(original_dep),
-                latest_version: updated_spec.version,
-                latest_resolvable_version: updated_spec.version
+                latest_version: updated_spec.fetch("version"),
+                latest_resolvable_version: updated_spec.fetch("version")
               ).updated_requirements,
             previous_version: original_dep.version,
             previous_requirements: original_dep.requirements,

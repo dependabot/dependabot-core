@@ -15,8 +15,8 @@ module Functions
 
     def run
       # Remove installed gems from the default Rubygems index
-      ::Gem::Specification.all =
-      ::Gem::Specification.send(:default_stubs, "*.gemspec")
+      Gem::Specification.all =
+        Gem::Specification.send(:default_stubs, "*.gemspec")
 
       # Set flags and credentials
       set_bundler_flags_and_credentials
@@ -27,15 +27,16 @@ module Functions
         definition = build_definition(other_updates: other_updates)
         definition.resolve_remotely!
         specs = definition.resolve
-        other_updates = other_updates.map { |dep| { name: dep.name } }
+        updates = [{ name: dependency_name }] +
+          other_updates.map { |dep| { name: dep.name } }
         specs = specs.map do |dep|
           {
             name: dep.name,
             version: dep.version,
           }
         end
-        [other_updates, specs]
-      rescue ::Bundler::VersionConflict => e
+        [updates, specs]
+      rescue Bundler::VersionConflict => e
         raise unless update_multiple_dependencies?
 
         # TODO: Not sure this won't unlock way too many things...
@@ -102,7 +103,7 @@ module Functions
 
     def build_definition(other_updates:)
       gems_to_unlock = other_updates.map(&:name) + [dependency_name]
-      definition = ::Bundler::Definition.build(
+      definition = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
         gems: gems_to_unlock + subdependencies,
@@ -121,7 +122,7 @@ module Functions
         find { |d| d.name == dependency_name }.
         tap do |dep|
           dep.instance_variable_set(:@requirement, new_req)
-          dep.source = nil if dep.source.is_a?(::Bundler::Source::Git)
+          dep.source = nil if dep.source.is_a?(Bundler::Source::Git)
         end
 
       definition
@@ -143,9 +144,9 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  ::Bundler::LockfileParser.new(lockfile).
+      all_deps =  Bundler::LockfileParser.new(lockfile).
                   specs.map(&:name).map(&:to_s)
-      top_level = ::Bundler::Definition.
+      top_level = Bundler::Definition.
                   build(gemfile_name, lockfile_name, {}).
                   dependencies.map(&:name).map(&:to_s)
 
