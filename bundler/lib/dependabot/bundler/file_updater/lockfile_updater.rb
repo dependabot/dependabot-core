@@ -88,7 +88,7 @@ module Dependabot
         end
 
         def ruby_lock_error?(error)
-          # return false unless error.error_class == "Bundler::VersionConflict"
+          return false unless error.error_class == "Bundler::VersionConflict"
           return false unless error.message.include?(" for gem \"ruby\0\"")
           return false if @dont_lock_ruby_version
 
