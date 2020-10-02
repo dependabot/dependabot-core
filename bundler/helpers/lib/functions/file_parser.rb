@@ -14,7 +14,7 @@ module Functions
     attr_reader :dir, :lockfile_name
 
     def parsed_gemfile(gemfile_name:)
-      Bundler.instance_variable_set(:@root, dir)
+      Bundler.instance_variable_set(:@root, Pathname.new(dir))
 
       Bundler::Definition.build(gemfile_name, nil, {}).
         dependencies.select(&:current_platform?).
@@ -23,7 +23,8 @@ module Functions
     end
 
     def parsed_gemspec(gemspec_name:)
-      Bundler.instance_variable_set(:@root, dir)
+      Bundler.instance_variable_set(:@root, Pathname.new(dir))
+
       Bundler.load_gemspec_uncached(gemspec_name).
         dependencies.
         map(&method(:serialize_bundler_dependency))
