@@ -170,12 +170,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end
       before do
-        stub_request(:get, registry_url + "versions").to_return(status: 404)
-        stub_request(:get, registry_url + "api/v1/dependencies").
-          to_return(status: 200)
-        # Note: returns details of three versions: 1.5.0, 1.9.0, and 1.10.0.beta
-        stub_request(:get, gemfury_business_url).
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        # We only need to stub out the version callout since it would
+        # otherwise call out to the internet in a shell command
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
+
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
+          and_return(
+            ["1.5.0", "1.9.0", "1.10.0.beta"]
+          )
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
