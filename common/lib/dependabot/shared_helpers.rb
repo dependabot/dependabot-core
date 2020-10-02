@@ -83,8 +83,11 @@ module Dependabot
     end
 
     class HelperSubprocessFailed < StandardError
-      def initialize(message:, error_context:)
+      attr_reader :error_class, :error_context
+
+      def initialize(message:, error_context:, error_class: nil)
         super(message)
+        @error_class = error_class
         @error_context = error_context
         @command = error_context[:command]
       end
@@ -110,6 +113,11 @@ module Dependabot
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
+      if ENV["DEBUG_HELPERS"] == "true"
+        puts stdout
+        puts stderr
+      end
+
       # Some package managers output useful stuff to stderr instead of stdout so
       # we want to parse this, most package manager will output garbage here so
       # would mess up json response from stdout
@@ -129,6 +137,7 @@ module Dependabot
 
       raise HelperSubprocessFailed.new(
         message: response["error"],
+        error_class: response["error_class"],
         error_context: error_context
       )
     rescue JSON::ParserError
