@@ -815,6 +815,71 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     end
   end
 
+  context "with multiple Gemfiles and Gemfile.locks" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture(
+            "github",
+            "contents_ruby_multiple_gemfiles_and_gemfile_locks.json"
+          ),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_with_gemspec_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile.common?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "business.gemspec?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemspec_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, url + "Gemfile_next.lock?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "gemfile_lock_content.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches gemfiles and gemfile locks" do
+      files = file_fetcher_instance.files
+      expect(files.count).to eq(5)
+      expect(files.map(&:name)).to include("business.gemspec")
+      expect(files.map(&:name)).to include("Gemfile")
+      expect(files.map(&:name)).to include("Gemfile.common")
+      expect(files.map(&:name)).to include("Gemfile.lock")
+      expect(files.map(&:name)).to include("Gemfile_next.lock")
+    end
+  end
+
   context "with only a gemspec" do
     before do
       stub_request(:get, url + "?ref=sha").
