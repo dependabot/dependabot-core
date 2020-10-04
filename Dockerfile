@@ -92,7 +92,7 @@ RUN npm install elm@0.18.0 \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz \
-  && npm cache clean
+  && rm -rf ~/.npm
 
 
 ### PHP
