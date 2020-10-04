@@ -91,7 +91,8 @@ RUN npm install elm@0.18.0 \
   && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz
+  && rm -f binaries-for-linux.tar.gz \
+  && npm cache clean
 
 
 ### PHP
