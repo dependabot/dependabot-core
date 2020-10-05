@@ -10,7 +10,7 @@ module Dependabot
       require_relative "file_updater/go_mod_updater"
 
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
-                     credentials:)
+                     credentials:, options: {})
         super
         return unless repo_contents_path.nil?
 
@@ -86,7 +86,7 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            tidy: !@repo_contents_stub
+            tidy: !@repo_contents_stub && options.fetch(:go_mod_tidy, false)
           )
       end
     end
