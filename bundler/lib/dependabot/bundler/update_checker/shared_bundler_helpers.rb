@@ -112,7 +112,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
         def handle_bundler_errors(error)
-          if error.message == "marshal data too short"
+          if error.error_class == "JSON::ParserError"
             msg = "Error evaluating your dependency files: #{error.message}"
             raise Dependabot::DependencyFileNotEvaluatable, msg
           end
