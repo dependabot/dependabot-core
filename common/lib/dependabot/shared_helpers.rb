@@ -87,7 +87,7 @@ module Dependabot
 
       def initialize(message:, error_context:, error_class: nil)
         super(message)
-        @error_class = error_class
+        @error_class = error_class || ""
         @error_context = error_context
         @command = error_context[:command]
       end
@@ -143,6 +143,7 @@ module Dependabot
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(
         message: stdout || "No output from command",
+        error_class: "JSON::ParserError",
         error_context: error_context
       )
     end
