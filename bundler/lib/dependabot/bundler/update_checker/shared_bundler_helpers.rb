@@ -86,7 +86,11 @@ module Dependabot
             yield
           end
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          # TODO: Add retrying
+          retry_count ||= 0
+          retry_count += 1
+          if retryable_error?(e) && retry_count <= 2
+            sleep(rand(1.0..5.0)) && retry
+          end
 
           error_handling ? handle_bundler_errors(e) : raise
         end
@@ -96,7 +100,8 @@ module Dependabot
         end
 
         def retryable_error?(error)
-          return true if error.message == "marshal data too short"
+          # TODO: Figure out equivalent signal for native call
+          # return true if error.message == "marshal data too short"
           return false if error.is_a?(ArgumentError)
           return true if RETRYABLE_ERRORS.include?(error.error_class)
 
