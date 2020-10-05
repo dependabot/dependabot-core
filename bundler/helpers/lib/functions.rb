@@ -2,6 +2,7 @@ require "functions/file_parser"
 require "functions/force_updater"
 require "functions/lockfile_updater"
 require "functions/dependency_source"
+require "functions/version_resolver"
 
 module Functions
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
@@ -80,5 +81,18 @@ module Functions
       dir: dir,
       credentials: credentials
     ).private_registry_versions
+  end
+
+  def self.resolve_version(dependency_name:, dependency_requirements:,
+                           gemfile_name:, lockfile_name:,
+                           dir:, credentials:)
+    VersionResolver.new(
+      dependency_name: dependency_name,
+      dependency_requirements: dependency_requirements,
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name,
+      dir: dir,
+      credentials: @credentials
+    ).version_details
   end
 end
