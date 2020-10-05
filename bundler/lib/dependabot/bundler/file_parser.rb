@@ -139,14 +139,14 @@ module Dependabot
             end
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
-        handle_marshall_error(e) if e.message == "marshal data too short"
+        handle_eval_error(e) if e.error_class == "JSON::ParserError"
 
         msg = e.error_class + " with message: " +
               e.message.force_encoding("UTF-8").encode
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
-      def handle_marshall_error(err)
+      def handle_eval_error(err)
         msg = "Error evaluating your dependency files: #{err.message}"
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
