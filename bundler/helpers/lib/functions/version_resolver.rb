@@ -2,9 +2,11 @@ module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
 
-    attr_reader :dependency_name, :gemfile_name, :lockfile_name,
+    attr_reader :dependency_name, :dependency_requirements,
+                :gemfile_name, :lockfile_name,
                 :dir, :credentials
 
+    # TODO: Add bundler 2 flag to args
     def initialize(dependency_name:, dependency_requirements:,
                    gemfile_name:, lockfile_name:,
                    dir:, credentials:)
@@ -21,13 +23,15 @@ module Functions
 
       dep = dependency_from_definition
 
+      # TODO: Rewrite this
+      #
       # If the dependency wasn't found in the definition, but *is*
       # included in a gemspec, it's because the Gemfile didn't import
       # the gemspec. This is unusual, but the correct behaviour if/when
       # it happens is to behave as if the repo was gemspec-only.
-      # if dep.nil? && dependency.requirements.any?
-      #   return latest_version_details
-      # end
+      if dep.nil? && dependency_requirements.any?
+        return "latest"
+      end
 
       # Otherwise, if the dependency wasn't found it's because it is a
       # subdependency that was removed when attempting to update it.
@@ -88,10 +92,7 @@ module Functions
 
       dep = definition.resolve.find { |d| d.name == dependency_name }
       return dep if dep
-      # TODO: Remove
-      return if !unlock_subdependencies
-      # TODO: Reinstate
-      # return if dependency.requirements.any? || !unlock_subdependencies
+      return if dependency_requirements.any? || !unlock_subdependencies
 
       # If no definition was found and we're updating a sub-dependency,
       # try again but without unlocking any other sub-dependencies
@@ -102,11 +103,9 @@ module Functions
     def subdependencies
       # If there's no lockfile we don't need to worry about
       # subdependencies
+      return [] unless lockfile
 
-      # TODO: Read in lockfile?
-      return [] # unless lockfile
-
-      all_deps =  ::Bundler::LockfileParser.new(sanitized_lockfile_body).
+      all_deps =  ::Bundler::LockfileParser.new(lockfile).
                   specs.map(&:name).map(&:to_s).uniq
       top_level = build_definition([]).dependencies.
                   map(&:name).map(&:to_s)
@@ -136,9 +135,16 @@ module Functions
       dependencies_to_unlock << gem_name
     end
 
-    def sanitized_lockfile_body
-      re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-      lockfile.content.gsub(re, "")
+    def lockfile
+      return @lockfile if defined?(@lockfile)
+
+      @lockfile =
+        begin
+          return unless lockfile_name
+          return unless File.exist?(lockfile_name)
+
+          File.read(lockfile_name)
+        end
     end
 
     def ruby_version_incompatible?(dep)

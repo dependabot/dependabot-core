@@ -63,6 +63,10 @@ module Dependabot
       pid = fork do
         read.close
         result = yield
+      # If a forked process is hitting the internet in test, we want
+      # the original error to surface
+      rescue VCR::Errors::UnhandledHTTPRequestError
+        raise
       rescue Exception => e # rubocop:disable Lint/RescueException
         result = { _error_details: { error_class: e.class.to_s,
                                      error_message: e.message,
