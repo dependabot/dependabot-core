@@ -194,7 +194,6 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
 
-        # TODO: Extract to native helper
         def inaccessible_git_dependencies
           in_a_temporary_bundler_context(error_handling: false) do
             ::Bundler::Definition.build(gemfile.name, nil, {}).dependencies.
@@ -222,7 +221,6 @@ module Dependabot
           end
         end
 
-        # TODO: Extract to native helper
         def jfrog_source
           in_a_temporary_bundler_context(error_handling: false) do
             ::Bundler::Definition.build(gemfile.name, nil, {}).
