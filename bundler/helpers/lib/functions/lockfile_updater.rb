@@ -39,7 +39,7 @@ module Functions
     alias :using_bundler_2? :using_bundler_2
 
     def generate_lockfile
-      dependencies_to_unlock = dependencies.map { |d| d["name"] }
+      dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
 
       begin
         definition = build_definition(dependencies_to_unlock)
@@ -209,25 +209,27 @@ module Functions
 
     def lock_deps_being_updated_to_exact_versions(definition)
       dependencies.each_with_object({}) do |dep, old_reqs|
-        defn_dep = definition.dependencies.find { |d| d.name == dep["name"] }
+        defn_dep = definition.dependencies.find do |d|
+          d.name == dep.fetch("name")
+        end
 
         if defn_dep.nil?
           definition.dependencies <<
-            Bundler::Dependency.new(dep["name"], dep["version"])
-          old_reqs[dep["name"]] = :none
+            Bundler::Dependency.new(dep.fetch("name"), dep.fetch("version"))
+          old_reqs[dep.fetch("name")] = :none
         elsif git_dependency?(dep) &&
               defn_dep.source.is_a?(Bundler::Source::Git)
           defn_dep.source.unlock!
-        elsif Gem::Version.correct?(dep["version"])
-          new_req = Gem::Requirement.create("= #{dep["version"]}")
-          old_reqs[dep["name"]] = defn_dep.requirement
+        elsif Gem::Version.correct?(dep.fetch("version"))
+          new_req = Gem::Requirement.create("= #{dep.fetch("version")}")
+          old_reqs[dep.fetch("name")] = defn_dep.requirement
           defn_dep.instance_variable_set(:@requirement, new_req)
         end
       end
     end
 
     def git_dependency?(dep)
-      sources = dep["requirements"].map { |r| r.fetch("source") }
+      sources = dep.fetch("requirements").map { |r| r.fetch("source") }
       sources.all? { |s| s&.fetch("type", nil) == "git" }
     end
 

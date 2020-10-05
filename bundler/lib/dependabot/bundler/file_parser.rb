@@ -1,16 +1,5 @@
 # frozen_string_literal: true
 
-# TODO: Remove/Replace?
-#
-# Right now we are using OpenStructs to 'stand in' for Bundler::Dependency or
-# Gem::Dependency objects we used to get via the Bundler API and now get
-# from a marshalled JSON object retrieved from the native helper script
-#
-# The final version is refacor anywhere we use these classes to use
-# Dependabot::Dependency objects and instantiate them from the JSON object
-# retrieved via the shell-out to the native helper
-require "ostruct"
-
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -50,12 +39,12 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: dep.name,
-                version: dependency_version(dep.name)&.to_s,
+                name: dep.fetch("name"),
+                version: dependency_version(dep.fetch("name"))&.to_s,
                 requirements: [{
                   requirement: gemfile_declaration_finder.enhanced_req_string,
-                  groups: dep.groups.map(&:to_sym),
-                  source: dep.source&.transform_keys(&:to_sym),
+                  groups: dep.fetch("groups").map(&:to_sym),
+                  source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
                 package_manager: "bundler"
@@ -73,16 +62,16 @@ module Dependabot
           parsed_gemspec(gemspec).each do |dependency|
             dependencies <<
               Dependency.new(
-                name: dependency.name,
-                version: dependency_version(dependency.name)&.to_s,
+                name: dependency.fetch("name"),
+                version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
-                  requirement: dependency.requirement.to_s,
-                  groups: if dependency.type == "runtime"
+                  requirement: dependency.fetch("requirement").to_s,
+                  groups: if dependency.fetch("type") == "runtime"
                             ["runtime"]
                           else
                             ["development"]
                           end,
-                  source: dependency.source&.transform_keys(&:to_sym),
+                  source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
                 package_manager: "bundler"
@@ -125,7 +114,7 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            deps = SharedHelpers.run_helper_subprocess(
+            SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "parsed_gemfile",
               args: {
@@ -134,9 +123,6 @@ module Dependabot
                 dir: Dir.pwd
               }
             )
-            deps.map do |dep_hash|
-              OpenStruct.new(dep_hash)
-            end
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
         handle_eval_error(e) if e.error_class == "JSON::ParserError"
@@ -158,7 +144,7 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            deps = SharedHelpers.run_helper_subprocess(
+            SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "parsed_gemspec",
               args: {
@@ -167,9 +153,6 @@ module Dependabot
                 dir: Dir.pwd
               }
             )
-            deps.map do |dep_hash|
-              OpenStruct.new(dep_hash)
-            end
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.error_class + " with message: " + e.message

@@ -20,7 +20,7 @@ module Dependabot
         def enhanced_req_string
           return unless gemfile_includes_dependency?
 
-          fallback_string = dependency.requirement
+          fallback_string = dependency.fetch("requirement")
           req_nodes = declaration_node.children[3..-1]
           req_nodes = req_nodes.reject { |child| child.type == :hash }
 
@@ -67,7 +67,7 @@ module Dependabot
           return false unless node.is_a?(Parser::AST::Node)
           return false unless node.children[1] == :gem
 
-          node.children[2].children.first == dependency.name
+          node.children[2].children.first == dependency.fetch("name")
         end
       end
     end

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "ostruct"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
@@ -14,13 +13,10 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
   let(:dependency) do
     dep = ::Bundler::Dependency.new(dependency_name,
                                     dependency_requirement_sting)
-    OpenStruct.new(
-      name: dep.name,
-      requirement: dep.requirement.to_s,
-      groups: dep.groups,
-      source: nil,
-      type: dep.type
-    )
+    {
+      "name" => dep.name,
+      "requirement" => dep.requirement.to_s
+    }
   end
   let(:dependency_name) { "business" }
   let(:dependency_requirement_sting) { "~> 1" }
