@@ -93,7 +93,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "options" do
-      let(:options) { { tidy: true } }
+      let(:options) { { go_mod_tidy: true } }
       let(:dummy_updater) do
         instance_double(
           Dependabot::GoModules::FileUpdater::GoModUpdater,

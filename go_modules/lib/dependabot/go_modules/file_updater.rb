@@ -86,7 +86,7 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            tidy: !@repo_contents_stub && options.fetch(:tidy, false)
+            tidy: !@repo_contents_stub && options.fetch(:go_mod_tidy, false)
           )
       end
     end
