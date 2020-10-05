@@ -84,13 +84,14 @@ module Functions
   end
 
   def self.resolve_version(dependency_name:, dependency_requirements:,
-                           gemfile_name:, lockfile_name:,
+                           gemfile_name:, lockfile_name:, using_bundler_2:,
                            dir:, credentials:)
     VersionResolver.new(
       dependency_name: dependency_name,
       dependency_requirements: dependency_requirements,
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
+      using_bundler_2: using_bundler_2,
       dir: dir,
       credentials: @credentials
     ).version_details

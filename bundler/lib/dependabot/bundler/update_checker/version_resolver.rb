@@ -84,6 +84,7 @@ module Dependabot
                   dependency_requirements: dependency.requirements,
                   gemfile_name: gemfile.name,
                   lockfile_name: lockfile&.name,
+                  using_bundler_2: using_bundler_2?,
                   dir: tmp_dir,
                   credentials: credentials
                 }
@@ -167,6 +168,12 @@ module Dependabot
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
+        end
+
+        def using_bundler_2?
+          return unless lockfile
+
+          lockfile.content.match?(/BUNDLED WITH\s+2/m)
         end
       end
     end

@@ -6,14 +6,14 @@ module Functions
                 :gemfile_name, :lockfile_name,
                 :dir, :credentials
 
-    # TODO: Add bundler 2 flag to args
     def initialize(dependency_name:, dependency_requirements:,
-                   gemfile_name:, lockfile_name:,
+                   gemfile_name:, lockfile_name:, using_bundler_2:,
                    dir:, credentials:)
       @dependency_name = dependency_name
       @dependency_requirements = dependency_requirements
       @gemfile_name = gemfile_name
       @lockfile_name = lockfile_name
+      @using_bundler_2 = using_bundler_2
       @dir = dir
       @credentials = @credentials
     end
@@ -56,6 +56,10 @@ module Functions
 
     private
 
+    def using_bundler_2?
+      @using_bundler_2
+    end
+
     def setup_bundler
       ::Bundler.instance_variable_set(:@root, dir)
 
@@ -70,6 +74,13 @@ module Functions
           token.gsub("@", "%40F").gsub("?", "%3F")
         )
       end
+
+      set_bundler_2_flags if using_bundler_2?
+    end
+
+    def set_bundler_2_flags
+      ::Bundler.settings.set_command_option("forget_cli_options", "true")
+      ::Bundler.settings.set_command_option("github.https", "true")
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
