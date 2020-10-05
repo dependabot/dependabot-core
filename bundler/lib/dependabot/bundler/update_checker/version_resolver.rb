@@ -102,7 +102,9 @@ module Dependabot
               raise unless ruby_lock_error?(e)
 
               @gemspec_ruby_unlocked = true
-              regenerate_dependency_files_without_ruby_lock && retry
+              regenerate_dependency_files_without_ruby_lock
+              write_temporary_dependency_files
+              retry
             end
           end
         end
