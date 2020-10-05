@@ -75,7 +75,7 @@ module Dependabot
           return latest_version_details unless gemfile
 
           SharedHelpers.with_git_configured(credentials: credentials) do
-            in_a_native_bundler_context do |tmp_dir|
+            in_a_native_bundler_context(error_handling: false) do |tmp_dir|
               details =  SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "resolve_version",
@@ -97,17 +97,15 @@ module Dependabot
                 details[:version] = Gem::Version.new(details[:version])
               end
               details
-            rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-              return if error_due_to_restrictive_upper_bound?(e)
-              return if circular_dependency_at_new_version?(e)
-              raise unless ruby_lock_error?(e)
-
-              @gemspec_ruby_unlocked = true
-              regenerate_dependency_files_without_ruby_lock
-              write_temporary_dependency_files
-              retry
             end
           end
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          return if error_due_to_restrictive_upper_bound?(e)
+          return if circular_dependency_at_new_version?(e)
+          handle_bundler_errors(e) unless ruby_lock_error?(e)
+
+          @gemspec_ruby_unlocked = true
+          regenerate_dependency_files_without_ruby_lock && retry
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
