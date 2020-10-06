@@ -62,14 +62,8 @@ module Dependabot
                     )
                 end
 
-                def write_temporary_dependency_files(update_package_json: true)
-                    # write_lockfiles
-        
-                    # File.write(".npmrc", npmrc_content)
-                    # File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
-                    
-                    # TODO: Copy all the dependency files to the temp folder and run yarn update?
-
+                def write_temporary_dependency_files
+                    # Copy updated dependency files to a temp folder
                     @dependency_files.each do |file|
                         path = file.name
                         FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -77,14 +71,17 @@ module Dependabot
                         # Update package.json files. Copy others as is
                         updated_content =
                             if file.name.end_with?("package.json") && top_level_dependencies.any?
-                                updated_package_json_content(file)
+                                pkg_json = JSON.parse(updated_package_json_content(file))
+
+                                # strip "bin" from package.json - This prevents failures due to missing files during link step of "rush update"
+                                pkg_json.delete('bin')
+                                JSON.pretty_generate(pkg_json)
                             else
                                 file.content
                             end
                     
                         File.write(file.name, updated_content)
                     end
-                    
                 end
 
                 def top_level_dependencies
