@@ -216,8 +216,7 @@ module Dependabot
           Excon.get(
             index_url + normalised_name + "/",
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 
@@ -225,8 +224,7 @@ module Dependabot
           Excon.get(
             index_url,
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 

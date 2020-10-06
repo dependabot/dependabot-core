@@ -48,9 +48,8 @@ module Dependabot
 
         response = Excon.get(
           dependency_nuspec_url,
-          headers: auth_header,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: auth_header)
         )
 
         @dependency_nuspec_file = Nokogiri::XML(response.body)

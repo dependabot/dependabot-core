@@ -183,7 +183,7 @@ module Dependabot
 
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
-      SharedHelpers.excon_defaults.merge(read_timeout: 20)
+      SharedHelpers.excon_defaults(read_timeout: 20)
     end
   end
 end

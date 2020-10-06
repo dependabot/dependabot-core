@@ -185,11 +185,12 @@ module Dependabot
       def get(url)
         response = Excon.get(
           url,
-          headers: auth_header,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(
+            headers: auth_header
+          )
         )
         raise NotFound if response.status == 404
 
@@ -199,16 +200,17 @@ module Dependabot
       def post(url, json)
         response = Excon.post(
           url,
-          headers: auth_header.merge(
-            {
-              "Content-Type" => "application/json"
-            }
-          ),
           body: json,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(
+            headers: auth_header.merge(
+              {
+                "Content-Type" => "application/json"
+              }
+            )
+          )
         )
         raise NotFound if response.status == 404
 
