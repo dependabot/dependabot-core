@@ -13,14 +13,6 @@ RSpec.describe Functions::VersionResolver do
       dependency_requirements: [],
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
-      using_bundler_2: false,
-      dir: fixture_directory,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
     )
   end
 
