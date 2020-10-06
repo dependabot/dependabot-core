@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
+
 module Dependabot
   module FileUpdaters
     class VendorUpdater
