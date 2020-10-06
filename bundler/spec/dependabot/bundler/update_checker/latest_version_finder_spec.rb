@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
           message: error_message,
           error_context: {},
-          error_class: error_class,
+          error_class: error_class
         )
       end
 

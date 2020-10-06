@@ -57,35 +57,6 @@ module Dependabot
       end
     end
 
-    def self.in_a_forked_process
-      read, write = IO.pipe
-
-      pid = fork do
-        read.close
-        result = yield
-      # If a forked process is hitting the internet in test, we want
-      # the original error to surface
-      rescue VCR::Errors::UnhandledHTTPRequestError
-        raise
-      rescue Exception => e # rubocop:disable Lint/RescueException
-        result = { _error_details: { error_class: e.class.to_s,
-                                     error_message: e.message,
-                                     error_backtrace: e.backtrace } }
-      ensure
-        Marshal.dump(result, write)
-        exit!(0)
-      end
-
-      write.close
-      result = read.read
-      Process.wait(pid)
-      result = Marshal.load(result) # rubocop:disable Security/MarshalLoad
-
-      return result unless result.is_a?(Hash) && result[:_error_details]
-
-      raise ChildProcessFailed, result[:_error_details]
-    end
-
     class HelperSubprocessFailed < StandardError
       attr_reader :error_class, :error_context
 
