@@ -175,6 +175,8 @@ module Dependabot
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, file.content)
         end
+
+        File.write(lockfile.name, sanitized_lockfile_content) if lockfile
       end
 
       def check_required_files

@@ -3,24 +3,17 @@ module Functions
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
 
     attr_reader :dependency_name, :dependency_requirements,
-                :gemfile_name, :lockfile_name,
-                :dir, :credentials
+                :gemfile_name, :lockfile_name
 
     def initialize(dependency_name:, dependency_requirements:,
-                   gemfile_name:, lockfile_name:, using_bundler_2:,
-                   dir:, credentials:)
+                   gemfile_name:, lockfile_name:)
       @dependency_name = dependency_name
       @dependency_requirements = dependency_requirements
       @gemfile_name = gemfile_name
       @lockfile_name = lockfile_name
-      @using_bundler_2 = using_bundler_2
-      @dir = dir
-      @credentials = @credentials
     end
 
     def version_details
-      setup_bundler
-
       dep = dependency_from_definition
 
       # TODO: Rewrite this
@@ -55,33 +48,6 @@ module Functions
     end
 
     private
-
-    def using_bundler_2?
-      @using_bundler_2
-    end
-
-    def setup_bundler
-      ::Bundler.instance_variable_set(:@root, dir)
-
-      # TODO: DRY out this setup with Functions::LockfileUpdater
-      return unless credentials
-      credentials.each do |cred|
-        token = cred["token"] ||
-                "#{cred['username']}:#{cred['password']}"
-
-        ::Bundler.settings.set_command_option(
-          cred.fetch("host"),
-          token.gsub("@", "%40F").gsub("?", "%3F")
-        )
-      end
-
-      set_bundler_2_flags if using_bundler_2?
-    end
-
-    def set_bundler_2_flags
-      ::Bundler.settings.set_command_option("forget_cli_options", "true")
-      ::Bundler.settings.set_command_option("github.https", "true")
-    end
 
     # rubocop:disable Metrics/PerceivedComplexity
     def dependency_from_definition(unlock_subdependencies: true)

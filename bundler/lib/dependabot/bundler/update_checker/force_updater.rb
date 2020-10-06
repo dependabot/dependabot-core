@@ -12,6 +12,9 @@ module Dependabot
   module Bundler
     class UpdateChecker
       class ForceUpdater
+        require_relative "shared_bundler_helpers"
+        include SharedBundlerHelpers
+
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, target_version:,
                        requirements_update_strategy:,
@@ -39,16 +42,12 @@ module Dependabot
         end
 
         def force_update
-          base_directory = dependency_files.first.directory
-          SharedHelpers.in_a_temporary_repo_directory(base_directory,
-                                                      repo_contents_path) do
-            write_temporary_dependency_files
-
+          in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             updated_deps, specs = SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "force_update",
               args: {
-                dir: Dir.pwd,
+                dir: tmp_dir,
                 dependency_name: dependency.name,
                 target_version: target_version,
                 credentials: relevant_credentials,

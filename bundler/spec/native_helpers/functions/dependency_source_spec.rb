@@ -9,14 +9,7 @@ RSpec.describe Functions::DependencySource do
   let(:dependency_source) do
     described_class.new(
       gemfile_name: gemfile_name,
-      dependency_name: dependency_name,
-      dir: fixture_directory,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      dependency_name: dependency_name
     )
   end
 

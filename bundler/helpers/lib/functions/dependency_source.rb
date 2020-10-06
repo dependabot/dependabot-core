@@ -1,29 +1,24 @@
 module Functions
   class DependencySource
-    attr_reader :gemfile_name, :dependency_name, :dir, :credentials
+    attr_reader :gemfile_name, :dependency_name
 
     RUBYGEMS = "rubygems"
     PRIVATE_REGISTRY = "private"
     GIT = "git"
     OTHER = "other"
 
-    def initialize(gemfile_name:, dependency_name:, dir:, credentials:)
+    def initialize(gemfile_name:, dependency_name:)
       @gemfile_name = gemfile_name
       @dependency_name = dependency_name
-      @dir = dir
-      @credentials = credentials
     end
 
     def type
-      setup_bundler
       bundler_source = specified_source || default_source
       type_of(bundler_source)
     end
 
     def latest_git_version(dependency_source_url:, dependency_source_branch:)
-      setup_bundler
-
-      source = ::Bundler::Source::Git.new(
+      source = Bundler::Source::Git.new(
         "uri" => dependency_source_url,
         "branch" => dependency_source_branch,
         "name" => dependency_name,
@@ -38,8 +33,6 @@ module Functions
     end
 
     def private_registry_versions
-      setup_bundler
-
       bundler_source = specified_source || default_source
 
       bundler_source.
@@ -53,31 +46,16 @@ module Functions
 
     private
 
-    def setup_bundler
-      ::Bundler.instance_variable_set(:@root, dir)
-
-      # TODO: DRY out this setup with Functions::LockfileUpdater
-      credentials.each do |cred|
-        token = cred["token"] ||
-                "#{cred['username']}:#{cred['password']}"
-
-        ::Bundler.settings.set_command_option(
-          cred.fetch("host"),
-          token.gsub("@", "%40F").gsub("?", "%3F")
-        )
-      end
-    end
-
     def type_of(bundler_source)
       case bundler_source
-      when ::Bundler::Source::Rubygems
+      when Bundler::Source::Rubygems
         remote = bundler_source.remotes.first
         if remote.nil? || remote.to_s == "https://rubygems.org/"
           RUBYGEMS
         else
           PRIVATE_REGISTRY
         end
-      when ::Bundler::Source::Git
+      when Bundler::Source::Git
         GIT
       else
         OTHER
@@ -96,7 +74,7 @@ module Functions
     end
 
     def definition
-      @definition ||= ::Bundler::Definition.build(gemfile_name, nil, {})
+      @definition ||= Bundler::Definition.build(gemfile_name, nil, {})
     end
 
     def serialize_bundler_source(source)

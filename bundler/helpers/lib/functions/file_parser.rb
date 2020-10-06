@@ -1,21 +1,12 @@
 module Functions
   class FileParser
-    # TODO: Remove the need to sanitize BUNDLED WITH (requires multiple
-    # installed bundler versions)
-    #
-    # Note: Copied from FileUpdater::LockfileUpdater
-    LOCKFILE_ENDING =  /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
-
-    def initialize(dir:, lockfile_name:)
-      @dir = dir
+    def initialize(lockfile_name:)
       @lockfile_name = lockfile_name
     end
 
-    attr_reader :dir, :lockfile_name
+    attr_reader :lockfile_name
 
     def parsed_gemfile(gemfile_name:)
-      Bundler.instance_variable_set(:@root, Pathname.new(dir))
-
       Bundler::Definition.build(gemfile_name, nil, {}).
         dependencies.select(&:current_platform?).
         reject { |dep| dep.source.is_a?(Bundler::Source::Gemspec) }.
@@ -23,8 +14,6 @@ module Functions
     end
 
     def parsed_gemspec(gemspec_name:)
-      Bundler.instance_variable_set(:@root, Pathname.new(dir))
-
       Bundler.load_gemspec_uncached(gemspec_name).
         dependencies.
         map(&method(:serialize_bundler_dependency))
@@ -33,21 +22,20 @@ module Functions
     private
 
     def lockfile
-      Dir.chdir(dir) do
-        return unless lockfile_name && File.exist?(lockfile_name)
+      return @lockfile if defined?(@lockfile)
 
-        @lockfile ||= File.read(lockfile_name)
-      end
-    end
+      @lockfile =
+        begin
+          return unless lockfile_name && File.exist?(lockfile_name)
 
-    def sanitized_lockfile
-      lockfile.gsub(LOCKFILE_ENDING, "")
+          File.read(lockfile_name)
+        end
     end
 
     def parsed_lockfile
       return unless lockfile
 
-      @parsed_lockfile ||= ::Bundler::LockfileParser.new(sanitized_lockfile)
+      @parsed_lockfile ||= Bundler::LockfileParser.new(lockfile)
     end
 
     def source_from_lockfile(dependency_name)
@@ -66,10 +54,10 @@ module Functions
       return nil if default_rubygems?(source)
 
       details = { type: source.class.name.split("::").last.downcase }
-      if source.is_a?(::Bundler::Source::Git)
+      if source.is_a?(Bundler::Source::Git)
         details.merge!(git_source_details(source))
       end
-      if source.is_a?(::Bundler::Source::Rubygems)
+      if source.is_a?(Bundler::Source::Rubygems)
         details[:url] = source.remotes.first.to_s
       end
       details
@@ -85,7 +73,7 @@ module Functions
 
     def default_rubygems?(source)
       return true if source.nil?
-      return false unless source.is_a?(::Bundler::Source::Rubygems)
+      return false unless source.is_a?(Bundler::Source::Rubygems)
 
       source.remotes.any? { |r| r.to_s.include?("rubygems.org") }
     end
@@ -105,11 +93,11 @@ module Functions
     def sources
       [
         NilClass,
-        ::Bundler::Source::Rubygems,
-        ::Bundler::Source::Git,
-        ::Bundler::Source::Path,
-        ::Bundler::Source::Gemspec,
-        ::Bundler::Source::Metadata
+        Bundler::Source::Rubygems,
+        Bundler::Source::Git,
+        Bundler::Source::Path,
+        Bundler::Source::Gemspec,
+        Bundler::Source::Metadata
       ]
     end
   end

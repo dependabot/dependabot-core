@@ -7,6 +7,7 @@ require "dependabot/monkey_patches/bundler/git_source_patch"
 require "excon"
 
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -47,45 +48,15 @@ module Dependabot
         # Bundler context setup #
         #########################
 
-        def in_a_temporary_bundler_context(error_handling: true)
+        def in_a_native_bundler_context(error_handling: true)
           SharedHelpers.
             in_a_temporary_repo_directory(base_directory,
                                           repo_contents_path) do |tmp_dir|
             write_temporary_dependency_files
 
-            SharedHelpers.in_a_forked_process do
-              # Set the path for path gemspec correctly
-              ::Bundler.instance_variable_set(:@root, tmp_dir)
-
-              # Remove installed gems from the default Rubygems index
-              ::Gem::Specification.all =
-                ::Gem::Specification.send(:default_stubs, "*.gemspec")
-
-              # Set flags and credentials
-              set_bundler_flags_and_credentials
-
-              yield
-            end
+            yield(tmp_dir)
           end
-        rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
-          retry_count ||= 0
-          retry_count += 1
-          if retryable_error?(e) && retry_count <= 2
-            sleep(rand(1.0..5.0)) && retry
-          end
-
-          error_handling ? handle_bundler_errors(e) : raise
-        end
-
-        def in_a_native_bundler_context(error_handling: true)
-          SharedHelpers.
-            in_a_temporary_repo_directory(base_directory,
-                                          repo_contents_path) do |_tmp_dir|
-            write_temporary_dependency_files
-
-            yield
-          end
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0
           retry_count += 1
           if retryable_error?(e) && retry_count <= 2
@@ -100,9 +71,7 @@ module Dependabot
         end
 
         def retryable_error?(error)
-          # TODO: Figure out equivalent signal for native call
-          # return true if error.message == "marshal data too short"
-          return false if error.is_a?(ArgumentError)
+          return true if error.error_class == "JSON::ParserError"
           return true if RETRYABLE_ERRORS.include?(error.error_class)
 
           unless RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class)
@@ -121,7 +90,6 @@ module Dependabot
             msg = "Error evaluating your dependency files: #{error.message}"
             raise Dependabot::DependencyFileNotEvaluatable, msg
           end
-          raise if error.is_a?(ArgumentError)
 
           msg = error.error_class + " with message: " + error.message
 
@@ -152,7 +120,9 @@ module Dependabot
               raise GitDependencyReferenceNotFound, gem_name
             end
 
-            bad_uris = inaccessible_git_dependencies.map { |s| s.source.uri }
+            bad_uris = inaccessible_git_dependencies.map do |spec|
+              spec.fetch("uri")
+            end
             raise unless bad_uris.any?
 
             # We don't have access to one of repos required
@@ -200,39 +170,41 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
 
         def inaccessible_git_dependencies
-          in_a_temporary_bundler_context(error_handling: false) do
-            ::Bundler::Definition.build(gemfile.name, nil, {}).dependencies.
-              reject do |spec|
-                next true unless spec.source.is_a?(::Bundler::Source::Git)
-
-                # Piggy-back off some private Bundler methods to configure the
-                # URI with auth details in the same way Bundler does.
-                git_proxy = spec.source.send(:git_proxy)
-                uri = spec.source.uri.gsub("git://", "https://")
-                uri = git_proxy.send(:configured_uri_for, uri)
-                uri += ".git" unless uri.end_with?(".git")
-                uri += "/info/refs?service=git-upload-pack"
-
-                begin
-                  Excon.get(
-                    uri,
-                    idempotent: true,
-                    **SharedHelpers.excon_defaults
-                  ).status == 200
-                rescue Excon::Error::Socket, Excon::Error::Timeout
-                  false
-                end
-              end
+          in_a_native_bundler_context(error_handling: false) do |tmp_dir|
+            git_specs = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "git_specs",
+              args: {
+                dir: tmp_dir,
+                gemfile_name: gemfile.name,
+                credentials: relevant_credentials,
+                using_bundler_2: using_bundler_2?
+              }
+            )
+            git_specs.reject do |spec|
+              Excon.get(
+                spec.fetch("auth_uri"),
+                idempotent: true,
+                **SharedHelpers.excon_defaults
+              ).status == 200
+            rescue Excon::Error::Socket, Excon::Error::Timeout
+              false
+            end
           end
         end
 
         def jfrog_source
-          in_a_temporary_bundler_context(error_handling: false) do
-            ::Bundler::Definition.build(gemfile.name, nil, {}).
-              send(:sources).
-              rubygems_remotes.
-              find { |uri| uri.host.include?("jfrog") }&.
-              host
+          in_a_native_bundler_context(error_handling: false) do |dir|
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "jfrog_source",
+              args: {
+                dir: dir,
+                gemfile_name: gemfile.name,
+                credentials: relevant_credentials,
+                using_bundler_2: using_bundler_2?
+              }
+            )
           end
         end
 
@@ -244,27 +216,6 @@ module Dependabot
           end
 
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
-        end
-
-        def set_bundler_flags_and_credentials
-          # Set auth details
-          relevant_credentials.each do |cred|
-            token = cred["token"] ||
-                    "#{cred['username']}:#{cred['password']}"
-
-            ::Bundler.settings.set_command_option(
-              cred.fetch("host"),
-              token.gsub("@", "%40F").gsub("?", "%3F")
-            )
-          end
-
-          # Use HTTPS for GitHub if lockfile was generated by Bundler 2
-          set_bundler_2_flags if using_bundler_2?
-        end
-
-        def set_bundler_2_flags
-          ::Bundler.settings.set_command_option("forget_cli_options", "true")
-          ::Bundler.settings.set_command_option("github.https", "true")
         end
 
         def relevant_credentials
