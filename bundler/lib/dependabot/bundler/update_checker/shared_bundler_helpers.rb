@@ -77,8 +77,7 @@ module Dependabot
           error_handling ? handle_bundler_errors(e) : raise
         end
 
-        # TODO: Use/remove argument
-        def in_a_native_bundler_context(_error_handling: true)
+        def in_a_native_bundler_context(error_handling: true)
           SharedHelpers.
             in_a_temporary_repo_directory(base_directory,
                                           repo_contents_path) do |_tmp_dir|
@@ -86,6 +85,14 @@ module Dependabot
 
             yield
           end
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          retry_count ||= 0
+          retry_count += 1
+          if retryable_error?(e) && retry_count <= 2
+            sleep(rand(1.0..5.0)) && retry
+          end
+
+          error_handling ? handle_bundler_errors(e) : raise
         end
 
         def base_directory
@@ -93,7 +100,8 @@ module Dependabot
         end
 
         def retryable_error?(error)
-          return true if error.message == "marshal data too short"
+          # TODO: Figure out equivalent signal for native call
+          # return true if error.message == "marshal data too short"
           return false if error.is_a?(ArgumentError)
           return true if RETRYABLE_ERRORS.include?(error.error_class)
 
@@ -109,13 +117,13 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
         def handle_bundler_errors(error)
-          if error.message == "marshal data too short"
+          if error.error_class == "JSON::ParserError"
             msg = "Error evaluating your dependency files: #{error.message}"
             raise Dependabot::DependencyFileNotEvaluatable, msg
           end
           raise if error.is_a?(ArgumentError)
 
-          msg = error.error_class + " with message: " + error.error_message
+          msg = error.error_class + " with message: " + error.message
 
           case error.error_class
           when "Bundler::Dsl::DSLError", "Bundler::GemspecError"
@@ -123,22 +131,22 @@ module Dependabot
             raise Dependabot::DependencyFileNotEvaluatable, msg
           when "Bundler::Source::Git::MissingGitRevisionError"
             gem_name =
-              error.error_message.match(GIT_REF_REGEX).
+              error.message.match(GIT_REF_REGEX).
               named_captures["path"].
               split("/").last
             raise GitDependencyReferenceNotFound, gem_name
           when "Bundler::PathError"
             gem_name =
-              error.error_message.match(PATH_REGEX).
+              error.message.match(PATH_REGEX).
               named_captures["path"].
               split("/").last.split("-")[0..-2].join
             raise Dependabot::PathDependenciesNotReachable, [gem_name]
           when "Bundler::Source::Git::GitCommandError"
-            if error.error_message.match?(GIT_REGEX)
+            if error.message.match?(GIT_REGEX)
               # We couldn't find the specified branch / commit (or the two
               # weren't compatible).
               gem_name =
-                error.error_message.match(GIT_REGEX).
+                error.message.match(GIT_REGEX).
                 named_captures["path"].
                 split("/").last.split("-")[0..-2].join
               raise GitDependencyReferenceNotFound, gem_name
@@ -158,20 +166,20 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           when "Bundler::Fetcher::AuthenticationRequiredError"
             regex = BundlerErrorPatterns::MISSING_AUTH_REGEX
-            source = error.error_message.match(regex)[:source]
+            source = error.message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::BadAuthenticationError"
             regex = BundlerErrorPatterns::BAD_AUTH_REGEX
-            source = error.error_message.match(regex)[:source]
+            source = error.message.match(regex)[:source]
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           when "Bundler::Fetcher::CertificateFailureError"
             regex = BundlerErrorPatterns::BAD_CERT_REGEX
-            source = error.error_message.match(regex)[:source]
+            source = error.message.match(regex)[:source]
             raise Dependabot::PrivateSourceCertificateFailure, source
           when "Bundler::HTTPError"
             regex = BundlerErrorPatterns::HTTP_ERR_REGEX
-            if error.error_message.match?(regex)
-              source = error.error_message.match(regex)[:source]
+            if error.message.match?(regex)
+              source = error.message.match(regex)[:source]
               raise if source.end_with?("rubygems.org/")
 
               raise Dependabot::PrivateSourceTimedOut, source
@@ -179,7 +187,7 @@ module Dependabot
 
             # JFrog can serve a 403 if the credentials provided are good but
             # don't have access to a particular gem.
-            raise unless error.error_message.include?("permitted to deploy")
+            raise unless error.message.include?("permitted to deploy")
             raise unless jfrog_source
 
             raise Dependabot::PrivateSourceAuthenticationFailure, jfrog_source
