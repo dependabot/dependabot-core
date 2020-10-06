@@ -1068,5 +1068,18 @@ RSpec.describe Dependabot::Python::FileFetcher do
         end
       end
     end
+
+    context "with a very large requirements.txt file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_large_requirements_txt.json")
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("requirements.txt")
+          end
+      end
+    end
   end
 end
