@@ -91,7 +91,8 @@ RUN npm install elm@0.18.0 \
   && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz
+  && rm -f binaries-for-linux.tar.gz \
+  && rm -rf ~/.npm
 
 
 ### PHP
@@ -140,7 +141,8 @@ RUN curl -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.t
   && tar -xzf go.tar.gz -C /opt \
   && mkdir /opt/go/gopath \
   && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep
+  && chmod +x /opt/go/bin/dep \
+  && rm go.tar.gz
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
@@ -158,7 +160,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip \
+  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
   && mix local.hex --force
 
 
