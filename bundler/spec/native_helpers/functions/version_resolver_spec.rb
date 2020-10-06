@@ -1,35 +1,20 @@
 # frozen_string_literal: true
 
-require "spec_helper"
+require "native_spec_helper"
 require "shared_contexts"
 
 require "dependabot/dependency"
-require_relative "../../../helpers/lib/functions/version_resolver"
 
 RSpec.describe Functions::VersionResolver do
-  let(:gemfile_fixture) do
-    fixture("ruby", "gemfiles", gemfile_fixture_name)
-  end
-  let(:lockfile_fixture) do
-    fixture("ruby", "lockfiles", lockfile_fixture_name)
-  end
-
-  let(:tmp_path) do
-    dir = Dir.mktmpdir("native_helper_spec_", "tmp")
-    Pathname.new(dir).expand_path
-  end
-
-  before do
-    File.write(File.join(tmp_path, "Gemfile"), gemfile_fixture)
-    File.write(File.join(tmp_path, "Gemfile.lock"), lockfile_fixture)
-  end
+  include_context "in a temporary bundler directory"
+  include_context "stub rubygems compact index"
 
   let(:version_resolver) do
     described_class.new(
       dependency_name: dependency_name,
       dependency_requirements: dependency_requirements,
-      gemfile_name: "Gemfile",
-      lockfile_name: "Gemfile.lock"
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name
     )
   end
 
@@ -46,13 +31,9 @@ RSpec.describe Functions::VersionResolver do
 
   let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
 
-  include_context "stub rubygems compact index"
-
   describe "#version_details" do
     subject do
-      Dir.chdir(tmp_path) do
-        version_resolver.version_details
-      end
+      in_tmp_folder { version_resolver.version_details }
     end
 
     context "with a private gemserver source" do
