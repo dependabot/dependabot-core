@@ -66,10 +66,10 @@ RUN apt-get install -y software-properties-common \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
-  && pyenv install 3.8.5 \
+  && cd /usr/local/.pyenv && git checkout dd62b0d155878cd5dbb90b1a38c4a7e1993cf4ef && cd - \
+  && pyenv install 3.8.6 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.8.5
+  && pyenv global 3.8.6
 
 ### JAVASCRIPT
 
@@ -89,7 +89,8 @@ RUN npm install elm@0.18.0 \
   && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz
+  && rm -f binaries-for-linux.tar.gz \
+  && rm -rf ~/.npm
 
 
 ### PHP
@@ -130,10 +131,15 @@ RUN add-apt-repository ppa:ondrej/php \
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -xz -C /opt \
+ARG GOLANG_VERSION=1.15.2
+ARG GOLANG_CHECKSUM=b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552
+RUN curl -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
+  && tar -xzf go.tar.gz -C /opt \
+  && mkdir /opt/go/gopath \
   && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
   && chmod +x /opt/go/bin/dep \
-  && mkdir /opt/go/gopath
+  && rm go.tar.gz
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
@@ -151,7 +157,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip \
+  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
   && mix local.hex --force
 
 

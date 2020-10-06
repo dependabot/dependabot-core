@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       with(headers: { "Accept" => "text/html" }).
       to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
+  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(
@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
     context "when the pypi link resolves to a redirect" do
-      let(:redirect_url) { "https://pypi.python.org/LuiGi/json" }
+      let(:redirect_url) { "https://pypi.org/LuiGi/json" }
 
       before do
         stub_request(:get, pypi_url).
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_django.html")
       end
-      let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+      let(:pypi_url) { "https://pypi.org/simple/django/" }
       let(:dependency_name) { "django" }
       let(:dependency_version) { "1.2.4" }
 
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
     context "when the dependency name isn't normalised" do
       let(:dependency_name) { "Luigi_ext" }
-      let(:pypi_url) { "https://pypi.python.org/simple/luigi-ext/" }
+      let(:pypi_url) { "https://pypi.org/simple/luigi-ext/" }
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_underscore.html")
       end
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
         context "that is unparseable" do
           let(:pipfile_fixture_name) { "unparseable" }
-          let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
+          let(:pypi_url) { "https://pypi.org/simple/luigi/" }
           it { is_expected.to eq(Gem::Version.new("2.6.0")) }
         end
 
@@ -502,7 +502,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_django.html")
         end
-        let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+        let(:pypi_url) { "https://pypi.org/simple/django/" }
         let(:dependency_name) { "django" }
         let(:dependency_version) { "1.2.4" }
 
@@ -604,7 +604,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_django.html")
       end
-      let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+      let(:pypi_url) { "https://pypi.org/simple/django/" }
       let(:dependency_name) { "django" }
       let(:dependency_version) { "1.2.4" }
 
