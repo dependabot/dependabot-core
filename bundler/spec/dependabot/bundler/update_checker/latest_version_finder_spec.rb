@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         Dependabot::SharedHelpers::HelperSubprocessFailed.new(
           message: error_message,
           error_context: {},
-          error_class: ""
+          error_class: error_class,
         )
       end
 
@@ -290,6 +290,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             Please supply credentials for this source. You can do this by running:
               bundle config repo.fury.io username:password
           ERR
+        end
+
+        let(:error_class) do
+          "Bundler::Fetcher::AuthenticationRequiredError"
         end
 
         before do
@@ -321,6 +325,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           ERR
         end
 
+        let(:error_class) do
+          "Bundler::Fetcher::BadAuthenticationError"
+        end
+
         before do
           allow(Dependabot::SharedHelpers).
             to receive(:run_helper_subprocess).
@@ -348,6 +356,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           <<~ERR
             Could not fetch specs from https://repo.fury.io/greysteil/
           ERR
+        end
+
+        let(:error_class) do
+          "Bundler::HTTPError"
         end
 
         before do

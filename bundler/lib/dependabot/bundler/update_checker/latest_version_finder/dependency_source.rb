@@ -67,12 +67,6 @@ module Dependabot
                 )
               end
             end.transform_keys(&:to_sym)
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            if e.message =~ GIT_REF_REGEX
-              raise GitDependencyReferenceNotFound, dependency.name
-            end
-
-            raise
           end
 
           def git?
