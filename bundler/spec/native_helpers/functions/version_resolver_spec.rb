@@ -10,35 +10,31 @@ RSpec.describe Functions::VersionResolver do
   let(:version_resolver) do
     described_class.new(
       dependency_name: dependency_name,
-      dependency_requirements: [],
+      dependency_requirements: dependency_requirements,
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name
     )
   end
 
-  let(:fixture_directory) do
+  let(:gemfile_fixture_directory) do
     File.join(
       File.dirname(__FILE__), "..", "..", "fixtures", "ruby", "gemfiles"
     )
   end
   let(:gemfile_name) do
-    File.join(fixture_directory, gemfile_fixture_name)
+    File.join(gemfile_fixture_directory, gemfile_fixture_name)
   end
-  let(:lockfile_name) do
-    File.join(fixture_directory, lockfile_fixture_name)
-  end
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: current_version,
-      requirements: requirements,
-      package_manager: "bundler"
+  let(:lockfile_fixture_directory) do
+    File.join(
+      File.dirname(__FILE__), "..", "..", "fixtures", "ruby", "lockfiles"
     )
   end
+  let(:lockfile_name) do
+    File.join(lockfile_fixture_directory, lockfile_fixture_name)
+  end
+
   let(:dependency_name) { "business" }
-  let(:current_version) { "1.3" }
-  let(:requirements) do
+  let(:dependency_requirements) do
     [{
       file: "Gemfile",
       requirement: requirement_string,
@@ -47,6 +43,7 @@ RSpec.describe Functions::VersionResolver do
     }]
   end
   let(:source) { nil }
+
   let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
 
   include_context "stub rubygems compact index"
@@ -92,7 +89,7 @@ RSpec.describe Functions::VersionResolver do
 
     # The latest version of public_suffix is 2.0.5, but requires Ruby 2.0.0
     # or greater.
-    xit([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
+    its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
 
     context "when Bundler's compact index is down" do
       before do
@@ -117,7 +114,7 @@ RSpec.describe Functions::VersionResolver do
         fixture("ruby", "rubygems_responses", "versions-public_suffix.json")
       end
 
-      xit { is_expected.to be_nil }
+      it { is_expected.to be_nil }
 
       context "and the dependency doesn't have a required Ruby version" do
         let(:rubygems_versions) do
@@ -128,7 +125,7 @@ RSpec.describe Functions::VersionResolver do
           ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')
         end
 
-        xit([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
       end
     end
   end
