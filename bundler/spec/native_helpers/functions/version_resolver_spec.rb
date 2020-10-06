@@ -12,7 +12,7 @@ RSpec.describe Functions::VersionResolver do
       dependency_name: dependency_name,
       dependency_requirements: [],
       gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name,
+      lockfile_name: lockfile_name
     )
   end
 
