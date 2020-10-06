@@ -111,21 +111,6 @@ module Dependabot
                   Gem::Version.new(version_string)
                 end
               end
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            if e.message.match(BundlerErrorPatterns::MISSING_AUTH_REGEX)
-              source = Regexp.last_match(:source)
-              raise Dependabot::PrivateSourceAuthenticationFailure, source
-            elsif e.message.match(BundlerErrorPatterns::BAD_AUTH_REGEX)
-              source = Regexp.last_match(:source)
-              raise Dependabot::PrivateSourceAuthenticationFailure, source
-            elsif e.message.match(BundlerErrorPatterns::HTTP_ERR_REGEX)
-              source = Regexp.last_match(:source)
-              raise Dependabot::PrivateSourceTimedOut, source
-            end
-
-            # TODO: Add testing and further exception case handling
-
-            raise
           end
 
           def source_type
