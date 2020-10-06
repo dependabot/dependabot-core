@@ -243,7 +243,9 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to include("Package croniter (0.3.26) not found")
+                to include("Because pythonprojects depends on croniter "\
+                "(0.3.26) which doesn't match any versions, version solving "\
+                "failed.")
             end
         end
       end
