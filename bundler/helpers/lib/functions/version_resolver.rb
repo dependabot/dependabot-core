@@ -1,6 +1,10 @@
 module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
+    USER_AGENT = "dependabot-core/bundler-helper "\
+                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
+                 "(#{RUBY_PLATFORM}) "\
+                "(+https://github.com/dependabot/dependabot-core)"
 
     attr_reader :dependency_name, :dependency_requirements,
                 :gemfile_name, :lockfile_name
@@ -16,8 +20,6 @@ module Functions
     def version_details
       dep = dependency_from_definition
 
-      # TODO: Rewrite this
-      #
       # If the dependency wasn't found in the definition, but *is*
       # included in a gemspec, it's because the Gemfile didn't import
       # the gemspec. This is unusual, but the correct behaviour if/when
@@ -138,7 +140,7 @@ module Functions
       versions = Excon.get(
         "#{fetcher.fetch_uri}api/v1/versions/#{dependency_name}.json",
         idempotent: true,
-        **SharedHelpers.excon_defaults
+        **excon_defaults
       )
 
       # Give the benefit of the doubt if something goes wrong fetching
@@ -167,6 +169,32 @@ module Functions
       return nil unless gemfile_name
 
       @ruby_version ||= build_definition([]).ruby_version&.gem_version
+    end
+
+    def excon_middleware
+      Excon.defaults[:middlewares] +
+        [Excon::Middleware::Decompress] +
+        [Excon::Middleware::RedirectFollower]
+    end
+
+    def excon_headers(headers = nil)
+      headers ||= {}
+      {
+        "User-Agent" => USER_AGENT
+      }.merge(headers)
+    end
+
+    def excon_defaults(options = nil)
+      options ||= {}
+      headers = options.delete(:headers)
+      {
+        connect_timeout: 5,
+        write_timeout: 5,
+        read_timeout: 20,
+        omit_default_port: true,
+        middlewares: excon_middleware,
+        headers: excon_headers(headers)
+      }.merge(options)
     end
   end
 end
