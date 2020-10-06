@@ -102,6 +102,7 @@ module Dependabot
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
           return if error_due_to_restrictive_upper_bound?(e)
           return if circular_dependency_at_new_version?(e)
+
           handle_bundler_errors(e) unless ruby_lock_error?(e)
 
           @gemspec_ruby_unlocked = true
@@ -110,7 +111,9 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def circular_dependency_at_new_version?(error)
-          return false unless error.error_class.include?("CyclicDependencyError")
+          unless error.error_class.include?("CyclicDependencyError")
+            return false
+          end
 
           error.message.include?("'#{dependency.name}'")
         end
