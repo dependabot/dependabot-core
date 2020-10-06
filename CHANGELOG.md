@@ -1,3 +1,7 @@
+## v0.121.0, 6 October 2020
+
+- Add experimental support for `go mod tidy`
+
 ## v0.120.5, 6 October 2020
 
 - Allow requirements.txt files of up to 200kb

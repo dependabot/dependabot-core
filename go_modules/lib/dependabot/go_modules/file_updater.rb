@@ -9,6 +9,25 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/go_mod_updater"
 
+      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
+                     credentials:, options: {})
+        super
+        return unless repo_contents_path.nil?
+
+        # masquerade repo_contents_path for GoModUpdater during transition
+        tmp = Dir.mktmpdir
+        Dir.chdir(tmp) do
+          dependency_files.each do |file|
+            File.write(file.name, file.content)
+          end
+          `git init .`
+          `git add .`
+          `git commit -m'fake repo_contents_path'`
+        end
+        @repo_contents_path = tmp
+        @repo_contents_stub = true
+      end
+
       def self.updated_files_regex
         [
           /^go\.mod$/,
@@ -56,13 +75,18 @@ module Dependabot
         @go_sum ||= get_original_file("go.sum")
       end
 
+      def directory
+        dependency_files.first.directory
+      end
+
       def file_updater
         @file_updater ||=
           GoModUpdater.new(
             dependencies: dependencies,
-            go_mod: go_mod,
-            go_sum: go_sum,
-            credentials: credentials
+            credentials: credentials,
+            repo_contents_path: repo_contents_path,
+            directory: directory,
+            tidy: !@repo_contents_stub && options.fetch(:go_mod_tidy, false)
           )
       end
     end
