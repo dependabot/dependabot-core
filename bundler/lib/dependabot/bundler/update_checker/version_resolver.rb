@@ -71,6 +71,9 @@ module Dependabot
           return latest_version_details unless gemfile
 
           SharedHelpers.with_git_configured(credentials: credentials) do
+            # We do not want the helper to handle errors for us as there are
+            # some errors we want to handle specifically ourselves, including
+            # potentially retrying in the case of the Ruby version being locked
             in_a_native_bundler_context(error_handling: false) do |tmp_dir|
               details =  SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
@@ -99,6 +102,8 @@ module Dependabot
           return if error_due_to_restrictive_upper_bound?(e)
           return if circular_dependency_at_new_version?(e)
 
+          # If we are unable to handle the error ourselves, pass it on to the
+          # general bundler error handling.
           handle_bundler_errors(e) unless ruby_lock_error?(e)
 
           @gemspec_ruby_unlocked = true
