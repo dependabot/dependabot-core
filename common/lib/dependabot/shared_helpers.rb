@@ -136,6 +136,7 @@ module Dependabot
       }.merge(headers)
     end
 
+    # Duplicated in bundler/helpers/lib/shared_native_helpers.rb
     def self.excon_defaults(options = nil)
       options ||= {}
       headers = options.delete(:headers)

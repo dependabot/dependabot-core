@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
-$LOAD_PATH.unshift(File.expand_path("../../helpers/lib", __FILE__))
-$LOAD_PATH.unshift(File.expand_path("../../helpers/monkey_patches", __FILE__))
+$LOAD_PATH.unshift(File.expand_path("../helpers/lib", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../helpers/monkey_patches", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
@@ -32,9 +34,7 @@ RSpec.shared_context "in a temporary bundler directory" do
     File.write(File.join(tmp_path, lockfile_name), lockfile_fixture)
   end
 
-  def in_tmp_folder
-    Dir.chdir(tmp_path) do
-      yield
-    end
+  def in_tmp_folder(&block)
+    Dir.chdir(tmp_path, &block)
   end
 end

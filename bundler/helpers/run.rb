@@ -1,8 +1,8 @@
 require "bundler"
 require "json"
 
-$LOAD_PATH.unshift(File.expand_path("../lib", __FILE__))
-$LOAD_PATH.unshift(File.expand_path("../monkey_patches", __FILE__))
+$LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
+$LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
