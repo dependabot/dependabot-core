@@ -30,13 +30,23 @@ RSpec.describe Functions::VersionResolver do
   let(:source) { nil }
 
   let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
+  let(:old_index_url) { rubygems_url + "dependencies" }
 
   describe "#version_details" do
     subject do
       in_tmp_folder { version_resolver.version_details }
     end
 
+    let(:gemfile_fixture_name) { "gemfile" }
+    let(:lockfile_fixture_name) { "gemfile.lock" }
+    let(:requirement_string) { " >= 0" }
+
+    its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+    its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::CompactIndex") }
+
     context "with a private gemserver source" do
+      include_context "stub rubygems compact index"
+
       let(:gemfile_fixture_name) { "specified_source" }
       let(:lockfile_fixture_name) { "specified_source.lock" }
       let(:requirement_string) { ">= 0" }
@@ -58,6 +68,27 @@ RSpec.describe Functions::VersionResolver do
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
+      its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
+    end
+
+    context "when Bundler's compact index is down" do
+      before do
+        stub_request(:get, "https://index.rubygems.org/versions").
+          to_return(status: 500, body: "We'll be back soon")
+        stub_request(:get, "https://index.rubygems.org/info/public_suffix").
+          to_return(status: 500, body: "We'll be back soon")
+        stub_request(:get, old_index_url).to_return(status: 200)
+        stub_request(:get, old_index_url + "?gems=business,statesman").
+          to_return(
+            status: 200,
+            body: fixture("ruby",
+                          "rubygems_responses",
+                          "dependencies-default-gemfile")
+          )
+      end
+
+      its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+      its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
     end
   end
 end

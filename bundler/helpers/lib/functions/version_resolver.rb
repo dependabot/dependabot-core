@@ -35,12 +35,11 @@ module Functions
       # running on, rather than the true latest resolvable version).
       return nil if dep.name == "bundler"
 
-      # If the old Gemfile index was used then it won't have checked
-      # Ruby compatibility. Fix that by doing the check manually (and
-      # saying no update is possible if the Ruby version is a mismatch)
-      return nil if ruby_version_incompatible?(dep)
-
-      details = { version: dep.version }
+      details = {
+        version: dep.version,
+        ruby_version: ruby_version,
+        fetcher: fetcher_class(dep)
+      }
       if dep.source.instance_of?(::Bundler::Source::Git)
         details[:commit_sha] = dep.source.revision
       end
@@ -128,43 +127,8 @@ module Functions
         end
     end
 
-    def ruby_version_incompatible?(dep)
-      return false unless dep.source.is_a?(::Bundler::Source::Rubygems)
-
-      fetcher = dep.source.fetchers.first.fetchers.first
-
-      # It's only the old index we have a problem with
-      return false unless fetcher.is_a?(::Bundler::Fetcher::Dependency)
-
-      # If no Ruby version is specified, we don't have a problem
-      return false unless ruby_version
-
-      versions = Excon.get(
-        "#{fetcher.fetch_uri}api/v1/versions/#{dependency_name}.json",
-        idempotent: true,
-        **SharedNativeHelpers.excon_defaults
-      )
-
-      # Give the benefit of the doubt if something goes wrong fetching
-      # version details (could be that it's a private index, etc.)
-      return false unless versions.status == 200
-
-      ruby_requirement =
-        JSON.parse(versions.body).
-        find { |details| details["number"] == dep.version.to_s }&.
-        fetch("ruby_version", nil)
-
-      # Give the benefit of the doubt if we can't find the version's
-      # required Ruby version.
-      return false unless ruby_requirement
-
-      ruby_requirement = Gem::Requirement.new(ruby_requirement)
-
-      !ruby_requirement.satisfied_by?(ruby_version)
-    rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
-      # Give the benefit of the doubt if something goes wrong fetching
-      # version details (could be that it's a private index, etc.)
-      false
+    def fetcher_class(dep)
+      dep.source.fetchers.first.fetchers.first.class.to_s
     end
 
     def ruby_version

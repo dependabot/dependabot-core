@@ -93,6 +93,13 @@ module Dependabot
 
               if details
                 details.transform_keys!(&:to_sym)
+
+                # If the old Gemfile index was used then it won't have checked
+                # Ruby compatibility. Fix that by doing the check manually and
+                # saying no update is possible if the Ruby version is a
+                # mismatch
+                return nil if ruby_version_incompatible?(details)
+
                 details[:version] = Gem::Version.new(details[:version])
               end
               details
@@ -160,6 +167,46 @@ module Dependabot
               raise_on_ignored: @raise_on_ignored,
               security_advisories: []
             ).latest_version_details
+        end
+
+        def ruby_version_incompatible?(details)
+          # It's only the old index we have a problem with
+          unless details[:fetcher] == "Bundler::Fetcher::Dependency"
+            return false
+          end
+
+          # If no Ruby version is specified, we don't have a problem
+          return false unless details[:ruby_version]
+
+          versions = Excon.get(
+            "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
+          # Give the benefit of the doubt if something goes wrong fetching
+          # version details (could be that it's a private index, etc.)
+          return false unless versions.status == 200
+
+          puts JSON.parse(versions.body)
+
+          ruby_requirement =
+            JSON.parse(versions.body).
+            find { |version| version["number"] == details[:version] }&.
+            fetch("ruby_version", nil)
+
+          # Give the benefit of the doubt if we can't find the version's
+          # required Ruby version.
+          return false unless ruby_requirement
+
+          ruby_requirement = Gem::Requirement.new(ruby_requirement)
+          current_ruby_version = Gem::Version.new(details[:ruby_version])
+
+          !ruby_requirement.satisfied_by?(current_ruby_version)
+        rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
+          # Give the benefit of the doubt if something goes wrong fetching
+          # version details (could be that it's a private index, etc.)
+          false
         end
 
         def gemfile
