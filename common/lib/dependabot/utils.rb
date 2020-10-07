@@ -29,5 +29,15 @@ module Dependabot
     def self.register_requirement_class(package_manager, requirement_class)
       @requirement_classes[package_manager] = requirement_class
     end
+
+    @cloning_package_managers = Set[]
+
+    def self.always_clone_for_package_manager?(package_manager)
+      @cloning_package_managers.include?(package_manager)
+    end
+
+    def self.register_always_clone(package_manager)
+      @cloning_package_managers << package_manager
+    end
   end
 end
