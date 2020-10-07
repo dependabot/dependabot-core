@@ -32,7 +32,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:options) { { vendor: vendor } }
+  let(:options) { { go_mod_vendor: vendor } }
 
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "options" do
-      let(:options) { { go_mod_tidy: true, vendor: vendor } }
+      let(:options) { { go_mod_tidy: true, go_mod_vendor: vendor } }
       let(:dummy_updater) do
         instance_double(
           Dependabot::GoModules::FileUpdater::GoModUpdater,
@@ -226,7 +226,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           file.name == "vendor/modules.txt"
         end
 
-        expect(modules_file.content).to_not include "github.com/pkg/errors v0.8.0"
+        expect(modules_file.content).
+          to_not include "github.com/pkg/errors v0.8.0"
         expect(modules_file.content).to include "github.com/pkg/errors v0.9.1"
       end
 
