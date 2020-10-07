@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "spec_helper"
+require "native_spec_helper"
 require "shared_contexts"
 
-require_relative "../../../helpers/lib/functions/dependency_source"
-
 RSpec.describe Functions::DependencySource do
+  include_context "in a temporary bundler directory"
+
   let(:dependency_source) do
     described_class.new(
       gemfile_name: gemfile_name,
@@ -13,14 +13,6 @@ RSpec.describe Functions::DependencySource do
     )
   end
 
-  let(:fixture_directory) do
-    File.join(
-      File.dirname(__FILE__), "..", "..", "fixtures", "ruby", "gemfiles"
-    )
-  end
-  let(:gemfile_name) do
-    File.join(fixture_directory, gemfile_fixture_name)
-  end
   let(:dependency_name) { "business" }
 
   let(:gemfile_fixture_name) { "specified_source" }
@@ -43,7 +35,7 @@ RSpec.describe Functions::DependencySource do
 
   describe "#private_registry_versions" do
     subject(:private_registry_versions) do
-      dependency_source.private_registry_versions
+      in_tmp_folder { dependency_source.private_registry_versions }
     end
 
     it "returns all versions from the private source" do
