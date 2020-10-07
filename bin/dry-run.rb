@@ -389,11 +389,18 @@ def peer_dependencies_can_update?(checker, reqs_to_unlock)
 end
 
 def file_updater_for(dependencies)
+  unless ENV["UPDATER_OPTIONS"].to_s.strip.empty?
+    options = ENV["UPDATER_OPTIONS"].split(",").
+                  map {|o| [o.downcase.to_sym, true] }
+    options = Hash[options]
+  end
+
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
-    credentials: $options[:credentials]
+    credentials: $options[:credentials],
+    options: options,
   )
 end
 
