@@ -114,7 +114,7 @@ module Dependabot
 
       def vendor?
         File.exist?(File.join(vendor_dir, "modules.txt")) &&
-          options.fetch(:vendor, false)
+          options.fetch(:go_mod_vendor, false)
       end
     end
   end

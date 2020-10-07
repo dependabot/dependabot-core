@@ -193,7 +193,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         }]
       end
 
-      it "updates the version" do
+      it "updates the go.mod" do
         expect(go_mod_body).to include("github.com/pkg/errors v0.8.0")
 
         updater.updated_dependency_files
@@ -226,6 +226,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           file.name == "vendor/modules.txt"
         end
 
+        expect(modules_file.content).to_not include "github.com/pkg/errors v0.8.0"
         expect(modules_file.content).to include "github.com/pkg/errors v0.9.1"
       end
 
