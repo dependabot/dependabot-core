@@ -128,6 +128,8 @@ module Functions
     end
 
     def fetcher_class(dep)
+      return unless dep.source.is_a?(::Bundler::Source::Rubygems)
+
       dep.source.fetchers.first.fetchers.first.class.to_s
     end
 
