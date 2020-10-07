@@ -26,6 +26,7 @@ RSpec.shared_context "in a temporary bundler directory" do
     nil
   end
 
+  # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
   let(:lockfile_fixture) do
     fixture("ruby", "lockfiles", lockfile_fixture_name).
       gsub(SharedNativeHelpers::LOCKFILE_ENDING, "")

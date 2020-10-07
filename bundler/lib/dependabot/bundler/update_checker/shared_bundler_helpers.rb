@@ -242,6 +242,7 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
+        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
         def sanitized_lockfile_body
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")

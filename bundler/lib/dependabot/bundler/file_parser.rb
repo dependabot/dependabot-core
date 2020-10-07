@@ -267,6 +267,7 @@ module Dependabot
         groups.any? { |g| g.include?("prod") }
       end
 
+      # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
       def sanitized_lockfile_content
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")

@@ -283,6 +283,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")
