@@ -127,6 +127,21 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "without repo_contents_path" do
+      before do
+        # We don't have git configured in prod, so simulate that in tests
+        Dir.chdir(repo_contents_path) do
+          `git config --global --unset user.email`
+          `git config --global --unset user.name`
+        end
+      end
+
+      after do
+        Dir.chdir(repo_contents_path) do
+          `git config --global user.email "no-reply@github.com"`
+          `git config --global user.name "dependabot-ci"`
+        end
+      end
+
       let(:updater) do
         described_class.new(
           dependency_files: files,
