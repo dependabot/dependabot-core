@@ -71,6 +71,14 @@ RSpec.describe Functions::VersionResolver do
       its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
     end
 
+    context "with a git source" do
+      let(:gemfile_fixture_name) { "git_source" }
+      let(:lockfile_fixture_name) { "git_source.lock" }
+
+      its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0")) }
+      its([:fetcher]) { is_expected.to be_nil }
+    end
+
     context "when Bundler's compact index is down" do
       before do
         stub_request(:get, "https://index.rubygems.org/versions").
