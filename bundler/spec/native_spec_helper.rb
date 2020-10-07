@@ -11,6 +11,7 @@ require "definition_bundler_version_patch"
 require "git_source_patch"
 
 require "functions"
+require "shared_native_helpers"
 
 RSpec.shared_context "in a temporary bundler directory" do
   let(:gemfile_name) { "Gemfile" }
@@ -26,7 +27,8 @@ RSpec.shared_context "in a temporary bundler directory" do
   end
 
   let(:lockfile_fixture) do
-    fixture("ruby", "lockfiles", lockfile_fixture_name)
+    fixture("ruby", "lockfiles", lockfile_fixture_name).
+      gsub(SharedNativeHelpers::LOCKFILE_ENDING, "")
   end
 
   let(:tmp_path) do

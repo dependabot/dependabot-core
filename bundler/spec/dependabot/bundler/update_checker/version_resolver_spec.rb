@@ -212,7 +212,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       end
 
       # TODO: Move to a native helper test spec
-      # rubocop:disable Layout/LineLength
       context "with a legacy Ruby which disallows the latest version" do
         let(:gemfile_fixture_name) { "legacy_ruby" }
         let(:lockfile_fixture_name) { "legacy_ruby.lock" }
@@ -261,7 +260,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           end
         end
       end
-      # rubocop:enable Layout/LineLength
 
       context "with JRuby" do
         let(:gemfile_fixture_name) { "jruby" }

@@ -3,6 +3,9 @@
 require "excon"
 
 module SharedNativeHelpers
+  # Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
+  LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+
   USER_AGENT = "dependabot-core/bundler-helper "\
                "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
                "(#{RUBY_PLATFORM}) "\
