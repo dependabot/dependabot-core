@@ -89,7 +89,8 @@ module Functions
     end
 
     # Can't be a constant because some of these don't exist in bundler
-    # 1.15, which Heroku uses, which causes an exception on boot.
+    # 1.15, which used to cause issues on Heroku (causing exception on boot).
+    # TODO: Check if this will be an issue with multiple bundler versions
     def sources
       [
         NilClass,
