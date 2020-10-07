@@ -60,6 +60,10 @@ module Functions
         unlock_yanked_gem(dependencies_to_unlock, e) && retry
       rescue ::Bundler::HTTPError => e
         # Retry network errors
+        # Note: in_a_native_bundler_context will also retry `Bundler::HTTPError` errors
+        # up to three times meaning we'll end up retrying this error up to six times
+        # TODO: Could we get rid of this retry logic and only rely on 
+        # SharedBundlerHelpers.in_a_native_bundler_context
         attempt ||= 1
         attempt += 1
         raise if attempt > 3 || !e.message.include?("Network error")
