@@ -94,7 +94,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "options" do
-      let(:options) { { go_mod_tidy: true } }
+      let(:options) { { go_mod_tidy: true, vendor: vendor } }
       let(:dummy_updater) do
         instance_double(
           Dependabot::GoModules::FileUpdater::GoModUpdater,
@@ -115,6 +115,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           ).and_return(dummy_updater)
 
         updater.updated_dependency_files
+      end
+
+      context "vendor option is passed but vendor directory not checked in" do
+        let(:vendor) { true }
+
+        it "does not includes the vendored files" do
+          expect(updater.updated_dependency_files.map(&:name)).to match_array(
+            %w(
+              go.mod
+              go.sum
+            )
+          )
+        end
       end
     end
 

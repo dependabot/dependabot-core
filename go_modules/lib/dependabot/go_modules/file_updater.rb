@@ -104,12 +104,17 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            options: { tidy: tidy?, vendor: options.fetch(:vendor, false) }
+            options: { tidy: tidy?, vendor: vendor? }
           )
       end
 
       def tidy?
         !@repo_contents_stub && options.fetch(:go_mod_tidy, false)
+      end
+
+      def vendor?
+        File.exist?(File.join(vendor_dir, "modules.txt")) &&
+          options.fetch(:vendor, false)
       end
     end
   end
