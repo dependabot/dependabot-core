@@ -188,7 +188,6 @@ module Dependabot
           # version details (could be that it's a private index, etc.)
           return false unless versions.status == 200
 
-
           ruby_requirement =
             JSON.parse(versions.body).
             find { |version| version["number"] == details[:version] }&.
