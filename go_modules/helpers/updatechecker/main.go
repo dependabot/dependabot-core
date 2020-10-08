@@ -3,12 +3,13 @@ package updatechecker
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"regexp"
 
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfetch"
-	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modload"
-	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/semver"
+	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 var (
@@ -44,7 +45,7 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 
 	modload.InitMod()
 
-	repo, err := modfetch.Lookup(args.Dependency.Name)
+	repo, err := modfetch.Lookup("direct", args.Dependency.Name)
 	if err != nil {
 		return nil, err
 	}
