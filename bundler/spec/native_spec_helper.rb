@@ -33,7 +33,8 @@ RSpec.shared_context "in a temporary bundler directory" do
   end
 
   let(:tmp_path) do
-    dir = Dir.mktmpdir("native_helper_spec_", "tmp")
+    tmp_folder = File.expand_path("../../tmp", __dir__)
+    dir = Dir.mktmpdir("native_helper_spec_", tmp_folder)
     Pathname.new(dir).expand_path
   end
 
