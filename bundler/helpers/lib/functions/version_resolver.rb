@@ -1,5 +1,3 @@
-require "shared_native_helpers"
-
 module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
@@ -61,7 +59,7 @@ module Functions
         # Retry network errors
         # Note: in_a_native_bundler_context will also retry `Bundler::HTTPError` errors
         # up to three times meaning we'll end up retrying this error up to six times
-        # TODO: Could we get rid of this retry logic and only rely on 
+        # TODO: Could we get rid of this retry logic and only rely on
         # SharedBundlerHelpers.in_a_native_bundler_context
         attempt ||= 1
         attempt += 1
