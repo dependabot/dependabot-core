@@ -1,3 +1,8 @@
+## v0.122.0, 7 October 2020
+
+- Add experimental support for `go mod vendor`
+- Enable code coverage reporting of dependabot-core
+
 ## v0.121.1, 7 October 2020
 
 - Configure git when creating a temp repo for gomod updates

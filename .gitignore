@@ -9,6 +9,7 @@ Gemfile.lock
 vendor
 !bundler/spec/fixtures/vendored_gems/vendor
 !common/spec/fixtures/projects/**/*/vendor
+!go_modules/spec/fixtures/projects/**/*
 .DS_Store
 *.pyc
 *git.store
@@ -23,3 +24,4 @@ vendor
 /dry-run
 **/bin/helper
 /.core-bash_history
+coverage/

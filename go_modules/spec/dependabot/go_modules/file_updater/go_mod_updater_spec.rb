@@ -17,7 +17,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       }],
       repo_contents_path: repo_contents_path,
       directory: "/",
-      tidy: tidy
+      options: { tidy: tidy, vendor: false }
     )
   end
 
