@@ -188,7 +188,6 @@ module Dependabot
           # version details (could be that it's a private index, etc.)
           return false unless versions.status == 200
 
-          puts JSON.parse(versions.body)
 
           ruby_requirement =
             JSON.parse(versions.body).
