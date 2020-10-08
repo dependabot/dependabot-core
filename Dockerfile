@@ -21,6 +21,7 @@ RUN apt-get update \
     gnupg2 \
     curl \
     wget \
+    file \
     zlib1g-dev \
     liblzma-dev \
     tzdata \
