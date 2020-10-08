@@ -38,7 +38,7 @@ RSpec.describe Functions::VersionResolver do
     end
 
     let(:gemfile_fixture_name) { "Gemfile" }
-    let(:lockfile_fixture_name) { "gemfile.lock" }
+    let(:lockfile_fixture_name) { "Gemfile.lock" }
     let(:requirement_string) { " >= 0" }
 
     its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
