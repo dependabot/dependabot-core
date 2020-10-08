@@ -37,7 +37,7 @@ RSpec.describe Functions::VersionResolver do
       in_tmp_folder { version_resolver.version_details }
     end
 
-    let(:gemfile_fixture_name) { "gemfile" }
+    let(:gemfile_fixture_name) { "Gemfile" }
     let(:lockfile_fixture_name) { "gemfile.lock" }
     let(:requirement_string) { " >= 0" }
 
