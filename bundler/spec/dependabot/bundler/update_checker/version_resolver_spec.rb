@@ -211,7 +211,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
       end
 
-      # TODO: Move to a native helper test spec
       context "with a legacy Ruby which disallows the latest version" do
         let(:gemfile_fixture_name) { "legacy_ruby" }
         let(:lockfile_fixture_name) { "legacy_ruby.lock" }
