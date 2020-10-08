@@ -423,6 +423,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       context "when an old required ruby is specified in the gemspec" do
         let(:gemspec_fixture_name) { "old_required_ruby" }
         let(:dependency_name) { "statesman" }
+        let(:latest_allowable_version) { "7.2.0" }
 
         it "takes the minimum ruby version into account" do
           expect(resolver.latest_resolvable_version_details[:version]).
@@ -435,7 +436,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           it "ignores the minimum ruby version in the gemspec" do
             expect(resolver.latest_resolvable_version_details[:version]).
-              to eq(Gem::Version.new("7.4.0"))
+              to eq(Gem::Version.new("7.2.0"))
           end
         end
       end
