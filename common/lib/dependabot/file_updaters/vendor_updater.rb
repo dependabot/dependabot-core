@@ -7,12 +7,15 @@ module Dependabot
     class VendorUpdater
       # notable filenames without a reliable extension:
       TEXT_FILE_NAMES = [
+        "Appraisals",
         "README",
         "LICENSE",
         "Gemfile",
         "Gemfile.lock",
+        "Rakefile",
         ".bundlecache",
-        ".gitignore"
+        ".gitignore",
+        ".rspec"
       ].freeze
 
       TEXT_FILE_EXTS = [
@@ -20,18 +23,25 @@ module Dependabot
         ".rb",
         ".erb",
         ".gemspec",
+        ".gemfile",
         ".js",
         ".html",
+        ".go",
+        ".c",
+        ".h",
+        ".ts",
+        ".sql",
         # config
         ".json",
         ".xml",
         ".toml",
         ".yaml",
         ".yml",
+        ".opts",
         # docs
         ".md",
         ".txt",
-        ".go"
+        ".rdoc"
       ].freeze
 
       def initialize(repo_contents_path:, vendor_dir:)
