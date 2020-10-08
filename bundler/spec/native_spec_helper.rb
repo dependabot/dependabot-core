@@ -12,11 +12,13 @@ require "git_source_patch"
 
 require "functions"
 
-RSpec.shared_context "in a temporary bundler directory" do
-  # Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
-  # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-  LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+TMP_DIR_PATH = File.expand_path("../tmp", __dir__)
 
+# Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
+# TODO: Stop sanitizing the lockfile once we have bundler 2 installed
+LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+
+RSpec.shared_context "in a temporary bundler directory" do
   let(:gemfile_name) { "Gemfile" }
   let(:lockfile_name) { "Gemfile.lock" }
 
@@ -36,8 +38,8 @@ RSpec.shared_context "in a temporary bundler directory" do
   end
 
   let(:tmp_path) do
-    tmp_folder = File.expand_path("../../tmp", __dir__)
-    dir = Dir.mktmpdir("native_helper_spec_", tmp_folder)
+    Dir.mkdir(TMP_DIR_PATH) unless Dir.exist?(TMP_DIR_PATH)
+    dir = Dir.mktmpdir("native_helper_spec_", TMP_DIR_PATH)
     Pathname.new(dir).expand_path
   end
 
