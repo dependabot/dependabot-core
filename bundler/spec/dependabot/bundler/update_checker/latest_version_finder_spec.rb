@@ -401,7 +401,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    # TODO: Test appears to be hitting the internet
     context "given a git source" do
       let(:gemfile_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source.lock" }
