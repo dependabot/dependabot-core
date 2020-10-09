@@ -166,10 +166,11 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.37.0
+# Install Rust 1.47.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.47.0 && rustup default 1.47.0
 
 
 ### NEW NATIVE HELPERS
