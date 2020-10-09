@@ -187,6 +187,20 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "with an old format lockfile" do
+        let(:manifest_fixture_name) { "old_lockfile" }
+        let(:lockfile_fixture_name) { "old_lockfile" }
+
+        it "updates the lockfile to the new version" do
+          expect(updated_lockfile_content).to include(
+            <<~CHECKSUM
+              checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+            CHECKSUM
+          )
+          expect(updated_lockfile_content).to_not include("[metadata]")
+        end
+      end
+
       context "with a git dependency" do
         let(:manifest_fixture_name) { "git_dependency" }
         let(:lockfile_fixture_name) { "git_dependency" }
