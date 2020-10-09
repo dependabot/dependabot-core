@@ -3,7 +3,6 @@ package updatechecker
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"regexp"
 
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfetch"
