@@ -95,10 +95,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).
           to include(%(name = "time"\nversion = "0.1.40"))
         expect(updated_lockfile_content).to include(
-          "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+          <<~CHECKSUM
+            checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
+          CHECKSUM
         )
         expect(updated_lockfile_content).to_not include(
-          "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
+          <<~CHECKSUM
+            checksum = "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
+          CHECKSUM
         )
       end
 
@@ -237,14 +241,6 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
                          "8d38a931b7e34f9da339c058cbbca6ded624ea58")
             expect(updated_lockfile_content).to_not include("git+https://")
-
-            expect(updated_lockfile_content).to include(
-              "[metadata]\n"\
-              '"checksum utf8-ranges 1.0.4 (git+ssh://git@github.com/'\
-              "BurntSushi/utf8-ranges)\" = \"<none>\"\n"\
-              '"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/'\
-              "dependabot-fixtures/utf8-ranges)\" = \"<none>\""
-            )
 
             content = updated_lockfile_content
             expect(content.scan(/name = "utf8-ranges"/).count).to eq(1)

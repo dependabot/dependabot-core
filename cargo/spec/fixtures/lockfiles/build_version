@@ -75,15 +75,3 @@ dependencies = [
  "glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.43 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[metadata]
-"checksum base64 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "30e93c03064e7590d0466209155251b90c22e37fab1daf2771582598b5827557"
-"checksum blob 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "122c3fa3949d822d2a51c648db9e8105d6e75b89dc628cc366901d3d396fa4f4"
-"checksum byteorder 1.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "90492c5858dd7d2e78691cfb89f90d273a2800fc11d98f60786e5d87e2f83781"
-"checksum gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)" = "5e33ec290da0d127825013597dbdfc28bee4964690c7ce1166cbc2a7bd08b1bb"
-"checksum glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
-"checksum libc 0.2.43 (registry+https://github.com/rust-lang/crates.io-index)" = "76e3a3ef172f1a0b9a9ff0dd1491ae5e6c948b94479a3021819ba7d860c8645d"
-"checksum serde 1.0.78 (registry+https://github.com/rust-lang/crates.io-index)" = "92ec94e2754699adddbbc4f555791bd3acc2a2f5574cba16c93a4a9cf4a04415"
-"checksum zstd 0.4.19+zstd.1.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e44f036c43e506ce5651cad4f340af6b0b6d405a1c440e4a553bc422df7a81a2"
-"checksum zstd-safe 1.4.4+zstd.1.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "9291dbf678d18ace21725e3409d07e0a80d512feb75f5e27ac472a4948e5ddd1"
-"checksum zstd-sys 1.4.4+zstd.1.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "de44a435b7bb72cb779af17a72d6e9dc039dbb11a85fa2f79abf4a74dc73c013"
