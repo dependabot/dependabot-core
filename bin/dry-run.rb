@@ -99,7 +99,8 @@ $options = {
   clone: false,
   lockfile_only: false,
   requirements_update_strategy: nil,
-  commit: nil
+  commit: nil,
+  updater_options: {},
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -158,6 +159,16 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--clone", "clone the repo") do |_value|
     $options[:clone] = true
+  end
+
+  opts_opt_desc = "Comma separated list of updater options, "\
+                  "available options depend on PACKAGE_MANAGER"
+  opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
+    $options[:updater_options] = Hash[
+                                   value.split(",").map do |o|
+                                     [o.strip.downcase.to_sym, true]
+                                   end
+                                 ]
   end
 end
 
@@ -393,7 +404,8 @@ def file_updater_for(dependencies)
     dependencies: dependencies,
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
-    credentials: $options[:credentials]
+    credentials: $options[:credentials],
+    options: $options[:updater_options],
   )
 end
 

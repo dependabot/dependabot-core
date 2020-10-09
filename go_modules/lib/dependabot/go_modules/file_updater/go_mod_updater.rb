@@ -26,12 +26,13 @@ module Dependabot
         ].freeze
 
         def initialize(dependencies:, credentials:, repo_contents_path:,
-                       directory:, tidy:)
+                       directory:, options:)
           @dependencies = dependencies
           @credentials = credentials
           @repo_contents_path = repo_contents_path
           @directory = directory
-          @tidy = tidy
+          @tidy = options.fetch(:tidy, false)
+          @vendor = options.fetch(:vendor, false)
         end
 
         def updated_go_mod_content
@@ -51,7 +52,7 @@ module Dependabot
           @updated_files ||= update_files
         end
 
-        def update_files
+        def update_files # rubocop:disable Metrics/AbcSize
           in_repo_path do
             # Map paths in local replace directives to path hashes
 
@@ -71,6 +72,7 @@ module Dependabot
             # Then run `go get` to pick up other changes to the file caused by
             # the upgrade
             run_go_get
+            run_go_vendor
             run_go_mod_tidy
 
             # At this point, the go.mod returned from run_go_get contains the
@@ -107,6 +109,14 @@ module Dependabot
           return unless tidy?
 
           command = "go mod tidy"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
+        end
+
+        def run_go_vendor
+          return unless vendor?
+
+          command = "go mod vendor"
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         end
@@ -272,6 +282,10 @@ module Dependabot
 
         def tidy?
           !!@tidy
+        end
+
+        def vendor?
+          !!@vendor
         end
       end
     end
