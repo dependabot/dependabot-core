@@ -88,7 +88,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
   describe "binary encoding" do
     let(:project_name) { "binary_files" }
 
-    %w(test.zip test_bin test.png test.gem).each do |name|
+    %w(test.zip test_bin test.png test.gem .bundlecache).each do |name|
       it "marks #{name} files correctly" do
         in_cloned_repository(repo_contents_path) do
           `mv vendor/cache/#{name} vendor/cache/new_#{name}`

@@ -1702,6 +1702,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         it "does not base64 encode vendored code" do
           updater.updated_dependency_files.
             select { |f| f.name.start_with?(added) }.
+            reject { |f| f.name.end_with?(".bundlecache") }.
             each { |f| expect(f.content_encoding).to eq("") }
         end
       end
