@@ -16,7 +16,8 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           /go: .*: git fetch .*: exit status 128/.freeze,
           /verifying .*: checksum mismatch/.freeze,
-          /build .*: cannot find module providing package/.freeze
+          /build .*: cannot find module providing package/.freeze,
+          /module .* found \(.*\), but does not contain package/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
