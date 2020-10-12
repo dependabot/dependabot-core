@@ -404,6 +404,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
         end
+
+        context "with a vendored .gemspec" do
+          let(:files) { [gemfile, gemfile_lock, gemspec] }
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              name: "vendor/cache/dep/git.gemspec",
+              content: fixture("ruby", "gemspecs", "example")
+            )
+          end
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
       end
 
       context "that uses angular commits" do
