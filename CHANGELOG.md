@@ -1,3 +1,10 @@
+## v0.123.0, 13 October 2020
+
+- Bundler: Refactored Dependabot's use of Bundler commands to shell out instead
+  of running in a forked process.
+  - This aligns Bundler with other package managers and will enable us to
+    support other Bundler versions in future.
+
 ## v0.122.1, 13 October 2020
 
 - Bump phpstan/phpstan from 0.12.48 to 0.12.49 in /composer/helpers
