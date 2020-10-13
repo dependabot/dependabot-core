@@ -178,6 +178,7 @@ RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.47.0 && rustup defa
 
 COPY composer/helpers /opt/composer/helpers
 COPY dep/helpers /opt/dep/helpers
+COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
@@ -191,6 +192,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
+  bash /opt/bundler/helpers/build /opt/bundler && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \

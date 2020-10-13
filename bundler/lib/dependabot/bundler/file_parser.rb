@@ -4,6 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
+require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -25,19 +26,6 @@ module Dependabot
 
       private
 
-      # Can't be a constant because some of these don't exist in bundler
-      # 1.15, which Heroku uses, which causes an exception on boot.
-      def sources
-        [
-          NilClass,
-          ::Bundler::Source::Rubygems,
-          ::Bundler::Source::Git,
-          ::Bundler::Source::Path,
-          ::Bundler::Source::Gemspec,
-          ::Bundler::Source::Metadata
-        ]
-      end
-
       def gemfile_dependencies
         dependencies = DependencySet.new
 
@@ -51,12 +39,12 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: dep.name,
-                version: dependency_version(dep.name)&.to_s,
+                name: dep.fetch("name"),
+                version: dependency_version(dep.fetch("name"))&.to_s,
                 requirements: [{
                   requirement: gemfile_declaration_finder.enhanced_req_string,
-                  groups: dep.groups,
-                  source: source_for(dep),
+                  groups: dep.fetch("groups").map(&:to_sym),
+                  source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
                 package_manager: "bundler"
@@ -71,15 +59,19 @@ module Dependabot
         dependencies = DependencySet.new
 
         gemspecs.each do |gemspec|
-          parsed_gemspec(gemspec).dependencies.each do |dependency|
+          parsed_gemspec(gemspec).each do |dependency|
             dependencies <<
               Dependency.new(
-                name: dependency.name,
-                version: dependency_version(dependency.name)&.to_s,
+                name: dependency.fetch("name"),
+                version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
-                  requirement: dependency.requirement.to_s,
-                  groups: dependency.runtime? ? ["runtime"] : ["development"],
-                  source: source_for(dependency),
+                  requirement: dependency.fetch("requirement").to_s,
+                  groups: if dependency.fetch("type") == "runtime"
+                            ["runtime"]
+                          else
+                            ["development"]
+                          end,
+                  source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
                 package_manager: "bundler"
@@ -122,28 +114,25 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-
-              ::Bundler::Definition.build(gemfile.name, nil, {}).
-                dependencies.
-                select(&:current_platform?).
-                # We can't dump gemspec sources, and we wouldn't bump them
-                # anyway, so we filter them out.
-                reject { |dep| dep.source.is_a?(::Bundler::Source::Gemspec) }
-            end
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "parsed_gemfile",
+              args: {
+                gemfile_name: gemfile.name,
+                lockfile_name: lockfile&.name,
+                dir: Dir.pwd
+              }
+            )
           end
-      rescue SharedHelpers::ChildProcessFailed, ArgumentError => e
-        handle_marshall_error(e) if e.is_a?(ArgumentError)
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        handle_eval_error(e) if e.error_class == "JSON::ParserError"
 
         msg = e.error_class + " with message: " +
-              e.error_message.force_encoding("UTF-8").encode
+              e.message.force_encoding("UTF-8").encode
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
-      def handle_marshall_error(err)
-        raise err unless err.message == "marshal data too short"
-
+      def handle_eval_error(err)
         msg = "Error evaluating your dependency files: #{err.message}"
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
@@ -153,19 +142,20 @@ module Dependabot
         @parsed_gemspecs[file.name] ||=
           SharedHelpers.in_a_temporary_repo_directory(base_directory,
                                                       repo_contents_path) do
-            [file, *imported_ruby_files].each do |f|
-              path = f.name
-              FileUtils.mkdir_p(Pathname.new(path).dirname)
-              File.write(path, f.content)
-            end
+            write_temporary_dependency_files
 
-            SharedHelpers.in_a_forked_process do
-              ::Bundler.instance_variable_set(:@root, Pathname.new(Dir.pwd))
-              ::Bundler.load_gemspec_uncached(file.name)
-            end
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "parsed_gemspec",
+              args: {
+                gemspec_name: file.name,
+                lockfile_name: lockfile&.name,
+                dir: Dir.pwd
+              }
+            )
           end
-      rescue SharedHelpers::ChildProcessFailed => e
-        msg = e.error_class + " with message: " + e.error_message
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        msg = e.error_class + " with message: " + e.message
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
@@ -185,6 +175,8 @@ module Dependabot
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, file.content)
         end
+
+        File.write(lockfile.name, sanitized_lockfile_content) if lockfile
       end
 
       def check_required_files
@@ -197,42 +189,6 @@ module Dependabot
         return if gemfile
 
         raise "A gemspec or Gemfile must be provided!"
-      end
-
-      def source_for(dependency)
-        source = dependency.source
-        if lockfile && default_rubygems?(source)
-          # If there's a lockfile and the Gemfile doesn't have anything
-          # interesting to say about the source, check that.
-          source = source_from_lockfile(dependency.name)
-        end
-        raise "Bad source: #{source}" unless sources.include?(source.class)
-
-        return nil if default_rubygems?(source)
-
-        details = { type: source.class.name.split("::").last.downcase }
-        if source.is_a?(::Bundler::Source::Git)
-          details.merge!(git_source_details(source))
-        end
-        if source.is_a?(::Bundler::Source::Rubygems)
-          details[:url] = source.remotes.first.to_s
-        end
-        details
-      end
-
-      def git_source_details(source)
-        {
-          url: source.uri,
-          branch: source.branch || "master",
-          ref: source.ref
-        }
-      end
-
-      def default_rubygems?(source)
-        return true if source.nil?
-        return false unless source.is_a?(::Bundler::Source::Rubygems)
-
-        source.remotes.any? { |r| r.to_s.include?("rubygems.org") }
       end
 
       def dependency_version(dependency_name)
@@ -253,10 +209,6 @@ module Dependabot
         end
 
         spec.version
-      end
-
-      def source_from_lockfile(dependency_name)
-        parsed_lockfile.specs.find { |s| s.name == dependency_name }&.source
       end
 
       def gemfile
@@ -315,6 +267,7 @@ module Dependabot
         groups.any? { |g| g.include?("prod") }
       end
 
+      # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
       def sanitized_lockfile_content
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")
