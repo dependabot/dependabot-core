@@ -17,6 +17,7 @@ module Dependabot
           /go: .*: git fetch .*: exit status 128/.freeze,
           /verifying .*: checksum mismatch/.freeze,
           /build .*: cannot find module providing package/.freeze,
+          /cannot find module providing package .*: exit status 128/.freeze,
           /module .* found \(.*\), but does not contain package/m.freeze
         ].freeze
 
