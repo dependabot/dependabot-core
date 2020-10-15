@@ -101,6 +101,7 @@ $options = {
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
+  security_advisories: []
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -117,6 +118,15 @@ unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # "[{\"type\":\"npm_registry\",\"registry\":\
   #     "registry.npmjs.org\",\"token\":\"123\"}]"
   $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
+end
+
+unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
+  # For example:
+  # [{"dependency_name":"name",
+  #   "patched_versions":[],
+  #   "unaffected_versions":[],
+  #   "affected_versions":["< 0.10.0"]}]
+  $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
 end
 
 option_parse = OptionParser.new do |opts|
@@ -251,7 +261,8 @@ def cached_dependency_files_read
   end
 
   if all_files_cached && $options[:cache_steps].include?("files")
-    puts "=> reading dependency files from cache: ./#{cache_dir}"
+    puts "=> reading dependency files from cache manifest: "\
+         "./#{cache_manifest_path}"
     cached_dependency_files.map do |file|
       file_content = File.read(File.join(cache_dir, file["name"]))
       Dependabot::DependencyFile.new(
@@ -350,7 +361,7 @@ def update_checker_for(dependency)
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignore_conditions_for(dependency),
-    security_advisories: security_advisories_for(dependency)
+    security_advisories: security_advisories
   )
 end
 
@@ -360,23 +371,16 @@ def ignore_conditions_for(_)
   []
 end
 
-# TODO: Parse from config file
-def security_advisories_for(dependency)
-  # Array of version requirement ranges, e.g. affected_versions: ["< 3.5.1"]
-  advisories = [{
-    dependency_name: dependency.name,
-    patched_versions: [],
-    unaffected_versions: [],
-    affected_versions: []
-  }]
+def security_advisories
+  return [] if $options[:security_advisories].empty?
 
-  advisories.map do |adv|
+  $options[:security_advisories].map do |adv|
     vulnerable_versions = adv[:affected_versions] || []
     safe_versions = (adv[:patched_versions] || []) +
                     (adv[:unaffected_versions] || [])
 
     Dependabot::SecurityAdvisory.new(
-      dependency_name: dependency.name,
+      dependency_name: adv[:dependency_name],
       package_manager: $package_manager,
       vulnerable_versions: vulnerable_versions,
       safe_versions: safe_versions
