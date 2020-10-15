@@ -478,5 +478,44 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
     end
+
+    context "when dockerfile includes platform" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "platform")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "node",
+          version: "10.9-alpine",
+          previous_version: "10-alpine",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "10.9-alpine" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "10-alpine" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) do
+          is_expected.to include "FROM --platform=$BUILDPLATFORM " \
+                                 "node:10.9-alpine AS"
+        end
+        its(:content) { is_expected.to include "FROM node:10.9-alpine\n" }
+        its(:content) { is_expected.to include "RUN apk add" }
+      end
+    end
   end
 end

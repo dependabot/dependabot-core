@@ -628,5 +628,28 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "with a platform" do
+      let(:dockerfile_body) { "FROM --platform=linux/amd64 ubuntu:artful" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "artful" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("artful")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end
