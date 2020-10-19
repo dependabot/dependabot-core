@@ -1,3 +1,9 @@
+## v0.123.1, 19 October 2020
+
+- Go mod: Handle `cannot find module` during go mod tidy
+- Python: Add 3.9.0 and upgrade pyenv to v1.2.21 (@ulgens)
+- Bundler: Ignore changed .gemspec from vendor/cache folder
+
 ## v0.123.0, 13 October 2020
 
 - Bundler: Refactored Dependabot's use of Bundler commands to shell out instead
