@@ -36,7 +36,6 @@ module Dependabot
           @credentials = credentials
           @repo_contents_path = repo_contents_path
           @directory = directory
-          @tidy = options.fetch(:tidy, false)
           @vendor = options.fetch(:vendor, false)
         end
 
@@ -111,8 +110,6 @@ module Dependabot
         end
 
         def run_go_mod_tidy
-          return unless tidy?
-
           command = "go mod tidy"
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
@@ -283,10 +280,6 @@ module Dependabot
 
         def write_go_mod(body)
           File.write("go.mod", body)
-        end
-
-        def tidy?
-          !!@tidy
         end
 
         def vendor?

@@ -17,14 +17,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       }],
       repo_contents_path: repo_contents_path,
       directory: "/",
-      options: { tidy: tidy, vendor: false }
+      options: { vendor: false }
     )
   end
 
   let(:project_name) { "simple" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
-  let(:tidy) { true }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -369,12 +368,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
         it { is_expected.not_to include(%(rsc.io/quote v1.4.0)) }
-
-        context "but tidying is disabled" do
-          let(:tidy) { false }
-          it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
-          it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
-        end
       end
     end
   end

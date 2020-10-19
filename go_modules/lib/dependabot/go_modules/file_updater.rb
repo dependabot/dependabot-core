@@ -85,12 +85,8 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            options: { tidy: tidy?, vendor: vendor? }
+            options: { vendor: vendor? }
           )
-      end
-
-      def tidy?
-        options.fetch(:go_mod_tidy, false)
       end
 
       def vendor?
