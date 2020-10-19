@@ -165,12 +165,12 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
-      # TODO: Look into bringing this in line with existing library checks that
-      # we do in the update checkers, which are also overriden by passing an
-      # explicit `requirements_update_strategy`.
+      # TODO: Bring this in line with existing library checks that we do in the
+      # update checkers, which are also overriden by passing an explicit
+      # `requirements_update_strategy`.
+      #
+      # TODO re-use in MessageBuilder
       def library?
-        return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
-
         dependencies.any? { |d| !d.appears_in_lockfile? }
       end
 
