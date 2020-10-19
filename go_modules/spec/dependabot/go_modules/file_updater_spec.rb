@@ -14,7 +14,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       dependency_files: files,
       dependencies: [dependency],
       credentials: credentials,
-      repo_contents_path: repo_contents_path,
+      repo_contents_path: repo_contents_path
     )
   end
 
