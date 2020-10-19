@@ -224,6 +224,29 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:dependency_name) { "github.com/googleapis/gnostic" }
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
+            let(:dependency_previous_version) { "v0.3.1" }
+            let(:previous_requirements) do
+              [{
+                file: "go.mod",
+                requirement: dependency_previous_version,
+                groups: [],
+                source: {
+                  type: "default",
+                  source: dependency_name
+                }
+              }]
+            end
+            let(:requirements) do
+              [{
+                file: "go.mod",
+                requirement: dependency_version,
+                groups: [],
+                source: {
+                  type: "default",
+                  source: dependency_name
+                }
+              }]
+            end
 
             it "raises a DependencyFileNotResolvable error" do
               error_class = Dependabot::DependencyFileNotResolvable
@@ -272,6 +295,37 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    context "major version update" do
+      let(:project_name) { "major" }
+      let(:dependency_name) { "github.com/Masterminds/semver/v3" }
+      let(:dependency_version) { "v3.0.1" }
+      let(:dependency_previous_version) { "v1.5.0" }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/Masterminds/semver"
+          }
+        }]
+      end
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v3.0.1",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/Masterminds/semver/v3"
+          }
+        }]
+      end
+
+      it { is_expected.to include(%(github.com/Masterminds/semver/v3)) }
+    end
+
     context "for an explicit indirect dependency" do
       let(:project_name) { "indirect" }
       let(:dependency_name) { "github.com/mattn/go-isatty" }
@@ -312,7 +366,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
     end
 
     context "for an upgraded indirect dependency" do
-      let(:go_mod_fixture_name) { "upgraded_indirect_dependency.mod" }
       let(:dependency_name) { "github.com/gorilla/csrf" }
       let(:dependency_version) { "v1.7.0" }
       let(:dependency_previous_version) { "v1.6.2" }

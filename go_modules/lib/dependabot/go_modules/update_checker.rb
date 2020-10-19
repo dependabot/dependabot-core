@@ -45,6 +45,26 @@ module Dependabot
         nil
       end
 
+      def updated_dependency_with_own_req_unlock
+        version = preferred_resolvable_version
+        previous_version = Version.new(dependency.version)
+
+        name = if version.major > previous_version.major
+                 dependency.name.gsub("v#{previous_version.major}", "v#{version.major}")
+               else
+                 dependency.name
+               end
+
+        Dependency.new(
+          name: name,
+          version: version.to_s,
+          requirements: updated_requirements,
+          previous_version: previous_version&.to_s,
+          previous_requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
+      end
+
       def updated_requirements
         dependency.requirements.map do |req|
           req.merge(requirement: latest_version)

@@ -42,6 +42,8 @@ module Dependabot
               )
           end
 
+          updated_files.concat(file_updater.updated_go_files)
+
           vendor_updater.updated_vendor_cache_files(base_directory: directory).
             each do |file|
             updated_files << file

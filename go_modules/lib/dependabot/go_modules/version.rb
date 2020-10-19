@@ -37,6 +37,10 @@ module Dependabot
       def to_s
         @version_string
       end
+
+      def major
+        canonical_segments.first
+      end
     end
   end
 end

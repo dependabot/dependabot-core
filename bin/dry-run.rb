@@ -258,9 +258,7 @@ def cached_dependency_files_read
   )
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
-  if File.exist?(cache_manifest_path)
-    cached_manifest = File.read(cache_manifest_path)
-  end
+  cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
   cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
 
   all_files_cached = cached_dependency_files&.all? do |file|
@@ -307,9 +305,7 @@ def cached_dependency_files_read
     end
     # Initialize a git repo so that changed files can be diffed
     if $options[:write]
-      if File.exist?(".gitignore")
-        FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
-      end
+      FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore")) if File.exist?(".gitignore")
       Dir.chdir(cache_dir) do
         system("git init . && git add . && git commit --allow-empty -m 'Init'")
       end
@@ -403,19 +399,20 @@ def security_advisories
   end
 end
 
-def peer_dependencies_can_update?(checker, reqs_to_unlock)
-  checker.updated_dependencies(requirements_to_unlock: reqs_to_unlock).
-    reject { |dep| dep.name == checker.dependency.name }.
-    any? do |dep|
-      original_peer_dep = ::Dependabot::Dependency.new(
-        name: dep.name,
-        version: dep.previous_version,
-        requirements: dep.previous_requirements,
-        package_manager: dep.package_manager
-      )
-      update_checker_for(original_peer_dep).
-        can_update?(requirements_to_unlock: :own)
-    end
+def peer_dependencies_can_update?(_checker, _reqs_to_unlock)
+  false
+  # checker.updated_dependencies(requirements_to_unlock: reqs_to_unlock).
+  #   reject { |dep| dep.name == checker.dependency.name }.
+  #   any? do |dep|
+  #     original_peer_dep = ::Dependabot::Dependency.new(
+  #       name: dep.name,
+  #       version: dep.previous_version,
+  #       requirements: dep.previous_requirements,
+  #       package_manager: dep.package_manager
+  #     )
+  #     update_checker_for(original_peer_dep).
+  #       can_update?(requirements_to_unlock: :own)
+  #   end
 end
 
 def file_updater_for(dependencies)

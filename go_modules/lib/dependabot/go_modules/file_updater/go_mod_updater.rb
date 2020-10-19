@@ -53,6 +53,10 @@ module Dependabot
           updated_files[:go_sum]
         end
 
+        def updated_go_files
+          updated_files[:go_files]
+        end
+
         private
 
         attr_reader :dependencies, :credentials, :repo_contents_path,
@@ -77,8 +81,9 @@ module Dependabot
             substitute_all(substitutions)
 
             # Set the stubbed replace directives
-            update_go_mod(dependencies)
+            updated_files = update_packages(dependencies)
 
+            byebug
             # Then run `go get` to pick up other changes to the file caused by
             # the upgrade
             run_go_get
@@ -103,7 +108,7 @@ module Dependabot
 
             remove_requirements(req_paths_to_remove)
             deps = updated_reqs.map { |r| requirement_to_dependency_obj(r) }
-            update_go_mod(deps)
+            update_packages(deps)
 
             # put the old replace directives back again
             substitute_all(substitutions.invert)
@@ -111,7 +116,7 @@ module Dependabot
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
-            { go_mod: updated_go_mod, go_sum: updated_go_sum }
+            { go_mod: updated_go_mod, go_sum: updated_go_sum, go_files: updated_files }
           end
         end
 
@@ -131,23 +136,28 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def update_go_mod(dependencies)
+        def update_packages(dependencies)
           deps = dependencies.map do |dep|
+            previous = ("v" + dep.previous_version&.sub(/^v/i, "") if dep.previous_version)
+
             {
               name: dep.name,
               version: "v" + dep.version.sub(/^v/i, ""),
+              previous_version: previous,
               indirect: dep.requirements.empty?
             }
           end
 
-          body = SharedHelpers.run_helper_subprocess(
+          updated_files = SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             env: ENVIRONMENT,
             function: "updateDependencyFile",
             args: { dependencies: deps }
           )
 
-          write_go_mod(body)
+          updated_files.map do |name|
+            DependencyFile.new(name: name, content: File.read(name), directory: directory)
+          end
         end
 
         def run_go_get

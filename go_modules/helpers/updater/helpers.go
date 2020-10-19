@@ -1,9 +1,14 @@
 package updater
 
 import (
+	"fmt"
+	"go/format"
+	"os"
 	"strings"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/tools/go/ast/astutil"
+	"golang.org/x/tools/go/packages"
 )
 
 // Private methods lifted from the `modfile` package
@@ -54,4 +59,43 @@ func isIndirect(line *modfile.Line) bool {
 	}
 	f := strings.Fields(line.Suffix[0].Token)
 	return (len(f) == 2 && f[1] == "indirect" || len(f) > 2 && f[1] == "indirect;") && f[0] == "//"
+}
+
+func updateImportPath(p *packages.Package, old, new string, files map[string]struct{}) ([]string, error) {
+	updated := []string{}
+
+	for _, syn := range p.Syntax {
+		goFileName := p.Fset.File(syn.Pos()).Name()
+		if _, ok := files[goFileName]; ok {
+			continue
+		}
+		files[goFileName] = struct{}{}
+		var rewritten bool
+		for _, i := range syn.Imports {
+			imp := strings.Replace(i.Path.Value, `"`, ``, 2)
+			if strings.HasPrefix(imp, fmt.Sprintf("%s/", old)) || imp == old {
+				newImp := strings.Replace(imp, old, new, 1)
+				rewrote := astutil.RewriteImport(p.Fset, syn, imp, newImp)
+				if rewrote {
+					updated = append(updated, goFileName)
+					rewritten = true
+				}
+			}
+		}
+		if !rewritten {
+			continue
+		}
+
+		f, err := os.Create(goFileName)
+		if err != nil {
+			return updated, err
+		}
+		err = format.Node(f, p.Fset, syn)
+		f.Close()
+		if err != nil {
+			return updated, err
+		}
+	}
+
+	return updated, nil
 }

@@ -2,8 +2,11 @@ package updatechecker
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfetch"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modload"
@@ -13,6 +16,7 @@ import (
 
 var (
 	pseudoVersionRegexp = regexp.MustCompile(`\b\d{14}-[0-9a-f]{12}$`)
+	versionRegexp       = regexp.MustCompile(`/v(\d+)$`)
 )
 
 type Dependency struct {
@@ -44,14 +48,20 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 
 	modload.InitMod()
 
-	repo, err := modfetch.Lookup("direct", args.Dependency.Name)
-	if err != nil {
-		return nil, err
+	versions := []string{}
+
+	nextMajor := nextMajorVersion(args.Dependency.Name)
+	if nextMajor != "" {
+		v, _ := findVersions(nextMajor)
+		versions = append(versions, v...)
 	}
 
-	versions, err := repo.Versions("")
-	if err != nil {
-		return nil, err
+	if len(versions) == 0 {
+		v, err := findVersions(args.Dependency.Name)
+		if err != nil {
+			return nil, err
+		}
+		versions = append(versions, v...)
 	}
 
 	excludes, err := goModExcludes(args.Dependency.Name)
@@ -59,19 +69,10 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 		return nil, err
 	}
 
-	currentMajor := semver.Major(currentVersion)
 	latestVersion := args.Dependency.Version
 
 Outer:
 	for _, v := range versions {
-		if semver.Major(v) != currentMajor {
-			continue
-		}
-
-		if semver.Compare(v, latestVersion) < 1 {
-			continue
-		}
-
 		if currentPrerelease == "" && semver.Prerelease(v) != "" {
 			continue
 		}
@@ -86,6 +87,25 @@ Outer:
 	}
 
 	return latestVersion, nil
+}
+
+func nextMajorVersion(name string) string {
+	m := versionRegexp.FindStringSubmatch(name)
+	if len(m) == 0 {
+		return ""
+	}
+
+	v, _ := strconv.ParseInt(m[1], 10, 32)
+	return fmt.Sprintf("%s/v%d", name[:strings.LastIndex(name, "/")], v+1)
+}
+
+func findVersions(name string) ([]string, error) {
+	repo, err := modfetch.Lookup("direct", name)
+	if err != nil {
+		return []string{}, err
+	}
+
+	return repo.Versions("")
 }
 
 func goModExcludes(dependency string) ([]string, error) {

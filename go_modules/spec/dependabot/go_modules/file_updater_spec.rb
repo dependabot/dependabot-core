@@ -322,5 +322,40 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
     end
+
+    context "major version  upgrade" do
+      let(:project_name) { "major" }
+      let(:dependency_name) { "github.com/Masterminds/semver/v3" }
+      let(:dependency_version) { "v3.0.1" }
+      let(:dependency_previous_version) { "v1.5.0" }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/Masterminds/semver"
+          }
+        }]
+      end
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v3.0.1",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/Masterminds/semver/v3"
+          }
+        }]
+      end
+
+      it "updates the the import path" do
+        expect(updated_files.map(&:name)).to match_array(["go.mod", "go.sum", "main.go"])
+        main_go = updated_files.first { |f| f.name == "main.go" }
+        expect(main_go.content).to include("github.com/Masterminds/semver/v3")
+      end
+    end
   end
 end
