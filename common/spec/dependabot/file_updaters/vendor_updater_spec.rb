@@ -19,18 +19,18 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
     updater.updated_vendor_cache_files(base_directory: repo_contents_path)
   end
 
-  before do
-    in_cloned_repository(repo_contents_path) do
-      # change a vendor file like an updater would
-      `mv vendor/cache/business-1.4.0.gem vendor/cache/business-1.5.0.gem`
-    end
-  end
-
   after do
     FileUtils.remove_entry repo_contents_path
   end
 
   describe "#updated_vendor_cache_files" do
+    before do
+      in_cloned_repository(repo_contents_path) do
+        # change a vendor file like an updater would
+        `mv vendor/cache/business-1.4.0.gem vendor/cache/business-1.5.0.gem`
+      end
+    end
+
     it "returns the updated files" do
       expect(updated_files.map(&:name)).to eq(
         %w(
@@ -41,7 +41,11 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
     end
 
     it "marks binary files as such" do
-      expect(updated_files.first.binary?).to be_truthy
+      file = updated_files.find do |f|
+        f.name == "vendor/cache/business-1.5.0.gem"
+      end
+
+      expect(file.binary?).to be_truthy
     end
 
     it "marks deleted files as such" do
@@ -78,6 +82,22 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       expect(updated_files.map(&:name)).to_not include(
         "some-file.txt"
       )
+    end
+  end
+
+  describe "binary encoding" do
+    let(:project_name) { "binary_files" }
+
+    %w(test.zip test_bin test.png test.gem .bundlecache).each do |name|
+      it "marks #{name} files correctly" do
+        in_cloned_repository(repo_contents_path) do
+          `mv vendor/cache/#{name} vendor/cache/new_#{name}`
+        end
+
+        file = updated_files.find { |f| f.name == "vendor/cache/new_#{name}" }
+
+        expect(file.binary?).to be_truthy
+      end
     end
   end
 

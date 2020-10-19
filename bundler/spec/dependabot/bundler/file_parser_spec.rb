@@ -436,6 +436,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it "raises a helpful error" do
           expect { parser.parse }.
             to raise_error do |error|
+              expect(error.message).
+                to start_with("Error evaluating your dependency files")
               expect(error.class).
                 to eq(Dependabot::DependencyFileNotEvaluatable)
             end

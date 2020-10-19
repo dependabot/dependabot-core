@@ -1,3 +1,33 @@
+## v0.123.1, 19 October 2020
+
+- Go mod: Handle `cannot find module` during go mod tidy
+- Python: Add 3.9.0 and upgrade pyenv to v1.2.21 (@ulgens)
+- Bundler: Ignore changed .gemspec from vendor/cache folder
+
+## v0.123.0, 13 October 2020
+
+- Bundler: Refactored Dependabot's use of Bundler commands to shell out instead
+  of running in a forked process.
+  - This aligns Bundler with other package managers and will enable us to
+    support other Bundler versions in future.
+
+## v0.122.1, 13 October 2020
+
+- Bump phpstan/phpstan from 0.12.48 to 0.12.49 in /composer/helpers
+- Gracefully handle gomod package import that has changed
+- Treat .bundlecache files as binary
+- Check if files are binary using the `file` util
+- Bump jest from 26.5.2 to 26.5.3 in /npm_and_yarn/helpers
+- Bump eslint from 7.10.0 to 7.11.0 in /npm_and_yarn/helpers
+- Update tests and fixtures for new Cargo.lock format
+- Explicitly install version of rust toolchain
+- Rust toolchain has been upgraded to 1.47.0. This means PRs will now try to
+  upgrade the lockfile to cargo's v2 format.
+- Update rubocop requirement from ~> 0.92.0 to ~> 0.93.0 in /common
+- Add a fingerprint to generated gitconfigs
+- If there isn't a backup gitconfig, remove the generated one
+- dry-run: updater-opts via option
+
 ## v0.122.0, 7 October 2020
 
 - Add experimental support for `go mod vendor`

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
-require "dependabot/monkey_patches/bundler/definition_bundler_version_patch"
-require "dependabot/monkey_patches/bundler/git_source_patch"
-
 require "excon"
 
 require "dependabot/bundler/update_checker"

@@ -5,35 +5,6 @@ require "dependabot/dependency_file"
 module Dependabot
   module FileUpdaters
     class VendorUpdater
-      # notable filenames without a reliable extension:
-      TEXT_FILE_NAMES = [
-        "README",
-        "LICENSE",
-        "Gemfile",
-        "Gemfile.lock",
-        ".bundlecache",
-        ".gitignore"
-      ].freeze
-
-      TEXT_FILE_EXTS = [
-        # code
-        ".rb",
-        ".erb",
-        ".gemspec",
-        ".js",
-        ".html",
-        # config
-        ".json",
-        ".xml",
-        ".toml",
-        ".yaml",
-        ".yml",
-        # docs
-        ".md",
-        ".txt",
-        ".go"
-      ].freeze
-
       def initialize(repo_contents_path:, vendor_dir:)
         @repo_contents_path = repo_contents_path
         @vendor_dir = vendor_dir
@@ -73,13 +44,16 @@ module Dependabot
 
       private
 
+      BINARY_ENCODINGS = %w(application/x-tarbinary binary).freeze
+
       attr_reader :repo_contents_path, :vendor_dir
 
       def binary_file?(path)
-        return false if TEXT_FILE_NAMES.include?(File.basename(path))
-        return false if TEXT_FILE_EXTS.include?(File.extname(path))
+        return false unless File.exist?(path)
 
-        true
+        encoding = `file -b --mime-encoding #{path}`.strip
+
+        BINARY_ENCODINGS.include?(encoding)
       end
     end
   end

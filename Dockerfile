@@ -21,6 +21,7 @@ RUN apt-get update \
     gnupg2 \
     curl \
     wget \
+    file \
     zlib1g-dev \
     liblzma-dev \
     tzdata \
@@ -63,14 +64,14 @@ RUN apt-get install -y software-properties-common \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout dd62b0d155878cd5dbb90b1a38c4a7e1993cf4ef && cd - \
-  && pyenv install 3.8.6 \
+  && cd /usr/local/.pyenv && git checkout v1.2.21 && cd - \
+  && pyenv install 3.9.0 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.8.6
+  && pyenv global 3.9.0
 
 
 ### JAVASCRIPT
@@ -166,16 +167,18 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 
 ### RUST
 
-# Install Rust 1.37.0
+# Install Rust 1.47.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.47.0 && rustup default 1.47.0
 
 
 ### NEW NATIVE HELPERS
 
 COPY composer/helpers /opt/composer/helpers
 COPY dep/helpers /opt/dep/helpers
+COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
@@ -189,6 +192,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
+  bash /opt/bundler/helpers/build /opt/bundler && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
