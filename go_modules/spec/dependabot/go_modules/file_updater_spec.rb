@@ -136,6 +136,26 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       it "includes an updated go.sum" do
         expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
       end
+
+      it "disables the tidy option" do
+        double = instance_double(
+          Dependabot::GoModules::FileUpdater::GoModUpdater,
+          updated_go_mod_content: "",
+          updated_go_sum_content: ""
+        )
+
+        expect(Dependabot::GoModules::FileUpdater::GoModUpdater).
+          to receive(:new).
+          with(
+            dependencies: anything,
+            credentials: anything,
+            repo_contents_path: anything,
+            directory: anything,
+            options: { tidy: false, vendor: false }
+          ).and_return(double)
+
+        updater.updated_dependency_files
+      end
     end
 
     context "vendoring" do

@@ -14,7 +14,7 @@ module Dependabot
                      credentials:, options: {})
         super
 
-        @repo_contents_path = repo_contents_path || create_placeholder_repo
+        use_repo_contents_stub if repo_contents_path.nil?
       end
 
       def self.updated_files_regex
@@ -62,9 +62,10 @@ module Dependabot
         raise "No go.mod!"
       end
 
-      def create_placeholder_repo
-        tmp = Dir.mktmpdir
-        Dir.chdir(tmp) do
+      def use_repo_contents_stub
+        @repo_contents_stub = true
+        @repo_contents_path = Dir.mktmpdir
+        Dir.chdir(@repo_contents_path) do
           dependency_files.each do |file|
             File.write(file.name, file.content)
           end
@@ -74,7 +75,6 @@ module Dependabot
           `git add .`
           `git commit -m'fake repo_contents_path'`
         end
-        tmp
       end
 
       def go_mod
@@ -107,8 +107,12 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            options: { vendor: vendor? }
+            options: { tidy: tidy?, vendor: vendor? }
           )
+      end
+
+      def tidy?
+        !@repo_contents_stub
       end
 
       def vendor?
