@@ -4,6 +4,7 @@ AllCops:
   Exclude:
     - '*/vendor/**/*'
     - '*/bin/**/*'
+    - 'bin/*'
     - '*/tmp/**/*'
     - 'tmp/**/*'
     - '*/helpers/**/*'
