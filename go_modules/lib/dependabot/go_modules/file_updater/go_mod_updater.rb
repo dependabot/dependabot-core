@@ -14,9 +14,14 @@ module Dependabot
         ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
 
         RESOLVABILITY_ERROR_REGEXES = [
+          # (Private) module could not be fetched
           /go: .*: git fetch .*: exit status 128/.freeze,
+          # The checksum in go.sum does not match the dowloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /build .*: cannot find module providing package/.freeze
+          # (Private) module could not be found
+          /cannot find module providing package/.freeze,
+          # Package in module was likely renamed or removed
+          /module .* found \(.*\), but does not contain package/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
