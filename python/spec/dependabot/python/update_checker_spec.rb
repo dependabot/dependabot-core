@@ -115,6 +115,29 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(Gem::Version.new("2.0.1"))
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "2.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 

@@ -387,6 +387,43 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    context "with a rubygems source" do
+      let(:current_version) { "1.2.0" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }]
+      end
+
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("1.3.0"))
+      end
+
+      context "with a security vulnerability" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "bundler",
+              vulnerable_versions: ["<= 1.3.0"]
+            )
+          ]
+        end
+
+        it "finds the lowest available non-vulnerable version" do
+          is_expected.to eq(Gem::Version.new("1.4.0"))
+        end
+      end
+    end
+  end
+
   describe "#latest_version_resolvable_with_full_unlock?" do
     include_context "stub rubygems compact index"
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }

@@ -26,6 +26,11 @@ module Dependabot
         latest_resolvable_version_details&.fetch(:version)
       end
 
+      def lowest_security_fix_version
+        latest_version_finder(remove_git_source: false).
+          lowest_security_fix_version
+      end
+
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
         return latest_resolvable_version if git_dependency?
