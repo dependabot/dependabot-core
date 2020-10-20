@@ -10,6 +10,26 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/go_mod_updater"
 
+      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
+                     credentials:, options: {})
+        super
+        return unless repo_contents_path.nil?
+
+        # Create a placeholder repository at repo_contents_path
+        tmp = Dir.mktmpdir
+        Dir.chdir(tmp) do
+          dependency_files.each do |file|
+            File.write(file.name, file.content)
+          end
+          `git config --global user.email "no-reply@github.com"`
+          `git config --global user.name "Dependabot"`
+          `git init .`
+          `git add .`
+          `git commit -m'fake repo_contents_path'`
+        end
+        @repo_contents_path = tmp
+      end
+
       def self.updated_files_regex
         [
           /^go\.mod$/,
