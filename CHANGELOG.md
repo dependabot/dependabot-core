@@ -1,3 +1,13 @@
+## v0.124.0, 20 October 2020
+
+- Go: Promote experimental `go mod tidy` support to stable
+  (i.e., always tidy if repo_contents_path is given)
+- Go: Promote experimental `go mod vendor` support to stable
+  (i.e., always vendor if repo_contents_path is given and vendor/modules.txt is present)
+- Bump jest from 26.5.3 to 26.6.0 in /npm_and_yarn/helpers
+- Bump object-path from 0.11.4 to 0.11.5 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.10.10 to 1.10.15 in /composer/helpers
+
 ## v0.123.1, 19 October 2020
 
 - Go mod: Handle `cannot find module` during go mod tidy
