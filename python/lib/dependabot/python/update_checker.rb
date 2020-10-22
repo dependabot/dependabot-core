@@ -74,6 +74,10 @@ module Dependabot
           end
       end
 
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
+      end
+
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
@@ -119,7 +123,7 @@ module Dependabot
       end
 
       def fetch_lowest_resolvable_security_fix_version
-        fix_version = latest_version_finder.lowest_security_fix_version
+        fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
         if resolver_type == :requirements

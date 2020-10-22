@@ -79,6 +79,12 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Lowest available security fix version not checking resolvability
+      # @return [Dependabot::<package manager>::Version, #to_s] version class
+      def lowest_security_fix_version
+        raise NotImplementedError
+      end
+
       def lowest_resolvable_security_fix_version
         raise NotImplementedError
       end
