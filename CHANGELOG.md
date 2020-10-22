@@ -1,3 +1,7 @@
+## v0.124.1, 22 October 2020
+
+- Add lowest_security_fix_version method to update checkers
+
 ## v0.124.0, 20 October 2020
 
 - Go: Promote experimental `go mod tidy` support to stable
