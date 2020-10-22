@@ -13,22 +13,8 @@ module Dependabot
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
                      credentials:, options: {})
         super
-        return unless repo_contents_path.nil?
 
-        # masquerade repo_contents_path for GoModUpdater during transition
-        tmp = Dir.mktmpdir
-        Dir.chdir(tmp) do
-          dependency_files.each do |file|
-            File.write(file.name, file.content)
-          end
-          `git config --global user.email "no-reply@github.com"`
-          `git config --global user.name "Dependabot"`
-          `git init .`
-          `git add .`
-          `git commit -m'fake repo_contents_path'`
-        end
-        @repo_contents_path = tmp
-        @repo_contents_stub = true
+        use_repo_contents_stub if repo_contents_path.nil?
       end
 
       def self.updated_files_regex
@@ -76,6 +62,21 @@ module Dependabot
         raise "No go.mod!"
       end
 
+      def use_repo_contents_stub
+        @repo_contents_stub = true
+        @repo_contents_path = Dir.mktmpdir
+        Dir.chdir(@repo_contents_path) do
+          dependency_files.each do |file|
+            File.write(file.name, file.content)
+          end
+          `git config --global user.email "no-reply@github.com"`
+          `git config --global user.name "Dependabot"`
+          `git init .`
+          `git add .`
+          `git commit -m'fake repo_contents_path'`
+        end
+      end
+
       def go_mod
         @go_mod ||= get_original_file("go.mod")
       end
@@ -111,12 +112,11 @@ module Dependabot
       end
 
       def tidy?
-        !@repo_contents_stub && options.fetch(:go_mod_tidy, false)
+        !@repo_contents_stub
       end
 
       def vendor?
-        File.exist?(File.join(vendor_dir, "modules.txt")) &&
-          options.fetch(:go_mod_vendor, false)
+        File.exist?(File.join(vendor_dir, "modules.txt"))
       end
     end
   end

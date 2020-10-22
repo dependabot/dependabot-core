@@ -14,15 +14,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       dependency_files: files,
       dependencies: [dependency],
       credentials: credentials,
-      repo_contents_path: repo_contents_path,
-      options: options
+      repo_contents_path: repo_contents_path
     )
   end
 
   let(:files) { [go_mod, go_sum] }
   let(:project_name) { "go_sum" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
-  let(:vendor) { false }
 
   let(:credentials) do
     [{
@@ -32,7 +30,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:options) { { go_mod_vendor: vendor } }
 
   let(:go_mod) do
     Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
@@ -93,44 +90,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
     end
 
-    context "options" do
-      let(:options) { { go_mod_tidy: true, go_mod_vendor: vendor } }
-      let(:dummy_updater) do
-        instance_double(
-          Dependabot::GoModules::FileUpdater::GoModUpdater,
-          updated_go_mod_content: "",
-          updated_go_sum_content: ""
-        )
-      end
-
-      it "uses the tidy option" do
-        expect(Dependabot::GoModules::FileUpdater::GoModUpdater).
-          to receive(:new).
-          with(
-            dependencies: [dependency],
-            credentials: credentials,
-            repo_contents_path: repo_contents_path,
-            directory: "/",
-            options: { tidy: true, vendor: false }
-          ).and_return(dummy_updater)
-
-        updater.updated_dependency_files
-      end
-
-      context "vendor option is passed but vendor directory not checked in" do
-        let(:vendor) { true }
-
-        it "does not includes the vendored files" do
-          expect(updater.updated_dependency_files.map(&:name)).to match_array(
-            %w(
-              go.mod
-              go.sum
-            )
-          )
-        end
-      end
-    end
-
     context "without a go.sum" do
       let(:project_name) { "simple" }
       let(:files) { [go_mod] }
@@ -140,9 +99,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "without repo_contents_path" do
+    context "without a clone of the repository" do
       before do
-        # We don't have git configured in prod, so simulate that in tests
+        # We don't have git configured in prod, so simulate the same setup here
         Dir.chdir(repo_contents_path) do
           `git config --global --unset user.email`
           `git config --global --unset user.name`
@@ -165,7 +124,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }]
+          }],
+          repo_contents_path: nil
         )
       end
 
@@ -176,12 +136,30 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       it "includes an updated go.sum" do
         expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
       end
+
+      it "disables the tidy option" do
+        double = instance_double(
+          Dependabot::GoModules::FileUpdater::GoModUpdater,
+          updated_go_mod_content: "",
+          updated_go_sum_content: ""
+        )
+
+        expect(Dependabot::GoModules::FileUpdater::GoModUpdater).
+          to receive(:new).
+          with(
+            dependencies: anything,
+            credentials: anything,
+            repo_contents_path: anything,
+            directory: anything,
+            options: { tidy: false, vendor: false }
+          ).and_return(double)
+
+        updater.updated_dependency_files
+      end
     end
 
     context "vendoring" do
       let(:project_name) { "vendor" }
-      let(:vendor) { true }
-
       let(:dependency_name) { "github.com/pkg/errors" }
       let(:dependency_version) { "v0.9.1" }
       let(:dependency_previous_version) { "v0.8.0" }
@@ -263,6 +241,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             segments from the beginning of the file path until the number of path
           LINE
         )
+      end
+
+      context "vendor directory not checked in" do
+        let(:project_name) { "go_sum" }
+
+        it "excludes the vendored files" do
+          paths = updater.updated_dependency_files.map(&:name)
+          vendor_paths = paths.select { |path| path.start_with?("vendor") }
+          expect(vendor_paths).to be_empty
+        end
       end
     end
   end

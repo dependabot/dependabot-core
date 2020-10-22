@@ -1,6 +1,7 @@
 /.bundle/
 /node_modules
 /.env
+/.envrc
 /tmp
 /pkg
 /dependabot-*.gem
