@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dependabot\Composer;
 
+use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Installer;
 
@@ -79,7 +80,7 @@ final class Updater
             ->setUpdate(true)
             ->setDevMode(true)
             ->setUpdateAllowList([$dependencyName])
-            ->setAllowListTransitiveDependencies(true)
+            ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
