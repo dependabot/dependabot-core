@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
           ).
           and_call_original
 
-        expect(updated_lockfile_content).to include("\"version\": \"1.22.1\"")
+        expect(updated_lockfile_content).to include("\"version\": \"1.0.1\"")
         expect(updated_lockfile_content).to include("\"prefer-stable\": false")
       end
     end

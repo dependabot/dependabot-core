@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dependabot\Composer;
 
+use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Installer;
 use Composer\Package\PackageInterface;
@@ -46,7 +47,7 @@ final class UpdateChecker
             $io->loadConfiguration($config);
         }
 
-        $installationManager = new DependabotInstallationManager();
+        $installationManager = new DependabotInstallationManager($composer->getLoop(), $io);
 
         $install = new Installer(
             $io,
@@ -66,7 +67,7 @@ final class UpdateChecker
             ->setUpdate(true)
             ->setDevMode(true)
             ->setUpdateAllowList([$dependencyName])
-            ->setAllowListTransitiveDependencies(true)
+            ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
