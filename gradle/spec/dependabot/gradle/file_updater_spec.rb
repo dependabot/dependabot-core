@@ -63,7 +63,9 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
-        updated_files.find { |f| f.name == "build.gradle" }
+        updated_files.find do |f|
+          %w(build.gradle build.gradle.kts).include?(f.name)
+        end
       end
 
       its(:content) do
@@ -73,6 +75,19 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         )
       end
       its(:content) { is_expected.to include "version: '4.2.0'" }
+
+      context "with kotlin" do
+        let(:buildfile_fixture_name) { "build.gradle.kts" }
+
+        its(:content) do
+          is_expected.to include(
+            # rubocop:disable Layout/LineLength
+            'implementation(group = "co.aikar", name = "acf-paper", version = "0.6.0-SNAPSHOT", changing: true)'
+            # rubocop:enable Layout/LineLength
+          )
+        end
+        its(:content) { is_expected.to include 'version = "4.2.0"' }
+      end
 
       context "with a plugin" do
         let(:buildfile_fixture_name) { "dependency_set.gradle" }
@@ -102,6 +117,83 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'id "org.springframework.boot" version "2.1.4.RELEASE" apply false'
           )
+        end
+
+        context "with kotlin" do
+          let(:buildfile_fixture_name) { "root_build.gradle.kts" }
+
+          its(:content) do
+            is_expected.to include(
+              # rubocop:disable Layout/LineLength
+              'id("org.springframework.boot") version "2.1.4.RELEASE" apply false'
+              # rubocop:enable Layout/LineLength
+            )
+          end
+
+          context "with a dependency version defined by a property" do
+            let(:buildfile) do
+              Dependabot::DependencyFile.new(
+                name: "build.gradle.kts",
+                content: fixture("buildfiles", buildfile_fixture_name)
+              )
+            end
+            let(:dependencies) do
+              [
+                Dependabot::Dependency.new(
+                  name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
+                  version: "23.6-jre",
+                  previous_version: "1.2.61",
+                  requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "23.6-jre",
+                    groups: [],
+                    source: {
+                      type: "maven_repo",
+                      url: "https://repo.maven.apache.org/maven2"
+                    },
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  previous_requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "1.2.61",
+                    groups: [],
+                    source: nil,
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  package_manager: "gradle"
+                ),
+                Dependabot::Dependency.new(
+                  name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
+                  version: "23.6-jre",
+                  previous_version: "1.2.61",
+                  requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "23.6-jre",
+                    groups: [],
+                    source: {
+                      type: "maven_repo",
+                      url: "https://repo.maven.apache.org/maven2"
+                    },
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  previous_requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "1.2.61",
+                    groups: [],
+                    source: nil,
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  package_manager: "gradle"
+                )
+              ]
+            end
+
+            it "updates the version in the build.gradle.kts" do
+              expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
+              expect(updated_files.first.content).
+                to include('extra["kotlinVersion"] = "23.6-jre"')
+            end
+          end
         end
       end
 
