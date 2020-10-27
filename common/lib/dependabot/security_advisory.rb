@@ -43,8 +43,13 @@ module Dependabot
       safe_versions.any?
     end
 
-    def fixes_advisory?(dependency)
-      return false unless dependency_name == dependency.name
+    # Check if the advisory is fixed by the updated dependency
+    #
+    # @param dependency [Dependabot::Dependency] Updated dependency
+    # @return [Boolean]
+    def fixed_by?(dependency)
+      # Handle case mismatch between the security advisory and parsed name
+      return false unless dependency_name.downcase == dependency.name.downcase
       return false unless package_manager == dependency.package_manager
       # TODO: Support no previous version to the same level as dependency graph
       # and security alerts. We currently ignore dependency updates without a
@@ -59,6 +64,10 @@ module Dependabot
       !affects_version?(dependency.version)
     end
 
+    # Check if the version is affected by the advisory
+    #
+    # @param version [Dependabot::<Package Manager>::Version] version class
+    # @return [Boolean]
     def affects_version?(version)
       return false unless version_class.correct?(version)
       return false unless [*safe_versions, *vulnerable_versions].any?
