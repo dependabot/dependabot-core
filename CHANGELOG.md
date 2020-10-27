@@ -1,3 +1,9 @@
+## v0.124.3, 27 October 2020
+
+- Rename fixes_advisory? to fixed_by? and handle mixed case names
+- dry-run: add security_updates_only
+- Bump eslint from 7.12.0 to 7.12.1 in /npm_and_yarn/helpers
+
 ## v0.124.2, 26 October 2020
 
 - Add fixes_advisory? and affects_version? to security advisory
