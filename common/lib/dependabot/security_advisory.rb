@@ -44,7 +44,8 @@ module Dependabot
     end
 
     def fixes_advisory?(dependency)
-      return false unless dependency_name == dependency.name
+      # Handle case mismatch between the security advisory and parsed name
+      return false unless dependency_name.downcase == dependency.name.downcase
       return false unless package_manager == dependency.package_manager
       # TODO: Support no previous version to the same level as dependency graph
       # and security alerts. We currently ignore dependency updates without a

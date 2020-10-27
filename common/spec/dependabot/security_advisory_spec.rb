@@ -149,6 +149,11 @@ RSpec.describe Dependabot::SecurityAdvisory do
     end
 
     context "for a different dependency" do
+      let(:dependency_name) { "Rails" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "when the name has a different case" do
       let(:dependency_name) { "gemcutter" }
       it { is_expected.to eq(false) }
     end
