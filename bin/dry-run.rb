@@ -439,7 +439,7 @@ end
 
 def security_fix?(dependency)
   security_advisories.any? do |advisory|
-    advisory.fixes_advisory?(dependency)
+    advisory.fixed_by?(dependency)
   end
 end
 

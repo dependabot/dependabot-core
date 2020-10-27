@@ -121,8 +121,8 @@ RSpec.describe Dependabot::SecurityAdvisory do
     end
   end
 
-  describe "#fixes_advisory?" do
-    subject { security_advisory.fixes_advisory?(dependency) }
+  describe "#fixed_by?" do
+    subject { security_advisory.fixed_by?(dependency) }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -149,13 +149,13 @@ RSpec.describe Dependabot::SecurityAdvisory do
     end
 
     context "for a different dependency" do
-      let(:dependency_name) { "Rails" }
-      it { is_expected.to eq(true) }
+      let(:dependency_name) { "gemcutter" }
+      it { is_expected.to eq(false) }
     end
 
     context "when the name has a different case" do
-      let(:dependency_name) { "gemcutter" }
-      it { is_expected.to eq(false) }
+      let(:dependency_name) { "Rails" }
+      it { is_expected.to eq(true) }
     end
 
     context "with a dependency that has already been patched" do
