@@ -161,6 +161,8 @@ docker run --rm -ti \
   -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
   -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
   -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
+  -v "$(pwd)/bundler/helpers:/opt/bundler" \
+  -v "$(pwd)/bundler/helpers:/opt/bundler/helpers" \
   -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \

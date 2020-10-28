@@ -23,6 +23,8 @@ begin
 
   output({ result: Functions.send(function, **args) })
 rescue => error
-  output({ error: error.message, error_class: error.class })
+  output(
+    { error: error.message, error_class: error.class, trace: error.backtrace }
+  )
   exit(1)
 end
