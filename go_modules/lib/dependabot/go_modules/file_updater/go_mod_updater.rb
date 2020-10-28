@@ -255,9 +255,9 @@ module Dependabot
               new(go_mod_path, match[1], match[2])
           end
 
+          # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
-          raise Dependabot::DependencyFileNotParseable.
-            new(go_mod_path, msg)
+          raise Dependabot::DependabotError, msg
         end
 
         def go_mod_path
