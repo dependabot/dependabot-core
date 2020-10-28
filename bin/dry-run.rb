@@ -101,7 +101,8 @@ $options = {
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
-  security_advisories: []
+  security_advisories: [],
+  security_updates_only: false,
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -179,6 +180,11 @@ option_parse = OptionParser.new do |opts|
                                      [o.strip.downcase.to_sym, true]
                                    end
                                  ]
+  end
+
+  opts.on("--security-updates-only",
+          "Only update vulnerable dependencies") do |_value|
+    $options[:security_updates_only] = true
   end
 end
 
@@ -379,8 +385,10 @@ def security_advisories
     safe_versions = (adv["patched_versions"] || []) +
                     (adv["unaffected_versions"] || [])
 
+    # Handle case mismatches between advisory name and parsed dependency name
+    dependency_name = adv["dependency_name"].downcase
     Dependabot::SecurityAdvisory.new(
-      dependency_name: adv[:dependency_name],
+      dependency_name: dependency_name,
       package_manager: $package_manager,
       vulnerable_versions: vulnerable_versions,
       safe_versions: safe_versions
@@ -429,6 +437,12 @@ def generate_dependency_files_for(updated_dependencies)
   updater.updated_dependency_files
 end
 
+def security_fix?(dependency)
+  security_advisories.any? do |advisory|
+    advisory.fixed_by?(dependency)
+  end
+end
+
 puts "=> updating #{dependencies.count} dependencies"
 
 # rubocop:disable Metrics/BlockLength
@@ -441,6 +455,17 @@ dependencies.each do |dep|
   puts " => checking for updates"
   puts " => latest available version is #{checker.latest_version}"
 
+  if $options[:security_updates_only] && !checker.vulnerable?
+    if checker.version_class.correct?(checker.dependency.version)
+      puts "    (no security update needed as it's not vulnerable)"
+    else
+      puts "    (can't update vulnerable dependencies for "\
+           "projects without a lockfile as the currently "\
+           "installed version isn't known 🚨)"
+    end
+    next
+  end
+
   if checker.vulnerable?
     if checker.lowest_security_fix_version
       puts " => earliest available non-vulnerable version is "\
@@ -449,13 +474,14 @@ dependencies.each do |dep|
       puts " => there is no available non-vulnerable version"
     end
   end
+
   latest_allowed_version = checker.vulnerable? ?
     checker.lowest_resolvable_security_fix_version :
     checker.latest_resolvable_version
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
   if checker.up_to_date?
-    puts "    (no update needed)"
+    puts "    (no update needed as it's already up-to-date)"
     next
   end
 
@@ -477,7 +503,7 @@ dependencies.each do |dep|
   end
 
   if requirements_to_unlock == :update_not_possible
-    if checker.vulnerable?
+    if checker.vulnerable? || $options[:security_updates_only]
       puts "    (no security update possible 🙅‍♀️)"
     else
       puts "    (no update possible 🙅‍♀️)"
@@ -488,14 +514,6 @@ dependencies.each do |dep|
   updated_deps = checker.updated_dependencies(
     requirements_to_unlock: requirements_to_unlock
   )
-
-  if checker.vulnerable?
-    version_class = Dependabot::Utils.version_class_for_package_manager($package_manager)
-    versions = updated_deps.map(&:version).map { |v| version_class.new(v) }
-    if versions.any? { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
-      puts "    (updated version is still vulnerable 🚨)"
-    end
-  end
 
   if peer_dependencies_can_update?(checker, requirements_to_unlock)
     puts "    (no update possible, peer dependency can be updated)"
@@ -510,6 +528,11 @@ dependencies.each do |dep|
     next true if d.requirements == d.previous_requirements
 
     d.version == d.previous_version
+  end
+
+  if $options[:security_updates_only] &&
+     updated_deps.none? { |dep| security_fix?(dep) }
+    puts "    (updated version is still vulnerable 🚨)"
   end
 
   if $options[:write]
