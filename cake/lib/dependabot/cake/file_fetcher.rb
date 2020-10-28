@@ -9,8 +9,9 @@ module Dependabot
       require_relative "file_fetcher/script_paths_finder"
       require_relative "file_fetcher/wildcard_search"
 
-      def initialize(source:, credentials:)
-        super(source: source, credentials: credentials)
+      def initialize(source:, credentials:, repo_contents_path: nil)
+        super(source: source, credentials: credentials,
+              repo_contents_path: repo_contents_path)
         @wildcard_search = WildcardSearch.new(
           enumerate_files_fn:
               ->(dir) { repo_contents(dir: dir) }
