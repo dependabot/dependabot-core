@@ -1,3 +1,17 @@
+## v0.124.3, 27 October 2020
+
+- Rename fixes_advisory? to fixed_by? and handle mixed case names
+- dry-run: add security_updates_only
+- Bump eslint from 7.12.0 to 7.12.1 in /npm_and_yarn/helpers
+
+## v0.124.2, 26 October 2020
+
+- Add fixes_advisory? and affects_version? to security advisory
+- Bump jest from 26.6.0 to 26.6.1 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.10.15 to 1.10.16 in /composer/helpers
+- Bump poetry from 1.1.2 to 1.1.4 in /python/helpers
+- Bump eslint from 7.11.0 to 7.12.0 in /npm_and_yarn/helpers
+
 ## v0.124.1, 22 October 2020
 
 - Add lowest_security_fix_version method to update checkers
