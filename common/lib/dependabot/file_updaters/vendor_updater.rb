@@ -18,7 +18,9 @@ module Dependabot
         return [] unless repo_contents_path && vendor_dir
 
         Dir.chdir(repo_contents_path) do
-          relative_dir = Pathname.new(vendor_dir).relative_path_from(Dir.pwd)
+          relative_dir = Pathname.new(vendor_dir).relative_path_from(
+            repo_contents_path
+          )
 
           status = SharedHelpers.run_shell_command(
             "git status --untracked-files=all --porcelain=v1 #{relative_dir}"
