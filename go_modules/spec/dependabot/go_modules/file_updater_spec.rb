@@ -252,6 +252,49 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           expect(vendor_paths).to be_empty
         end
       end
+
+      context "nested folder" do
+        let(:project_name) { "nested_vendor" }
+        let(:directory) { "nested" }
+
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(
+            name: "go.mod", content: go_mod_body, directory: directory
+          )
+        end
+        let(:go_mod_body) do
+          fixture("projects", project_name, directory, "go.mod")
+        end
+
+        let(:go_sum) do
+          Dependabot::DependencyFile.new(
+            name: "go.sum", content: go_sum_body, directory: directory
+          )
+        end
+        let(:go_sum_body) do
+          fixture("projects", project_name, directory, "go.sum")
+        end
+
+        it "vendors in the right directory" do
+          expect(updater.updated_dependency_files.map(&:name)).to match_array(
+            %w(
+              go.mod
+              go.sum
+              vendor/github.com/pkg/errors/.travis.yml
+              vendor/github.com/pkg/errors/Makefile
+              vendor/github.com/pkg/errors/README.md
+              vendor/github.com/pkg/errors/errors.go
+              vendor/github.com/pkg/errors/go113.go
+              vendor/github.com/pkg/errors/stack.go
+              vendor/modules.txt
+            )
+          )
+
+          updater.updated_dependency_files.map(&:directory).each do |dir|
+            expect(dir).to eq("/nested")
+          end
+        end
+      end
     end
   end
 end

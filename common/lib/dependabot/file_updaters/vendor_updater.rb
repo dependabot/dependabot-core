@@ -31,8 +31,10 @@ module Dependabot
               encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
               encoded_content = Base64.encode64(encoded_content) unless deleted
             end
+
+            clean_base_directory = Pathname.new(base_directory).basename
             Dependabot::DependencyFile.new(
-              name: path,
+              name: path.sub("#{clean_base_directory}/", ""),
               content: encoded_content,
               directory: base_directory,
               deleted: deleted,
