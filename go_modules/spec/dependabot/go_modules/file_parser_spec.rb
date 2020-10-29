@@ -236,5 +236,20 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(dependency.name).to eq("rsc.io/qr")
       end
     end
+
+    context "that is not resolvable" do
+      let(:go_mod_content) do
+        fixture("projects", "unknown_vcs", "go.mod")
+      end
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error do |err|
+            expect(err).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(err.message).
+              to start_with("Cannot detect VCS for unknown/vcs")
+          end
+      end
+    end
   end
 end
