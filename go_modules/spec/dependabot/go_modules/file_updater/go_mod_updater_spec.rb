@@ -209,6 +209,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
+          describe "with non-package go files in the root" do
+            let(:project_name) { "doc_go" }
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(rsc.io/quote v1.5.2\n)
+              )
+            end
+          end
+
           context "renamed package name" do
             let(:project_name) { "renamed_package" }
             let(:dependency_name) { "github.com/googleapis/gnostic" }

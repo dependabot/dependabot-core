@@ -151,9 +151,11 @@ module Dependabot
         def run_go_get
           tmp_go_file = "#{SecureRandom.hex}.go"
 
-          unless Dir.glob("*.go").any?
-            File.write(tmp_go_file, "package dummypkg\n")
+          package = Dir.glob("*.go").any? do |path|
+            !File.read(path).include?("// +build")
           end
+
+          File.write(tmp_go_file, "package dummypkg\n") unless package
 
           _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
           handle_subprocess_error(stderr) unless status.success?
