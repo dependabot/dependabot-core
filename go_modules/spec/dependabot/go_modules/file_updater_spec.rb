@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/file_updater"
+require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GoModules::FileUpdater do
@@ -103,15 +104,21 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       before do
         # We don't have git configured in prod, so simulate the same setup here
         Dir.chdir(repo_contents_path) do
-          `git config --global --unset user.email`
-          `git config --global --unset user.name`
+          # Only used to create a backup git config that's reset
+          Dependabot::SharedHelpers.with_git_configured(credentials: []) do
+            `git config --global --unset user.email`
+            `git config --global --unset user.name`
+          end
         end
       end
 
       after do
         Dir.chdir(repo_contents_path) do
-          `git config --global user.email "no-reply@github.com"`
-          `git config --global user.name "dependabot-ci"`
+          # Only used to create a backup git config that's reset
+          Dependabot::SharedHelpers.with_git_configured(credentials: []) do
+            `git config --global user.email "no-reply@github.com"`
+            `git config --global user.name "dependabot-ci"`
+          end
         end
       end
 
@@ -155,6 +162,25 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           ).and_return(double)
 
         updater.updated_dependency_files
+      end
+
+      context "when dependency files are nested in a directory" do
+        let(:go_mod) do
+          Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body,
+                                         directory: "/nested")
+        end
+        let(:go_sum) do
+          Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body,
+                                         directory: "/nested")
+        end
+
+        it "includes an updated go.mod" do
+          expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+        end
+
+        it "includes an updated go.sum" do
+          expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+        end
       end
     end
 
