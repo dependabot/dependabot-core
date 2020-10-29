@@ -42,8 +42,7 @@ module Dependabot
               )
           end
 
-          vendor_updater.
-            updated_vendor_cache_files(base_directory: directory).
+          vendor_updater.updated_vendor_cache_files(base_directory: directory).
             each do |file|
             updated_files << file
           end

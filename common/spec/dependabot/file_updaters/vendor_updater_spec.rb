@@ -11,12 +11,15 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
     )
   end
 
-  let(:vendor_dir) { File.join(repo_contents_path, "vendor/cache") }
+  let(:vendor_dir) do
+    File.join(repo_contents_path, directory, "vendor/cache")
+  end
   let(:project_name) { "vendor_gems" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:directory) { "/" }
 
   let(:updated_files) do
-    updater.updated_vendor_cache_files(base_directory: repo_contents_path)
+    updater.updated_vendor_cache_files(base_directory: directory)
   end
 
   after do
@@ -27,6 +30,8 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
     before do
       in_cloned_repository(repo_contents_path) do
         # change a vendor file like an updater would
+        next unless File.exist?("vendor/cache/business-1.4.0.gem")
+
         `mv vendor/cache/business-1.4.0.gem vendor/cache/business-1.5.0.gem`
       end
     end
@@ -82,6 +87,27 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       expect(updated_files.map(&:name)).to_not include(
         "some-file.txt"
       )
+    end
+
+    context "in a directory" do
+      let(:project_name) { "nested_vendor_gems" }
+      let(:directory) { "nested" }
+
+      before do
+        in_cloned_repository(repo_contents_path) do
+          # change a vendor file like an updater would
+          `mv nested/vendor/cache/business-1.4.0.gem \
+          nested/vendor/cache/business-1.5.0.gem`
+        end
+      end
+
+      it "does not include the directory in the name" do
+        expect(updated_files.first.name).to_not include("nested")
+      end
+
+      it "sets the right directory" do
+        expect(updated_files.first.directory).to eq("/nested")
+      end
     end
   end
 
