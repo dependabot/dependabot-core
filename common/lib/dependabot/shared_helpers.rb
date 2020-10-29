@@ -42,6 +42,9 @@ module Dependabot
         path = Pathname.new(File.join(repo_contents_path, directory)).
                expand_path
         reset_git_repo(repo_contents_path)
+        # Handle missing directories by creating an empty one and relying on the
+        # file fetcher to raise a DependencyFileNotFound error
+        FileUtils.mkdir_p(path) unless Dir.exist?(path)
         Dir.chdir(path) { yield(path) }
       else
         in_a_temporary_directory(directory, &block)

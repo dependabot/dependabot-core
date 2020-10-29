@@ -329,12 +329,18 @@ source = Dependabot::Source.new(
   commit: $options[:commit]
 )
 
-$repo_contents_path = Dir.mktmpdir if $options[:clone]
+always_clone = Dependabot::Utils.
+               always_clone_for_package_manager?($package_manager)
+if $options[:clone] || always_clone
+  $repo_contents_path = Dir.mktmpdir
+  puts "=> cloning into #{$repo_contents_path}"
+end
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
           new(source: source, credentials: $options[:credentials],
               repo_contents_path: $repo_contents_path)
-$files = if $options[:clone]
+$files = if $options[:clone] || always_clone
+           fetcher.clone_repo_contents
            fetcher.files
          else
            cached_dependency_files_read do
