@@ -21,7 +21,10 @@ module Dependabot
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
-          /module .* found \(.*\), but does not contain package/m.freeze
+          /module .* found \(.*\), but does not contain package/m.freeze,
+          # Package does not exist, has been pulled or cannot be reached due to
+          # auth problems with either git or the go proxy
+          /go: .*: unknown revision/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
@@ -252,9 +255,9 @@ module Dependabot
               new(go_mod_path, match[1], match[2])
           end
 
+          # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
-          raise Dependabot::DependencyFileNotParseable.
-            new(go_mod_path, msg)
+          raise Dependabot::DependabotError, msg
         end
 
         def go_mod_path
