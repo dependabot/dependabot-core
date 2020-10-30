@@ -51,6 +51,15 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     end
   end
 
+  context "when directory is missing" do
+    let(:directory) { "/missing" }
+
+    it "raises a helpful error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
   context "for an application" do
     let(:repo) { "dependabot-fixtures/go-modules-app" }
 

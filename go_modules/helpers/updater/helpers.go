@@ -3,7 +3,7 @@ package updater
 import (
 	"strings"
 
-	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
+	"golang.org/x/mod/modfile"
 )
 
 // Private methods lifted from the `modfile` package

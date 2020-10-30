@@ -134,5 +134,49 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     end
 
     it "doesn't update Git SHAs not on master to newer commits to master"
+
+    context "when the package url returns 404" do
+      let(:dependency_files) { [go_mod] }
+      let(:project_name) { "missing_package" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+      let(:dependency_name) { "example.com/test/package" }
+      let(:dependency_version) { "1.7.0" }
+
+      let(:go_mod) do
+        Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
+      end
+      let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { latest_resolvable_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("example.com/test/package")
+        end
+      end
+    end
+
+    context "when the package url doesn't include any valid meta tags" do
+      let(:dependency_files) { [go_mod] }
+      let(:project_name) { "missing_meta_tag" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+      let(:dependency_name) { "web.archive.org/web/dependabot.com" }
+      let(:dependency_version) { "1.7.0" }
+
+      let(:go_mod) do
+        Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
+      end
+      let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { latest_resolvable_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("web.archive.org/web/dependabot.com")
+        end
+      end
+    end
   end
 end

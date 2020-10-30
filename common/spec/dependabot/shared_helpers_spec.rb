@@ -20,6 +20,71 @@ RSpec.describe Dependabot::SharedHelpers do
     end
   end
 
+  describe ".in_a_temporary_repo_directory" do
+    subject(:in_a_temporary_repo_directory) do
+      Dependabot::SharedHelpers.
+        in_a_temporary_repo_directory(directory, repo_contents_path) do
+          on_create.call
+        end
+    end
+
+    let(:directory) { "/" }
+    let(:on_create) { -> { Dir.pwd } }
+    let(:project_name) { "vendor_gems" }
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    it "runs inside the temporary repo directory" do
+      expect(in_a_temporary_repo_directory).to eq(repo_contents_path.to_s)
+    end
+
+    context "with a valid directory" do
+      let(:directory) { "vendor/cache" }
+      let(:on_create) { -> { `ls .` } }
+
+      it "yields the directory contents" do
+        expect(in_a_temporary_repo_directory).
+          to include("business-1.4.0.gem")
+      end
+    end
+
+    context "with a missing directory" do
+      let(:directory) { "missing/directory" }
+
+      it "creates the missing directory " do
+        expect(in_a_temporary_repo_directory).
+          to eq(repo_contents_path.join(directory).to_s)
+      end
+    end
+
+    context "with modifications to the repo contents" do
+      before do
+        Dir.chdir(repo_contents_path) do
+          `touch some-file.txt`
+        end
+      end
+
+      let(:on_create) { -> { `stat some-file.txt 2>&1` } }
+
+      it "resets the changes " do
+        expect(in_a_temporary_repo_directory).
+          to include("No such file or directory")
+      end
+    end
+
+    context "without repo_contents_path" do
+      before do
+        allow(described_class).to receive(:in_a_temporary_directory).
+          and_call_original
+      end
+
+      it "falls back to creating a temporary directory" do
+        expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
+          to yield_with_args(Pathname)
+        expect(described_class).to have_received(:in_a_temporary_directory)
+      end
+    end
+  end
+
   describe ".run_helper_subprocess" do
     let(:function) { "example" }
     let(:args) { ["foo"] }

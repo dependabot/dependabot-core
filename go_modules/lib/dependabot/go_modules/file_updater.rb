@@ -42,8 +42,7 @@ module Dependabot
               )
           end
 
-          vendor_updater.
-            updated_vendor_cache_files(base_directory: directory).
+          vendor_updater.updated_vendor_cache_files(base_directory: directory).
             each do |file|
             updated_files << file
           end
@@ -65,15 +64,23 @@ module Dependabot
       def use_repo_contents_stub
         @repo_contents_stub = true
         @repo_contents_path = Dir.mktmpdir
+
         Dir.chdir(@repo_contents_path) do
           dependency_files.each do |file|
-            File.write(file.name, file.content)
+            path = File.join(@repo_contents_path, directory, file.name)
+            path = Pathname.new(path).expand_path
+            FileUtils.mkdir_p(path.dirname) unless Dir.exist?(path.dirname)
+            File.write(path, file.content)
           end
-          `git config --global user.email "no-reply@github.com"`
-          `git config --global user.name "Dependabot"`
-          `git init .`
-          `git add .`
-          `git commit -m'fake repo_contents_path'`
+
+          # Only used to create a backup git config that's reset
+          SharedHelpers.with_git_configured(credentials: []) do
+            `git config --global user.email "no-reply@github.com"`
+            `git config --global user.name "Dependabot"`
+            `git init .`
+            `git add .`
+            `git commit -m'fake repo_contents_path'`
+          end
         end
       end
 
