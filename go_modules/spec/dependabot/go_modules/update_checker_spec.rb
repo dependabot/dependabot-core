@@ -135,7 +135,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
     it "doesn't update Git SHAs not on master to newer commits to master"
 
-    context "when the package url doesn't include any valid meta tags" do
+    context "when the package url returns 404" do
       let(:dependency_files) { [go_mod] }
       let(:project_name) { "missing_meta_tag" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }
