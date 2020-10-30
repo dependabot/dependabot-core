@@ -209,6 +209,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
+          describe "with ignored go files in the root" do
+            let(:project_name) { "ignored_go_files" }
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(rsc.io/quote v1.5.2\n)
+              )
+            end
+          end
+
           context "renamed package name" do
             let(:project_name) { "renamed_package" }
             let(:dependency_name) { "github.com/googleapis/gnostic" }
@@ -323,6 +333,35 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it do
         is_expected.to_not include("github.com/pkg/errors")
+      end
+    end
+
+    context "for a revision that does not exist" do
+      # The go.mod file contains a reference to a revision of
+      # google.golang.org/grpc that does not exist.
+      let(:project_name) { "unknown_revision" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.2",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("unknown revision v1.33.999")
+        end
       end
     end
   end

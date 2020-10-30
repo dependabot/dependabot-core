@@ -18,7 +18,10 @@ module Dependabot
         return [] unless repo_contents_path && vendor_dir
 
         Dir.chdir(repo_contents_path) do
-          relative_dir = vendor_dir.sub("#{repo_contents_path}/", "")
+          relative_dir = Pathname.new(vendor_dir).relative_path_from(
+            repo_contents_path
+          )
+
           status = SharedHelpers.run_shell_command(
             "git status --untracked-files=all --porcelain=v1 #{relative_dir}"
           )
@@ -31,8 +34,14 @@ module Dependabot
               encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
               encoded_content = Base64.encode64(encoded_content) unless deleted
             end
+
+            project_root =
+              Pathname.new(File.expand_path(File.join(Dir.pwd, base_directory)))
+            file_path =
+              Pathname.new(path).expand_path.relative_path_from(project_root)
+
             Dependabot::DependencyFile.new(
-              name: path,
+              name: file_path.to_s,
               content: encoded_content,
               directory: base_directory,
               deleted: deleted,

@@ -42,6 +42,9 @@ module Dependabot
         path = Pathname.new(File.join(repo_contents_path, directory)).
                expand_path
         reset_git_repo(repo_contents_path)
+        # Handle missing directories by creating an empty one and relying on the
+        # file fetcher to raise a DependencyFileNotFound error
+        FileUtils.mkdir_p(path) unless Dir.exist?(path)
         Dir.chdir(path) { yield(path) }
       else
         in_a_temporary_directory(directory, &block)
@@ -58,13 +61,14 @@ module Dependabot
     end
 
     class HelperSubprocessFailed < StandardError
-      attr_reader :error_class, :error_context
+      attr_reader :error_class, :error_context, :trace
 
-      def initialize(message:, error_context:, error_class: nil)
+      def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)
         @error_class = error_class || ""
         @error_context = error_context
         @command = error_context[:command]
+        @trace = trace
       end
 
       def raven_context
@@ -113,7 +117,8 @@ module Dependabot
       raise HelperSubprocessFailed.new(
         message: response["error"],
         error_class: response["error_class"],
-        error_context: error_context
+        error_context: error_context,
+        trace: response["trace"]
       )
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(

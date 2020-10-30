@@ -10,6 +10,13 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      RESOLVABILITY_ERROR_REGEXES = [
+        # Package url/proxy doesn't include any redirect meta tags
+        /no go-import meta tags/,
+        # Package url 404s
+        /404 Not Found/
+      ].freeze
+
       def latest_resolvable_version
         # We don't yet support updating indirect dependencies for go_modules
         #
@@ -73,6 +80,15 @@ module Dependabot
         retry_count ||= 0
         retry_count += 1
         retry if transitory_failure?(e) && retry_count < 2
+
+        handle_subprocess_error(e)
+      end
+
+      def handle_subprocess_error(error)
+        if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
+          raise Dependabot::DependencyFileNotResolvable, error.message
+        end
+
         raise
       end
 
