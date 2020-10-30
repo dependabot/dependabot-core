@@ -151,7 +151,7 @@ module Dependabot
         def run_go_get
           tmp_go_file = "#{SecureRandom.hex}.go"
 
-          package = Dir.glob("*.go").any? do |path|
+          package = Dir.glob("[^\._]*.go").any? do |path|
             !File.read(path).include?("// +build")
           end
 

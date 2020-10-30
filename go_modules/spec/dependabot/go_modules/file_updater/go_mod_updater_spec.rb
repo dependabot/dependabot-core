@@ -209,8 +209,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          describe "with non-package go files in the root" do
-            let(:project_name) { "doc_go" }
+          describe "with ignored go files in the root" do
+            let(:project_name) { "ignored_go_files" }
 
             it "updates the go.mod" do
               expect(updater.updated_go_mod_content).to include(
