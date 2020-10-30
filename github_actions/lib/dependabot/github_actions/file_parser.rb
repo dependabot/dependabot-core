@@ -45,12 +45,31 @@ module Dependabot
           # TODO: Support Docker references and path references
           if string.match?(GITHUB_REPO_REFERENCE)
             dependency_set << build_github_dependency(file, string)
+          elsif string.match?("docker://")
+            image = "FROM #{string.split("docker://").last}"
+            dependency_set << build_docker_dependency(file, image)
           end
         end
 
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, file.path
+      end
+
+      def build_docker_dependency(file, image)
+        docker_file_parser = Docker::Utils::DockerFileParser.new(image, credentials)
+
+        Dependency.new(
+          name: docker_file_parser.image,
+          version: docker_file_parser.version,
+          package_manager: "docker",
+          requirements: [
+            requirement: nil,
+            groups: [],
+            file: file.name,
+            source: docker_file_parser.source
+          ]
+        )
       end
 
       def build_github_dependency(file, string)

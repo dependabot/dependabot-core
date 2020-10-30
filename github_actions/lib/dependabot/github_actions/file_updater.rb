@@ -57,13 +57,16 @@ module Dependabot
 
         updated_requirement_pairs.each do |new_req, old_req|
           # TODO: Support updating Docker sources
-          next unless new_req.fetch(:source).fetch(:type) == "git"
+          if new_req.fetch(:source).fetch(:type) == "git"
 
           old_declaration = old_req.fetch(:metadata).fetch(:declaration_string)
           new_declaration =
             old_declaration.
             gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
-
+          elsif new_req.fetch(:source).fetch(:type) == "docker"
+            old_declaration = "docker://#{old_req.fetch(:source).fetch(:image)}:#{old_req.fetch(:source).fetch(:tag)}"
+            new_declaration = "docker://#{new_req.fetch(:source).fetch(:image)}:#{new_req.fetch(:source).fetch(:tag)}"
+          end
           # Replace the old declaration that's preceded by a non-word character
           # and followed by a whitespace character (comments) or EOL
           updated_content =
