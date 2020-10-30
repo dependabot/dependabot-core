@@ -11,8 +11,10 @@ module Dependabot
   module GoModules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       RESOLVABILITY_ERROR_REGEXES = [
+        # Package url/proxy doesn't include any redirect meta tags
+        /no go-import meta tags/,
         # Package url 404s
-        /unrecognized import path/
+        /404 Not Found/
       ].freeze
 
       def latest_resolvable_version

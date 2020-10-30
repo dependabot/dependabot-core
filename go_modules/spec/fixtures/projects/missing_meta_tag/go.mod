@@ -1,7 +1,7 @@
-module github.com/dependabot/vgotest
+module github.com/dependabot/test
 
 go 1.12
 
 require (
-	example.com/test/package v1.7.0
+	web.archive.org/web/dependabot.com v1.7.0
 )
