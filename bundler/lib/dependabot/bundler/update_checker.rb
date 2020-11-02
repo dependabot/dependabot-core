@@ -107,6 +107,8 @@ module Dependabot
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
       end
 
+      attr_reader :blocked_by_parent_msg
+
       private
 
       def latest_version_resolvable_with_full_unlock?
@@ -157,7 +159,10 @@ module Dependabot
               update_multiple_dependencies: false
             ).updated_dependencies
             true
-          rescue Dependabot::DependencyFileNotResolvable
+          rescue Dependabot::DependencyFileNotResolvable => e
+            if e.error_class.end_with?("TransitiveDependencyError")
+              @blocked_by_parent_msg = e.msg
+            end
             false
           end
       end

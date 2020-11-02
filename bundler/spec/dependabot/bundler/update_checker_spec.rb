@@ -473,6 +473,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it { is_expected.to be_truthy }
+
+        it "explains why the update was not possible" do
+          subject
+          expect(checker.blocked_by_parent_msg).to eq(
+            "dummy-pkg-a cannot be "\
+            "updated to 2.0.0 because it is locked by dummy-pkg-b (1.0.0) which "\
+            "requires dummy-pkg-a < 2.0.0"
+          )
+        end
       end
     end
   end
