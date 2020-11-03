@@ -19,6 +19,7 @@ module Dependabot
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
                  "(#{RUBY_PLATFORM}) "\
                  "(+https://github.com/dependabot/dependabot-core)"
+    SIGKILL = 9
 
     class ChildProcessFailed < StandardError
       attr_reader :error_class, :error_message, :error_backtrace

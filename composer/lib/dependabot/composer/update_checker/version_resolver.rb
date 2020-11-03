@@ -320,7 +320,8 @@ module Dependabot
           elsif error.message.start_with?("Allowed memory size") ||
                 error.message.start_with?("Out of memory")
             raise Dependabot::OutOfMemory
-          elsif error.error_context[:process_termsig] == 9
+          elsif error.error_context[:process_termsig] ==
+                Dependabot::SharedHelpers::SIGKILL
             # If the helper was SIGKILL-ed, assume the OOMKiller did it
             raise Dependabot::OutOfMemory
           elsif error.message.start_with?("Package not found in updated") &&
