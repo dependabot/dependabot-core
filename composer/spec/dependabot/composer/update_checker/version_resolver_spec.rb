@@ -199,6 +199,22 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a forced oom error" do
+      let(:manifest_fixture_name) { "php_specified_in_library" }
+      let(:dependency_files) { [manifest] }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "16G" }
+      after { ENV.delete("DEPENDABOT_TEST_MEMORY_ALLOCATION") }
+
+      it "raises a Dependabot::OutOfMemory error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::OutOfMemory)
+      end
+    end
+
     # This test is extremely slow, as it needs to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do

@@ -1,3 +1,11 @@
+## v0.124.7, 3 November 2020
+
+- composer: assume a helper terminated by `SIGKILL` is OutOfMemory
+- dry-run: handle comma separated list of deps
+- Bump jest from 26.6.1 to 26.6.2 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.49 to 0.12.53 in /composer/helpers
+- Bump npm-user-validate from 1.0.0 to 1.0.1 in /npm_and_yarn/helpers
+
 ## v0.124.6, 2 November 2020
 
 - Go mod: handle major version mismatch
