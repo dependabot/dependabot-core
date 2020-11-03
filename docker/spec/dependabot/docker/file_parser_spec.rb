@@ -101,6 +101,106 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "with a global ARG (${ARG})" do
+      let(:dockerfile_fixture_name) { "global_arg" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "registry-host.io",
+              tag: "17.04"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a global ARG ($ARG)" do
+      let(:dockerfile_fixture_name) { "global_arg_second_format" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "registry-host.io",
+              tag: "17.04"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a global ARG multi stage" do
+      let(:dockerfile_fixture_name) { "multi_stage_global_arg" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "registry-host.io",
+              tag: "17.04"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "registry-host.io",
+              tag: "17.04"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a FROM line written by a nutcase" do
       let(:dockerfile_fixture_name) { "case" }
 
