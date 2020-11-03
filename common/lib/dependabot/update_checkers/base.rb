@@ -93,6 +93,10 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def blocking_parent_dependencies
+        raise NotImplementedError
+      end
+
       def latest_resolvable_previous_version(_updated_version)
         dependency.version
       end

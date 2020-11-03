@@ -120,7 +120,7 @@ module Functions
 
       # If the dependency is not found in the Gemfile it means this is a
       # transitive dependency that we can't force update.
-      raise TransitiveDependencyError, locked_by_parent_msg unless dep
+      raise TransitiveDependencyError unless dep
 
       dep.instance_variable_set(:@requirement, new_req)
       dep.source = nil if dep.source.is_a?(Bundler::Source::Git)
@@ -151,25 +151,6 @@ module Functions
                   dependencies.map(&:name).map(&:to_s)
 
       all_deps - top_level
-    end
-
-    def locked_by_parent_msg
-      version = Gem::Version.new(target_version)
-      specs = Bundler::LockfileParser.new(lockfile).specs.filter do |spec|
-        spec.dependencies.any? do |sub_dep|
-          sub_dep.name == dependency_name &&
-            !sub_dep.requirement.satisfied_by?(version)
-        end
-      end
-
-      locking = specs.map do |spec|
-        req = spec.dependencies.find { |bd| bd.name == dependency_name }
-        "#{spec.name} (#{spec.version}) which requires #{dependency_name} "\
-        "#{req.requirement}"
-      end
-
-      "#{dependency_name} cannot be updated to #{target_version} because it "\
-        "is locked by #{locking.join(', ')}"
     end
 
     def unlock_gem(definition:, gem_name:)

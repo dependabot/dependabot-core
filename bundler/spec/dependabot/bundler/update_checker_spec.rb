@@ -473,15 +473,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it { is_expected.to be_truthy }
-
-        it "explains why the update was not possible" do
-          subject
-          expect(checker.blocked_by_parent_msg).to eq(
-            "dummy-pkg-a cannot be "\
-            "updated to 2.0.0 because it is locked by dummy-pkg-b (1.0.0) which "\
-            "requires dummy-pkg-a < 2.0.0"
-          )
-        end
       end
     end
   end
@@ -599,6 +590,53 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
         end
       end
+    end
+  end
+
+  describe "#blocking_parent_dependencies" do
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
+    subject { checker.blocking_parent_dependencies }
+
+    let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
+    let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
+    let(:target_version) { "2.0.0" }
+    let(:dependency_name) { "dummy-pkg-a" }
+    let(:requirements) do
+      [{
+        file: "Gemfile",
+        requirement: "~> 1.0.0",
+        groups: [],
+        source: nil
+      }]
+    end
+
+    let(:requirements) { [] }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["< 2.0.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(checker).
+        to receive(:lowest_security_fix_version).
+        and_return(target_version)
+    end
+
+    it do
+      is_expected.to eq(
+        [{
+          "name" => "dummy-pkg-b",
+          "version" => "1.0.0",
+          "requirement" => "< 2.0.0"
+        }]
+      )
     end
   end
 

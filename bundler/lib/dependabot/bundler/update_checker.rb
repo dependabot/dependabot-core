@@ -13,6 +13,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/parent_dependency_resolver"
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
@@ -107,7 +108,16 @@ module Dependabot
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
       end
 
-      attr_reader :blocked_by_parent_msg
+      def blocking_parent_dependencies
+        ParentDependencyResolver.new(
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials
+        ).blocking_parent_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
+      end
 
       private
 
@@ -159,10 +169,7 @@ module Dependabot
               update_multiple_dependencies: false
             ).updated_dependencies
             true
-          rescue Dependabot::DependencyFileNotResolvable => e
-            if e.error_class.end_with?("TransitiveDependencyError")
-              @blocked_by_parent_msg = e.msg
-            end
+          rescue Dependabot::DependencyFileNotResolvable
             false
           end
       end

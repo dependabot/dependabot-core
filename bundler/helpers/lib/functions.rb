@@ -3,6 +3,7 @@ require "functions/force_updater"
 require "functions/lockfile_updater"
 require "functions/dependency_source"
 require "functions/version_resolver"
+require "functions/parent_dependency_resolver"
 
 module Functions
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
@@ -32,7 +33,7 @@ module Functions
     LockfileUpdater.new(
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
-      dependencies: dependencies,
+      dependencies: dependencies
     ).run
   end
 
@@ -46,7 +47,7 @@ module Functions
       target_version: target_version,
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
-      update_multiple_dependencies: update_multiple_dependencies,
+      update_multiple_dependencies: update_multiple_dependencies
     ).run
   end
 
@@ -57,7 +58,7 @@ module Functions
 
     DependencySource.new(
       gemfile_name: gemfile_name,
-      dependency_name: dependency_name,
+      dependency_name: dependency_name
     ).type
   end
 
@@ -69,7 +70,7 @@ module Functions
                                       using_bundler_2: false)
     DependencySource.new(
       gemfile_name: gemfile_name,
-      dependency_name: dependency_name,
+      dependency_name: dependency_name
     ).latest_git_version(
       dependency_source_url: dependency_source_url,
       dependency_source_branch: dependency_source_branch
@@ -83,7 +84,7 @@ module Functions
 
     DependencySource.new(
       gemfile_name: gemfile_name,
-      dependency_name: dependency_name,
+      dependency_name: dependency_name
     ).private_registry_versions
   end
 
@@ -96,7 +97,7 @@ module Functions
       dependency_name: dependency_name,
       dependency_requirements: dependency_requirements,
       gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name,
+      lockfile_name: lockfile_name
     ).version_details
   end
 
@@ -117,9 +118,9 @@ module Functions
                                       using_bundler_2: using_bundler_2)
 
     git_specs = Bundler::Definition.build(gemfile_name, nil, {}).dependencies.
-      select do |spec|
-        spec.source.is_a?(Bundler::Source::Git)
-      end
+                select do |spec|
+      spec.source.is_a?(Bundler::Source::Git)
+    end
     git_specs.map do |spec|
       # Piggy-back off some private Bundler methods to configure the
       # URI with auth details in the same way Bundler does.
@@ -160,5 +161,17 @@ module Functions
       Bundler.settings.set_command_option("forget_cli_options", "true")
       Bundler.settings.set_command_option("github.https", "true")
     end
+  end
+
+  def self.blocking_parent_dependencies(dir:, dependency_name:, target_version:,
+                                        lockfile_name:, using_bundler_2:,
+                                        credentials:)
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler_2: using_bundler_2)
+    ParentDependencyResolver.new(
+      dependency_name: dependency_name,
+      target_version: target_version,
+      lockfile_name: lockfile_name
+    ).blocking_parent_dependencies
   end
 end
