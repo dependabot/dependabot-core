@@ -92,7 +92,7 @@ require "dependabot/terraform"
 $options = {
   credentials: [],
   directory: "/",
-  dependency_name: nil,
+  dependency_names: nil,
   branch: nil,
   cache_steps: [],
   write: false,
@@ -141,8 +141,9 @@ option_parse = OptionParser.new do |opts|
     $options[:branch] = value
   end
 
-  opts.on("--dep DEPENDENCY", "Dependency to update") do |value|
-    $options[:dependency_name] = value
+  opts.on("--dep DEPENDENCIES",
+          "Comma separated list of dependencies to update") do |value|
+    $options[:dependency_names] = value.split(",").map { |o| o.strip.downcase }
   end
 
   opts.on("--cache STEPS", "Cache e.g. files, dependencies") do |value|
@@ -359,11 +360,11 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
 
 dependencies = cached_read("dependencies") { parser.parse }
 
-if $options[:dependency_name].nil?
+if $options[:dependency_names].nil?
   dependencies.select!(&:top_level?)
 else
   dependencies.select! do |d|
-    d.name.downcase == $options[:dependency_name].downcase
+    $options[:dependency_names].include?(d.name.downcase)
   end
 end
 

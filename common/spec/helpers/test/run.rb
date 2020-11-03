@@ -13,6 +13,9 @@ when "useful_error"
 when "hard_error"
   puts "Oh no!"
   exit 0
+when "killed"
+  # SIGKILL the helper, which is what the kernel OOMKiller might do.
+  Process.kill("KILL", Process.pid)
 else
   $stdout.write(JSON.dump(result: request))
 end

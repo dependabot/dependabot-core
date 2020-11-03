@@ -150,6 +150,19 @@ RSpec.describe Dependabot::SharedHelpers do
           to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
+
+    context "when the subprocess is killed" do
+      let(:function) { "killed" }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }.
+          to(raise_error do |error|
+            expect(error).
+              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            expect(error.error_context[:process_termsig]).to eq(9)
+          end)
+      end
+    end
   end
 
   describe ".escape_command" do
