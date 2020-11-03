@@ -19,6 +19,7 @@ module Dependabot
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
                  "(#{RUBY_PLATFORM}) "\
                  "(+https://github.com/dependabot/dependabot-core)"
+    SIGKILL = 9
 
     class ChildProcessFailed < StandardError
       attr_reader :error_class, :error_message, :error_backtrace
@@ -108,7 +109,8 @@ module Dependabot
         args: args,
         time_taken: time_taken,
         stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
-        process_exit_value: process.to_s
+        process_exit_value: process.to_s,
+        process_termsig: process.termsig
       }
 
       response = JSON.parse(stdout)
