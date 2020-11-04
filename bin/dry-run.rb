@@ -489,14 +489,16 @@ dependencies.each do |dep|
                            end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
-  parents = checker.conflicting_dependencies
-  if parents.any?
+  conflicting_dependencies = checker.conflicting_dependencies
+  if conflicting_dependencies.any?
     puts " => The update is not possible because of the following conflicting "\
       "dependencies:"
-  end
-  parents.each do |parent|
-    puts "   #{parent['name']} (#{parent['version']}) which requires:"
-    puts "     #{dep.name} #{parent['requirement']}"
+
+    conflicting_dependencies.each do |conflicting_dep|
+      puts "   #{conflicting_dep['name']} (#{conflicting_dep['version']}) "\
+        "which requires:"
+      puts "     #{dep.name} #{conflicting_dep['requirement']}"
+    end
   end
 
   if checker.up_to_date?
