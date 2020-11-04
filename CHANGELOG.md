@@ -1,3 +1,7 @@
+## v0.124.8, 4 November 2020
+
+- Add missing python versions: 3.6.12 3.6.11 3.6.10, 3.5.10 and 3.5.8
+
 ## v0.124.7, 3 November 2020
 
 - composer: assume a helper terminated by `SIGKILL` is OutOfMemory
