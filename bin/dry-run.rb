@@ -33,6 +33,7 @@
 # - submodules
 # - docker
 # - terraform
+# - lein
 
 # rubocop:disable Style/GlobalVars
 
@@ -53,6 +54,7 @@ $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./terraform/lib"
+$LOAD_PATH << "./lein/lib"
 
 require "bundler"
 ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "../omnibus/Gemfile")
@@ -61,6 +63,7 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
+require "pry"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
@@ -84,6 +87,7 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/terraform"
+require "dependabot/lein"
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

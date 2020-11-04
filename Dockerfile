@@ -174,6 +174,20 @@ RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.47.0 && rustup default 1.47.0
 
 
+### CLOJURE
+
+# Install leiningen
+RUN apt-get update \
+  && apt-get install -y openjdk-8-jre-headless \
+  && java -version \
+  && wget "https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein" \
+  && mkdir -p /usr/local/lein/bin \
+  && mv lein /usr/local/lein/bin \
+  && chmod +x /usr/local/lein/bin/lein \
+  && /usr/local/lein/bin/lein --version
+
+ENV PATH="$PATH:/usr/local/lein/bin"
+
 ### NEW NATIVE HELPERS
 
 COPY composer/helpers /opt/composer/helpers

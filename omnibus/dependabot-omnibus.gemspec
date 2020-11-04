@@ -28,11 +28,12 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-dep", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
-  spec.add_dependency "dependabot-github_actions", Dependabot::VERSION
   spec.add_dependency "dependabot-git_submodules", Dependabot::VERSION
+  spec.add_dependency "dependabot-github_actions", Dependabot::VERSION
   spec.add_dependency "dependabot-go_modules", Dependabot::VERSION
   spec.add_dependency "dependabot-gradle", Dependabot::VERSION
   spec.add_dependency "dependabot-hex", Dependabot::VERSION
+  spec.add_dependency "dependabot-lein", Dependabot::VERSION
   spec.add_dependency "dependabot-maven", Dependabot::VERSION
   spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION

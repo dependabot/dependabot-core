@@ -53,6 +53,7 @@ RUN mkdir -p \
   ${CODE_DIR}/go_modules \
   ${CODE_DIR}/gradle \
   ${CODE_DIR}/hex \
+  ${CODE_DIR}/lein \
   ${CODE_DIR}/maven \
   ${CODE_DIR}/npm_and_yarn \
   ${CODE_DIR}/nuget \
@@ -71,6 +72,7 @@ COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec ${C
 COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec ${CODE_DIR}/go_modules/
 COPY gradle/Gemfile gradle/dependabot-gradle.gemspec ${CODE_DIR}/gradle/
 COPY hex/Gemfile hex/dependabot-hex.gemspec ${CODE_DIR}/hex/
+COPY lein/Gemfile lein/dependabot-lein.gemspec ${CODE_DIR}/lein/
 COPY maven/Gemfile maven/dependabot-maven.gemspec ${CODE_DIR}/maven/
 COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
 COPY nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
