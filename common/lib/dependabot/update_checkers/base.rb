@@ -93,6 +93,16 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Finds any dependencies in the lockfile that have a subdependency on the
+      # given dependency that do not satisfy the target_version.
+      # @return [Array<Hash{String => String}]
+      #   name [String] the blocking dependencies name
+      #   version [String] the version of the blocking dependency
+      #   requirement [String] the requirement on the target_dependency
+      def conflicting_dependencies
+        [] # return an empty array for ecosystems that don't support this yet
+      end
+
       def latest_resolvable_previous_version(_updated_version)
         dependency.version
       end

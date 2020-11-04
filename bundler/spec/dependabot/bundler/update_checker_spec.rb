@@ -593,6 +593,53 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "#conflicting_dependencies" do
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
+    subject { checker.conflicting_dependencies }
+
+    let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
+    let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
+    let(:target_version) { "2.0.0" }
+    let(:dependency_name) { "dummy-pkg-a" }
+    let(:requirements) do
+      [{
+        file: "Gemfile",
+        requirement: "~> 1.0.0",
+        groups: [],
+        source: nil
+      }]
+    end
+
+    let(:requirements) { [] }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["< 2.0.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(checker).
+        to receive(:lowest_security_fix_version).
+        and_return(target_version)
+    end
+
+    it do
+      is_expected.to eq(
+        [{
+          "name" => "dummy-pkg-b",
+          "version" => "1.0.0",
+          "requirement" => "< 2.0.0"
+        }]
+      )
+    end
+  end
+
   describe "#latest_resolvable_version" do
     include_context "stub rubygems compact index"
     include_context "stub rubygems versions api"
