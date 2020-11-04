@@ -593,11 +593,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
-  describe "#blocking_parent_dependencies" do
+  describe "#conflicting_dependencies" do
     include_context "stub rubygems compact index"
     include_context "stub rubygems versions api"
 
-    subject { checker.blocking_parent_dependencies }
+    subject { checker.conflicting_dependencies }
 
     let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
     let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }

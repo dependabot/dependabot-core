@@ -4,9 +4,11 @@ require "spec_helper"
 require "shared_contexts"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/bundler/update_checker/parent_dependency_resolver"
+require "dependabot/bundler/update_checker/conflicting_dependency_resolver"
 
-RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
+RSpec.describe(
+  Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
+) do
   include_context "stub rubygems compact index"
 
   let(:resolver) do
@@ -46,16 +48,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
     fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
   end
 
-  describe "#blocking_parent_dependencies" do
-    subject(:blocking_parent_dependencies) do
-      resolver.blocking_parent_dependencies(
+  describe "#conflicting_dependencies" do
+    subject(:conflicting_dependencies) do
+      resolver.conflicting_dependencies(
         dependency: dependency,
         target_version: target_version
       )
     end
 
     it "returns the right array of blocking dependencies" do
-      expect(blocking_parent_dependencies).to match_array(
+      expect(conflicting_dependencies).to match_array(
         [
           {
             "name" => "dummy-pkg-b",
@@ -69,7 +71,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
     context "with no blocking dependencies" do
       let(:target_version) { "1.5.0" }
       it "returns an empty array" do
-        expect(blocking_parent_dependencies).to match_array([])
+        expect(conflicting_dependencies).to match_array([])
       end
     end
 
@@ -83,7 +85,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
       end
 
       it "returns all of the blocking dependencies" do
-        expect(blocking_parent_dependencies).to match_array(
+        expect(conflicting_dependencies).to match_array(
           [
             {
               "name" => "actionpack",

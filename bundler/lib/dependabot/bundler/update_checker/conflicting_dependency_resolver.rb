@@ -7,7 +7,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Bundler
     class UpdateChecker < UpdateCheckers::Base
-      class ParentDependencyResolver
+      class ConflictingDependencyResolver
         require_relative "shared_bundler_helpers"
         include SharedBundlerHelpers
 
@@ -26,11 +26,11 @@ module Dependabot
         #   * name [String] the blocking dependencies name
         #   * version [String] the version of the blocking dependency
         #   * requirement [String] the requirement on the target_dependency
-        def blocking_parent_dependencies(dependency:, target_version:)
+        def conflicting_dependencies(dependency:, target_version:)
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
-              function: "blocking_parent_dependencies",
+              function: "conflicting_dependencies",
               args: {
                 dir: tmp_dir,
                 dependency_name: dependency.name,

@@ -13,7 +13,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
-      require_relative "update_checker/parent_dependency_resolver"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
@@ -108,12 +108,12 @@ module Dependabot
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
       end
 
-      def blocking_parent_dependencies
-        ParentDependencyResolver.new(
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           repo_contents_path: repo_contents_path,
           credentials: credentials
-        ).blocking_parent_dependencies(
+        ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version
         )

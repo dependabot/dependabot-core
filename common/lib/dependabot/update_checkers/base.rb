@@ -99,7 +99,7 @@ module Dependabot
       #   name [String] the blocking dependencies name
       #   version [String] the version of the blocking dependency
       #   requirement [String] the requirement on the target_dependency
-      def blocking_parent_dependencies
+      def conflicting_dependencies
         [] # return an empty array for ecosystems that don't support this yet
       end
 

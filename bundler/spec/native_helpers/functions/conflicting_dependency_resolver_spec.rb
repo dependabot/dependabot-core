@@ -3,10 +3,10 @@
 require "native_spec_helper"
 require "shared_contexts"
 
-RSpec.describe Functions::ParentDependencyResolver do
+RSpec.describe Functions::ConflictingDependencyResolver do
   include_context "in a temporary bundler directory"
 
-  let(:parent_dependency_resolver) do
+  let(:conflicting_dependency_resolver) do
     described_class.new(
       dependency_name: dependency_name,
       target_version: target_version,
@@ -20,13 +20,13 @@ RSpec.describe Functions::ParentDependencyResolver do
   let(:gemfile_fixture_name) { "blocked_by_subdep" }
   let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
 
-  describe "#blocking_parent_dependencies" do
-    subject(:blocking_parent_dependencies) do
-      in_tmp_folder { parent_dependency_resolver.blocking_parent_dependencies }
+  describe "#conflicting_dependencies" do
+    subject(:conflicting_dependencies) do
+      in_tmp_folder { conflicting_dependency_resolver.conflicting_dependencies }
     end
 
     it "returns a list of dependencies that block the update" do
-      expect(blocking_parent_dependencies).to eq(
+      expect(conflicting_dependencies).to eq(
         [
           { name: "dummy-pkg-b", version: "1.0.0", requirement: "< 2.0.0" }
         ]
@@ -37,7 +37,7 @@ RSpec.describe Functions::ParentDependencyResolver do
       let(:target_version) { "1.0.0" }
 
       it "returns an empty list" do
-        expect(blocking_parent_dependencies).to eq([])
+        expect(conflicting_dependencies).to eq([])
       end
     end
   end

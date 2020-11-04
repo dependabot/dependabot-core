@@ -3,7 +3,7 @@ require "functions/force_updater"
 require "functions/lockfile_updater"
 require "functions/dependency_source"
 require "functions/version_resolver"
-require "functions/parent_dependency_resolver"
+require "functions/conflicting_dependency_resolver"
 
 module Functions
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
@@ -163,15 +163,14 @@ module Functions
     end
   end
 
-  def self.blocking_parent_dependencies(dir:, dependency_name:, target_version:,
-                                        lockfile_name:, using_bundler_2:,
-                                        credentials:)
+  def self.conflicting_dependencies(dir:, dependency_name:, target_version:,
+                                    lockfile_name:, using_bundler_2:, credentials:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
                                       using_bundler_2: using_bundler_2)
-    ParentDependencyResolver.new(
+    ConflictingDependencyResolver.new(
       dependency_name: dependency_name,
       target_version: target_version,
       lockfile_name: lockfile_name
-    ).blocking_parent_dependencies
+    ).conflicting_dependencies
   end
 end

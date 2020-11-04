@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Functions
-  class ParentDependencyResolver
+  class ConflictingDependencyResolver
     def initialize(dependency_name:, target_version:, lockfile_name:)
       @dependency_name = dependency_name
       @target_version = target_version
@@ -14,7 +14,7 @@ module Functions
     #   * name [String] the blocking dependencies name
     #   * version [String] the version of the blocking dependency
     #   * requirement [String] the requirement on the target_dependency
-    def blocking_parent_dependencies
+    def conflicting_dependencies
       Bundler.settings.set_command_option("only_update_to_newer_versions", true)
 
       parent_specs.map do |spec|
