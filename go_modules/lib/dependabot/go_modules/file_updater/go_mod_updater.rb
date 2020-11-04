@@ -26,7 +26,7 @@ module Dependabot
           # auth problems with either git or the go proxy
           /go: .*: unknown revision/m.freeze,
           # Package version doesn't match the module major version
-          /go: .*: go.mod has post-v1 module path/m.freeze
+          /go: .*: go.mod has post-v\d+ module path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
