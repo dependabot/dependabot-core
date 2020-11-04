@@ -10,17 +10,19 @@ module Functions
       Bundler.settings.set_command_option("only_update_to_newer_versions", true)
     end
 
-    # @return [Array<Hash{Symbol => String}]
-    #   :name the blocking dependencies name
-    #   :version the version of the blocking dependency
-    #   :requirement the requirement on the target_dependency
+    # Finds any dependencies in the lockfile that have a subdependency on the
+    # given dependency that does not satisfly the target_version.
+    # @return [Array<Hash{String => String}]
+    #   * name [String] the blocking dependencies name
+    #   * version [String] the version of the blocking dependency
+    #   * requirement [String] the requirement on the target_dependency
     def blocking_parent_dependencies
       parent_specs.map do |spec|
         req = spec.dependencies.find { |bd| bd.name == dependency_name }
         {
-          name: spec.name,
-          version: spec.version.to_s,
-          requirement: req.requirement.to_s
+          "name" => spec.name,
+          "version" => spec.version.to_s,
+          "requirement" => req.requirement.to_s
         }
       end
     end
