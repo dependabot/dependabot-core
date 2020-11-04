@@ -94,7 +94,7 @@ module Dependabot
       end
 
       # Finds any dependencies in the lockfile that have a subdependency on the
-      # given dependency that do not satisfly the target_version.
+      # given dependency that do not satisfy the target_version.
       # @return [Array<Hash{String => String}]
       #   name [String] the blocking dependencies name
       #   version [String] the version of the blocking dependency
