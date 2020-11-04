@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
       )
     end
 
-    it "returns the right array of updated dependencies" do
+    it "returns the right array of blocking dependencies" do
       expect(blocking_parent_dependencies).to match_array(
         [
           {
