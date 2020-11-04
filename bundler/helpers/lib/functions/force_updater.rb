@@ -113,8 +113,6 @@ module Functions
         unlock_gem(definition: definition, gem_name: gem_name)
       end
 
-      # Set the requirement for the gem we're forcing an update of
-      new_req = Gem::Requirement.create("= #{target_version}")
       dep = definition.dependencies.
             find { |d| d.name == dependency_name }
 
@@ -122,6 +120,8 @@ module Functions
       # transitive dependency that we can't force update.
       raise TransitiveDependencyError unless dep
 
+      # Set the requirement for the gem we're forcing an update of
+      new_req = Gem::Requirement.create("= #{target_version}")
       dep.instance_variable_set(:@requirement, new_req)
       dep.source = nil if dep.source.is_a?(Bundler::Source::Git)
 
