@@ -27,9 +27,11 @@ RSpec.describe Functions::ConflictingDependencyResolver do
 
     it "returns a list of dependencies that block the update" do
       expect(conflicting_dependencies).to eq(
-        [
-          { name: "dummy-pkg-b", version: "1.0.0", requirement: "< 2.0.0" }
-        ]
+        [{
+          "name" => "dummy-pkg-b",
+          "version" => "1.0.0",
+          "requirement" => "< 2.0.0"
+        }]
       )
     end
 
