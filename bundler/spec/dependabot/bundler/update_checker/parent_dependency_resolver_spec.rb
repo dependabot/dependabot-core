@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
   let(:resolver) do
     described_class.new(
       dependency_files: dependency_files,
-      repo_contents_path: repo_contents_path,
+      repo_contents_path: nil,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -22,7 +22,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ParentDependencyResolver do
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
-  let(:repo_contents_path) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
