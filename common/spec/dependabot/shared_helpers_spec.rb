@@ -4,6 +4,8 @@ require "spec_helper"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::SharedHelpers do
+  let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
+
   describe ".in_a_temporary_directory" do
     subject(:in_a_temporary_directory) do
       Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
@@ -92,7 +94,6 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stderr_to_stdout) { false }
 
     subject(:run_subprocess) do
-      spec_root = File.join(File.dirname(__FILE__), "..")
       bin_path = File.join(spec_root, "helpers/test/run.rb")
       command = "ruby #{bin_path}"
       Dependabot::SharedHelpers.run_helper_subprocess(
@@ -161,6 +162,52 @@ RSpec.describe Dependabot::SharedHelpers do
               to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
             expect(error.error_context[:process_termsig]).to eq(9)
           end)
+      end
+    end
+  end
+
+  describe ".run_shell_command" do
+    let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
+
+    subject(:run_shell_command) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
+
+    context "when the subprocess is successful" do
+      it "returns the result" do
+        expect(run_shell_command).to eq("output\n")
+      end
+    end
+
+    context "with bash command as argument" do
+      let(:command) do
+        File.join(spec_root, "helpers/test/run_bash") + " $(ps)"
+      end
+
+      it "returns the argument" do
+        expect(run_shell_command).to eq("$(ps)\n")
+      end
+
+      context "when escaping is disabled" do
+        subject(:run_shell_command) do
+          Dependabot::SharedHelpers.
+            run_shell_command(command, escape_command_str: false)
+        end
+
+        it "returns the command output" do
+          output = run_shell_command
+          expect(output).not_to eq("$(ps)\n")
+          expect(output).to include("PID")
+        end
+      end
+    end
+
+    context "when the subprocess exits" do
+      let(:command) { File.join(spec_root, "helpers/test/error_bash") }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_shell_command }.
+          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
   end

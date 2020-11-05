@@ -23,7 +23,7 @@ module Dependabot
           )
 
           status = SharedHelpers.run_shell_command(
-            "git status --untracked-files=all --porcelain=v1 #{relative_dir}"
+            "git status --untracked-files all --porcelain v1 #{relative_dir}"
           )
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|

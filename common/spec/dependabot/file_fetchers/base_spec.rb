@@ -1324,27 +1324,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
     let(:repo_contents_path) { Dir.mktmpdir }
     after { FileUtils.rm_rf(repo_contents_path) }
 
-    # `git clone` against a file:// URL that is filled by the test
-    let(:repo_path) { Dir.mktmpdir }
-    after { FileUtils.rm_rf(repo_path) }
-    let(:fill_repo) {}
-    before do
-      Dir.chdir(repo_path) do
-        `git init .`
-        fill_repo
-        `git add .`
-        `git commit --allow-empty -m'fake clone source'`
-      end
-
-      allow(source).
-        to receive(:url).and_return("file://#{repo_path}")
-      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    end
-
     describe "#files" do
       subject(:files) { file_fetcher_instance.files }
 
       let(:contents) { "foo=1.0.0" }
+
+      # `git clone` against a file:// URL that is filled by the test
+      let(:repo_path) { Dir.mktmpdir }
+      after { FileUtils.rm_rf(repo_path) }
+      let(:fill_repo) {}
+      before do
+        Dir.chdir(repo_path) do
+          `git init .`
+          fill_repo
+          `git add .`
+          `git commit --allow-empty -m'fake clone source'`
+        end
+
+        allow(source).
+          to receive(:url).and_return("file://#{repo_path}")
+        allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      end
 
       context "with a git source" do
         let(:fill_repo) do
@@ -1515,6 +1515,42 @@ RSpec.describe Dependabot::FileFetchers::Base do
             its(:content) { is_expected.to eq(contents) }
             its(:directory) { is_expected.to eq(directory) }
           end
+        end
+      end
+    end
+
+    describe "#clone_repo_contents" do
+      subject(:clone_repo_contents) do
+        file_fetcher_instance.clone_repo_contents
+      end
+
+      let(:repo) do
+        "dependabot-fixtures/go-modules-app"
+      end
+
+      it "clones the repo" do
+        clone_repo_contents
+        expect(`ls #{repo_contents_path}`).to include("README")
+      end
+
+      context "with a branch name including bash command" do
+        let(:branch) do
+          "\"$(time)\""
+        end
+
+        it "clones the repo" do
+          clone_repo_contents
+          expect(`ls #{repo_contents_path}`).to include("time.md")
+        end
+      end
+
+      context "when the repo can't be found" do
+        let(:repo) do
+          "dependabot-fixtures/not-found"
+        end
+
+        it "raises a not found error" do
+          expect { subject }.to raise_error(Dependabot::RepoNotFound)
         end
       end
     end
