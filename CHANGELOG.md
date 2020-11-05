@@ -1,3 +1,7 @@
+## v0.125.1, 5 November 2020
+
+- Escape `SharedHelpers.run_shell_command` with shellwords
+
 ## v0.125.0, 5 November 2020
 
 - Bundler: Explain why security update was not possible
