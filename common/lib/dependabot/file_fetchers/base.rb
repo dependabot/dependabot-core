@@ -480,10 +480,10 @@ module Dependabot
           return path if Dir.exist?(File.join(path, ".git"))
 
           FileUtils.mkdir_p(path)
-          br_opt = " --branch=#{source.branch} --single-branch" if source.branch
+          br_opt = " --branch #{source.branch} --single-branch" if source.branch
           SharedHelpers.run_shell_command(
             <<~CMD
-              git clone --no-tags --no-recurse-submodules --depth=1#{br_opt} #{source.url} #{path}
+              git clone --no-tags --no-recurse-submodules --depth 1#{br_opt} #{source.url} #{path}
             CMD
           )
           path
