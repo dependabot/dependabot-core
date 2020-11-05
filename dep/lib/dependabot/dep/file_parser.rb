@@ -76,9 +76,7 @@ module Dependabot
       end
 
       def requirement_from_declaration(declaration)
-        unless declaration.is_a?(Hash)
-          raise "Unexpected dependency declaration: #{declaration}"
-        end
+        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
         return if git_declaration?(declaration)
 

@@ -25,13 +25,9 @@ module Dependabot
               content
             )
 
-            if remove_git_source?(dependency)
-              content = remove_gemfile_git_source(dependency, content)
-            end
+            content = remove_gemfile_git_source(dependency, content) if remove_git_source?(dependency)
 
-            if update_git_pin?(dependency)
-              content = update_gemfile_git_pin(dependency, gemfile, content)
-            end
+            content = update_gemfile_git_pin(dependency, gemfile, content) if update_git_pin?(dependency)
           end
 
           content

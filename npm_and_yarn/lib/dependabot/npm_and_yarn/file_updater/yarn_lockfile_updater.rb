@@ -23,9 +23,7 @@ module Dependabot
 
         def updated_yarn_lock_content(yarn_lock)
           @updated_yarn_lock_content ||= {}
-          if @updated_yarn_lock_content[yarn_lock.name]
-            return @updated_yarn_lock_content[yarn_lock.name]
-          end
+          return @updated_yarn_lock_content[yarn_lock.name] if @updated_yarn_lock_content[yarn_lock.name]
 
           new_content = updated_yarn_lock(yarn_lock)
 
@@ -235,16 +233,12 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
-            handle_timeout(error_message, yarn_lock)
-          end
+          handle_timeout(error_message, yarn_lock) if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
 
           if error_message.start_with?("Couldn't find any versions") ||
              error_message.include?(": Not found")
 
-            unless resolvable_before_update?(yarn_lock)
-              raise_resolvability_error(error_message, yarn_lock)
-            end
+            raise_resolvability_error(error_message, yarn_lock) unless resolvable_before_update?(yarn_lock)
 
             # Dependabot has probably messed something up with the update and we
             # want to hear about it
@@ -259,9 +253,7 @@ module Dependabot
 
         def resolvable_before_update?(yarn_lock)
           @resolvable_before_update ||= {}
-          if @resolvable_before_update.key?(yarn_lock.name)
-            return @resolvable_before_update[yarn_lock.name]
-          end
+          return @resolvable_before_update[yarn_lock.name] if @resolvable_before_update.key?(yarn_lock.name)
 
           @resolvable_before_update[yarn_lock.name] =
             begin
@@ -392,9 +384,7 @@ module Dependabot
             'https://\1/'
           )
 
-          if remove_integrity_lines?
-            updated_content = remove_integrity_lines(updated_content)
-          end
+          updated_content = remove_integrity_lines(updated_content) if remove_integrity_lines?
 
           updated_content
         end

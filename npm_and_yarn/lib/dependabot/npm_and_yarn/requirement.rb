@@ -17,9 +17,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
       def self.parse(obj)
-        if obj.is_a?(Gem::Version)
-          return ["=", NpmAndYarn::Version.new(obj.to_s)]
-        end
+        return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"
@@ -88,9 +86,7 @@ module Dependabot
         upper_bound_range =
           if upper_bound_parts.length < 3
             # When upper bound is a partial version treat these as an X-range
-            if upper_bound_parts[-1].to_i.positive?
-              upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1
-            end
+            upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1 if upper_bound_parts[-1].to_i.positive?
             upper_bound_parts.fill("0", upper_bound_parts.length...3)
             "< #{upper_bound_parts.join('.')}.a"
           else

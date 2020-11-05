@@ -50,9 +50,7 @@ module Dependabot
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
               # If all the URLs include this registry, it's global
-              if dependency_urls.all? { |url| url.include?(cred["registry"]) }
-                next true
-              end
+              next true if dependency_urls.all? { |url| url.include?(cred["registry"]) }
 
               # If any unscoped URLs include this registry, it's global
               dependency_urls.
@@ -120,9 +118,7 @@ module Dependabot
             match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
             named_captures&.fetch("registry")
 
-          if yarnrc_global_registry
-            return "registry = #{yarnrc_global_registry}\n"
-          end
+          return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
 
           build_npmrc_content_from_lockfile
         end

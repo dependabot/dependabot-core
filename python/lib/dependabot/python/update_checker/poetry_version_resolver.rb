@@ -54,11 +54,11 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+                                   true
+                                 else
+                                   false
+                                 end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise unless e.message.include?("SolverProblemError")
 
@@ -69,9 +69,7 @@ module Dependabot
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do

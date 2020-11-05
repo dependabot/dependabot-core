@@ -328,9 +328,7 @@ module Dependabot
 
         def resolvable_before_update?(lockfile)
           @resolvable_before_update ||= {}
-          if @resolvable_before_update.key?(lockfile.name)
-            return @resolvable_before_update[lockfile.name]
-          end
+          return @resolvable_before_update[lockfile.name] if @resolvable_before_update.key?(lockfile.name)
 
           @resolvable_before_update[lockfile.name] =
             begin

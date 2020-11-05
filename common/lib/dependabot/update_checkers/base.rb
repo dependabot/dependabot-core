@@ -48,9 +48,7 @@ module Dependabot
       end
 
       def updated_dependencies(requirements_to_unlock:)
-        unless can_update?(requirements_to_unlock: requirements_to_unlock)
-          return []
-        end
+        return [] unless can_update?(requirements_to_unlock: requirements_to_unlock)
 
         case requirements_to_unlock&.to_sym
         when :none then [updated_dependency_without_unlock]

@@ -21,9 +21,7 @@ module Dependabot
         attr_reader :dependencies
 
         def <<(dep)
-          unless dep.is_a?(Dependency)
-            raise ArgumentError, "must be a Dependency object"
-          end
+          raise ArgumentError, "must be a Dependency object" unless dep.is_a?(Dependency)
 
           existing_dependency = dependency_for_name(dep.name)
 
@@ -40,9 +38,7 @@ module Dependabot
         end
 
         def +(other)
-          unless other.is_a?(DependencySet)
-            raise ArgumentError, "must be a DependencySet"
-          end
+          raise ArgumentError, "must be a DependencySet" unless other.is_a?(DependencySet)
 
           other.dependencies.each { |dep| self << dep }
           self

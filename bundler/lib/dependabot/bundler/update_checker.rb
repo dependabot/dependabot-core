@@ -100,9 +100,7 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
@@ -142,9 +140,7 @@ module Dependabot
       end
 
       def preferred_resolvable_version_details
-        if vulnerable?
-          return { version: lowest_resolvable_security_fix_version }
-        end
+        return { version: lowest_resolvable_security_fix_version } if vulnerable?
 
         latest_resolvable_version_details
       end
@@ -220,9 +216,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -246,9 +240,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA

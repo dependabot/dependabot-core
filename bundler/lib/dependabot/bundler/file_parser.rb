@@ -204,9 +204,7 @@ module Dependabot
 
         # If the source is Git we're better off knowing the SHA-1 than the
         # version.
-        if spec.source.instance_of?(::Bundler::Source::Git)
-          return spec.source.revision
-        end
+        return spec.source.revision if spec.source.instance_of?(::Bundler::Source::Git)
 
         spec.version
       end

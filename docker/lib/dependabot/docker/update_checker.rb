@@ -102,9 +102,7 @@ module Dependabot
       # Note: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_version
-        unless dependency.version.match?(NAME_WITH_VERSION)
-          return dependency.version
-        end
+        return dependency.version unless dependency.version.match?(NAME_WITH_VERSION)
 
         # Prune out any downgrade tags before checking for pre-releases
         # (which requires a call to the registry for each tag, so can be slow)
@@ -264,9 +262,7 @@ module Dependabot
       end
 
       def prerelease?(tag)
-        if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
-          return true
-        end
+        return true if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
 
         # If we're dealing with a numeric version we can compare it against
         # the digest for the `latest` tag.
@@ -323,9 +319,7 @@ module Dependabot
             version = version_class.new(numeric_version_from(tag))
             ignore_reqs.any? { |r| r.satisfied_by?(version) }
           end
-        if @raise_on_ignored && filtered.empty? && candidate_tags.any?
-          raise AllVersionsIgnored
-        end
+        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && candidate_tags.any?
 
         filtered
       end

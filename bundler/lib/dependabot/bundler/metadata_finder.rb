@@ -120,9 +120,7 @@ module Dependabot
       # Note: This response MUST NOT be unmarshalled
       # (as calling Marshal.load is unsafe)
       def rubygems_marshalled_gemspec_response
-        if defined?(@rubygems_marshalled_gemspec_response)
-          return @rubygems_marshalled_gemspec_response
-        end
+        return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
 
         gemspec_uri =
           "#{registry_url}quick/Marshal.4.8/"\
@@ -135,9 +133,7 @@ module Dependabot
             **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
 
-        if response.status >= 400
-          return @rubygems_marshalled_gemspec_response = nil
-        end
+        return @rubygems_marshalled_gemspec_response = nil if response.status >= 400
 
         @rubygems_marshalled_gemspec_response =
           Zlib::Inflate.inflate(response.body)

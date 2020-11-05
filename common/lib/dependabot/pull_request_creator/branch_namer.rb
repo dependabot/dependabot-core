@@ -120,9 +120,7 @@ module Dependabot
         # Version looks like a git SHA and we could be updating to a specific
         # ref in which case we return that otherwise we return a shorthand sha
         if dependency.version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && new_ref(dependency)
-            return new_ref(dependency)
-          end
+          return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
           dependency.version[0..6]
         elsif dependency.version == dependency.previous_version &&
