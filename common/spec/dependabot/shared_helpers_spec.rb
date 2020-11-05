@@ -188,10 +188,10 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(run_shell_command).to eq("$(ps)\n")
       end
 
-      context "when escaping is disabled" do
+      context "when allowing unsafe shell command" do
         subject(:run_shell_command) do
           Dependabot::SharedHelpers.
-            run_shell_command(command, escape_command_str: false)
+            run_shell_command(command, allow_unsafe_shell_command: true)
         end
 
         it "returns the command output" do

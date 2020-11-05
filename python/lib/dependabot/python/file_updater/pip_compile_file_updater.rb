@@ -78,7 +78,7 @@ module Dependabot
               run_pip_compile_command(
                 "#{SharedHelpers.escape_command(name_part)}=="\
                 "#{SharedHelpers.escape_command(version_part)}",
-                escape_command_str: false
+                allow_unsafe_shell_command: true
               )
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
@@ -142,9 +142,13 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        def run_command(cmd, env: python_env, escape_command_str: true)
+        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false)
           start = Time.now
-          command = escape_command_str ? SharedHelpers.escape_command(cmd) : cmd
+          command = if allow_unsafe_shell_command
+                      cmd
+                    else
+                      SharedHelpers.escape_command(cmd)
+                    end
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -160,9 +164,12 @@ module Dependabot
           )
         end
 
-        def run_pip_compile_command(command, escape_command_str: true)
+        def run_pip_compile_command(command, allow_unsafe_shell_command: false)
           run_command("pyenv local #{python_version}")
-          run_command(command, escape_command_str: escape_command_str)
+          run_command(
+            command,
+            allow_unsafe_shell_command: allow_unsafe_shell_command
+          )
         rescue SharedHelpers::HelperSubprocessFailed => e
           original_error ||= e
           msg = e.message
