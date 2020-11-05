@@ -1,3 +1,9 @@
+## v0.125.0, 5 November 2020
+
+- Bundler: Explain why security update was not possible
+- Raise descriptive error when update is not possible
+- Go mod: Handle post-v0 module path updates
+
 ## v0.124.8, 4 November 2020
 
 - Add missing python versions: 3.6.12 3.6.11 3.6.10, 3.5.10 and 3.5.8
