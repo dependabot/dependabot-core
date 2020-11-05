@@ -49,9 +49,7 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        if defined?(@lowest_resolvable_security_fix_version)
-          return @lowest_resolvable_security_fix_version
-        end
+        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
 
         @lowest_resolvable_security_fix_version =
           fetch_lowest_resolvable_security_fix_version
@@ -125,9 +123,7 @@ module Dependabot
       def latest_git_version_sha
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -145,9 +141,7 @@ module Dependabot
       def latest_resolvable_version_for_git_dependency
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -221,9 +215,7 @@ module Dependabot
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
-        if path_dependency? || git_dependency? || git_subdependency?
-          return latest_resolvable_version
-        end
+        return latest_resolvable_version if path_dependency? || git_dependency? || git_subdependency?
 
         prepared_files = FilePreparer.new(
           dependency_files: dependency_files,

@@ -169,13 +169,9 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def version_commit_message_intro
-        if dependencies.count > 1 && updating_a_property?
-          return multidependency_property_intro
-        end
+        return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
-        if dependencies.count > 1 && updating_a_dependency_set?
-          return dependency_set_intro
-        end
+        return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
         return multidependency_intro if dependencies.count > 1
 
@@ -184,9 +180,7 @@ module Dependabot
               "#{from_version_msg(previous_version(dependency))}"\
               "to #{new_version(dependency)}."
 
-        if switching_from_ref_to_release?(dependency)
-          msg += " This release includes the previously tagged commit."
-        end
+        msg += " This release includes the previously tagged commit." if switching_from_ref_to_release?(dependency)
 
         if vulnerabilities_fixed[dependency.name]&.one?
           msg += " **This update includes a security fix.**"
@@ -272,9 +266,7 @@ module Dependabot
       end
 
       def metadata_links
-        if dependencies.count == 1
-          return metadata_links_for_dep(dependencies.first)
-        end
+        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
 
         dependencies.map do |dep|
           "\n\nUpdates `#{dep.display_name}` "\
@@ -294,9 +286,7 @@ module Dependabot
       end
 
       def metadata_cascades
-        if dependencies.one?
-          return metadata_cascades_for_dep(dependencies.first)
-        end
+        return metadata_cascades_for_dep(dependencies.first) if dependencies.one?
 
         dependencies.map do |dep|
           msg = "\nUpdates `#{dep.display_name}` "\
@@ -375,9 +365,7 @@ module Dependabot
         end
 
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && previous_ref(dependency)
-            return previous_ref(dependency)
-          end
+          return previous_ref(dependency) if ref_changed?(dependency) && previous_ref(dependency)
 
           "`#{dependency.previous_version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
@@ -391,9 +379,7 @@ module Dependabot
 
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && new_ref(dependency)
-            return new_ref(dependency)
-          end
+          return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
           "`#{dependency.version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
@@ -448,9 +434,7 @@ module Dependabot
 
         req = updated_reqs.first.fetch(:requirement)
         return req if req
-        if ref_changed?(dependency) && new_ref(dependency)
-          return new_ref(dependency)
-        end
+        return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
         raise "No new requirement!"
       end

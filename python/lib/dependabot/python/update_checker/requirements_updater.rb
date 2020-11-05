@@ -79,15 +79,11 @@ module Dependabot
           return req if new_version_satisfies?(req) && !has_lockfile
 
           # If the requirement uses || syntax then we always want to widen it
-          if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
-            return widen_pyproject_requirement(req)
-          end
+          return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
 
           # If the requirement is a development dependency we always want to
           # bump it
-          if req.fetch(:groups).include?("dev-dependencies")
-            return update_pyproject_version(req)
-          end
+          return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
           when :widen_ranges then widen_pyproject_requirement(req)

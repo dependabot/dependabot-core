@@ -65,9 +65,7 @@ module Dependabot
             updated_content = run_update_helper.fetch("composer.lock")
 
             updated_content = post_process_lockfile(updated_content)
-            if lockfile.content == updated_content
-              raise "Expected content to change!"
-            end
+            raise "Expected content to change!" if lockfile.content == updated_content
 
             updated_content
           end
@@ -159,9 +157,7 @@ module Dependabot
             raise MissingExtensions, [missing_extension]
           end
 
-          if error.message.start_with?("Failed to execute git checkout")
-            raise git_dependency_reference_error(error)
-          end
+          raise git_dependency_reference_error(error) if error.message.start_with?("Failed to execute git checkout")
 
           # Special case for Laravel Nova, which will fall back to attempting
           # to close a private repo if given invalid (or no) credentials
@@ -193,9 +189,7 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
 
-          if error.message.start_with?("Allowed memory size")
-            raise Dependabot::OutOfMemory
-          end
+          raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
 
           if error.message.include?("403 Forbidden")
             source = error.message.match(%r{https?://(?<source>[^/]+)/}).
@@ -457,9 +451,7 @@ module Dependabot
           platform_php = parsed_composer_json.dig("config", "platform", "php")
 
           platform = {}
-          if platform_php.is_a?(String) && requirement_valid?(platform_php)
-            platform["php"] = [platform_php]
-          end
+          platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
           # Note: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in

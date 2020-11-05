@@ -41,9 +41,7 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        if defined?(@lowest_resolvable_security_fix_version)
-          return @lowest_resolvable_security_fix_version
-        end
+        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
 
         @lowest_resolvable_security_fix_version =
           fetch_lowest_resolvable_security_fix_version
@@ -72,9 +70,7 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :widen_ranges : :bump_versions_if_necessary
@@ -149,9 +145,7 @@ module Dependabot
       def latest_version_for_git_dependency
         # If the dependency isn't pinned then we just want to check that it
         # points to the latest commit on the relevant branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA

@@ -74,9 +74,7 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          if internal_dependency_poms[name]
-            return internal_dependency_poms[name]
-          end
+          return internal_dependency_poms[name] if internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 

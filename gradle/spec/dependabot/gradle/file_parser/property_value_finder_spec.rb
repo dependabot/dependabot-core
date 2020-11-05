@@ -90,9 +90,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             let(:property_name) { "findPropertyVersion" }
             its([:value]) { is_expected.to eq("27.1.1") }
             its([:declaration_string]) do
-              # rubocop:disable Layout/LineLength
               is_expected.to eq("findPropertyVersion = project.findProperty('findPropertyVersion') ?: '27.1.1'")
-              # rubocop:enable Layout/LineLength
             end
           end
 
@@ -123,9 +121,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               let(:property_name) { "versions.findPropertyVersion" }
               its([:value]) { is_expected.to eq("1.0.0") }
               its([:declaration_string]) do
-                # rubocop:disable Layout/LineLength
                 is_expected.to eq("findPropertyVersion    : project.findProperty('findPropertyVersion') ?: '1.0.0'")
-                # rubocop:enable Layout/LineLength
               end
             end
 

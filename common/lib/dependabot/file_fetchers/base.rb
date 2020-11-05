@@ -113,9 +113,7 @@ module Dependabot
       def load_cloned_file_if_present(filename)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         repo_path = File.join(clone_repo_contents, path)
-        unless File.exist?(repo_path)
-          raise Dependabot::DependencyFileNotFound, path
-        end
+        raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
 
         content = File.read(repo_path)
         type = if File.symlink?(repo_path)
@@ -135,9 +133,7 @@ module Dependabot
       end
 
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
-        unless repo_contents_path.nil?
-          return load_cloned_file_if_present(filename)
-        end
+        return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)

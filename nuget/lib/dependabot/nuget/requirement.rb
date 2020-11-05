@@ -46,9 +46,7 @@ module Dependabot
       def convert_dotnet_constraint_to_ruby_constraint(req_string)
         return unless req_string
 
-        if req_string&.start_with?("(", "[")
-          return convert_dotnet_range_to_ruby_range(req_string)
-        end
+        return convert_dotnet_range_to_ruby_range(req_string) if req_string&.start_with?("(", "[")
 
         return req_string.split(",").map(&:strip) if req_string.include?(",")
         return req_string unless req_string.include?("*")

@@ -43,9 +43,7 @@ module Dependabot
             end
 
           return if latest_resolvable_version.nil?
-          if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
-            return latest_resolvable_version
-          end
+          return latest_resolvable_version if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
 
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => e

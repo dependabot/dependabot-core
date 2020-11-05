@@ -100,9 +100,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_from_suggested_url
-          if defined?(@changelog_from_suggested_url)
-            return @changelog_from_suggested_url
-          end
+          return @changelog_from_suggested_url if defined?(@changelog_from_suggested_url)
           return unless suggested_changelog_url
 
           # TODO: Support other providers

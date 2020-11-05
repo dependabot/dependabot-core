@@ -62,9 +62,7 @@ module Dependabot
             versions_array.
             reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
 
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end
@@ -81,9 +79,7 @@ module Dependabot
 
         def wants_prerelease?
           current_version = dependency.version
-          if current_version && version_class.new(current_version).prerelease?
-            return true
-          end
+          return true if current_version && version_class.new(current_version).prerelease?
 
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)

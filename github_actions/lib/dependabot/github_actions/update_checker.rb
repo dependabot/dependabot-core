@@ -24,9 +24,7 @@ module Dependabot
       end
 
       def updated_requirements
-        if updated_source == dependency_source_details
-          return dependency.requirements
-        end
+        return dependency.requirements if updated_source == dependency_source_details
 
         dependency.requirements.map { |req| req.merge(source: updated_source) }
       end
@@ -50,9 +48,7 @@ module Dependabot
       end
 
       def fetch_latest_version_for_git_dependency
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -109,9 +105,7 @@ module Dependabot
 
         # If there are multiple source types, or multiple source URLs, then it's
         # unclear how we should proceed
-        if sources.map { |s| [s.fetch(:type), s[:url]] }.uniq.count > 1
-          raise "Multiple sources! #{sources.join(', ')}"
-        end
+        raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s.fetch(:type), s[:url]] }.uniq.count > 1
 
         # Otherwise it's reasonable to take the first source and use that. This
         # will happen if we have multiple git sources with difference references

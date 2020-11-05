@@ -29,9 +29,7 @@ module Dependabot
 
       def repo_has_subdir_for_dep?(tmp_source)
         @repo_has_subdir_for_dep ||= {}
-        if @repo_has_subdir_for_dep.key?(tmp_source)
-          return @repo_has_subdir_for_dep[tmp_source]
-        end
+        return @repo_has_subdir_for_dep[tmp_source] if @repo_has_subdir_for_dep.key?(tmp_source)
 
         fetcher =
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)

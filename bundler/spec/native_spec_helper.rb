@@ -46,9 +46,7 @@ RSpec.shared_context "in a temporary bundler directory" do
   before do
     File.write(File.join(tmp_path, gemfile_name), gemfile_fixture)
 
-    if lockfile_fixture_name
-      File.write(File.join(tmp_path, lockfile_name), lockfile_fixture)
-    end
+    File.write(File.join(tmp_path, lockfile_name), lockfile_fixture) if lockfile_fixture_name
   end
 
   def in_tmp_folder(&block)
