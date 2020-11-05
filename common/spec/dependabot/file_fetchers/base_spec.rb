@@ -1538,7 +1538,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           "\"$(time)\""
         end
 
-        it "clones the repo" do
+        it "clones the repo with branch checked out" do
           clone_repo_contents
           expect(`ls #{repo_contents_path}`).to include("time.md")
         end
