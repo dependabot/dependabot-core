@@ -34,14 +34,11 @@ module Dependabot
         result = SharedHelpers.run_helper_subprocess(
           command: "cd lein/helpers; /usr/local/lein/bin/lein run",
           function: "generate_pom",
-          args: project.content,
+          args: { file: project.content },
           escape_command_str: false
         )
 
-        Dependabot::DependencyFile.new(
-          name: "pom.xml",
-          content: result
-        )
+        Dependabot::DependencyFile.new(name: "pom.xml", content: result)
       end
     end
   end

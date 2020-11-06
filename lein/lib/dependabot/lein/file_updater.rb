@@ -14,16 +14,18 @@ module Dependabot
         file = dependency_files.find { |f| f.name == "project.clj" }
 
         dependencies_for_args = dependencies.map do |dependency|
-          { name: dependency.name,
+          {
+            dependency: dependency.name.gsub(":", "/"),
             version: dependency.version,
-            previous_version: dependency.previous_version }
+            previous: dependency.previous_version
+          }
         end
 
         result = SharedHelpers.run_helper_subprocess(
           command: "cd lein/helpers; /usr/local/lein/bin/lein run",
           function: "update_dependencies",
           args: {
-            file: project.content,
+            file: file.content,
             dependencies: dependencies_for_args
           },
           escape_command_str: false
