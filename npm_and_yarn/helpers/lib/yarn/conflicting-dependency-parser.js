@@ -16,13 +16,15 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   var parents = [];
 
   const json = await parse(directory);
+  const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(json).forEach(([pkgName, pkg]) => {
-    if (pkg.dependencies) {
+    if (pkgName.match(re) && pkg.dependencies) {
       Object.entries(pkg.dependencies).forEach(([subDepName, spec]) => {
         if (subDepName === depName && !semver.satisfies(targetVersion, spec)) {
+          const [_, packageName] = pkgName.match(re);
           parents.push({
-            name: pkgName,
+            name: packageName,
             version: pkg.version,
             requirement: spec,
           });
