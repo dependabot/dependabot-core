@@ -11,33 +11,28 @@ module Dependabot
       end
 
       def updated_dependency_files
-        file = dependency_files.find { |f| f.name == "project.clj" }.dup
+        file = dependency_files.find { |f| f.name == "project.clj" }
 
-        dependencies.each do |dependency|
-          file = update_project(
-            file: file,
-            dependency: dependency
-          )
+        dependencies_for_args = dependencies.map do |dependency|
+          { name: dependency.name,
+            version: dependency.version,
+            previous_version: dependency.previous_version }
         end
 
-        [file]
+        result = SharedHelpers.run_helper_subprocess(
+          command: "cd lein/helpers; /usr/local/lein/bin/lein run",
+          function: "update_dependencies",
+          args: {
+            file: project.content,
+            dependencies: dependencies_for_args
+          },
+          escape_command_str: false
+        )
+
+        [updated_file(file: file, content: result)]
       end
 
       private
-
-      def update_project(file:, dependency:)
-        content = file.content
-        name = dependency.name.split(":").uniq.join("/")
-        pv = dependency.previous_version
-        cv = dependency.version
-
-        # TODO: Handle "shortcutted" names explicitly
-        # This works, but if a project.clj has for example utils/utils and
-        # other-utils/utils there would be issues!
-        content = content.gsub("#{name} \"#{pv}\"", "#{name} \"#{cv}\"")
-
-        updated_file(file: file, content: content)
-      end
 
       def check_required_files
         raise "No project.clj!" unless get_original_file("project.clj")

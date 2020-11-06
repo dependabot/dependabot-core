@@ -1,5 +1,6 @@
 (ns helpers.core
   (:require [leiningen.pom :as pom]
+            [leiningen.change :as change]
             [clojure.java.io :as io]
             [clojure.data.json :as json]
             [leiningen.core.project :as project])
@@ -58,11 +59,27 @@
                    :integration :integration
                    :all (constantly true)})")
 
+(defn- generate_pom [input]
+  (let [proj (project/read-raw (io/reader (char-array input)))]
+    ;; TODO: Merge all profiles dependencies into main dependencies
+    (pom/make-pom (select-keys proj [:repositories :dependencies :profiles]))))
+
+(defn- change_dependencies [project_dependencies dependencies]
+  (println "dependencies")
+  (println dependencies)
+  (println "current_dependencies")
+  (println project_dependencies)
+  ; TODO iterate over project_dependencies and fetch the version from dependencies or keep current version
+  project_dependencies)
+
+(defn- update_dependencies [input]
+  (let [{:keys [file dependencies]} (json/read-str input :key-fn keyword)]
+    (change/change-string file "dependencies" change_dependencies dependencies)))
+
 (defn -main
   [& args]
   (let [input (json/read *in* :key-fn keyword)
-        proj (project/read-raw (io/reader (char-array (:args input))))
-
-        ;; TODO: Merge all profiles dependencies into main dependencies
-        result {:result (pom/make-pom (select-keys proj [:repositories :dependencies :profiles]))}]
-    (json/write result *out*)))
+        result (case (:function input)
+                 "generate_pom" (generate_pom (:args input))
+                 "update_dependencies" (update_dependencies (:args input)))]
+  (json/write {:result result} *out*)))
