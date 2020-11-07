@@ -63,7 +63,6 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
-require "pry"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
