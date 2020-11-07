@@ -34,6 +34,7 @@ jobs:
           - omnibus
           - python
           - terraform
+          - lein
     env:
       DOCKER_BUILDKIT: 1
     steps:
