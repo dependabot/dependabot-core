@@ -21,7 +21,8 @@ RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
 RUN chown -R "${USERNAME}":"${USERNAME}" \
   /usr/local/.pyenv \
   /opt/go/gopath \
-  /opt/rust/
+  /opt/rust/ \
+  /opt/lein
 USER $USERNAME
 RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 

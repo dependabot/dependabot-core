@@ -1,4 +1,4 @@
-(defproject helpers "0.1.0-SNAPSHOT"
+(defproject helpers "0.1.0"
   :description "dependabot-lein native helper"
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/data.json "1.0.0"]

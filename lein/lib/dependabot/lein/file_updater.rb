@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/lein/native_helpers"
 
 module Dependabot
   module Lein
@@ -22,13 +23,12 @@ module Dependabot
         end
 
         result = SharedHelpers.run_helper_subprocess(
-          command: "cd lein/helpers; /usr/local/lein/bin/lein run",
+          command: NativeHelpers.helper_path,
           function: "update_dependencies",
           args: {
             file: file.content,
             dependencies: dependencies_for_args
-          },
-          escape_command_str: false
+          }
         )
 
         [updated_file(file: file, content: result)]

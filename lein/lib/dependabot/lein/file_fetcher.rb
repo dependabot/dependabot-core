@@ -2,6 +2,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/lein/native_helpers"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -30,12 +31,10 @@ module Dependabot
       end
 
       def generate_pom(project)
-        # TODO install helpers properly onto path
         result = SharedHelpers.run_helper_subprocess(
-          command: "cd lein/helpers; /usr/local/lein/bin/lein run",
+          command: NativeHelpers.helper_path,
           function: "generate_pom",
-          args: { file: project.content },
-          escape_command_str: false
+          args: { file: project.content }
         )
 
         Dependabot::DependencyFile.new(name: "pom.xml", content: result)

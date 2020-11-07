@@ -9,7 +9,7 @@
 (defn generate-pom [{:keys [file]}]
   (let [proj (project/read-raw (io/reader (char-array file)))]
     ;; TODO: Merge all profiles dependencies into main dependencies
-    (pom/make-pom (select-keys proj [:repositories :dependencies :profiles]))))
+    (pom/make-pom (select-keys proj [:repositories :dependencies :profiles :version]))))
 
 (defn match? [dep-name dep-version {:keys [dependency previous]}]
   (and (= previous dep-version)
@@ -40,4 +40,5 @@
         fun (case function
               "generate_pom" generate-pom
               "update_dependencies" update-dependencies)]
-  (json/write {:result (fun args)} *out*)))
+  (json/write {:result (fun args)} *out*))
+  (flush))

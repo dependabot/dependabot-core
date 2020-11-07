@@ -186,7 +186,8 @@ RUN apt-get update \
   && chmod +x /usr/local/lein/bin/lein \
   && /usr/local/lein/bin/lein --version
 
-ENV PATH="$PATH:/usr/local/lein/bin"
+ENV PATH="$PATH:/usr/local/lein/bin" \
+  LEIN_SNAPSHOTS_IN_RELEASE="yes"
 
 ### NEW NATIVE HELPERS
 
@@ -198,6 +199,7 @@ COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 COPY python/helpers /opt/python/helpers
 COPY terraform/helpers /opt/terraform/helpers
+COPY lein/helpers /opt/lein/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
@@ -210,4 +212,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
-  bash /opt/composer/helpers/build /opt/composer
+  bash /opt/composer/helpers/build /opt/composer && \
+  bash /opt/lein/helpers/build /opt/lein
