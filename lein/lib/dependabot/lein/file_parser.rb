@@ -19,6 +19,12 @@ module Dependabot
           )
         end
       end
+
+      private
+
+      def check_required_files
+        super
+      end
     end
   end
 end
