@@ -6,7 +6,7 @@ require "dependabot/dependency"
 module Dependabot
   module Lein
     class FileParser < Dependabot::Maven::FileParser
-      def parser
+      def parse
         super.map do |dep|
           Dependabot::Dependency.new(
             package_manager: "lein",
