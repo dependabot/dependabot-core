@@ -33,15 +33,26 @@ module Dependabot
         #   * requirement [String] the requirement on the target_dependency
         def conflicting_dependencies(dependency:, target_version:)
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files(dependency)
-
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              # We always run in the `npm` namespace as this helper handles both
-              # package-lock.json and yarn.lock files.
-              function: "npm:findConflictingDependencies",
-              args: [Dir.pwd, dependency.name, target_version.to_s]
+            dependency_files_builder = DependencyFilesBuilder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
             )
+            dependency_files_builder.write_temporary_dependency_files
+
+            if dependency_files_builder.yarn_locks.any?
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:findConflictingDependencies",
+                args: [Dir.pwd, dependency.name, target_version.to_s]
+              )
+            else
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "npm:findConflictingDependencies",
+                args: [Dir.pwd, dependency.name, target_version.to_s]
+              )
+            end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           []
@@ -50,14 +61,6 @@ module Dependabot
         private
 
         attr_reader :dependency_files, :credentials
-
-        def write_temporary_dependency_files(dependency)
-          DependencyFilesBuilder.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).write_temporary_dependency_files
-        end
       end
     end
   end

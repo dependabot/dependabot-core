@@ -95,7 +95,7 @@ module Dependabot
       end
 
       def conflicting_dependencies
-        ConflictingDependencyParser.new(
+        ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           credentials: credentials
         ).conflicting_dependencies(
