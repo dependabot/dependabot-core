@@ -83,6 +83,7 @@ module Dependabot
       Shellwords.join(command_parts)
     end
 
+    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
@@ -92,8 +93,9 @@ module Dependabot
       env_cmd = [env, cmd].compact
       if ENV["DEBUG_FUNCTION"] == function
         escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
-        puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(" ")}"
-        byebug
+        puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(' ')}"
+        # Pause execution so we can run helpers inside the temporary directory
+        byebug # rubocop:disable Lint/Debugger
       end
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
@@ -134,6 +136,7 @@ module Dependabot
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +
