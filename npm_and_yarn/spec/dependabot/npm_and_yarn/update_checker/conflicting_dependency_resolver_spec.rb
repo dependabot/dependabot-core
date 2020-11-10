@@ -17,22 +17,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       }]
     )
   end
-  let(:dependency_files) { [package_json, npm_lock] }
+
+  let(:manifest_fixture_name) { "subdependency_out_of_range_gt.json" }
   let(:package_json) do
     Dependabot::DependencyFile.new(
       name: "package.json",
       content: fixture("package_files", manifest_fixture_name)
     )
   end
-  let(:manifest_fixture_name) { "subdependency_out_of_range_gt.json" }
-  let(:npm_lock) do
-    Dependabot::DependencyFile.new(
-      name: "package-lock.json",
-      content: fixture("npm_lockfiles", npm_lock_fixture_name)
-    )
-  end
-  let(:npm_lock_fixture_name) { "subdependency_out_of_range_gt.json" }
-
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -53,27 +45,41 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       )
     end
 
-    it "returns the right array of blocking dependencies" do
-      expect(conflicting_dependencies).to match_array(
-        [
-          {
-            "name" => "objnest",
-            "version" => "4.1.2",
-            "requirement" => "^1.0.0"
-          }
-        ]
-      )
-    end
+    context "with npm lockfiles" do
+      let(:dependency_files) { [package_json, npm_lock] }
 
-    context "with no blocking dependencies" do
-      let(:target_version) { "1.0.0" }
+      let(:npm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "package-lock.json",
+          content: fixture("npm_lockfiles", npm_lock_fixture_name)
+        )
+      end
+      let(:npm_lock_fixture_name) { "subdependency_out_of_range_gt.json" }
 
-      it "returns an empty array" do
-        expect(conflicting_dependencies).to match_array([])
+      it "returns the right array of blocking dependencies" do
+        expect(conflicting_dependencies).to match_array(
+          [
+            {
+              "name" => "objnest",
+              "version" => "4.1.2",
+              "requirement" => "^1.0.0"
+            }
+          ]
+        )
+      end
+
+      context "with no blocking dependencies" do
+        let(:target_version) { "1.0.0" }
+
+        it "returns an empty array" do
+          expect(conflicting_dependencies).to match_array([])
+        end
       end
     end
 
-    context "yarn" do
+    context "with yarn lockfiles" do
+      let(:dependency_files) { [package_json, yarn_lock] }
+
       let(:yarn_lock) do
         Dependabot::DependencyFile.new(
           name: "yarn.lock",
@@ -81,8 +87,6 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         )
       end
       let(:yarn_lock_fixture_name) { "subdependency_out_of_range_gt.lock" }
-
-      let(:dependency_files) { [package_json, yarn_lock] }
 
       it "returns the right array of blocking dependencies" do
         expect(conflicting_dependencies).to match_array(
