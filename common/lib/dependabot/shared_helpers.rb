@@ -90,6 +90,11 @@ module Dependabot
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
       env_cmd = [env, cmd].compact
+      if ENV["DEBUG_FUNCTION"] == function
+        escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
+        puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(" ")}"
+        byebug
+      end
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
