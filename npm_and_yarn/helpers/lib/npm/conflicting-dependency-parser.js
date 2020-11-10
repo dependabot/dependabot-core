@@ -17,8 +17,9 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
     path: directory,
   });
 
-  var parents = [];
-  await arb.loadVirtual().then((tree) => {
+  return await arb.loadVirtual().then((tree) => {
+    var parents = [];
+
     for (const node of tree.inventory.query("name", depName)) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
@@ -37,9 +38,9 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
         }
       }
     }
-  });
 
-  return parents;
+    return parents;
+  });
 }
 
 module.exports = { findConflictingDependencies };

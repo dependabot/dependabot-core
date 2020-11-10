@@ -11,6 +11,7 @@
 
 const semver = require("semver");
 const { parse } = require("./lockfile-parser");
+const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
 
 async function findConflictingDependencies(directory, depName, targetVersion) {
   var parents = [];
@@ -18,13 +19,13 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   const json = await parse(directory);
   const re = /^(.*)@([^@]*?)$/;
 
-  Object.entries(json).forEach(([pkgName, pkg]) => {
-    if (pkgName.match(re) && pkg.dependencies) {
+  Object.entries(json).forEach(([entry, pkg]) => {
+    if (entry.match(LOCKFILE_ENTRY_REGEX) && pkg.dependencies) {
       Object.entries(pkg.dependencies).forEach(([subDepName, spec]) => {
         if (subDepName === depName && !semver.satisfies(targetVersion, spec)) {
-          const [_, packageName] = pkgName.match(re);
+          const [_, parentDepName] = entry.match(LOCKFILE_ENTRY_REGEX);
           parents.push({
-            name: packageName,
+            name: parentDepName,
             version: pkg.version,
             requirement: spec,
           });
