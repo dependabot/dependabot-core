@@ -23,16 +23,16 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
     for (const node of tree.inventory.query("name", depName)) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
-          var parentSpec;
+          var parentVersion;
           for (const fromEdge of edge.from.edgesIn.values()) {
             if (fromEdge.name == edge.from.name) {
-              parentSpec = fromEdge.spec;
+              parentVersion = edge.from.version;
             }
           }
 
           parents.push({
             name: edge.from.name,
-            version: parentSpec,
+            version: parentVersion,
             requirement: edge.spec,
           });
         }

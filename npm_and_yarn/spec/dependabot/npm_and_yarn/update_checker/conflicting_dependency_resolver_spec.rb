@@ -58,7 +58,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         [
           {
             "name" => "objnest",
-            "version" => "^4.1.2",
+            "version" => "4.1.2",
             "requirement" => "^1.0.0"
           }
         ]
