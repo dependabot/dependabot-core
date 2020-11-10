@@ -1,4 +1,4 @@
-/* CONFLICTING DEPENDENCY PARSER
+/* Conflicting dependency parser for yarn
  *
  * Inputs:
  *  - directory containing a package.json and a yarn.lock
@@ -17,7 +17,6 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   var parents = [];
 
   const json = await parse(directory);
-  const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(json).forEach(([entry, pkg]) => {
     if (entry.match(LOCKFILE_ENTRY_REGEX) && pkg.dependencies) {

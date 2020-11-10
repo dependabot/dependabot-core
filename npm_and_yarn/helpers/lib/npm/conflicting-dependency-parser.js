@@ -1,4 +1,4 @@
-/* CONFLICTING DEPENDENCY PARSER
+/* Conflicting dependency parser for npm
  *
  * Inputs:
  *  - directory containing a package.json and a yarn.lock
