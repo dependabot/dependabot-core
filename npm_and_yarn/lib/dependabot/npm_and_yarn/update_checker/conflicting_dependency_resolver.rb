@@ -33,8 +33,7 @@ module Dependabot
         #   * requirement [String] the requirement on the target_dependency
         def conflicting_dependencies(dependency:, target_version:)
           SharedHelpers.in_a_temporary_directory do
-            DependencyFilesBuilder.new(dependency_files: dependency_files, credentials: credentials).
-              write_temporary_dependency_files
+            write_temporary_dependency_files(dependency)
 
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -44,13 +43,21 @@ module Dependabot
               args: [Dir.pwd, dependency.name, target_version.to_s]
             )
           end
-        rescue SharedHelpers::HelperSubprocessFailed
+        rescue SharedHelpers::HelperSubprocessFailed => e
           []
         end
 
         private
 
         attr_reader :dependency_files, :credentials
+
+        def write_temporary_dependency_files(dependency)
+          DependencyFilesBuilder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).write_temporary_dependency_files
+        end
       end
     end
   end

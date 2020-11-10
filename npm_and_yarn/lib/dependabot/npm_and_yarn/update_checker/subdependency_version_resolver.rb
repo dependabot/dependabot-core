@@ -30,7 +30,11 @@ module Dependabot
           return if bundled_dependency?
 
           SharedHelpers.in_a_temporary_directory do
+<<<<<<< HEAD
             dependency_files_builder.write_temporary_dependency_files
+=======
+            write_temporary_dependency_files
+>>>>>>> Add spec for parsing yarn file
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
               updated_content = update_subdependency_in_lockfile(lockfile)
@@ -52,6 +56,14 @@ module Dependabot
 
         attr_reader :dependency, :credentials, :dependency_files,
                     :ignored_versions, :latest_allowable_version
+
+        def write_temporary_dependency_files
+          DependencyFilesBuilder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).write_temporary_dependency_files
+        end
 
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s

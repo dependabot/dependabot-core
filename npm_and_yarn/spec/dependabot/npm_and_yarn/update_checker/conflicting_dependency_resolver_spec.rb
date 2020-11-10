@@ -5,9 +5,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/update_checker/conflicting_dependency_resolver"
 
-RSpec.describe(
-  Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResolver
-) do
+RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResolver) do
   let(:resolver) do
     described_class.new(
       dependency_files: dependency_files,
@@ -72,6 +70,30 @@ RSpec.describe(
 
       it "returns an empty array" do
         expect(conflicting_dependencies).to match_array([])
+      end
+    end
+
+    context "yarn" do
+      let(:yarn_lock) do
+        Dependabot::DependencyFile.new(
+          name: "yarn.lock",
+          content: fixture("yarn_lockfiles", yarn_lock_fixture_name)
+        )
+      end
+      let(:yarn_lock_fixture_name) { "subdependency_out_of_range_gt.lock" }
+
+      let(:dependency_files) { [package_json, yarn_lock] }
+
+      it "returns the right array of blocking dependencies" do
+        expect(conflicting_dependencies).to match_array(
+          [
+            {
+              "name" => "objnest",
+              "version" => "^4.1.2",
+              "requirement" => "^1.0.0"
+            }
+          ]
+        )
       end
     end
   end
