@@ -1,8 +1,8 @@
 ## v0.125.2, 11 November 2020
 
-- update ci jobs env variable assignment (@baseballlover723)
-- support elixir `Code.eval_file` without specifying a relative directory (baseballlover723)
-- Explain update not possible for yarn and npm
+- Update CI jobs env variable assignment (@baseballlover723)
+- Hex: Support elixir `Code.eval_file` without specifying a relative directory (@baseballlover723)
+- JS: Explain update not possible for yarn and npm
 - Extract DependencyFileBuilder to remove duplication
 
 ## v0.125.1, 5 November 2020
