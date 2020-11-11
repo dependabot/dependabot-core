@@ -13,6 +13,7 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         @latest_version ||=
@@ -91,6 +92,16 @@ module Dependabot
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :widen_ranges : :bump_versions
+      end
+
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).conflicting_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
       end
 
       private
