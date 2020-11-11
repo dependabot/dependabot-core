@@ -22,9 +22,7 @@ def pr_info(dependency)
 end
 
 def using_dockerhub?(dependency)
-  unless dependency.requirements.length == 1
-    raise ArgumentError, "Dependency must have exactly one requirement"
-  end
+  raise ArgumentError, "Dependency must have exactly one requirement" unless dependency.requirements.length == 1
 
   dependency.requirements.first[:source][:registry].nil?
 end
