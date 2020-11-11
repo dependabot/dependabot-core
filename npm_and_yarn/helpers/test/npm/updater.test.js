@@ -12,22 +12,8 @@ describe("updater", () => {
   });
   afterEach(() => rimraf.sync(tempDir));
 
-  function copyDependencies(sourceDir, destDir) {
-    const srcPackageJson = path.join(
-      __dirname,
-      `fixtures/updater/${sourceDir}/package.json`
-    );
-    fs.copyFileSync(srcPackageJson, `${destDir}/package.json`);
-
-    const srcLockfile = path.join(
-      __dirname,
-      `fixtures/updater/${sourceDir}/package-lock.json`
-    );
-    fs.copyFileSync(srcLockfile, `${destDir}/package-lock.json`);
-  }
-
   it("generates an updated package-lock.json", async () => {
-    copyDependencies("original", tempDir);
+    helpers.copyDependencies("updater/original", tempDir);
 
     const result = await updateDependencyFiles(tempDir, "package-lock.json", [
       {
