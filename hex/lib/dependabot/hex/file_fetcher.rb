@@ -10,6 +10,8 @@ module Dependabot
       STRING_ARG = %{(?:["'](.*?)["'])}
       EVAL_FILE = /Code\.eval_file\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
                   freeze
+      REQUIRE_FILE = /Code\.require_file\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
+                     freeze
 
       def self.required_files_in?(filenames)
         filenames.include?("mix.exs")
@@ -27,6 +29,7 @@ module Dependabot
         fetched_files << lockfile if lockfile
         fetched_files += subapp_mixfiles
         fetched_files += evaled_files
+        fetched_files += required_files
         fetched_files
       end
 
@@ -69,6 +72,14 @@ module Dependabot
       def evaled_files
         mixfile.content.scan(EVAL_FILE).map do |eval_file_args|
           path = Pathname.new(File.join(*eval_file_args.compact.reverse)).
+                 cleanpath.to_path
+          fetch_file_from_host(path).tap { |f| f.support_file = true }
+        end
+      end
+
+      def required_files
+        mixfile.content.scan(REQUIRE_FILE).map do |require_file_args|
+          path = Pathname.new(File.join(*require_file_args.compact.reverse)).
                  cleanpath.to_path
           fetch_file_from_host(path).tap { |f| f.support_file = true }
         end
