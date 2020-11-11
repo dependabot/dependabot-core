@@ -22,9 +22,7 @@ module Dependabot
         end
 
         def latest_resolvable_version(unlock_requirement:)
-          unless %i(none own all).include?(unlock_requirement)
-            raise "Invalid unlock setting: #{unlock_requirement}"
-          end
+          raise "Invalid unlock setting: #{unlock_requirement}" unless %i(none own all).include?(unlock_requirement)
 
           # Elm has no lockfile, so we will never create an update PR if
           # unlock requirements are `none`. Just return the current version.

@@ -216,9 +216,7 @@ module Dependabot
 
           # If there are multiple source types, or multiple source URLs, then
           # it's unclear how we should proceed
-          if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
-            raise "Multiple sources! #{sources.join(', ')}"
-          end
+          raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
 
           # Otherwise we just take the URL of the first private registry
           sources.find { |s| s[:type] == "private_registry" }&.fetch(:url)

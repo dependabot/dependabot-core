@@ -225,9 +225,7 @@ module Dependabot
         return unless version_property_name || in_dependency_set
 
         metadata = {}
-        if version_property_name
-          metadata[:property_name] = version_property_name
-        end
+        metadata[:property_name] = version_property_name if version_property_name
         if in_dependency_set
           metadata[:dependency_set] = {
             group: details_hash[:group],

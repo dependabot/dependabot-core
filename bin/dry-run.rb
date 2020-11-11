@@ -102,7 +102,7 @@ $options = {
   commit: nil,
   updater_options: {},
   security_advisories: [],
-  security_updates_only: false,
+  security_updates_only: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -424,7 +424,7 @@ def file_updater_for(dependencies)
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
     credentials: $options[:credentials],
-    options: $options[:updater_options],
+    options: $options[:updater_options]
   )
 end
 
@@ -482,10 +482,24 @@ dependencies.each do |dep|
     end
   end
 
-  latest_allowed_version = checker.vulnerable? ?
-    checker.lowest_resolvable_security_fix_version :
-    checker.latest_resolvable_version
+  latest_allowed_version = if checker.vulnerable?
+                             checker.lowest_resolvable_security_fix_version
+                           else
+                             checker.latest_resolvable_version
+                           end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
+
+  conflicting_dependencies = checker.conflicting_dependencies
+  if conflicting_dependencies.any?
+    puts " => The update is not possible because of the following conflicting "\
+      "dependencies:"
+
+    conflicting_dependencies.each do |conflicting_dep|
+      puts "   #{conflicting_dep['name']} (#{conflicting_dep['version']}) "\
+        "which requires:"
+      puts "     #{dep.name} #{conflicting_dep['requirement']}"
+    end
+  end
 
   if checker.up_to_date?
     puts "    (no update needed as it's already up-to-date)"

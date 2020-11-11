@@ -81,9 +81,7 @@ module Dependabot
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
 
-        if defined?(@lowest_resolvable_security_fix_version)
-          return @lowest_resolvable_security_fix_version
-        end
+        return @lowest_resolvable_security_fix_version if defined?(@lowest_resolvable_security_fix_version)
 
         @lowest_resolvable_security_fix_version =
           fetch_lowest_resolvable_security_fix_version
@@ -100,9 +98,7 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, check if this is a poetry library or not
         poetry_library? ? :widen_ranges : :bump_versions
@@ -126,9 +122,7 @@ module Dependabot
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
-        if resolver_type == :requirements
-          return pip_version_resolver.lowest_resolvable_security_fix_version
-        end
+        return pip_version_resolver.lowest_resolvable_security_fix_version if resolver_type == :requirements
 
         resolver =
           case resolver_type

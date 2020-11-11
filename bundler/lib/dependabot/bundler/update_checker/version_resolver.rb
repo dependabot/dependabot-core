@@ -119,9 +119,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def circular_dependency_at_new_version?(error)
-          unless error.error_class.include?("CyclicDependencyError")
-            return false
-          end
+          return false unless error.error_class.include?("CyclicDependencyError")
 
           error.message.include?("'#{dependency.name}'")
         end
@@ -171,9 +169,7 @@ module Dependabot
 
         def ruby_version_incompatible?(details)
           # It's only the old index we have a problem with
-          unless details[:fetcher] == "Bundler::Fetcher::Dependency"
-            return false
-          end
+          return false unless details[:fetcher] == "Bundler::Fetcher::Dependency"
 
           # If no Ruby version is specified, we don't have a problem
           return false unless details[:ruby_version]

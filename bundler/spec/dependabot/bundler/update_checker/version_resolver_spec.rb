@@ -111,7 +111,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
 
-        # rubocop:disable Layout/LineLength
         # TODO: https://github.com/dependabot/dependabot-core/issues/2364
         # context "that will be removed if other sub-dependencies are updated" do
         #   let(:gemfile_fixture_name) { "subdependency_change" }
@@ -123,7 +122,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         #     expect(subject.version).to eq(Gem::Version.new("1.10.9"))
         #   end
         # end
-        # rubocop:enable Layout/LineLength
       end
 
       context "with a Bundler version specified" do

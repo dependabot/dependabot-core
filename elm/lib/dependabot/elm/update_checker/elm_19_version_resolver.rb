@@ -22,9 +22,7 @@ module Dependabot
         end
 
         def latest_resolvable_version(unlock_requirement:)
-          unless %i(none own all).include?(unlock_requirement)
-            raise "Invalid unlock setting: #{unlock_requirement}"
-          end
+          raise "Invalid unlock setting: #{unlock_requirement}" unless %i(none own all).include?(unlock_requirement)
 
           # Elm has no lockfile, so we will never create an update PR if
           # unlock requirements are `none`. Just return the current version.
@@ -159,14 +157,10 @@ module Dependabot
           # Delete the dependency from the elm.json, so that we can use
           # `elm install <dependency_name>` to generate the install plan
           %w(dependencies test-dependencies).each do |type|
-            if json.dig(type, dependency.name)
-              json[type].delete(dependency.name)
-            end
+            json[type].delete(dependency.name) if json.dig(type, dependency.name)
 
             %w(direct indirect).each do |category|
-              if json.dig(type, category, dependency.name)
-                json[type][category].delete(dependency.name)
-              end
+              json[type][category].delete(dependency.name) if json.dig(type, category, dependency.name)
             end
           end
 

@@ -54,14 +54,10 @@ module Dependabot
         def mixfile_content_for_update_check(file)
           content = file.content
 
-          unless dependency_appears_in_file?(file.name)
-            return sanitize_mixfile(content)
-          end
+          return sanitize_mixfile(content) unless dependency_appears_in_file?(file.name)
 
           content = relax_version(content, filename: file.name)
-          if replace_git_pin?
-            content = replace_git_pin(content, filename: file.name)
-          end
+          content = replace_git_pin(content, filename: file.name) if replace_git_pin?
 
           sanitize_mixfile(content)
         end
@@ -85,9 +81,7 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless version_class.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless version_class.correct?(latest_allowable_version)
 
           lower_bound_req + " and <= #{latest_allowable_version}"
         end

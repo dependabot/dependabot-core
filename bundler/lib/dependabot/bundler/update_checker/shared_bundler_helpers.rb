@@ -55,9 +55,7 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           retry_count ||= 0
           retry_count += 1
-          if retryable_error?(e) && retry_count <= 2
-            sleep(rand(1.0..5.0)) && retry
-          end
+          sleep(rand(1.0..5.0)) && retry if retryable_error?(e) && retry_count <= 2
 
           error_handling ? handle_bundler_errors(e) : raise
         end
@@ -70,9 +68,7 @@ module Dependabot
           return true if error.error_class == "JSON::ParserError"
           return true if RETRYABLE_ERRORS.include?(error.error_class)
 
-          unless RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class)
-            return false
-          end
+          return false unless RETRYABLE_PRIVATE_REGISTRY_ERRORS.include?(error.error_class)
 
           private_registry_credentials.any?
         end

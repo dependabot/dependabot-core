@@ -65,9 +65,7 @@ module Dependabot
                 map { |version| { version: version, source_url: url } }
             end.flatten.compact
 
-          if version_details.none? && forbidden_urls.any?
-            raise PrivateSourceAuthenticationFailure, forbidden_urls.first
-          end
+          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
           version_details.sort_by { |details| details.fetch(:version) }
         end
@@ -105,9 +103,7 @@ module Dependabot
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          if @raise_on_ignored && filtered.empty? && possible_versions.any?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
 
           filtered
         end

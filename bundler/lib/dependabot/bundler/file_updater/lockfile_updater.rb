@@ -44,9 +44,7 @@ module Dependabot
             begin
               updated_content = build_updated_lockfile
 
-              if lockfile.content == updated_content
-                raise "Expected content to change!"
-              end
+              raise "Expected content to change!" if lockfile.content == updated_content
 
               updated_content
             end

@@ -62,9 +62,7 @@ module Dependabot
           raise "Can't convert multiple Java reqs to a single Ruby one"
         end
 
-        if req_string&.include?(",")
-          return convert_java_range_to_ruby_range(req_string)
-        end
+        return convert_java_range_to_ruby_range(req_string) if req_string&.include?(",")
 
         convert_java_equals_req_to_ruby(req_string)
       end

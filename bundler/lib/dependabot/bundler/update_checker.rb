@@ -13,6 +13,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
@@ -99,12 +100,21 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+      end
+
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials
+        ).conflicting_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
       end
 
       private
@@ -130,9 +140,7 @@ module Dependabot
       end
 
       def preferred_resolvable_version_details
-        if vulnerable?
-          return { version: lowest_resolvable_security_fix_version }
-        end
+        return { version: lowest_resolvable_security_fix_version } if vulnerable?
 
         latest_resolvable_version_details
       end
@@ -208,9 +216,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -234,9 +240,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA

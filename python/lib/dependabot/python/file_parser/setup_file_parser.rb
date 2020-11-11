@@ -69,9 +69,7 @@ module Dependabot
             requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.start_with?("InstallationError")
-            raise Dependabot::DependencyFileNotEvaluatable, e.message
-          end
+          raise Dependabot::DependencyFileNotEvaluatable, e.message if e.message.start_with?("InstallationError")
 
           parsed_sanitized_setup_file
         end

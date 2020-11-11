@@ -95,9 +95,7 @@ module Dependabot
                       "/_apis/git/repositories/" + source.unscoped_repo +
                       "/commits"
 
-        unless branch_name.to_s.empty?
-          commits_url += "?searchCriteria.itemVersion.version=" + branch_name
-        end
+        commits_url += "?searchCriteria.itemVersion.version=" + branch_name unless branch_name.to_s.empty?
 
         response = get(commits_url)
 

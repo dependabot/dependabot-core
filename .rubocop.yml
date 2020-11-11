@@ -17,7 +17,7 @@ Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
 
 Layout/LineLength:
-  Max: 80
+  Max: 120
 
 Layout/RescueEnsureAlignment:
   Enabled: false

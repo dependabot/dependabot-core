@@ -71,9 +71,7 @@ module Dependabot
         end
 
         def node_group_id(node)
-          unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
-            return
-          end
+          return unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
           return "org.apache.maven.plugins" unless node.at_xpath("./*/groupId")
 
           evaluated_value(node.at_xpath("./*/groupId").content.strip)

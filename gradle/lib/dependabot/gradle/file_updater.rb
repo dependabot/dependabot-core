@@ -114,9 +114,7 @@ module Dependabot
             )
           )
 
-        if updated_content == buildfile.content
-          raise "Expected content to change!"
-        end
+        raise "Expected content to change!" if updated_content == buildfile.content
 
         updated_file(file: buildfile, content: updated_content)
       end

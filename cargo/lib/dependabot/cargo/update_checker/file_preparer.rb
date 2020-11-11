@@ -120,13 +120,9 @@ module Dependabot
               next unless req.is_a?(Hash)
               next unless [req["tag"], req["rev"]].compact.uniq.count == 1
 
-              if req["tag"]
-                parsed_manifest[type][name]["tag"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["tag"] = replacement_git_pin if req["tag"]
 
-              if req["rev"]
-                parsed_manifest[type][name]["rev"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["rev"] = replacement_git_pin if req["rev"]
             end
           end
 
@@ -255,9 +251,7 @@ module Dependabot
 
         def name_from_declaration(name, declaration)
           return name if declaration.is_a?(String)
-          unless declaration.is_a?(Hash)
-            raise "Unexpected dependency declaration: #{declaration}"
-          end
+          raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
           declaration.fetch("package", name)
         end

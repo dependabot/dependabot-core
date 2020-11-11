@@ -59,9 +59,7 @@ module Dependabot
           callsite_file = dependency_files.
                           find { |f| f.name == node_details.fetch(:file) }
 
-          if stack.include?([property_name, callsite_file.name])
-            raise "Circular reference!"
-          end
+          raise "Circular reference!" if stack.include?([property_name, callsite_file.name])
 
           property_details(
             property_name: property_name,
@@ -80,9 +78,7 @@ module Dependabot
           node = doc.at_xpath(property_xpath(property))
 
           # If we found a value for the property, return it
-          if node
-            return node_details(file: file, node: node, property: property)
-          end
+          return node_details(file: file, node: node, property: property) if node
 
           # Otherwise, we need to look in an imported file
           import_path_finder =

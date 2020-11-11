@@ -34,9 +34,7 @@ module Dependabot
             next req if req.fetch(:requirement).include?(",")
 
             property_name = req.dig(:metadata, :property_name)
-            if property_name && !properties_to_update.include?(property_name)
-              next req
-            end
+            next req if property_name && !properties_to_update.include?(property_name)
 
             new_req = update_requirement(req[:requirement])
             req.merge(requirement: new_req, source: updated_source)

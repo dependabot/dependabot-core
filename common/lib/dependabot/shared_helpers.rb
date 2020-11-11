@@ -83,13 +83,20 @@ module Dependabot
       Shellwords.join(command_parts)
     end
 
+    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
-                                   escape_command_str: true)
+                                   allow_unsafe_shell_command: false)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
-      cmd = escape_command_str ? escape_command(command) : command
+      cmd = allow_unsafe_shell_command ? command : escape_command(command)
       env_cmd = [env, cmd].compact
+      if ENV["DEBUG_FUNCTION"] == function
+        escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
+        puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(' ')}"
+        # Pause execution so we can run helpers inside the temporary directory
+        byebug # rubocop:disable Lint/Debugger
+      end
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
@@ -129,6 +136,7 @@ module Dependabot
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +
@@ -176,15 +184,23 @@ module Dependabot
       # Note: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
       run_shell_command(
-        'git config --global --replace-all url."https://github.com/".'\
-        "insteadOf ssh://git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf ssh://git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
+        "git config --global --replace-all url.https://github.com/."\
+        "insteadOf ssh://git@github.com/"
+      )
+      run_shell_command(
+        "git config --global --add url.https://github.com/."\
+        "insteadOf ssh://git@github.com:"
+      )
+      run_shell_command(
+        "git config --global --add url.https://github.com/."\
+        "insteadOf git@github.com:"
+      )
+      run_shell_command(
+        "git config --global --add url.https://github.com/."\
+        "insteadOf git@github.com/"
+      )
+      run_shell_command(
+        "git config --global --add url.https://github.com/."\
         "insteadOf git://github.com/"
       )
     end
@@ -199,7 +215,8 @@ module Dependabot
         File.join(__dir__, "../../bin/git-credential-store-immutable")
       run_shell_command(
         "git config --global credential.helper "\
-        "'!#{credential_helper_path} --file=#{Dir.pwd}/git.store'"
+        "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
+        allow_unsafe_shell_command: true
       )
 
       github_credentials = credentials.
@@ -237,7 +254,8 @@ module Dependabot
 
     def self.reset_git_repo(path)
       Dir.chdir(path) do
-        run_shell_command("git reset HEAD --hard && git clean -fx")
+        run_shell_command("git reset HEAD --hard")
+        run_shell_command("git clean -fx")
       end
     end
 
@@ -262,9 +280,10 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command)
+    def self.run_shell_command(command, allow_unsafe_shell_command: false)
       start = Time.now
-      stdout, process = Open3.capture2e(command)
+      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+      stdout, process = Open3.capture2e(cmd)
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
@@ -272,7 +291,7 @@ module Dependabot
       return stdout if process.success?
 
       error_context = {
-        command: command,
+        command: cmd,
         time_taken: time_taken,
         process_exit_value: process.to_s
       }
