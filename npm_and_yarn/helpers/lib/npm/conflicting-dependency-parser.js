@@ -18,22 +18,28 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   });
 
   return await arb.loadVirtual().then((tree) => {
-    var parents = [];
-
+    const parents = [];
     for (const node of tree.inventory.query("name", depName)) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
-          var parentVersion;
-          for (const fromEdge of edge.from.edgesIn.values()) {
-            if (fromEdge.name == edge.from.name) {
-              parentVersion = edge.from.version;
+          findTopLevelEdges(edge).forEach((topLevel) => {
+            if (topLevel.to === edge.from) {
+              parents.push({
+                name: edge.from.name,
+                version: edge.from.version,
+                requirement: edge.spec,
+              });
+            } else {
+              parents.push({
+                name: topLevel.to.name,
+                version: topLevel.to.version,
+                subdependency: {
+                  name: edge.from.name,
+                  version: edge.from.version,
+                  requirement: edge.spec,
+                },
+              });
             }
-          }
-
-          parents.push({
-            name: edge.from.name,
-            version: parentVersion,
-            requirement: edge.spec,
           });
         }
       }
@@ -41,6 +47,18 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
 
     return parents;
   });
+}
+
+function findTopLevelEdges(edge, parents = []) {
+  edge.from.edgesIn.forEach((parent) => {
+    if (parent.from.edgesIn.size === 0) {
+      parents.push(parent);
+    } else {
+      findTopLevelEdges(parent, parents);
+    }
+  });
+
+  return parents;
 }
 
 module.exports = { findConflictingDependencies };
