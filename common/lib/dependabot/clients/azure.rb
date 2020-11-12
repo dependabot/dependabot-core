@@ -8,6 +8,8 @@ module Dependabot
     class Azure
       class NotFound < StandardError; end
 
+      MAX_PR_DESCRIPTION_LENGTH = 3999
+
       #######################
       # Constructor methods #
       #######################
@@ -154,15 +156,7 @@ module Dependabot
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels, work_item = nil)
-        # Azure DevOps only support descriptions up to 4000 characters
-        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
-        azure_max_length = 3999
-        if pr_description.length > azure_max_length
-          truncated_msg = "...\n\n_Description has been truncated_"
-          truncate_length = azure_max_length - truncated_msg.length
-          pr_description = pr_description[0..truncate_length] + truncated_msg
-        end
-        # rubocop:enable Metrics/ParameterLists
+        pr_description = truncate_pr_description(pr_description)
 
         content = {
           sourceRefName: "refs/heads/" + source_branch,
@@ -178,6 +172,7 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pullrequests?api-version=5.0", content.to_json)
       end
+      # rubocop:enable Metrics/ParameterLists
 
       def get(url)
         response = Excon.get(
@@ -228,6 +223,19 @@ module Dependabot
         else
           { "Authorization" => "Bearer #{token}" }
         end
+      end
+
+      def truncate_pr_description(pr_description)
+        # Azure DevOps only support descriptions up to 4000 characters in UTF-16
+        # encoding.
+        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
+        pr_description = pr_description.dup.force_encoding(Encoding::UTF_16)
+        if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
+          truncated_msg = "...\n\n_Description has been truncated_".dup.force_encoding(Encoding::UTF_16)
+          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
+          pr_description = (pr_description[0..truncate_length] + truncated_msg)
+        end
+        pr_description.force_encoding(Encoding::UTF_8)
       end
 
       attr_reader :auth_header
