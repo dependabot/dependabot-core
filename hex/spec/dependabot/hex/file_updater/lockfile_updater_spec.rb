@@ -220,6 +220,26 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a mix.exs that opens another file in a required file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:lockfile_fixture_name) { "exact_version" }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
+          support_file: true
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+        expect(updated_lockfile_content).to include(
+          "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+        )
+      end
+    end
+
     context "with an umbrella app" do
       let(:mixfile_fixture_name) { "umbrella" }
       let(:lockfile_fixture_name) { "umbrella" }
