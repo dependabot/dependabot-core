@@ -41,8 +41,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_file, lockfile] }
-  let(:composer_file) do
+  let(:files) { [manifest, lockfile] }
+  let(:manifest) do
     Dependabot::DependencyFile.new(
       content: fixture("composer_files", manifest_fixture_name),
       name: "composer.json"
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "without a lockfile" do
-      let(:files) { [composer_file] }
+      let(:files) { [manifest] }
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
 
       context "when using a pre-release" do
@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
               "password" => "token"
             }]
           end
-          let(:files) { [composer_file, lockfile, auth_json] }
+          let(:files) { [manifest, lockfile, auth_json] }
           let(:auth_json) do
             Dependabot::DependencyFile.new(
               content: fixture("auth_jsons", auth_json_fixture_name),

@@ -10,13 +10,13 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
     described_class.new(
       path: path,
       directory: directory,
-      lockfile: composer_lock
+      lockfile: lockfile
     )
   end
 
   let(:path) { "components/path_dep" }
   let(:directory) { "/" }
-  let(:composer_lock) do
+  let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "composer.lock",
       content: fixture("lockfiles", lockfile_fixture_name)
@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
     subject(:dependency_file) { builder.dependency_file }
 
     context "with a lockfile" do
-      let(:composer_lock) do
+      let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: "composer.lock",
           content: fixture("lockfiles", lockfile_fixture_name)
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
     end
 
     context "without a lockfile" do
-      let(:composer_lock) { nil }
+      let(:lockfile) { nil }
       it { is_expected.to be_nil }
     end
   end

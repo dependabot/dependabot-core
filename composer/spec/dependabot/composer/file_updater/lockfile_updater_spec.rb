@@ -22,8 +22,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
+  let(:files) { [manifest, lockfile] }
+  let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "composer.json",
       content: fixture("composer_files", manifest_fixture_name)
@@ -280,7 +280,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a path source" do
-      let(:files) { [composer_json, lockfile, path_dep] }
+      let(:files) { [manifest, lockfile, path_dep] }
       let(:manifest_fixture_name) { "path_source" }
       let(:lockfile_fixture_name) { "path_source" }
       let(:path_dep) do

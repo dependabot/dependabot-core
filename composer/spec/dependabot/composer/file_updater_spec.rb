@@ -23,8 +23,8 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       "host" => "github.com"
     }]
   end
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
+  let(:files) { [manifest, lockfile] }
+  let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "composer.json",
       content: fixture("composer_files", manifest_fixture_name)
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     end
 
     describe "the updated composer_file" do
-      let(:files) { [composer_json] }
+      let(:files) { [manifest] }
       subject(:updated_manifest_content) do
         updated_files.find { |f| f.name == "composer.json" }.content
       end
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         it "includes the new requirement" do
           expect(described_class::ManifestUpdater).
             to receive(:new).
-            with(dependencies: [dependency], manifest: composer_json).
+            with(dependencies: [dependency], manifest: manifest).
             and_call_original
 
           expect(updated_manifest_content).

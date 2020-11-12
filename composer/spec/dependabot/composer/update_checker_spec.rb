@@ -44,8 +44,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_file, lockfile] }
-  let(:composer_file) do
+  let(:files) { [manifest, lockfile] }
+  let(:manifest) do
     Dependabot::DependencyFile.new(
       content: fixture("composer_files", manifest_fixture_name),
       name: "composer.json"
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a path source" do
-      let(:files) { [composer_file, lockfile, path_dep] }
+      let(:files) { [manifest, lockfile, path_dep] }
       let(:manifest_fixture_name) { "path_source" }
       let(:lockfile_fixture_name) { "path_source" }
       let(:path_dep) do
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a git dependency" do
-      let(:files) { [composer_file, lockfile] }
+      let(:files) { [manifest, lockfile] }
       let(:manifest_fixture_name) { "git_source" }
       let(:lockfile_fixture_name) { "git_source" }
 
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "without a lockfile" do
-      let(:files) { [composer_file] }
+      let(:files) { [manifest] }
       it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
       context "when there are conflicts at the version specified" do
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a path source" do
-      let(:files) { [composer_file, lockfile, path_dep] }
+      let(:files) { [manifest, lockfile, path_dep] }
       let(:manifest_fixture_name) { "path_source" }
       let(:lockfile_fixture_name) { "path_source" }
       let(:path_dep) do
@@ -452,7 +452,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a replaced direct dependency" do
       let(:manifest_fixture_name) { "replaced_direct_dependency" }
-      let(:files) { [composer_file] }
+      let(:files) { [manifest] }
       let(:dependency_name) { "neos/flow" }
       let(:dependency_version) { nil }
       let(:requirements) do
@@ -518,7 +518,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a version conflict in the current files" do
-      let(:files) { [composer_file, lockfile] }
+      let(:files) { [manifest, lockfile] }
       let(:manifest_fixture_name) { "version_conflict" }
       let(:dependency_name) { "monolog/monolog" }
       let(:dependency_version) { "2.1.5" }
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it { is_expected.to be_nil }
 
       context "and there is no lockfile" do
-        let(:files) { [composer_file] }
+        let(:files) { [manifest] }
 
         it "raises a resolvability error" do
           expect { latest_resolvable_version }.
@@ -544,7 +544,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with an update that can't resolve" do
-      let(:files) { [composer_file, lockfile] }
+      let(:files) { [manifest, lockfile] }
       let(:manifest_fixture_name) { "version_conflict_on_update" }
       let(:lockfile_fixture_name) { "version_conflict_on_update" }
       let(:dependency_name) { "longman/telegram-bot" }
@@ -561,13 +561,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it { is_expected.to be_nil }
 
       context "and there is no lockfile" do
-        let(:files) { [composer_file] }
+        let(:files) { [manifest] }
 
         it { is_expected.to be_nil }
 
         context "and the conflict comes from a loose PHP version" do
           let(:manifest_fixture_name) { "version_conflict_library" }
-          let(:files) { [composer_file] }
+          let(:files) { [manifest] }
 
           it { is_expected.to be_nil }
         end
