@@ -49,9 +49,7 @@ module Dependabot
           end
 
           if lockfile
-            if lockfile.content == updated_lockfile_content
-              raise "Expected Pipfile.lock to change!"
-            end
+            raise "Expected Pipfile.lock to change!" if lockfile.content == updated_lockfile_content
 
             updated_files <<
               updated_file(file: lockfile, content: updated_lockfile_content)
@@ -330,9 +328,7 @@ module Dependabot
             nil
           end
 
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")
@@ -341,9 +337,7 @@ module Dependabot
 
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
-          if @sanitized_setup_file_content[file.name]
-            return @sanitized_setup_file_content[file.name]
-          end
+          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
             SetupFileSanitizer.

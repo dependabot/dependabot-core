@@ -16,9 +16,7 @@ def auto_merge(pr_number,
     commit_title: commit_title
   )
 
-  unless client.pull_merged?(project_path, pr_number)
-    raise "The PR was not merged correctly"
-  end
+  raise "The PR was not merged correctly" unless client.pull_merged?(project_path, pr_number)
 
   # Delete the branch if it exists. If it doesn't exist, swallow the exception.
   begin

@@ -91,9 +91,7 @@ module Dependabot
       def replace_wildcard_in_lower_bound(req_string)
         after_wildcard = false
 
-        if req_string.start_with?("~")
-          req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "")
-        end
+        req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "") if req_string.start_with?("~")
 
         req_string.split(".").
           map do |part|

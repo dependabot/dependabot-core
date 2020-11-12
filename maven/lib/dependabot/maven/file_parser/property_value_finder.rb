@@ -42,9 +42,7 @@ module Dependabot
             end
 
           # If we found a property, return it
-          if node
-            return { file: pom.name, node: node, value: node.content.strip }
-          end
+          return { file: pom.name, node: node, value: node.content.strip } if node
 
           # Otherwise, look for a value in this pom's parent
           return unless (parent = parent_pom(pom))
@@ -99,9 +97,7 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          if internal_dependency_poms[name]
-            return internal_dependency_poms[name]
-          end
+          return internal_dependency_poms[name] if internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 

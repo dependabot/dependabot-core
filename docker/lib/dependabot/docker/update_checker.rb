@@ -282,9 +282,7 @@ module Dependabot
 
       def prerelease?(tag)
         return false if tag == BOOTSTRAP_TAG
-        if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
-          return true
-        end
+        return true if numeric_version_from(tag).gsub(/kb/i, "").match?(/[a-zA-Z]/)
 
         # If we're dealing with a numeric version we can compare it against
         # the digest for the `latest` tag.
@@ -341,9 +339,7 @@ module Dependabot
             version = version_class.new(numeric_version_from(tag))
             ignore_reqs.any? { |r| r.satisfied_by?(version) }
           end
-        if @raise_on_ignored && filtered.empty? && candidate_tags.any?
-          raise AllVersionsIgnored
-        end
+        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && candidate_tags.any?
 
         filtered
       end

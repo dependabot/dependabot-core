@@ -123,9 +123,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          unless filename.end_with?(".tgz")
-            filename = File.join(filename, "package.json")
-          end
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -185,9 +183,7 @@ module Dependabot
         resolution_objects = parsed_manifest.values_at("resolutions").compact
         manifest_objects = dependency_objects + resolution_objects
 
-        unless manifest_objects.all? { |o| o.is_a?(Hash) }
-          raise Dependabot::DependencyFileNotParseable, file.path
-        end
+        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all? { |o| o.is_a?(Hash) }
 
         resolution_deps = resolution_objects.flat_map(&:to_a).
                           map do |path, value|

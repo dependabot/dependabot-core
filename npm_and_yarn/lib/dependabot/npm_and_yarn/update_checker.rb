@@ -13,6 +13,7 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         @latest_version ||=
@@ -54,9 +55,7 @@ module Dependabot
       def latest_resolvable_version_with_no_unlock
         return latest_resolvable_version unless dependency.top_level?
 
-        if git_dependency?
-          return latest_resolvable_version_with_no_unlock_for_git_dependency
-        end
+        return latest_resolvable_version_with_no_unlock_for_git_dependency if git_dependency?
 
         latest_version_finder.latest_version_with_no_unlock
       end
@@ -89,12 +88,20 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :widen_ranges : :bump_versions
+      end
+
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).conflicting_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
       end
 
       private
@@ -188,9 +195,7 @@ module Dependabot
       def git_branch_or_ref_in_latest_release?
         return false unless latest_released_version
 
-        if defined?(@git_branch_or_ref_in_latest_release)
-          return @git_branch_or_ref_in_latest_release
-        end
+        return @git_branch_or_ref_in_latest_release if defined?(@git_branch_or_ref_in_latest_release)
 
         @git_branch_or_ref_in_latest_release ||=
           git_commit_checker.branch_or_ref_in_release?(latest_released_version)
@@ -261,9 +266,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return { sha: git_commit_checker.head_commit_for_current_branch }
-        end
+        return { sha: git_commit_checker.head_commit_for_current_branch } unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that doesn't look like a
         # version then there's nothing we can do.

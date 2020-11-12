@@ -207,9 +207,7 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless Gem::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless Gem::Version.correct?(latest_allowable_version)
 
           lower_bound_req + ", <= #{latest_allowable_version}"
         end

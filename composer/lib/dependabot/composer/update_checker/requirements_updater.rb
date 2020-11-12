@@ -144,9 +144,7 @@ module Dependabot
         def update_version_string(req_string)
           req_string.
             sub(VERSION_REGEX) do |old_version|
-              unless req_string.match?(/[~*\^]/)
-                next latest_resolvable_version.to_s
-              end
+              next latest_resolvable_version.to_s unless req_string.match?(/[~*\^]/)
 
               old_parts = old_version.split(".")
               new_parts = latest_resolvable_version.to_s.split(".").

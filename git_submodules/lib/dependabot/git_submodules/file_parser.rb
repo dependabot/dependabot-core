@@ -14,9 +14,7 @@ module Dependabot
           File.write(".gitmodules", gitmodules_file.content)
 
           ParseConfig.new(".gitmodules").params.map do |_, params|
-            if params.fetch("path").end_with?("/")
-              raise DependencyFileNotParseable, gitmodules_file.path
-            end
+            raise DependencyFileNotParseable, gitmodules_file.path if params.fetch("path").end_with?("/")
 
             Dependency.new(
               name: params.fetch("path"),

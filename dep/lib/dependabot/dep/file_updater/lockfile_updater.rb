@@ -137,9 +137,7 @@ module Dependabot
             parsed_file(lockfile).fetch("projects").
             find { |p| p["name"] == dep.name }
 
-          if original_details["source"]
-            details["source"] = original_details["source"]
-          end
+          details["source"] = original_details["source"] if original_details["source"]
 
           if original_details["version"]
             details["version"] = dep.version
@@ -162,9 +160,7 @@ module Dependabot
             overrides << override
           end
 
-          unless override["source"]
-            override["source"] = "gopkg.in/fsnotify/fsnotify.v1"
-          end
+          override["source"] = "gopkg.in/fsnotify/fsnotify.v1" unless override["source"]
 
           overrides
         end

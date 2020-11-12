@@ -214,9 +214,7 @@ module Dependabot
             raise Dependabot::GitDependencyReferenceNotFound, dependency_url
           end
 
-          if resolvability_error?(error.message)
-            raise Dependabot::DependencyFileNotResolvable, error.message
-          end
+          raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
 
           if workspace_native_library_update_error?(error.message)
             # This happens when we're updating one part of a workspace which
@@ -373,16 +371,12 @@ module Dependabot
 
           object.delete("bin")
 
-          if object.dig("package", "default-run")
-            object["package"].delete("default-run")
-          end
+          object["package"].delete("default-run") if object.dig("package", "default-run")
 
           package_name = object.dig("package", "name")
           return TomlRB.dump(object) unless package_name&.match?(/[\{\}]/)
 
-          if lockfile
-            raise "Sanitizing name for pkg with lockfile. Investigate!"
-          end
+          raise "Sanitizing name for pkg with lockfile. Investigate!" if lockfile
 
           object["package"]["name"] = "sanitized"
           TomlRB.dump(object)

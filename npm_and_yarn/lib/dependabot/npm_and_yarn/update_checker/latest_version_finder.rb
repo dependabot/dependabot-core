@@ -111,9 +111,7 @@ module Dependabot
             ignore_reqs.any? { |r| r.satisfied_by?(v) }
           end
 
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end
@@ -261,9 +259,7 @@ module Dependabot
         def version_endpoint_working?
           return true if dependency_registry == "registry.npmjs.org"
 
-          if defined?(@version_endpoint_working)
-            return @version_endpoint_working
-          end
+          return @version_endpoint_working if defined?(@version_endpoint_working)
 
           @version_endpoint_working =
             begin

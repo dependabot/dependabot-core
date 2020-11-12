@@ -132,9 +132,7 @@ module Dependabot
           @known_repositories += credential_repositories
           @known_repositories += config_file_repositories
 
-          if @known_repositories.empty?
-            @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil }
-          end
+          @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
           @known_repositories.uniq
         end

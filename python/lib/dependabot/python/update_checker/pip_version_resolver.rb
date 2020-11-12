@@ -57,9 +57,7 @@ module Dependabot
         end
 
         def user_specified_python_version
-          unless python_requirement_parser.user_specified_requirements.any?
-            return
-          end
+          return unless python_requirement_parser.user_specified_requirements.any?
 
           user_specified_requirements =
             python_requirement_parser.user_specified_requirements.

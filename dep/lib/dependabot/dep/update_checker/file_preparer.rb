@@ -138,9 +138,7 @@ module Dependabot
             overrides << override
           end
 
-          unless override["source"]
-            override["source"] = "gopkg.in/fsnotify/fsnotify.v1"
-          end
+          override["source"] = "gopkg.in/fsnotify/fsnotify.v1" unless override["source"]
 
           parsed_manifest["override"] = overrides
           TomlRB.dump(parsed_manifest)

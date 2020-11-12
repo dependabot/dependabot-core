@@ -1,3 +1,20 @@
+## v0.125.2, 11 November 2020
+
+- Update CI jobs env variable assignment (@baseballlover723)
+- Hex: Support elixir `Code.eval_file` without specifying a relative directory (@baseballlover723)
+- JS: Explain update not possible for yarn and npm
+- Extract DependencyFileBuilder to remove duplication
+
+## v0.125.1, 5 November 2020
+
+- Escape `SharedHelpers.run_shell_command` with shellwords
+
+## v0.125.0, 5 November 2020
+
+- Bundler: Explain why security update was not possible
+- Raise descriptive error when update is not possible
+- Go mod: Handle post-v0 module path updates
+
 ## v0.124.8, 4 November 2020
 
 - Add missing python versions: 3.6.12 3.6.11 3.6.10, 3.5.10 and 3.5.8

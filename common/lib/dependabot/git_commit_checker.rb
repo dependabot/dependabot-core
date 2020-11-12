@@ -93,9 +93,7 @@ module Dependabot
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
                  reject { |t| tag_included_in_ignore_reqs?(t) }
-      if @raise_on_ignored && tags.any? && filtered.empty?
-        raise Dependabot::AllVersionsIgnored
-      end
+      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
 
       tag = filtered.
             reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.

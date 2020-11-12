@@ -94,9 +94,7 @@ module Dependabot
       def check_required_files
         file_names = dependency_files.map(&:name)
 
-        if lockfile && !gemfile
-          raise "A Gemfile must be provided if a lockfile is!"
-        end
+        raise "A Gemfile must be provided if a lockfile is!" if lockfile && !gemfile
 
         return if file_names.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
         return if gemfile

@@ -82,7 +82,7 @@ def build_tmp_repo(project)
   Dir.chdir(tmp_repo_path) do
     Dependabot::SharedHelpers.run_shell_command("git init")
     Dependabot::SharedHelpers.run_shell_command("git add --all")
-    Dependabot::SharedHelpers.run_shell_command("git commit -m 'Init'")
+    Dependabot::SharedHelpers.run_shell_command("git commit -m init")
   end
 
   tmp_repo_path
