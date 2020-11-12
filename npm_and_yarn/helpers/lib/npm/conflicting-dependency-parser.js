@@ -23,23 +23,14 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
           findTopLevelEdges(edge).forEach((topLevel) => {
-            if (topLevel.to === edge.from) {
-              parents.push({
-                name: edge.from.name,
-                version: edge.from.version,
-                requirement: edge.spec,
-              });
-            } else {
-              parents.push({
-                name: topLevel.to.name,
-                version: topLevel.to.version,
-                subdependency: {
-                  name: edge.from.name,
-                  version: edge.from.version,
-                  requirement: edge.spec,
-                },
-              });
-            }
+            explanation = buildExplanation(node, edge, topLevel);
+
+            parents.push({
+              explanation: explanation,
+              name: edge.from.name,
+              version: edge.from.version,
+              requirement: edge.spec,
+            });
           });
         }
       }
@@ -49,10 +40,31 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   });
 }
 
+function buildExplanation(node, directEdge, topLevelEdge) {
+  if (directEdge.from === topLevelEdge.to) {
+    // The nodes parent is top-level
+    return `${directEdge.from.name}@${directEdge.from.version}
+  ${directEdge.to.name}@${directEdge.spec}`;
+  } else if (topLevelEdge.to.edgesOut.has(directEdge.from.name)) {
+    // The nodes parent is a direct dependency of the top-level dependency
+    return `${topLevelEdge.to.name}@${topLevelEdge.to.version}
+  ${directEdge.from.name}@${directEdge.from.version}
+    ${directEdge.to.name}@${directEdge.spec}`;
+  } else {
+    // The nodes parent is a transitive dependency of the top-level dependency
+    return `${topLevelEdge.to.name}@${topLevelEdge.to.version}
+  ...
+    ${directEdge.from.name}@${directEdge.from.version}
+      ${directEdge.to.name}@${directEdge.spec}`;
+  }
+}
+
 function findTopLevelEdges(edge, parents = []) {
   edge.from.edgesIn.forEach((parent) => {
     if (parent.from.edgesIn.size === 0) {
-      parents.push(parent);
+      if (!parents.includes(parent)) {
+        parents.push(parent);
+      }
     } else {
       findTopLevelEdges(parent, parents);
     }
