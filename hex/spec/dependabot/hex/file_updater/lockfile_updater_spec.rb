@@ -199,10 +199,8 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     end
 
     context "with a mix.exs that evals another file" do
-      let(:mixfile_body) do
-        fixture("mixfiles", "loads_file_with_eval")
-      end
-      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "loads_file_with_eval" }
+      let(:lockfile_fixture_name) { "exact_version" }
       let(:files) { [mixfile, lockfile, support_file] }
       let(:support_file) do
         Dependabot::DependencyFile.new(
