@@ -43,19 +43,19 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
 function buildExplanation(node, directEdge, topLevelEdge) {
   if (directEdge.from === topLevelEdge.to) {
     // The nodes parent is top-level
-    return `${directEdge.from.name}@${directEdge.from.version}
-  ${directEdge.to.name}@${directEdge.spec}`;
+    return `${directEdge.from.name}@${directEdge.from.version} requires ${directEdge.to.name}@${directEdge.spec}`;
   } else if (topLevelEdge.to.edgesOut.has(directEdge.from.name)) {
     // The nodes parent is a direct dependency of the top-level dependency
-    return `${topLevelEdge.to.name}@${topLevelEdge.to.version}
-  ${directEdge.from.name}@${directEdge.from.version}
-    ${directEdge.to.name}@${directEdge.spec}`;
+    return (
+      `${topLevelEdge.to.name}@${topLevelEdge.to.version} requires ${directEdge.to.name}@${directEdge.spec} ` +
+      `via ${directEdge.from.name}@${directEdge.from.version}`
+    );
   } else {
     // The nodes parent is a transitive dependency of the top-level dependency
-    return `${topLevelEdge.to.name}@${topLevelEdge.to.version}
-  ...
-    ${directEdge.from.name}@${directEdge.from.version}
-      ${directEdge.to.name}@${directEdge.spec}`;
+    return (
+      `${topLevelEdge.to.name}@${topLevelEdge.to.version} requires ${directEdge.to.name}@${directEdge.spec} ` +
+      `via a transitive dependency on ${directEdge.from.name}@${directEdge.from.version}`
+    );
   }
 }
 

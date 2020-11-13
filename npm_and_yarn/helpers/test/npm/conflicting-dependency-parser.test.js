@@ -20,7 +20,7 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
     expect(result).toEqual([
       {
-        explanation: "objnest@4.1.2\n  abind@^1.0.0",
+        explanation: "objnest@4.1.2 requires abind@^1.0.0",
         name: "objnest",
         version: "4.1.2",
         requirement: "^1.0.0",
@@ -34,7 +34,7 @@ describe("findConflictingDependencies", () => {
     const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
     expect(result).toEqual([
       {
-        explanation: "askconfig@4.0.4\n  objnest@5.0.10\n    abind@^1.0.4",
+        explanation: "askconfig@4.0.4 requires abind@^1.0.4 via objnest@5.0.10",
         name: "objnest",
         version: "5.0.10",
         requirement: "^1.0.4",
@@ -49,17 +49,15 @@ describe("findConflictingDependencies", () => {
     );
 
     const result = await findConflictingDependencies(tempDir, "abind", "2.0.0");
-    console.log(result);
     expect(result).toEqual([
       {
-        explanation: "apass@1.1.0\n  cipherjson@2.1.0\n    abind@^1.0.0",
+        explanation: "apass@1.1.0 requires abind@^1.0.0 via cipherjson@2.1.0",
         name: "cipherjson",
         version: "2.1.0",
         requirement: "^1.0.0",
       },
       {
-        explanation:
-          "apass@1.1.0\n  ...\n    objnest@3.0.9\n      abind@^1.0.0",
+        explanation: `apass@1.1.0 requires abind@^1.0.0 via a transitive dependency on objnest@3.0.9`,
         name: "objnest",
         version: "3.0.9",
         requirement: "^1.0.0",

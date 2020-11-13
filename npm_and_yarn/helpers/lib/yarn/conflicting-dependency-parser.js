@@ -24,6 +24,7 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
         if (subDepName === depName && !semver.satisfies(targetVersion, spec)) {
           const [_, parentDepName] = entry.match(LOCKFILE_ENTRY_REGEX);
           parents.push({
+            explanation: `${parentDepName}@${pkg.version} requires ${depName}@${spec}`,
             name: parentDepName,
             version: pkg.version,
             requirement: spec,
