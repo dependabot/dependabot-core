@@ -32,6 +32,38 @@ COPY common/Gemfile common/*.gemspec ${CODE_DIR}/common/
 COPY common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
 RUN cd common && bundle install
 
+COPY bundler/Gemfile bundler/*.gemspec ${CODE_DIR}/bundler/
+COPY cargo/Gemfile cargo/*.gemspec ${CODE_DIR}/cargo/
+COPY composer/Gemfile composer/*.gemspec ${CODE_DIR}/composer/
+COPY dep/Gemfile dep/*.gemspec ${CODE_DIR}/dep/
+COPY docker/Gemfile docker/*.gemspec ${CODE_DIR}/docker/
+COPY elm/Gemfile elm/*.gemspec ${CODE_DIR}/elm/
+COPY git_submodules/Gemfile git_submodules/*.gemspec ${CODE_DIR}/git_submodules/
+COPY github_actions/Gemfile github_actions/*.gemspec ${CODE_DIR}/github_actions/
+COPY go_modules/Gemfile go_modules/*.gemspec ${CODE_DIR}/go_modules/
+COPY gradle/Gemfile gradle/*.gemspec ${CODE_DIR}/gradle/
+COPY hex/Gemfile hex/*.gemspec ${CODE_DIR}/hex/
+COPY maven/Gemfile maven/*.gemspec ${CODE_DIR}/maven/
+COPY npm_and_yarn/Gemfile npm_and_yarn/*.gemspec ${CODE_DIR}/npm_and_yarn/
+COPY nuget/Gemfile nuget/*.gemspec ${CODE_DIR}/nuget/
+COPY python/Gemfile python/*.gemspec ${CODE_DIR}/python/
+COPY terraform/Gemfile terraform/*.gemspec ${CODE_DIR}/terraform/
+
+COPY omnibus/Gemfile omnibus/*.gemspec ${CODE_DIR}/omnibus/
+RUN cd omnibus && bundle install
+
+RUN GREEN='\033[0;32m'; NC='\033[0m'; \
+  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
+    -not -path "${CODE_DIR}/omnibus/Gemfile" \
+    -not -path "${CODE_DIR}/common/Gemfile" \
+    -name 'Gemfile' | xargs dirname`; do \
+    echo && \
+    echo "---------------------------------------------------------------------------" && \
+    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+    echo "---------------------------------------------------------------------------" && \
+    cd $d && bundle install; \
+  done
+
 COPY common/ ${CODE_DIR}/common/
 COPY bundler/ ${CODE_DIR}/bundler/
 COPY cargo/ ${CODE_DIR}/cargo/
@@ -50,18 +82,3 @@ COPY nuget/ ${CODE_DIR}/nuget/
 COPY omnibus/ ${CODE_DIR}/omnibus/
 COPY python/ ${CODE_DIR}/python/
 COPY terraform/ ${CODE_DIR}/terraform/
-
-RUN GREEN='\033[0;32m'; NC='\033[0m'; \
-  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/omnibus/Gemfile" \
-    -not -path "${CODE_DIR}/common/Gemfile" \
-    -name 'Gemfile' | xargs dirname`; do \
-    echo && \
-    echo "---------------------------------------------------------------------------" && \
-    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-    echo "---------------------------------------------------------------------------" && \
-    cd $d && bundle install; \
-  done
-
-RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
-RUN cd omnibus && bundle install
