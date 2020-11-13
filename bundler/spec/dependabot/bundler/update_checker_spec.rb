@@ -632,6 +632,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     it do
       is_expected.to eq(
         [{
+          "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
           "name" => "dummy-pkg-b",
           "version" => "1.0.0",
           "requirement" => "< 2.0.0"

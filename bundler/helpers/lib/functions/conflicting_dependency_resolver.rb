@@ -20,6 +20,7 @@ module Functions
       parent_specs.map do |spec|
         req = spec.dependencies.find { |bd| bd.name == dependency_name }
         {
+          "explanation" => "#{spec.name} (#{spec.version}) requires #{dependency_name} (#{req.requirement})",
           "name" => spec.name,
           "version" => spec.version.to_s,
           "requirement" => req.requirement.to_s
