@@ -60,6 +60,7 @@ RSpec.describe(
       expect(conflicting_dependencies).to match_array(
         [
           {
+            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
             "name" => "dummy-pkg-b",
             "version" => "1.0.0",
             "requirement" => "< 2.0.0"
@@ -88,16 +89,19 @@ RSpec.describe(
         expect(conflicting_dependencies).to match_array(
           [
             {
+              "explanation" => "actionpack (5.0.0) requires activesupport (= 5.0.0)",
               "name" => "actionpack",
               "version" => "5.0.0",
               "requirement" => "= 5.0.0"
             },
             {
+              "explanation" => "actionview (5.0.0) requires activesupport (= 5.0.0)",
               "name" => "actionview",
               "version" => "5.0.0",
               "requirement" => "= 5.0.0"
             },
             {
+              "explanation" => "activejob (5.0.0) requires activesupport (= 5.0.0)",
               "name" => "activejob",
               "version" => "5.0.0",
               "requirement" => "= 5.0.0"
