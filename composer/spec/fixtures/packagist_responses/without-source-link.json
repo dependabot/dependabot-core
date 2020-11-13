@@ -1,0 +1,2647 @@
+{
+    "packages": {
+        "monolog/monolog": {
+            "1.0.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "433b98d4218c181bae01865901aac045585e8a1a",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/433b98d4218c181bae01865901aac045585e8a1a"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "source": {
+                    "reference": "433b98d4218c181bae01865901aac045585e8a1a",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "time": "2011-07-07T16:21:02+00:00",
+                "type": "library",
+                "uid": 5151,
+                "version": "1.0.0",
+                "version_normalized": "1.0.0.0"
+            },
+            "1.0.0-RC1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "5e651a82b4b03d267da6084720ada0cd398c8d16",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/5e651a82b4b03d267da6084720ada0cd398c8d16"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "source": {
+                    "reference": "5e651a82b4b03d267da6084720ada0cd398c8d16",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "time": "2011-07-01T19:29:40+00:00",
+                "type": "library",
+                "uid": 34388,
+                "version": "1.0.0-RC1",
+                "version_normalized": "1.0.0.0-RC1"
+            },
+            "1.0.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "303b8a83c87d5c6d749926cf02620465a5dcd0f2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/303b8a83c87d5c6d749926cf02620465a5dcd0f2"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "source": {
+                    "reference": "303b8a83c87d5c6d749926cf02620465a5dcd0f2",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "time": "2011-08-25T20:42:58+00:00",
+                "type": "library",
+                "uid": 5152,
+                "version": "1.0.1",
+                "version_normalized": "1.0.1.0"
+            },
+            "1.0.2": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "b704c49a3051536f67f2d39f13568f74615b9922",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/b704c49a3051536f67f2d39f13568f74615b9922"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "source": {
+                    "reference": "b704c49a3051536f67f2d39f13568f74615b9922",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "time": "2011-10-24T09:39:02+00:00",
+                "type": "library",
+                "uid": 5153,
+                "version": "1.0.2",
+                "version_normalized": "1.0.2.0"
+            },
+            "1.1.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "abc80e0db8ad31c03b373977fc997e980800f9c2",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/abc80e0db8ad31c03b373977fc997e980800f9c2"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "require-dev": {
+                    "mlehner/gelf-php": "1.0.*"
+                },
+                "source": {
+                    "reference": "abc80e0db8ad31c03b373977fc997e980800f9c2",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server"
+                },
+                "time": "2012-04-23T16:27:40+00:00",
+                "type": "library",
+                "uid": 11074,
+                "version": "1.1.0",
+                "version_normalized": "1.1.0.0"
+            },
+            "1.10.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "25b16e801979098cb2f120e697bfce454b18bf23",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/25b16e801979098cb2f120e697bfce454b18bf23"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.10.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*"
+                },
+                "source": {
+                    "reference": "25b16e801979098cb2f120e697bfce454b18bf23",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2014-06-04T16:30:04+00:00",
+                "type": "library",
+                "uid": 183340,
+                "version": "1.10.0",
+                "version_normalized": "1.10.0.0"
+            },
+            "1.11.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "ec3961874c43840e96da3a8a1ed20d8c73d7e5aa",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/ec3961874c43840e96da3a8a1ed20d8c73d7e5aa"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.11.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "ec3961874c43840e96da3a8a1ed20d8c73d7e5aa",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2014-09-30T13:30:58+00:00",
+                "type": "library",
+                "uid": 243161,
+                "version": "1.11.0",
+                "version_normalized": "1.11.0.0"
+            },
+            "1.12.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "1fbe8c2641f2b163addf49cc5e18f144bec6b19f",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/1fbe8c2641f2b163addf49cc5e18f144bec6b19f"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.12.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~4.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "1fbe8c2641f2b163addf49cc5e18f144bec6b19f",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2014-12-29T21:29:35+00:00",
+                "type": "library",
+                "uid": 296518,
+                "version": "1.12.0",
+                "version_normalized": "1.12.0.0"
+            },
+            "1.13.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "c41c218e239b50446fd883acb1ecfd4b770caeae",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/c41c218e239b50446fd883acb1ecfd4b770caeae"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.13.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~4.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "c41c218e239b50446fd883acb1ecfd4b770caeae",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-03-05T01:12:12+00:00",
+                "type": "library",
+                "uid": 348286,
+                "version": "1.13.0",
+                "version_normalized": "1.13.0.0"
+            },
+            "1.13.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "c31a2c4e8db5da8b46c74cf275d7f109c0f249ac",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/c31a2c4e8db5da8b46c74cf275d7f109c0f249ac"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.13.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~4.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "c31a2c4e8db5da8b46c74cf275d7f109c0f249ac",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-03-09T09:58:04+00:00",
+                "type": "library",
+                "uid": 354135,
+                "version": "1.13.1",
+                "version_normalized": "1.13.1.0"
+            },
+            "1.14.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "b287fbbe1ca27847064beff2bad7fb6920bf08cc",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/b287fbbe1ca27847064beff2bad7fb6920bf08cc"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.14.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "~0.8",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "b287fbbe1ca27847064beff2bad7fb6920bf08cc",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-06-19T13:29:54+00:00",
+                "type": "library",
+                "uid": 438539,
+                "version": "1.14.0",
+                "version_normalized": "1.14.0.0"
+            },
+            "1.15.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "dc5150cc608f2334c72c3b6a553ec9668a4156b0",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/dc5150cc608f2334c72c3b6a553ec9668a4156b0"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.15.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "~0.8",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "dc5150cc608f2334c72c3b6a553ec9668a4156b0",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-07-12T13:54:09+00:00",
+                "type": "library",
+                "uid": 459596,
+                "version": "1.15.0",
+                "version_normalized": "1.15.0.0"
+            },
+            "1.16.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "c0c0b4bee3aabce7182876b0d912ef2595563db7",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/c0c0b4bee3aabce7182876b0d912ef2595563db7"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "~0.8",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "c0c0b4bee3aabce7182876b0d912ef2595563db7",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-08-09T17:44:44+00:00",
+                "type": "library",
+                "uid": 486369,
+                "version": "1.16.0",
+                "version_normalized": "1.16.0.0"
+            },
+            "1.17.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "877ae631713cc961952df713ae785735b90df682",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/877ae631713cc961952df713ae785735b90df682"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "~0.11",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "877ae631713cc961952df713ae785735b90df682",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-08-30T11:40:25+00:00",
+                "type": "library",
+                "uid": 506342,
+                "version": "1.17.0",
+                "version_normalized": "1.17.0.0"
+            },
+            "1.17.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "0524c87587ab85bc4c2d6f5b41253ccb930a5422",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/0524c87587ab85bc4c2d6f5b41253ccb930a5422"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "~0.11",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "0524c87587ab85bc4c2d6f5b41253ccb930a5422",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-08-31T09:17:37+00:00",
+                "type": "library",
+                "uid": 507060,
+                "version": "1.17.1",
+                "version_normalized": "1.17.1.0"
+            },
+            "1.17.2": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "bee7f0dc9c3e0b69a6039697533dca1e845c8c24",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/bee7f0dc9c3e0b69a6039697533dca1e845c8c24"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "^0.13",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "bee7f0dc9c3e0b69a6039697533dca1e845c8c24",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2015-10-14T12:51:02+00:00",
+                "type": "library",
+                "uid": 550950,
+                "version": "1.17.2",
+                "version_normalized": "1.17.2.0"
+            },
+            "1.18.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "e19b764b5c855580e8ffa7e615f72c10fd2f99cc",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/e19b764b5c855580e8ffa7e615f72c10fd2f99cc"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "^0.13",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "e19b764b5c855580e8ffa7e615f72c10fd2f99cc",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2016-03-01T18:00:40+00:00",
+                "type": "library",
+                "uid": 719359,
+                "version": "1.18.0",
+                "version_normalized": "1.18.0.0"
+            },
+            "1.18.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "a5f2734e8c16f3aa21b3da09715d10e15b4d2d45",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/a5f2734e8c16f3aa21b3da09715d10e15b4d2d45"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "^0.13",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3",
+                    "videlalvaro/php-amqplib": "~2.4"
+                },
+                "source": {
+                    "reference": "a5f2734e8c16f3aa21b3da09715d10e15b4d2d45",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "videlalvaro/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib"
+                },
+                "time": "2016-03-13T16:08:35+00:00",
+                "type": "library",
+                "uid": 735276,
+                "version": "1.18.1",
+                "version_normalized": "1.18.1.0"
+            },
+            "1.18.2": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "064b38c16790249488e7a8b987acf1c9d7383c09",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/064b38c16790249488e7a8b987acf1c9d7383c09"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "^0.13",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "064b38c16790249488e7a8b987acf1c9d7383c09",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2016-04-02T13:12:58+00:00",
+                "type": "library",
+                "uid": 761695,
+                "version": "1.18.2",
+                "version_normalized": "1.18.2.0"
+            },
+            "1.19.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "5f56ed5212dc509c8dc8caeba2715732abb32dbf",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/5f56ed5212dc509c8dc8caeba2715732abb32dbf"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "raven/raven": "^0.13",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "5f56ed5212dc509c8dc8caeba2715732abb32dbf",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2016-04-12T18:29:35+00:00",
+                "type": "library",
+                "uid": 775623,
+                "version": "1.19.0",
+                "version_normalized": "1.19.0.0"
+            },
+            "1.2.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "7940ae31ce4687d875d2bb5aa277bb3802203fe1",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/7940ae31ce4687d875d2bb5aa277bb3802203fe1"
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "require-dev": {
+                    "mlehner/gelf-php": "1.0.*"
+                },
+                "source": {
+                    "reference": "7940ae31ce4687d875d2bb5aa277bb3802203fe1",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server"
+                },
+                "time": "2012-08-18T17:27:13+00:00",
+                "type": "library",
+                "uid": 17167,
+                "version": "1.2.0",
+                "version_normalized": "1.2.0.0"
+            },
+            "1.2.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Logging for PHP 5.3",
+                "dist": {
+                    "reference": "d16496318c3e08e3bccfc3866e104e49cf25488a",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/d16496318c3e08e3bccfc3866e104e49cf25488a"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.3.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0"
+                },
+                "require-dev": {
+                    "mlehner/gelf-php": "1.0.*"
+                },
+                "source": {
+                    "reference": "d16496318c3e08e3bccfc3866e104e49cf25488a",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server"
+                },
+                "time": "2012-08-29T11:53:20+00:00",
+                "type": "library",
+                "uid": 17888,
+                "version": "1.2.1",
+                "version_normalized": "1.2.1.0"
+            },
+            "1.20.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "55841909e2bcde01b5318c35f2b74f8ecc86e037",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/55841909e2bcde01b5318c35f2b74f8ecc86e037"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "55841909e2bcde01b5318c35f2b74f8ecc86e037",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2016-07-02T14:02:10+00:00",
+                "type": "library",
+                "uid": 886205,
+                "version": "1.20.0",
+                "version_normalized": "1.20.0.0"
+            },
+            "1.21.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "f42fbdfd53e306bda545845e4dbfd3e72edb4952",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/f42fbdfd53e306bda545845e4dbfd3e72edb4952"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "f42fbdfd53e306bda545845e4dbfd3e72edb4952",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2016-07-29T03:23:52+00:00",
+                "type": "library",
+                "uid": 928751,
+                "version": "1.21.0",
+                "version_normalized": "1.21.0.0"
+            },
+            "1.22.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "bad29cb8d18ab0315e6c477751418a82c850d558",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/bad29cb8d18ab0315e6c477751418a82c850d558"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9 || ^3.0",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "bad29cb8d18ab0315e6c477751418a82c850d558",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2016-11-26T00:15:39+00:00",
+                "type": "library",
+                "uid": 1099516,
+                "version": "1.22.0",
+                "version_normalized": "1.22.0.0"
+            },
+            "1.22.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "1e044bc4b34e91743943479f1be7a1d5eb93add0",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/1e044bc4b34e91743943479f1be7a1d5eb93add0"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9 || ^3.0",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "1e044bc4b34e91743943479f1be7a1d5eb93add0",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2017-03-13T07:08:03+00:00",
+                "type": "library",
+                "uid": 1278871,
+                "version": "1.22.1",
+                "version_normalized": "1.22.1.0"
+            },
+            "1.3.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "25a97abf904120a386c546be11c3b58f1f9e6f37",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/25a97abf904120a386c546be11c3b58f1f9e6f37"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.3.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.3.*"
+                },
+                "source": {
+                    "reference": "25a97abf904120a386c546be11c3b58f1f9e6f37",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-01-07T20:26:46+00:00",
+                "type": "library",
+                "uid": 31072,
+                "version": "1.3.0",
+                "version_normalized": "1.3.0.0"
+            },
+            "1.3.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "47eb599b4aad36b66e818ed72ebf939e2fb311be",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/47eb599b4aad36b66e818ed72ebf939e2fb311be"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.3.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.3.*"
+                },
+                "source": {
+                    "reference": "47eb599b4aad36b66e818ed72ebf939e2fb311be",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-01-11T10:23:20+00:00",
+                "type": "library",
+                "uid": 31615,
+                "version": "1.3.1",
+                "version_normalized": "1.3.1.0"
+            },
+            "1.4.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "32fe28af60b4da9a5b0cef024138afacc0c01eeb",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/32fe28af60b4da9a5b0cef024138afacc0c01eeb"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.4.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.3.*"
+                },
+                "source": {
+                    "reference": "32fe28af60b4da9a5b0cef024138afacc0c01eeb",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-02-13T18:06:51+00:00",
+                "type": "library",
+                "uid": 37441,
+                "version": "1.4.0",
+                "version_normalized": "1.4.0.0"
+            },
+            "1.4.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "3295de82be06b3bbcd336983ddf8c50724430180",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/3295de82be06b3bbcd336983ddf8c50724430180"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.4.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.3.*"
+                },
+                "source": {
+                    "reference": "3295de82be06b3bbcd336983ddf8c50724430180",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-04-01T10:04:58+00:00",
+                "type": "library",
+                "uid": 46264,
+                "version": "1.4.1",
+                "version_normalized": "1.4.1.0"
+            },
+            "1.5.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "583618d5cd2115a52101694aca87afb182b3e567",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/583618d5cd2115a52101694aca87afb182b3e567"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.4.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.3.*"
+                },
+                "source": {
+                    "reference": "583618d5cd2115a52101694aca87afb182b3e567",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-04-23T10:09:48+00:00",
+                "type": "library",
+                "uid": 50373,
+                "version": "1.5.0",
+                "version_normalized": "1.5.0.0"
+            },
+            "1.6.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "f72392d0e6eb855118f5a84e89ac2d257c704abd",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/f72392d0e6eb855118f5a84e89ac2d257c704abd"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.6.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "raven/raven": "0.5.*"
+                },
+                "source": {
+                    "reference": "f72392d0e6eb855118f5a84e89ac2d257c704abd",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2013-07-28T22:38:30+00:00",
+                "type": "library",
+                "uid": 72464,
+                "version": "1.6.0",
+                "version_normalized": "1.6.0.0"
+            },
+            "1.7.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-0": {
+                        "Monolog": "src/"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "6225b22de9dcf36546be3a0b2fa8e3d986153f57",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/6225b22de9dcf36546be3a0b2fa8e3d986153f57"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.7.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4.8",
+                    "doctrine/couchdb": "dev-master",
+                    "mlehner/gelf-php": "1.0.*",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "0.5.*",
+                    "ruflin/elastica": "0.90.*"
+                },
+                "source": {
+                    "reference": "6225b22de9dcf36546be3a0b2fa8e3d986153f57",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "mlehner/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2013-11-14T19:48:31+00:00",
+                "type": "library",
+                "uid": 101157,
+                "version": "1.7.0",
+                "version_normalized": "1.7.0.0"
+            },
+            "1.8.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "392ef35fd470638e08d0160d6b1cbab63cb23174",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/392ef35fd470638e08d0160d6b1cbab63cb23174"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.8.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*"
+                },
+                "source": {
+                    "reference": "392ef35fd470638e08d0160d6b1cbab63cb23174",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2014-03-23T19:50:26+00:00",
+                "type": "library",
+                "uid": 148914,
+                "version": "1.8.0",
+                "version_normalized": "1.8.0.0"
+            },
+            "1.9.0": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "1afc39690e7414412face1f8cbf67b73db34485c",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/1afc39690e7414412face1f8cbf67b73db34485c"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.9.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*"
+                },
+                "source": {
+                    "reference": "1afc39690e7414412face1f8cbf67b73db34485c",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2014-04-20T16:41:26+00:00",
+                "type": "library",
+                "uid": 161381,
+                "version": "1.9.0",
+                "version_normalized": "1.9.0.0"
+            },
+            "1.9.1": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano",
+                        "role": "Developer"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "65026b610f8c19e61d7242f600530677b0466aac",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/65026b610f8c19e61d7242f600530677b0466aac"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.9.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "~2.4, >2.4.8",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "phpunit/phpunit": "~3.7.0",
+                    "raven/raven": "~0.5",
+                    "ruflin/elastica": "0.90.*"
+                },
+                "source": {
+                    "reference": "65026b610f8c19e61d7242f600530677b0466aac",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "raven/raven": "Allow sending log messages to a Sentry server",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
+                },
+                "time": "2014-04-24T13:29:03+00:00",
+                "type": "library",
+                "uid": 163177,
+                "version": "1.9.1",
+                "version_normalized": "1.9.1.0"
+            },
+            "1.x-dev": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "35c07a81de6200e5aa0629eacecd11fd925d19dc",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/35c07a81de6200e5aa0629eacecd11fd925d19dc"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": ">=5.3.0",
+                    "psr/log": "~1.0"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9 || ^3.0",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "~1.0",
+                    "jakub-onderka/php-parallel-lint": "0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpunit/phpunit": "~4.5",
+                    "phpunit/phpunit-mock-objects": "2.3.0",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "35c07a81de6200e5aa0629eacecd11fd925d19dc",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongo": "Allow sending log messages to a MongoDB server",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server via PHP Driver",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2017-05-03T13:17:21+00:00",
+                "type": "library",
+                "uid": 627655,
+                "version": "1.x-dev",
+                "version_normalized": "1.9999999.9999999.9999999-dev"
+            },
+            "dev-master": {
+                "authors": [
+                    {
+                        "email": "j.boggiano@seld.be",
+                        "homepage": "http://seld.be",
+                        "name": "Jordi Boggiano"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolog\\": "src/Monolog"
+                    }
+                },
+                "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
+                "dist": {
+                    "reference": "e5ff7eb0746c50d483fc9797f1f288acd8cbb5fc",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/Seldaek/monolog/zipball/e5ff7eb0746c50d483fc9797f1f288acd8cbb5fc"
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "2.0.x-dev"
+                    }
+                },
+                "homepage": "http://example.com/Seldaek/monolog",
+                "keywords": [
+                    "log",
+                    "logging",
+                    "psr-3"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "monolog/monolog",
+                "provide": {
+                    "psr/log-implementation": "1.0.0"
+                },
+                "require": {
+                    "php": "^7.0",
+                    "psr/log": "^1.0.1"
+                },
+                "require-dev": {
+                    "aws/aws-sdk-php": "^2.4.9 || ^3.0",
+                    "doctrine/couchdb": "~1.0@dev",
+                    "graylog2/gelf-php": "^1.4.2",
+                    "jakub-onderka/php-parallel-lint": "^0.9",
+                    "php-amqplib/php-amqplib": "~2.4",
+                    "php-console/php-console": "^3.1.3",
+                    "phpspec/prophecy": "^1.6.1",
+                    "phpunit/phpunit": "^5.5",
+                    "predis/predis": "^1.1",
+                    "ruflin/elastica": ">=0.90 <3.0",
+                    "sentry/sentry": "^0.13",
+                    "swiftmailer/swiftmailer": "~5.3"
+                },
+                "source": {
+                    "reference": "e5ff7eb0746c50d483fc9797f1f288acd8cbb5fc",
+                    "type": "git",
+                    "url": "https://example.com/Seldaek/monolog.git"
+                },
+                "suggest": {
+                    "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
+                    "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
+                    "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
+                    "ext-mongodb": "Allow sending log messages to a MongoDB server (via driver)",
+                    "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
+                    "mongodb/mongodb": "Allow sending log messages to a MongoDB server (via library)",
+                    "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
+                    "php-console/php-console": "Allow sending log messages to Google Chrome",
+                    "rollbar/rollbar": "Allow sending log messages to Rollbar",
+                    "ruflin/elastica": "Allow sending log messages to an Elastic Search server",
+                    "sentry/sentry": "Allow sending log messages to a Sentry server"
+                },
+                "time": "2017-05-08T09:13:42+00:00",
+                "type": "library",
+                "uid": 5154,
+                "version": "dev-master",
+                "version_normalized": "9999999-dev"
+            }
+        },
+        "phpointless/monolol": {
+            "1.0.0": {
+                "authors": [
+                    {
+                        "email": "contact@romain-renaud.fr",
+                        "name": "Romain Renaud"
+                    }
+                ],
+                "autoload": {
+                    "psr-4": {
+                        "Monolol\\": "lib"
+                    }
+                },
+                "description": "PSR-3 compliant lol-gger",
+                "dist": {
+                    "reference": "1991e6b72b52229dc43147fd2c208f21896021bb",
+                    "shasum": "",
+                    "type": "zip",
+                    "url": "https://api.example.com/repos/PHPointless/monolol/zipball/1991e6b72b52229dc43147fd2c208f21896021bb"
+                },
+                "homepage": "",
+                "keywords": [
+                    "PSR3",
+                    "LoL",
+                    "lol-gging"
+                ],
+                "license": [
+                    "MIT"
+                ],
+                "name": "phpointless/monolol",
+                "provide": {
+                    "monolog/monolog": "1.12"
+                },
+                "require": {
+                    "monolog/monolog": "~1.12"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "~4.5"
+                },
+                "source": {
+                    "reference": "1991e6b72b52229dc43147fd2c208f21896021bb",
+                    "type": "git",
+                    "url": "https://example.com/PHPointless/monolol.git"
+                },
+                "time": "2015-03-04T13:27:14+00:00",
+                "type": "library",
+                "uid": 347741,
+                "version": "1.0.0",
+                "version_normalized": "1.0.0.0"
+            }
+        }
+    }
+}

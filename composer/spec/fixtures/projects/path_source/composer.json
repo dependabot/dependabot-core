@@ -1,0 +1,15 @@
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "components/*",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
+    "require": {
+        "path_dep/path_dep": "1.0.*",
+        "monolog/monolog": "1.0.*"
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "name": "path_dep/path_dep",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "MyThing\\": "src/MyThing"
+        }
+    },
+    "version": "1.0.1",
+    "minimum-stability": "stable",
+    "autoload-dev": {
+        "psr-4": { "Test\\": "test/" }
+    },
+    "require": {
+        "php": ">=7.1",
+        "symfony/serializer": "^3.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.2"
+    }
+}
