@@ -133,12 +133,7 @@ module Dependabot
           files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-
-            if file.name.end_with?("mix.exs")
-              File.write(path, sanitize_mixfile(file.content))
-            else
-              File.write(path, file.content)
-            end
+            File.write(path, sanitize_mixfile(file.content))
           end
         end
 
