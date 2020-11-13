@@ -31,7 +31,7 @@ module Dependabot
         def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+              write_temporary_sanitized_dependency_files
               FileUtils.cp(
                 elixir_helper_check_update_path,
                 "check_update.exs"
@@ -109,7 +109,7 @@ module Dependabot
 
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files(prepared: false)
+            write_temporary_sanitized_dependency_files(prepared: false)
             FileUtils.cp(
               elixir_helper_check_update_path,
               "check_update.exs"
@@ -125,7 +125,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
-        def write_temporary_dependency_files(prepared: true)
+        def write_temporary_sanitized_dependency_files(prepared: true)
           files = if prepared then prepared_dependency_files
                   else original_dependency_files
                   end

@@ -42,7 +42,7 @@ module Dependabot
       def dependency_details
         SharedHelpers.in_a_temporary_directory do
           write_sanitized_mixfiles
-          write_supporting_files
+          write_sanitized_supporting_files
           File.write("mix.lock", lockfile.content) if lockfile
           FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
@@ -73,7 +73,7 @@ module Dependabot
         end
       end
 
-      def write_supporting_files
+      def write_sanitized_supporting_files
         dependency_files.select(&:support_file).each do |file|
           path = file.name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
