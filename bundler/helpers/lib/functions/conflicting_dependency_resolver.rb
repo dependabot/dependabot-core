@@ -11,19 +11,23 @@ module Functions
     # Finds any dependencies in the lockfile that have a subdependency on the
     # given dependency that does not satisfly the target_version.
     # @return [Array<Hash{String => String}]
+    #   * explanation [String] a sentence explaining the conflict
     #   * name [String] the blocking dependencies name
     #   * version [String] the version of the blocking dependency
     #   * requirement [String] the requirement on the target_dependency
     def conflicting_dependencies
       Bundler.settings.set_command_option("only_update_to_newer_versions", true)
 
-      parent_specs.map do |spec|
-        req = spec.dependencies.find { |bd| bd.name == dependency_name }
-        {
-          "name" => spec.name,
-          "version" => spec.version.to_s,
-          "requirement" => req.requirement.to_s
-        }
+      parent_specs.flat_map do |parent_spec|
+        top_level_specs_for(parent_spec).map do |top_level|
+          dependency = parent_spec.dependencies.find { |bd| bd.name == dependency_name }
+          {
+            "explanation" => explanation(parent_spec, dependency, top_level),
+            "name" => parent_spec.name,
+            "version" => parent_spec.version.to_s,
+            "requirement" => dependency.requirement.to_s
+          }
+        end
       end
     end
 
@@ -33,12 +37,39 @@ module Functions
 
     def parent_specs
       version = Gem::Version.new(target_version)
-      Bundler::LockfileParser.new(lockfile).specs.filter do |spec|
-        spec.dependencies.any? do |sub_dep|
-          sub_dep.name == dependency_name &&
-            !sub_dep.requirement.satisfied_by?(version)
+      parsed_lockfile.specs.filter do |spec|
+        spec.dependencies.any? do |dep|
+          dep.name == dependency_name &&
+            !dep.requirement.satisfied_by?(version)
         end
       end
+    end
+
+    def top_level_specs_for(parent_spec)
+      return [parent_spec] if top_level?(parent_spec)
+
+      parsed_lockfile.specs.filter do |spec|
+        spec.dependencies.any? do |dep|
+          dep.name == parent_spec.name && top_level?(spec)
+        end
+      end
+    end
+
+    def top_level?(spec)
+      parsed_lockfile.dependencies.key?(spec.name)
+    end
+
+    def explanation(spec, dependency, top_level)
+      if spec.name == top_level.name
+        "#{spec.name} (#{spec.version}) requires #{dependency_name} (#{dependency.requirement})"
+      else
+        "#{top_level.name} (#{top_level.version}) requires #{dependency_name} "\
+          "(#{dependency.requirement}) via #{spec.name} (#{spec.version})"
+      end
+    end
+
+    def parsed_lockfile
+      @parsed_lockfile ||= Bundler::LockfileParser.new(lockfile)
     end
 
     def lockfile

@@ -60,6 +60,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         expect(conflicting_dependencies).to match_array(
           [
             {
+              "explanation" => "objnest@4.1.2 requires abind@^1.0.0",
               "name" => "objnest",
               "version" => "4.1.2",
               "requirement" => "^1.0.0"
@@ -92,9 +93,10 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         expect(conflicting_dependencies).to match_array(
           [
             {
+              "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
               "name" => "objnest",
-              "version" => "4.1.4",
-              "requirement" => "^1.0.0"
+              "requirement" => "^1.0.0",
+              "version" => "4.1.4"
             }
           ]
         )

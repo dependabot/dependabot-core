@@ -130,6 +130,60 @@ RSpec.describe Dependabot::Hex::FileFetcher do
     end
   end
 
+  context "with a required file" do
+    before do
+      stub_request(:get, url + "mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_elixir_mixfile_with_require_file.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "rel/releases.ex?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_todo_txt.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the required file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(mix.exs mix.lock rel/releases.ex))
+    end
+  end
+
+  context "with a required file without a relative directory" do
+    before do
+      stub_request(:get, url + "mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_elixir_mixfile_with_require_file_without_relative_dir.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "rel/releases.ex?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body:
+            fixture("github", "contents_todo_txt.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the required file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(mix.exs mix.lock rel/releases.ex))
+    end
+  end
+
   context "with an umbrella app" do
     before do
       stub_request(:get, url + "?ref=sha").

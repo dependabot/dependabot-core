@@ -1,10 +1,12 @@
 defmodule DependabotTest.Mixfile do
   use Mix.Project
 
+  Code.require_file("./module_version.ex")
+
   def project do
     [
       app: :dependabot_test,
-      version: "0.1.0",
+      version: DependabotTest.Version.version(),
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps()
@@ -17,8 +19,8 @@ defmodule DependabotTest.Mixfile do
 
   defp deps do
     [
-      {:poison, "~> 3.0", only: :test},
-      {:credo, ">= 0.6.0 and < 0.10.0", only: [:dev, :test]}
+      {:plug, "1.3.0"},
+      {:phoenix, "== 1.2.1"}
     ]
   end
 end

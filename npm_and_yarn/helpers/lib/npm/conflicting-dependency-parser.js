@@ -18,22 +18,19 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
   });
 
   return await arb.loadVirtual().then((tree) => {
-    var parents = [];
-
+    const parents = [];
     for (const node of tree.inventory.query("name", depName)) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
-          var parentVersion;
-          for (const fromEdge of edge.from.edgesIn.values()) {
-            if (fromEdge.name == edge.from.name) {
-              parentVersion = edge.from.version;
-            }
-          }
+          findTopLevelEdges(edge).forEach((topLevel) => {
+            explanation = buildExplanation(node, edge, topLevel);
 
-          parents.push({
-            name: edge.from.name,
-            version: parentVersion,
-            requirement: edge.spec,
+            parents.push({
+              explanation: explanation,
+              name: edge.from.name,
+              version: edge.from.version,
+              requirement: edge.spec,
+            });
           });
         }
       }
@@ -41,6 +38,39 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
 
     return parents;
   });
+}
+
+function buildExplanation(node, directEdge, topLevelEdge) {
+  if (directEdge.from === topLevelEdge.to) {
+    // The nodes parent is top-level
+    return `${directEdge.from.name}@${directEdge.from.version} requires ${directEdge.to.name}@${directEdge.spec}`;
+  } else if (topLevelEdge.to.edgesOut.has(directEdge.from.name)) {
+    // The nodes parent is a direct dependency of the top-level dependency
+    return (
+      `${topLevelEdge.to.name}@${topLevelEdge.to.version} requires ${directEdge.to.name}@${directEdge.spec} ` +
+      `via ${directEdge.from.name}@${directEdge.from.version}`
+    );
+  } else {
+    // The nodes parent is a transitive dependency of the top-level dependency
+    return (
+      `${topLevelEdge.to.name}@${topLevelEdge.to.version} requires ${directEdge.to.name}@${directEdge.spec} ` +
+      `via a transitive dependency on ${directEdge.from.name}@${directEdge.from.version}`
+    );
+  }
+}
+
+function findTopLevelEdges(edge, parents = []) {
+  edge.from.edgesIn.forEach((parent) => {
+    if (parent.from.edgesIn.size === 0) {
+      if (!parents.includes(parent)) {
+        parents.push(parent);
+      }
+    } else {
+      findTopLevelEdges(parent, parents);
+    }
+  });
+
+  return parents;
 }
 
 module.exports = { findConflictingDependencies };

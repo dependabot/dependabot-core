@@ -60,6 +60,7 @@ RSpec.describe(
       expect(conflicting_dependencies).to match_array(
         [
           {
+            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
             "name" => "dummy-pkg-b",
             "version" => "1.0.0",
             "requirement" => "< 2.0.0"
@@ -72,38 +73,6 @@ RSpec.describe(
       let(:target_version) { "1.5.0" }
       it "returns an empty array" do
         expect(conflicting_dependencies).to match_array([])
-      end
-    end
-
-    context "with multiple blocking dependencies" do
-      let(:dependency_name) { "activesupport" }
-      let(:current_version) { "5.0.0" }
-      let(:target_version) { "6.0.0" }
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "multiple_blocking") }
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "multiple_blocking.lock")
-      end
-
-      it "returns all of the blocking dependencies" do
-        expect(conflicting_dependencies).to match_array(
-          [
-            {
-              "name" => "actionpack",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            },
-            {
-              "name" => "actionview",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            },
-            {
-              "name" => "activejob",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            }
-          ]
-        )
       end
     end
   end
