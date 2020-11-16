@@ -495,9 +495,7 @@ dependencies.each do |dep|
       "dependencies:"
 
     conflicting_dependencies.each do |conflicting_dep|
-      puts "   #{conflicting_dep['name']} (#{conflicting_dep['version']}) "\
-        "which requires:"
-      puts "     #{dep.name} #{conflicting_dep['requirement']}"
+      puts "   #{conflicting_dep['explanation']}"
     end
   end
 

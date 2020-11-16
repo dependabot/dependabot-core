@@ -314,6 +314,21 @@ RSpec.describe Dependabot::Hex::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "with a call to read a version file in a support file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:lockfile_fixture_name) { "exact_version" }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
+          support_file: true
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     context "with a call to eval a support file" do
       let(:mixfile_fixture_name) { "loads_file_with_eval" }
       let(:lockfile_fixture_name) { "exact_version" }
