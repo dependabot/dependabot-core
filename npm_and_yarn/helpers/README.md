@@ -23,7 +23,7 @@ yarn test path/to/test.js
 
 In order to run an interactive debugger:
 
-- `node --inspect-brk node_modules/.bin/jest --runInBand pat/to/test/test.js`
+- `node --inspect-brk node_modules/.bin/jest --runInBand path/to/test/test.js`
 - In Chrome, nativate to chrome://inspect
 - Click `Open dedicated DevTools for Node`
 - You'll now be able to interactively debug using the chrome dev tools.
