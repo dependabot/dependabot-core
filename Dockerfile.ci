@@ -47,7 +47,7 @@ COPY nuget/ ${CODE_DIR}/nuget/
 COPY omnibus/ ${CODE_DIR}/omnibus/
 COPY python/ ${CODE_DIR}/python/
 COPY terraform/ ${CODE_DIR}/terraform/
-COPY terraform/ ${CODE_DIR}/lein/
+COPY lein/ ${CODE_DIR}/lein/
 
 RUN cd common && bundle install
 
