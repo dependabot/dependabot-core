@@ -1,3 +1,7 @@
+## v0.125.4, 17 November 2020
+
+- Yarn: Explain conflicting top-level dependency
+
 ## v0.125.3, 16 November 2020
 
 - Bundler: Add top-level dependency to conflict explanation
