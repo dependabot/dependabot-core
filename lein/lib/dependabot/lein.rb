@@ -27,10 +27,9 @@ Dependabot::Utils.register_requirement_class("lein", Dependabot::Maven::Requirem
 Dependabot::Utils.register_version_class("lein", Dependabot::Maven::Version)
 
 Dependabot::UpdateCheckers.register("lein", Dependabot::Maven::UpdateChecker)
-Dependabot::FileParsers.register("lein", Dependabot::Lein::FileParser)
+Dependabot::MetadataFinders.register("lein", Dependabot::Maven::MetadataFinder)
 
 Dependabot::Dependency.register_production_check("lein", ->(_) { true })
-Dependabot::MetadataFinders.register("lein", Dependabot::Maven::MetadataFinder)
 
 Dependabot::PullRequestCreator::Labeler.register_label_details(
   "lein",

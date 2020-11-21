@@ -28,3 +28,5 @@ module Dependabot
     end
   end
 end
+
+Dependabot::FileParsers.register("lein", Dependabot::Lein::FileParser)
