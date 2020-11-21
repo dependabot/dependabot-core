@@ -9,7 +9,7 @@ module Dependabot
   module Lein
     class FileFetcher < Dependabot::FileFetchers::Base
       def self.required_files_in?(filenames)
-        filenames.include?('project.clj')
+        filenames.include?("project.clj")
       end
 
       def self.required_files_message

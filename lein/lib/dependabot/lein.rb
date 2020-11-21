@@ -7,7 +7,6 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/metadata_finders"
-require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator/labeler"
 require "dependabot/update_checkers"
 require "dependabot/utils"

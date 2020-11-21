@@ -15,14 +15,15 @@ module Dependabot
             requirements: dep.requirements,
             previous_version: dep.previous_version,
             previous_requirements: dep.previous_requirements,
-            subdependency_metadata: dep.subdependency_metadata,
+            subdependency_metadata: dep.subdependency_metadata
           )
         end
       end
 
       private
 
-      def check_required_files
+      # Required to pass shared examples for file parsers
+      def check_required_files # rubocop:disable Lint/UselessMethodDefinition
         super
       end
     end

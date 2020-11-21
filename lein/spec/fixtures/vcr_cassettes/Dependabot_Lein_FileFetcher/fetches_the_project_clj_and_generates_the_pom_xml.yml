@@ -1,0 +1,228 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/technomancy/leiningen
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:14:29 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"2634fda80ca79addae7fa9e9d133101da6ac639b872bf78521519a779a59e7e0"
+      Last-Modified:
+      - Fri, 20 Nov 2020 08:06:32 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '59'
+      X-Ratelimit-Reset:
+      - '1605971668'
+      X-Ratelimit-Used:
+      - '1'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - 439E:13679:2D6393B:3412AEF:5FB920C4
+    body:
+      encoding: ASCII-8BIT
+      string: '{"id":356756,"node_id":"MDEwOlJlcG9zaXRvcnkzNTY3NTY=","name":"leiningen","full_name":"technomancy/leiningen","private":false,"owner":{"login":"technomancy","id":141,"node_id":"MDQ6VXNlcjE0MQ==","avatar_url":"https://avatars2.githubusercontent.com/u/141?v=4","gravatar_id":"","url":"https://api.github.com/users/technomancy","html_url":"https://github.com/technomancy","followers_url":"https://api.github.com/users/technomancy/followers","following_url":"https://api.github.com/users/technomancy/following{/other_user}","gists_url":"https://api.github.com/users/technomancy/gists{/gist_id}","starred_url":"https://api.github.com/users/technomancy/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/technomancy/subscriptions","organizations_url":"https://api.github.com/users/technomancy/orgs","repos_url":"https://api.github.com/users/technomancy/repos","events_url":"https://api.github.com/users/technomancy/events{/privacy}","received_events_url":"https://api.github.com/users/technomancy/received_events","type":"User","site_admin":false},"html_url":"https://github.com/technomancy/leiningen","description":"Automate
+        Clojure projects without setting your hair on fire.","fork":false,"url":"https://api.github.com/repos/technomancy/leiningen","forks_url":"https://api.github.com/repos/technomancy/leiningen/forks","keys_url":"https://api.github.com/repos/technomancy/leiningen/keys{/key_id}","collaborators_url":"https://api.github.com/repos/technomancy/leiningen/collaborators{/collaborator}","teams_url":"https://api.github.com/repos/technomancy/leiningen/teams","hooks_url":"https://api.github.com/repos/technomancy/leiningen/hooks","issue_events_url":"https://api.github.com/repos/technomancy/leiningen/issues/events{/number}","events_url":"https://api.github.com/repos/technomancy/leiningen/events","assignees_url":"https://api.github.com/repos/technomancy/leiningen/assignees{/user}","branches_url":"https://api.github.com/repos/technomancy/leiningen/branches{/branch}","tags_url":"https://api.github.com/repos/technomancy/leiningen/tags","blobs_url":"https://api.github.com/repos/technomancy/leiningen/git/blobs{/sha}","git_tags_url":"https://api.github.com/repos/technomancy/leiningen/git/tags{/sha}","git_refs_url":"https://api.github.com/repos/technomancy/leiningen/git/refs{/sha}","trees_url":"https://api.github.com/repos/technomancy/leiningen/git/trees{/sha}","statuses_url":"https://api.github.com/repos/technomancy/leiningen/statuses/{sha}","languages_url":"https://api.github.com/repos/technomancy/leiningen/languages","stargazers_url":"https://api.github.com/repos/technomancy/leiningen/stargazers","contributors_url":"https://api.github.com/repos/technomancy/leiningen/contributors","subscribers_url":"https://api.github.com/repos/technomancy/leiningen/subscribers","subscription_url":"https://api.github.com/repos/technomancy/leiningen/subscription","commits_url":"https://api.github.com/repos/technomancy/leiningen/commits{/sha}","git_commits_url":"https://api.github.com/repos/technomancy/leiningen/git/commits{/sha}","comments_url":"https://api.github.com/repos/technomancy/leiningen/comments{/number}","issue_comment_url":"https://api.github.com/repos/technomancy/leiningen/issues/comments{/number}","contents_url":"https://api.github.com/repos/technomancy/leiningen/contents/{+path}","compare_url":"https://api.github.com/repos/technomancy/leiningen/compare/{base}...{head}","merges_url":"https://api.github.com/repos/technomancy/leiningen/merges","archive_url":"https://api.github.com/repos/technomancy/leiningen/{archive_format}{/ref}","downloads_url":"https://api.github.com/repos/technomancy/leiningen/downloads","issues_url":"https://api.github.com/repos/technomancy/leiningen/issues{/number}","pulls_url":"https://api.github.com/repos/technomancy/leiningen/pulls{/number}","milestones_url":"https://api.github.com/repos/technomancy/leiningen/milestones{/number}","notifications_url":"https://api.github.com/repos/technomancy/leiningen/notifications{?since,all,participating}","labels_url":"https://api.github.com/repos/technomancy/leiningen/labels{/name}","releases_url":"https://api.github.com/repos/technomancy/leiningen/releases{/id}","deployments_url":"https://api.github.com/repos/technomancy/leiningen/deployments","created_at":"2009-11-01T05:50:07Z","updated_at":"2020-11-20T08:06:32Z","pushed_at":"2020-11-21T09:35:29Z","git_url":"git://github.com/technomancy/leiningen.git","ssh_url":"git@github.com:technomancy/leiningen.git","clone_url":"https://github.com/technomancy/leiningen.git","svn_url":"https://github.com/technomancy/leiningen","homepage":"https://leiningen.org","size":6599,"stargazers_count":6884,"watchers_count":6884,"language":"Clojure","has_issues":true,"has_projects":false,"has_downloads":true,"has_wiki":true,"has_pages":false,"forks_count":1589,"mirror_url":null,"archived":false,"disabled":false,"open_issues_count":171,"license":{"key":"other","name":"Other","spdx_id":"NOASSERTION","url":null,"node_id":"MDc6TGljZW5zZTA="},"forks":1589,"open_issues":171,"watchers":6884,"default_branch":"master","temp_clone_token":null,"network_count":1589,"subscribers_count":241}'
+  recorded_at: Sat, 21 Nov 2020 14:14:29 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/technomancy/leiningen/git/refs/heads/master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:14:29 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"8311ab4bbdab258054eb9cc68377bbbe1222bf47fa4f762e4f7ee06dde5fbc57"
+      Last-Modified:
+      - Fri, 20 Nov 2020 08:06:32 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '58'
+      X-Ratelimit-Reset:
+      - '1605971669'
+      X-Ratelimit-Used:
+      - '2'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '219'
+      X-Github-Request-Id:
+      - 439F:128EF:99675B:B16DCF:5FB920C5
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/master","node_id":"MDM6UmVmMzU2NzU2OnJlZnMvaGVhZHMvbWFzdGVy","url":"https://api.github.com/repos/technomancy/leiningen/git/refs/heads/master","object":{"sha":"830d19d5b9f9e2b0e3411428d83422791ca2f814","type":"commit","url":"https://api.github.com/repos/technomancy/leiningen/git/commits/830d19d5b9f9e2b0e3411428d83422791ca2f814"}}'
+  recorded_at: Sat, 21 Nov 2020 14:14:29 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/technomancy/leiningen/contents/project.clj?ref=830d19d5b9f9e2b0e3411428d83422791ca2f814
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:14:29 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"63f4406fa1182fd143c11b90029289c6f3625961"
+      Last-Modified:
+      - Fri, 02 Oct 2020 20:13:28 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '57'
+      X-Ratelimit-Reset:
+      - '1605971669'
+      X-Ratelimit-Used:
+      - '3'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1722'
+      X-Github-Request-Id:
+      - 43A0:7DE5:469ABB:514BE3:5FB920C5
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"project.clj","path":"project.clj","sha":"63f4406fa1182fd143c11b90029289c6f3625961","size":2053,"url":"https://api.github.com/repos/technomancy/leiningen/contents/project.clj?ref=830d19d5b9f9e2b0e3411428d83422791ca2f814","html_url":"https://github.com/technomancy/leiningen/blob/830d19d5b9f9e2b0e3411428d83422791ca2f814/project.clj","git_url":"https://api.github.com/repos/technomancy/leiningen/git/blobs/63f4406fa1182fd143c11b90029289c6f3625961","download_url":"https://raw.githubusercontent.com/technomancy/leiningen/830d19d5b9f9e2b0e3411428d83422791ca2f814/project.clj","type":"file","content":"OzsgVGhpcyBpcyBMZWluaW5nZW4ncyBvd24gcHJvamVjdCBjb25maWd1cmF0\naW9uLiBTZWUgZG9jL1RVVE9SSUFMLm1kCjs7IGZpbGUgYXMgd2VsbCBhcyBz\nYW1wbGUucHJvamVjdC5jbGogZm9yIGhlbHAgd3JpdGluZyB5b3VyIG93bi4K\nCihkZWZwcm9qZWN0IGxlaW5pbmdlbiAiMi45LjUtU05BUFNIT1QiCiAgOmRl\nc2NyaXB0aW9uICJBdXRvbWF0ZSBDbG9qdXJlIHByb2plY3RzIHdpdGhvdXQg\nc2V0dGluZyB5b3VyIGhhaXIgb24gZmlyZS4iCiAgOnVybCAiaHR0cHM6Ly9n\naXRodWIuY29tL3RlY2hub21hbmN5L2xlaW5pbmdlbiIKICA6bGljZW5zZSB7\nOm5hbWUgIkVjbGlwc2UgUHVibGljIExpY2Vuc2UiCiAgICAgICAgICAgIDp1\ncmwgImh0dHA6Ly93d3cuZWNsaXBzZS5vcmcvbGVnYWwvZXBsLXYxMC5odG1s\nIn0KICA7OyBJZiB5b3UgdXBkYXRlIHRoZXNlLCB1cGRhdGUgcmVzb3VyY2Vz\nL2xlaW5pbmdlbi9ib290Y2xhc3NwYXRoLWRlcHMuY2xqIHRvbwogIDpkZXBl\nbmRlbmNpZXMgW1tsZWluaW5nZW4tY29yZSAiMi45LjUtU05BUFNIT1QiXQog\nICAgICAgICAgICAgICAgIDs7IG5lZWRlZCBmb3IgcG9tCiAgICAgICAgICAg\nICAgICAgW29yZy5jbG9qdXJlL2RhdGEueG1sICIwLjIuMC1hbHBoYTUiXQog\nICAgICAgICAgICAgICAgIDs7IG5lZWRlZCBmb3IgdGVzdAogICAgICAgICAg\nICAgICAgIFt0aW1vZnJlaWJlcmcvYnVsdGl0dWRlICIwLjMuMCIKICAgICAg\nICAgICAgICAgICAgOmV4Y2x1c2lvbnMgW29yZy5jbG9qdXJlL2Nsb2p1cmVd\nXQogICAgICAgICAgICAgICAgIDs7IG5lZWRlZCBmb3IgbmV3CiAgICAgICAg\nICAgICAgICAgW3N0ZW5jaWwgIjAuNS4wIiA6ZXhjbHVzaW9ucyBbb3JnLmNs\nb2p1cmUvY29yZS5jYWNoZV1dCiAgICAgICAgICAgICAgICAgOzsgbmVlZGVk\nIGZvciB1YmVyamFyCiAgICAgICAgICAgICAgICAgW2NvbW1vbnMtbGFuZyAi\nMi42Il0KICAgICAgICAgICAgICAgICA7OyBuZWVkZWQgZm9yIHJlcGwKICAg\nICAgICAgICAgICAgICBbbnJlcGwgIjAuNy4wIl0KICAgICAgICAgICAgICAg\nICA7OyBuZWVkZWQgZm9yIGNoYW5nZQogICAgICAgICAgICAgICAgIFtvcmcu\nY2xvamFycy50cnB0Y29saW4vc2phY2tldCAiMC4xLjEuMSIgOmV4Y2x1c2lv\nbnMgW29yZy5jbG9qdXJlL2Nsb2p1cmVdXQogICAgICAgICAgICAgICAgIDs7\nIGJ1bXAgdmVyc2lvbnMgb2YgdmFyaW91cyBjb21tb24gdHJhbnNpdGl2ZSBk\nZXBzCiAgICAgICAgICAgICAgICAgW25ldC5jZ3JhbmQvcGFyc2xleSAiMC45\nLjMiIDpleGNsdXNpb25zIFtvcmcuY2xvanVyZS9jbG9qdXJlXV0KICAgICAg\nICAgICAgICAgICBbc2NvdXQgIjAuMS4xIl0KICAgICAgICAgICAgICAgICBb\nY29tbW9ucy1pbyAiMi42Il1dCiAgOnBlZGFudGljPyA6YWJvcnQKICA7OyBj\naGVja291dC1kZXBzIGRvbid0IHdvcmsgd2l0aCA6ZXZhbC1pbiA6bGVpbmlu\nZ2VuCiAgOnByb2ZpbGVzIHs6ZGV2IHs6cmVzb3VyY2UtcGF0aHMgWyJsZWlu\naW5nZW4tY29yZS9kZXYtcmVzb3VyY2VzIl0KICAgICAgICAgICAgICAgICAg\nIDp0ZXN0LXBhdGhzIFsibGVpbmluZ2VuLWNvcmUvdGVzdCJdfQogICAgICAg\nICAgICAgOnViZXJqYXIgezphb3QgWyMibGVpbmluZ2VuIgogICAgICAgICAg\nICAgICAgICAgICAgICAgICAgIGxlaW5pbmdlbi5jb3JlLnNzbCA7IGxhenkt\nbG9hZGVkCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY2VtZXJpY2su\ncG9tZWdyYW5hdGUKICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjbGFz\nc2xvanVyZS5jb3JlCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbnJl\ncGwuY29yZV19fQogIDp0ZXN0LXNlbGVjdG9ycyB7OmRlZmF1bHQgKGNvbXBs\nZW1lbnQgOmRpc2FibGVkKQogICAgICAgICAgICAgICAgICAgOm9mZmxpbmUg\nKGNvbXAgKHBhcnRpYWwgbm90LWFueT8gaWRlbnRpdHkpCiAgICAgICAgICAg\nICAgICAgICAgICAgICAgICAgICAgICAoanV4dCA6b25saW5lIDpkaXNhYmxl\nZCkpfQogIDpzb3VyY2UtcGF0aHMgWyJsZWluaW5nZW4tY29yZS9zcmMiICJz\ncmMiXQogIDpldmFsLWluIDpsZWluaW5nZW4pCg==\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/technomancy/leiningen/contents/project.clj?ref=830d19d5b9f9e2b0e3411428d83422791ca2f814","git":"https://api.github.com/repos/technomancy/leiningen/git/blobs/63f4406fa1182fd143c11b90029289c6f3625961","html":"https://github.com/technomancy/leiningen/blob/830d19d5b9f9e2b0e3411428d83422791ca2f814/project.clj"}}'
+  recorded_at: Sat, 21 Nov 2020 14:14:29 GMT
+recorded_with: VCR 6.0.0

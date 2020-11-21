@@ -1,0 +1,230 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/dakrone/clj-http
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:27:09 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"f9574093ee326728736210cce88acc8826d2388b0ae3759b058f0a738e1d7d24"
+      Last-Modified:
+      - Fri, 20 Nov 2020 14:50:48 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '53'
+      X-Ratelimit-Reset:
+      - '1605971669'
+      X-Ratelimit-Used:
+      - '7'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1301'
+      X-Github-Request-Id:
+      - 4770:D97B:1921D25:1CC8EA0:5FB923BD
+    body:
+      encoding: ASCII-8BIT
+      string: '{"id":2344720,"node_id":"MDEwOlJlcG9zaXRvcnkyMzQ0NzIw","name":"clj-http","full_name":"dakrone/clj-http","private":false,"owner":{"login":"dakrone","id":19060,"node_id":"MDQ6VXNlcjE5MDYw","avatar_url":"https://avatars3.githubusercontent.com/u/19060?v=4","gravatar_id":"","url":"https://api.github.com/users/dakrone","html_url":"https://github.com/dakrone","followers_url":"https://api.github.com/users/dakrone/followers","following_url":"https://api.github.com/users/dakrone/following{/other_user}","gists_url":"https://api.github.com/users/dakrone/gists{/gist_id}","starred_url":"https://api.github.com/users/dakrone/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/dakrone/subscriptions","organizations_url":"https://api.github.com/users/dakrone/orgs","repos_url":"https://api.github.com/users/dakrone/repos","events_url":"https://api.github.com/users/dakrone/events{/privacy}","received_events_url":"https://api.github.com/users/dakrone/received_events","type":"User","site_admin":false},"html_url":"https://github.com/dakrone/clj-http","description":"An
+        idiomatic clojure http client wrapping the apache client. Offically supported
+        version.","fork":false,"url":"https://api.github.com/repos/dakrone/clj-http","forks_url":"https://api.github.com/repos/dakrone/clj-http/forks","keys_url":"https://api.github.com/repos/dakrone/clj-http/keys{/key_id}","collaborators_url":"https://api.github.com/repos/dakrone/clj-http/collaborators{/collaborator}","teams_url":"https://api.github.com/repos/dakrone/clj-http/teams","hooks_url":"https://api.github.com/repos/dakrone/clj-http/hooks","issue_events_url":"https://api.github.com/repos/dakrone/clj-http/issues/events{/number}","events_url":"https://api.github.com/repos/dakrone/clj-http/events","assignees_url":"https://api.github.com/repos/dakrone/clj-http/assignees{/user}","branches_url":"https://api.github.com/repos/dakrone/clj-http/branches{/branch}","tags_url":"https://api.github.com/repos/dakrone/clj-http/tags","blobs_url":"https://api.github.com/repos/dakrone/clj-http/git/blobs{/sha}","git_tags_url":"https://api.github.com/repos/dakrone/clj-http/git/tags{/sha}","git_refs_url":"https://api.github.com/repos/dakrone/clj-http/git/refs{/sha}","trees_url":"https://api.github.com/repos/dakrone/clj-http/git/trees{/sha}","statuses_url":"https://api.github.com/repos/dakrone/clj-http/statuses/{sha}","languages_url":"https://api.github.com/repos/dakrone/clj-http/languages","stargazers_url":"https://api.github.com/repos/dakrone/clj-http/stargazers","contributors_url":"https://api.github.com/repos/dakrone/clj-http/contributors","subscribers_url":"https://api.github.com/repos/dakrone/clj-http/subscribers","subscription_url":"https://api.github.com/repos/dakrone/clj-http/subscription","commits_url":"https://api.github.com/repos/dakrone/clj-http/commits{/sha}","git_commits_url":"https://api.github.com/repos/dakrone/clj-http/git/commits{/sha}","comments_url":"https://api.github.com/repos/dakrone/clj-http/comments{/number}","issue_comment_url":"https://api.github.com/repos/dakrone/clj-http/issues/comments{/number}","contents_url":"https://api.github.com/repos/dakrone/clj-http/contents/{+path}","compare_url":"https://api.github.com/repos/dakrone/clj-http/compare/{base}...{head}","merges_url":"https://api.github.com/repos/dakrone/clj-http/merges","archive_url":"https://api.github.com/repos/dakrone/clj-http/{archive_format}{/ref}","downloads_url":"https://api.github.com/repos/dakrone/clj-http/downloads","issues_url":"https://api.github.com/repos/dakrone/clj-http/issues{/number}","pulls_url":"https://api.github.com/repos/dakrone/clj-http/pulls{/number}","milestones_url":"https://api.github.com/repos/dakrone/clj-http/milestones{/number}","notifications_url":"https://api.github.com/repos/dakrone/clj-http/notifications{?since,all,participating}","labels_url":"https://api.github.com/repos/dakrone/clj-http/labels{/name}","releases_url":"https://api.github.com/repos/dakrone/clj-http/releases{/id}","deployments_url":"https://api.github.com/repos/dakrone/clj-http/deployments","created_at":"2011-09-07T21:37:58Z","updated_at":"2020-11-20T14:50:48Z","pushed_at":"2020-11-15T21:11:09Z","git_url":"git://github.com/dakrone/clj-http.git","ssh_url":"git@github.com:dakrone/clj-http.git","clone_url":"https://github.com/dakrone/clj-http.git","svn_url":"https://github.com/dakrone/clj-http","homepage":"http://clojars.org/clj-http","size":1983,"stargazers_count":1517,"watchers_count":1517,"language":"Clojure","has_issues":true,"has_projects":true,"has_downloads":true,"has_wiki":true,"has_pages":false,"forks_count":380,"mirror_url":null,"archived":false,"disabled":false,"open_issues_count":44,"license":{"key":"mit","name":"MIT
+        License","spdx_id":"MIT","url":"https://api.github.com/licenses/mit","node_id":"MDc6TGljZW5zZTEz"},"forks":380,"open_issues":44,"watchers":1517,"default_branch":"3.x","temp_clone_token":null,"network_count":380,"subscribers_count":40}'
+  recorded_at: Sat, 21 Nov 2020 14:27:09 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dakrone/clj-http/git/refs/heads/3.x
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:27:10 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"831ea6a242f15fcfa5dce435778b5a2b2bc5b8e09a5680e435fa948e477cf115"
+      Last-Modified:
+      - Fri, 20 Nov 2020 14:50:48 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '52'
+      X-Ratelimit-Reset:
+      - '1605971668'
+      X-Ratelimit-Used:
+      - '8'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '215'
+      X-Github-Request-Id:
+      - 4771:8C0C:294821D:2FA7B59:5FB923BD
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/3.x","node_id":"MDM6UmVmMjM0NDcyMDpyZWZzL2hlYWRzLzMueA==","url":"https://api.github.com/repos/dakrone/clj-http/git/refs/heads/3.x","object":{"sha":"65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2","type":"commit","url":"https://api.github.com/repos/dakrone/clj-http/git/commits/65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2"}}'
+  recorded_at: Sat, 21 Nov 2020 14:27:09 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dakrone/clj-http/contents/project.clj?ref=65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Sat, 21 Nov 2020 14:27:10 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"1e880e1d0ce8abc871a4022d964f9f9686c459f9"
+      Last-Modified:
+      - Sun, 15 Nov 2020 17:59:51 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '51'
+      X-Ratelimit-Reset:
+      - '1605971669'
+      X-Ratelimit-Used:
+      - '9'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1909'
+      X-Github-Request-Id:
+      - 4774:126C2:2BE2492:327F5F8:5FB923BE
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"project.clj","path":"project.clj","sha":"1e880e1d0ce8abc871a4022d964f9f9686c459f9","size":2907,"url":"https://api.github.com/repos/dakrone/clj-http/contents/project.clj?ref=65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2","html_url":"https://github.com/dakrone/clj-http/blob/65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2/project.clj","git_url":"https://api.github.com/repos/dakrone/clj-http/git/blobs/1e880e1d0ce8abc871a4022d964f9f9686c459f9","download_url":"https://raw.githubusercontent.com/dakrone/clj-http/65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2/project.clj","type":"file","content":"KGRlZnByb2plY3QgY2xqLWh0dHAgIjMuMTEuMS1TTkFQU0hPVCIKICA6ZGVz\nY3JpcHRpb24gIkEgQ2xvanVyZSBIVFRQIGxpYnJhcnkgd3JhcHBpbmcgdGhl\nIEFwYWNoZSBIdHRwQ29tcG9uZW50cyBjbGllbnQuIgogIDp1cmwgImh0dHBz\nOi8vZ2l0aHViLmNvbS9kYWtyb25lL2Nsai1odHRwLyIKICA6bGljZW5zZSB7\nOm5hbWUgIlRoZSBNSVQgTGljZW5zZSIKICAgICAgICAgICAgOnVybCAiaHR0\ncDovL29wZW5zb3VyY2Uub3JnL2xpY2Vuc2VzL21pdC1saWNlbnNlLnBocCIK\nICAgICAgICAgICAgOmRpc3RyaWJ1dGlvbiA6cmVwb30KICA6Z2xvYmFsLXZh\ncnMgeyp3YXJuLW9uLXJlZmxlY3Rpb24qIGZhbHNlfQogIDptaW4tbGVpbi12\nZXJzaW9uICIyLjAuMCIKICA6ZXhjbHVzaW9ucyBbb3JnLmNsb2p1cmUvY2xv\nanVyZV0KICA6ZGVwZW5kZW5jaWVzIFtbb3JnLmFwYWNoZS5odHRwY29tcG9u\nZW50cy9odHRwY29yZSAiNC40LjEzIl0KICAgICAgICAgICAgICAgICBbb3Jn\nLmFwYWNoZS5odHRwY29tcG9uZW50cy9odHRwY2xpZW50ICI0LjUuMTMiXQog\nICAgICAgICAgICAgICAgIFtvcmcuYXBhY2hlLmh0dHBjb21wb25lbnRzL2h0\ndHBjbGllbnQtY2FjaGUgIjQuNS4xMyJdCiAgICAgICAgICAgICAgICAgW29y\nZy5hcGFjaGUuaHR0cGNvbXBvbmVudHMvaHR0cGFzeW5jY2xpZW50ICI0LjEu\nNCJdCiAgICAgICAgICAgICAgICAgW29yZy5hcGFjaGUuaHR0cGNvbXBvbmVu\ndHMvaHR0cG1pbWUgIjQuNS4xMyJdCiAgICAgICAgICAgICAgICAgW2NvbW1v\nbnMtY29kZWMgIjEuMTIiXQogICAgICAgICAgICAgICAgIFtjb21tb25zLWlv\nICIyLjYiXQogICAgICAgICAgICAgICAgIFtzbGluZ3Nob3QgIjAuMTIuMiJd\nCiAgICAgICAgICAgICAgICAgW3BvdGVta2luICIwLjQuNSJdXQogIDpyZXNv\ndXJjZS1wYXRocyBbInJlc291cmNlcyJdCiAgOnByb2ZpbGVzIHs6ZGV2IHs6\nZGVwZW5kZW5jaWVzIFs7OyBvcHRpb25hbCBkZXBzCiAgICAgICAgICAgICAg\nICAgICAgICAgICAgICAgICAgICBbY2hlc2hpcmUgIjUuOS4wIl0KICAgICAg\nICAgICAgICAgICAgICAgICAgICAgICAgICAgIFtjcm91dG9uICIwLjEuMiIg\nOmV4Y2x1c2lvbnMgW1tvcmcuanNvdXAvanNvdXBdXV0KICAgICAgICAgICAg\nICAgICAgICAgICAgICAgICAgICAgIFtvcmcuanNvdXAvanNvdXAgIjEuMTEu\nMyJdCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBbb3JnLmNs\nb2p1cmUvdG9vbHMucmVhZGVyICIxLjMuMiJdCiAgICAgICAgICAgICAgICAg\nICAgICAgICAgICAgICAgICBbY29tLmNvZ25pdGVjdC90cmFuc2l0LWNsaiAi\nMC44LjMxMyJdCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBb\ncmluZy9yaW5nLWNvZGVjICIxLjEuMiJdCiAgICAgICAgICAgICAgICAgICAg\nICAgICAgICAgICAgICA7OyBvdGhlciAodGVzdGluZykgZGVwcwogICAgICAg\nICAgICAgICAgICAgICAgICAgICAgICAgICAgW29yZy5jbG9qdXJlL2Nsb2p1\ncmUgIjEuMTAuMCJdCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg\nICBbb3JnLmNsb2p1cmUvdG9vbHMubG9nZ2luZyAiMC40LjAiXQogICAgICAg\nICAgICAgICAgICAgICAgICAgICAgICAgICAgW3JpbmcvcmluZy1qZXR0eS1h\nZGFwdGVyICIxLjcuMSJdCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAg\nICAgICBbcmluZy9yaW5nLWRldmVsICIxLjcuMSJdCiAgICAgICAgICAgICAg\nICAgICAgICAgICAgICAgICAgICA7OyBjYWNoaW5nIGV4YW1wbGUgZGVwcwog\nICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgW29yZy5jbG9qdXJl\nL2NvcmUuY2FjaGUgIjAuNy4yIl0KICAgICAgICAgICAgICAgICAgICAgICAg\nICAgICAgICAgIDs7IGxvZ2dpbmcKICAgICAgICAgICAgICAgICAgICAgICAg\nICAgICAgICAgIFtvcmcuYXBhY2hlLmxvZ2dpbmcubG9nNGovbG9nNGotYXBp\nICIyLjExLjIiXQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg\nW29yZy5hcGFjaGUubG9nZ2luZy5sb2c0ai9sb2c0ai1jb3JlICIyLjExLjIi\nXQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgW29yZy5hcGFj\naGUubG9nZ2luZy5sb2c0ai9sb2c0ai0xLjItYXBpICIyLjExLjIiXV0KICAg\nICAgICAgICAgICAgICAgIDpwbHVnaW5zIFtbbGVpbi1hbmNpZW50ICIwLjYu\nMTUiXQogICAgICAgICAgICAgICAgICAgICAgICAgICAgIFtqb25hc2UvZWFz\ndHdvb2QgIjAuMi41Il0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICBb\nbGVpbi1raWJpdCAiMC4xLjUiXQogICAgICAgICAgICAgICAgICAgICAgICAg\nICAgIFtsZWluLW52ZCAiMC41LjIiXV19CiAgICAgICAgICAgICA6MS42IHs6\nZGVwZW5kZW5jaWVzIFtbb3JnLmNsb2p1cmUvY2xvanVyZSAiMS42LjAiXV19\nCiAgICAgICAgICAgICA6MS43IHs6ZGVwZW5kZW5jaWVzIFtbb3JnLmNsb2p1\ncmUvY2xvanVyZSAiMS43LjAiXV19CiAgICAgICAgICAgICA6MS44IHs6ZGVw\nZW5kZW5jaWVzIFtbb3JnLmNsb2p1cmUvY2xvanVyZSAiMS44LjAiXV19CiAg\nICAgICAgICAgICA6MS45IHs6ZGVwZW5kZW5jaWVzIFtbb3JnLmNsb2p1cmUv\nY2xvanVyZSAiMS45LjAiXV19CiAgICAgICAgICAgICA6MS4xMCB7OmRlcGVu\nZGVuY2llcyBbW29yZy5jbG9qdXJlL2Nsb2p1cmUgIjEuMTAuMSJdXX19CiAg\nOmFsaWFzZXMgeyJhbGwiIFsid2l0aC1wcm9maWxlIiAiZGV2LDEuNjpkZXYs\nMS43OmRldiwxLjg6ZGV2LDEuOTpkZXYsMS4xMDpkZXYiXX0KICA6cGx1Z2lu\ncyBbW2NvZG94ICIwLjYuNCJdXQogIDp0ZXN0LXNlbGVjdG9ycyB7OmRlZmF1\nbHQgICMobm90ICg6aW50ZWdyYXRpb24gJSkpCiAgICAgICAgICAgICAgICAg\nICA6aW50ZWdyYXRpb24gOmludGVncmF0aW9uCiAgICAgICAgICAgICAgICAg\nICA6YWxsIChjb25zdGFudGx5IHRydWUpfSkK\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dakrone/clj-http/contents/project.clj?ref=65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2","git":"https://api.github.com/repos/dakrone/clj-http/git/blobs/1e880e1d0ce8abc871a4022d964f9f9686c459f9","html":"https://github.com/dakrone/clj-http/blob/65aaa9b9cc2bd2cfd15634d4f4b2cea802852cf2/project.clj"}}'
+  recorded_at: Sat, 21 Nov 2020 14:27:10 GMT
+recorded_with: VCR 6.0.0
