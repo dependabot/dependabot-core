@@ -33,6 +33,14 @@ RSpec.describe Dependabot::Lein::FileUpdater do
     )
   end
 
+  describe "without a project.clj" do
+    it "raises an error" do
+      args = { dependency_files: [], dependencies: [], credentials: credentials }
+
+      expect { described_class.new(**args) }.to raise_error("No project.clj!")
+    end
+  end
+
   describe "an abbreviated dependency" do
     let(:dependency) do
       Dependabot::Dependency.new(
