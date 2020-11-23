@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/monkey_patches/bundler/definition_ruby_version_patch"
-require "dependabot/monkey_patches/bundler/definition_bundler_version_patch"
-require "dependabot/monkey_patches/bundler/git_source_patch"
-
 require "excon"
 
 require "dependabot/bundler/update_checker"
@@ -43,9 +39,7 @@ module Dependabot
                     :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version_details
-          if dependency_source.git?
-            return dependency_source.latest_git_version_details
-          end
+          return dependency_source.latest_git_version_details if dependency_source.git?
 
           relevant_versions = dependency_source.versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
@@ -75,9 +69,7 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end

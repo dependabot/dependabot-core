@@ -41,15 +41,15 @@ jobs:
         uses: actions/checkout@v2
       - name: Prepare environment variables
         run: |
-          echo ::set-env name=BRANCH_REF::"$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')"
-          echo ::set-env name=BASE_IMAGE::ubuntu:18.04
-          echo ::set-env name=CORE_IMAGE::dependabot/dependabot-core
-          echo ::set-env name=CORE_CI_IMAGE::dependabot/dependabot-core-ci
+          echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
+          echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
+          echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
+          echo "CORE_CI_IMAGE=dependabot/dependabot-core-ci" >> $GITHUB_ENV
       - name: Log in to Docker registry
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
             echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            echo ::set-env name=DOCKER_LOGGED_IN::true
+            echo "DOCKER_LOGGED_IN=true" >> $GITHUB_ENV
           else
             echo "No Docker credentials, skipping login"
           fi
@@ -101,4 +101,4 @@ jobs:
           docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"

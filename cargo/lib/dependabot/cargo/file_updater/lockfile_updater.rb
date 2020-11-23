@@ -38,9 +38,7 @@ module Dependabot
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
-            if updated_lockfile.include?(desired_lockfile_content)
-              next updated_lockfile
-            end
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -270,9 +268,7 @@ module Dependabot
 
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
-          if parsed_manifest.dig("package", "default-run")
-            parsed_manifest["package"].delete("default-run")
-          end
+          parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 

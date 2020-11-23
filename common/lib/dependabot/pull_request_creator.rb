@@ -73,7 +73,7 @@ module Dependabot
     end
 
     def check_dependencies_have_previous_version
-      return if library? && dependencies.all? { |d| requirements_changed?(d) }
+      return if dependencies.all? { |d| requirements_changed?(d) }
       return if dependencies.all?(&:previous_version)
 
       raise "Dependencies must have a previous version or changed " \
@@ -222,12 +222,6 @@ module Dependabot
           label_language: label_language?,
           automerge_candidate: automerge_candidate?
         )
-    end
-
-    def library?
-      return true if files.any? { |file| file.name.end_with?(".gemspec") }
-
-      dependencies.any? { |d| !d.appears_in_lockfile? }
     end
 
     def includes_security_fixes?

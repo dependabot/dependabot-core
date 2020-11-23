@@ -42,13 +42,9 @@ module Dependabot
       end
 
       def capitalize_first_word?
-        if commit_message_options.key?(:prefix)
-          return !commit_message_options[:prefix]&.strip&.match?(/\A[a-z]/)
-        end
+        return !commit_message_options[:prefix]&.strip&.match?(/\A[a-z]/) if commit_message_options.key?(:prefix)
 
-        if last_dependabot_commit_style
-          return capitalise_first_word_from_last_dependabot_commit_style
-        end
+        return capitalise_first_word_from_last_dependabot_commit_style if last_dependabot_commit_style
 
         capitalise_first_word_from_previous_commits
       end
@@ -63,15 +59,11 @@ module Dependabot
 
       def commit_prefix
         # If a preferred prefix has been explicitly provided, use it
-        if commit_message_options.key?(:prefix)
-          return prefix_from_explicitly_provided_details
-        end
+        return prefix_from_explicitly_provided_details if commit_message_options.key?(:prefix)
 
         # Otherwise, if there is a previous Dependabot commit and it used a
         # known style, use that as our model for subsequent commits
-        if last_dependabot_commit_style
-          return prefix_for_last_dependabot_commit_style
-        end
+        return prefix_for_last_dependabot_commit_style if last_dependabot_commit_style
 
         # Otherwise we need to detect the user's preferred style from the
         # existing commits on their repo
@@ -89,9 +81,7 @@ module Dependabot
       end
 
       def explicitly_provided_prefix_string
-        unless commit_message_options.key?(:prefix)
-          raise "No explicitly provided prefix!"
-        end
+        raise "No explicitly provided prefix!" unless commit_message_options.key?(:prefix)
 
         if dependencies.any?(&:production?)
           commit_message_options[:prefix].to_s
@@ -181,9 +171,7 @@ module Dependabot
         end
 
         # Definitely not using Angular commits if < 30% match angular commits
-        if angular_messages.count.to_f / recent_commit_messages.count < 0.3
-          return false
-        end
+        return false if angular_messages.count.to_f / recent_commit_messages.count < 0.3
 
         eslint_only_pres = ESLINT_PREFIXES.map(&:downcase) - ANGULAR_PREFIXES
         angular_only_pres = ANGULAR_PREFIXES - ESLINT_PREFIXES.map(&:downcase)
@@ -244,9 +232,7 @@ module Dependabot
             "build"
           end
 
-        if capitalize_angular_commit_prefix?
-          commit_prefix = commit_prefix.capitalize
-        end
+        commit_prefix = commit_prefix.capitalize if capitalize_angular_commit_prefix?
 
         commit_prefix
       end
@@ -256,9 +242,7 @@ module Dependabot
           ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
         end
 
-        if semantic_messages.none?
-          return last_dependabot_commit_message&.start_with?(/[A-Z]/)
-        end
+        return last_dependabot_commit_message&.start_with?(/[A-Z]/) if semantic_messages.none?
 
         capitalized_msgs = semantic_messages.
                            select { |m| m.start_with?(/[A-Z]/) }

@@ -8,26 +8,23 @@ require "dependabot/go_modules/file_updater/go_mod_updater"
 RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
-      go_mod: go_mod,
-      go_sum: go_sum,
       dependencies: [dependency],
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      }],
+      repo_contents_path: repo_contents_path,
+      directory: "/",
+      options: { tidy: tidy, vendor: false }
     )
   end
 
-  let(:go_sum) { nil }
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-  end
-  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
-
   let(:project_name) { "simple" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+  let(:tidy) { true }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -61,7 +58,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       context "if no files have changed" do
-        it { is_expected.to eq(go_mod.content) }
+        it { is_expected.to eq(go_mod_content) }
       end
 
       context "when the requirement has changed" do
@@ -80,7 +77,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
 
-        context "when a replace directive is present" do
+        context "when a path-based replace directive is present" do
           let(:project_name) { "replace" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
@@ -93,6 +90,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "for a go 1.12 go.mod" do
+          let(:project_name) { "simple" }
+
           it { is_expected.to include("go 1.12") }
         end
 
@@ -128,12 +127,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          let(:go_sum) do
-            Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
-          end
           let(:project_name) { "go_sum" }
-          let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
-          subject(:updated_go_sum_content) { updater.updated_go_sum_content }
+          subject(:updated_go_mod_content) { updater.updated_go_sum_content }
 
           it "adds new entries to the go.sum" do
             is_expected.
@@ -142,11 +137,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
-          # This happens via `go mod tidy`, which we currently can't run, as we
-          # need to the whole source repo
-          pending "removes old entries from the go.sum" do
+          it "removes old entries from the go.sum" do
             is_expected.
-              to include(%(rsc.io/quote v1.4.0 h1:))
+              to_not include(%(rsc.io/quote v1.4.0 h1:))
             is_expected.
               to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
@@ -184,9 +177,67 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               expect { updater.updated_go_sum_content }.to_not raise_error
             end
           end
+
+          describe "with a main.go that is not in the root directory" do
+            let(:project_name) { "not_root" }
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(rsc.io/quote v1.5.2\n)
+              )
+            end
+
+            it "adds new entries to the go.sum" do
+              is_expected.
+                to include(%(rsc.io/quote v1.5.2 h1:))
+              is_expected.
+                to include(%(rsc.io/quote v1.5.2/go.mod h1:))
+            end
+
+            it "removes old entries from the go.sum" do
+              is_expected.
+                to_not include(%(rsc.io/quote v1.4.0 h1:))
+              is_expected.
+                to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+            end
+
+            it "does not leave a temporary file lingering in the repo" do
+              updater.updated_go_mod_content
+
+              go_files = Dir.glob("#{repo_contents_path}/*.go")
+              expect(go_files).to be_empty
+            end
+          end
+
+          describe "with ignored go files in the root" do
+            let(:project_name) { "ignored_go_files" }
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(rsc.io/quote v1.5.2\n)
+              )
+            end
+          end
+
+          context "renamed package name" do
+            let(:project_name) { "renamed_package" }
+            let(:dependency_name) { "github.com/googleapis/gnostic" }
+            # OpenAPIV2 has been renamed to openapiv2 in this version
+            let(:dependency_version) { "v0.5.1" }
+
+            it "raises a DependencyFileNotResolvable error" do
+              error_class = Dependabot::DependencyFileNotResolvable
+              expect { updater.updated_go_sum_content }.
+                to raise_error(error_class) do |error|
+                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
+              end
+            end
+          end
         end
 
         context "without a go.sum" do
+          let(:project_name) { "simple" }
+
           it "doesn't return a go.sum" do
             expect(updater.updated_go_sum_content).to be_nil
           end
@@ -194,32 +245,51 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       context "when it has become indirect" do
-        let(:dependency_version) { "v1.5.2" }
+        let(:project_name) { "indirect_after_update" }
+        let(:dependency_name) { "github.com/mattn/go-isatty" }
+        let(:dependency_version) { "v0.0.12" }
         let(:requirements) do
           []
         end
 
-        it { is_expected.to include(%(rsc.io/quote v1.5.2 // indirect\n)) }
+        it do
+          is_expected.to include(
+            %(github.com/mattn/go-isatty v0.0.12 // indirect\n)
+          )
+        end
+      end
+
+      context "when it has become unneeded" do
+        context "when it has become indirect" do
+          let(:project_name) { "unneeded_after_update" }
+          let(:dependency_version) { "v1.5.2" }
+          let(:requirements) do
+            []
+          end
+
+          it { is_expected.to_not include(%(rsc.io/quote)) }
+        end
       end
     end
 
     context "for an explicit indirect dependency" do
-      let(:dependency_name) { "github.com/mattn/go-colorable" }
-      let(:dependency_version) { "v0.0.9" }
-      let(:dependency_previous_version) { "v0.0.9" }
+      let(:project_name) { "indirect" }
+      let(:dependency_name) { "github.com/mattn/go-isatty" }
+      let(:dependency_version) { "v0.0.4" }
+      let(:dependency_previous_version) { "v0.0.4" }
       let(:requirements) { previous_requirements }
       let(:previous_requirements) { [] }
 
       context "if no files have changed" do
-        it { is_expected.to eq(go_mod.content) }
+        it { is_expected.to eq(go_mod_content) }
       end
 
       context "when the version has changed" do
-        let(:dependency_version) { "v0.1.0" }
+        let(:dependency_version) { "v0.0.12" }
 
         it do
           is_expected.
-            to include(%(github.com/mattn/go-colorable v0.1.0 // indirect\n))
+            to include(%(github.com/mattn/go-isatty v0.0.12 // indirect\n))
         end
       end
     end
@@ -263,6 +333,145 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it do
         is_expected.to_not include("github.com/pkg/errors")
+      end
+    end
+
+    context "for a revision that does not exist" do
+      # The go.mod file contains a reference to a revision of
+      # google.golang.org/grpc that does not exist.
+      let(:project_name) { "unknown_revision" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.2",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("unknown revision v1.33.999")
+        end
+      end
+    end
+
+    context "when module major version doesn't match (v1)" do
+      let(:project_name) { "module_major_version_mismatch_v1" }
+      let(:dependency_name) do
+        "github.com/dependabot-fixtures/go-major-mismatch"
+      end
+      let(:dependency_version) { "v1.0.5" }
+      let(:dependency_previous_version) { "v1.0.4" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.0.5",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/dependabot-fixtures/go-major-mismatch"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("go.mod has post-v1 module path")
+        end
+      end
+    end
+
+    context "when module major version doesn't match (v0)" do
+      let(:project_name) { "module_major_version_mismatch_v0" }
+      let(:dependency_name) do
+        "github.com/jenkins-x/jx-api"
+      end
+      let(:dependency_version) { "v0.0.25" }
+      let(:dependency_previous_version) { "v0.0.24" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.0.25",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/jenkins-x/jx-api"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("go.mod has post-v0 module path")
+        end
+      end
+    end
+  end
+
+  describe "#updated_go_sum_content" do
+    let(:project_name) { "go_sum" }
+    subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+    context "for a top level dependency" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.4.0" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.4.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+
+      context "if no files have changed" do
+        let(:go_sum_content) { fixture("projects", project_name, "go.sum") }
+        it { is_expected.to eq(go_sum_content) }
+      end
+
+      context "when the requirement has changed" do
+        let(:dependency_version) { "v1.5.2" }
+        let(:requirements) do
+          [{
+            file: "go.mod",
+            requirement: "v1.5.2",
+            groups: [],
+            source: {
+              type: "default",
+              source: "rsc.io/quote"
+            }
+          }]
+        end
+
+        it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
+        it { is_expected.not_to include(%(rsc.io/quote v1.4.0)) }
+
+        context "but tidying is disabled" do
+          let(:tidy) { false }
+          it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
+          it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+        end
       end
     end
   end

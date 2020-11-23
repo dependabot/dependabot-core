@@ -228,9 +228,7 @@ module Dependabot
           lb_segments = version.segments
           lb_segments.pop while lb_segments.any? && lb_segments.last.zero?
 
-          if lb_segments.none?
-            return [Gem::Requirement.new("< #{ub_segments.join('.')}")]
-          end
+          return [Gem::Requirement.new("< #{ub_segments.join('.')}")] if lb_segments.none?
 
           # Ensure versions have the same length as each other (cosmetic)
           length = [lb_segments.count, ub_segments.count].max
@@ -253,9 +251,7 @@ module Dependabot
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
         def update_greatest_version(requirement, version_to_be_permitted)
-          if version_to_be_permitted.is_a?(String)
-            version_to_be_permitted = Gem::Version.new(version_to_be_permitted)
-          end
+          version_to_be_permitted = Gem::Version.new(version_to_be_permitted) if version_to_be_permitted.is_a?(String)
           op, version = requirement.requirements.first
           version = version.release if version.prerelease?
 

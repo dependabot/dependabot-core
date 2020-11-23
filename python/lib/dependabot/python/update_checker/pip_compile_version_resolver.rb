@@ -49,20 +49,18 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+                                   true
+                                 else
+                                   false
+                                 end
         end
 
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -244,15 +242,11 @@ module Dependabot
 
           # If the previous error was definitely due to using the wrong Python
           # version, return the new error (which can't be worse)
-          if error_certainly_bad_python_version?(previous_error.message)
-            return new_error
-          end
+          return new_error if error_certainly_bad_python_version?(previous_error.message)
 
           # Otherwise, if the new error may be due to using the wrong Python
           # version, return the old error (which can't be worse)
-          if error_suggests_bad_python_version?(new_error.message)
-            return previous_error
-          end
+          return previous_error if error_suggests_bad_python_version?(new_error.message)
 
           # Otherwise, default to the new error
           new_error
@@ -329,9 +323,7 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install -r"\
@@ -340,9 +332,7 @@ module Dependabot
 
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
-          if @sanitized_setup_file_content[file.name]
-            return @sanitized_setup_file_content[file.name]
-          end
+          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
             Python::FileUpdater::SetupFileSanitizer.
@@ -361,9 +351,7 @@ module Dependabot
 
           req = dependency.requirements.find { |r| r[:file] == file.name }
 
-          unless req&.fetch(:requirement)
-            return file.content + "\n#{dependency.name} #{updated_req}"
-          end
+          return file.content + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
 
           Python::FileUpdater::RequirementReplacer.new(
             content: file.content,
@@ -492,9 +480,7 @@ module Dependabot
         end
 
         def user_specified_python_version
-          unless python_requirement_parser.user_specified_requirements.any?
-            return
-          end
+          return unless python_requirement_parser.user_specified_requirements.any?
 
           user_specified_requirements =
             python_requirement_parser.user_specified_requirements.

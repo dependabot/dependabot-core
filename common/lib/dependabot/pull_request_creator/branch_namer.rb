@@ -120,9 +120,7 @@ module Dependabot
         # Version looks like a git SHA and we could be updating to a specific
         # ref in which case we return that otherwise we return a shorthand sha
         if dependency.version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && new_ref(dependency)
-            return new_ref(dependency)
-          end
+          return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
           dependency.version[0..6]
         elsif dependency.version == dependency.previous_version &&
@@ -165,12 +163,12 @@ module Dependabot
         updated_reqs.first[:requirement]
       end
 
-      # TODO: Look into bringing this in line with existing library checks that
-      # we do in the update checkers, which are also overriden by passing an
-      # explicit `requirements_update_strategy`.
+      # TODO: Bring this in line with existing library checks that we do in the
+      # update checkers, which are also overriden by passing an explicit
+      # `requirements_update_strategy`.
+      #
+      # TODO re-use in MessageBuilder
       def library?
-        return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
-
         dependencies.any? { |d| !d.appears_in_lockfile? }
       end
 

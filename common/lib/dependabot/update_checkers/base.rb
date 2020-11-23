@@ -48,9 +48,7 @@ module Dependabot
       end
 
       def updated_dependencies(requirements_to_unlock:)
-        unless can_update?(requirements_to_unlock: requirements_to_unlock)
-          return []
-        end
+        return [] unless can_update?(requirements_to_unlock: requirements_to_unlock)
 
         case requirements_to_unlock&.to_sym
         when :none then [updated_dependency_without_unlock]
@@ -79,12 +77,28 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Lowest available security fix version not checking resolvability
+      # @return [Dependabot::<package manager>::Version, #to_s] version class
+      def lowest_security_fix_version
+        raise NotImplementedError
+      end
+
       def lowest_resolvable_security_fix_version
         raise NotImplementedError
       end
 
       def latest_resolvable_version_with_no_unlock
         raise NotImplementedError
+      end
+
+      # Finds any dependencies in the lockfile that have a subdependency on the
+      # given dependency that do not satisfy the target_version.
+      # @return [Array<Hash{String => String}]
+      #   name [String] the blocking dependencies name
+      #   version [String] the version of the blocking dependency
+      #   requirement [String] the requirement on the target_dependency
+      def conflicting_dependencies
+        [] # return an empty array for ecosystems that don't support this yet
       end
 
       def latest_resolvable_previous_version(_updated_version)

@@ -239,15 +239,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       before do
-        stub_request(:get, registry_url + "versions").
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 404)
-        stub_request(:get, registry_url + "api/v1/dependencies").
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 200)
-        stub_request(:get, gemfury_business_url).
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        # We only need to stub out the version callout since it would
+        # otherwise call out to the internet in a shell command
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
+
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
+          and_return(
+            ["1.5.0", "1.9.0", "1.10.0.beta"]
+          )
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
@@ -264,17 +275,36 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
+      let(:subprocess_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {},
+          error_class: error_class
+        )
+      end
+
       context "that we don't have authentication details for" do
+        let(:error_message) do
+          <<~ERR
+            Authentication is required for repo.fury.io.
+            Please supply credentials for this source. You can do this by running:
+              bundle config repo.fury.io username:password
+          ERR
+        end
+
+        let(:error_class) do
+          "Bundler::Fetcher::AuthenticationRequiredError"
+        end
+
         before do
-          stub_request(:get, registry_url + "versions").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 401)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 401)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 401)
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
@@ -288,16 +318,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "that we have bad authentication details for" do
+        let(:error_message) do
+          <<~ERR
+            Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
+            Please double-check your credentials and correct them.
+          ERR
+        end
+
+        let(:error_class) do
+          "Bundler::Fetcher::BadAuthenticationError"
+        end
+
         before do
-          stub_request(:get, registry_url + "versions").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 403)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 403)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 403)
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
@@ -312,16 +352,25 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "that bad-requested, but was a private repo" do
+        let(:error_message) do
+          <<~ERR
+            Could not fetch specs from https://repo.fury.io/greysteil/
+          ERR
+        end
+
+        let(:error_class) do
+          "Bundler::HTTPError"
+        end
+
         before do
-          stub_request(:get, registry_url + "versions").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 400)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 400)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 400)
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_raise(subprocess_error)
         end
 
         it "blows up with a useful error" do
@@ -336,53 +385,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       context "that doesn't have details of the gem" do
         before do
-          stub_request(:get, gemfury_business_url).
-            with(basic_auth: ["SECRET_CODES", ""]).
-            to_return(status: 404)
-
-          # Stub indexes to return details of other gems (but not this one)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_response")
-            )
-          stub_request(:get, registry_url + "prerelease_specs.4.8.gz").
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_prerelease_response")
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_helper_subprocess).
+            with({
+                   command: Dependabot::Bundler::NativeHelpers.helper_path,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_return(
+              []
             )
         end
 
         it { is_expected.to be_nil }
-      end
-
-      context "that only implements the old Bundler index format..." do
-        let(:gemfile_fixture_name) { "sidekiq_pro" }
-        let(:lockfile_fixture_name) { "sidekiq_pro.lock" }
-        let(:dependency_name) { "sidekiq-pro" }
-        let(:registry_url) { "https://gems.contribsys.com/" }
-        before do
-          stub_request(:get, registry_url + "versions").
-            with(basic_auth: %w(username password)).
-            to_return(status: 404)
-          stub_request(:get, registry_url + "api/v1/dependencies").
-            with(basic_auth: %w(username password)).
-            to_return(status: 404)
-          stub_request(:get, registry_url + "specs.4.8.gz").
-            with(basic_auth: %w(username password)).
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_response")
-            )
-          stub_request(:get, registry_url + "prerelease_specs.4.8.gz").
-            with(basic_auth: %w(username password)).
-            to_return(
-              status: 200,
-              body: fixture("ruby", "contribsys_old_index_prerelease_response")
-            )
-        end
-
-        its([:version]) { is_expected.to eq(Gem::Version.new("3.5.2")) }
       end
     end
 
@@ -523,15 +538,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       before do
-        stub_request(:get, registry_url + "versions").
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 404)
-        stub_request(:get, registry_url + "api/v1/dependencies").
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 200)
-        stub_request(:get, gemfury_business_url).
-          with(basic_auth: ["SECRET_CODES", ""]).
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        # We only need to stub out the version callout since it would
+        # otherwise call out to the internet in a shell command
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
+
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
+          and_return(
+            ["1.5.0", "1.9.0", "1.10.0.beta"]
+          )
       end
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }

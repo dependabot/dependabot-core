@@ -170,12 +170,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end
       before do
-        stub_request(:get, registry_url + "versions").to_return(status: 404)
-        stub_request(:get, registry_url + "api/v1/dependencies").
-          to_return(status: 200)
-        # Note: returns details of three versions: 1.5.0, 1.9.0, and 1.10.0.beta
-        stub_request(:get, gemfury_business_url).
-          to_return(status: 200, body: fixture("ruby", "gemfury_response"))
+        # We only need to stub out the version callout since it would
+        # otherwise call out to the internet in a shell command
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "dependency_source_type",
+                 args: anything
+               }).and_call_original
+
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_helper_subprocess).
+          with({
+                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 function: "private_registry_versions",
+                 args: anything
+               }).
+          and_return(
+            ["1.5.0", "1.9.0", "1.10.0.beta"]
+          )
       end
 
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
@@ -373,6 +387,43 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    context "with a rubygems source" do
+      let(:current_version) { "1.2.0" }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }]
+      end
+
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("1.3.0"))
+      end
+
+      context "with a security vulnerability" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "bundler",
+              vulnerable_versions: ["<= 1.3.0"]
+            )
+          ]
+        end
+
+        it "finds the lowest available non-vulnerable version" do
+          is_expected.to eq(Gem::Version.new("1.4.0"))
+        end
+      end
+    end
+  end
+
   describe "#latest_version_resolvable_with_full_unlock?" do
     include_context "stub rubygems compact index"
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
@@ -539,6 +590,54 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
         end
       end
+    end
+  end
+
+  describe "#conflicting_dependencies" do
+    include_context "stub rubygems compact index"
+    include_context "stub rubygems versions api"
+
+    subject { checker.conflicting_dependencies }
+
+    let(:gemfile_fixture_name) { "subdep_blocked_by_subdep" }
+    let(:lockfile_fixture_name) { "subdep_blocked_by_subdep.lock" }
+    let(:target_version) { "2.0.0" }
+    let(:dependency_name) { "dummy-pkg-a" }
+    let(:requirements) do
+      [{
+        file: "Gemfile",
+        requirement: "~> 1.0.0",
+        groups: [],
+        source: nil
+      }]
+    end
+
+    let(:requirements) { [] }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "bundler",
+          vulnerable_versions: ["< 2.0.0"]
+        )
+      ]
+    end
+
+    before do
+      allow(checker).
+        to receive(:lowest_security_fix_version).
+        and_return(target_version)
+    end
+
+    it do
+      is_expected.to eq(
+        [{
+          "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+          "name" => "dummy-pkg-b",
+          "version" => "1.0.0",
+          "requirement" => "< 2.0.0"
+        }]
+      )
     end
   end
 

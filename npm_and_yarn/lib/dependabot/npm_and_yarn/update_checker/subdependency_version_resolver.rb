@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
+require "dependabot/npm_and_yarn/version"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -29,7 +30,7 @@ module Dependabot
           return if bundled_dependency?
 
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
+            dependency_files_builder.write_temporary_dependency_files
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
               updated_content = update_subdependency_in_lockfile(lockfile)
@@ -67,9 +68,9 @@ module Dependabot
 
         def version_from_updated_lockfiles(updated_lockfiles)
           updated_files = dependency_files -
-                          yarn_locks -
-                          package_locks -
-                          shrinkwraps +
+                          dependency_files_builder.yarn_locks -
+                          dependency_files_builder.package_locks -
+                          dependency_files_builder.shrinkwraps +
                           updated_lockfiles
 
           updated_version = NpmAndYarn::FileParser.new(
@@ -118,82 +119,8 @@ module Dependabot
           end
         end
 
-        def write_temporary_dependency_files
-          write_lock_files
-
-          File.write(".npmrc", npmrc_content)
-
-          package_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(file.name, prepared_package_json_content(file))
-          end
-        end
-
-        def write_lock_files
-          yarn_locks.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, prepared_yarn_lockfile_content(f.content))
-          end
-
-          [*package_locks, *shrinkwraps].each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
-          end
-        end
-
-        # Duplicated in NpmLockfileUpdater
-        # Remove the dependency we want to update from the lockfile and let
-        # yarn find the latest resolvable version and fix the lockfile
-        def prepared_yarn_lockfile_content(content)
-          content.gsub(/^#{Regexp.quote(dependency.name)}\@.*?\n\n/m, "")
-        end
-
-        def prepared_package_json_content(file)
-          NpmAndYarn::FileUpdater::PackageJsonPreparer.new(
-            package_json_content: file.content
-          ).prepared_content
-        end
-
-        def npmrc_content
-          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
-            credentials: credentials,
-            dependency_files: dependency_files
-          ).npmrc_content
-        end
-
         def version_class
           NpmAndYarn::Version
-        end
-
-        def package_locks
-          @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
-        end
-
-        def yarn_locks
-          @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
-        end
-
-        def shrinkwraps
-          @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
-        end
-
-        def lockfiles
-          [*package_locks, *shrinkwraps, *yarn_locks]
-        end
-
-        def filtered_lockfiles
-          @filtered_lockfiles ||=
-            SubDependencyFilesFilterer.new(
-              dependency_files: dependency_files,
-              updated_dependencies: [updated_dependency]
-            ).files_requiring_update
         end
 
         def updated_dependency
@@ -206,10 +133,21 @@ module Dependabot
           )
         end
 
-        def package_files
-          @package_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package.json") }
+        def filtered_lockfiles
+          @filtered_lockfiles ||=
+            SubDependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: [updated_dependency]
+            ).files_requiring_update
+        end
+
+        def dependency_files_builder
+          @dependency_files_builder ||=
+            DependencyFilesBuilder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
         end
 
         # TODO: We should try and fix this by updating the parent that's not

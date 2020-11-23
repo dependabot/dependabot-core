@@ -187,6 +187,40 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
+    let(:packagist_response) { fixture("packagist_response.json") }
+
+    before do
+      stub_request(:get, packagist_url).
+        to_return(status: 200, body: packagist_response)
+      allow(checker).to receive(:latest_resolvable_version).
+        and_return(Gem::Version.new("1.17.0"))
+    end
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(Gem::Version.new("1.0.2"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "composer",
+            vulnerable_versions: ["<= 1.22.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("1.22.1"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 

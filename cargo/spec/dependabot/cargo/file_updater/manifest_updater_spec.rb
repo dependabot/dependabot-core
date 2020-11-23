@@ -264,6 +264,30 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
             to include(%([dependencies.pango]\nversion = "0.3.0"\n))
         end
       end
+
+      context "with a version requirement" do
+        context "with a target-specific dependency" do
+          let(:manifest_fixture_name) { "version_requirement" }
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "^0.1.38",
+              groups: [],
+              source: nil
+            }]
+          end
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "^0.1.40",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it { is_expected.to include(%(time = "^0.1.40")) }
+        end
+      end
     end
   end
 end

@@ -76,9 +76,7 @@ module Dependabot
       end
 
       def check_required_files_present
-        if requirements_txt_files.any? || setup_file || pipfile || pyproject
-          return
-        end
+        return if requirements_txt_files.any? || setup_file || pipfile || pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -268,9 +266,7 @@ module Dependabot
           unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
-        if unfetchable_files.any?
-          raise Dependabot::PathDependenciesNotReachable, unfetchable_files
-        end
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_files if unfetchable_files.any?
 
         path_setup_files
       end

@@ -4,6 +4,8 @@ require "spec_helper"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::SharedHelpers do
+  let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
+
   describe ".in_a_temporary_directory" do
     subject(:in_a_temporary_directory) do
       Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
@@ -20,33 +22,67 @@ RSpec.describe Dependabot::SharedHelpers do
     end
   end
 
-  describe ".in_a_forked_process" do
-    subject(:run_sub_process) do
-      Dependabot::SharedHelpers.in_a_forked_process { task.call }
+  describe ".in_a_temporary_repo_directory" do
+    subject(:in_a_temporary_repo_directory) do
+      Dependabot::SharedHelpers.
+        in_a_temporary_repo_directory(directory, repo_contents_path) do
+          on_create.call
+        end
     end
 
-    context "when the forked process returns a value" do
-      let(:task) { -> { "all good" } }
+    let(:directory) { "/" }
+    let(:on_create) { -> { Dir.pwd } }
+    let(:project_name) { "vendor_gems" }
+    let(:repo_contents_path) { build_tmp_repo(project_name) }
 
-      it "returns the return value of the sub-process" do
-        expect(run_sub_process).to eq("all good")
+    it "runs inside the temporary repo directory" do
+      expect(in_a_temporary_repo_directory).to eq(repo_contents_path.to_s)
+    end
+
+    context "with a valid directory" do
+      let(:directory) { "vendor/cache" }
+      let(:on_create) { -> { `ls .` } }
+
+      it "yields the directory contents" do
+        expect(in_a_temporary_repo_directory).
+          to include("business-1.4.0.gem")
       end
     end
 
-    context "when the forked process sets an environment variable" do
-      let(:task) { -> { @bundle_setting = "new" } }
+    context "with a missing directory" do
+      let(:directory) { "missing/directory" }
 
-      it "doesn't persist the change" do
-        expect { run_sub_process }.to_not(change { @bundle_setting })
+      it "creates the missing directory " do
+        expect(in_a_temporary_repo_directory).
+          to eq(repo_contents_path.join(directory).to_s)
       end
     end
 
-    context "when the forked process raises an error" do
-      let(:task) { -> { raise Exception, "hell" } }
+    context "with modifications to the repo contents" do
+      before do
+        Dir.chdir(repo_contents_path) do
+          `touch some-file.txt`
+        end
+      end
 
-      it "raises a ChildProcessFailed error" do
-        expect { run_sub_process }.
-          to raise_error(Dependabot::SharedHelpers::ChildProcessFailed)
+      let(:on_create) { -> { `stat some-file.txt 2>&1` } }
+
+      it "resets the changes " do
+        expect(in_a_temporary_repo_directory).
+          to include("No such file or directory")
+      end
+    end
+
+    context "without repo_contents_path" do
+      before do
+        allow(described_class).to receive(:in_a_temporary_directory).
+          and_call_original
+      end
+
+      it "falls back to creating a temporary directory" do
+        expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
+          to yield_with_args(Pathname)
+        expect(described_class).to have_received(:in_a_temporary_directory)
       end
     end
   end
@@ -58,7 +94,6 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stderr_to_stdout) { false }
 
     subject(:run_subprocess) do
-      spec_root = File.join(File.dirname(__FILE__), "..")
       bin_path = File.join(spec_root, "helpers/test/run.rb")
       command = "ruby #{bin_path}"
       Dependabot::SharedHelpers.run_helper_subprocess(
@@ -113,6 +148,65 @@ RSpec.describe Dependabot::SharedHelpers do
 
       it "raises a HelperSubprocessFailed error" do
         expect { run_subprocess }.
+          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
+
+    context "when the subprocess is killed" do
+      let(:function) { "killed" }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }.
+          to(raise_error do |error|
+            expect(error).
+              to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+            expect(error.error_context[:process_termsig]).to eq(9)
+          end)
+      end
+    end
+  end
+
+  describe ".run_shell_command" do
+    let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
+
+    subject(:run_shell_command) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
+
+    context "when the subprocess is successful" do
+      it "returns the result" do
+        expect(run_shell_command).to eq("output\n")
+      end
+    end
+
+    context "with bash command as argument" do
+      let(:command) do
+        File.join(spec_root, "helpers/test/run_bash") + " $(ps)"
+      end
+
+      it "returns the argument" do
+        expect(run_shell_command).to eq("$(ps)\n")
+      end
+
+      context "when allowing unsafe shell command" do
+        subject(:run_shell_command) do
+          Dependabot::SharedHelpers.
+            run_shell_command(command, allow_unsafe_shell_command: true)
+        end
+
+        it "returns the command output" do
+          output = run_shell_command
+          expect(output).not_to eq("$(ps)\n")
+          expect(output).to include("PID")
+        end
+      end
+    end
+
+    context "when the subprocess exits" do
+      let(:command) { File.join(spec_root, "helpers/test/error_bash") }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_shell_command }.
           to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
       end
     end
