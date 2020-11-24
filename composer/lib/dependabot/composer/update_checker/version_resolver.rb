@@ -125,7 +125,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
-              escape_command_str: false,
+              allow_unsafe_shell_command: true,
               function: "get_latest_resolvable_version",
               args: [
                 Dir.pwd,
@@ -156,9 +156,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
-            unless version_for_reqs(requirements)
-              raise "No matching version for #{requirements}!"
-            end
+            raise "No matching version for #{requirements}!" unless version_for_reqs(requirements)
 
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
@@ -223,9 +221,7 @@ module Dependabot
 
           # If the original requirement is just a stability flag we append that
           # flag to the requirement
-          if lower_bound.strip.start_with?("@")
-            return "<=#{latest_allowable_version}#{lower_bound.strip}"
-          end
+          return "<=#{latest_allowable_version}#{lower_bound.strip}" if lower_bound.strip.start_with?("@")
 
           lower_bound + ", <= #{latest_allowable_version}"
         end
@@ -319,6 +315,10 @@ module Dependabot
             raise Dependabot::PrivateSourceTimedOut, source
           elsif error.message.start_with?("Allowed memory size") ||
                 error.message.start_with?("Out of memory")
+            raise Dependabot::OutOfMemory
+          elsif error.error_context[:process_termsig] ==
+                Dependabot::SharedHelpers::SIGKILL
+            # If the helper was SIGKILL-ed, assume the OOMKiller did it
             raise Dependabot::OutOfMemory
           elsif error.message.start_with?("Package not found in updated") &&
                 !dependency.top_level?
@@ -435,9 +435,7 @@ module Dependabot
           platform_php = parsed_composer_file.dig("config", "platform", "php")
 
           platform = {}
-          if platform_php.is_a?(String) && requirement_valid?(platform_php)
-            platform["php"] = [platform_php]
-          end
+          platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
           # Note: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in

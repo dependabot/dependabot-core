@@ -111,9 +111,7 @@ module Dependabot
             ignore_reqs.any? { |r| r.satisfied_by?(v) }
           end
 
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end
@@ -237,18 +235,16 @@ module Dependabot
             begin
               status = Excon.get(
                 dependency_url + "/#{version}",
-                headers: registry_auth_headers,
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
               ).status
 
               if status == 404 && dependency_registry != "registry.npmjs.org"
                 # Some registries don't handle escaped package names properly
                 status = Excon.get(
                   dependency_url.gsub("%2F", "/") + "/#{version}",
-                  headers: registry_auth_headers,
                   idempotent: true,
-                  **SharedHelpers.excon_defaults
+                  **SharedHelpers.excon_defaults(headers: registry_auth_headers)
                 ).status
               end
 
@@ -263,17 +259,14 @@ module Dependabot
         def version_endpoint_working?
           return true if dependency_registry == "registry.npmjs.org"
 
-          if defined?(@version_endpoint_working)
-            return @version_endpoint_working
-          end
+          return @version_endpoint_working if defined?(@version_endpoint_working)
 
           @version_endpoint_working =
             begin
               Excon.get(
                 dependency_url + "/latest",
-                headers: registry_auth_headers,
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
               ).status < 400
             rescue Excon::Error::Timeout, Excon::Error::Socket
               # Give the benefit of the doubt if the registry is playing up
@@ -307,9 +300,8 @@ module Dependabot
         def fetch_npm_response
           response = Excon.get(
             dependency_url,
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
 
           return response unless response.status == 500

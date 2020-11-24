@@ -1,3 +1,184 @@
+## v0.125.4, 17 November 2020
+
+- Yarn: Explain conflicting top-level dependency
+
+## v0.125.3, 16 November 2020
+
+- Bundler: Add top-level dependency to conflict explanation
+- Use conflicting deps explanation in the dry-run script
+- Bundler: Add explanation message to conflicting dependencies
+- Add js helper README with debugging tips.
+- JS: Include the top-level npm dependency for conflicting dependencies
+- Hex: support reading files in elixir supporting files like in mixfiles (@baseballlover723)
+- Update simplecov-console requirement from ~> 0.7.2 to ~> 0.8.0
+- Bump @npmcli/arborist from 1.0.9 to 1.0.10 in /npm_and_yarn/helpers
+- Hex: support elixir `Code.require_file` like `Code.eval_file` (@baseballlover723)
+
+## v0.125.2, 11 November 2020
+
+- Update CI jobs env variable assignment (@baseballlover723)
+- Hex: Support elixir `Code.eval_file` without specifying a relative directory (@baseballlover723)
+- JS: Explain update not possible for yarn and npm
+- Extract DependencyFileBuilder to remove duplication
+
+## v0.125.1, 5 November 2020
+
+- Escape `SharedHelpers.run_shell_command` with shellwords
+
+## v0.125.0, 5 November 2020
+
+- Bundler: Explain why security update was not possible
+- Raise descriptive error when update is not possible
+- Go mod: Handle post-v0 module path updates
+
+## v0.124.8, 4 November 2020
+
+- Add missing python versions: 3.6.12 3.6.11 3.6.10, 3.5.10 and 3.5.8
+
+## v0.124.7, 3 November 2020
+
+- composer: assume a helper terminated by `SIGKILL` is OutOfMemory
+- dry-run: handle comma separated list of deps
+- Bump jest from 26.6.1 to 26.6.2 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.49 to 0.12.53 in /composer/helpers
+- Bump npm-user-validate from 1.0.0 to 1.0.1 in /npm_and_yarn/helpers
+
+## v0.124.6, 2 November 2020
+
+- Go mod: handle major version mismatch
+- Cargo: handle caret version requirements
+
+## v0.124.5, 30 October 2020
+
+- Go mod: Bump gomodules-extracted [from commit](https://github.com/golang/go/commit/5b509d993d3a3a212b4033815be8b7b439fac672)
+- Go mod: Add/fix specs for missing meta tag and packages that 404
+
+## v0.124.4, 30 October 2020
+
+- Ignore go files that start with underscore or dot
+- Go mod: handle missing package url meta tags
+- Ignore go files tagged with `+build`
+- Handle missing VCS when converting git_source path
+- Fix relative dir on mac where tmp is in /private
+- Handle missing directory in cloned repo
+- Improve relative path code in vendor updater
+- Correctly handle vendored updates in nested directory
+- Raise generic DependabotError when all else fails
+- Mark unknown revision errors as DependencyFileNotResolvable
+- Include backtrace from native bundler helpers
+- Mount native bundler helpers in dev shell
+- Bump friendsofphp/php-cs-fixer in /composer/helpers
+
+## v0.124.3, 27 October 2020
+
+- Rename fixes_advisory? to fixed_by? and handle mixed case names
+- dry-run: add security_updates_only
+- Bump eslint from 7.12.0 to 7.12.1 in /npm_and_yarn/helpers
+
+## v0.124.2, 26 October 2020
+
+- Add fixes_advisory? and affects_version? to security advisory
+- Bump jest from 26.6.0 to 26.6.1 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.10.15 to 1.10.16 in /composer/helpers
+- Bump poetry from 1.1.2 to 1.1.4 in /python/helpers
+- Bump eslint from 7.11.0 to 7.12.0 in /npm_and_yarn/helpers
+
+## v0.124.1, 22 October 2020
+
+- Add lowest_security_fix_version method to update checkers
+
+## v0.124.0, 20 October 2020
+
+- Go: Promote experimental `go mod tidy` support to stable
+  (i.e., always tidy if repo_contents_path is given)
+- Go: Promote experimental `go mod vendor` support to stable
+  (i.e., always vendor if repo_contents_path is given and vendor/modules.txt is present)
+- Bump jest from 26.5.3 to 26.6.0 in /npm_and_yarn/helpers
+- Bump object-path from 0.11.4 to 0.11.5 in /npm_and_yarn/helpers
+- Bump composer/composer from 1.10.10 to 1.10.15 in /composer/helpers
+
+## v0.123.1, 19 October 2020
+
+- Go mod: Handle `cannot find module` during go mod tidy
+- Python: Add 3.9.0 and upgrade pyenv to v1.2.21 (@ulgens)
+- Bundler: Ignore changed .gemspec from vendor/cache folder
+
+## v0.123.0, 13 October 2020
+
+- Bundler: Refactored Dependabot's use of Bundler commands to shell out instead
+  of running in a forked process.
+  - This aligns Bundler with other package managers and will enable us to
+    support other Bundler versions in future.
+
+## v0.122.1, 13 October 2020
+
+- Bump phpstan/phpstan from 0.12.48 to 0.12.49 in /composer/helpers
+- Gracefully handle gomod package import that has changed
+- Treat .bundlecache files as binary
+- Check if files are binary using the `file` util
+- Bump jest from 26.5.2 to 26.5.3 in /npm_and_yarn/helpers
+- Bump eslint from 7.10.0 to 7.11.0 in /npm_and_yarn/helpers
+- Update tests and fixtures for new Cargo.lock format
+- Explicitly install version of rust toolchain
+- Rust toolchain has been upgraded to 1.47.0. This means PRs will now try to
+  upgrade the lockfile to cargo's v2 format.
+- Update rubocop requirement from ~> 0.92.0 to ~> 0.93.0 in /common
+- Add a fingerprint to generated gitconfigs
+- If there isn't a backup gitconfig, remove the generated one
+- dry-run: updater-opts via option
+
+## v0.122.0, 7 October 2020
+
+- Add experimental support for `go mod vendor`
+- Enable code coverage reporting of dependabot-core
+
+## v0.121.1, 7 October 2020
+
+- Configure git when creating a temp repo for gomod updates
+- Bump jest from 26.5.0 to 26.5.2 in /npm_and_yarn/helpers
+- Bump poetry from 1.1.1 to 1.1.2 in /python/helpers
+- Refactor: reusable VendorDependencies object
+
+## v0.121.0, 6 October 2020
+
+- Add experimental support for `go mod tidy`
+
+## v0.120.5, 6 October 2020
+
+- Allow requirements.txt files of up to 200kb
+- Bump poetry from 1.0.10 to 1.1.1 in /python/helpers
+- Bump jest from 26.4.2 to 26.5.0 in /npm_and_yarn/helpers
+- Reduce docker image size (@wreulicke)
+- Bump phpstan/phpstan from 0.12.47 to 0.12.48 in /composer/helpers
+- Update rubocop requirement from ~> 0.91.0 to ~> 0.92.0 in /common
+- Adds python 3.7.9. (@jeremiq)
+
+## v0.120.4, 1 October 2020
+
+- Go: Bump golang to v1.15.2
+- Bump phpstan/phpstan from 0.12.45 to 0.12.47 in /composer/helpers
+- Upgrade Python to 3.8.6 (@ulgens)
+- Handle empty pipfile requirement string
+- Teach FileFetcher to fetch from disk if local repository clone is present
+- Bundler: refactor DependencySource from LatestVersionFinder
+
+## v0.120.3, 28 September 2020
+
+- Fix uninitialized constant error (`Dependabot::VERSION`) when using `SharedHelpers`
+- Fix `SharedHelpers.excon_defaults` when passing in extra headers
+- Bump phpstan/phpstan from 0.12.44 to 0.12.45 in /composer/helpers
+- Bump eslint from 7.9.0 to 7.10.0 in /npm_and_yarn/helpers
+
+## v0.120.2, 25 September 2020
+
+- Add trailing slash to pypi.org index requests
+- Add a default User-Agent header to excon requests
+- Bump phpstan/phpstan from 0.12.43 to 0.12.44 in /composer/helpers
+
+## v0.120.1, 25 September 2020
+
+- Default to pypi.org instead of pypi.python.org
+
 ## v0.120.0, 24 September 2020
 
 - BREAKING: New exception `Dependabot::PullRequestCreator::AnnotationError`

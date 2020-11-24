@@ -37,9 +37,7 @@ module Dependabot
         fetched_files = fetched_files.uniq
 
         if project_files.none? && packages_config_files.none?
-          if @missing_sln_project_file_errors&.any?
-            raise @missing_sln_project_file_errors.first
-          end
+          raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
 
           raise(
             Dependabot::DependencyFileNotFound,

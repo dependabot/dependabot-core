@@ -21,6 +21,7 @@ RUN apt-get update \
     gnupg2 \
     curl \
     wget \
+    file \
     zlib1g-dev \
     liblzma-dev \
     tzdata \
@@ -62,14 +63,14 @@ RUN apt-get install -y software-properties-common \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
-  && pyenv install 3.8.5 \
+  && cd /usr/local/.pyenv && git checkout v1.2.21 && cd - \
+  && pyenv install 3.9.0 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.8.5
+  && pyenv global 3.9.0
 
 ### JAVASCRIPT
 
@@ -89,7 +90,8 @@ RUN npm install elm@0.18.0 \
   && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz
+  && rm -f binaries-for-linux.tar.gz \
+  && rm -rf ~/.npm
 
 
 ### PHP
@@ -130,10 +132,15 @@ RUN add-apt-repository ppa:ondrej/php \
 ### GO
 
 # Install Go and dep
-RUN curl https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -xz -C /opt \
+ARG GOLANG_VERSION=1.15.2
+ARG GOLANG_CHECKSUM=b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552
+RUN curl -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
+  && tar -xzf go.tar.gz -C /opt \
+  && mkdir /opt/go/gopath \
   && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
   && chmod +x /opt/go/bin/dep \
-  && mkdir /opt/go/gopath
+  && rm go.tar.gz
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
 
 
@@ -151,22 +158,24 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip \
+  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
   && mix local.hex --force
 
 
 ### RUST
 
-# Install Rust 1.37.0
+# Install Rust 1.47.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.47.0 && rustup default 1.47.0
 
 
 ### NEW NATIVE HELPERS
 
 COPY composer/helpers /opt/composer/helpers
 COPY dep/helpers /opt/dep/helpers
+COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
@@ -180,6 +189,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
+  bash /opt/bundler/helpers/build /opt/bundler && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \

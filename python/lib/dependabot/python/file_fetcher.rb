@@ -76,9 +76,7 @@ module Dependabot
       end
 
       def check_required_files_present
-        if requirements_txt_files.any? || setup_file || pipfile || pyproject
-          return
-        end
+        return if requirements_txt_files.any? || setup_file || pipfile || pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -166,7 +164,7 @@ module Dependabot
         repo_contents.
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 200_000 }.
           map { |f| fetch_file_from_host(f.name) }.
           select { |f| requirements_file?(f) }.
           each { |f| @req_txt_and_in_files << f }
@@ -186,7 +184,7 @@ module Dependabot
         repo_contents(dir: relative_reqs_dir).
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 200_000 }.
           map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
           select { |f| requirements_file?(f) }
       end
@@ -268,9 +266,7 @@ module Dependabot
           unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
-        if unfetchable_files.any?
-          raise Dependabot::PathDependenciesNotReachable, unfetchable_files
-        end
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_files if unfetchable_files.any?
 
         path_setup_files
       end

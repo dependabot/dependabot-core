@@ -144,7 +144,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             expect(error.message).to eq(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.7.8"
+              "but the running Python is 3.7.9"
             )
           end
       end
@@ -255,7 +255,7 @@ RSpec.describe namespace::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.8.5, 3.8.4, 3.8.3")
+                to include("supported in Dependabot: 3.9.0, 3.8.6, 3.8.5")
             end
         end
       end
@@ -403,7 +403,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             "password" => "token"
           }, {
             "type" => "python_index",
-            "index-url" => "https://pypi.python.org/simple"
+            "index-url" => "https://pypi.org/simple"
           }]
         end
 

@@ -14,9 +14,7 @@ module Dependabot
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
-        if latest_version_listing["homepage"]
-          return latest_version_listing["homepage"]
-        end
+        return latest_version_listing["homepage"] if latest_version_listing["homepage"]
 
         listing = all_version_listings.find { |_, l| l["homepage"] }
         listing&.last&.fetch("homepage", nil) || super
@@ -136,9 +134,7 @@ module Dependabot
         # Special case DefinitelyTyped, which has predictable URLs.
         # This can be removed once this PR is merged:
         # https://github.com/Microsoft/types-publisher/pull/578
-        if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-          return dependency.name.gsub(/^@/, "")
-        end
+        return dependency.name.gsub(/^@/, "") if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
 
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
@@ -156,14 +152,11 @@ module Dependabot
 
         response = Excon.get(
           "#{dependency_url}/latest",
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
-        if response.status == 200
-          return @latest_version_listing = JSON.parse(response.body)
-        end
+        return @latest_version_listing = JSON.parse(response.body) if response.status == 200
 
         @latest_version_listing = {}
       rescue JSON::ParserError, Excon::Error::Timeout
@@ -184,9 +177,8 @@ module Dependabot
 
         response = Excon.get(
           dependency_url,
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
         return @npm_listing = {} if response.status >= 500

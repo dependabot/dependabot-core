@@ -63,9 +63,7 @@ module Dependabot
       def latest_version_for_registry_dependency
         return unless registry_dependency?
 
-        if @latest_version_for_registry_dependency
-          return @latest_version_for_registry_dependency
-        end
+        return @latest_version_for_registry_dependency if @latest_version_for_registry_dependency
 
         versions = all_registry_versions
         versions.reject!(&:prerelease?) unless wants_prerelease?
@@ -90,9 +88,7 @@ module Dependabot
           **SharedHelpers.excon_defaults
         )
 
-        unless response.status == 200
-          raise "Response from registry was #{response.status}"
-        end
+        raise "Response from registry was #{response.status}" unless response.status == 200
 
         JSON.parse(response.body).
           fetch("modules").first.fetch("versions").
@@ -117,9 +113,7 @@ module Dependabot
         # (since there's no lockfile to update the version in). We still
         # return the latest commit for the given branch, in order to keep
         # this method consistent
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. Because we don't have a lockfile, the

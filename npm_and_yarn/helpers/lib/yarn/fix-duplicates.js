@@ -2,6 +2,7 @@ const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
 const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
   .default;
 const semver = require("semver");
+const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
 
 function flattenIndirectDependencies(packages) {
   return (packages || []).reduce((acc, { pkg }) => {
@@ -24,11 +25,12 @@ module.exports = (data, updatedDependencyName) => {
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
   const packages = {};
-  const re = /^(.*)@([^@]*?)$/;
 
   Object.entries(json).forEach(([name, pkg]) => {
-    if (name.match(re)) {
-      const [_, packageName, requestedVersion] = name.match(re);
+    if (name.match(LOCKFILE_ENTRY_REGEX)) {
+      const [_, packageName, requestedVersion] = name.match(
+        LOCKFILE_ENTRY_REGEX
+      );
       packages[packageName] = packages[packageName] || [];
       packages[packageName].push(
         Object.assign({}, { name, pkg, packageName, requestedVersion })

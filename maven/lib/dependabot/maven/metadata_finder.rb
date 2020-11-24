@@ -29,9 +29,7 @@ module Dependabot
 
       def repo_has_subdir_for_dep?(tmp_source)
         @repo_has_subdir_for_dep ||= {}
-        if @repo_has_subdir_for_dep.key?(tmp_source)
-          return @repo_has_subdir_for_dep[tmp_source]
-        end
+        return @repo_has_subdir_for_dep[tmp_source] if @repo_has_subdir_for_dep.key?(tmp_source)
 
         fetcher =
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)
@@ -105,9 +103,8 @@ module Dependabot
           "#{maven_repo_dependency_url}/"\
           "#{dependency.version}/"\
           "#{dependency_artifact_id}-#{dependency.version}.pom",
-          headers: auth_details,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -137,9 +134,8 @@ module Dependabot
 
         response = Excon.get(
           substitute_properties_in_source_url(url, pom),
-          headers: auth_details,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         Nokogiri::XML(response.body)

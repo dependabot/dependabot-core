@@ -8,6 +8,8 @@ module Dependabot
     class Azure
       class NotFound < StandardError; end
 
+      MAX_PR_DESCRIPTION_LENGTH = 3999
+
       #######################
       # Constructor methods #
       #######################
@@ -94,9 +96,7 @@ module Dependabot
                       "/_apis/git/repositories/" + source.unscoped_repo +
                       "/commits"
 
-        unless branch_name.to_s.empty?
-          commits_url += "?searchCriteria.itemVersion.version=" + branch_name
-        end
+        commits_url += "?searchCriteria.itemVersion.version=" + branch_name unless branch_name.to_s.empty?
 
         response = get(commits_url)
 
@@ -155,15 +155,7 @@ module Dependabot
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels, work_item = nil)
-        # Azure DevOps only support descriptions up to 4000 characters
-        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
-        azure_max_length = 3999
-        if pr_description.length > azure_max_length
-          truncated_msg = "...\n\n_Description has been truncated_"
-          truncate_length = azure_max_length - truncated_msg.length
-          pr_description = pr_description[0..truncate_length] + truncated_msg
-        end
-        # rubocop:enable Metrics/ParameterLists
+        pr_description = truncate_pr_description(pr_description)
 
         puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
         puts "PR name:#{pr_name}"
@@ -181,15 +173,17 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pullrequests?api-version=5.0", content.to_json)
       end
+      # rubocop:enable Metrics/ParameterLists
 
       def get(url)
         response = Excon.get(
           url,
-          headers: auth_header,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(
+            headers: auth_header
+          )
         )
         raise NotFound if response.status == 404
 
@@ -199,16 +193,17 @@ module Dependabot
       def post(url, json)
         response = Excon.post(
           url,
-          headers: auth_header.merge(
-            {
-              "Content-Type" => "application/json"
-            }
-          ),
           body: json,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(
+            headers: auth_header.merge(
+              {
+                "Content-Type" => "application/json"
+              }
+            )
+          )
         )
         raise NotFound if response.status == 404
 
@@ -247,6 +242,19 @@ module Dependabot
         # ADO throws exception if dir not found. Return false
         false
       end
+      def truncate_pr_description(pr_description)
+        # Azure DevOps only support descriptions up to 4000 characters in UTF-16
+        # encoding.
+        # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
+        pr_description = pr_description.dup.force_encoding(Encoding::UTF_16)
+        if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
+          truncated_msg = "...\n\n_Description has been truncated_".dup.force_encoding(Encoding::UTF_16)
+          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
+          pr_description = (pr_description[0..truncate_length] + truncated_msg)
+        end
+        pr_description.force_encoding(Encoding::UTF_8)
+      end
+
       attr_reader :auth_header
       attr_reader :credentials
       attr_reader :source

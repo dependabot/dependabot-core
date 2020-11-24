@@ -14,9 +14,19 @@ module Dependabot
         ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
 
         RESOLVABILITY_ERROR_REGEXES = [
+          # (Private) module could not be fetched
           /go: .*: git fetch .*: exit status 128/.freeze,
+          # The checksum in go.sum does not match the dowloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /build .*: cannot find module providing package/.freeze
+          # (Private) module could not be found
+          /cannot find module providing package/.freeze,
+          # Package in module was likely renamed or removed
+          /module .* found \(.*\), but does not contain package/m.freeze,
+          # Package does not exist, has been pulled or cannot be reached due to
+          # auth problems with either git or the go proxy
+          /go: .*: unknown revision/m.freeze,
+          # Package version doesn't match the module major version
+          /go: .*: go.mod has post-v\d+ module path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
@@ -25,11 +35,14 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
-        def initialize(dependencies:, go_mod:, go_sum:, credentials:)
+        def initialize(dependencies:, credentials:, repo_contents_path:,
+                       directory:, options:)
           @dependencies = dependencies
-          @go_mod = go_mod
-          @go_sum = go_sum
           @credentials = credentials
+          @repo_contents_path = repo_contents_path
+          @directory = directory
+          @tidy = options.fetch(:tidy, false)
+          @vendor = options.fetch(:vendor, false)
         end
 
         def updated_go_mod_content
@@ -42,64 +55,83 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :go_mod, :go_sum, :credentials
+        attr_reader :dependencies, :credentials, :repo_contents_path,
+                    :directory
 
         def updated_files
           @updated_files ||= update_files
         end
 
-        # rubocop:disable Metrics/AbcSize
-        def update_files
-          # Map paths in local replace directives to path hashes
-          substitutions = replace_directive_substitutions(go_mod.content)
-          stub_dirs = substitutions.values
+        def update_files # rubocop:disable Metrics/AbcSize
+          in_repo_path do
+            # Map paths in local replace directives to path hashes
 
-          # Replace full paths with path hashes in the go.mod
-          clean_go_mod = substitute_all(go_mod.content, substitutions)
+            original_go_mod = File.read("go.mod")
+            original_manifest = parse_manifest
+            original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
-          # Set the new dependency versions in the go.mod
-          updated_go_mod = in_temp_dir(stub_dirs) do
-            update_go_mod(clean_go_mod, dependencies)
-          end
+            substitutions = replace_directive_substitutions(original_manifest)
+            build_module_stubs(substitutions.values)
 
-          # Then run `go get` to pick up other changes to the file caused by
-          # the upgrade
-          regenerated_files = in_temp_dir(stub_dirs) do
-            run_go_get(updated_go_mod, go_sum)
-          end
+            # Replace full paths with path hashes in the go.mod
+            substitute_all(substitutions)
 
-          # At this point, the go.mod returned from run_go_get contains the
-          # correct set of modules, but running `go get` can change the file in
-          # undesirable ways (such as injecting the current Go version), so we
-          # need to update the original go.mod with the updated set of
-          # requirements rather than using the regenerated file directly
-          original_reqs = in_temp_dir(stub_dirs) do
-            parse_manifest_requirements(go_mod.content)
-          end
-          updated_reqs = in_temp_dir(stub_dirs) do
-            parse_manifest_requirements(regenerated_files[:go_mod])
-          end
+            # Set the stubbed replace directives
+            update_go_mod(dependencies)
 
-          original_paths = original_reqs.map { |r| r["Path"] }
-          updated_paths = updated_reqs.map { |r| r["Path"] }
-          req_paths_to_remove = original_paths - updated_paths
+            # Then run `go get` to pick up other changes to the file caused by
+            # the upgrade
+            run_go_get
+            run_go_vendor
+            run_go_mod_tidy
 
-          output_go_mod = in_temp_dir(stub_dirs) do
-            remove_requirements(go_mod.content, req_paths_to_remove)
-          end
+            # At this point, the go.mod returned from run_go_get contains the
+            # correct set of modules, but running `go get` can change the file
+            # in undesirable ways (such as injecting the current Go version),
+            # so we need to update the original go.mod with the updated set of
+            # requirements rather than using the regenerated file directly
+            original_reqs = original_manifest["Require"] || []
+            updated_reqs = parse_manifest["Require"] || []
 
-          output_go_mod = in_temp_dir(stub_dirs) do
+            original_paths = original_reqs.map { |r| r["Path"] }
+            updated_paths = updated_reqs.map { |r| r["Path"] }
+            req_paths_to_remove = original_paths - updated_paths
+
+            # Put back the original content before we replace just the updated
+            # dependencies.
+            write_go_mod(original_go_mod)
+
+            remove_requirements(req_paths_to_remove)
             deps = updated_reqs.map { |r| requirement_to_dependency_obj(r) }
-            update_go_mod(output_go_mod, deps)
+            update_go_mod(deps)
+
+            # put the old replace directives back again
+            substitute_all(substitutions.invert)
+
+            updated_go_sum = original_go_sum ? File.read("go.sum") : nil
+            updated_go_mod = File.read("go.mod")
+
+            { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
-
-          { go_mod: output_go_mod, go_sum: regenerated_files[:go_sum] }
         end
-        # rubocop:enable Metrics/AbcSize
 
-        def update_go_mod(go_mod_content, dependencies)
-          File.write("go.mod", go_mod_content)
+        def run_go_mod_tidy
+          return unless tidy?
 
+          command = "go mod tidy"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
+        end
+
+        def run_go_vendor
+          return unless vendor?
+
+          command = "go mod vendor"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
+        end
+
+        def update_go_mod(dependencies)
           deps = dependencies.map do |dep|
             {
               name: dep.name,
@@ -108,75 +140,74 @@ module Dependabot
             }
           end
 
-          SharedHelpers.run_helper_subprocess(
+          body = SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             env: ENVIRONMENT,
             function: "updateDependencyFile",
             args: { dependencies: deps }
           )
+
+          write_go_mod(body)
         end
 
-        def run_go_get(go_mod_content, go_sum)
-          File.write("go.mod", go_mod_content)
-          File.write("go.sum", go_sum.content) if go_sum
-          File.write("main.go", dummy_main_go)
+        def run_go_get
+          tmp_go_file = "#{SecureRandom.hex}.go"
+
+          package = Dir.glob("[^\._]*.go").any? do |path|
+            !File.read(path).include?("// +build")
+          end
+
+          File.write(tmp_go_file, "package dummypkg\n") unless package
 
           _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
           handle_subprocess_error(stderr) unless status.success?
-
-          updated_go_sum = go_sum ? File.read("go.sum") : nil
-          { go_mod: File.read("go.mod"), go_sum: updated_go_sum }
+        ensure
+          File.delete(tmp_go_file) if File.exist?(tmp_go_file)
         end
 
-        def parse_manifest_requirements(go_mod_content)
-          File.write("go.mod", go_mod_content)
-
+        def parse_manifest
           command = "go mod edit -json"
           stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
 
-          JSON.parse(stdout)["Require"] || []
+          JSON.parse(stdout) || {}
         end
 
-        def remove_requirements(go_mod_content, requirement_paths)
-          File.write("go.mod", go_mod_content)
-
+        def remove_requirements(requirement_paths)
           requirement_paths.each do |path|
             escaped_path = Shellwords.escape(path)
             command = "go mod edit -droprequire #{escaped_path}"
             _, stderr, status = Open3.capture3(ENVIRONMENT, command)
             handle_subprocess_error(stderr) unless status.success?
           end
-
-          File.read("go.mod")
         end
 
-        def add_requirements(go_mod_content, requirements)
-          File.write("go.mod", go_mod_content)
-
+        def add_requirements(requirements)
           requirements.each do |r|
             escaped_req = Shellwords.escape("#{r['Path']}@#{r['Version']}")
             command = "go mod edit -require #{escaped_req}"
             _, stderr, status = Open3.capture3(ENVIRONMENT, command)
             handle_subprocess_error(stderr) unless status.success?
           end
-
-          File.read("go.mod")
         end
 
-        def in_temp_dir(stub_paths, &block)
-          SharedHelpers.in_a_temporary_directory do
+        def in_repo_path(&block)
+          SharedHelpers.
+            in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
-              # Create a fake empty module for each local module so that
-              # `go get -d` works, even if some modules have been `replace`d
-              # with a local module that we don't have access to.
-              stub_paths.each do |stub_path|
-                Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
-                FileUtils.touch(File.join(stub_path, "go.mod"))
-              end
-
               block.call
             end
+          end
+        end
+
+        def build_module_stubs(stub_paths)
+          # Create a fake empty module for each local module so that
+          # `go get -d` works, even if some modules have been `replace`d
+          # with a local module that we don't have access to.
+          stub_paths.each do |stub_path|
+            Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+            FileUtils.touch(File.join(stub_path, "go.mod"))
+            FileUtils.touch(File.join(stub_path, "main.go"))
           end
         end
 
@@ -188,22 +219,14 @@ module Dependabot
         # the layout of the filesystem with a structure we can reproduce (i.e.
         # no paths such as ../../../foo), run the Go tooling, then reverse the
         # process afterwards.
-        def replace_directive_substitutions(go_mod_content)
+        def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            SharedHelpers.in_a_temporary_directory do |path|
-              File.write("go.mod", go_mod_content)
-
-              # Parse the go.mod to get a JSON representation of the replace
-              # directives
-              command = "go mod edit -json"
-              stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
-              handle_subprocess_error(path, stderr) unless status.success?
-
+            begin
               # Find all the local replacements, and return them with a stub
               # path we can use in their place. Using generated paths is safer
               # as it means we don't need to worry about references to parent
               # directories, etc.
-              (JSON.parse(stdout)["Replace"] || []).
+              (manifest["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
                 compact.
                 select { |p| p.start_with?(".") || p.start_with?("/") }.
@@ -212,10 +235,12 @@ module Dependabot
             end
         end
 
-        def substitute_all(file, substitutions)
-          substitutions.reduce(file) do |text, (a, b)|
+        def substitute_all(substitutions)
+          body = substitutions.reduce(File.read("go.mod")) do |text, (a, b)|
             text.sub(a, b)
           end
+
+          write_go_mod(body)
         end
 
         def handle_subprocess_error(stderr)
@@ -231,28 +256,18 @@ module Dependabot
           if path_regex
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
-              new(go_mod.path, match[1], match[2])
+              new(go_mod_path, match[1], match[2])
           end
 
+          # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
+          raise Dependabot::DependabotError, msg
         end
 
-        def dummy_main_go
-          # If we use `main` as the package name, running `go get -d` seems to
-          # invoke the build systems, which can cause problems. For instance,
-          # if the go.mod includes a module that doesn't have a top-level
-          # package, we have no way of working out the import path, so the
-          # build step fails.
-          #
-          # In due course, if we end up fetching the full repo, it might be
-          # good to switch back to `main` so we can surface more errors.
-          lines = ["package dummypkg", "import ("]
-          dependencies.each do |dep|
-            lines << "_ \"#{dep.name}\"" unless dep.requirements.empty?
-          end
-          lines << ")"
-          lines.join("\n")
+        def go_mod_path
+          return "go.mod" if directory == "/"
+
+          File.join(directory, "go.mod")
         end
 
         def requirement_to_dependency_obj(req)
@@ -271,6 +286,18 @@ module Dependabot
             requirements: req["Indirect"] ? [] : [dep_req],
             package_manager: "go_modules"
           )
+        end
+
+        def write_go_mod(body)
+          File.write("go.mod", body)
+        end
+
+        def tidy?
+          !!@tidy
+        end
+
+        def vendor?
+          !!@vendor
         end
       end
     end

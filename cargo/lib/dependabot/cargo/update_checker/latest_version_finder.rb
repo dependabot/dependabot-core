@@ -56,9 +56,7 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise Dependabot::AllVersionsIgnored
-          end
+          raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end
@@ -86,7 +84,6 @@ module Dependabot
           response = Excon.get(
             "https://crates.io/api/v1/crates/#{dependency.name}",
             idempotent: true,
-            headers: { "User-Agent" => "Dependabot (dependabot.com)" },
             **SharedHelpers.excon_defaults
           )
 

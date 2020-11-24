@@ -17,3 +17,6 @@ Dependabot::PullRequestCreator::Labeler.
 require "dependabot/dependency"
 Dependabot::Dependency.
   register_production_check("go_modules", ->(_) { true })
+
+require "dependabot/utils"
+Dependabot::Utils.register_always_clone("go_modules")

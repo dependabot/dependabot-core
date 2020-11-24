@@ -84,17 +84,11 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            if block.match?(/\sgoogle\(/)
-              repository_urls << "https://maven.google.com/"
-            end
+            repository_urls << "https://maven.google.com/" if block.match?(/\sgoogle\(/)
 
-            if block.match?(/\smavenCentral\(/)
-              repository_urls << "https://repo.maven.apache.org/maven2/"
-            end
+            repository_urls << "https://repo.maven.apache.org/maven2/" if block.match?(/\smavenCentral\(/)
 
-            if block.match?(/\sjcenter\(/)
-              repository_urls << "https://jcenter.bintray.com/"
-            end
+            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << Regexp.last_match.named_captures.fetch("url")

@@ -59,20 +59,18 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+                                   true
+                                 else
+                                   false
+                                 end
         end
 
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -298,9 +296,7 @@ module Dependabot
             nil
           end
 
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")

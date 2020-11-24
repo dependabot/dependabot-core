@@ -96,9 +96,7 @@ module Dependabot
       end
 
       def create_commit
-        if files.count == 1 && files.first.type == "submodule"
-          return create_submodule_update_commit
-        end
+        return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
 
         actions = files.map do |file|
           if file.type == "symlink"

@@ -101,9 +101,7 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
-            raise Dependabot::AllVersionsIgnored
-          end
+          raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
         end
@@ -216,8 +214,7 @@ module Dependabot
           Excon.get(
             index_url + normalised_name + "/",
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 
@@ -225,8 +222,7 @@ module Dependabot
           Excon.get(
             index_url,
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 

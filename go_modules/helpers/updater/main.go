@@ -3,7 +3,7 @@ package updater
 import (
 	"io/ioutil"
 
-	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfile"
+	"golang.org/x/mod/modfile"
 )
 
 type Dependency struct {

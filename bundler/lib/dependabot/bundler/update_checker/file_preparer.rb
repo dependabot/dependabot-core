@@ -207,9 +207,7 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless Gem::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless Gem::Version.correct?(latest_allowable_version)
 
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
@@ -283,6 +281,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")

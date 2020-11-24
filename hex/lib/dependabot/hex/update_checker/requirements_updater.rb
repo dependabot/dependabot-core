@@ -54,9 +54,7 @@ module Dependabot
               update_mixfile_range(last_string_reqs).map(&:to_s).join(" and ")
             end
 
-          if or_string_reqs.count > 1
-            new_requirement = req[:requirement] + " or " + new_requirement
-          end
+          new_requirement = req[:requirement] + " or " + new_requirement if or_string_reqs.count > 1
 
           req.merge(requirement: new_requirement)
         end
@@ -66,9 +64,7 @@ module Dependabot
         def update_source(requirement_hash)
           # Only git sources ever need to be updated. Anything else should be
           # left alone.
-          unless requirement_hash.dig(:source, :type) == "git"
-            return requirement_hash
-          end
+          return requirement_hash unless requirement_hash.dig(:source, :type) == "git"
 
           requirement_hash.merge(source: updated_source)
         end

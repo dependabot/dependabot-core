@@ -52,13 +52,9 @@ module Dependabot
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
 
-      unless uri.match?(KNOWN_HOSTS)
-        raise Dependabot::GitDependenciesNotReachable, [uri]
-      end
+      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
 
-      if response.status < 400
-        raise "Unexpected response: #{response.status} - #{response.body}"
-      end
+      raise "Unexpected response: #{response.status} - #{response.body}" if response.status < 400
 
       if uri.match?(/github\.com/i)
         response = response.data
@@ -183,7 +179,7 @@ module Dependabot
 
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
-      SharedHelpers.excon_defaults.merge(read_timeout: 20)
+      SharedHelpers.excon_defaults(read_timeout: 20)
     end
   end
 end

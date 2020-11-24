@@ -45,9 +45,10 @@ module Dependabot
               response = Excon.get(
                 "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
                 "#{escaped_dependency_name}",
-                headers: auth_header_for(details["token"]),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(
+                  headers: auth_header_for(details["token"])
+                )
               )
               response.status < 400 && JSON.parse(response.body)
             rescue Excon::Error::Timeout,
@@ -215,9 +216,7 @@ module Dependabot
 
           # If there are multiple source types, or multiple source URLs, then
           # it's unclear how we should proceed
-          if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
-            raise "Multiple sources! #{sources.join(', ')}"
-          end
+          raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
 
           # Otherwise we just take the URL of the first private registry
           sources.find { |s| s[:type] == "private_registry" }&.fetch(:url)

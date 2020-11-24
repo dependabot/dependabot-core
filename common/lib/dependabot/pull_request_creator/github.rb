@@ -447,9 +447,7 @@ module Dependabot
 
           raise_custom_error err, RepoNotFound, err.message
         when Octokit::UnprocessableEntity
-          if err.message.include?("no history in common")
-            raise_custom_error err, NoHistoryInCommon, err.message
-          end
+          raise_custom_error err, NoHistoryInCommon, err.message if err.message.include?("no history in common")
 
           raise err
         else

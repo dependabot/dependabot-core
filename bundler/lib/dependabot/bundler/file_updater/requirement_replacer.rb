@@ -64,9 +64,7 @@ module Dependabot
         end
 
         def length_change
-          unless previous_requirement.start_with?("=")
-            return updated_requirement.length - previous_requirement.length
-          end
+          return updated_requirement.length - previous_requirement.length unless previous_requirement.start_with?("=")
 
           updated_requirement.length -
             previous_requirement.gsub(/^=/, "").strip.length
@@ -205,9 +203,7 @@ module Dependabot
             # Gem::Requirement serializes exact matches as a string starting
             # with `=`. We may need to remove that equality operator if it
             # wasn't used originally.
-            unless use_equality_operator
-              tmp_req = tmp_req.gsub(/(?<![<>])=/, "")
-            end
+            tmp_req = tmp_req.gsub(/(?<![<>])=/, "") unless use_equality_operator
 
             tmp_req.strip
           end
