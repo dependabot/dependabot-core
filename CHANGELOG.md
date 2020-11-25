@@ -1,3 +1,13 @@
+## v0.125.5, 25 November 2020
+
+- go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com
+- JS: Prefer the npm conflicting dependency parser
+- Clean go_modules build cache in dependabot/dependabot-core docker image
+- Check Azure PR description against utf-16 encoded length
+- Bump @npmcli/arborist from 1.0.10 to 1.0.12 in /npm_and_yarn/helpers
+- Bump npm from 6.14.8 to 6.14.9 in /npm_and_yarn/helpers
+- Bump eslint from 7.12.1 to 7.14.0 in /npm_and_yarn/helpers
+
 ## v0.125.4, 17 November 2020
 
 - Yarn: Explain conflicting top-level dependency

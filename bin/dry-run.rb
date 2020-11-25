@@ -450,16 +450,18 @@ def security_fix?(dependency)
   end
 end
 
-puts "=> updating #{dependencies.count} dependencies"
+puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(", ")}"
 
 # rubocop:disable Metrics/BlockLength
+checker_count = 0
 dependencies.each do |dep|
+  checker_count += 1
   checker = update_checker_for(dep)
   name_version = "\n=== #{dep.name} (#{dep.version})"
   vulnerable = checker.vulnerable? ? " (vulnerable 🚨)" : ""
   puts name_version + vulnerable
 
-  puts " => checking for updates"
+  puts " => checking for updates #{checker_count}/#{dependencies.count}"
   puts " => latest available version is #{checker.latest_version}"
 
   if $options[:security_updates_only] && !checker.vulnerable?
