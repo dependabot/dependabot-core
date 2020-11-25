@@ -177,7 +177,6 @@ module Functions
 
   def self.git_source_credentials(credentials)
     credentials.
-      select { |cred| cred["password"] || cred["token"] }.
       select { |cred| cred["type"] == "git_source" }
   end
 
