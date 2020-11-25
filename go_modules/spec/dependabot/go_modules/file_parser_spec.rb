@@ -165,6 +165,21 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "a non-existent github.com versioned repository" do
+      let(:invalid_repo) { "github.com/dependabot-fixtures/must-never-exist/v2" }
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote v1.4.0", "#{invalid_repo} v2.0.0")
+      end
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).to contain_exactly(invalid_repo)
+          end
+      end
+    end
+
     describe "a non-existent github.com revision" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
