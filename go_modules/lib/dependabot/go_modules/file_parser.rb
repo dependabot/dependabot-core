@@ -139,8 +139,9 @@ module Dependabot
       def handle_parser_error(path, stderr)
         case stderr
         when /go: .*: unknown revision/m
-          line = stderr.lines.grep(/unknown revision/).first
-          raise Dependabot::DependencyFileNotResolvable, line.strip
+          line = stderr.lines.grep(/unknown revision/).first.strip
+          handle_github_unknown_revision(line) if line.start_with?("go: github.com/")
+          raise Dependabot::DependencyFileNotResolvable, line
         when /go: .*: unrecognized import path/m
           line = stderr.lines.grep(/unrecognized import/).first
           raise Dependabot::DependencyFileNotResolvable, line.strip
@@ -153,6 +154,26 @@ module Dependabot
         else
           msg = stderr.gsub(path.to_s, "").strip
           raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
+        end
+      end
+
+      GITHUB_REPO_REGEX = %r{github.com/[^@]*}.freeze
+      def handle_github_unknown_revision(line)
+        repo_path = line.scan(GITHUB_REPO_REGEX).first
+        return unless repo_path
+
+        # Query for _any_ version of this module, to know if it doesn't exist (or is private)
+        # or we were just given a bad revision by this manifest
+        SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            File.write("go.mod", "module dummy\n")
+
+            env = { "GOPRIVATE" => "*" }
+            _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go get #{repo_path}"))
+            raise Dependabot::DependencyFileNotResolvable, line if status.success?
+
+            raise Dependabot::GitDependenciesNotReachable, [repo_path]
+          end
         end
       end
 

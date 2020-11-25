@@ -150,6 +150,33 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "a non-existent github.com repository" do
+      let(:invalid_repo) { "github.com/dependabot-fixtures/must-never-exist" }
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("rsc.io/quote", invalid_repo)
+      end
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).to contain_exactly(invalid_repo)
+          end
+      end
+    end
+
+    describe "a non-existent github.com revision" do
+      let(:go_mod_content) do
+        go_mod = fixture("go_mods", go_mod_fixture_name)
+        go_mod.sub("github.com/mattn/go-colorable v0.0.9", "github.com/mattn/go-colorable v0.1234.4321")
+      end
+
+      it "raises the correct error" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     describe "a non-existing transitive dependency" do
       # go.mod references repo with bad go.mod, a broken transitive dependency
       let(:go_mod_fixture_name) { "parent_module.mod" }
