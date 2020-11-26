@@ -23,6 +23,7 @@ jobs:
           docker build \
             -t "dependabot/dependabot-core:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --memory 4g \
             .
       - name: Log in to the Docker registry
         run: |
