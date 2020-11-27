@@ -250,6 +250,34 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
+    context "with an unresolvable project" do
+      let(:dependency_files) { project_dependency_files("unresolvable") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jupyter-server",
+          version: "0.1.1",
+          requirements: dependency_requirements,
+          package_manager: "pip"
+        )
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to start_with("Could not find a version that matches jupyter-server")
+          end
+      end
+    end
+
     context "with a git source" do
       context "for another dependency, that can't be reached" do
         let(:manifest_fixture_name) { "git_source_unreachable.in" }
