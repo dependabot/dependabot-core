@@ -1,0 +1,18 @@
+{
+  "name": "cake.config",
+  "path": "cake.config",
+  "sha": "d16a66faa9265982ba364651b470d6ebbebaf7e5",
+  "size": 1367,
+  "url": "https://api.github.com/repos/fsharp/fsharp/contents/cake.config?ref=master",
+  "html_url": "https://github.com/fsharp/fsharp/blob/master/cake.config",
+  "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/d16a66faa9265982ba364651b470d6ebbebaf7e5",
+  "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/cake.config",
+  "type": "file",
+  "content": "W1NldHRpbmdzXQpTa2lwUGFja2FnZVZlcnNpb25DaGVjaz10cnVlCgpbTnVHZXRdClNvdXJjZT1odHRwczovL251Z2V0LnBrZy5naXRodWIuY29tL3BoYXJvcy9pbmRleC5qc29uO2h0dHBzOi8vYXBpLm51Z2V0Lm9yZy92My9pbmRleC5qc29u",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/fsharp/fsharp/contents/cake.config?ref=master",
+    "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/d16a66faa9265982ba364651b470d6ebbebaf7e5",
+    "html": "https://github.com/fsharp/fsharp/blob/master/cake.config"
+  }
+}

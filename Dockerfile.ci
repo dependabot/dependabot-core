@@ -10,6 +10,7 @@ COPY .rubocop.yml /home/dependabot/dependabot-core/
 
 RUN mkdir -p \
   ${CODE_DIR}/bundler \
+  ${CODE_DIR}/cake \
   ${CODE_DIR}/cargo \
   ${CODE_DIR}/common \
   ${CODE_DIR}/composer \
@@ -30,6 +31,7 @@ RUN mkdir -p \
 
 COPY common/ ${CODE_DIR}/common/
 COPY bundler/ ${CODE_DIR}/bundler/
+COPY cake/ ${CODE_DIR}/cake/
 COPY cargo/ ${CODE_DIR}/cargo/
 COPY composer/ ${CODE_DIR}/composer/
 COPY dep/ ${CODE_DIR}/dep/

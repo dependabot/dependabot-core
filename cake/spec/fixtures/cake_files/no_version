@@ -1,0 +1,16 @@
+#module nuget:?package=Cake.Module
+
+var target = Argument("target", "Default");
+var configuration = Argument("configuration", "Release");
+
+var buildDir = Directory("./src/Example/bin") + Directory(configuration);
+
+Task("Message")
+    .Does(() =>
+{
+  Information("Very simple cake script");
+});
+
+Task("Default").IsDependentOn("Message");
+
+RunTarget(target);

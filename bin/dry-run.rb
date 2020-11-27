@@ -19,6 +19,7 @@
 #
 # Package managers:
 # - bundler
+# - cake
 # - pip (includes pipenv)
 # - npm_and_yarn
 # - maven
@@ -37,6 +38,7 @@
 # rubocop:disable Style/GlobalVars
 
 $LOAD_PATH << "./bundler/lib"
+$LOAD_PATH << "./cake/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
@@ -69,6 +71,7 @@ require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 
 require "dependabot/bundler"
+require "dependabot/cake"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/dep"

@@ -17,6 +17,7 @@ jobs:
       matrix:
         suite:
           - bundler
+          - cake
           - cargo
           - common
           - composer

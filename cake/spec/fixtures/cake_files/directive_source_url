@@ -1,0 +1,16 @@
+#addin nuget:https://myget.org/f/Cake/?package=Cake.Foo&version=10.0.1
+
+var target = Argument("target", "Default");
+var configuration = Argument("configuration", "Release");
+
+var buildDir = Directory("./src/Example/bin") + Directory(configuration);
+
+Task("Message")
+    .Does(() =>
+{
+  Information("Very simple cake script");
+});
+
+Task("Default").IsDependentOn("Message");
+
+RunTarget(target);
