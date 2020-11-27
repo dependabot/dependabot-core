@@ -97,7 +97,7 @@ def project_dependency_files(project)
       content = File.read(filename)
       Dependabot::DependencyFile.new(
         name: filename,
-        content: content,
+        content: content
       )
     end
   end
