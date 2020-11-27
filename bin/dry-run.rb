@@ -322,6 +322,96 @@ end
 # rubocop:enable Metrics/MethodLength
 # rubocop:enable Metrics/AbcSize
 
+def handle_dependabot_error(error:, dependency:)
+  error_details =
+    case error
+    when Dependabot::DependencyFileNotResolvable
+      {
+        "error-type": "dependency_file_not_resolvable",
+        "error-detail": { message: error.message },
+      }
+    when Dependabot::DependencyFileNotEvaluatable
+      {
+        "error-type": "dependency_file_not_evaluatable",
+        "error-detail": { message: error.message },
+      }
+    when Dependabot::BranchNotFound
+      {
+        "error-type": "branch_not_found",
+        "error-detail": { "branch-name": error.branch_name },
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path,
+        },
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": { "file-path": error.file_path },
+      }
+    when Dependabot::PathDependenciesNotReachable
+      {
+        "error-type": "path_dependencies_not_reachable",
+        "error-detail": { dependencies: error.dependencies },
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source },
+      }
+    when Dependabot::GitDependenciesNotReachable
+      {
+        "error-type": "git_dependencies_not_reachable",
+        "error-detail": { "dependency-urls": error.dependency_urls },
+      }
+    when Dependabot::GitDependencyReferenceNotFound
+      {
+        "error-type": "git_dependency_reference_not_found",
+        "error-detail": { dependency: error.dependency },
+      }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source },
+      }
+    when Dependabot::PrivateSourceTimedOut
+      {
+        "error-type": "private_source_timed_out",
+        "error-detail": { source: error.source },
+      }
+    when Dependabot::PrivateSourceCertificateFailure
+      {
+        "error-type": "private_source_certificate_failure",
+        "error-detail": { source: error.source },
+      }
+    when Dependabot::MissingEnvironmentVariable
+      {
+        "error-type": "missing_environment_variable",
+        "error-detail": {
+          "environment-variable": error.environment_variable,
+        },
+      }
+    when Dependabot::GoModulePathMismatch
+      {
+        "error-type": "go_module_path_mismatch",
+        "error-detail": {
+          "declared-path": error.declared_path,
+          "discovered-path": error.discovered_path,
+          "go-mod": error.go_mod,
+        },
+      }
+    else
+      raise error
+    end
+
+  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
+       "#{error_details.fetch(:'error-detail')}"
+end
+
 source = Dependabot::Source.new(
   provider: "github",
   repo: $repo_name,
@@ -582,6 +672,8 @@ dependencies.each do |dep|
       end
     end
   end
+rescue StandardError => e
+  handle_dependabot_error(error: e, dependency: dep)
 end
 # rubocop:enable Metrics/BlockLength
 

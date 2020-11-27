@@ -162,15 +162,16 @@ module Dependabot
 
               true
             rescue SharedHelpers::HelperSubprocessFailed => e
-              unless e.message.include?("Could not find a version") ||
-                     e.message.include?("UnsupportedConstraint")
-                raise
+              # Pick the error message that includes resolvability errors, this might be the cause from
+              # handle_pip_compile_errors (it's unclear if we should always pick the cause here)
+              error_message = [e.message, e.cause&.message].compact.find do |msg|
+                ["UnsupportedConstraint", "Could not find a version"].any? { |err| msg.include?(err) }
               end
 
-              msg = clean_error_message(e.message)
-              raise if msg.empty?
+              cleaned_message = clean_error_message(error_message || "")
+              raise if cleaned_message.empty?
 
-              raise DependencyFileNotResolvable, msg
+              raise DependencyFileNotResolvable, cleaned_message
             end
           end
         end

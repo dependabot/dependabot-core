@@ -1,3 +1,11 @@
+## v0.125.6, 27 November 2020
+
+- Pip compile: raise DependencyFileNotRqesolvable error when initial manifest
+  files are unresolvable
+- JS: Handle rate limited npm package requests
+- Go mod: verify Dependabot::GitDependenciesNotReachable from versioned
+- dry-run: add exception handling and re-raise on unknown errors
+
 ## v0.125.5, 25 November 2020
 
 - go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com

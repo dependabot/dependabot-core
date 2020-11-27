@@ -69,6 +69,7 @@ jobs:
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_CI_IMAGE:core--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
+            --memory 4g \
             .
       - name: Push dependabot-core image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
@@ -85,6 +86,7 @@ jobs:
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_CI_IMAGE:latest" \
             --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
+            --memory 4g \
             .
       - name: Push dependabot-core-ci image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
