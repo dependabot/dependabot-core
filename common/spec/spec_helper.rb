@@ -7,6 +7,7 @@ require "byebug"
 require "simplecov"
 require "simplecov-console"
 
+require "dependabot/dependency_file"
 require_relative "dummy_package_manager/dummy"
 
 SimpleCov::Formatter::Console.output_style = "block"
@@ -86,6 +87,20 @@ def build_tmp_repo(project)
   end
 
   tmp_repo_path
+end
+
+def project_dependency_files(project)
+  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+  Dir.chdir(project_path) do
+    files = Dir.glob("**/*")
+    files.map do |filename|
+      content = File.read(filename)
+      Dependabot::DependencyFile.new(
+        name: filename,
+        content: content,
+      )
+    end
+  end
 end
 
 def capture_stderr
