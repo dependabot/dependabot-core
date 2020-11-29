@@ -11,7 +11,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: []
     )
   end
   let(:credentials) do

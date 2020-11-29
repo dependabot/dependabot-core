@@ -46,6 +46,31 @@ module Dependabot
         end
       end
 
+      def self.complement_patterns(version_patterns)
+        complement_patterns = []
+        version_patterns.each do |version_pattern|
+          op, ver = parse(version_pattern)
+          version = ver.to_s
+          case op
+          when "<"
+            complement_patterns.push(">=" + version)
+          when "<="
+            complement_patterns.push(">" + version)
+          when "=", "==", "==="
+            complement_patterns.push("!=" + version)
+          when "!="
+            complement_patterns.push("==" + version)
+          when ">"
+            complement_patterns.push("<=" + version)
+          when ">="
+            complement_patterns.push("<" + version)
+          else
+            puts "Could not find a complement for #{op}, ignoring it."
+          end
+        end
+        complement_patterns
+      end
+
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
