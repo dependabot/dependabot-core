@@ -437,7 +437,7 @@ module Dependabot
           platform = {}
           platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
-          # Note: We *don't* include the require-dev PHP version in our initial
+          # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
           requirement_php = parsed_composer_file.dig("require", "php")

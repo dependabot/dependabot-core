@@ -8,28 +8,28 @@ require "functions/conflicting_dependency_resolver"
 module Functions
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
     set_bundler_flags_and_credentials(dir: dir, credentials: [],
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
     FileParser.new(lockfile_name: lockfile_name).
       parsed_gemfile(gemfile_name: gemfile_name)
   end
 
   def self.parsed_gemspec(lockfile_name:, gemspec_name:, dir:)
     set_bundler_flags_and_credentials(dir: dir, credentials: [],
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
     FileParser.new(lockfile_name: lockfile_name).
       parsed_gemspec(gemspec_name: gemspec_name)
   end
 
   def self.vendor_cache_dir(dir:)
     set_bundler_flags_and_credentials(dir: dir, credentials: [],
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
     Bundler.app_cache
   end
 
-  def self.update_lockfile(dir:, gemfile_name:, lockfile_name:, using_bundler_2:,
+  def self.update_lockfile(dir:, gemfile_name:, lockfile_name:, using_bundler2:,
                            credentials:, dependencies:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
     LockfileUpdater.new(
       gemfile_name: gemfile_name,
       lockfile_name: lockfile_name,
@@ -38,10 +38,10 @@ module Functions
   end
 
   def self.force_update(dir:, dependency_name:, target_version:, gemfile_name:,
-                        lockfile_name:, using_bundler_2:, credentials:,
+                        lockfile_name:, using_bundler2:, credentials:,
                         update_multiple_dependencies:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
     ForceUpdater.new(
       dependency_name: dependency_name,
       target_version: target_version,
@@ -54,7 +54,7 @@ module Functions
   def self.dependency_source_type(gemfile_name:, dependency_name:, dir:,
                                   credentials:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
 
     DependencySource.new(
       gemfile_name: gemfile_name,
@@ -67,7 +67,7 @@ module Functions
                                                 dependency_source_url:,
                                                 dependency_source_branch:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
     DependencySource.new(
       gemfile_name: gemfile_name,
       dependency_name: dependency_name
@@ -80,7 +80,7 @@ module Functions
   def self.private_registry_versions(gemfile_name:, dependency_name:, dir:,
                                      credentials:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: false)
+                                      using_bundler2: false)
 
     DependencySource.new(
       gemfile_name: gemfile_name,
@@ -89,10 +89,10 @@ module Functions
   end
 
   def self.resolve_version(dependency_name:, dependency_requirements:,
-                           gemfile_name:, lockfile_name:, using_bundler_2:,
+                           gemfile_name:, lockfile_name:, using_bundler2:,
                            dir:, credentials:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
     VersionResolver.new(
       dependency_name: dependency_name,
       dependency_requirements: dependency_requirements,
@@ -101,10 +101,10 @@ module Functions
     ).version_details
   end
 
-  def self.jfrog_source(dir:, gemfile_name:, credentials:, using_bundler_2:)
+  def self.jfrog_source(dir:, gemfile_name:, credentials:, using_bundler2:)
     # Set flags and credentials
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
 
     Bundler::Definition.build(gemfile_name, nil, {}).
       send(:sources).
@@ -113,9 +113,9 @@ module Functions
       host
   end
 
-  def self.git_specs(dir:, gemfile_name:, credentials:, using_bundler_2:)
+  def self.git_specs(dir:, gemfile_name:, credentials:, using_bundler2:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
 
     git_specs = Bundler::Definition.build(gemfile_name, nil, {}).dependencies.
                 select do |spec|
@@ -137,7 +137,7 @@ module Functions
   end
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:,
-                                             using_bundler_2:)
+                                             using_bundler2:)
     dir = dir ? Pathname.new(dir) : dir
     Bundler.instance_variable_set(:@root, dir)
 
@@ -157,7 +157,7 @@ module Functions
     end
 
     # Use HTTPS for GitHub if lockfile was generated by Bundler 2
-    if using_bundler_2
+    if using_bundler2
       Bundler.settings.set_command_option("forget_cli_options", "true")
       Bundler.settings.set_command_option("github.https", "true")
     end
@@ -181,9 +181,9 @@ module Functions
   end
 
   def self.conflicting_dependencies(dir:, dependency_name:, target_version:,
-                                    lockfile_name:, using_bundler_2:, credentials:)
+                                    lockfile_name:, using_bundler2:, credentials:)
     set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
-                                      using_bundler_2: using_bundler_2)
+                                      using_bundler2: using_bundler2)
     ConflictingDependencyResolver.new(
       dependency_name: dependency_name,
       target_version: target_version,
