@@ -89,7 +89,7 @@ jobs:
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
       - name: Run Rubocop linting
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop ."
       - name: Run js linting and tests
         if: matrix.suite == 'npm_and_yarn'
         run: |
