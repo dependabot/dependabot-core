@@ -116,7 +116,7 @@ module Dependabot
       end
 
       def convert_wildcard(req_string)
-        # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
+        # NOTE: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
         quoted_ops = OPS.keys.sort_by(&:length).reverse.
                      map { |k| Regexp.quote(k) }.join("|")

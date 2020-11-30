@@ -181,7 +181,7 @@ module Dependabot
     end
 
     def self.configure_git_to_use_https
-      # Note: we use --global here (rather than --system) so that Dependabot
+      # NOTE: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
       run_shell_command(
         "git config --global --replace-all url.https://github.com/."\

@@ -53,7 +53,7 @@ module Dependabot
                 credentials: credentials,
                 gemfile_name: gemfile.name,
                 lockfile_name: lockfile.name,
-                using_bundler_2: using_bundler_2?,
+                using_bundler2: using_bundler2?,
                 update_multiple_dependencies: update_multiple_dependencies?
               }
             )
@@ -141,7 +141,7 @@ module Dependabot
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
         end
 
-        def using_bundler_2?
+        def using_bundler2?
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)

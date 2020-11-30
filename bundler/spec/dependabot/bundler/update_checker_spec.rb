@@ -1821,7 +1821,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
-              # Note: the v1.13.0 for the source is because we stub the lookup
+              # NOTE: the v1.13.0 for the source is because we stub the lookup
               # for the updated source
               expect(requirements_updater).
                 to receive(:new).with(

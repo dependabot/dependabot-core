@@ -121,7 +121,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      # Note: The latest vision is 6.0.2, but we can't reach it as other
+      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
@@ -142,14 +142,14 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      # Note: The latest vision is 6.0.2, but we can't reach it as other
+      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
       context "when using npm5 lockfile" do
         let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
 
-        # Note: npm5 lockfiles have exact version requires so can't easily
+        # NOTE: npm5 lockfiles have exact version requires so can't easily
         # update specific sub-dependencies to a new version, make sure we keep
         # the same version
         it { is_expected.to eq(Gem::Version.new("5.2.1")) }
@@ -200,7 +200,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       context "when using npm5" do
         let(:npm_lock_fixture_name) { "subdependency_update_npm5.json" }
 
-        # Note: npm5 lockfiles have exact version requires so can't easily
+        # NOTE: npm5 lockfiles have exact version requires so can't easily
         # update specific sub-dependencies to a new version, make sure we keep
         # the same version
         it { is_expected.to eq(Gem::Version.new("5.2.1")) }

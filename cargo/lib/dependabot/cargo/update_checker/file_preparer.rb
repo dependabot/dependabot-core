@@ -62,7 +62,7 @@ module Dependabot
           content
         end
 
-        # Note: We don't need to care about formatting in this method, since
+        # NOTE: We don't need to care about formatting in this method, since
         # we're only using the manifest to find the latest resolvable version
         def replace_version_constraint(content, filename)
           parsed_manifest = TomlRB.parse(content)

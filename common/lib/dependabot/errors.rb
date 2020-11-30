@@ -88,6 +88,7 @@ module Dependabot
   end
 
   class DependencyFileNotEvaluatable < DependabotError; end
+
   class DependencyFileNotResolvable < DependabotError; end
 
   #######################
