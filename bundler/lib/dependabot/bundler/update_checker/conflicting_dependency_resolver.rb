@@ -35,7 +35,7 @@ module Dependabot
                 dir: tmp_dir,
                 dependency_name: dependency.name,
                 target_version: target_version,
-                credentials: relevant_credentials,
+                credentials: credentials,
                 lockfile_name: lockfile.name,
                 using_bundler_2: using_bundler_2?
               }

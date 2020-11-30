@@ -146,7 +146,7 @@ module Functions
       Gem::Specification.send(:default_stubs, "*.gemspec")
 
     # Set auth details
-    credentials.each do |cred|
+    relevant_credentials(credentials).each do |cred|
       token = cred["token"] ||
               "#{cred['username']}:#{cred['password']}"
 
@@ -161,6 +161,23 @@ module Functions
       Bundler.settings.set_command_option("forget_cli_options", "true")
       Bundler.settings.set_command_option("github.https", "true")
     end
+  end
+
+  def self.relevant_credentials(credentials)
+    [
+      *git_source_credentials(credentials),
+      *private_registry_credentials(credentials)
+    ].select { |cred| cred["password"] || cred["token"] }
+  end
+
+  def self.private_registry_credentials(credentials)
+    credentials.
+      select { |cred| cred["type"] == "rubygems_server" }
+  end
+
+  def self.git_source_credentials(credentials)
+    credentials.
+      select { |cred| cred["type"] == "git_source" }
   end
 
   def self.conflicting_dependencies(dir:, dependency_name:, target_version:,

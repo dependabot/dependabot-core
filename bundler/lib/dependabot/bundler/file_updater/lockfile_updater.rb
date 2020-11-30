@@ -72,7 +72,7 @@ module Dependabot
                   lockfile_name: lockfile.name,
                   using_bundler_2: using_bundler_2?,
                   dir: tmp_dir,
-                  credentials: relevant_credentials,
+                  credentials: credentials,
                   dependencies: dependencies.map(&:to_h)
                 }
               )
@@ -233,17 +233,6 @@ module Dependabot
           spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
         # rubocop:enable Metrics/PerceivedComplexity
-
-        def relevant_credentials
-          credentials.
-            select { |cred| cred["password"] || cred["token"] }.
-            select do |cred|
-              next true if cred["type"] == "git_source"
-              next true if cred["type"] == "rubygems_server"
-
-              false
-            end
-        end
 
         def prepared_gemfile_content(file)
           content =
