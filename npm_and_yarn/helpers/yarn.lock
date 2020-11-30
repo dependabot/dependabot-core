@@ -543,10 +543,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@npmcli/arborist@^1.0.12":
-  version "1.0.12"
-  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-1.0.12.tgz#b8b5e6cbf8b65740a1f53e929f53df521f26017a"
-  integrity sha512-w/Wmy5qBphI1QiuPt7ff3+SL1/PzVkEjuBQj3zAhNxvsXyQMHtK4YKyFm1cUbO9tcEOKhN0RfHuax0LCmDlMzQ==
+"@npmcli/arborist@^1.0.13":
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-1.0.13.tgz#f3d2b761213b8a476e84acb58808a0044ae441e7"
+  integrity sha512-AtNV/iuDFiwdPf2RqnTbq3cd3dRL6H5Vv3Ve+78SShfXF0dOFJrDsaVOFbmAqDKvemBny0cI8GBu+ncjkAffBw==
   dependencies:
     "@npmcli/installed-package-contents" "^1.0.5"
     "@npmcli/map-workspaces" "^1.0.1"
