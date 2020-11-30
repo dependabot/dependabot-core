@@ -34,8 +34,6 @@ jobs:
           - omnibus
           - python
           - terraform
-    env:
-      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -62,14 +60,13 @@ jobs:
             "$CORE_CI_IMAGE:latest" || true
       - name: Build dependabot-core image
         run: |
-          docker build \
+          DOCKER_BUILDKIT=1 docker build \
             -t "$CORE_IMAGE:latest" \
             -t "$CORE_CI_IMAGE:core--$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_CI_IMAGE:core--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
-            --memory 4g \
             .
       - name: Push dependabot-core image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
@@ -82,11 +79,8 @@ jobs:
             -t "$CORE_CI_IMAGE:latest" \
             -t "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
             -f Dockerfile.ci \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_CI_IMAGE:latest" \
             --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
-            --memory 4g \
             .
       - name: Push dependabot-core-ci image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
