@@ -13,7 +13,7 @@
     "@npmcli/arborist": "^1.0.13",
     "detect-indent": "^6.0.0",
     "npm": "6.14.9",
-    "semver": "^7.3.2"
+    "semver": "^7.3.4"
   },
   "devDependencies": {
     "eslint": "^7.14.0",
