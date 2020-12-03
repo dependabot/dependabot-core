@@ -27,8 +27,7 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
-          freeze
+          /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -72,7 +71,7 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
+                    "pyenv exec pip-compile --allow-unsafe -v "\
                      "#{pip_compile_options(filename)} -P #{dependency.name} "\
                      "#{filename}"
                   )
@@ -366,11 +365,21 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
+        VERBOSE_ERROR_OUTPUT_LINES = [
+          "Traceback",
+          "Using indexes:",
+          "Current constraints:",
+          "Finding the best candidates:",
+          "Finding secondary dependencies:",
+          "\n",
+          "  "
+        ].freeze
+
         def clean_error_message(message)
           msg_lines = message.lines
           msg = msg_lines.
                 take_while { |l| !l.start_with?("During handling of") }.
-                drop_while { |l| l.start_with?("Traceback", "  ") }.
+                drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
                 join.strip
 
           # Redact any URLs, as they may include credentials
