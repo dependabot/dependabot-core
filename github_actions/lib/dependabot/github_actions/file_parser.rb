@@ -47,8 +47,8 @@ module Dependabot
         end
 
         dependency_set
-      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
-        raise Dependabot::DependencyFileNotParseable, file.path
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
+        raise Dependabot::DependencyFileNotParseable, file.path, e.message
       end
 
       def build_github_dependency(file, string)

@@ -153,8 +153,8 @@ module Dependabot
       def parsed_file(file)
         @parsed_file ||= {}
         @parsed_file[file.name] ||= TomlRB.parse(file.content)
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, file.path
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+        raise Dependabot::DependencyFileNotParseable, file.path, e.message
       end
 
       def manifest

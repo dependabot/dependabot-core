@@ -113,14 +113,14 @@ module Dependabot
 
       def parsed_package_file
         @parsed_package_file ||= JSON.parse(elm_package.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, elm_package.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, elm_package.path, e.message
       end
 
       def parsed_elm_json
         @parsed_elm_json ||= JSON.parse(elm_json.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, elm_json.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, elm_json.path, e.message
       end
 
       def elm_package

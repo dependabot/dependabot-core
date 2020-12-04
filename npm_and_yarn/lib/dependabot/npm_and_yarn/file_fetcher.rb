@@ -198,8 +198,8 @@ module Dependabot
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
           end
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, file.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, file.path, e.message
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
@@ -318,8 +318,8 @@ module Dependabot
 
       def parsed_package_json
         JSON.parse(package_json.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, package_json.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, package_json.path, e.message
       end
 
       def parsed_package_lock
@@ -362,8 +362,8 @@ module Dependabot
         return {} unless lerna_json
 
         JSON.parse(lerna_json.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, lerna_json.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, lerna_json.path, e.message
       end
     end
   end

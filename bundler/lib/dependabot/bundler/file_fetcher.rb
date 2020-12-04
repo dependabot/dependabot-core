@@ -173,8 +173,8 @@ module Dependabot
             PathGemspecFinder.new(gemfile: file).path_gemspec_paths
           end.uniq
         end
-      rescue ::Bundler::LockfileError
-        raise Dependabot::DependencyFileNotParseable, lockfile.path
+      rescue ::Bundler::LockfileError => e
+        raise Dependabot::DependencyFileNotParseable, lockfile.path, e.message
       rescue ::Bundler::Plugin::UnknownSourceError
         # Quietly ignore plugin errors - we'll raise a better error during
         # parsing

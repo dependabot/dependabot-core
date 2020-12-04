@@ -377,13 +377,10 @@ module Dependabot
 
         def clean_error_message(message)
           msg_lines = message.lines
-          msg = msg_lines.
-                take_while { |l| !l.start_with?("During handling of") }.
-                drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
-                join.strip
-
-          # Redact any URLs, as they may include credentials
-          msg.gsub(/http.*?(?=\s)/, "<redacted>")
+          msg_lines.
+          take_while { |l| !l.start_with?("During handling of") }.
+          drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
+          join.strip
         end
 
         def filenames_to_compile

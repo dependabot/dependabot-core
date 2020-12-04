@@ -29,10 +29,10 @@ module Dependabot
     end
 
     def sanitize_source(source)
-      replace_capture_group(source, SOURCE_PATH_REGEX, "<redacted path>")
+      replace_capture_groups(source, SOURCE_PATH_REGEX, "<redacted path>")
     end
 
-    def replace_capture_group(string, regex, replacement)
+    def replace_capture_groups(string, regex, replacement)
       return string unless string.respond_to?(:scan)
 
       string.scan(regex).flatten.compact.reduce(string) do |original_msg, match|
@@ -42,7 +42,7 @@ module Dependabot
 
     def filter_sensitive_data(message)
       [HTTP_REGEX, BASIC_AUTH_REGEX].reduce(message) do |msg, regex|
-        replace_capture_group(msg, regex, "<redacted>")
+        replace_capture_groups(msg, regex, "<redacted>")
       end
     end
   end

@@ -18,8 +18,8 @@ module Dependabot
         def require_relative_paths
           ast = Parser::CurrentRuby.parse(file.content)
           find_require_relative_paths(ast)
-        rescue Parser::SyntaxError
-          raise Dependabot::DependencyFileNotParseable, file.path
+        rescue Parser::SyntaxError => e
+          raise Dependabot::DependencyFileNotParseable, file.path, e.message
         end
 
         private

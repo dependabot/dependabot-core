@@ -233,8 +233,6 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_composer_errors(error)
-          sanitized_message = remove_url_credentials(error.message)
-
           # Special case for Laravel Nova, which will fall back to attempting
           # to close a private repo if given invalid (or no) credentials
           if error.message.include?("github.com/laravel/nova.git")
@@ -253,7 +251,7 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           elsif error.message.start_with?("Could not parse version") ||
                 error.message.include?("does not allow connections to http://")
-            raise Dependabot::DependencyFileNotResolvable, sanitized_message
+            raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
@@ -493,10 +491,6 @@ module Dependabot
           credentials.
             select { |cred| cred["type"] == "composer_repository" }.
             select { |cred| cred["password"] }
-        end
-
-        def remove_url_credentials(message)
-          message.gsub(%r{(?<=://)[^\s]*:[^\s]*(?=@)}, "****")
         end
       end
     end

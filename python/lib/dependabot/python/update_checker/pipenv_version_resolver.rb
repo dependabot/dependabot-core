@@ -250,20 +250,17 @@ module Dependabot
           # Pipenv outputs a lot of things to STDERR, so we need to clean
           # up the error message
           msg_lines = message.lines
-          msg = msg_lines.
-                take_while { |l| !l.start_with?("During handling of") }.
-                drop_while do |l|
-                  next false if l.start_with?("CRITICAL:")
-                  next false if l.start_with?("ERROR:")
-                  next false if l.start_with?("packaging.specifiers")
-                  next false if l.start_with?("pipenv.patched.notpip._internal")
-                  next false if l.include?("Max retries exceeded")
+          msg_lines.
+          take_while { |l| !l.start_with?("During handling of") }.
+          drop_while do |l|
+            next false if l.start_with?("CRITICAL:")
+            next false if l.start_with?("ERROR:")
+            next false if l.start_with?("packaging.specifiers")
+            next false if l.start_with?("pipenv.patched.notpip._internal")
+            next false if l.include?("Max retries exceeded")
 
-                  true
-                end.join.strip
-
-          # We also need to redact any URLs, as they may include credentials
-          msg.gsub(/http.*?(?=\s)/, "<redacted>")
+            true
+          end.join.strip
         end
 
         def handle_pipenv_installation_error(error_message)

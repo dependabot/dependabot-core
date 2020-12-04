@@ -235,8 +235,7 @@ module Dependabot
             JSON.parse(stdout)
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
-        msg = e.message.strip
-        raise Dependabot::DependencyFileNotParseable.new(file.path, msg)
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 
       def terraform_parser_path

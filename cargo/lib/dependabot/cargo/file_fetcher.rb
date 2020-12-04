@@ -272,8 +272,8 @@ module Dependabot
 
       def parsed_file(file)
         TomlRB.parse(file.content)
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, file.path
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+        raise Dependabot::DependencyFileNotParseable, file.path, e.message
       end
 
       def cargo_toml

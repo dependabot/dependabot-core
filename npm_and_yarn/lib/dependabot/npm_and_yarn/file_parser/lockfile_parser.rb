@@ -171,16 +171,16 @@ module Dependabot
           @parse_package_lock ||= {}
           @parse_package_lock[package_lock.name] ||=
             JSON.parse(package_lock.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, package_lock.path
+        rescue JSON::ParserError => e
+          raise Dependabot::DependencyFileNotParseable, package_lock.path, e.message
         end
 
         def parse_shrinkwrap(shrinkwrap)
           @parse_shrinkwrap ||= {}
           @parse_shrinkwrap[shrinkwrap.name] ||=
             JSON.parse(shrinkwrap.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, shrinkwrap.path
+        rescue JSON::ParserError => e
+          raise Dependabot::DependencyFileNotParseable, shrinkwrap.path, e.message
         end
 
         def parse_yarn_lock(yarn_lock)
@@ -194,8 +194,8 @@ module Dependabot
                 function: "yarn:parseLockfile",
                 args: [Dir.pwd]
               )
-            rescue SharedHelpers::HelperSubprocessFailed
-              raise Dependabot::DependencyFileNotParseable, yarn_lock.path
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise Dependabot::DependencyFileNotParseable, yarn_lock.path, e.message
             end
         end
 

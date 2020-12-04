@@ -48,8 +48,8 @@ module Dependabot
 
         def parsed_global_json
           @parsed_global_json ||= JSON.parse(global_json.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, global_json.path
+        rescue JSON::ParserError => e
+          raise Dependabot::DependencyFileNotParseable, global_json.path, e.message
         end
       end
     end

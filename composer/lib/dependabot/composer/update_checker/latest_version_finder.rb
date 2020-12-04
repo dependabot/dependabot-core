@@ -162,8 +162,8 @@ module Dependabot
               "password" => details["password"]
             }
           end
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, auth_json.path
+        rescue JSON::ParserError => e
+          raise Dependabot::DependencyFileNotParseable, auth_json.path, e.message
         end
 
         def composer_file

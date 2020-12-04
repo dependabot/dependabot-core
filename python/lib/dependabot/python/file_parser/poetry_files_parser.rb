@@ -107,20 +107,20 @@ module Dependabot
 
         def parsed_pyproject
           @parsed_pyproject ||= TomlRB.parse(pyproject.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pyproject.path
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+          raise Dependabot::DependencyFileNotParseable, pyproject.path, e.message
         end
 
         def parsed_pyproject_lock
           @parsed_pyproject_lock ||= TomlRB.parse(pyproject_lock.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pyproject_lock.path
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+          raise Dependabot::DependencyFileNotParseable, pyproject_lock.path, e.message
         end
 
         def parsed_poetry_lock
           @parsed_poetry_lock ||= TomlRB.parse(poetry_lock.content)
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, poetry_lock.path
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+          raise Dependabot::DependencyFileNotParseable, poetry_lock.path, e.message
         end
 
         def pyproject

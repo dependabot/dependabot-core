@@ -159,15 +159,9 @@ module Dependabot
               raise unless e.message.include?("SolverProblemError") ||
                            e.message.include?("PackageNotFound")
 
-              msg = clean_error_message(e.message)
-              raise DependencyFileNotResolvable, msg
+              raise DependencyFileNotResolvable, e.message
             end
           end
-        end
-
-        def clean_error_message(message)
-          # Redact any URLs, as they may include credentials
-          message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
         def write_temporary_dependency_files(updated_req: nil,

@@ -144,16 +144,16 @@ module Dependabot
         raise "No Pipfile" unless pipfile
 
         @parsed_pipfile ||= TomlRB.parse(pipfile.content)
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, pipfile.path
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+        raise Dependabot::DependencyFileNotParseable, pipfile.path, e.message
       end
 
       def parsed_pyproject
         raise "No pyproject.toml" unless pyproject
 
         @parsed_pyproject ||= TomlRB.parse(pyproject.content)
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, pyproject.path
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError => e
+        raise Dependabot::DependencyFileNotParseable, pyproject.path, e.message
       end
 
       def req_txt_and_in_files

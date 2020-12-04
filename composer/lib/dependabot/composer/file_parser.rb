@@ -196,8 +196,8 @@ module Dependabot
 
       def parsed_composer_json
         @parsed_composer_json ||= JSON.parse(composer_json.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, composer_json.path
+      rescue JSON::ParserError => e
+        raise Dependabot::DependencyFileNotParseable, composer_json.path, e.message
       end
 
       def composer_json
