@@ -454,6 +454,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
       end
     end
+
+    context "with native dependencies that are not pre-built" do
+      let(:manifest_fixture_name) { "native_dependencies.in" }
+      let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
+      let(:dependency_name) { "cryptography" }
+      let(:dependency_version) { "2.2.2" }
+      let(:updated_requirement) { "> 3.0.0" }
+
+      it { is_expected.to eq(Gem::Version.new("3.2.1")) }
+    end
   end
 
   describe "#resolvable?" do
