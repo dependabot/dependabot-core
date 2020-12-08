@@ -2,7 +2,7 @@
 
 - pip-compile: Fix building native python dependencies
 - pipenv: handle installs with missing system dependencies
-- docker: support platform option in from line
+- docker: support platform option in from line @ttshivers
 - Bump pip from 20.1.1 to 20.3.1 in /python/helpers
 - Bump golang.org/x/mod from 0.3.0 to 0.4.0 in /go_modules/helpers
 - Bump @npmcli/arborist from 1.0.13 to 1.0.14 in /npm_and_yarn/helpers
