@@ -428,7 +428,15 @@ module Dependabot
         end
 
         def php_helper_path
-          NativeHelpers.composer_helper_path
+          NativeHelpers.composer_helper_path(composer_version: composer_version)
+        end
+
+        def composer_version
+          @composer_version ||=
+            begin
+              version Version.new(parsed_lockfile["plugin-api-version"])
+              version.canonical_segments.first == 1 ? "v1" : "v2"
+            end
         end
 
         def initial_platform
