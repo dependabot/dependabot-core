@@ -118,9 +118,12 @@ module Dependabot
         def run_go_mod_tidy
           return unless tidy?
 
+          # NOTE(arslan): use `go mod tidy -e` once Go 1.16 is out:
+          # https://github.com/golang/go/commit/3aa09489ab3aa13a3ac78b1ff012b148ffffe367
           command = "go mod tidy"
+
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
-          handle_subprocess_error(stderr) unless status.success?
+          handle_subprocess_error(stderr, true) unless status.success?
         end
 
         def run_go_vendor
@@ -243,7 +246,7 @@ module Dependabot
           write_go_mod(body)
         end
 
-        def handle_subprocess_error(stderr)
+        def handle_subprocess_error(stderr, istidy=false)
           stderr = stderr.gsub(Dir.getwd, "")
 
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
@@ -258,6 +261,12 @@ module Dependabot
             raise Dependabot::GoModulePathMismatch.
               new(go_mod_path, match[1], match[2])
           end
+
+          # we explicitly don't raise an error for 'go mod tidy' and silently
+          # continue here. `go mod tidy` shouldn't block updating versions
+          # because there are some edge cases where it's ok to fail (such as
+          # generated files not available yet to us). 
+          return if istidy
 
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
