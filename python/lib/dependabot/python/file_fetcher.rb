@@ -6,6 +6,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
 require "dependabot/errors"
+
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
