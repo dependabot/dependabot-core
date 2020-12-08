@@ -1,3 +1,18 @@
+## v0.126.0, 8 December 2020
+
+- pip-compile: Fix building native python dependencies
+- pipenv: handle installs with missing system dependencies
+- docker: support platform option in from line @ttshivers
+- Bump pip from 20.1.1 to 20.3.1 in /python/helpers
+- Bump golang.org/x/mod from 0.3.0 to 0.4.0 in /go_modules/helpers
+- Bump @npmcli/arborist from 1.0.13 to 1.0.14 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.58 to 0.12.59 in /composer/helpers
+- Bump friendsofphp/php-cs-fixer in /composer/helpers
+- Bump eslint from 7.14.0 to 7.15.0 in /npm_and_yarn/helpers
+- Bump eslint-plugin-prettier from 3.1.4 to 3.2.0 in /npm_and_yarn/helpers
+- Bump semver from 7.3.2 to 7.3.4 in /npm_and_yarn/helpers
+- Update rubocop requirement from ~> 1.4.2 to ~> 1.5.0 in /common
+
 ## v0.125.7, 30 November 2020
 
 - Bump jest from 26.6.2 to 26.6.3 in /npm_and_yarn/helpers
