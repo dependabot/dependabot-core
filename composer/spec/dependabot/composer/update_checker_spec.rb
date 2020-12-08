@@ -469,7 +469,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a PEAR dependency" do
       let(:manifest_fixture_name) { "pear" }
       let(:lockfile_fixture_name) { "pear" }
-      let(:dependency_name) { "pear-pear.horde.org/horde_date" }
+      let(:dependency_name) { "pear-pear.horde.org/Horde_Date" }
       let(:dependency_version) { "2.4.1" }
       let(:requirements) do
         [{

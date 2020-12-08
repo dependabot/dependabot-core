@@ -127,8 +127,12 @@ RSpec.describe Dependabot::Composer::FileUpdater do
           ).
           and_call_original
 
-        expect(updated_lockfile_content).to include("\"version\": \"1.0.1\"")
-        expect(updated_lockfile_content).to include("\"prefer-stable\": false")
+        parsed_updated_lockfile_content = JSON.parse(updated_lockfile_content)
+        dependency_entry = parsed_updated_lockfile_content["packages"].find do |package|
+          package["name"] == dependency.name
+        end
+        expect(dependency_entry).to eq("1.22.1")
+        expect(parsed_updated_lockfile_content["prefer-stable"]).to be_false
       end
     end
   end

@@ -8,7 +8,7 @@
     "packages": [
         {
             "name": "cweagans/composer-patches",
-            "version": "1.7.0",
+            "version": "1.6.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cweagans/composer-patches.git",
@@ -21,11 +21,11 @@
                 "shasum": ""
             },
             "require": {
-                "composer-plugin-api": "^2.0",
+                "composer-plugin-api": "^1.0",
                 "php": ">=5.3.0"
             },
             "require-dev": {
-                "composer/composer": "~2.0",
+                "composer/composer": "~1.0",
                 "phpunit/phpunit": "~4.6"
             },
             "type": "composer-plugin",

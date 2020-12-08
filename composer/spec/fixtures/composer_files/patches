@@ -4,7 +4,7 @@
     "type": "project",
     "require": {
         "ehime/hello-world": "1.0.4",
-        "cweagans/composer-patches": "~1.7"
+        "cweagans/composer-patches": "~1.0"
     },
     "extra": {
       "patches": {
