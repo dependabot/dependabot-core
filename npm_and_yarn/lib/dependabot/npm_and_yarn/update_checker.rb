@@ -43,7 +43,7 @@ module Dependabot
 
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
-        # Note: we currently don't resolve transitive/sub-dependencies as
+        # NOTE: we currently don't resolve transitive/sub-dependencies as
         # npm/yarn don't provide any control over updating to a specific
         # sub-dependency
         return latest_resolvable_version unless dependency.top_level?

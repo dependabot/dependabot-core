@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
         end
         let(:dependency_requirement_sting) { nil }
 
-        # Note: It would be equally valid to return `nil` here
+        # NOTE: It would be equally valid to return `nil` here
         it { is_expected.to eq(">= 0") }
       end
 

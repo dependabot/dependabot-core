@@ -247,7 +247,7 @@ module Dependabot
       end
 
       def pomfiles
-        # Note: this (correctly) excludes any parent POMs that were downloaded
+        # NOTE: this (correctly) excludes any parent POMs that were downloaded
         @pomfiles ||=
           dependency_files.select { |f| f.name.end_with?("pom.xml") }
       end

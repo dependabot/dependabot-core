@@ -27,8 +27,8 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
-          freeze
+          /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
+        NATIVE_COMPILATION_ERROR = "pip._internal.exceptions.InstallationError: Command errored out with exit status 1"
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -36,6 +36,7 @@ module Dependabot
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @build_isolation = true
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -72,7 +73,7 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
+                    "pyenv exec pip-compile --allow-unsafe -v "\
                      "#{pip_compile_options(filename)} -P #{dependency.name} "\
                      "#{filename}"
                   )
@@ -91,8 +92,20 @@ module Dependabot
                 parse_updated_files
               end
             rescue SharedHelpers::HelperSubprocessFailed => e
+              retry_count ||= 0
+              retry_count += 1
+
+              if compilation_error?(e) && retry_count <= 1
+                @build_isolation = false
+                retry
+              end
+
               handle_pip_compile_errors(e)
             end
+        end
+
+        def compilation_error?(error)
+          error.message.include?(NATIVE_COMPILATION_ERROR)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -195,7 +208,7 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          options = ["--build-isolation"]
+          options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
           if (requirements_file = compiled_file_for_filename(filename))
@@ -366,11 +379,21 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
+        VERBOSE_ERROR_OUTPUT_LINES = [
+          "Traceback",
+          "Using indexes:",
+          "Current constraints:",
+          "Finding the best candidates:",
+          "Finding secondary dependencies:",
+          "\n",
+          "  "
+        ].freeze
+
         def clean_error_message(message)
           msg_lines = message.lines
           msg = msg_lines.
                 take_while { |l| !l.start_with?("During handling of") }.
-                drop_while { |l| l.start_with?("Traceback", "  ") }.
+                drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
                 join.strip
 
           # Redact any URLs, as they may include credentials

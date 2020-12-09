@@ -25,11 +25,13 @@ module Dependabot
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
       FROM = /FROM/i.freeze
+      PLATFORM = /--platform\=(?<platform>\S+)/.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
       NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
       FROM_LINE =
-        %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
+        %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
+          #{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x.freeze
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
@@ -80,10 +82,10 @@ module Dependabot
         dependency_set = DependencySet.new
         input_files.each do |file|
           parsed = begin
-              YAML.safe_load(file.content, [], [], true)
-                     rescue ArgumentError => e
-                       puts "Could not parse YAML: #{e.message}"
-            end
+            YAML.safe_load(file.content, [], [], true)
+                   rescue ArgumentError => e
+                     puts "Could not parse YAML: #{e.message}"
+          end
 
           res = parsed["resources"]
           res.each do |item|

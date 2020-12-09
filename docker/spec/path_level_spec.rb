@@ -17,8 +17,8 @@ RSpec.describe "recursive_path", :pix4d do
 
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
-    let(:url_1) { github_url + "repos/#{project_path}/branches/master" }
-    let(:url_2) do
+    let(:url1) { github_url + "repos/#{project_path}/branches/master" }
+    let(:url2) do
       github_url +
         "repos/#{project_path}/git/trees/#{github_sha}?recursive=true"
     end
@@ -27,13 +27,13 @@ RSpec.describe "recursive_path", :pix4d do
     let(:github_sha) { "76abc" }
 
     before do
-      stub_request(:get, url_1).
+      stub_request(:get, url1).
         to_return(
           status: 200,
           body: { "name": "master", "commit": { "sha": github_sha } }.to_json,
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url_2).
+      stub_request(:get, url2).
         to_return(
           status: 200,
           body: { "sha": github_sha, "tree": [
@@ -54,11 +54,11 @@ RSpec.describe "recursive_path", :pix4d do
 
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
-    let(:url_1) { github_url + "repos/#{project_path}/branches/master" }
+    let(:url1) { github_url + "repos/#{project_path}/branches/master" }
     let(:project_path) { "Pix4D/non-existing" }
 
     before do
-      stub_request(:get, url_1).
+      stub_request(:get, url1).
         to_return(
           status: 404,
           body: { "message": "not found" }.to_json,
@@ -68,14 +68,14 @@ RSpec.describe "recursive_path", :pix4d do
 
     it "raises a correct error (repo not found)" do
       expect { recursive_path("docker", project_path, "path", "token") }.
-        to raise_error(Octokit::NotFound, "GET #{url_1}: 404 - not found")
+        to raise_error(Octokit::NotFound, "GET #{url1}: 404 - not found")
     end
   end
 
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
-    let(:url_1) { github_url + "repos/#{project_path}/branches/master" }
-    let(:url_2) do
+    let(:url1) { github_url + "repos/#{project_path}/branches/master" }
+    let(:url2) do
       github_url +
         "repos/#{project_path}/git/trees/#{github_sha}?recursive=true"
     end
@@ -84,13 +84,13 @@ RSpec.describe "recursive_path", :pix4d do
     let(:github_sha) { "76abc" }
 
     before do
-      stub_request(:get, url_1).
+      stub_request(:get, url1).
         to_return(
           status: 200,
           body: { "name": "master", "commit": { "sha": github_sha } }.to_json,
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url_2).
+      stub_request(:get, url2).
         to_return(
           status: 404,
           body: { "message": "not found" }.to_json,
@@ -100,7 +100,7 @@ RSpec.describe "recursive_path", :pix4d do
 
     it "raises a correct error (tree not found)" do
       expect { recursive_path("docker", project_path, "path", "token") }.
-        to raise_error(Octokit::NotFound, "GET #{url_2}: 404 - not found")
+        to raise_error(Octokit::NotFound, "GET #{url2}: 404 - not found")
     end
   end
 end

@@ -1019,7 +1019,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
     context "updating duplicate nested dependencies with peer requirements" do
       let(:dependency_files) do
-        [package_json, nested_package_json, nested_package_json_2]
+        [package_json, nested_package_json, nested_package_json2]
       end
       let(:manifest_fixture_name) { "package.json" }
       let(:nested_package_json) do
@@ -1028,7 +1028,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           content: fixture("package_files", "nested_peer_dependency.json")
         )
       end
-      let(:nested_package_json_2) do
+      let(:nested_package_json2) do
         Dependabot::DependencyFile.new(
           name: "packages/package2/package.json",
           content: fixture("package_files", "nested_peer_dependency.json")

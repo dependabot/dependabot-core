@@ -154,6 +154,29 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
     end
 
+    context "with extra nonrelevant credentials" do
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_versions.json")
+        stub_request(:get, rubygems_url + "versions/business.json").
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "npm_registry",
+          "registry" => "npm.fury.io/dependabot",
+          "token" => "secret_token"
+        }]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.5.0")) }
+    end
+
     context "with a private rubygems source" do
       let(:lockfile_fixture_name) { "specified_source.lock" }
       let(:gemfile_fixture_name) { "specified_source" }
@@ -1798,7 +1821,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
-              # Note: the v1.13.0 for the source is because we stub the lookup
+              # NOTE: the v1.13.0 for the source is because we stub the lookup
               # for the updated source
               expect(requirements_updater).
                 to receive(:new).with(

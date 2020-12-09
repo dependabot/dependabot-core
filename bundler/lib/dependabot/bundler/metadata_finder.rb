@@ -117,7 +117,7 @@ module Dependabot
         end
       end
 
-      # Note: This response MUST NOT be unmarshalled
+      # NOTE: This response MUST NOT be unmarshalled
       # (as calling Marshal.load is unsafe)
       def rubygems_marshalled_gemspec_response
         return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
