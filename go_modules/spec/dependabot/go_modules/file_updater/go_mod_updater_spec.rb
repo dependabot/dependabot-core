@@ -230,6 +230,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               expect { updater.updated_go_sum_content }.
                 to_not raise_error(error_class) do |error|
                 expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
+              it "updates the go.mod" do
+                expect(updater.updated_go_mod_content).to include(
+                  %(github.com/googleapis/gnostic v0.5.1\n)
+                )
               end
             end
           end
