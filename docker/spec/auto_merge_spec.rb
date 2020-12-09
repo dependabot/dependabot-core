@@ -6,7 +6,7 @@ require "spec_helper"
 RSpec.describe "auto_merge", :pix4d do
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
-    let(:url_1) do
+    let(:url1) do
       github_url +
         "repos/#{project_path}/pulls/#{pr_number}/merge"
     end
@@ -14,13 +14,13 @@ RSpec.describe "auto_merge", :pix4d do
     let(:pr_number) { "101" }
 
     before do
-      stub_request(:put, url_1).
+      stub_request(:put, url1).
         to_return(
           status: 200,
           body: { "merged": true }.to_json,
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url_1).
+      stub_request(:get, url1).
         to_return(
           status: 404
         )
@@ -35,11 +35,11 @@ RSpec.describe "auto_merge", :pix4d do
 
   context "using a docker feature_package" do
     let(:github_url) { "https://api.github.com/" }
-    let(:url_1) do
+    let(:url1) do
       github_url +
         "repos/#{project_path}/pulls/#{pr_number}/merge"
     end
-    let(:url_2) do
+    let(:url2) do
       github_url +
         "repos/#{project_path}/git/refs/heads/#{pr_branch}"
     end
@@ -48,17 +48,17 @@ RSpec.describe "auto_merge", :pix4d do
     let(:pr_branch) { "feature-branch" }
 
     before do
-      stub_request(:put, url_1).
+      stub_request(:put, url1).
         to_return(
           status: 200,
           body: { "merged": true }.to_json,
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url_1).
+      stub_request(:get, url1).
         to_return(
           status: 204
         )
-      stub_request(:delete, url_2).
+      stub_request(:delete, url2).
         to_return(
           status: 422
         )

@@ -82,10 +82,10 @@ module Dependabot
         dependency_set = DependencySet.new
         input_files.each do |file|
           parsed = begin
-              YAML.safe_load(file.content, [], [], true)
-                     rescue ArgumentError => e
-                       puts "Could not parse YAML: #{e.message}"
-            end
+            YAML.safe_load(file.content, [], [], true)
+                   rescue ArgumentError => e
+                     puts "Could not parse YAML: #{e.message}"
+          end
 
           res = parsed["resources"]
           res.each do |item|

@@ -7,7 +7,7 @@ require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
   it_behaves_like "an update checker"
-  BASE_URL = "https://registry.hub.docker.com/v2/library"
+  base_url = "https://registry.hub.docker.com/v2/library"
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -676,7 +676,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   describe "Pix4D tests", :pix4d do
     describe "Method #can_update?" do
       before do
-        stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
+        stub_request(:get, "#{base_url}/#{dependency_name}/tags/list").
           and_return(
             status: 200,
             body: {
@@ -728,7 +728,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     describe "Method #up_to_date?" do
       before do
-        stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
+        stub_request(:get, "#{base_url}/#{dependency_name}/tags/list").
           and_return(
             status: 200,
             body: {
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "return latest tag" do
         before do
-          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
+          stub_request(:get, "#{base_url}/#{dependency_name}/tags/list").
             and_return(
               status: 200,
               body: {
@@ -799,7 +799,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "every time public docker registry times out" do
         before do
-          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
+          stub_request(:get, "#{base_url}/#{dependency_name}/tags/list").
             to_raise(RestClient::Exceptions::OpenTimeout)
         end
 
@@ -885,7 +885,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           }]
         end
         before do
-          tags_url = "#{BASE_URL}/#{dependency_name}/tags/list"
+          tags_url = "#{base_url}/#{dependency_name}/tags/list"
           stub_request(:get, tags_url).
             and_return(
               status: 200,
@@ -903,7 +903,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "20200301" }
         let(:dependency_name) { "docker-img-name-5" }
         before do
-          stub_request(:get, "#{BASE_URL}/#{dependency_name}/tags/list").
+          stub_request(:get, "#{base_url}/#{dependency_name}/tags/list").
             and_return(
               status: 200,
               body: {
@@ -913,7 +913,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
           stub_request(
             :head,
-            "#{BASE_URL}/#{dependency_name}/manifests/latest"
+            "#{base_url}/#{dependency_name}/manifests/latest"
           ).
             and_return(
               status: 200,
@@ -921,7 +921,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
           stub_request(
             :head,
-            "#{BASE_URL}/#{dependency_name}/manifests/20200320091510"
+            "#{base_url}/#{dependency_name}/manifests/20200320091510"
           ).
             and_return(
               status: 200,
@@ -952,7 +952,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       let(:dependency_name) { "docker-img-name-1" }
       before do
-        tags_url = "#{BASE_URL}/#{dependency_name}/tags/list"
+        tags_url = "#{base_url}/#{dependency_name}/tags/list"
         stub_request(:get, tags_url).
           and_return(
             status: 200,
