@@ -70,7 +70,7 @@ final class UpdateChecker
             ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(true);
+            ->setIgnorePlatformRequirements(false);
 
         $install->run();
 
