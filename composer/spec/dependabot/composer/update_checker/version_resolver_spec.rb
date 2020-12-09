@@ -25,21 +25,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     }]
   end
   let(:requirements_to_unlock) { :own }
-  let(:dependency_files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "invalid_version_constraint" }
-  let(:lockfile_fixture_name) { "invalid_version_constraint" }
+  let(:dependency_files) { project_dependency_files(project_name) }
+  let(:project_name) { "invalid_version_constraint" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -65,8 +52,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     subject { resolver.latest_resolvable_version }
 
     context "with an invalid version constraint" do
-      let(:manifest_fixture_name) { "invalid_version_constraint" }
-      let(:lockfile_fixture_name) { "invalid_version_constraint" }
+      let(:project_name) { "invalid_version_constraint" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -75,8 +61,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library using a >= PHP constraint" do
-      let(:manifest_fixture_name) { "php_specified_in_library" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
@@ -85,8 +70,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with an application using a >= PHP constraint" do
-      let(:manifest_fixture_name) { "php_specified" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "php_specified_without_lockfile" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
@@ -103,8 +87,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
     context "with an application using a ^ PHP constraint" do
       context "the minimum version of which is invalid" do
-        let(:manifest_fixture_name) { "php_specified_min_invalid" }
-        let(:dependency_files) { [manifest] }
+        let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
@@ -114,8 +97,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "updating a subdependency that's not required anymore" do
-      let(:manifest_fixture_name) { "exact_version" }
-      let(:lockfile_fixture_name) { "version_conflict_at_latest" }
+      let(:project_name) { "subdependency_no_longer_required" }
       let(:requirements) { [] }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "doctrine/dbal" }
@@ -125,8 +107,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a dependency that's provided by another dep" do
-      let(:manifest_fixture_name) { "provided_dependency" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
@@ -136,8 +117,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a dependency that uses a stability flag" do
-      let(:manifest_fixture_name) { "stability_flag" }
-      let(:lockfile_fixture_name) { "minor_version" }
+      let(:project_name) { "stability_flag" }
       let(:string_req) { "@stable" }
       let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
       let(:dependency_name) { "monolog/monolog" }
@@ -148,8 +128,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library that requires itself" do
-      let(:dependency_files) { [manifest] }
-      let(:manifest_fixture_name) { "requires_self" }
+      let(:project_name) { "requires_self" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -160,9 +139,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library that uses a dev branch" do
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "dev_branch" }
       let(:dependency_name) { "monolog/monolog" }
-      let(:manifest_fixture_name) { "dev_branch" }
       let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
       let(:string_req) { "dev-1.x" }
       let(:dependency_version) { nil }
@@ -171,8 +149,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a local VCS source" do
-      let(:manifest_fixture_name) { "local_vcs_source" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "local_vcs_source" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -181,8 +158,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a private registry that 404s" do
-      let(:manifest_fixture_name) { "private_registry_not_found" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "private_registry_not_found" }
       let(:dependency_name) { "dependabot/dummy-pkg-a" }
       let(:dependency_version) { nil }
       let(:string_req) { "*" }
@@ -200,8 +176,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a forced oom error" do
-      let(:manifest_fixture_name) { "php_specified_in_library" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }

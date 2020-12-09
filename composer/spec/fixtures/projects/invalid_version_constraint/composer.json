@@ -1,0 +1,76 @@
+{
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^7.2.*",
+        "ext-iconv": "*",
+        "sensio/framework-extra-bundle": "^5.1",
+        "symfony/console": "^4.0",
+        "symfony/flex": "^1.0",
+        "symfony/form": "^4.0",
+        "symfony/framework-bundle": "^4.0",
+        "symfony/lts": "^4@dev",
+        "symfony/orm-pack": "^1.0",
+        "symfony/security-bundle": "^4.0",
+        "symfony/translation": "^4.0",
+        "symfony/twig-bundle": "^4.0",
+        "symfony/validator": "^4.0",
+        "symfony/yaml": "^4.0"
+    },
+    "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^3.0",
+        "phpmd/phpmd": "^2.6",
+        "phpunit/phpunit": "^7.0",
+        "sebastian/phpcpd": "^4.0",
+        "squizlabs/php_codesniffer": "^3.2",
+        "symfony/dotenv": "^4.0",
+        "symfony/maker-bundle": "^1.1",
+        "symfony/profiler-pack": "^1.0",
+        "symfony/thanks": "^1.0",
+        "symfony/var-dumper": "^4.0",
+        "symfony/web-server-bundle": "^4.0"
+    },
+    "config": {
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\Tests\\": "tests/"
+        }
+    },
+    "replace": {
+        "symfony/polyfill-iconv": "*",
+        "symfony/polyfill-php71": "*",
+        "symfony/polyfill-php70": "*",
+        "symfony/polyfill-php56": "*"
+    },
+    "scripts": {
+        "auto-scripts": {
+            "cache:clear": "symfony-cmd",
+            "assets:install --symlink --relative %PUBLIC_DIR%": "symfony-cmd"
+        },
+        "post-install-cmd": [
+            "@auto-scripts"
+        ],
+        "post-update-cmd": [
+            "@auto-scripts"
+        ]
+    },
+    "conflict": {
+        "symfony/symfony": "*"
+    },
+    "extra": {
+        "symfony": {
+            "id": "01C5B6XJEEV3WYJYYDDBJ2MD6J",
+            "allow-contrib": false
+        }
+    }
+}

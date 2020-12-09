@@ -1,0 +1,6 @@
+{
+    "require": {
+        "monolog/monolog": "@stable",
+        "symfony/polyfill-mbstring": "1.0.*"
+    }
+}
