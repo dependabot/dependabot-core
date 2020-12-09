@@ -22,12 +22,6 @@ RSpec.describe namespace::MetadataPresenter do
     )
   end
 
-  class MockMetadataFinder < Dependabot::MetadataFinders::Base
-    def look_up_source
-      Dependabot::Source.new(provider: "github", repo: "gocardless/business")
-    end
-  end
-
   let(:metadata_finder) do
     instance_double(Dependabot::MetadataFinders::Base,
                     changelog_url: "http://localhost/changelog.md",

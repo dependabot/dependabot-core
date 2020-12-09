@@ -235,7 +235,7 @@ module Dependabot
             return unless node.is_a?(Parser::AST::Node)
 
             if unnecessary_assignment?(node) &&
-               node.children.last&.location&.respond_to?(:heredoc_end)
+               node.children.last&.location.respond_to?(:heredoc_end)
               range_to_remove = node.loc.expression.join(
                 node.children.last.location.heredoc_end
               )

@@ -361,7 +361,7 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
-            # Note: returns 429 when the login page is rate limited
+            # NOTE: returns 429 when the login page is rate limited
             return web_response.body.include?("Forgot password?") ||
                    web_response.status == 429
           end

@@ -13,8 +13,11 @@ module Dependabot
     require "dependabot/pull_request_creator/labeler"
 
     class RepoNotFound < StandardError; end
+
     class RepoArchived < StandardError; end
+
     class RepoDisabled < StandardError; end
+
     class NoHistoryInCommon < StandardError; end
 
     # AnnotationError is raised if a PR was created, but failed annotation

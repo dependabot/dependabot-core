@@ -105,7 +105,7 @@ module Dependabot
         end
       end
 
-      # Note: It's important that this *always* returns a version (even if
+      # NOTE: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_version
         unless dependency.version.match?(NAME_WITH_VERSION) ||
@@ -345,7 +345,7 @@ module Dependabot
       end
 
       def ignore_reqs
-        # Note: we use Gem::Requirement here because ignore conditions will
+        # NOTE: we use Gem::Requirement here because ignore conditions will
         # be passed as Ruby ranges
         ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
       end
