@@ -125,7 +125,7 @@ module Dependabot
           # we explicitly don't raise an error for 'go mod tidy' and silently
           # continue here. `go mod tidy` shouldn't block updating versions
           # because there are some edge cases where it's OK to fail (such as
-          # generated files not available yet to us). 
+          # generated files not available yet to us).
           Open3.capture3(ENVIRONMENT, command)
         end
 
