@@ -22,21 +22,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:project_name) { "exact_version" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -82,7 +69,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "when an old version of PHP is specified" do
       context "as a platform requirement" do
-        let(:manifest_fixture_name) { "old_php_platform" }
+        let(:project_name) { "old_php_platform" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
@@ -110,7 +97,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with an application using a >= PHP constraint" do
-        let(:manifest_fixture_name) { "php_specified" }
+        let(:project_name) { "php_specified" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -139,7 +126,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with an application using a ^ PHP constraint" do
-        let(:manifest_fixture_name) { "php_specified_min_invalid" }
+        let(:project_name) { "php_specified_min_invalid" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -168,8 +155,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "and an extension is specified that we don't have" do
-        let(:manifest_fixture_name) { "missing_extension" }
-        let(:lockfile_fixture_name) { "missing_extension" }
+        let(:project_name) { "missing_extension" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
@@ -200,8 +186,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a plugin that would cause errors" do
-      let(:manifest_fixture_name) { "plugin" }
-      let(:lockfile_fixture_name) { "plugin" }
+      let(:project_name) { "plugin" }
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
@@ -209,8 +194,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a plugin that conflicts with the current composer version" do
-      let(:manifest_fixture_name) { "outdated_flex" }
-      let(:lockfile_fixture_name) { "outdated_flex" }
+      let(:project_name) { "outdated_flex" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "symphony/lock",
@@ -241,7 +225,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "that requires an environment variable" do
-      let(:manifest_fixture_name) { "env_variable" }
+      let(:project_name) { "env_variable" }
 
       context "that hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
@@ -280,15 +264,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a path source" do
-      let(:files) { [composer_json, lockfile, path_dep] }
-      let(:manifest_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source" }
-      let(:path_dep) do
-        Dependabot::DependencyFile.new(
-          name: "components/path_dep/composer.json",
-          content: fixture("composer_files", "path_dep")
-        )
-      end
+      let(:project_name) { "path_source" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -317,8 +293,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the new version is covered by the old requirements" do
-      let(:manifest_fixture_name) { "minor_version" }
-      let(:lockfile_fixture_name) { "covered_version" }
+      let(:project_name) { "covered_version" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -351,8 +326,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency is a development dependency" do
-      let(:manifest_fixture_name) { "development_dependencies" }
-      let(:lockfile_fixture_name) { "development_dependencies" }
+      let(:project_name) { "development_dependencies" }
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
@@ -360,8 +334,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency is a subdependency" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -381,8 +354,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "and is limited by a library's PHP version" do
-        let(:manifest_fixture_name) { "php_specified_in_library" }
-        let(:lockfile_fixture_name) { "php_specified_in_library" }
+        let(:project_name) { "php_specified_in_library" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -404,8 +376,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a private registry" do
-      let(:manifest_fixture_name) { "private_registry" }
-      let(:lockfile_fixture_name) { "private_registry" }
+      let(:project_name) { "private_registry" }
       before { `composer clear-cache --quiet` }
 
       let(:dependency) do
@@ -451,8 +422,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a laravel nova" do
-      let(:manifest_fixture_name) { "laravel_nova" }
-      let(:lockfile_fixture_name) { "laravel_nova" }
+      let(:project_name) { "laravel_nova" }
       before { `composer clear-cache --quiet` }
 
       let(:dependency) do
@@ -501,8 +471,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when another dependency has git source with a bad reference" do
-      let(:lockfile_fixture_name) { "git_source_bad_ref" }
-      let(:manifest_fixture_name) { "git_source_bad_ref" }
+      let(:project_name) { "git_source_bad_ref" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -534,8 +503,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when another dependency has git source with a bad commit" do
-      let(:manifest_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source_bad_commit" }
+      let(:project_name) { "git_source_bad_commit" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -572,8 +540,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a git source using no-api" do
-      let(:manifest_fixture_name) { "git_source_no_api" }
-      let(:lockfile_fixture_name) { "git_source_no_api" }
+      let(:project_name) { "git_source_no_api" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -615,8 +582,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when another dependency has an unreachable git source" do
-      let(:lockfile_fixture_name) { "git_source_unreachable" }
-      let(:manifest_fixture_name) { "git_source_unreachable" }
+      let(:project_name) { "git_source_unreachable" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -649,8 +615,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when there are patches" do
-      let(:manifest_fixture_name) { "patches" }
-      let(:lockfile_fixture_name) { "patches" }
+      let(:project_name) { "patches" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -684,8 +649,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "regression spec for media-organizer" do
-      let(:manifest_fixture_name) { "media_organizer" }
-      let(:lockfile_fixture_name) { "media_organizer" }
+      let(:project_name) { "media_organizer" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -719,8 +683,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when a subdependency needs to be updated" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -750,8 +713,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "updating to a specific version when reqs would allow higher" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
