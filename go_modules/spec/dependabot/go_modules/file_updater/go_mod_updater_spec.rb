@@ -225,10 +225,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
 
-            it "raises a DependencyFileNotResolvable error" do
+            it "does not raises a DependencyFileNotResolvable error" do
               error_class = Dependabot::DependencyFileNotResolvable
               expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
+                to_not raise_error(error_class) do |error|
                 expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
               end
             end
