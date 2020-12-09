@@ -460,7 +460,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
       let(:dependency_name) { "cryptography" }
       let(:dependency_version) { "2.2.2" }
-      let(:updated_requirement) { "> 3.0.0" }
+      let(:updated_requirement) { "> 3.0.0, < 3.3" }
 
       it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
