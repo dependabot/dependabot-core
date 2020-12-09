@@ -8,6 +8,7 @@ use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Installer;
 use Composer\Package\PackageInterface;
+use Composer\Util\Filesystem;
 
 final class UpdateChecker
 {
@@ -49,6 +50,13 @@ final class UpdateChecker
 
         $installationManager = new DependabotInstallationManager($composer->getLoop(), $io);
 
+        $fs = new Filesystem(null);
+        $binaryInstaller = new Installer\BinaryInstaller($io, rtrim($composer->getConfig()->get('bin-dir'), '/'), $composer->getConfig()->get('bin-compat'), $fs);
+
+        $installationManager->addInstaller(new Installer\LibraryInstaller($io, $composer, null, $fs, $binaryInstaller));
+        $installationManager->addInstaller(new Installer\PluginInstaller($io, $composer, $fs, $binaryInstaller));
+        $installationManager->addInstaller(new Installer\MetapackageInstaller($io));
+
         $install = new Installer(
             $io,
             $config,
@@ -63,15 +71,13 @@ final class UpdateChecker
 
         // For all potential options, see UpdateCommand in composer
         $install
-            ->setDryRun(true)
             ->setUpdate(true)
             ->setDevMode(true)
             ->setUpdateAllowList([$dependencyName])
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
-            ->setExecuteOperations(false)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(false);
+            ->setIgnorePlatformRequirements(true);
 
         $install->run();
 
