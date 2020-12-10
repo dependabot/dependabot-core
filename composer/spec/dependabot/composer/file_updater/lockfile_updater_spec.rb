@@ -224,8 +224,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "that requires an environment variable" do
-      let(:project_name) { "env_variable" }
+    context "that requires an environment variable (composer v1)" do
+      let(:project_name) { "v1/env_variable" }
 
       context "that hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
@@ -257,7 +257,46 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         it "runs just fine (we get a 404 here because our key is wrong)" do
           expect { updated_lockfile_content }.to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404 Not Found")
+            expect(error.message).to include("404")
+          end
+        end
+      end
+    end
+
+    context "that requires an environment variable (composer v2)" do
+      let(:project_name) { "env_variable" }
+
+      context "that hasn't been provided" do
+        it "raises a DependencyFileNotResolvable error" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include("404")
+          end
+        end
+      end
+
+      context "that has been provided" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: [dependency],
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "php_environment_variable",
+              "env-key" => "ACF_PRO_KEY",
+              "env-value" => "example_key"
+            }]
+          )
+        end
+
+        it "runs just fine (we get a 404 here because our key is wrong)" do
+          expect { updated_lockfile_content }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to include("404")
           end
         end
       end

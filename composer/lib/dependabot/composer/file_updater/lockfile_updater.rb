@@ -179,6 +179,7 @@ module Dependabot
             raise GitDependenciesNotReachable, dependency_url
           end
 
+          # NOTE: Only raises this when running composer v1
           if error.message.start_with?("Could not find a key for ACF PRO")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
           end
