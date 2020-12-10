@@ -73,11 +73,16 @@ final class UpdateChecker
         $install
             ->setUpdate(true)
             ->setDevMode(true)
-            ->setUpdateAllowList([$dependencyName])
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
             ->setIgnorePlatformRequirements(true);
+
+        // if no lock is present, we do not do a partial update as
+        // this is not supported by the Installer
+        if ($composer->getLocker()->isLocked()) {
+            $install->setUpdateAllowList([$dependencyName]);
+        }
 
         $install->run();
 
