@@ -298,7 +298,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           end
 
           context "that can't be parsed" do
-            let(:auth_json_fixture_name) { "unparseable.json" }
             let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do
