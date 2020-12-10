@@ -193,8 +193,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     # This test is extremely slow, as it needs to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do
-    #   let(:manifest_fixture_name) { "unreachable_private_registry" }
-    #   let(:dependency_files) { [manifest] }
+    #   let(:project_name) { "unreachable_private_registry" }
     #   let(:dependency_name) { "dependabot/dummy-pkg-a" }
     #   let(:dependency_version) { nil }
     #   let(:string_req) { "*" }
