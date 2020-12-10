@@ -488,16 +488,25 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       let(:requirements) { previous_requirements }
       let(:previous_requirements) { [] }
 
-      it "raises an OutOfDisk error" do
+      it "detects 'input/output error'" do
         stderr = <<~ERROR
-          rsc.io/quote imports
-            rsc.io/quote/v3 imports
-            rsc.io/sampler imports
-            golang.org/x/text/language: write /tmp/go-codehost-014108053: input/output error
+          rsc.io/sampler imports
+          golang.org/x/text/language: write /tmp/go-codehost-014108053: input/output error
         ERROR
 
         expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
           expect(error.message).to include("write /tmp/go-codehost-014108053: input/output error")
+        end
+      end
+
+      it "detects 'no space left on device'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          write /opt/go/gopath/pkg/mod/cache/vcs/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef/info/attributes: no space left on device
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("info/attributes: no space left on device")
         end
       end
     end

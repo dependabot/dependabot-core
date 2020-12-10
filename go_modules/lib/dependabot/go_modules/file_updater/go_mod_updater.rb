@@ -36,7 +36,8 @@ module Dependabot
         ].freeze
 
         OUT_OF_DISK_REGEXES = [
-          %r{input/output error}.freeze
+          %r{input/output error}.freeze,
+          /no space left on device/.freeze
         ].freeze
 
         def initialize(dependencies:, credentials:, repo_contents_path:,
