@@ -35,6 +35,10 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
+        OUT_OF_DISK_REGEXES = [
+          %r{input/output error}.freeze
+        ].freeze
+
         def initialize(dependencies:, credentials:, repo_contents_path:,
                        directory:, options:)
           @dependencies = dependencies
@@ -263,6 +267,12 @@ module Dependabot
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
               new(go_mod_path, match[1], match[2])
+          end
+
+          out_of_disk_regex = OUT_OF_DISK_REGEXES.find { |r| stderr =~ r }
+          if out_of_disk_regex
+            lines = stderr.lines.select { |l| out_of_disk_regex =~ l }
+            raise Dependabot::OutOfDisk.new, lines.join
           end
 
           # We don't know what happened so we raise a generic error

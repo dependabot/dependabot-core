@@ -22,6 +22,7 @@ module Dependabot
     end
   end
 
+  class OutOfDisk < DependabotError; end
   class OutOfMemory < DependabotError; end
 
   #####################
