@@ -1,0 +1,11 @@
+{
+  "repositories": [
+    {
+      "type": "pear",
+      "url": "https://pear.horde.org"
+    }
+  ],
+  "require": {
+    "pear-pear.horde.org/Horde_Date": "^2.4.0@stable"
+  }
+}

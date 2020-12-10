@@ -430,8 +430,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it { is_expected.to be_nil }
     end
 
-    context "with a PEAR dependency" do
-      let(:project_name) { "pear" }
+    context "with a PEAR dependency (composer v1)" do
+      let(:project_name) { "v1/pear" }
       let(:dependency_name) { "pear-pear.horde.org/Horde_Date" }
       let(:dependency_version) { "2.4.1" }
       let(:requirements) do
