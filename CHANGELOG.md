@@ -1,3 +1,7 @@
+## v0.126.1, 10 December 2020
+
+- go_modules: don't raise error for `go mod tidy` executions
+
 ## v0.126.0, 8 December 2020
 
 - pip-compile: Fix building native python dependencies
