@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
   end
   let(:requirements_to_unlock) { :own }
   let(:dependency_files) { project_dependency_files(project_name) }
-  let(:project_name) { "invalid_version_constraint" }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,

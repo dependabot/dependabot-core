@@ -479,7 +479,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "with a version conflict in the current files" do
-      let(:project_name) { "version_conflict" }
       let(:dependency_name) { "monolog/monolog" }
       let(:dependency_version) { "2.1.5" }
       let(:requirements) do
@@ -734,8 +733,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    subject { checker.updated_requirements.first }
-
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "monolog/monolog",
