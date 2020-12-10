@@ -434,7 +434,7 @@ module Dependabot
         def composer_version
           @composer_version ||=
             begin
-              return "v1" unless lockfile && parsed_lockfile["plugin-api-version"]
+              return "v2" unless lockfile && parsed_lockfile["plugin-api-version"]
 
               version = Version.new(parsed_lockfile["plugin-api-version"])
               version.canonical_segments.first == 1 ? "v1" : "v2"
