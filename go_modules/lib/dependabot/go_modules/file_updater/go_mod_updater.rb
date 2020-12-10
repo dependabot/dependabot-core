@@ -118,9 +118,15 @@ module Dependabot
         def run_go_mod_tidy
           return unless tidy?
 
+          # NOTE(arslan): use `go mod tidy -e` once Go 1.16 is out:
+          # https://github.com/golang/go/commit/3aa09489ab3aa13a3ac78b1ff012b148ffffe367
           command = "go mod tidy"
-          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
-          handle_subprocess_error(stderr) unless status.success?
+
+          # we explicitly don't raise an error for 'go mod tidy' and silently
+          # continue here. `go mod tidy` shouldn't block updating versions
+          # because there are some edge cases where it's OK to fail (such as
+          # generated files not available yet to us).
+          Open3.capture3(ENVIRONMENT, command)
         end
 
         def run_go_vendor
