@@ -17,21 +17,27 @@ final class DependabotInstallationManager extends InstallationManager
     private array $updated = [];
     private array $uninstalled = [];
 
+    public function execute(RepositoryInterface $repo, array $operations, $devMode = true, $runScripts = true): void
+    {
+        foreach ($operations as $operation) {
+            $method = $operation->getOperationType();
+            // skipping download() step here for tests
+            $this->$method($repo, $operation);
+        }
+    }
+
     public function install(RepositoryInterface $repo, InstallOperation $operation): void
     {
-        parent::install($repo, $operation);
         $this->installed[] = $operation->getPackage();
     }
 
     public function update(RepositoryInterface $repo, UpdateOperation $operation): void
     {
-        parent::update($repo, $operation);
         $this->updated[] = [$operation->getInitialPackage(), $operation->getTargetPackage()];
     }
 
     public function uninstall(RepositoryInterface $repo, UninstallOperation $operation): void
     {
-        parent::uninstall($repo, $operation);
         $this->uninstalled[] = $operation->getPackage();
     }
 
