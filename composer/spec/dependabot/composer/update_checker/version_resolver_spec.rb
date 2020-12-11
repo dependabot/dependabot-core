@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
 
-        it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+        it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
       end
     end
 
