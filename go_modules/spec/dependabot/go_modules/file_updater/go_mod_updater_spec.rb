@@ -16,7 +16,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         "password" => "token"
       }],
       repo_contents_path: repo_contents_path,
-      directory: "/",
+      directory: directory,
       options: { tidy: tidy, vendor: false }
     )
   end
@@ -25,6 +25,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
+  let(:directory) { "/" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -477,6 +478,29 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
         end
       end
+    end
+
+    context "for a monorepo" do
+      let(:project_name) { "monorepo" }
+      let(:directory) { "cmd" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
   end
 end
