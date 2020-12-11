@@ -84,7 +84,7 @@ final class Updater
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(true);
+            ->setIgnorePlatformRequirements(false);
 
         $install->run();
 
