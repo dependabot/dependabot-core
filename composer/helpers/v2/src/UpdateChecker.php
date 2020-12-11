@@ -76,7 +76,7 @@ final class UpdateChecker
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(true);
+            ->setIgnorePlatformRequirements(false);
 
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
