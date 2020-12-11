@@ -565,16 +565,12 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "updates the lockfile correctly" do
-        # Updates the commit SHA of the git dependency (because we have to)
-        expect(updated_lockfile_content).
-          to include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
-        expect(updated_lockfile_content).to include('"version":"dev-example"')
-
-        # Updates the specified dependency
-        expect(updated_lockfile_content).
-          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
-        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+      it "raises a helpful errors" do
+        expect { updated_lockfile_content }.to raise_error do |error|
+          expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
+          expect(error.dependency).
+            to eq("monolog/monolog")
+        end
       end
     end
 
