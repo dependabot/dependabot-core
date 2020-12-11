@@ -107,6 +107,8 @@ module Dependabot
           file = fetch_file_if_present(supported_file_name)
           return file if file
         end
+        
+        nil
       end
     end
   end
