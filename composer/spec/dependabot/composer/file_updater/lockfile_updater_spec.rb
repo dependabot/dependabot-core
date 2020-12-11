@@ -185,11 +185,23 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that would cause errors" do
-      let(:project_name) { "plugin" }
+    context "with a plugin that would cause errors (composer v1)" do
+      let(:project_name) { "v1/plugin" }
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
+      end
+    end
+
+    context "with a plugin that would cause errors (composer v2)" do
+      let(:project_name) { "plugin" }
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.to raise_error do |error|
+          expect(error.message).to include("You are using Composer 2, which some of "\
+                                           "your plugins seem to be incompatible with.")
+          expect(error).to be_a Dependabot::DependencyFileNotResolvable
+        end
       end
     end
 
@@ -299,10 +311,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       let(:project_name) { "env_variable" }
 
       context "that hasn't been provided" do
-        it "raises a DependencyFileNotResolvable error" do
+        it "raises a MissingEnvironmentVariable error" do
           expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404")
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to eq("Missing environment variable ACF_PRO_KEY")
           end
         end
       end
