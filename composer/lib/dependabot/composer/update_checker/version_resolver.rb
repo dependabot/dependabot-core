@@ -34,6 +34,7 @@ module Dependabot
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
+        GIT_REF_NOT_FOUND = /Failed to execute git checkout '(?<ref>.[^']+)'/.freeze
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -251,6 +252,12 @@ module Dependabot
               error.message.match(/Failed to clone (?<url>.*?) via/).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
+          elsif error.message.match?(GIT_REF_NOT_FOUND)
+            ref = error.message.match(GIT_REF_NOT_FOUND).named_captures.fetch("ref")
+            msg = "Failed to execute git checkout for the following branch or reference: #{ref}"
+            # Raising a resolvability error (as opposed to a GitDependencyReferenceNotFound error) as the error message
+            # doesn't include any dependency information and is caused by a reference in the existing manifest/lockfile
+            raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.start_with?("Could not parse version") ||
                 error.message.include?("does not allow connections to http://")
             raise Dependabot::DependencyFileNotResolvable, sanitized_message

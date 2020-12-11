@@ -588,9 +588,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         context "with a bad commit" do
           let(:project_name) { "git_source_bad_commit" }
 
-          # Alternatively, this could raise an error. Either behaviour would be
-          # fine - the below is just what we get with Composer at the moment.
-          it { is_expected.to be >= Gem::Version.new("1.3.0") }
+          it "raises a helpful error" do
+            expect { checker.latest_resolvable_version }.
+              to raise_error do |error|
+                expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+                expect(error.message).
+                  to eq("Failed to execute git checkout for the following branch or reference: "\
+                        "bad7b03b1e4861c4657ede17a88f13ef479db482")
+              end
+          end
         end
 
         context "with a git URL" do
