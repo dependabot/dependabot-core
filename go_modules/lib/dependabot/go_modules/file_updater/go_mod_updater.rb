@@ -235,10 +235,24 @@ module Dependabot
               (manifest["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
                 compact.
-                select { |p| p.start_with?(".") || p.start_with?("/") }.
+                select { |p| external_path?(p) }.
                 map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
                 to_h
             end
+        end
+
+        # returns true if the provided path does not exist in the current checkout
+        def external_path?(path)
+          return true if path.start_with?("/")
+          return false unless path.start_with?(".")
+
+          !module_pathname.join(path).realpath.to_s.start_with?(repo_contents_path.to_s)
+        rescue Errno::ENOENT
+          true
+        end
+
+        def module_pathname
+          @module_pathname ||= repo_contents_path.join(directory)
         end
 
         def substitute_all(substitutions)
