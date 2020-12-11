@@ -218,8 +218,10 @@ module Dependabot
           end
 
           # NOTE: This error is raised by composer v2 and includes helpful
-          # information about updating composer to be compatible with plugins
-          raise DependencyFileNotResolvable, error.message if error.message.include?("requires composer-plugin-api")
+          # information about which plugins or dependencies are not compatible
+          if error.message.include?("Your requirements could not be resolved")
+            raise DependencyFileNotResolvable, error.message
+          end
 
           raise error
         end
