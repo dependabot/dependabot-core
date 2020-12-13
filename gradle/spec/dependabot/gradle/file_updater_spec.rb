@@ -81,9 +81,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
         its(:content) do
           is_expected.to include(
-            # rubocop:disable Layout/LineLength
             'implementation(group = "co.aikar", name = "acf-paper", version = "0.6.0-SNAPSHOT", changing: true)'
-            # rubocop:enable Layout/LineLength
           )
         end
         its(:content) { is_expected.to include 'version = "4.2.0"' }
@@ -124,9 +122,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
           its(:content) do
             is_expected.to include(
-              # rubocop:disable Layout/LineLength
               'id("org.springframework.boot") version "2.1.4.RELEASE" apply false'
-              # rubocop:enable Layout/LineLength
             )
           end
 

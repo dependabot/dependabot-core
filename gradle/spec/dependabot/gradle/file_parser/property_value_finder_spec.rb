@@ -262,9 +262,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
               let(:property_name) { "findPropertyVersion" }
               its([:value]) { is_expected.to eq("27.1.1") }
               its([:declaration_string]) do
-                # rubocop:disable Layout/LineLength
                 is_expected.to eq('set("findPropertyVersion", project.findProperty("findPropertyVersion") ?: "27.1.1")')
-                # rubocop:enable Layout/LineLength
               end
             end
 
