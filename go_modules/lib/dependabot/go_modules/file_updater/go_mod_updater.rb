@@ -235,20 +235,31 @@ module Dependabot
               (manifest["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
                 compact.
-                select { |p| external_path?(p) }.
+                select { |p| stub_replace_path?(p) }.
                 map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
                 to_h
             end
         end
 
-        # returns true if the provided path does not exist in the current checkout
-        def external_path?(path)
-          return true if path.start_with?("/")
-          return false unless path.start_with?(".")
+        # returns true if the provided path should be replaced with a stub
+        def stub_replace_path?(path)
+          return true if absolute_path?(path)
+          return false unless relative_replacement_path?(path)
 
-          !module_pathname.join(path).realpath.to_s.start_with?(repo_contents_path.to_s)
+          resolved_path = module_pathname.join(path).realpath
+          inside_repo_contents_path = resolved_path.to_s.start_with?(repo_contents_path.to_s)
+          !inside_repo_contents_path
         rescue Errno::ENOENT
           true
+        end
+
+        def absolute_path?(path)
+          path.start_with?("/")
+        end
+
+        def relative_replacement_path?(path)
+          # https://golang.org/ref/mod#go-mod-file-replace
+          path.start_with?("./") || path.start_with?("../")
         end
 
         def module_pathname
