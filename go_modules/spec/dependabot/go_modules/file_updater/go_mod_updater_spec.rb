@@ -479,4 +479,36 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
   end
+
+  describe "#handle_subprocess_error" do
+    context "for a error caused by running out of disk space" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) { [] }
+
+      it "detects 'input/output error'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          golang.org/x/text/language: write /tmp/go-codehost-014108053: input/output error
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("write /tmp/go-codehost-014108053: input/output error")
+        end
+      end
+
+      it "detects 'no space left on device'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          write /opt/go/gopath/pkg/mod/cache/vcs/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef/info/attributes: no space left on device
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("info/attributes: no space left on device")
+        end
+      end
+    end
+  end
 end
