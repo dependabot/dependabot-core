@@ -1,3 +1,7 @@
+## v0.128.0, 14 December 2020
+
+- Gradle: Support kotlin manifest files (thanks, @shakhar!)
+
 ## v0.127.1, 14 December 2020
 
 - Bump wheel from 0.36.1 to 0.36.2 in /python/helpers
