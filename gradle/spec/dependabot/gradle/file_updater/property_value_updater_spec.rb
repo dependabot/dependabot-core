@@ -57,5 +57,34 @@ RSpec.describe Dependabot::Gradle::FileUpdater::PropertyValueUpdater do
           to include("ext.kotlin_version = '1.1.4-3'")
       end
     end
+
+    context "with kotlin" do
+      let(:buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle.kts",
+          content: fixture("buildfiles", buildfile_fixture_name)
+        )
+      end
+      let(:subproject_buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle.kts",
+          content: fixture("buildfiles", subproject_fixture_name)
+        )
+      end
+      let(:buildfile_fixture_name) { "root_build.gradle.kts" }
+      let(:subproject_fixture_name) { "build.gradle.kts" }
+      let(:callsite_buildfile) { buildfile }
+      let(:property_name) { "kotlinVersion" }
+      let(:previous_value) { "1.2.61" }
+      let(:updated_value) { "3.2.1" }
+
+      its(:length) { is_expected.to eq(2) }
+
+      it "updates the files correctly" do
+        expect(updated_files.last).to eq(dependency_files.last)
+        expect(updated_files.first.content).
+          to include('extra["kotlinVersion"] = "3.2.1"')
+      end
+    end
   end
 end
