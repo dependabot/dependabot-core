@@ -10,8 +10,10 @@ module Dependabot
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
 
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+
       def self.updated_files_regex
-        [/^build\.gradle$/, %r{/build\.gradle$}]
+        [/^build\.gradle(\.kts)?$/, %r{/build\.gradle(\.kts)?$}]
       end
 
       def updated_dependency_files
@@ -38,7 +40,13 @@ module Dependabot
       private
 
       def check_required_files
-        raise "No build.gradle!" unless get_original_file("build.gradle")
+        raise "No build.gradle or build.gradle.kts!" unless original_file
+      end
+
+      def original_file
+        dependency_files.find do |f|
+          SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+        end
       end
 
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
@@ -131,7 +139,8 @@ module Dependabot
             next false unless line.include?(dependency.name.split(":").first)
             next false unless line.include?(dependency.name.split(":").last)
           else
-            name_regex = /id\s+['"]#{Regexp.quote(dependency.name)}['"]/
+            name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
+            name_regex = /id(\s+#{name_regex_value}|\(#{name_regex_value}\))/
             next false unless line.match?(name_regex)
           end
 

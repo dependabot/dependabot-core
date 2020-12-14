@@ -33,6 +33,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
   context "with a basic buildfile" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_with_subdir.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, File.join(url, "build.gradle?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -89,10 +96,70 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
     end
+
+    context "with kotlin" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_kotlin_with_subdir.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "build.gradle.kts?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_kotlin_basic_buildfile.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, "settings.gradle.kts?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
+
+      it "fetches the buildfile" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(build.gradle.kts))
+      end
+
+      context "with a settings.gradle.kts" do
+        before do
+          stub_request(:get, File.join(url, "settings.gradle.kts?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_kotlin_simple_settings.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, File.join(url, "app/build.gradle.kts?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_kotlin_basic_buildfile.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the main buildfile and subproject buildfile" do
+          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(build.gradle.kts app/build.gradle.kts))
+        end
+      end
+    end
   end
 
   context "with a script plugin" do
     before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_with_subdir.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, File.join(url, "build.gradle?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -123,6 +190,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
     context "that can't be found" do
       before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_java_with_subdir.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(
           :get,
           File.join(url, "gradle/dependencies.gradle?ref=sha")
