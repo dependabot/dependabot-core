@@ -1,3 +1,7 @@
+## v0.128.2, 14 December 2020
+
+- go_modules: fix regression with stubbing local replace paths
+
 ## v0.128.1, 14 December 2020
 
 - go_modules: only stub modules outside this repo
