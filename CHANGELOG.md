@@ -1,3 +1,7 @@
+## v0.128.1, 14 December 2020
+
+- go_modules: only stub modules outside this repo
+
 ## v0.128.0, 14 December 2020
 
 - Gradle: Support kotlin manifest files (thanks, @shakhar!)
