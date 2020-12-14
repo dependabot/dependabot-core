@@ -21,7 +21,7 @@ final class DependabotInstallationManager extends InstallationManager
     {
         foreach ($operations as $operation) {
             $method = $operation->getOperationType();
-            // skipping download() step here for tests
+            // NOTE: skipping download() step
             $this->$method($repo, $operation);
         }
     }
