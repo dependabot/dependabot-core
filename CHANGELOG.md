@@ -1,3 +1,8 @@
+## v0.127.0, 11 December 2020
+
+- go_modules: raise Dependabot::OutOfDisk error when we're fairly sure that the failure occurred due to running out of disk space
+- Bump ini from 1.3.5 to 1.3.7 in /npm_and_yarn/helpers
+
 ## v0.126.1, 10 December 2020
 
 - go_modules: don't raise error for `go mod tidy` executions
