@@ -36,7 +36,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:repo_contents_path) { build_tmp_repo(project_name) }
 
     it "runs inside the temporary repo directory" do
-      expect(in_a_temporary_repo_directory).to eq(repo_contents_path.to_s)
+      expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
     end
 
     context "with a valid directory" do
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
       it "creates the missing directory " do
         expect(in_a_temporary_repo_directory).
-          to eq(repo_contents_path.join(directory).to_s)
+          to eq(Pathname.new(repo_contents_path).join(directory).to_s)
       end
     end
 

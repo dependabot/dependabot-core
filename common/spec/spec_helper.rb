@@ -86,7 +86,7 @@ def build_tmp_repo(project)
     Dependabot::SharedHelpers.run_shell_command("git commit -m init")
   end
 
-  tmp_repo_path
+  tmp_repo_path.to_s
 end
 
 def project_dependency_files(project)
