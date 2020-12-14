@@ -206,6 +206,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
+    context "with a composer v1 lockfile" do
+      let(:project_name) { "v1/exact_version" }
+
+      it { is_expected.to be >= Gem::Version.new("1.22.0") }
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
       it { is_expected.to eq(Gem::Version.new("1.21.0")) }
