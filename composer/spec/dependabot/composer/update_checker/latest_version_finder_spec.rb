@@ -41,21 +41,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_file, lockfile] }
-  let(:composer_file) do
-    Dependabot::DependencyFile.new(
-      content: fixture("composer_files", manifest_fixture_name),
-      name: "composer.json"
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      content: fixture("lockfiles", lockfile_fixture_name),
-      name: "composer.lock"
-    )
-  end
-  let(:manifest_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:project_name) { "exact_version" }
 
   before do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
@@ -114,7 +101,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "without a lockfile" do
-      let(:files) { [composer_file] }
+      let(:project_name) { "exact_version_without_lockfile" }
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
 
       context "when using a pre-release" do
@@ -194,8 +181,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "with a private composer registry" do
-      let(:manifest_fixture_name) { "private_registry" }
-      let(:lockfile_fixture_name) { "private_registry" }
+      let(:project_name) { "private_registry" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "dependabot/dummy-pkg-a",
@@ -302,14 +288,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
               "password" => "token"
             }]
           end
-          let(:files) { [composer_file, lockfile, auth_json] }
-          let(:auth_json) do
-            Dependabot::DependencyFile.new(
-              content: fixture("auth_jsons", auth_json_fixture_name),
-              name: "auth.json"
-            )
-          end
-          let(:auth_json_fixture_name) { "gemfury.json" }
+          let(:project_name) { "private_registry_with_auth_json" }
 
           it "uses the credentials" do
             finder.latest_version
@@ -319,7 +298,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           end
 
           context "that can't be parsed" do
-            let(:auth_json_fixture_name) { "unparseable.json" }
+            let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do
               expect { finder.latest_version }.
@@ -334,8 +313,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "with an unreachable source (speccing we don't try to reach it)" do
-      let(:manifest_fixture_name) { "git_source_unreachable_git_url" }
-      let(:lockfile_fixture_name) { "git_source_unreachable_git_url" }
+      let(:project_name) { "git_source_unreachable_git_url" }
       it { is_expected.to eq(Gem::Version.new("1.22.1")) }
     end
   end

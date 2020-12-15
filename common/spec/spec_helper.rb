@@ -93,6 +93,7 @@ def project_dependency_files(project)
   project_path = File.expand_path(File.join("spec/fixtures/projects", project))
   Dir.chdir(project_path) do
     files = Dir.glob("**/*")
+    files = files.select { |f| File.file?(f) }
     files.map do |filename|
       content = File.read(filename)
       Dependabot::DependencyFile.new(

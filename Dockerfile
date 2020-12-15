@@ -100,7 +100,8 @@ RUN npm install elm@0.18.0 \
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y \
@@ -196,4 +197,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
-  bash /opt/composer/helpers/build /opt/composer
+  bash /opt/composer/helpers/v2/build /opt/composer/v2 && \
+  bash /opt/composer/helpers/v1/build /opt/composer/v1
