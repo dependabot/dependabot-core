@@ -97,4 +97,7 @@ jobs:
           docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
-          docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c \
+            "composer config --global github-oauth.github.com ${{ secrets.COMPOSER_GITHUB_TOKEN }} && \
+            cd /home/dependabot/dependabot-core/${{ matrix.suite }} && \
+            bundle exec rspec spec"
