@@ -159,8 +159,8 @@ module Dependabot
 
       GITHUB_REPO_REGEX = %r{github.com/[^@]*}.freeze
       def handle_github_unknown_revision(line)
-        repo_path = line.scan(GITHUB_REPO_REGEX).first
-        return unless repo_path
+        mod_path = line.scan(GITHUB_REPO_REGEX).first
+        return unless mod_path
 
         # Query for _any_ version of this module, to know if it doesn't exist (or is private)
         # or we were just given a bad revision by this manifest
@@ -169,9 +169,15 @@ module Dependabot
             File.write("go.mod", "module dummy\n")
 
             env = { "GOPRIVATE" => "*" }
-            _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go get #{repo_path}"))
+            _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go get #{mod_path}"))
             raise Dependabot::DependencyFileNotResolvable, line if status.success?
 
+            mod_split = mod_path.split("/")
+            repo_path = if mod_split.size > 3
+                          mod_split[0..2].join("/")
+                        else
+                          mod_path
+                        end
             raise Dependabot::GitDependenciesNotReachable, [repo_path]
           end
         end
