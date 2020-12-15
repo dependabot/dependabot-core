@@ -1,3 +1,7 @@
+## v0.129.0, 15 December 2020
+
+- Composer: Support composer v2 alongside v1 (Thanks for helping out @WyriHaximus)
+
 ## v0.128.2, 14 December 2020
 
 - go_modules: fix regression with stubbing local replace paths
