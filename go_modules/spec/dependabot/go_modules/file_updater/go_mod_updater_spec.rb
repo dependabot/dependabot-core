@@ -229,7 +229,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # NOTE: We explitly don't want to raise a resolvability error from go mod tidy
             it "does not raises a DependencyFileNotResolvable error" do
               expect { updater.updated_go_sum_content }.
-                to_not raise_error(Dependabot::DependencyFileNotResolvable)
+                to_not raise_error
             end
 
             it "updates the go.mod" do
