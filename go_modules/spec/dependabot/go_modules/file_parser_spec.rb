@@ -166,10 +166,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     describe "a non-existent github.com versioned repository" do
-      let(:invalid_repo) { "github.com/dependabot-fixtures/must-never-exist/v2" }
+      let(:invalid_repo) { "github.com/dependabot-fixtures/must-never-exist" }
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote v1.4.0", "#{invalid_repo} v2.0.0")
+        go_mod.sub("rsc.io/quote v1.4.0", "#{invalid_repo}/v2 v2.0.0")
       end
 
       it "raises the correct error" do
