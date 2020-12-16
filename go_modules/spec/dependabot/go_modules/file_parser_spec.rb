@@ -37,7 +37,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(6) }
+    its(:length) { is_expected.to eq(5) }
 
     describe "top level dependencies" do
       subject(:dependencies) do

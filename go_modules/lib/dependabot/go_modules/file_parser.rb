@@ -16,17 +16,8 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        i = 0
-        chunks = module_info.lines.
-                 group_by { |line| line == "{\n" ? i += 1 : i }
-        deps = chunks.values.map { |chunk| JSON.parse(chunk.join) }
-
-        deps.each do |dep|
-          # The project itself appears in this list as "Main"
-          next if dep["Main"]
-
-          dependency = dependency_from_details(dep)
-          dependency_set << dependency if dependency
+        required_packages.each do |dep|
+          dependency_set << dependency_from_details(dep)
         end
 
         dependency_set.dependencies
@@ -65,8 +56,8 @@ module Dependabot
         )
       end
 
-      def module_info
-        @module_info ||=
+      def required_packages
+        @required_packages ||=
           SharedHelpers.in_a_temporary_directory do |path|
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Create a fake empty module for each local module so that
@@ -78,9 +69,10 @@ module Dependabot
               end
 
               File.write("go.mod", go_mod_content)
+              File.write("main.go", "package dummypkg\n func main() {}\n")
 
-              command = "go mod edit -print > /dev/null"
-              command += " && go list -m -json all"
+              command = "go get > /dev/null" # Verify the packages are installable
+              command += " && go mod edit -json"
 
               # Turn off the module proxy for now, as it's causing issues with
               # private git dependencies
@@ -88,7 +80,7 @@ module Dependabot
 
               stdout, stderr, status = Open3.capture3(env, command)
               handle_parser_error(path, stderr) unless status.success?
-              stdout
+              JSON.parse(stdout)["Require"]
             rescue Dependabot::DependencyFileNotResolvable
               # We sometimes see this error if a host times out.
               # In such cases, retrying (a maximum of 3 times) may fix it.
