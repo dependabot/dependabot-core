@@ -17,7 +17,7 @@ module Dependabot
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         required_packages.each do |dep|
-          dependency_set << dependency_from_details(dep)
+          dependency_set << dependency_from_details(dep) unless dep["Indirect"]
         end
 
         dependency_set.dependencies
