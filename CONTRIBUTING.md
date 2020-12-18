@@ -35,6 +35,7 @@ is a clearer interface between core and the language-specific tooling.
 
 Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
 ecosystems in the future.
+
 ## Contribution workflow
 
  * Fork the project.
