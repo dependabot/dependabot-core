@@ -4,10 +4,37 @@
 
 #### Overview
 
+- [Contributing new ecosystems](#contributing-new-ecosystems)
 - [Contribution workflow](#contribution-workflow)
 - [Setup instructions](#setup-instructions)
 - [Project layout](#project-layout)
 
+## Contributing new ecosystems
+
+We are not currently accepting new ecosystems into `dependabot-core`, starting in December 2020 until at least June 2021.
+
+### Why have we paused accepting new ecosystems?
+
+Dependabot has grown dramatically in the last two years since integrating with GitHub. We are now [used by millions of repositories](https://octoverse.github.com/#securing-software) across [16 package managers](https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/about-dependabot-version-updates#supported-repositories-and-ecosystems). We aim to provide the best user experience
+possible for each of these, but we have found we've lacked the capacity – and in some cases the in-house expertise – to support new ecosystems in the last year. We want to be
+confident we can support each ecosystem we merge.
+
+In the immediate future, we want to focus more of our resources on merging improvements to the ecosystems we already support. This does not mean that we are stopping work or investing less in this space - in fact, we're investing more, to make it a great user experience. This tough call means we can also provide a better experience for our contributors, where PRs don't go stale while waiting for a review.
+
+We hope to be able to accept community contributions for ecosystem support again soon.
+
+### What's next?
+
+In `dependabot-core`, each ecosystem implementation is in its own gem so you can use Dependabot for a language
+we have not merged by creating a [script](https://github.com/dependabot/dependabot-script) to run your own gem or
+fork of core, e.g. [dependabot-lein-runner](https://github.com/CGA1123/dependabot-lein-runner)
+
+Our plan in the year ahead is to invest more developer time directly in `dependabot-core` to improve our architecture so
+each ecosystem is more isolated and testable. We also want to make a consistency pass on existing ecosystems so that there
+is a clearer interface between core and the language-specific tooling.
+
+Our goal is make it easier to create and test Dependabot extensions so there is a paved path for running additional
+ecosystems in the future.
 ## Contribution workflow
 
  * Fork the project.
