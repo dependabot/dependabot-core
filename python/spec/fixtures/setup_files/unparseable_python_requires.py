@@ -1,3 +1,4 @@
+import homeassistant.const as hass_const
 from setuptools import setup, find_packages
 
 MIN_PY_VERSION = '.'.join(map(str, hass_const.REQUIRED_PYTHON_VER))
