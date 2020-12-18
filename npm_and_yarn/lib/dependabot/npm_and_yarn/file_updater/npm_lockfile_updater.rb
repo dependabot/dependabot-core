@@ -286,7 +286,7 @@ module Dependabot
                                                                lockfile)
           lockfile_dir = Pathname.new(lockfile.name).dirname
           modules_path = lockfile_dir.join("node_modules")
-          # Note: don't include the dependency names to prevent opening
+          # NOTE: don't include the dependency names to prevent opening
           # multiple issues for each dependency that fails because we unique
           # issues on the error message (issue detail) on the backend
           #

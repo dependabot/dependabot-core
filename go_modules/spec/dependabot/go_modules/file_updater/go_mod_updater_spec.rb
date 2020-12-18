@@ -16,7 +16,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         "password" => "token"
       }],
       repo_contents_path: repo_contents_path,
-      directory: "/",
+      directory: directory,
       options: { tidy: tidy, vendor: false }
     )
   end
@@ -25,6 +25,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
+  let(:directory) { "/" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -225,12 +226,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
 
-            it "raises a DependencyFileNotResolvable error" do
-              error_class = Dependabot::DependencyFileNotResolvable
+            # NOTE: We explitly don't want to raise a resolvability error from go mod tidy
+            it "does not raises a DependencyFileNotResolvable error" do
               expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
-                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
-              end
+                to_not raise_error
+            end
+
+            it "updates the go.mod" do
+              expect(updater.updated_go_mod_content).to include(
+                %(github.com/googleapis/gnostic v0.5.1 // indirect\n)
+              )
             end
           end
         end
@@ -471,6 +476,61 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:tidy) { false }
           it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
           it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+        end
+      end
+    end
+
+    context "for a monorepo" do
+      let(:project_name) { "monorepo" }
+      let(:directory) { "cmd" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+    end
+  end
+
+  describe "#handle_subprocess_error" do
+    context "for a error caused by running out of disk space" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) { [] }
+
+      it "detects 'input/output error'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          golang.org/x/text/language: write /tmp/go-codehost-014108053: input/output error
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("write /tmp/go-codehost-014108053: input/output error")
+        end
+      end
+
+      it "detects 'no space left on device'" do
+        stderr = <<~ERROR
+          rsc.io/sampler imports
+          write /opt/go/gopath/pkg/mod/cache/vcs/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef/info/attributes: no space left on device
+        ERROR
+
+        expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
+          expect(error.message).to include("info/attributes: no space left on device")
         end
       end
     end

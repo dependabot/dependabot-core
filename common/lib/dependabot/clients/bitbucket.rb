@@ -7,7 +7,9 @@ module Dependabot
   module Clients
     class Bitbucket
       class NotFound < StandardError; end
+
       class Unauthorized < StandardError; end
+
       class Forbidden < StandardError; end
 
       ##########

@@ -29,7 +29,8 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)
+            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1
+            (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
@@ -428,7 +429,17 @@ module Dependabot
         end
 
         def php_helper_path
-          NativeHelpers.composer_helper_path
+          NativeHelpers.composer_helper_path(composer_version: composer_version)
+        end
+
+        def composer_version
+          @composer_version ||=
+            begin
+              return "v2" unless lockfile && parsed_lockfile["plugin-api-version"]
+
+              version = Version.new(parsed_lockfile["plugin-api-version"])
+              version.canonical_segments.first == 1 ? "v1" : "v2"
+            end
         end
 
         def initial_platform
@@ -437,7 +448,7 @@ module Dependabot
           platform = {}
           platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
-          # Note: We *don't* include the require-dev PHP version in our initial
+          # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
           requirement_php = parsed_composer_file.dig("require", "php")

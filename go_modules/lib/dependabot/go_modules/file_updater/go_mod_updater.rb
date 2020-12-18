@@ -35,6 +35,11 @@ module Dependabot
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
         ].freeze
 
+        OUT_OF_DISK_REGEXES = [
+          %r{input/output error}.freeze,
+          /no space left on device/.freeze
+        ].freeze
+
         def initialize(dependencies:, credentials:, repo_contents_path:,
                        directory:, options:)
           @dependencies = dependencies
@@ -118,9 +123,15 @@ module Dependabot
         def run_go_mod_tidy
           return unless tidy?
 
+          # NOTE(arslan): use `go mod tidy -e` once Go 1.16 is out:
+          # https://github.com/golang/go/commit/3aa09489ab3aa13a3ac78b1ff012b148ffffe367
           command = "go mod tidy"
-          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
-          handle_subprocess_error(stderr) unless status.success?
+
+          # we explicitly don't raise an error for 'go mod tidy' and silently
+          # continue here. `go mod tidy` shouldn't block updating versions
+          # because there are some edge cases where it's OK to fail (such as
+          # generated files not available yet to us).
+          Open3.capture3(ENVIRONMENT, command)
         end
 
         def run_go_vendor
@@ -229,10 +240,35 @@ module Dependabot
               (manifest["Replace"] || []).
                 map { |r| r["New"]["Path"] }.
                 compact.
-                select { |p| p.start_with?(".") || p.start_with?("/") }.
+                select { |p| stub_replace_path?(p) }.
                 map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
                 to_h
             end
+        end
+
+        # returns true if the provided path should be replaced with a stub
+        def stub_replace_path?(path)
+          return true if absolute_path?(path)
+          return false unless relative_replacement_path?(path)
+
+          resolved_path = module_pathname.join(path).realpath
+          inside_repo_contents_path = resolved_path.to_s.start_with?(repo_contents_path.to_s)
+          !inside_repo_contents_path
+        rescue Errno::ENOENT
+          true
+        end
+
+        def absolute_path?(path)
+          path.start_with?("/")
+        end
+
+        def relative_replacement_path?(path)
+          # https://golang.org/ref/mod#go-mod-file-replace
+          path.start_with?("./") || path.start_with?("../")
+        end
+
+        def module_pathname
+          @module_pathname ||= Pathname.new(repo_contents_path).join(directory)
         end
 
         def substitute_all(substitutions)
@@ -257,6 +293,12 @@ module Dependabot
             match = path_regex.match(stderr)
             raise Dependabot::GoModulePathMismatch.
               new(go_mod_path, match[1], match[2])
+          end
+
+          out_of_disk_regex = OUT_OF_DISK_REGEXES.find { |r| stderr =~ r }
+          if out_of_disk_regex
+            lines = stderr.lines.select { |l| out_of_disk_regex =~ l }
+            raise Dependabot::OutOfDisk.new, lines.join
           end
 
           # We don't know what happened so we raise a generic error

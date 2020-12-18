@@ -19,14 +19,14 @@ module Functions
         true
       )
 
-      other_updates = []
+      dependencies_to_unlock = []
 
       begin
-        definition = build_definition(other_updates: other_updates)
+        definition = build_definition(dependencies_to_unlock: dependencies_to_unlock)
         definition.resolve_remotely!
         specs = definition.resolve
         updates = [{ name: dependency_name }] +
-                  other_updates.map { |dep| { name: dep.name } }
+                  dependencies_to_unlock.map { |dep| { name: dep.name } }
         specs = specs.map do |dep|
           {
             name: dep.name,
@@ -41,12 +41,12 @@ module Functions
         new_dependencies_to_unlock =
           new_dependencies_to_unlock_from(
             error: e,
-            already_unlocked: other_updates
+            already_unlocked: dependencies_to_unlock
           )
 
         raise if new_dependencies_to_unlock.none?
 
-        other_updates += new_dependencies_to_unlock
+        dependencies_to_unlock += new_dependencies_to_unlock
         retry
       end
     end
@@ -98,8 +98,8 @@ module Functions
         end
     end
 
-    def build_definition(other_updates:)
-      gems_to_unlock = other_updates.map(&:name) + [dependency_name]
+    def build_definition(dependencies_to_unlock:)
+      gems_to_unlock = dependencies_to_unlock.map(&:name) + [dependency_name]
       definition = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,

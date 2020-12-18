@@ -1603,7 +1603,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           vendor_files =
-            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+            Dir.entries(Pathname.new(repo_contents_path).join("vendor/cache"))
 
           expect(file).to be_nil
           expect(vendor_files).to include("business-1.4.0.gem")
@@ -1626,7 +1626,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             f.name == "vendor/cache/addressable-7.2.0.gem"
           end
           vendor_files =
-            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+            Dir.entries(Pathname.new(repo_contents_path).join("vendor/cache"))
 
           expect(file).to be_nil
           expect(vendor_files).to include("statesman-7.2.0.gem")

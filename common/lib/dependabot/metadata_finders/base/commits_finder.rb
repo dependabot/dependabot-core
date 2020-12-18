@@ -226,7 +226,7 @@ module Dependabot
               previous_commit_shas =
                 github_client.commits(repo, **args).map(&:sha)
 
-              # Note: We reverse this so it's consistent with the array we get
+              # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
               github_client.
