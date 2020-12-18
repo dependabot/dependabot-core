@@ -371,7 +371,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it "raises a to Dependabot::PrivateSourceTimedOut error" do
           expect { version_finder.latest_version_from_registry }.
             to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
@@ -434,7 +434,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
       end
@@ -584,7 +584,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
@@ -611,7 +611,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { version_finder.latest_version_from_registry }.
                 to raise_error(error_class) do |error|
-                  expect(error.source).to eq("npm.fury.io/dependabot")
+                  expect(error.source).to eq("npm.fury.io/<redacted>")
                 end
             end
           end

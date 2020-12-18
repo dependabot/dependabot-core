@@ -8,33 +8,18 @@ require "digest"
 require "open3"
 require "shellwords"
 
+require "dependabot/utils"
+require "dependabot/errors"
 require "dependabot/version"
 
 module Dependabot
   module SharedHelpers
-    BUMP_TMP_FILE_PREFIX = "dependabot_"
-    BUMP_TMP_DIR_PATH = "tmp"
     GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} "\
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
                  "(#{RUBY_PLATFORM}) "\
                  "(+https://github.com/dependabot/dependabot-core)"
     SIGKILL = 9
-
-    class ChildProcessFailed < StandardError
-      attr_reader :error_class, :error_message, :error_backtrace
-
-      def initialize(error_class:, error_message:, error_backtrace:)
-        @error_class = error_class
-        @error_message = error_message
-        @error_backtrace = error_backtrace
-
-        msg = "Child process raised #{error_class} with message: "\
-              "#{error_message}"
-        super(msg)
-        set_backtrace(error_backtrace)
-      end
-    end
 
     def self.in_a_temporary_repo_directory(directory = "/",
                                            repo_contents_path = nil,
@@ -53,15 +38,15 @@ module Dependabot
     end
 
     def self.in_a_temporary_directory(directory = "/")
-      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
-      Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
+      Dir.mkdir(Utils::BUMP_TMP_DIR_PATH) unless Dir.exist?(Utils::BUMP_TMP_DIR_PATH)
+      Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH) do |dir|
         path = Pathname.new(File.join(dir, directory)).expand_path
         FileUtils.mkpath(path)
         Dir.chdir(path) { yield(path) }
       end
     end
 
-    class HelperSubprocessFailed < StandardError
+    class HelperSubprocessFailed < Dependabot::DependabotError
       attr_reader :error_class, :error_context, :trace
 
       def initialize(message:, error_context:, error_class: nil, trace: nil)
