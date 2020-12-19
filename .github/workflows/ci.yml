@@ -34,8 +34,6 @@ jobs:
           - omnibus
           - python
           - terraform
-    env:
-      DOCKER_BUILDKIT: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -62,7 +60,7 @@ jobs:
             "$CORE_CI_IMAGE:latest" || true
       - name: Build dependabot-core image
         run: |
-          docker build \
+          DOCKER_BUILDKIT=1 docker build \
             -t "$CORE_IMAGE:latest" \
             -t "$CORE_CI_IMAGE:core--$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -81,8 +79,6 @@ jobs:
             -t "$CORE_CI_IMAGE:latest" \
             -t "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
             -f Dockerfile.ci \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_CI_IMAGE:latest" \
             --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
             .
@@ -93,7 +89,7 @@ jobs:
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
       - name: Run Rubocop linting
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop . -c ../.rubocop.yml"
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop ."
       - name: Run js linting and tests
         if: matrix.suite == 'npm_and_yarn'
         run: |

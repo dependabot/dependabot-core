@@ -218,7 +218,7 @@ module Dependabot
               find { |n| n.attribute("key")&.value == "ClearTextPassword" }&.
               attribute("value")&.value
 
-            # Note: We have to look for plain text passwords, as we have no
+            # NOTE: We have to look for plain text passwords, as we have no
             # way of decrypting encrypted passwords. For the same reason we
             # don't fetch API keys from the nuget.config at all.
             next source_details[:token] = nil unless username && password

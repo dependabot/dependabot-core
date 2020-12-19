@@ -180,7 +180,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        # Note: this is the dist-tag latest version, *not* the latest prerelease
+        # NOTE: this is the dist-tag latest version, *not* the latest prerelease
         it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
         context "but only says so in their requirements (with a .)" do
@@ -267,7 +267,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             to_return(status: 200, body: login_form)
         end
 
-        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+        it "raises a Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { version_finder.latest_version_from_registry }.
+            to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.npmjs.org")
+            end
+        end
+      end
+
+      context "when the login page is rate limited" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        end
+
+        before do
+          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+            to_return(status: 429, body: "")
+        end
+
+        it "raises a Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|

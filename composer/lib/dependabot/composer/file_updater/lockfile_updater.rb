@@ -34,6 +34,7 @@ module Dependabot
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
             (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
           }x.freeze
+        MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/.freeze
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -179,8 +180,19 @@ module Dependabot
             raise GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("Could not find a key for ACF PRO")
+          # NOTE: This matches an error message from composer plugins used to install ACF PRO
+          # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
+          # https://github.com/pivvenit/acf-pro-installer/blob/f2d4812839ee2c333709b0ad4c6c134e4c25fd6d/src/Exceptions/MissingKeyException.php#L25
+          if error.message.start_with?("Could not find a key for ACF PRO") ||
+             error.message.start_with?("Could not find a license key for ACF PRO")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
+          end
+
+          # NOTE: This matches error output from a composer plugin (private-composer-installer):
+          # https://github.com/ffraenz/private-composer-installer/blob/8655e3da4e8f99203f13ccca33b9ab953ad30a31/src/Exception/MissingEnvException.php#L22
+          if error.message.match?(MISSING_ENV_VAR_REGEX)
+            env_var = error.message.match(MISSING_ENV_VAR_REGEX).named_captures.fetch("env_var")
+            raise MissingEnvironmentVariable, env_var
           end
 
           if error.message.start_with?("Unknown downloader type: npm-sign") ||
@@ -197,11 +209,18 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, source
           end
 
+          # NOTE: This error is raised by composer v1
           if error.message.include?("Argument 1 passed to Composer")
             msg = "One of your Composer plugins is not compatible with the "\
                   "latest version of Composer. Please update Composer and "\
                   "try running `composer update` to debug further."
             raise DependencyFileNotResolvable, msg
+          end
+
+          # NOTE: This error is raised by composer v2 and includes helpful
+          # information about which plugins or dependencies are not compatible
+          if error.message.include?("Your requirements could not be resolved")
+            raise DependencyFileNotResolvable, error.message
           end
 
           raise error
@@ -425,7 +444,17 @@ module Dependabot
         end
 
         def php_helper_path
-          NativeHelpers.composer_helper_path
+          NativeHelpers.composer_helper_path(composer_version: composer_version)
+        end
+
+        def composer_version
+          @composer_version ||=
+            begin
+              return "v2" unless parsed_lockfile["plugin-api-version"]
+
+              version = Version.new(parsed_lockfile["plugin-api-version"])
+              version.canonical_segments.first == 1 ? "v1" : "v2"
+            end
         end
 
         def credentials_env
@@ -453,7 +482,7 @@ module Dependabot
           platform = {}
           platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
-          # Note: We *don't* include the require-dev PHP version in our initial
+          # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
           requirement_php = parsed_composer_json.dig("require", "php")

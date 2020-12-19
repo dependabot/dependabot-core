@@ -132,7 +132,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
-      # Note: Dep's caret notation implementation doesn't distinguish between
+      # NOTE: Dep's caret notation implementation doesn't distinguish between
       # pre and post-1.0.0 requirements (unlike in JS)
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^?v?/, "")

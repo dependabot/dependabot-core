@@ -61,6 +61,7 @@ RUN apt-get install -y software-properties-common \
   && gem update --system 3.0.3 \
   && gem install bundler -v 1.17.3 --no-document
 
+
 ### PYTHON
 
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
@@ -71,6 +72,7 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && pyenv install 3.9.0 \
   && pyenv install 2.7.18 \
   && pyenv global 3.9.0
+
 
 ### JAVASCRIPT
 
@@ -98,7 +100,8 @@ RUN npm install elm@0.18.0 \
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y \
@@ -128,6 +131,7 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-xml \
     php7.4-zip \
     php7.4-zmq
+
 
 ### GO
 
@@ -193,4 +197,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
-  bash /opt/composer/helpers/build /opt/composer
+  bash /opt/composer/helpers/v2/build /opt/composer/v2 && \
+  bash /opt/composer/helpers/v1/build /opt/composer/v1

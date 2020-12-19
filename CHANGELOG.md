@@ -1,3 +1,80 @@
+## v0.129.0, 15 December 2020
+
+- Composer: Support composer v2 alongside v1 (Thanks for helping out @WyriHaximus)
+
+## v0.128.2, 14 December 2020
+
+- go_modules: fix regression with stubbing local replace paths
+
+## v0.128.1, 14 December 2020
+
+- go_modules: only stub modules outside this repo
+
+## v0.128.0, 14 December 2020
+
+- Gradle: Support kotlin manifest files (thanks, @shakhar!)
+
+## v0.127.1, 14 December 2020
+
+- Bump wheel from 0.36.1 to 0.36.2 in /python/helpers
+- Bump eslint-plugin-prettier from 3.2.0 to 3.3.0 in /npm_and_yarn/helpers
+- Bump @npmcli/arborist from 2.0.0 to 2.0.1 in /npm_and_yarn/helpers
+
+## v0.127.0, 11 December 2020
+
+- go_modules: raise Dependabot::OutOfDisk error when we're fairly sure that the failure occurred due to running out of disk space
+- Bump ini from 1.3.5 to 1.3.7 in /npm_and_yarn/helpers
+
+## v0.126.1, 10 December 2020
+
+- go_modules: don't raise error for `go mod tidy` executions
+
+## v0.126.0, 8 December 2020
+
+- pip-compile: Fix building native python dependencies
+- pipenv: handle installs with missing system dependencies
+- docker: support platform option in from line @ttshivers
+- Bump pip from 20.1.1 to 20.3.1 in /python/helpers
+- Bump golang.org/x/mod from 0.3.0 to 0.4.0 in /go_modules/helpers
+- Bump @npmcli/arborist from 1.0.13 to 1.0.14 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.58 to 0.12.59 in /composer/helpers
+- Bump friendsofphp/php-cs-fixer in /composer/helpers
+- Bump eslint from 7.14.0 to 7.15.0 in /npm_and_yarn/helpers
+- Bump eslint-plugin-prettier from 3.1.4 to 3.2.0 in /npm_and_yarn/helpers
+- Bump semver from 7.3.2 to 7.3.4 in /npm_and_yarn/helpers
+- Update rubocop requirement from ~> 1.4.2 to ~> 1.5.0 in /common
+
+## v0.125.7, 30 November 2020
+
+- Bump jest from 26.6.2 to 26.6.3 in /npm_and_yarn/helpers
+- Bump prettier from 2.1.2 to 2.2.1 in /npm_and_yarn/helpers
+- Bump @npmcli/arborist from 1.0.12 to 1.0.13 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.53 to 0.12.58 in /composer/helpers
+- Bump pip-tools from 5.3.1 to 5.4.0 in /python/helpers
+- Update rubocop requirement from ~> 0.93.0 to ~> 1.4.2 in /common
+- Update simplecov requirement from ~> 0.19.0 to ~> 0.20.0 in /common
+- Update gitlab requirement from = 4.16.1 to = 4.17.0 in /common
+- Bundler: filter relevant credentials for all native helpers @baseballlover723
+- CI: Fix dependabot-core-ci build by removing buildkit caching
+
+## v0.125.6, 27 November 2020
+
+- Pip compile: raise DependencyFileNotRqesolvable error when initial manifest
+  files are unresolvable
+- JS: Handle rate limited npm package requests
+- Go mod: verify Dependabot::GitDependenciesNotReachable from versioned
+- dry-run: add exception handling and re-raise on unknown errors
+
+## v0.125.5, 25 November 2020
+
+- go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com
+- JS: Prefer the npm conflicting dependency parser
+- Clean go_modules build cache in dependabot/dependabot-core docker image
+- Check Azure PR description against utf-16 encoded length
+- Bump @npmcli/arborist from 1.0.10 to 1.0.12 in /npm_and_yarn/helpers
+- Bump npm from 6.14.8 to 6.14.9 in /npm_and_yarn/helpers
+- Bump eslint from 7.12.1 to 7.14.0 in /npm_and_yarn/helpers
+
 ## v0.125.4, 17 November 2020
 
 - Yarn: Explain conflicting top-level dependency

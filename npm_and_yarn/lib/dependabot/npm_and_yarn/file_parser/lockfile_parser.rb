@@ -75,7 +75,7 @@ module Dependabot
               next unless semver_version_for(details["version"])
               next if alias_package?(req)
 
-              # Note: The DependencySet will de-dupe our dependencies, so they
+              # NOTE: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
               # the nested nature of JS resolution, but it makes everything work
               # comparably to other flat-resolution strategies
@@ -94,7 +94,7 @@ module Dependabot
         def package_lock_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
-          # Note: The DependencySet will de-dupe our dependencies, so they
+          # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
@@ -110,7 +110,7 @@ module Dependabot
         def shrinkwrap_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
-          # Note: The DependencySet will de-dupe our dependencies, so they
+          # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies

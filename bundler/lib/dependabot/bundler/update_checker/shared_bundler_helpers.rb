@@ -169,8 +169,8 @@ module Dependabot
               args: {
                 dir: tmp_dir,
                 gemfile_name: gemfile.name,
-                credentials: relevant_credentials,
-                using_bundler_2: using_bundler_2?
+                credentials: credentials,
+                using_bundler2: using_bundler2?
               }
             )
             git_specs.reject do |spec|
@@ -193,8 +193,8 @@ module Dependabot
               args: {
                 dir: dir,
                 gemfile_name: gemfile.name,
-                credentials: relevant_credentials,
-                using_bundler_2: using_bundler_2?
+                credentials: credentials,
+                using_bundler2: using_bundler2?
               }
             )
           end
@@ -210,22 +210,9 @@ module Dependabot
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
         end
 
-        def relevant_credentials
-          [
-            *git_source_credentials,
-            *private_registry_credentials
-          ].select { |cred| cred["password"] || cred["token"] }
-        end
-
         def private_registry_credentials
           credentials.
             select { |cred| cred["type"] == "rubygems_server" }
-        end
-
-        def git_source_credentials
-          credentials.
-            select { |cred| cred["password"] || cred["token"] }.
-            select { |cred| cred["type"] == "git_source" }
         end
 
         def gemfile
@@ -244,7 +231,7 @@ module Dependabot
           lockfile.content.gsub(re, "")
         end
 
-        def using_bundler_2?
+        def using_bundler2?
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)

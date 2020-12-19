@@ -429,7 +429,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               ).to eq("git+https://github.com/jonschlinkert/is-number.git#"\
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-              # Note: Yarn installs the latest version of is-number because the
+              # NOTE: Yarn installs the latest version of is-number because the
               # lockfile has an invalid resolved url and the package json has no
               # version specified. The invalid source url gets set when
               # replacing the resolved url from the old lockfile in
@@ -2390,7 +2390,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      # Note: this will never fail locally on a Mac
+      # NOTE: this will never fail locally on a Mac
       context "with an incompatible os" do
         let(:manifest_fixture_name) { "os_mismatch.json" }
         let(:npm_lock_fixture_name) { "os_mismatch.json" }

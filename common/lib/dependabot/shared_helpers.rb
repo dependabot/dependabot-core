@@ -91,7 +91,6 @@ module Dependabot
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
       env_cmd = [env, cmd].compact
-      puts "Running function #{function}"
       if ENV["DEBUG_FUNCTION"] == function
         escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
         puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(' ')}"
@@ -182,7 +181,7 @@ module Dependabot
     end
 
     def self.configure_git_to_use_https
-      # Note: we use --global here (rather than --system) so that Dependabot
+      # NOTE: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
       run_shell_command(
         "git config --global --replace-all url.https://github.com/."\

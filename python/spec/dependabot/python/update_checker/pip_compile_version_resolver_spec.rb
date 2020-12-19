@@ -250,6 +250,34 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
+    context "with an unresolvable project" do
+      let(:dependency_files) { project_dependency_files("unresolvable") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jupyter-server",
+          version: "0.1.1",
+          requirements: dependency_requirements,
+          package_manager: "pip"
+        )
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to start_with("Could not find a version that matches jupyter-server")
+          end
+      end
+    end
+
     context "with a git source" do
       context "for another dependency, that can't be reached" do
         let(:manifest_fixture_name) { "git_source_unreachable.in" }
@@ -425,6 +453,16 @@ RSpec.describe namespace::PipCompileVersionResolver do
           it { is_expected.to eq(Gem::Version.new("0.1.2")) }
         end
       end
+    end
+
+    context "with native dependencies that are not pre-built" do
+      let(:manifest_fixture_name) { "native_dependencies.in" }
+      let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
+      let(:dependency_name) { "cryptography" }
+      let(:dependency_version) { "2.2.2" }
+      let(:updated_requirement) { "> 3.0.0, < 3.3" }
+
+      it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
   end
 

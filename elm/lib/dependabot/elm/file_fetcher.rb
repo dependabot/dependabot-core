@@ -24,7 +24,7 @@ module Dependabot
         fetched_files << elm_package if elm_package
         fetched_files << elm_json if elm_json
 
-        # Note: We *do not* fetch the exact-dependencies.json file, as it is
+        # NOTE: We *do not* fetch the exact-dependencies.json file, as it is
         # recommended that this is not committed
 
         check_required_files_present

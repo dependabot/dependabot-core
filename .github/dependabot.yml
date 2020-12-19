@@ -5,7 +5,11 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "composer"
-    directory: "/composer/helpers"
+    directory: "/composer/helpers/v1"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "/composer/helpers/v2"
     schedule:
       interval: "daily"
   - package-ecosystem: "mix"

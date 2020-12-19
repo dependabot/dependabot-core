@@ -18,6 +18,8 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+
       PROPERTY_REGEX =
         /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
@@ -36,6 +38,7 @@ module Dependabot
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/.freeze
       PLUGIN_BLOCK_ENTRY_REGEX =
         /id\s+"(?<id>#{PART})"\s+version\s+"(?<version>#{VSN_PART})"/.freeze
+      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/.freeze
 
       def parse
         dependency_set = DependencySet.new
@@ -51,7 +54,7 @@ module Dependabot
       private
 
       def map_value_regex(key)
-        /(?:^|\s|,|\()#{Regexp.quote(key)}:\s*['"](?<value>[^'"]+)['"]/
+        /(?:^|\s|,|\()#{Regexp.quote(key)}(\s*=|:)\s*['"](?<value>[^'"]+)['"]/
       end
 
       def buildfile_dependencies(buildfile)
@@ -146,10 +149,11 @@ module Dependabot
 
         plugin_blocks.each do |blk|
           blk.lines.each do |line|
-            name    = line.match(/id\s+['"](?<id>#{PART})['"]/)&.
-                      named_captures&.fetch("id")
-            version = line.match(/version\s+['"](?<version>#{VSN_PART})['"]/)&.
-                      named_captures&.fetch("version")
+            name_regex = /id(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/
+            name = line.match(name_regex)&.named_captures&.fetch("id")
+            version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/
+            version = line.match(version_regex)&.named_captures&.
+                fetch("version")
             next unless name && version
 
             details = { name: name, group: "plugins", version: version }
@@ -286,15 +290,16 @@ module Dependabot
       end
 
       def buildfiles
-        @buildfiles ||=
-          dependency_files.select { |f| f.name.end_with?("build.gradle") }
+        @buildfiles ||= dependency_files.select do |f|
+          f.name.end_with?(*SUPPORTED_BUILD_FILE_NAMES)
+        end
       end
 
       def script_plugin_files
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
             buildfile.content.
-              scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
+              scan(/apply from(\s+=|:)\s+['"]([^'"]+)['"]/).flatten.
               map { |f| dependency_files.find { |bf| bf.name == f } }.
               compact
           end.
@@ -302,7 +307,13 @@ module Dependabot
       end
 
       def check_required_files
-        raise "No build.gradle!" unless get_original_file("build.gradle")
+        raise "No build.gradle or build.gradle.kts!" unless original_file
+      end
+
+      def original_file
+        dependency_files.find do |f|
+          SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+        end
       end
     end
   end

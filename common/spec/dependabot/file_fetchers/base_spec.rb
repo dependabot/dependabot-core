@@ -286,7 +286,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
     end
 
-    # Note: only used locally when testing against specific commits
+    # NOTE: only used locally when testing against specific commits
     context "with a source commit" do
       let(:source_commit) { "0e8b8c801024c811d434660f8cf09809f9eb9540" }
 
