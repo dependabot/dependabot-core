@@ -8,6 +8,8 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
+require "dependabot/composer/helpers"
+
 module Dependabot
   module Composer
     class UpdateChecker
@@ -433,13 +435,8 @@ module Dependabot
         end
 
         def composer_version
-          @composer_version ||=
-            begin
-              return "v2" unless lockfile && parsed_lockfile["plugin-api-version"]
-
-              version = Version.new(parsed_lockfile["plugin-api-version"])
-              version.canonical_segments.first == 1 ? "v1" : "v2"
-            end
+          parsed_lockfile_or_nil = lockfile ? parsed_lockfile : nil
+          @composer_version ||= Helpers.composer_version(parsed_composer_file, parsed_lockfile_or_nil)
         end
 
         def initial_platform

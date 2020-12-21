@@ -190,6 +190,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_name" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
     # This test is extremely slow, as it needs to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do
