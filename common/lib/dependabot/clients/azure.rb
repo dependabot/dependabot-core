@@ -7,7 +7,9 @@ module Dependabot
   module Clients
     class Azure
       class NotFound < StandardError; end
+      class ServiceNotAvailaible < StandardError; end
 
+      RETRYABLE_ERRORS = [Dependabot::Clients::Azure::ServiceNotAvailaible].freeze
       MAX_PR_DESCRIPTION_LENGTH = 3999
 
       #######################
@@ -176,15 +178,21 @@ module Dependabot
       # rubocop:enable Metrics/ParameterLists
 
       def get(url)
-        response = Excon.get(
-          url,
-          user: credentials&.fetch("username", nil),
-          password: credentials&.fetch("password", nil),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(
-            headers: auth_header
-          )
-        )
+        response = nil
+        retry_connection_failures do
+          response = Excon.get(
+                  url,
+                  user: credentials&.fetch("username", nil),
+                  password: credentials&.fetch("password", nil),
+                  idempotent: true,
+                  **SharedHelpers.excon_defaults(
+                    headers: auth_header
+                  )
+                )
+          
+          raise ServiceNotAvailaible if response.status == 500
+        end
+      
         raise NotFound if response.status == 404
 
         response
@@ -211,6 +219,17 @@ module Dependabot
       end
 
       private
+      
+      def retry_connection_failures
+        retry_attempt = 0
+
+        begin
+          yield
+        rescue *RETRYABLE_ERRORS
+          retry_attempt += 1
+          retry_attempt <= @max_retries ? retry : raise
+        end
+      end
 
       def auth_header_for(token)
         return {} unless token
