@@ -90,7 +90,7 @@ jobs:
       - name: Run Python flake8 linting
         if: matrix.suite == 'python'
         run: |
-          IGNORE=E127,E201,E202,E302,E306,F401
+          IGNORE=E126,E127,E201,E202,E302,E306,F401
           docker run --rm "$CORE_CI_IMAGE" bash -c "pyenv exec flake8 . --count --exclude=./.*,./python/spec/fixtures --ignore=$IGNORE --show-source --statistics"
       - name: Run Ruby Rubocop linting
         run: |
