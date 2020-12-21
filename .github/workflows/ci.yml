@@ -98,6 +98,5 @@ jobs:
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
           docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c \
-            "composer config --global github-oauth.github.com ${{ secrets.COMPOSER_GITHUB_TOKEN }} && \
             cd /home/dependabot/dependabot-core/${{ matrix.suite }} && \
             bundle exec rspec spec"
