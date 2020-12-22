@@ -185,8 +185,8 @@ RSpec.describe Dependabot::Clients::Azure do
         expect(response.status).to eq(200)
       end
 
-      it "with failure count > max_retries rasie error" do
-        #  Request fails (503) multiple times and exceeds max_retry limimt
+      it "with failure count > max_retries raises error" do
+        #  Request fails (503) multiple times and exceeds max_retry limit
         stub_request(:get, base_url).
           with(basic_auth: [username, password]).
           to_return({ status: 503 }, { status: 503 }, { status: 503 })
