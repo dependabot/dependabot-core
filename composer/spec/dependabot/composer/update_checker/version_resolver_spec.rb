@@ -16,14 +16,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:requirements_to_unlock) { :own }
   let(:dependency_files) { project_dependency_files(project_name) }
 
