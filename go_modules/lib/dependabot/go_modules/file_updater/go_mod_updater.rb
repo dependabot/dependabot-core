@@ -40,6 +40,8 @@ module Dependabot
           /no space left on device/.freeze
         ].freeze
 
+        GO_MOD_VERSION = /^go 1\.[\d]+$/.freeze
+
         def initialize(dependencies:, credentials:, repo_contents_path:,
                        directory:, options:)
           @dependencies = dependencies
@@ -67,7 +69,7 @@ module Dependabot
           @updated_files ||= update_files
         end
 
-        def update_files # rubocop:disable Metrics/AbcSize
+        def update_files
           in_repo_path do
             # Map paths in local replace directives to path hashes
 
@@ -90,31 +92,20 @@ module Dependabot
             run_go_vendor
             run_go_mod_tidy
 
-            # At this point, the go.mod returned from run_go_get contains the
-            # correct set of modules, but running `go get` can change the file
-            # in undesirable ways (such as injecting the current Go version),
-            # so we need to update the original go.mod with the updated set of
-            # requirements rather than using the regenerated file directly
-            original_reqs = original_manifest["Require"] || []
-            updated_reqs = parse_manifest["Require"] || []
-
-            original_paths = original_reqs.map { |r| r["Path"] }
-            updated_paths = updated_reqs.map { |r| r["Path"] }
-            req_paths_to_remove = original_paths - updated_paths
-
-            # Put back the original content before we replace just the updated
-            # dependencies.
-            write_go_mod(original_go_mod)
-
-            remove_requirements(req_paths_to_remove)
-            deps = updated_reqs.map { |r| requirement_to_dependency_obj(r) }
-            update_go_mod(deps)
-
             # put the old replace directives back again
             substitute_all(substitutions.invert)
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
+
+            # running "go get" may inject the current go version; remove
+            original_go_version = original_go_mod.match(GO_MOD_VERSION)
+            updated_go_version = updated_go_mod.match(GO_MOD_VERSION)
+            if original_go_version != updated_go_version
+              updated_go_mod = updated_go_mod.lines.map do |l|
+                l.match?(GO_MOD_VERSION) ? original_go_version : l
+              end.compact.join("\n")
+            end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
@@ -182,15 +173,6 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
 
           JSON.parse(stdout) || {}
-        end
-
-        def remove_requirements(requirement_paths)
-          requirement_paths.each do |path|
-            escaped_path = Shellwords.escape(path)
-            command = "go mod edit -droprequire #{escaped_path}"
-            _, stderr, status = Open3.capture3(ENVIRONMENT, command)
-            handle_subprocess_error(stderr) unless status.success?
-          end
         end
 
         def in_repo_path(&block)
@@ -301,24 +283,6 @@ module Dependabot
           return "go.mod" if directory == "/"
 
           File.join(directory, "go.mod")
-        end
-
-        def requirement_to_dependency_obj(req)
-          # This is an approximation - we're not correctly populating `source`
-          # for instance, but it's only to plug the requirement into the
-          # `update_go_mod` method so this mapping doesn't need to be perfect
-          dep_req = {
-            file: "go.mod",
-            requirement: req["Version"],
-            groups: [],
-            source: nil
-          }
-          Dependency.new(
-            name: req["Path"],
-            version: req["Version"],
-            requirements: req["Indirect"] ? [] : [dep_req],
-            package_manager: "go_modules"
-          )
         end
 
         def write_go_mod(body)
