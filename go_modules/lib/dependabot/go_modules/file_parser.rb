@@ -71,8 +71,7 @@ module Dependabot
               File.write("go.mod", go_mod_content)
               File.write("main.go", "package dummypkg\n func main() {}\n")
 
-              command = "go get > /dev/null" # Verify the packages are installable
-              command += " && go mod edit -json"
+              command = "go mod edit -json"
 
               # Turn off the module proxy for now, as it's causing issues with
               # private git dependencies
@@ -127,52 +126,9 @@ module Dependabot
         end
       end
 
-      GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/m.freeze
       def handle_parser_error(path, stderr)
-        case stderr
-        when /go: .*: unknown revision/m
-          line = stderr.lines.grep(/unknown revision/).first.strip
-          handle_github_unknown_revision(line) if line.start_with?("go: github.com/")
-          raise Dependabot::DependencyFileNotResolvable, line
-        when /go: .*: unrecognized import path/m
-          line = stderr.lines.grep(/unrecognized import/).first
-          raise Dependabot::DependencyFileNotResolvable, line.strip
-        when /go: errors parsing go.mod/m
-          msg = stderr.gsub(path.to_s, "").strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
-        when GIT_ERROR_REGEX
-          lines = stderr.lines.drop_while { |l| GIT_ERROR_REGEX !~ l }
-          raise Dependabot::DependencyFileNotResolvable.new, lines.join
-        else
-          msg = stderr.gsub(path.to_s, "").strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
-        end
-      end
-
-      GITHUB_REPO_REGEX = %r{github.com/[^@]*}.freeze
-      def handle_github_unknown_revision(line)
-        mod_path = line.scan(GITHUB_REPO_REGEX).first
-        return unless mod_path
-
-        # Query for _any_ version of this module, to know if it doesn't exist (or is private)
-        # or we were just given a bad revision by this manifest
-        SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            File.write("go.mod", "module dummy\n")
-
-            env = { "GOPRIVATE" => "*" }
-            _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go get #{mod_path}"))
-            raise Dependabot::DependencyFileNotResolvable, line if status.success?
-
-            mod_split = mod_path.split("/")
-            repo_path = if mod_split.size > 3
-                          mod_split[0..2].join("/")
-                        else
-                          mod_path
-                        end
-            raise Dependabot::GitDependenciesNotReachable, [repo_path]
-          end
-        end
+        msg = stderr.gsub(path.to_s, "").strip
+        raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
       end
 
       def rev_identifier?(dep)
