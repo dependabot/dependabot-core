@@ -69,7 +69,7 @@ module Dependabot
           @updated_files ||= update_files
         end
 
-        def update_files
+        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
           in_repo_path do
             # Map paths in local replace directives to path hashes
 
@@ -99,8 +99,8 @@ module Dependabot
             updated_go_mod = File.read("go.mod")
 
             # running "go get" may inject the current go version, remove it
-            original_go_version = original_go_mod.match(GO_MOD_VERSION)
-            updated_go_version = updated_go_mod.match(GO_MOD_VERSION)
+            original_go_version = original_go_mod.match(GO_MOD_VERSION)&.to_a&.first
+            updated_go_version = updated_go_mod.match(GO_MOD_VERSION)&.to_a&.first
             if original_go_version != updated_go_version
               go_mod_lines = updated_go_mod.lines
               go_mod_lines.each_with_index do |line, i|
