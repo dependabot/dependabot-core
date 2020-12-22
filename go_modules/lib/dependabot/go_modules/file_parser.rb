@@ -59,36 +59,33 @@ module Dependabot
       def required_packages
         @required_packages ||=
           SharedHelpers.in_a_temporary_directory do |path|
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              # Create a fake empty module for each local module so that
-              # `go list` works, even if some modules have been `replace`d with
-              # a local module that we don't have access to.
-              local_replacements.each do |_, stub_path|
-                Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
-                FileUtils.touch(File.join(stub_path, "go.mod"))
-              end
-
-              File.write("go.mod", go_mod_content)
-              File.write("main.go", "package dummypkg\n func main() {}\n")
-
-              command = "go mod edit -json"
-
-              # Turn off the module proxy for now, as it's causing issues with
-              # private git dependencies
-              env = { "GOPRIVATE" => "*" }
-
-              stdout, stderr, status = Open3.capture3(env, command)
-              handle_parser_error(path, stderr) unless status.success?
-              JSON.parse(stdout)["Require"]
-            rescue Dependabot::DependencyFileNotResolvable
-              # We sometimes see this error if a host times out.
-              # In such cases, retrying (a maximum of 3 times) may fix it.
-              retry_count ||= 0
-              raise if retry_count >= 3
-
-              retry_count += 1
-              retry
+            # Create a fake empty module for each local module so that
+            # `go list` works, even if some modules have been `replace`d with
+            # a local module that we don't have access to.
+            local_replacements.each do |_, stub_path|
+              Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+              FileUtils.touch(File.join(stub_path, "go.mod"))
             end
+
+            File.write("go.mod", go_mod_content)
+
+            command = "go mod edit -json"
+
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
+            stdout, stderr, status = Open3.capture3(env, command)
+            handle_parser_error(path, stderr) unless status.success?
+            JSON.parse(stdout)["Require"]
+          rescue Dependabot::DependencyFileNotResolvable
+            # We sometimes see this error if a host times out.
+            # In such cases, retrying (a maximum of 3 times) may fix it.
+            retry_count ||= 0
+            raise if retry_count >= 3
+
+            retry_count += 1
+            retry
           end
       end
 
