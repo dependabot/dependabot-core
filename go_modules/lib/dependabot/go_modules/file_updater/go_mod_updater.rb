@@ -193,15 +193,6 @@ module Dependabot
           end
         end
 
-        def add_requirements(requirements)
-          requirements.each do |r|
-            escaped_req = Shellwords.escape("#{r['Path']}@#{r['Version']}")
-            command = "go mod edit -require #{escaped_req}"
-            _, stderr, status = Open3.capture3(ENVIRONMENT, command)
-            handle_subprocess_error(stderr) unless status.success?
-          end
-        end
-
         def in_repo_path(&block)
           SharedHelpers.
             in_a_temporary_repo_directory(directory, repo_contents_path) do
