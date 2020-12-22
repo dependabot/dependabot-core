@@ -94,7 +94,11 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
-      - name: Run Rubocop linting
+      - name: Run Python flake8 linting
+        if: matrix.suite == 'python'
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c "pyenv exec flake8 . --count --exclude=./.*,./python/spec/fixtures --show-source --statistics"
+      - name: Run Ruby Rubocop linting
         run: |
           docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop ."
       - name: Run js linting and tests
