@@ -98,13 +98,21 @@ module Dependabot
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
-            # running "go get" may inject the current go version; remove
+            # running "go get" may inject the current go version, remove it
             original_go_version = original_go_mod.match(GO_MOD_VERSION)
             updated_go_version = updated_go_mod.match(GO_MOD_VERSION)
             if original_go_version != updated_go_version
-              updated_go_mod = updated_go_mod.lines.map do |l|
-                l.match?(GO_MOD_VERSION) ? original_go_version : l
-              end.compact.join("\n")
+              go_mod_lines = updated_go_mod.lines
+              go_mod_lines.each_with_index do |line, i|
+                next unless line&.match?(GO_MOD_VERSION)
+
+                # replace with the original version
+                go_mod_lines[i] = original_go_version
+                # avoid a stranded newline if there was no version originally
+                go_mod_lines[i + 1] = nil if original_go_version.nil?
+              end
+
+              updated_go_mod = go_mod_lines.compact.join
             end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }

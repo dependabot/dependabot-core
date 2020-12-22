@@ -88,6 +88,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_1.11" }
 
           it { is_expected.to_not include("go 1.") }
+          it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
         end
 
         context "for a go 1.12 go.mod" do
