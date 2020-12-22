@@ -51,6 +51,13 @@ jobs:
           else
             echo "No Docker credentials, skipping login"
           fi
+      - name: Set test env credentials
+        run: |
+          if [ -n "${{ secrets.PUBLIC_REPO_GITHUB_TOKEN }}" ]; then
+            echo "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.PUBLIC_REPO_GITHUB_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "No test credentials, skipping"
+          fi
       - name: Pull Docker base images & warm Docker cache
         run: |
           docker pull "$BASE_IMAGE"
@@ -97,6 +104,5 @@ jobs:
           docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
-          docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && \
-            bundle exec rspec spec"
+          docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
