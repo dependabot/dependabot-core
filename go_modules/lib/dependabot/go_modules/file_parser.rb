@@ -60,7 +60,7 @@ module Dependabot
         @required_packages ||=
           SharedHelpers.in_a_temporary_directory do |path|
             # Create a fake empty module for each local module so that
-            # `go list` works, even if some modules have been `replace`d with
+            # `go mod edit` works, even if some modules have been `replace`d with
             # a local module that we don't have access to.
             local_replacements.each do |_, stub_path|
               Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
