@@ -173,5 +173,26 @@ RSpec.describe Dependabot::Clients::Azure do
       include_examples "#get using auth headers", basic_encoded_token_data
       include_examples "#get using auth headers", bearer_token_data
     end
+
+    context "Retries" do
+      it "with failure count <= max_retries" do
+        # Request succeeds (200) on second attempt.
+        stub_request(:get, base_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 502 }, { status: 200 })
+
+        response = client.get(base_url)
+        expect(response.status).to eq(200)
+      end
+
+      it "with failure count > max_retries rasie error" do
+        #  Request fails (503) multiple times and exceeds max_retry limimt
+        stub_request(:get, base_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 503 }, { status: 503 }, { status: 503 })
+
+        expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailaible)
+      end
+    end
   end
 end

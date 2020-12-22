@@ -7,9 +7,15 @@ module Dependabot
   module Clients
     class Azure
       class NotFound < StandardError; end
+
+      class InternalServerError < StandardError; end
+
       class ServiceNotAvailaible < StandardError; end
 
-      RETRYABLE_ERRORS = [Dependabot::Clients::Azure::ServiceNotAvailaible].freeze
+      class BadGateway < StandardError; end
+
+      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailaible].freeze
+
       MAX_PR_DESCRIPTION_LENGTH = 3999
 
       #######################
@@ -28,10 +34,11 @@ module Dependabot
       # Client #
       ##########
 
-      def initialize(source, credentials)
+      def initialize(source, credentials, max_retries: 3)
         @source = source
         @credentials = credentials
         @auth_header = auth_header_for(credentials&.fetch("token", nil))
+        @max_retries = max_retries || 3
       end
 
       def fetch_commit(_repo, branch)
@@ -179,20 +186,23 @@ module Dependabot
 
       def get(url)
         response = nil
+
         retry_connection_failures do
           response = Excon.get(
-                  url,
-                  user: credentials&.fetch("username", nil),
-                  password: credentials&.fetch("password", nil),
-                  idempotent: true,
-                  **SharedHelpers.excon_defaults(
-                    headers: auth_header
-                  )
-                )
-          
-          raise ServiceNotAvailaible if response.status == 500
+            url,
+            user: credentials&.fetch("username", nil),
+            password: credentials&.fetch("password", nil),
+            idempotent: true,
+            **SharedHelpers.excon_defaults(
+              headers: auth_header
+            )
+          )
+
+          raise InternalServerError if response.status == 500
+          raise BadGateway if response.status == 502
+          raise ServiceNotAvailaible if response.status == 503
         end
-      
+
         raise NotFound if response.status == 404
 
         response
@@ -219,7 +229,7 @@ module Dependabot
       end
 
       private
-      
+
       def retry_connection_failures
         retry_attempt = 0
 
