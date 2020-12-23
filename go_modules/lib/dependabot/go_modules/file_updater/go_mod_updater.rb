@@ -72,7 +72,6 @@ module Dependabot
         def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
           in_repo_path do
             # Map paths in local replace directives to path hashes
-
             original_go_mod = File.read("go.mod")
             original_manifest = parse_manifest
             original_go_sum = File.read("go.sum") if File.exist?("go.sum")
@@ -89,11 +88,15 @@ module Dependabot
             # Then run `go get` to pick up other changes to the file caused by
             # the upgrade
             run_go_get
-            run_go_vendor
-            run_go_mod_tidy
 
-            # put the old replace directives back again
-            substitute_all(substitutions.invert)
+            # If we stubbed modules, don't run `go mod {tidy,vendor}` as
+            # dependencies are incomplete
+            if substitutions.empty?
+              run_go_mod_tidy
+              run_go_vendor
+            else
+              substitute_all(substitutions.invert)
+            end
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")

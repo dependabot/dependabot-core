@@ -503,6 +503,30 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
+
+    context "for an external path replacement" do
+      let(:project_name) { "substituted" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      # Update is applied, stubbed indirect dependencies are not culled
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+    end
   end
 
   describe "#handle_subprocess_error" do
