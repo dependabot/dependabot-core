@@ -481,9 +481,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a monorepo" do
+    context "for a monorepo directory" do
       let(:project_name) { "monorepo" }
-      let(:directory) { "cmd" }
+      let(:directory) { "/cmd" }
 
       let(:dependency_name) { "rsc.io/qr" }
       let(:dependency_version) { "v0.2.0" }
@@ -501,6 +501,36 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
 
+      # updated and tidied
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
+      it { is_expected.not_to include(%(rsc.io/qr v0.1.0)) }
+      # module was not stubbed
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+    end
+
+    context "for a monorepo root" do
+      let(:project_name) { "monorepo" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      # updated and tidied
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
+      it { is_expected.not_to include(%(rsc.io/qr v0.1.0)) }
+      # module was not stubbed
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
 

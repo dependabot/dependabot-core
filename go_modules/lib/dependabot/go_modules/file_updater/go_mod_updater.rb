@@ -252,7 +252,7 @@ module Dependabot
         end
 
         def module_pathname
-          @module_pathname ||= Pathname.new(repo_contents_path).join(directory)
+          @module_pathname ||= Pathname.new(repo_contents_path).join(directory.sub(%r{^/}, ""))
         end
 
         def substitute_all(substitutions)
