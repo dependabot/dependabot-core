@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Clients::Azure do
           with(basic_auth: [username, password]).
           to_return({ status: 503 }, { status: 503 }, { status: 503 })
 
-        expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailaible)
+        expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
       end
     end
   end
