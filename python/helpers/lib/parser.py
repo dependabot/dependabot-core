@@ -1,28 +1,26 @@
-from itertools import chain
 import glob
 import io
 import json
-import optparse
 import os.path
 import re
 
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.network.session import PipSession
-from pip._internal.models.format_control import FormatControl
 from pip._internal.req.constructors import (
-        install_req_from_line,
-        install_req_from_parsed_requirement,
+    install_req_from_line,
+    install_req_from_parsed_requirement,
 )
+
 
 def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []
     requirement_files = glob.glob(os.path.join(directory, '*.txt')) \
-                        + glob.glob(os.path.join(directory, '**', '*.txt'))
+        + glob.glob(os.path.join(directory, '**', '*.txt'))
 
     pip_compile_files = glob.glob(os.path.join(directory, '*.in')) \
-                        + glob.glob(os.path.join(directory, '**', '*.in'))
+        + glob.glob(os.path.join(directory, '**', '*.in'))
 
     def version_from_install_req(install_req):
         if install_req.is_pinned:
@@ -52,10 +50,11 @@ def parse_requirements(directory):
                     "extras": sorted(list(install_req.extras))
                 })
         except Exception as e:
-            print(json.dumps({ "error": repr(e) }))
+            print(json.dumps({"error": repr(e)}))
             exit(1)
 
-    return json.dumps({ "result": requirement_packages })
+    return json.dumps({"result": requirement_packages})
+
 
 def parse_setup(directory):
     # Parse the setup.py
@@ -99,6 +98,7 @@ def parse_setup(directory):
             return []
 
         global fake_open
+
         def fake_open(*args, **kwargs):
             content = ("VERSION = ('0', '0', '1+dependabot')\n"
                        "__version__ = '0.0.1+dependabot'\n"
@@ -135,4 +135,4 @@ def parse_setup(directory):
         # Exec the setup.py
         exec(content) in globals(), locals()
 
-    return json.dumps({ "result": setup_packages })
+    return json.dumps({"result": setup_packages})

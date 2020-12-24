@@ -36,14 +36,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:requirements) do
     [{ file: "composer.json", requirement: "1.0.*", groups: [], source: nil }]
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
 
@@ -534,7 +527,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
     end
 
-    context "with a dependency with a git source" do
+    context "with a git source dependency" do
       let(:project_name) { "git_source" }
 
       let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
@@ -552,85 +545,128 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to be_nil }
+    end
 
-      context "that is not the gem we're checking" do
-        let(:dependency_name) { "symfony/polyfill-mbstring" }
-        let(:dependency_version) { "1.0.1" }
-        let(:requirements) do
-          [{
-            file: "composer.json",
-            requirement: "1.0.*",
-            groups: [],
-            source: nil
-          }]
-        end
+    context "with a git source dependency that's not the dependency we're checking" do
+      let(:project_name) { "git_source" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
 
-        it { is_expected.to be >= Gem::Version.new("1.3.0") }
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
 
-        context "with an alias" do
-          let(:project_name) { "git_source_alias" }
-          it { is_expected.to be >= Gem::Version.new("1.3.0") }
-        end
+    context "with a git source dependency that's not the dependency we're checking with an alias" do
+      let(:project_name) { "git_source_alias" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
 
-        context "with a stability flag" do
-          let(:project_name) { "git_source_transitive" }
-          let(:requirements) do
-            [{
-              requirement: "1.*@dev",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/php-fig/log.git",
-                branch: "master",
-                ref: nil
-              }
-            }]
+    context "with a git source dependency that's not the dependency we're checking with a stability flag" do
+      let(:project_name) { "git_source_transitive" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          requirement: "1.*@dev",
+          file: "composer.json",
+          groups: ["runtime"],
+          source: {
+            type: "git",
+            url: "https://github.com/php-fig/log.git",
+            branch: "master",
+            ref: nil
+          }
+        }]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with a git source dependency that's not the dependency we're checking with a bad commit" do
+      let(:project_name) { "git_source_bad_commit" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      # Alternatively, this could raise an error. Either behaviour would be
+      # fine - the below is just what we get with Composer at the moment
+      # because we disabled downloading the files in
+      # DependabotInstallationManager.
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
+
+    context "with a git source dependency that's not the dependency we're checking with a git URL" do
+      let(:project_name) { "git_source_git_url" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
+    end
+
+    context "with a git source dependency that's not the dependency we're checking that is unreachable" do
+      let(:project_name) { "git_source_unreachable" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { checker.latest_resolvable_version }.
+          to raise_error do |error|
+            expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+            expect(error.dependency_urls).
+              to eq(["https://github.com/no-exist-sorry/monolog.git"])
           end
+      end
 
-          it { is_expected.to be_nil }
-        end
+      context "with a git URL" do
+        let(:project_name) { "git_source_unreachable_git_url" }
 
-        context "with a bad commit" do
-          let(:project_name) { "git_source_bad_commit" }
-
-          # Alternatively, this could raise an error. Either behaviour would be
-          # fine - the below is just what we get with Composer at the moment
-          # because we disabled downloading the files in
-          # DependabotInstallationManager.
-          it { is_expected.to be >= Gem::Version.new("1.3.0") }
-        end
-
-        context "with a git URL" do
-          let(:project_name) { "git_source_git_url" }
-
-          it { is_expected.to be >= Gem::Version.new("1.3.0") }
-        end
-
-        context "that is unreachable" do
-          let(:project_name) { "git_source_unreachable" }
-
-          it "raises a helpful error" do
-            expect { checker.latest_resolvable_version }.
-              to raise_error do |error|
-                expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-                expect(error.dependency_urls).
-                  to eq(["https://github.com/no-exist-sorry/monolog.git"])
-              end
-          end
-
-          context "with a git URL" do
-            let(:project_name) { "git_source_unreachable_git_url" }
-
-            it "raises a helpful error" do
-              expect { checker.latest_resolvable_version }.
-                to raise_error do |error|
-                  expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-                  expect(error.dependency_urls).
-                    to eq(["git@github.com:no-exist-sorry/monolog"])
-                end
+        it "raises a helpful error" do
+          expect { checker.latest_resolvable_version }.
+            to raise_error do |error|
+              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+              expect(error.dependency_urls).
+                to eq(["git@github.com:no-exist-sorry/monolog"])
             end
-          end
         end
       end
     end
@@ -719,7 +755,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       checker.latest_resolvable_version_with_no_unlock
     end
 
-    context "with a dependency with a git source" do
+    context "with a git source dependency" do
       let(:project_name) { "git_source" }
 
       let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }

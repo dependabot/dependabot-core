@@ -17,12 +17,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
 
