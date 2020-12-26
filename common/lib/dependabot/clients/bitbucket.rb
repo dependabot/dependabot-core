@@ -18,6 +18,7 @@ module Dependabot
 
       def initialize(credentials:)
         @credentials = credentials
+        @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
 
       def fetch_commit(repo, branch)
@@ -72,7 +73,9 @@ module Dependabot
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
           idempotent: true,
-          **Dependabot::SharedHelpers.excon_defaults
+          **Dependabot::SharedHelpers.excon_defaults(
+            headers: auth_header
+          )
         )
         raise Unauthorized if response.status == 401
         raise Forbidden if response.status == 403
@@ -89,6 +92,13 @@ module Dependabot
 
       private
 
+      def auth_header_for(token)
+        return {} unless token
+
+        { "Authorization" => "Bearer #{token}" }
+      end
+
+      attr_reader :auth_header
       attr_reader :credentials
 
       def base_url
