@@ -17,12 +17,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
 
@@ -52,7 +47,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       source: nil
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 

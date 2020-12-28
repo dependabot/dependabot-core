@@ -13,7 +13,11 @@ Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
 
-Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
+## Contributing to Dependabot
+
+Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
+
+Please refer to the [CONTRIBUTING][contributing] guidelines for more information.
 
 ### Disclosing security issues
 
@@ -217,6 +221,7 @@ recurring payments from Europe, check them out.
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
+[contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
 [api-docs]: https://github.com/dependabot/api-docs
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core

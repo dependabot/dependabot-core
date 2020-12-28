@@ -10,11 +10,11 @@ module Dependabot
 
       class InternalServerError < StandardError; end
 
-      class ServiceNotAvailaible < StandardError; end
+      class ServiceNotAvailable < StandardError; end
 
       class BadGateway < StandardError; end
 
-      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailaible].freeze
+      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
       MAX_PR_DESCRIPTION_LENGTH = 3999
 
@@ -200,7 +200,7 @@ module Dependabot
 
           raise InternalServerError if response.status == 500
           raise BadGateway if response.status == 502
-          raise ServiceNotAvailaible if response.status == 503
+          raise ServiceNotAvailable if response.status == 503
         end
 
         raise NotFound if response.status == 404

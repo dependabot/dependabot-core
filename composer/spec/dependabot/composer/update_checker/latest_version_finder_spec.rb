@@ -33,14 +33,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   let(:requirements) do
     [{ file: "composer.json", requirement: "1.0.*", groups: [], source: nil }]
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
 

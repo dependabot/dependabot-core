@@ -16,14 +16,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:requirements_to_unlock) { :own }
   let(:dependency_files) { project_dependency_files(project_name) }
 
@@ -188,6 +181,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::OutOfMemory)
       end
+    end
+
+    context "with a name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_name" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
     # This test is extremely slow, as it needs to wait for Composer to time out.

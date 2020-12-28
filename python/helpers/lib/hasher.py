@@ -1,8 +1,8 @@
 import hashin
 import json
 import pipfile
-from poetry.poetry import Poetry
 from poetry.factory import Factory
+
 
 def get_dependency_hash(dependency_name, dependency_version, algorithm):
     hashes = hashin.get_package_hashes(
@@ -11,14 +11,16 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm):
         algorithm=algorithm
     )
 
-    return json.dumps({ "result": hashes["hashes"] })
+    return json.dumps({"result": hashes["hashes"]})
+
 
 def get_pipfile_hash(directory):
     p = pipfile.load(directory + '/Pipfile')
 
-    return json.dumps({ "result": p.hash })
+    return json.dumps({"result": p.hash})
+
 
 def get_pyproject_hash(directory):
     p = Factory().create_poetry(directory)
 
-    return json.dumps({ "result": p.locker._get_content_hash() })
+    return json.dumps({"result": p.locker._get_content_hash()})
