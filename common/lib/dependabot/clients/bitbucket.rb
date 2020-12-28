@@ -12,11 +12,26 @@ module Dependabot
 
       class Forbidden < StandardError; end
 
+      #######################
+      # Constructor methods #
+      #######################
+
+      def self.for_source(source:, credentials:)
+        credential =
+          credentials.
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == source.hostname }
+
+        new(credentials: credential, source: source)
+      end
+
       ##########
       # Client #
       ##########
 
-      def initialize(credentials:)
+      # FIXME: I don't know if changing the constructor here is safe
+      def initialize(credentials:, source: nil)
+        @source = source
         @credentials = credentials
         @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
@@ -52,6 +67,92 @@ module Dependabot
 
         response.body
       end
+
+      def commits(repo, branch_name = nil)
+        commits_path = "#{repo}/commits/" + branch_name.to_s
+        commits_path += "?pagelen=100"
+
+        response = get(base_url + commits_path)
+
+        JSON.parse(response.body).fetch("values")
+      end
+
+      def branch(repo, branch_name)
+        branch_path = "#{repo}/refs/branches/#{branch_name}"
+        response = get(base_url + branch_path)
+
+        JSON.parse(response.body)
+      end
+
+      def pull_requests(repo, source_branch, target_branch)
+        pr_path = "#{repo}/pullrequests"
+        pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
+        next_page = base_url + pr_path
+        pull_requests = []
+        loop do
+          response = get(next_page)
+          result = JSON.parse(response.body)
+          pull_requests.concat result.fetch("values")
+          break unless result.key?("next")
+
+          next_page = result.fetch("next")
+        end
+
+        pull_requests unless source_branch && target_branch
+
+        pull_requests.
+          select do |pr|
+            pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+            pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
+            pr_source_branch == source_branch && pr_target_branch == target_branch
+          end
+      end
+
+      # rubocop:disable Metrics/ParameterLists
+      def create_commit(repo, branch_name, base_commit, commit_message, files,
+                        author_details)
+        parameters = {
+          message: commit_message, # TODO: Format markup in commit message
+          author: "#{author_details.fetch(:name)} <#{author_details.fetch(:email)}>",
+          parents: base_commit,
+          branch: branch_name
+        }
+
+        files.each do |file|
+          absolute_path = "/" + file.name unless file.name.start_with?("/")
+          parameters[absolute_path] = file.content
+        end
+
+        body = encode_form_parameters(parameters)
+
+        commit_path = "#{repo}/src"
+        post(base_url + commit_path, body, "application/x-www-form-urlencoded")
+      end
+      # rubocop:enable Metrics/ParameterLists
+
+      # rubocop:disable Metrics/ParameterLists
+      def create_pull_request(repo, pr_name, source_branch, target_branch,
+                              pr_description, _labels, _work_item = nil)
+        content = {
+          title: pr_name,
+          source: {
+            branch: {
+              name: source_branch
+            }
+          },
+          destination: {
+            branch: {
+              name: target_branch
+            }
+          },
+          description: pr_description,
+          close_source_branch: true
+        }
+
+        pr_path = "#{repo}/pullrequests"
+        post(base_url + pr_path, content.to_json)
+      end
+      # rubocop:enable Metrics/ParameterLists
 
       def tags(repo)
         path = "#{repo}/refs/tags?pagelen=100"
@@ -90,12 +191,40 @@ module Dependabot
         response
       end
 
+      def post(url, body, content_type = "application/json")
+        response = Excon.post(
+          url,
+          body: body,
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
+          idempotent: false,
+          **SharedHelpers.excon_defaults(
+            headers: auth_header.merge(
+              {
+                "Content-Type" => content_type
+              }
+            )
+          )
+        )
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
+        raise NotFound if response.status == 404
+
+        response
+      end
+
       private
 
       def auth_header_for(token)
         return {} unless token
 
         { "Authorization" => "Bearer #{token}" }
+      end
+
+      def encode_form_parameters(parameters)
+        parameters.map do |key, value|
+          URI.encode_www_form_component(key.to_s) + "=" + URI.encode_www_form_component(value.to_s)
+        end.join("&")
       end
 
       attr_reader :auth_header

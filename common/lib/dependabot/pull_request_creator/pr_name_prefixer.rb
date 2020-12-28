@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/clients/azure"
+require "dependabot/clients/bitbucket"
 require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -264,6 +265,7 @@ module Dependabot
         when "github" then recent_github_commit_messages
         when "gitlab" then recent_gitlab_commit_messages
         when "azure" then recent_azure_commit_messages
+        when "bitbucket" then recent_bitbucket_commit_messages
         when "codecommit" then recent_codecommit_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
@@ -307,6 +309,19 @@ module Dependabot
           map(&:strip)
       end
 
+      # FIXME: Should this paginate through all commits, or is 100 enough?
+      def recent_bitbucket_commit_messages
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits(source.repo)
+
+        @recent_bitbucket_commit_messages.
+          reject { |c| bitbucket_commit_author_email(c) == dependabot_email }.
+          reject { |c| c.fetch("message")&.start_with?("Merge") }.
+          map { |c| c.fetch("message") }.
+          compact.
+          map(&:strip)
+      end
+
       def recent_codecommit_commit_messages
         @recent_codecommit_commit_messages ||=
           codecommit_client_for_source.commits
@@ -324,6 +339,7 @@ module Dependabot
           when "github" then last_github_dependabot_commit_message
           when "gitlab" then last_gitlab_dependabot_commit_message
           when "azure" then last_azure_dependabot_commit_message
+          when "bitbucket" then last_bitbucket_dependabot_commit_message
           when "codecommit" then last_codecommit_dependabot_commit_message
           else raise "Unsupported provider: #{source.provider}"
           end
@@ -365,6 +381,16 @@ module Dependabot
           strip
       end
 
+      def last_bitbucket_dependabot_commit_message
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits(source.repo)
+
+        @recent_bitbucket_commit_messages.
+          find { |c| bitbucket_commit_author_email(c) == dependabot_email }&.
+          fetch("message", nil)&.
+          strip
+      end
+
       def last_codecommit_dependabot_commit_message
         @recent_codecommit_commit_messages ||=
           codecommit_client_for_source.commits(source.repo)
@@ -377,6 +403,11 @@ module Dependabot
 
       def azure_commit_author_email(commit)
         commit.fetch("author").fetch("email", "")
+      end
+
+      def bitbucket_commit_author_email(commit)
+        matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
+        matches ? matches[1] : ""
       end
 
       def github_client_for_source
@@ -398,6 +429,14 @@ module Dependabot
       def azure_client_for_source
         @azure_client_for_source ||=
           Dependabot::Clients::Azure.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def bitbucket_client_for_source
+        @bitbucket_client_for_source ||=
+          Dependabot::Clients::Bitbucket.for_source(
             source: source,
             credentials: credentials
           )
