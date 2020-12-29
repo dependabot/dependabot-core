@@ -23,10 +23,20 @@ module Dependabot
         dependency.version
       end
 
-      def updated_requirements
-        return dependency.requirements if updated_source == dependency_source_details
+      def updated_requirements # rubocop:disable Metrics/PerceivedComplexity
+        previous = dependency_source_details
+        updated = updated_source
+        return dependency.requirements if updated == previous
 
-        dependency.requirements.map { |req| req.merge(source: updated_source) }
+        if previous[:type] == "git" &&
+           previous[:url] == updated[:url] &&
+           updated[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
+           previous[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
+           updated[:ref]&.start_with?(previous[:ref])
+          return dependency.requirements
+        end
+
+        dependency.requirements.map { |req| req.merge(source: updated) }
       end
 
       private
