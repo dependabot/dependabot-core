@@ -91,6 +91,7 @@ require "dependabot/terraform"
 
 $options = {
   credentials: [],
+  provider: "github",
   directory: "/",
   dependency_names: nil,
   branch: nil,
@@ -132,6 +133,10 @@ end
 
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
+
+  opts.on("--provider PROVIDER", "SCM provider e.g. github, azure, bitbucket") do |value|
+    $options[:provider] = value
+  end
 
   opts.on("--dir DIRECTORY", "Dependency file directory") do |value|
     $options[:directory] = value
@@ -413,7 +418,7 @@ def handle_dependabot_error(error:, dependency:)
 end
 
 source = Dependabot::Source.new(
-  provider: "github",
+  provider: $options[:provider],
   repo: $repo_name,
   directory: $options[:directory],
   branch: $options[:branch],
