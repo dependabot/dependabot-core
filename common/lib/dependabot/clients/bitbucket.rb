@@ -106,7 +106,7 @@ module Dependabot
         }
 
         files.each do |file|
-          absolute_path = "/" + file.name unless file.name.start_with?("/")
+          absolute_path = file.name.start_with?("/") ? file.name : "/" + file.name
           parameters[absolute_path] = file.content
         end
 
