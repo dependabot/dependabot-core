@@ -315,9 +315,9 @@ module Dependabot
 
         @recent_bitbucket_commit_messages.
           reject { |c| bitbucket_commit_author_email(c) == dependabot_email }.
-          reject { |c| c.fetch("message")&.start_with?("Merge") }.
-          map { |c| c.fetch("message") }.
+          map { |c| c.fetch("message", nil) }.
           compact.
+          reject { |m| m.start_with?("Merge") }.
           map(&:strip)
       end
 
