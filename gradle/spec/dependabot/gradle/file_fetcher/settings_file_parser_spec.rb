@@ -24,19 +24,19 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       it "includes the additional declarations" do
         expect(subproject_paths).to match_array(%w(app))
       end
+    end
 
-      context "when kotlin" do
-        let(:settings_file) do
-          Dependabot::DependencyFile.new(
-            name: "settings.gradle.kts",
-            content: fixture("settings_files", fixture_name)
-          )
-        end
-        let(:fixture_name) { "settings.gradle.kts" }
+    context "when kotlin" do
+      let(:settings_file) do
+        Dependabot::DependencyFile.new(
+          name: "settings.gradle.kts",
+          content: fixture("settings_files", fixture_name)
+        )
+      end
+      let(:fixture_name) { "settings.gradle.kts" }
 
-        it "includes the additional declarations" do
-          expect(subproject_paths).to match_array(%w(app))
-        end
+      it "includes the additional declarations" do
+        expect(subproject_paths).to match_array(%w(app))
       end
     end
 
