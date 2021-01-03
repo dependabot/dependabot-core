@@ -81,6 +81,7 @@ module Dependabot
 
       def pull_requests(repo, source_branch, target_branch)
         pr_path = "#{repo}/pullrequests"
+        # Get pull requests with any status
         pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
         next_page_url = base_url + pr_path
         pull_requests = paginate({ "next" => next_page_url })
