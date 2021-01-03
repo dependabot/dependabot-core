@@ -39,7 +39,6 @@ module Dependabot
 
       private
 
-      # FIXME: I don't know what the "for_source" methods are for
       def bitbucket_client_for_source
         @bitbucket_client_for_source ||=
           Dependabot::Clients::Bitbucket.for_source(

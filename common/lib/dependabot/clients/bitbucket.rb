@@ -22,16 +22,14 @@ module Dependabot
           select { |cred| cred["type"] == "git_source" }.
           find { |cred| cred["host"] == source.hostname }
 
-        new(credentials: credential, source: source)
+        new(credentials: credential)
       end
 
       ##########
       # Client #
       ##########
 
-      # FIXME: I don't know if changing the constructor here is safe
-      def initialize(credentials:, source: nil)
-        @source = source
+      def initialize(credentials:)
         @credentials = credentials
         @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
