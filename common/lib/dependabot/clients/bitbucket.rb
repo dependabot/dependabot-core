@@ -87,12 +87,11 @@ module Dependabot
 
         pull_requests unless source_branch && target_branch
 
-        pull_requests.
-          select do |pr|
-            pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
-            pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
-            pr_source_branch == source_branch && pr_target_branch == target_branch
-          end
+        pull_requests.select do |pr|
+          pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+          pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
+          pr_source_branch == source_branch && pr_target_branch == target_branch
+        end
       end
 
       # rubocop:disable Metrics/ParameterLists
