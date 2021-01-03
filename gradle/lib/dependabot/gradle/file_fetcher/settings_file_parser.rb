@@ -49,7 +49,7 @@ module Dependabot
 
         def function_regex(function_name)
           /
-            (?:^|\s)#{Regexp.quote(function_name)}(?:\(|\s)
+            (?:^|\s)#{Regexp.quote(function_name)}(?:\s*\(|\s)
             (?<args>\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)
           /mx
         end

@@ -26,6 +26,16 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       end
     end
 
+    context "with various call styles" do
+      let(:fixture_name) { "call_style_settings.gradle" }
+
+      it "includes the additional declarations" do
+        expect(subproject_paths).to match_array(
+          %w(function_without_space function_with_space implicit implicit_with_many_spaces)
+        )
+      end
+    end
+
     context "when kotlin" do
       let(:settings_file) do
         Dependabot::DependencyFile.new(
