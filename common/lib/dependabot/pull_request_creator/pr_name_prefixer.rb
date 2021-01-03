@@ -309,7 +309,6 @@ module Dependabot
           map(&:strip)
       end
 
-      # FIXME: Should this paginate through all commits, or is 100 enough?
       def recent_bitbucket_commit_messages
         @recent_bitbucket_commit_messages ||=
           bitbucket_client_for_source.commits(source.repo)

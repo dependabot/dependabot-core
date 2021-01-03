@@ -67,12 +67,9 @@ module Dependabot
       end
 
       def commits(repo, branch_name = nil)
-        commits_path = "#{repo}/commits/" + branch_name.to_s
-        commits_path += "?pagelen=100"
-
-        response = get(base_url + commits_path)
-
-        JSON.parse(response.body).fetch("values")
+        commits_path = "#{repo}/commits/#{branch_name}?pagelen=100"
+        next_page_url = base_url + commits_path
+        paginate({ "next" => next_page_url })
       end
 
       def branch(repo, branch_name)
@@ -85,16 +82,8 @@ module Dependabot
       def pull_requests(repo, source_branch, target_branch)
         pr_path = "#{repo}/pullrequests"
         pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
-        next_page = base_url + pr_path
-        pull_requests = []
-        loop do
-          response = get(next_page)
-          result = JSON.parse(response.body)
-          pull_requests.concat result.fetch("values")
-          break unless result.key?("next")
-
-          next_page = result.fetch("next")
-        end
+        next_page_url = base_url + pr_path
+        pull_requests = paginate({ "next" => next_page_url })
 
         pull_requests unless source_branch && target_branch
 
@@ -223,6 +212,31 @@ module Dependabot
         parameters.map do |key, value|
           URI.encode_www_form_component(key.to_s) + "=" + URI.encode_www_form_component(value.to_s)
         end.join("&")
+      end
+
+      # Takes a hash with optional `values` and `next` fields
+      # Returns an enumerator.
+      #
+      # Can be used a few ways:
+      # With GET:
+      #     paginate ({"next" => url})
+      # or
+      #     paginate(JSON.parse(get(url).body))
+      #
+      # With POST (for endpoints that provide POST methods for long query parameters)
+      #     response = post(url, body)
+      #     first_page = JSON.parse(repsonse.body)
+      #     paginate(first_page)
+      def paginate(page)
+        Enumerator.new do |yielder|
+          loop do
+            page.fetch("values", []).each { |value| yielder << value }
+            break unless page.key?("next")
+
+            next_page_url = page.fetch("next")
+            page = JSON.parse(get(next_page_url).body)
+          end
+        end
       end
 
       attr_reader :auth_header
