@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
           end
 
           context "and does have a subdirectory with its name" do
-            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+            let(:repo_contents_fixture_nm) { "contents_java.json" }
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 

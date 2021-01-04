@@ -31,6 +31,7 @@ module Dependabot
         fetched_files << buildfile
         fetched_files += subproject_buildfiles
         fetched_files += dependency_script_plugins
+        check_required_files_present
         fetched_files
       end
 
@@ -38,7 +39,7 @@ module Dependabot
         @buildfile ||= begin
           file = supported_build_file
           @buildfile_name ||= file.name if file
-          fetch_file_from_host(file.name) if file
+          file
         end
       end
 
@@ -58,7 +59,10 @@ module Dependabot
         end.compact
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def dependency_script_plugins
+        return [] unless buildfile
+
         dependency_plugin_paths =
           buildfile.content.
           scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
@@ -77,6 +81,15 @@ module Dependabot
           raise
         end.compact
       end
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      def check_required_files_present
+        return if buildfile
+
+        path = Pathname.new(File.join(directory, "build.gradle")).cleanpath.to_path
+        path += "(.kts)?"
+        raise Dependabot::DependencyFileNotFound, path
+      end
 
       def file_exists_in_submodule?(path)
         fetch_file_from_host(path, fetch_submodules: true)
@@ -86,12 +99,7 @@ module Dependabot
       end
 
       def settings_file
-        @settings_file ||= begin
-          file = supported_settings_file
-          fetch_file_from_host(file.name) if file
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
+        @settings_file ||= supported_settings_file
       end
 
       def supported_build_file
