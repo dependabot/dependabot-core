@@ -1,3 +1,45 @@
+## v0.129.2, 4 January 2021
+
+- go_modules: return tidied `go.mod` contents directly
+- go_modules: fix nested module detection from a monorepo root
+- go_modules: stop parsing indirect dependencies (previous: parsed but not updated)
+- gradle: fix whitespace matching in settings (@bountin)
+- Add token support for BitBucket (@iinuwa)
+- Add retries for Azure client (@GiriB)
+- CI: Add Python flake8 linting
+- Bundler: fix bundler gem when invoked as standalone gem
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- Bump node-notifier from 8.0.0 to 8.0.1 in /npm_and_yarn/helpers
+- Update rubocop requirement from ~> 1.6.0 to ~> 1.7.0 in /common
+- Update simplecov requirement from ~> 0.20.0 to ~> 0.21.0 in /common
+- Bump eslint from 7.16.0 to 7.17.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.63 to 0.12.64 in /composer/helpers/v2
+- Bump phpstan/phpstan from 0.12.63 to 0.12.64 in /composer/helpers/v1
+
+## v0.129.1, 21 December 2020
+
+- Bump phpstan/phpstan from 0.12.59 to 0.12.63
+- Bump friendsofphp/php-cs-fixer
+- Composer: Verify if composer name is compatible with v2
+- Python: Upgrade Python version to 3.9.1 (@ulgens)
+- Bump npm from 6.14.9 to 6.14.10 in /npm_and_yarn/helpers
+- Bump eslint from 7.15.0 to 7.16.0 in /npm_and_yarn/helpers
+- Sanitize creds from DependabotError
+- Bump composer/composer from 1.10.16 to 1.10.19 in /composer/helpers/v1
+- Bump pip from 20.3.1 to 20.3.3 in /python/helpers
+- Bump @npmcli/arborist from 2.0.1 to 2.0.2 in /npm_and_yarn/helpers
+- go_modules: limit GitDeps to repo
+- go_modules: fix test warning
+
+## v0.129.0, 15 December 2020
+
+- Composer: Support composer v2 alongside v1 (Thanks for helping out @WyriHaximus)
+
+## v0.128.2, 14 December 2020
+
+- go_modules: fix regression with stubbing local replace paths
+
 ## v0.128.1, 14 December 2020
 
 - go_modules: only stub modules outside this repo

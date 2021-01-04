@@ -6,6 +6,7 @@ require (
 	github.com/fatih/Color v1.7.0
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
+	golang.org/x/sys v0.0.0-20201221093633-bc327ba9c2f0 // indirect
 	rsc.io/qr v0.1.0
 	rsc.io/quote v1.4.0
 )

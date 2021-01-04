@@ -4,6 +4,9 @@
 #       dependabot-core.
 module Dependabot
   module Utils
+    BUMP_TMP_FILE_PREFIX = "dependabot_"
+    BUMP_TMP_DIR_PATH = "tmp"
+
     @version_classes = {}
 
     def self.version_class_for_package_manager(package_manager)

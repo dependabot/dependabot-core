@@ -16,17 +16,8 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        i = 0
-        chunks = module_info.lines.
-                 group_by { |line| line == "{\n" ? i += 1 : i }
-        deps = chunks.values.map { |chunk| JSON.parse(chunk.join) }
-
-        deps.each do |dep|
-          # The project itself appears in this list as "Main"
-          next if dep["Main"]
-
-          dependency = dependency_from_details(dep)
-          dependency_set << dependency if dependency
+        required_packages.each do |dep|
+          dependency_set << dependency_from_details(dep) unless dep["Indirect"]
         end
 
         dependency_set.dependencies
@@ -65,39 +56,36 @@ module Dependabot
         )
       end
 
-      def module_info
-        @module_info ||=
+      def required_packages
+        @required_packages ||=
           SharedHelpers.in_a_temporary_directory do |path|
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              # Create a fake empty module for each local module so that
-              # `go list` works, even if some modules have been `replace`d with
-              # a local module that we don't have access to.
-              local_replacements.each do |_, stub_path|
-                Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
-                FileUtils.touch(File.join(stub_path, "go.mod"))
-              end
-
-              File.write("go.mod", go_mod_content)
-
-              command = "go mod edit -print > /dev/null"
-              command += " && go list -m -json all"
-
-              # Turn off the module proxy for now, as it's causing issues with
-              # private git dependencies
-              env = { "GOPRIVATE" => "*" }
-
-              stdout, stderr, status = Open3.capture3(env, command)
-              handle_parser_error(path, stderr) unless status.success?
-              stdout
-            rescue Dependabot::DependencyFileNotResolvable
-              # We sometimes see this error if a host times out.
-              # In such cases, retrying (a maximum of 3 times) may fix it.
-              retry_count ||= 0
-              raise if retry_count >= 3
-
-              retry_count += 1
-              retry
+            # Create a fake empty module for each local module so that
+            # `go mod edit` works, even if some modules have been `replace`d with
+            # a local module that we don't have access to.
+            local_replacements.each do |_, stub_path|
+              Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+              FileUtils.touch(File.join(stub_path, "go.mod"))
             end
+
+            File.write("go.mod", go_mod_content)
+
+            command = "go mod edit -json"
+
+            # Turn off the module proxy for now, as it's causing issues with
+            # private git dependencies
+            env = { "GOPRIVATE" => "*" }
+
+            stdout, stderr, status = Open3.capture3(env, command)
+            handle_parser_error(path, stderr) unless status.success?
+            JSON.parse(stdout)["Require"]
+          rescue Dependabot::DependencyFileNotResolvable
+            # We sometimes see this error if a host times out.
+            # In such cases, retrying (a maximum of 3 times) may fix it.
+            retry_count ||= 0
+            raise if retry_count >= 3
+
+            retry_count += 1
+            retry
           end
       end
 
@@ -135,46 +123,9 @@ module Dependabot
         end
       end
 
-      GIT_ERROR_REGEX = /go: .*: git fetch .*: exit status 128/m.freeze
       def handle_parser_error(path, stderr)
-        case stderr
-        when /go: .*: unknown revision/m
-          line = stderr.lines.grep(/unknown revision/).first.strip
-          handle_github_unknown_revision(line) if line.start_with?("go: github.com/")
-          raise Dependabot::DependencyFileNotResolvable, line
-        when /go: .*: unrecognized import path/m
-          line = stderr.lines.grep(/unrecognized import/).first
-          raise Dependabot::DependencyFileNotResolvable, line.strip
-        when /go: errors parsing go.mod/m
-          msg = stderr.gsub(path.to_s, "").strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
-        when GIT_ERROR_REGEX
-          lines = stderr.lines.drop_while { |l| GIT_ERROR_REGEX !~ l }
-          raise Dependabot::DependencyFileNotResolvable.new, lines.join
-        else
-          msg = stderr.gsub(path.to_s, "").strip
-          raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
-        end
-      end
-
-      GITHUB_REPO_REGEX = %r{github.com/[^@]*}.freeze
-      def handle_github_unknown_revision(line)
-        repo_path = line.scan(GITHUB_REPO_REGEX).first
-        return unless repo_path
-
-        # Query for _any_ version of this module, to know if it doesn't exist (or is private)
-        # or we were just given a bad revision by this manifest
-        SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            File.write("go.mod", "module dummy\n")
-
-            env = { "GOPRIVATE" => "*" }
-            _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go get #{repo_path}"))
-            raise Dependabot::DependencyFileNotResolvable, line if status.success?
-
-            raise Dependabot::GitDependenciesNotReachable, [repo_path]
-          end
-        end
+        msg = stderr.gsub(path.to_s, "").strip
+        raise Dependabot::DependencyFileNotParseable.new(go_mod.path, msg)
       end
 
       def rev_identifier?(dep)

@@ -7,6 +7,9 @@ case request["function"]
 when "error"
   $stdout.write(JSON.dump(error: "Something went wrong"))
   exit 1
+when "sensitive_error"
+  $stdout.write(JSON.dump(error: "Something went wrong: https://username:secret@www.example.com"))
+  exit 1
 when "useful_error"
   $stderr.write("Some useful error")
   exit 1
