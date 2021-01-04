@@ -28,6 +28,7 @@ module Dependabot
         updated = updated_source
         return dependency.requirements if updated == previous
 
+        # Maintain a short git hash only if it matches the latest
         if previous[:type] == "git" &&
            previous[:url] == updated[:url] &&
            updated[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
