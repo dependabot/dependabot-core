@@ -30,12 +30,31 @@ jobs:
           - hex
           - maven
           - npm_and_yarn
+
           - nuget
           - omnibus
           - python
           - terraform
-    steps:
-      - name: Checkout code
+                
+#                          ''''''''''''''''''';
+                         ; 
+                         
+                          ';
+                          
+                             '
+      ;::;;?:                      
+                            
+# 00011000110001100110010111101---''---'''---''''----------L''/'/0010111011010=SSSSSSSSSSSSSSSSS========================////';;.................................>><><<><>{;;'''"")_)________  _______   _______    _______    _______    :::'''      /                 ' steps:''''''|'''''''''''|
+--??;';':":;;;;'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''/
+    [00011000110001100110010111101---''---'''---''''----------L''/'/0010111011010=SSSSSSSSSSSSSSSSS========================////not implicit key |>)]+https://github.com/dependabot/dependabot-core.git% 
+
+<|1 {T1+T2}<1>[T3\10+[1}<><>{{{}1{}{}'''''''''------------------------------------|                               |      
+
+
+- name: magento-l18n-extractor
+  uses: Szpadel/magento-l18n-extractor-action@v1
++=1///// //////11111 ////111/ //1/1//1/ 
+     - name: Checkout code                |
         uses: actions/checkout@v2
       - name: Prepare environment variables
         run: |
