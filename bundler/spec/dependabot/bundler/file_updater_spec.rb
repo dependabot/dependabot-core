@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
   let(:previous_requirements) do
     [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
@@ -946,9 +946,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           it "does not change the original path" do
             expect(file.content).to include "remote: plugins/example"
             expect(file.content).
-              not_to include Dependabot::SharedHelpers::BUMP_TMP_FILE_PREFIX
+              not_to include Dependabot::Utils::BUMP_TMP_FILE_PREFIX
             expect(file.content).
-              not_to include Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH
+              not_to include Dependabot::Utils::BUMP_TMP_DIR_PATH
           end
 
           context "as a .specification" do
@@ -1603,7 +1603,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           vendor_files =
-            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+            Dir.entries(Pathname.new(repo_contents_path).join("vendor/cache"))
 
           expect(file).to be_nil
           expect(vendor_files).to include("business-1.4.0.gem")
@@ -1626,7 +1626,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             f.name == "vendor/cache/addressable-7.2.0.gem"
           end
           vendor_files =
-            Dir.entries(File.join(repo_contents_path + "vendor/cache"))
+            Dir.entries(Pathname.new(repo_contents_path).join("vendor/cache"))
 
           expect(file).to be_nil
           expect(vendor_files).to include("statesman-7.2.0.gem")

@@ -320,7 +320,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that we have bad authentication details for" do
         let(:error_message) do
           <<~ERR
-            Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
+            Bad username or password for https://user:secret@repo.fury.io/greysteil/.
             Please double-check your credentials and correct them.
           ERR
         end
@@ -346,7 +346,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).
-                to eq("https://SECRET_CODES@repo.fury.io/greysteil/")
+                to eq("https://repo.fury.io/<redacted>")
             end
         end
       end
@@ -378,7 +378,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::PrivateSourceTimedOut)
               expect(error.source).
-                to eq("https://repo.fury.io/greysteil/")
+                to eq("https://repo.fury.io/<redacted>")
             end
         end
       end

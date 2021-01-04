@@ -16,14 +16,6 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
 
   let(:path) { "components/path_dep" }
   let(:directory) { "/" }
-  let(:composer_lock) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-
-  let(:lockfile_fixture_name) { "path_source" }
 
   describe "#dependency_file" do
     subject(:dependency_file) { builder.dependency_file }
@@ -32,10 +24,9 @@ RSpec.describe Dependabot::Composer::FileFetcher::PathDependencyBuilder do
       let(:composer_lock) do
         Dependabot::DependencyFile.new(
           name: "composer.lock",
-          content: fixture("lockfiles", lockfile_fixture_name)
+          content: fixture("projects", "path_source", "composer.lock")
         )
       end
-      let(:lockfile_fixture_name) { "path_source" }
 
       it "builds an imitation path dependency" do
         expect(dependency_file).to be_a(Dependabot::DependencyFile)
