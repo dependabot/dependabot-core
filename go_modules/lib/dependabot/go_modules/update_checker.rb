@@ -88,7 +88,7 @@ module Dependabot
 
       def handle_subprocess_error(error)
         if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-          ResolvabilityErrors.handle(error, credentials: credentials)
+          ResolvabilityErrors.handle(error.message, credentials: credentials)
         end
 
         raise

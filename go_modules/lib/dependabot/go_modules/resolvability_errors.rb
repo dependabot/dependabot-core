@@ -5,10 +5,10 @@ module Dependabot
     module ResolvabilityErrors
       GITHUB_REPO_REGEX = %r{github.com/[^:@]*}.freeze
 
-      def self.handle(error, credentials:)
-        mod_path = error.message.scan(GITHUB_REPO_REGEX).first
+      def self.handle(message, credentials:)
+        mod_path = message.scan(GITHUB_REPO_REGEX).first
         unless mod_path
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          raise Dependabot::DependencyFileNotResolvable, message
         end
 
         # Module not found on github.com - query for _any_ version to know if it

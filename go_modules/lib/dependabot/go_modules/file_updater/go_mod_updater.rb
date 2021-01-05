@@ -268,9 +268,8 @@ module Dependabot
 
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
-            # TODO: handle_resolvability_error here
             lines = stderr.lines.drop_while { |l| error_regex !~ l }
-            raise Dependabot::DependencyFileNotResolvable.new, lines.join
+            ResolvabilityErrors.handle(lines.join, credentials: credentials)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
