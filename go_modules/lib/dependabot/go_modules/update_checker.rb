@@ -16,7 +16,7 @@ module Dependabot
         /no go-import meta tags/,
         # Package url 404s
         /404 Not Found/,
-        /Repository not found/,
+        /Repository not found/
       ].freeze
 
       def latest_resolvable_version

@@ -4,6 +4,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
+require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
   module GoModules
@@ -14,19 +15,21 @@ module Dependabot
         ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
 
         RESOLVABILITY_ERROR_REGEXES = [
-          # (Private) module could not be fetched
-          /go: .*: git fetch .*: exit status 128/.freeze,
           # The checksum in go.sum does not match the dowloaded content
           /verifying .*: checksum mismatch/.freeze,
+          /go: .*: go.mod has post-v\d+ module path/
+        ].freeze
+
+        REPO_RESOLVABILITY_ERROR_REGEXES = [
+          # (Private) module could not be fetched
+          /go: .*: git fetch .*: exit status 128/.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
           /module .* found \(.*\), but does not contain package/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze,
-          # Package version doesn't match the module major version
-          /go: .*: go.mod has post-v\d+ module path/m.freeze
+          /go: .*: unknown revision/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
@@ -263,12 +266,21 @@ module Dependabot
           write_go_mod(body)
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_subprocess_error(stderr)
           stderr = stderr.gsub(Dir.getwd, "")
 
+          # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
             lines = stderr.lines.drop_while { |l| error_regex !~ l }
+            raise Dependabot::DependencyFileNotResolvable, lines.join
+          end
+
+          repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
+          if repo_error_regex
+            lines = stderr.lines.drop_while { |l| repo_error_regex !~ l }
             ResolvabilityErrors.handle(lines.join, credentials: credentials)
           end
 
@@ -289,6 +301,8 @@ module Dependabot
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
         end
+        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         def go_mod_path
           return "go.mod" if directory == "/"
