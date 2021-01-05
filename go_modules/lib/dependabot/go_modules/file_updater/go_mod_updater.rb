@@ -268,6 +268,7 @@ module Dependabot
 
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
+            # TODO: handle_resolvability_error here
             lines = stderr.lines.drop_while { |l| error_regex !~ l }
             raise Dependabot::DependencyFileNotResolvable.new, lines.join
           end
