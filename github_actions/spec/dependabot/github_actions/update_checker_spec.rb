@@ -3,6 +3,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/github_actions/update_checker"
+require "dependabot/github_actions/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GithubActions::UpdateChecker do
@@ -297,6 +298,27 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
                 type: "git",
                 url: "https://github.com/actions/setup-node",
                 ref: "fc9ff49b90869a686df00e922af871c12215986a",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/setup-node@master" }
+            }]
+          end
+
+          it { is_expected.to eq(expected_requirements) }
+        end
+
+        context "and the previous version is a short SHA" do
+          let(:reference) { "5273d0df" }
+          let(:comparison_url) { repo_url + "/compare/v1.1.0...5273d0df" }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/setup-node",
+                ref: "5273d0df",
                 branch: nil
               },
               metadata: { declaration_string: "actions/setup-node@master" }
