@@ -1,3 +1,9 @@
+## v0.129.3, 5 January 2021
+
+- Bump eslint-plugin-prettier from 3.3.0 to 3.3.1 in /npm_and_yarn/helpers
+- Gradle: Handle missing required manifest file
+- Actions: Accept shortref hashes
+
 ## v0.129.2, 4 January 2021
 
 - go_modules: return tidied `go.mod` contents directly
