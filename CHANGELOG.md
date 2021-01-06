@@ -1,6 +1,7 @@
 ## v0.129.4, 6 January 2021
 
 - go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com
+- go_modules: fix regression when parsing go.mod files without dependencies
 - Bitbucket: support for PR creation (@iinuwa)
 
 ## v0.129.3, 5 January 2021
