@@ -297,7 +297,7 @@ module Dependabot
             resolved_url.split("/#{name}/-/#{name}").first.
               gsub("dl.bintray.com//", "api.bintray.com/npm/").
               # GitLab format
-              gsub(/\/projects\/\d+/, '')
+              gsub(%r{\/projects\/\d+}, "")
           elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first
