@@ -77,7 +77,7 @@ module Dependabot
 
             stdout, stderr, status = Open3.capture3(env, command)
             handle_parser_error(path, stderr) unless status.success?
-            JSON.parse(stdout)["Require"]
+            JSON.parse(stdout)["Require"] || []
           rescue Dependabot::DependencyFileNotResolvable
             # We sometimes see this error if a host times out.
             # In such cases, retrying (a maximum of 3 times) may fix it.
