@@ -5,6 +5,7 @@ require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/native_helpers"
+require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/version"
 
 module Dependabot
@@ -14,7 +15,8 @@ module Dependabot
         # Package url/proxy doesn't include any redirect meta tags
         /no go-import meta tags/,
         # Package url 404s
-        /404 Not Found/
+        /404 Not Found/,
+        /Repository not found/
       ].freeze
 
       def latest_resolvable_version
@@ -86,7 +88,7 @@ module Dependabot
 
       def handle_subprocess_error(error)
         if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
-          raise Dependabot::DependencyFileNotResolvable, error.message
+          ResolvabilityErrors.handle(error.message, credentials: credentials)
         end
 
         raise

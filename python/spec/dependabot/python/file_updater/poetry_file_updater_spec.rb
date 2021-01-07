@@ -80,6 +80,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
+    # TODO: Fix flaky spec caused by an issue in poetry:
+    # https://github.com/python-poetry/poetry/issues/3010)
     context "with a specified Python version" do
       let(:pyproject_fixture_name) { "python_2.toml" }
       let(:lockfile_fixture_name) { "python_2.lock" }
@@ -105,7 +107,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
 
-      it "updates the lockfile successfully" do
+      skip "updates the lockfile successfully" do
         updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)

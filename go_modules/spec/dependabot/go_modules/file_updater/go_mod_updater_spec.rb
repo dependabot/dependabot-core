@@ -150,10 +150,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:project_name) { "non_existent_dependency" }
 
             it "raises the correct error" do
-              error_class = Dependabot::DependencyFileNotResolvable
+              error_class = Dependabot::GitDependenciesNotReachable
               expect { updater.updated_go_sum_content }.
                 to raise_error(error_class) do |error|
                   expect(error.message).to include("hmarr/404")
+                  expect(error.dependency_urls).
+                    to eq(["github.com/hmarr/404"])
                 end
             end
           end
