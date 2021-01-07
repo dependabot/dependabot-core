@@ -41,7 +41,14 @@ RSpec.describe module_to_test::RubyRequirementSetter do
         let(:content) { fixture("ruby", "gemfiles", "Gemfile") }
         let(:gemspec_body) { fixture("ruby", "gemspecs", "impossible_ruby") }
 
-        specify { expect { rewrite }.to raise_error(/Ruby version/) }
+        specify { expect { rewrite }.to raise_error(described_class::RubyVersionNotFound) }
+      end
+
+      context "when requiring ruby 3" do
+        let(:gemspec_body) { fixture("ruby", "gemspecs", "require_ruby_3") }
+        let(:content) { fixture("ruby", "gemfiles", "Gemfile") }
+        it { is_expected.to include("ruby '3.0.0'\n") }
+        it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
       context "that can't be evaluated" do
