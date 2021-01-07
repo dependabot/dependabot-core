@@ -1,3 +1,14 @@
+## v0.129.5, 7 January 2021
+
+- Bundler: support ruby 2.7 and 3.0 version requirements in gemspecs
+- Update parser requirement from ~> 2.5 to >= 2.5, < 4.0 in /common
+
+## v0.129.4, 6 January 2021
+
+- go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com
+- go_modules: fix regression when parsing go.mod files without dependencies
+- Bitbucket: support for PR creation (@iinuwa)
+
 ## v0.129.3, 5 January 2021
 
 - Bump eslint-plugin-prettier from 3.3.0 to 3.3.1 in /npm_and_yarn/helpers
@@ -99,7 +110,7 @@
 
 ## v0.125.6, 27 November 2020
 
-- Pip compile: raise DependencyFileNotRqesolvable error when initial manifest
+- Pip compile: raise DependencyFileNotResolvable error when initial manifest
   files are unresolvable
 - JS: Handle rate limited npm package requests
 - Go mod: verify Dependabot::GitDependenciesNotReachable from versioned
