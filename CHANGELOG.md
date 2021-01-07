@@ -1,3 +1,8 @@
+## v0.129.5, 7 January 2021
+
+- Bundler: support ruby 2.7 and 3.0 version requirements in gemspecs
+- Update parser requirement from ~> 2.5 to >= 2.5, < 4.0 in /common
+
 ## v0.129.4, 6 January 2021
 
 - go_modules: raise Dependabot::GitDependenciesNotReachable for dependencies missing from github.com
