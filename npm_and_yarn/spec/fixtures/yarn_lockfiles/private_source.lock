@@ -31,3 +31,9 @@ chalk@^2.0.0:
   resolved "https://npm.pkg.github.com/download/@dependabot/pack-core-3/2.0.14/55a2db17e0946313e6d150d2d63d5e9539458e4fcaf3fe928c320a7dd1b7f90b"
   dependencies:
     "@dependabot/etag" "^2.0.0"
+
+"@dependabot/pack-core-4@^2.0.1", "@dependabot/pack-core-4@^2.0.2":
+  version "2.0.14"
+  resolved "https://gitlab.mydomain.com/api/v4/projects/229/packages/npm/@dependabot/pack-core-4/-/@dependabot/pack-core-4-2.0.14.tgz"
+  dependencies:
+    "@dependabot/etag" "^2.0.0"
