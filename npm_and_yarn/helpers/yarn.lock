@@ -543,10 +543,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@npmcli/arborist@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.2.tgz#4b119e842f59fb150be81c36d01807270ba81a75"
-  integrity sha512-QMMUSeGW6u9/T8zH0zCGSRtOqCMmv8LnRNjZFX+zv4u1dauIx5iJ4i8e7EJbvXkKEZyGjK8sJ45NIoF+umMgIQ==
+"@npmcli/arborist@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.3.tgz#d11f85c6609f542588bb946d0223b57c9a968650"
+  integrity sha512-iqahzDZaqdUyAHLG1SIG9jrbkLtT5xNbKX1ppAnx7mKx1u+BXYjkxi5ohewLAfyERH6IpODPAiRVc8c3kxA5jQ==
   dependencies:
     "@npmcli/installed-package-contents" "^1.0.5"
     "@npmcli/map-workspaces" "^1.0.1"
@@ -564,13 +564,14 @@
     npm-install-checks "^4.0.0"
     npm-package-arg "^8.1.0"
     npm-pick-manifest "^6.1.0"
-    pacote "^11.1.13"
+    pacote "^11.1.14"
     parse-conflict-json "^1.1.1"
     promise-all-reject-late "^1.0.0"
     promise-call-limit "^1.0.1"
     read-package-json-fast "^1.2.1"
     readdir-scoped-modules "^1.1.0"
     semver "^7.3.4"
+    tar "^6.1.0"
     treeverse "^1.0.4"
     walk-up-path "^1.0.0"
 
@@ -5605,10 +5606,10 @@ package-json@^4.0.0:
     registry-url "^3.0.3"
     semver "^5.1.0"
 
-pacote@^11.1.11, pacote@^11.1.13:
-  version "11.1.13"
-  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.1.13.tgz#7e85213693b0b4b1119c4026dc1b68c087641dc2"
-  integrity sha512-oJ7Bg7p3izrIMhZPHCCHmMHQl+xb+pKBXL5ZYeM2oCZrw6sBRSx7f8l7F+95V2qA0BP3c1cNaaBmUNkbo6Hn9w==
+pacote@^11.1.11, pacote@^11.1.14:
+  version "11.1.14"
+  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.1.14.tgz#c60b9849ab05488d3f9ccd644c8a42543f2f36d6"
+  integrity sha512-6c5OhQelaJFDfiw/Zd8MfGCvvFHurSdeGzufZMPvRFImdbNOYFciOINf3DtUNUaU3h98eCb749UyHDsgvL19+A==
   dependencies:
     "@npmcli/git" "^2.0.1"
     "@npmcli/installed-package-contents" "^1.0.5"
@@ -5628,7 +5629,7 @@ pacote@^11.1.11, pacote@^11.1.13:
     read-package-json-fast "^1.1.3"
     rimraf "^3.0.2"
     ssri "^8.0.0"
-    tar "^6.0.1"
+    tar "^6.1.0"
 
 pacote@^9.1.0, pacote@^9.5.12, pacote@^9.5.3:
   version "9.5.12"
@@ -7058,10 +7059,10 @@ tar@^4.4.10, tar@^4.4.12, tar@^4.4.13:
     safe-buffer "^5.1.2"
     yallist "^3.0.3"
 
-tar@^6.0.1, tar@^6.0.2:
-  version "6.0.5"
-  resolved "https://registry.yarnpkg.com/tar/-/tar-6.0.5.tgz#bde815086e10b39f1dcd298e89d596e1535e200f"
-  integrity sha512-0b4HOimQHj9nXNEAA7zWwMM91Zhhba3pspja6sQbgTpynOJf+bkjBnfybNYzbpLbnwXnbyB4LOREvlyXLkCHSg==
+tar@^6.0.2, tar@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-6.1.0.tgz#d1724e9bcc04b977b18d5c573b333a2207229a83"
+  integrity sha512-DUCttfhsnLCjwoDoFcI+B2iJgYa93vBnDUATYEeRx6sntCTdN01VnqsIuTlALXla/LWooNg0yEGeB+Y8WdFxGA==
   dependencies:
     chownr "^2.0.0"
     fs-minipass "^2.0.0"
