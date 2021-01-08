@@ -276,8 +276,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           describe "the scoped gitlab dependency" do
-
-
             subject { top_level_dependencies[6] }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
