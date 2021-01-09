@@ -185,10 +185,9 @@ module Dependabot
           else "#{group}:#{name}"
           end
         groups =
-          if group == "plugins" then ["plugins"]
+          if group == "plugins" then ["plugins"] + extra_groups
           else []
           end
-        extra_groups.each { |extra_group| groups.append extra_group }
         source =
           source_from(group, name, version)
 
