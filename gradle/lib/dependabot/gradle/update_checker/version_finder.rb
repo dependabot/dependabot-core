@@ -305,12 +305,10 @@ module Dependabot
         end
 
         def group_and_artifact_ids
-          if plugin?
-            if kotlin_plugin?
-              [dependency.name, "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
-            else
-              [dependency.name, "#{dependency.name}.gradle.plugin"]
-            end
+          if kotlin_plugin?
+            [dependency.name, "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+          elsif plugin?
+            [dependency.name, "#{dependency.name}.gradle.plugin"]
           else
             dependency.name.split(":")
           end
