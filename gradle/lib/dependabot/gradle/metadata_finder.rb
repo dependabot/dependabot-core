@@ -153,7 +153,8 @@ module Dependabot
       def maven_repo_dependency_url
         group_id, artifact_id =
           if kotlin_plugin?
-            ["#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}", "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+            ["#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}",
+             "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
           elsif plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
           else dependency.name.split(":")
           end
