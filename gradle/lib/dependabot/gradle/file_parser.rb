@@ -36,8 +36,6 @@ module Dependabot
         /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/.freeze
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/.freeze
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/.freeze
-      PLUGIN_BLOCK_ENTRY_REGEX =
-        /id\s+"(?<id>#{PART})"\s+version\s+"(?<version>#{VSN_PART})"/.freeze
       PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/.freeze
 
       def parse
