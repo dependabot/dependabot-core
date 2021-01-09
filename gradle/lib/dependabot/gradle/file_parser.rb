@@ -149,20 +149,24 @@ module Dependabot
 
         plugin_blocks.each do |blk|
           blk.lines.each do |line|
-            name_regex = /id(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/
+            name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/
             name = line.match(name_regex)&.named_captures&.fetch("id")
             version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/
             version = line.match(version_regex)&.named_captures&.
                 fetch("version")
             next unless name && version
 
-            details = { name: name, group: "plugins", version: version }
+            details = { name: name, group: "plugins", extra_groups: extra_groups(line), version: version }
             dep = dependency_from(details_hash: details, buildfile: buildfile)
             dependency_set << dep if dep
           end
         end
 
         dependency_set
+      end
+
+      def extra_groups(line)
+        line.match(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/) ? ["kotlin"] : []
       end
 
       def argument_from_string(string, arg_name)
@@ -176,6 +180,7 @@ module Dependabot
         group   = evaluated_value(details_hash[:group], buildfile)
         name    = evaluated_value(details_hash[:name], buildfile)
         version = evaluated_value(details_hash[:version], buildfile)
+        extra_groups = details_hash[:extra_groups] || []
 
         dependency_name =
           if group == "plugins" then name
@@ -185,6 +190,7 @@ module Dependabot
           if group == "plugins" then ["plugins"]
           else []
           end
+        extra_groups.each { |extra_group| groups.append extra_group }
         source =
           source_from(group, name, version)
 

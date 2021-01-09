@@ -13,6 +13,7 @@ module Dependabot
       class VersionFinder
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
+        KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java).freeze
 
         GRADLE_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
@@ -295,6 +296,7 @@ module Dependabot
 
         def dependency_metadata_url(repository_url)
           group_id, artifact_id = group_and_artifact_ids
+          group_id = "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
@@ -304,14 +306,22 @@ module Dependabot
 
         def group_and_artifact_ids
           if plugin?
-            [dependency.name, "#{dependency.name}.gradle.plugin"]
+            if kotlin_plugin?
+              [dependency.name, "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+            else
+              [dependency.name, "#{dependency.name}.gradle.plugin"]
+            end
           else
             dependency.name.split(":")
           end
         end
 
         def plugin?
-          dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+          dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+        end
+
+        def kotlin_plugin?
+          plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
         end
 
         def central_repo_urls
