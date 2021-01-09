@@ -565,10 +565,10 @@ RSpec.describe Dependabot::Gradle::FileParser do
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("jvm")
-            expect(dependency.version).to eq("1.4.21")
+            expect(dependency.version).to eq("1.3.72")
             expect(dependency.requirements).to eq(
               [{
-                requirement: "1.4.21",
+                requirement: "1.3.72",
                 file: "build.gradle.kts",
                 groups: %w(plugins kotlin),
                 source: nil,
