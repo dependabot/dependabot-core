@@ -84,6 +84,28 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       end
     end
 
+    context "with a kotlin plugin dependency" do
+      let(:dependency_name) { "jvm" }
+      let(:dependency_version) { "1.1.1" }
+      let(:dependency_source) do
+        { type: "maven_repo", url: "https://plugins.gradle.org/m2" }
+      end
+      let(:maven_url) do
+        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/1.1.1/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin-1.1.1.pom"
+      end
+      let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
+      let(:dependency_groups) { %w(plugins kotlin) }
+
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      it "caches the call to maven" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, maven_url).once
+      end
+    end
+
     context "when the github link is buried in the pom" do
       let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
 
