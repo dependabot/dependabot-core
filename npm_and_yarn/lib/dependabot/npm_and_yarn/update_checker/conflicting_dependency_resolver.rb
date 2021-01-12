@@ -45,7 +45,7 @@ module Dependabot
                dependency_files_builder.shrinkwraps.any?
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm:findConflictingDependencies",
+                function: "npm6:findConflictingDependencies",
                 args: [Dir.pwd, dependency.name, target_version.to_s]
               )
             else
