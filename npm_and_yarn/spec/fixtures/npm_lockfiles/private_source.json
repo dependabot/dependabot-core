@@ -47,6 +47,11 @@
             "resolved": "https://npm.pkg.github.com/download/@dependabot/pack-core-3/2.0.14/55a2db17e0946313e6d150d2d63d5e9539458e4fcaf3fe928c320a7dd1b7f90b",
             "integrity": "sha1-/HizFb1hVT38sBYgsMHMF2qMbC8="
         },
+        "@dependabot/pack-core-4": {
+            "version": "2.0.14",
+            "resolved": "https://gitlab.mydomain.com/api/v4/projects/229/packages/npm/@dependabot/pack-core-4/-/@dependabot/pack-core-4-2.0.14.tgz",
+            "integrity": "sha1-/HizFb1hVT38sBYgsMHMF2qMbC8="
+        },
         "fetch-factory": {
             "version": "0.0.1",
             "resolved": "https://artifactory01.mydomain.com/artifactory/api/npm/my-repo/fetch-factory/-/fetch-factory-0.0.1.tgz",
