@@ -415,7 +415,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm:checkPeerDependencies",
+                function: "npm6:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,

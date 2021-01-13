@@ -150,7 +150,7 @@ module Dependabot
                                       top_level_dependency_updates:)
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
-            function: "npm:update",
+            function: "npm6:update",
             args: [
               Dir.pwd,
               lockfile_name,
@@ -162,7 +162,7 @@ module Dependabot
         def run_npm_subdependency_updater(lockfile_name:)
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
-            function: "npm:updateSubdependency",
+            function: "npm6:updateSubdependency",
             args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
           )
         end

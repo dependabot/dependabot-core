@@ -112,7 +112,7 @@ module Dependabot
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm:updateSubdependency",
+                function: "npm6:updateSubdependency",
                 args: [Dir.pwd, lockfile_name, [dependency.to_h]]
               )
             end
