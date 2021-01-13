@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 # TODO: in due course, these "registries" should live in a wrapper gem, not
 #       dependabot-core.
 module Dependabot
