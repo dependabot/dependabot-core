@@ -11,6 +11,7 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
 
       private
 
@@ -101,7 +102,8 @@ module Dependabot
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
         artifact_id =
-          if plugin? then "#{dependency.name}.gradle.plugin"
+          if kotlin_plugin? then "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"
+          elsif plugin? then "#{dependency.name}.gradle.plugin"
           else dependency.name.split(":").last
           end
 
@@ -150,7 +152,10 @@ module Dependabot
 
       def maven_repo_dependency_url
         group_id, artifact_id =
-          if plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
+          if kotlin_plugin?
+            ["#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}",
+             "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+          elsif plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
           else dependency.name.split(":")
           end
 
@@ -158,7 +163,11 @@ module Dependabot
       end
 
       def plugin?
-        dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+        dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+      end
+
+      def kotlin_plugin?
+        plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
       end
 
       def auth_details
