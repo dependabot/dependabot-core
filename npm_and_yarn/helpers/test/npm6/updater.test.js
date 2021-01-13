@@ -2,7 +2,7 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 const rimraf = require("rimraf");
-const { updateDependencyFiles } = require("../../lib/npm/updater");
+const { updateDependencyFiles } = require("../../lib/npm6/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {

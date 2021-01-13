@@ -4,7 +4,7 @@ const fs = require("fs");
 const rimraf = require("rimraf");
 const {
   findConflictingDependencies,
-} = require("../../lib/npm/conflicting-dependency-parser");
+} = require("../../lib/npm6/conflicting-dependency-parser");
 const helpers = require("./helpers");
 
 describe("findConflictingDependencies", () => {

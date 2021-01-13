@@ -10,8 +10,8 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 
-const npm = require("npm");
-const installer = require("npm/lib/install");
+const npm = require("npm6");
+const installer = require("npm6/lib/install");
 const { muteStderr, runAsync } = require("./helpers.js");
 
 function installArgsWithVersion(depName, desiredVersion, reqs) {

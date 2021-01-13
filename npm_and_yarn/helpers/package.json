@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
-    "@npmcli/arborist": "^2.0.2",
+    "@npmcli/arborist": "^2.0.3",
     "detect-indent": "^6.0.0",
-    "npm": "6.14.10",
+    "npm6": "npm:npm@6.14.11",
     "semver": "^7.3.4"
   },
   "devDependencies": {

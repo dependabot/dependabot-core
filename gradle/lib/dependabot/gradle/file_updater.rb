@@ -140,7 +140,7 @@ module Dependabot
             next false unless line.include?(dependency.name.split(":").last)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
-            name_regex = /id(\s+#{name_regex_value}|\(#{name_regex_value}\))/
+            name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
             next false unless line.match?(name_regex)
           end
 
