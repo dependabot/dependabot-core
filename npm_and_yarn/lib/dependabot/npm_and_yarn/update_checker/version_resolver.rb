@@ -6,6 +6,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -413,6 +414,10 @@ module Dependabot
         def run_npm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              package_lock = dependency_files_builder.package_locks.find { |f| f.name == "package-lock.json" }
+              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
+              puts npm_version
+
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "npm6:checkPeerDependencies",

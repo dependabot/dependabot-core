@@ -4,6 +4,7 @@ require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -32,7 +33,7 @@ module Dependabot
               lockfile_name = Pathname.new(lockfile.name).basename.to_s
               write_temporary_dependency_files(lockfile.name)
               updated_files = Dir.chdir(path) do
-                run_current_npm_update(lockfile_name: lockfile_name)
+                run_current_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
               end
               updated_content = updated_files.fetch(lockfile_name)
               post_process_npm_lockfile(lockfile.content, updated_content)
@@ -107,18 +108,19 @@ module Dependabot
           dependency.top_level? && requirements_for_path.empty?
         end
 
-        def run_current_npm_update(lockfile_name:)
+        def run_current_npm_update(lockfile_name:, lockfile_content:)
           top_level_dependency_updates = top_level_dependencies.map do |d|
             { name: d.name, version: d.version, requirements: d.requirements }
           end
 
           run_npm_updater(
             lockfile_name: lockfile_name,
-            top_level_dependency_updates: top_level_dependency_updates
+            top_level_dependency_updates: top_level_dependency_updates,
+            lockfile_content: lockfile_content
           )
         end
 
-        def run_previous_npm_update(lockfile_name:)
+        def run_previous_npm_update(lockfile_name:, lockfile_content:)
           previous_top_level_dependencies = top_level_dependencies.map do |d|
             {
               name: d.name,
@@ -129,25 +131,29 @@ module Dependabot
 
           run_npm_updater(
             lockfile_name: lockfile_name,
-            top_level_dependency_updates: previous_top_level_dependencies
+            top_level_dependency_updates: previous_top_level_dependencies,
+            lockfile_content: lockfile_content
           )
         end
 
-        def run_npm_updater(lockfile_name:, top_level_dependency_updates:)
+        def run_npm_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             if top_level_dependency_updates.any?
               run_npm_top_level_updater(
                 lockfile_name: lockfile_name,
-                top_level_dependency_updates: top_level_dependency_updates
+                top_level_dependency_updates: top_level_dependency_updates,
+                lockfile_content: lockfile_content
               )
             else
-              run_npm_subdependency_updater(lockfile_name: lockfile_name)
+              run_npm_subdependency_updater(lockfile_name: lockfile_name, lockfile_content: lockfile_content)
             end
           end
         end
 
-        def run_npm_top_level_updater(lockfile_name:,
-                                      top_level_dependency_updates:)
+        def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
+          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
+          puts npm_version
+
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             function: "npm6:update",
@@ -159,7 +165,10 @@ module Dependabot
           )
         end
 
-        def run_npm_subdependency_updater(lockfile_name:)
+        def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
+          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
+          puts npm_version
+
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             function: "npm6:updateSubdependency",
@@ -341,7 +350,7 @@ module Dependabot
                 lockfile_name = Pathname.new(lockfile.name).basename.to_s
                 path = Pathname.new(lockfile.name).dirname.to_s
                 Dir.chdir(path) do
-                  run_previous_npm_update(lockfile_name: lockfile_name)
+                  run_previous_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
                 end
               end
 
