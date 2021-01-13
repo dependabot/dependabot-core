@@ -1,3 +1,16 @@
+## v0.130.0, 13 January 2021
+
+- npm: Support GitLab format npm registry (@danoe)
+- npm: move native helpers to npm6 namespace
+- Python: Use release version of pyenv (@ulgens)
+- Gradle: Add support for Kotlin Plugins (@busches)
+- Composer: Use composer v1 when any of the requirements are invalid on v2
+- docker-dev-shell: exclude dry-run files
+- Bump @npmcli/arborist from 2.0.2 to 2.0.3 in /npm_and_yarn/helpers
+- Bump npm from 6.14.10 to 6.14.11 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.64 to 0.12.66 in /composer/helpers/v1 and /composer/helpers/v2
+- Update rubocop requirement from ~> 1.7.0 to ~> 1.8.0 in /common
+
 ## v0.129.5, 7 January 2021
 
 - Bundler: support ruby 2.7 and 3.0 version requirements in gemspecs
