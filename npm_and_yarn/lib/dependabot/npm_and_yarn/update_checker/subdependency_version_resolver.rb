@@ -2,11 +2,12 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
-require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
@@ -112,7 +113,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-              puts npm_version
+              Dependabot.logger.info(npm_version)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,

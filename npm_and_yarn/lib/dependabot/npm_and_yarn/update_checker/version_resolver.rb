@@ -1,17 +1,18 @@
 # frozen_string_literal: true
 
-require "dependabot/git_commit_checker"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/dependency_files_filterer"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/git_commit_checker"
+require "dependabot/logger"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
+require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/npm_and_yarn/version"
+require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -414,9 +415,12 @@ module Dependabot
         def run_npm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              package_lock = dependency_files_builder.package_locks.find { |f| f.name == "package-lock.json" }
+              package_lock = dependency_files_builder.package_locks.find do |f|
+                # Find the lockfile that's in the current directory
+                f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
+              end
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
-              puts npm_version
+              Dependabot.logger.info(npm_version)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,

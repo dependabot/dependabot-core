@@ -61,6 +61,7 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
+require "logger"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
@@ -84,6 +85,8 @@ require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/terraform"
+
+Dependabot.logger = Logger.new($stdout)
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/file_updater"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/logger"
+require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -152,7 +153,7 @@ module Dependabot
 
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          puts npm_version
+          Dependabot.logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
@@ -167,7 +168,7 @@ module Dependabot
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          puts npm_version
+          Dependabot.logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
