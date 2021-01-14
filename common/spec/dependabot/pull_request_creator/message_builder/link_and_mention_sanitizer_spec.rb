@@ -67,7 +67,7 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
         it "sanitizes the mention" do
           expect(sanitize_links_and_mentions).to eq(
-            "<p><a href=\"https://github.com/hmarr\"><em>@hmarr</em></a> "\
+            "<p><a href=\"https://github.com/hmarr\"><em><code>@hmarr</code></em></a> "\
             "<a href=\"https://github.com/feelepxyz\"><code>@feelepxyz</code></a></p>\n"
           )
         end

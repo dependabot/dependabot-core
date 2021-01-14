@@ -45,9 +45,13 @@ module Dependabot
 
         def sanitize_mentions(doc)
           doc.walk do |node|
-            if !parent_node_link?(node) && node.type == :text &&
+            if node.type == :text &&
                node.string_content.match?(MENTION_REGEX)
-              nodes = build_mention_nodes(node.string_content)
+              nodes = if !parent_node_link?(node)
+                        build_mention_nodes(node.string_content)
+                      else
+                        build_mention_link_text_nodes(node.string_content)
+                      end
 
               nodes.each do |n|
                 node.insert_before(n)
@@ -111,6 +115,12 @@ module Dependabot
           end
 
           nodes
+        end
+
+        def build_mention_link_text_nodes(text)
+          code_node = CommonMarker::Node.new(:code)
+          code_node.string_content = text
+          [code_node]
         end
 
         def create_link_node(url, text)
