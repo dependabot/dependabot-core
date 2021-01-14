@@ -86,7 +86,7 @@ require "dependabot/nuget"
 require "dependabot/python"
 require "dependabot/terraform"
 
-Dependabot.logger = Logger.new($stdout)
+Dependabot::Logger.logger = Logger.new($stdout)
 
 # GitHub credentials with write permission to the repo you want to update
 # (so that you can create a new branch, commit and pull request).

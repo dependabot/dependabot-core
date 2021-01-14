@@ -14,6 +14,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class ConflictingDependencyResolver
+        include Dependabot::Logger
+
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files
           @credentials = credentials
@@ -47,7 +49,7 @@ module Dependabot
                dependency_files_builder.shrinkwraps.any?
               package_lock = dependency_files_builder.package_locks.find { |f| f.name == "package-lock.json" }
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
-              Dependabot.logger.info(npm_version)
+              logger.info(npm_version)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,

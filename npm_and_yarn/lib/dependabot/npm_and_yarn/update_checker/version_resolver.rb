@@ -20,6 +20,7 @@ module Dependabot
     class UpdateChecker
       class VersionResolver
         require_relative "latest_version_finder"
+        include Dependabot::Logger
 
         TIGHTLY_COUPLED_MONOREPOS = {
           "vue" => %w(vue vue-template-compiler)
@@ -420,7 +421,7 @@ module Dependabot
                 f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
               end
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
-              Dependabot.logger.info(npm_version)
+              logger.info(npm_version)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,

@@ -16,6 +16,7 @@ module Dependabot
       class NpmLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
+        include Dependabot::Logger
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -153,7 +154,7 @@ module Dependabot
 
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
+          logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
@@ -168,7 +169,7 @@ module Dependabot
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
+          logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,

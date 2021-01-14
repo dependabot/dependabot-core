@@ -18,6 +18,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class SubdependencyVersionResolver
+        include Dependabot::Logger
+
         def initialize(dependency:, credentials:, dependency_files:,
                        ignored_versions:, latest_allowable_version:)
           @dependency = dependency
@@ -113,7 +115,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-              Dependabot.logger.info(npm_version)
+              logger.info(npm_version)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
