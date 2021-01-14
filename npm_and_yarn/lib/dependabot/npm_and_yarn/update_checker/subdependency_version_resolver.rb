@@ -2,9 +2,11 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
@@ -60,7 +62,7 @@ module Dependabot
           updated_files = if lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
                           else
-                            run_npm_updater(path, lockfile_name)
+                            run_npm_updater(path, lockfile_name, lockfile.content)
                           end
 
           updated_files.fetch(lockfile_name)
@@ -107,9 +109,12 @@ module Dependabot
           sleep(rand(3.0..10.0)) && retry
         end
 
-        def run_npm_updater(path, lockfile_name)
+        def run_npm_updater(path, lockfile_name, lockfile_content)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
+              Dependabot.logger.info(npm_version)
+
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "npm6:updateSubdependency",

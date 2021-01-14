@@ -2,7 +2,9 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
@@ -43,6 +45,10 @@ module Dependabot
             # parser doesn't deal with at the moment.
             if dependency_files_builder.package_locks.any? ||
                dependency_files_builder.shrinkwraps.any?
+              package_lock = dependency_files_builder.package_locks.find { |f| f.name == "package-lock.json" }
+              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
+              Dependabot.logger.info(npm_version)
+
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "npm6:findConflictingDependencies",
