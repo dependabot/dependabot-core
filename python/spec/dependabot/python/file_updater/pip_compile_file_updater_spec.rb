@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       expect(updated_files.count).to eq(1)
       expect(updated_files.first.content).to include("attrs==18.1.0")
       expect(updated_files.first.content).
-        to include("pbr==4.0.2\n    # via mock")
+        to include("pbr==4.0.2                # via mock")
       expect(updated_files.first.content).to include("# This file is autogen")
       expect(updated_files.first.content).to_not include("--hash=sha")
     end
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2\n    # via mock")
+          to include("pbr==4.0.2                # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           to include("-e file:///Users/greysteil/code/python-test")
         expect(updated_files.first.content).to_not include("tmp/dependabot")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2\n    # via mock")
+          to include("pbr==4.0.2                # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "updates the requirements.txt" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).
-          to include("pbr==4.2.0\n    # via mock")
+          to include("pbr==4.2.0                # via mock")
       end
 
       context "with an uncompiled requirement file, too" do
@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.first.content).
-            to include("pbr==4.2.0\n    # via mock")
+            to include("pbr==4.2.0                # via mock")
           expect(updated_files.last.content).to include("pbr==4.2.0")
         end
       end
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==17.4.0")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2\n    # via mock")
+          to include("pbr==4.0.2                # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
