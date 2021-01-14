@@ -1,3 +1,11 @@
+## v0.130.1, 14 January 2021
+
+- npm: detect npm v7 lockfiles
+- npm: Install npm v7 (unused) alongside npm v6
+- JS: Upgrade node to v14.15.4
+- Common: Added require "set" to utils.rb (@JohannesEH)
+- Sanitize `@mentions` by wrapping them in codeblocks preventing notifications when replying to PR email notifications
+
 ## v0.130.0, 13 January 2021
 
 - npm: Support GitLab format npm registry (@danoe)
