@@ -115,10 +115,10 @@ module Dependabot
 
         def create_link_node(url, text)
           link_node = CommonMarker::Node.new(:link)
-          text_node = CommonMarker::Node.new(:text)
+          code_node = CommonMarker::Node.new(:code)
           link_node.url = url
-          text_node.string_content = text
-          link_node.append_child(text_node)
+          code_node.string_content = text
+          link_node.append_child(code_node)
           link_node
         end
 
