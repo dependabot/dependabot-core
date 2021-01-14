@@ -1,0 +1,27 @@
+{
+  "name": "@compassdigital/id",
+  "version": "2.1.3",
+  "description": "Compass Digital IDs",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/* --bail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://jonathankeebler@github.com/compassdigital/compassdigital.id.git"
+  },
+  "author": "Jonathan Keebler",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/compassdigital/compassdigital.id/issues"
+  },
+  "homepage": "https://github.com/compassdigital/compassdigital.id#readme",
+  "dependencies": {
+    "hashids": "^1.1.4"
+  },
+  "devDependencies": {
+    "assert": "^1.4.1",
+    "should": "^11.2.1",
+    "should-http": "^0.1.1"
+  }
+}

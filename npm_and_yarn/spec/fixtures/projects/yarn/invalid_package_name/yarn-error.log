@@ -1,0 +1,49 @@
+Arguments: 
+  /Users/jurre/.nodenv/versions/10.16.0/bin/node /usr/local/Cellar/yarn/1.22.10/libexec/bin/yarn.js install
+
+PATH: 
+  /Users/jurre/.nodenv/versions/10.16.0/bin:/usr/local/Cellar/nodenv/1.4.0/libexec:/Users/jurre/.rbenv/versions/2.7.1/bin:/usr/local/Cellar/rbenv/1.1.2/libexec:/usr/local/opt/libxml2/bin:/Users/jurre/.nodenv/shims:/usr/local/opt/qt@5.5/bin:.git/safe/../../bin:/Users/jurre/.rbenv/shims:/Users/jurre/.bin:/usr/local/sbin:/Users/jurre/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/VMware Fusion.app/Contents/Public:/Users/jurre/go/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  10.16.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: fetch-factory:: Invalid URI "fetch-factory:/"
+      at Request.module.exports.Request.init (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:140837:31)
+      at new Request (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:140691:8)
+      at request (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:137597:10)
+      at RequestManager.execute (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:67040:15)
+      at RequestManager.shiftQueue (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:67078:10)
+      at /usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:66747:13
+      at new Promise (<anonymous>)
+      at new F (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:5301:28)
+      at RequestManager.request (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:66745:19)
+      at NpmRegistry.<anonymous> (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:31704:42)
+
+npm manifest: 
+  {
+    "name": "test-invalid-package-name",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "fetch-factory:": "^0.0.1"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

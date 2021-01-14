@@ -1,0 +1,54 @@
+Arguments: 
+  /Users/jurre/.nodenv/versions/10.16.0/bin/node /usr/local/Cellar/yarn/1.22.10/libexec/bin/yarn.js install
+
+PATH: 
+  /Users/jurre/.nodenv/versions/10.16.0/bin:/usr/local/Cellar/nodenv/1.4.0/libexec:/Users/jurre/.rbenv/versions/2.7.1/bin:/usr/local/Cellar/rbenv/1.1.2/libexec:/usr/local/opt/libxml2/bin:/Users/jurre/.nodenv/shims:/usr/local/opt/qt@5.5/bin:.git/safe/../../bin:/Users/jurre/.rbenv/shims:/Users/jurre/.bin:/usr/local/sbin:/Users/jurre/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/VMware Fusion.app/Contents/Public:/Users/jurre/go/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  10.16.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/jurre/dependabot/dependabot-core/npm_and_yarn/spec/fixtures/projects/yarn/invalid_name/package.json: Unexpected token   in JSON at position 165
+      at JSON.parse (<anonymous>)
+      at /usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:310:30)
+      at /usr/local/Cellar/yarn/1.22.10/libexec/lib/cli.js:321:13
+
+npm manifest: 
+  {
+      "name": "Spaces are invalid",
+      "version": "1.0.0",
+      "description": "",
+      "main": "index.js",
+      "scripts": {
+          "test": "echo \"Error: no\\ test\ specified\" && exit 1"
+      },
+      "repository": {
+          "type": "git",
+          "url": "git+https://github.com/waltfy/PROTO_TEST.git"
+      },
+      "author": "",
+      "license": "ISC",
+      "bugs": {
+          "url": "https://github.com/waltfy/PROTO_TEST/issues"
+      },
+      "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
+      "dependencies": {
+        "fetch-factory": "^0.0.1"
+      },
+      "devDependencies": {
+        "etag" : "^1.0.0"
+      }}
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

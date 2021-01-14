@@ -1,0 +1,13 @@
+{
+    "name": "test",
+    "version": "1.0.0",
+    "description": "An example",
+    "main": "app.js",
+    "author": "Example <me@example.com>",
+    "license": "UNLICENSED",
+    "private": false,
+    "flat": true,
+    "devDependencies": {
+        "etag": "^1.0.0"
+    }
+}
