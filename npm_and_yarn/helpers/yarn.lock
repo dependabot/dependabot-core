@@ -543,15 +543,15 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.3.tgz#d11f85c6609f542588bb946d0223b57c9a968650"
-  integrity sha512-iqahzDZaqdUyAHLG1SIG9jrbkLtT5xNbKX1ppAnx7mKx1u+BXYjkxi5ohewLAfyERH6IpODPAiRVc8c3kxA5jQ==
+"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3", "@npmcli/arborist@^2.0.5":
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.5.tgz#d4c4e0d3050084ac741af124410d9831f2b3da86"
+  integrity sha512-hUXn8XRChDG2Af4NpfPQpMiVbb0/IfhONdX1f1bcxjPXXKV54DMshU25tItcnKIeT5iKF1fqebQg8F3xHb5pCw==
   dependencies:
     "@npmcli/installed-package-contents" "^1.0.5"
     "@npmcli/map-workspaces" "^1.0.1"
-    "@npmcli/metavuln-calculator" "^1.0.0"
-    "@npmcli/move-file" "^1.0.1"
+    "@npmcli/metavuln-calculator" "^1.0.1"
+    "@npmcli/move-file" "^1.1.0"
     "@npmcli/name-from-folder" "^1.0.1"
     "@npmcli/node-gyp" "^1.0.1"
     "@npmcli/run-script" "^1.8.1"
@@ -564,7 +564,8 @@
     npm-install-checks "^4.0.0"
     npm-package-arg "^8.1.0"
     npm-pick-manifest "^6.1.0"
-    pacote "^11.1.14"
+    npm-registry-fetch "^9.0.0"
+    pacote "^11.2.1"
     parse-conflict-json "^1.1.1"
     promise-all-reject-late "^1.0.0"
     promise-call-limit "^1.0.1"
@@ -626,21 +627,22 @@
     minimatch "^3.0.4"
     read-package-json-fast "^1.2.1"
 
-"@npmcli/metavuln-calculator@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@npmcli/metavuln-calculator/-/metavuln-calculator-1.0.0.tgz#ee71f101581e36058084b533f99ec3e6c7ee7357"
-  integrity sha512-BzFNWElLl99WqqkxBWHPBSZbKGbH4qJa0vICgRff+PWl0nIT0nDn0wJV3EBCDDWnrVqomH29ZENZc1SkRQ0C7A==
+"@npmcli/metavuln-calculator@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@npmcli/metavuln-calculator/-/metavuln-calculator-1.0.1.tgz#2f8bfcd7b7ad4a2a95adb78dd7a7d0896015f14e"
+  integrity sha512-ezAi4lvICICG613CPvavqCn76jjkiQS+Hag8qMQInLitEjIyzVBud6ATfYIhDcH3d8RnxtMXe3kvKs6+JqTnJA==
   dependencies:
     cacache "^15.0.5"
     pacote "^11.1.11"
     semver "^7.3.2"
 
-"@npmcli/move-file@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@npmcli/move-file/-/move-file-1.0.1.tgz#de103070dac0f48ce49cf6693c23af59c0f70464"
-  integrity sha512-Uv6h1sT+0DrblvIrolFtbvM1FgWm+/sy4B3pvLp67Zys+thcukzS5ekn7HsZFGpWP4Q3fYJCljbWQE/XivMRLw==
+"@npmcli/move-file@^1.0.1", "@npmcli/move-file@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@npmcli/move-file/-/move-file-1.1.0.tgz#4ef8a53d727b9e43facf35404caf55ebf92cfec8"
+  integrity sha512-Iv2iq0JuyYjKeFkSR4LPaCdDZwlGK9X2cP/01nJcp3yMJ1FjNd9vpiEYvLUgzBxKPg2SFmaOhizoQsPc0LWeOQ==
   dependencies:
     mkdirp "^1.0.4"
+    rimraf "^2.7.1"
 
 "@npmcli/name-from-folder@^1.0.1":
   version "1.0.1"
@@ -5849,10 +5851,10 @@ package-json@^4.0.0:
     registry-url "^3.0.3"
     semver "^5.1.0"
 
-pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4:
-  version "11.1.14"
-  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.1.14.tgz#c60b9849ab05488d3f9ccd644c8a42543f2f36d6"
-  integrity sha512-6c5OhQelaJFDfiw/Zd8MfGCvvFHurSdeGzufZMPvRFImdbNOYFciOINf3DtUNUaU3h98eCb749UyHDsgvL19+A==
+pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4, pacote@^11.2.1:
+  version "11.2.1"
+  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.2.1.tgz#1b80e1ef24ca2a5000cb1a469a308072623f33dd"
+  integrity sha512-r5GzxJdmyLdWxP98xYcXinyyj1MIO3wwgJeJpaIIql7rnMBkcLx5k3WKCPpknZU11ybOiXCrIjWuZt3le0Es9A==
   dependencies:
     "@npmcli/git" "^2.0.1"
     "@npmcli/installed-package-contents" "^1.0.5"
