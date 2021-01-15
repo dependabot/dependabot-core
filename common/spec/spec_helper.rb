@@ -57,9 +57,7 @@ VCR.configure do |config|
 end
 
 def fixture(*name)
-  fixture_path = File.join("spec", "fixtures", File.join(*name))
-  ProjectFixtureBuilder.current_group.add_fixture_path(fixture_path)
-  File.read(fixture_path)
+  File.read(File.join("spec", "fixtures", File.join(*name)))
 end
 
 # Creates a temporary directory and copies in any files from the specified
