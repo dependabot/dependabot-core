@@ -10,30 +10,9 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-class ExampleGroupData
-  attr_reader :metadata, :fixture_names
-
-  def initialize(metadata)
-    @metadata = metadata
-    @fixture_names = Set[]
-  end
-
-  def explain
-    "#{metadata[:full_description]} (#{metadata[:location]}) uses fixtures: #{fixture_names.to_a.join(', ')}"
-  end
-
-  def self.key(metadata)
-    Digest::SHA256.hexdigest(metadata[:full_description])
-  end
-
-  def add_fixture(name)
-    @fixture_names << name
-  end
-end
-
-class LetInspector
+class ProjectFixtureBuilder
   class << self
-    attr_accessor :storage
+    attr_accessor :storage, :current_group
   end
 
   self.storage = {}
@@ -59,18 +38,19 @@ class LetInspector
   def example_group.let(name, &block)
     super(name, &block)
 
-    LetInspector.prepend_behavior(self, name) do |metadata|
+    ProjectFixtureBuilder.prepend_behavior(self, name) do |metadata|
       # puts name
       # puts caller_locations(1..1).first
       # puts block.source_location
 
       key = ExampleGroupData.key(metadata)
-      data = LetInspector.storage.fetch(key) { ExampleGroupData.new(metadata) }
+      data = ProjectFixtureBuilder.storage.fetch(key) { ExampleGroupData.new(metadata) }
       if FIXTURE_NAMES.include?(name.to_sym)
         fixture_name = block.call
-        data.add_fixture(fixture_name)
+        data.add_fixture_name(fixture_name)
       end
-      LetInspector.storage[key] = data
+      ProjectFixtureBuilder.current_group = data
+      ProjectFixtureBuilder.storage[key] = data
     end
   end
 
@@ -83,11 +63,52 @@ class LetInspector
       original_method.bind(self).call(*args, &block)
     end
   end
+
+  class ExampleGroupData
+    attr_reader :metadata, :fixture_names, :fixture_paths
+
+    def initialize(metadata)
+      @metadata = metadata
+      @fixture_names = Set[]
+      @fixture_paths = Set[]
+    end
+
+    def explain
+      msg = String.new("#{metadata[:full_description]} (#{metadata[:location]}) uses fixtures: #{fixture_names.to_a.join(', ')}\n")
+      fixture_paths.each do |path|
+        msg << "\ncp #{path} #{new_project_folder}"
+      end
+
+      msg << "\n\nAdd `let(:project_name) { \"#{project_name}\" }` to the #{metadata[:description]} block"
+
+      msg
+    end
+
+    def self.key(metadata)
+      Digest::SHA256.hexdigest(metadata[:full_description])
+    end
+
+    def add_fixture_name(name)
+      @fixture_names << name
+    end
+
+    def add_fixture_path(path)
+      @fixture_paths << path
+    end
+
+    def new_project_folder
+      "npm_and_yarn/spec/fixtures/projects/#{project_name}"
+    end
+
+    def project_name
+      @fixture_names.to_a.map { |f| File.basename(f, File.extname(f)) }.join("-")
+    end
+  end
 end
 
 RSpec.configure do |c|
   c.after do
-    LetInspector.storage.each do |_, data|
+    ProjectFixtureBuilder.storage.each do |_, data|
       puts data.explain
     end
   end
