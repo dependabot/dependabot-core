@@ -311,37 +311,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       let(:project_name) { "env_variable" }
 
       context "that hasn't been provided" do
-        it "raises a MissingEnvironmentVariable error" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
-            expect(error.message).to eq("Missing environment variable ACF_PRO_KEY")
-          end
-        end
-      end
-
-      context "that has been provided" do
-        let(:updater) do
-          described_class.new(
-            dependency_files: files,
-            dependencies: [dependency],
-            credentials: [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "php_environment_variable",
-              "env-key" => "ACF_PRO_KEY",
-              "env-value" => "example_key"
-            }]
-          )
-        end
-
-        it "runs just fine (we get a 404 here because our key is wrong)" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404")
-          end
+        it "does not attempt to download and has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"5.9.2\"")
         end
       end
     end
@@ -544,11 +515,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           }]
         end
 
-        it "raises a helpful errors" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a Dependabot::PrivateSourceAuthenticationFailure
-            expect(error.source).to eq("nova.laravel.com")
-          end
+        it "does not attempt to download and has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v2.0.9\"")
         end
       end
     end
@@ -577,11 +545,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "raises a helpful errors" do
-        expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
-          expect(error.dependency).to eq("monolog/monolog")
-        end
+      it "does not attempt to install it and has details of the updated item" do
+        expect(updated_lockfile_content).to include("\"version\":\"v1.6.0\"")
       end
     end
 
@@ -609,12 +574,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "raises a helpful errors" do
-        expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
-          expect(error.dependency).
-            to eq("monolog/monolog")
-        end
+      it "does not attempt to install it and has details of the updated item" do
+        expect(updated_lockfile_content).to include("\"version\":\"v1.6.0\"")
       end
     end
 

@@ -53,7 +53,7 @@ final class UpdateChecker
         $fs = new Filesystem(null);
         $binaryInstaller = new Installer\BinaryInstaller($io, rtrim($composer->getConfig()->get('bin-dir'), '/'), $composer->getConfig()->get('bin-compat'), $fs);
 
-        $installationManager->addInstaller(new Installer\LibraryInstaller($io, $composer, null, $fs, $binaryInstaller));
+        $installationManager->addInstaller(new LibraryInstaller());
         $installationManager->addInstaller(new Installer\PluginInstaller($io, $composer, $fs, $binaryInstaller));
         $installationManager->addInstaller(new Installer\MetapackageInstaller($io));
 
