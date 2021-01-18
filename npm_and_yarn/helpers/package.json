@@ -8,6 +8,9 @@
     "lint": "eslint .",
     "test": "jest"
   },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
     "@npmcli/arborist": "^2.0.5",
