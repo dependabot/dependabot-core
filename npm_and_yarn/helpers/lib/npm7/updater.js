@@ -38,9 +38,10 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
     ...npm.flatOptions,
     path: directory,
     packageLockOnly: true,
-    dryRun: false,
+    dryRun: false, // override dry-run set in the updater
     ignoreScripts: true,
     force: true,
+    quiet: true,
   });
 
   const manifest = JSON.parse(readFile("package.json"));
