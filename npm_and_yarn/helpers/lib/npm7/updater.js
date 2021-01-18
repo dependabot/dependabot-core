@@ -16,10 +16,12 @@
  */
 const fs = require("fs");
 const path = require("path");
-const npm = require("npm6");
-const installer = require("npm6/lib/install");
+const npm = require("npm7");
+const Arborist = require("@npmcli/arborist");
+const process = require("process");
+
+// const installer = require("npm6/lib/install");
 const detectIndent = require("detect-indent");
-const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
@@ -29,24 +31,20 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
   // in npm/lib/install/validate-args.js
   // Platform is checked and raised from (EBADPLATFORM):
   // https://github.com/npm/npm-install-checks
-  //
-  // `'prefer-offline': true` sets fetch() cache key to `force-cache`
-  // https://github.com/npm/npm-registry-fetch
-  //
-  // `'ignore-scripts': true` used to disable prepare and prepack scripts
-  // which are run when installing git dependencies
-  await runAsync(npm, npm.load, [
-    {
-      loglevel: "silent",
-      force: true,
-      audit: false,
-      "prefer-offline": true,
-      "ignore-scripts": true,
-    },
-  ]);
-  const manifest = JSON.parse(readFile("package.json"));
+  await new Promise((resolve) => {
+    npm.load(resolve);
+  });
 
-  const dryRun = true;
+  const arb = new Arborist({
+    ...npm.flatOptions,
+    path: directory,
+    packageLockOnly: true,
+    dryRun: false,
+    ignoreScripts: true,
+    force: true,
+  });
+
+  const manifest = JSON.parse(readFile("package.json"));
   const flattenedDependencies = flattenAllDependencies(manifest);
   const args = dependencies.map((dependency) => {
     const existingVersionRequirement = flattenedDependencies[dependency.name];
@@ -57,36 +55,14 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
       existingVersionRequirement
     );
   });
-  const initialInstaller = new installer.Installer(directory, dryRun, args, {
-    packageLockOnly: true,
+
+  await arb.reify({
+    add: args,
   });
 
-  // A bug in npm means the initial install will remove any git dependencies
-  // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true,
-  });
-
-  // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
-  cleanupInstaller.printInstalled = (cb) => cb();
-
-  // There are some hard-to-prevent bits of output.
-  // This is horrible, but works.
-  const unmute = muteStderr();
-  try {
-    // Fix already present git sub-dependency with invalid "from" and "requires"
-    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
-
-    await runAsync(initialInstaller, initialInstaller.run, []);
-
-    // Fix npm5 lockfiles where invalid "from" is introduced after first install
-    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
-
-    await runAsync(cleanupInstaller, cleanupInstaller.run, []);
-  } finally {
-    unmute();
-  }
+  // TODO: Do we need to do this for npm7?
+  // Fix already present git sub-dependency with invalid "from" and "requires"
+  updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
 
   const updatedLockfile = readFile(lockfileName);
 
