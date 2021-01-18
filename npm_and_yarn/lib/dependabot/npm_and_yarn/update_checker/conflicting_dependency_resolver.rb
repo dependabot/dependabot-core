@@ -51,7 +51,7 @@ module Dependabot
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm6:findConflictingDependencies",
+                function: "#{npm_version}:findConflictingDependencies",
                 args: [Dir.pwd, dependency.name, target_version.to_s]
               )
             else

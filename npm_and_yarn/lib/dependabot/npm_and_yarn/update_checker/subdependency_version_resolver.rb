@@ -117,7 +117,7 @@ module Dependabot
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
+                function: "#{npm_version}:updateSubdependency",
                 args: [Dir.pwd, lockfile_name, [dependency.to_h]]
               )
             end
