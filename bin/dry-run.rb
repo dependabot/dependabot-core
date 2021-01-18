@@ -63,6 +63,7 @@ require "json"
 require "byebug"
 require "logger"
 
+require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
