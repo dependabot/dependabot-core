@@ -18,23 +18,22 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm7");
 const Arborist = require("@npmcli/arborist");
-const process = require("process");
-
-// const installer = require("npm6/lib/install");
 const detectIndent = require("detect-indent");
 
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  // `force: true` ignores checks for platform (os, cpu) and engines
-  // in npm/lib/install/validate-args.js
-  // Platform is checked and raised from (EBADPLATFORM):
-  // https://github.com/npm/npm-install-checks
   await new Promise((resolve) => {
     npm.load(resolve);
   });
 
+  // `force` ignores checks for platform (os, cpu) and engines in
+  // npm/lib/install/validate-args.js Platform is checked and raised from
+  // (EBADPLATFORM): https://github.com/npm/npm-install-checks
+  //
+  // `ignoreScripts` is used to disable prepare and prepack scripts which are
+  // run when installing git dependencies
   const arb = new Arborist({
     ...npm.flatOptions,
     path: directory,
