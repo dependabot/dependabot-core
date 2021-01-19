@@ -73,6 +73,7 @@ final class UpdateChecker
         $install
             ->setUpdate(true)
             ->setDevMode(true)
+            ->setInstall(false)
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)

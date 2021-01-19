@@ -78,6 +78,7 @@ final class Updater
         $install
             ->setWriteLock(true)
             ->setUpdate(true)
+            ->setInstall(false)
             ->setDevMode(true)
             ->setUpdateAllowList([$dependencyName])
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
