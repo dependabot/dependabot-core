@@ -6,7 +6,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "test": "jest -c jest.config.js"
+    "test": "jest"
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
