@@ -10,9 +10,8 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 
-const npm = require("npm6");
-const installer = require("npm6/lib/install");
-const { muteStderr, runAsync } = require("./helpers.js");
+const npm = require("npm7");
+const Arborist = require("@npmcli/arborist");
 
 function installArgsWithVersion(depName, desiredVersion, reqs) {
   const source = (reqs.find((req) => req.source) || {}).source;
@@ -29,83 +28,57 @@ async function checkPeerDependencies(
   depName,
   desiredVersion,
   requirements,
-  topLevelDependencies
+  _topLevelDependencies // included for compatibility with npm 6 implementation
 ) {
-  // `force: true` ignores checks for platform (os, cpu) and engines
-  // in npm/lib/install/validate-args.js
-  // Platform is checked and raised from (EBADPLATFORM):
-  // https://github.com/npm/npm-install-checks
-  //
-  // `'prefer-offline': true` sets fetch() cache key to `force-cache`
-  // https://github.com/npm/npm-registry-fetch
-  //
-  // `'ignore-scripts': true` used to disable prepare and prepack scripts
-  // which are run when installing git dependencies
-  await runAsync(npm, npm.load, [
-    {
-      loglevel: "silent",
-      force: true,
-      audit: false,
-      "prefer-offline": true,
-      "ignore-scripts": true,
-      save: false,
-    },
-  ]);
+  await new Promise((resolve) => {
+    npm.load(resolve);
+  });
 
-  const dryRun = true;
+  // `force` ignores checks for platform (os, cpu) and engines in
+  // npm/lib/install/validate-args.js Platform is checked and raised from
+  // (EBADPLATFORM): https://github.com/npm/npm-install-checks
+  //
+  // `ignoreScripts` is used to disable prepare and prepack scripts which are
+  // run when installing git dependencies
+  const arb = new Arborist({
+    ...npm.flatOptions,
+    path: directory,
+    packageLockOnly: true,
+    dryRun: true,
+    save: false,
+    ignoreScripts: true,
+    engineStrict: false,
+    // NOTE: there seems to be no way to disable platform checks in arborist
+    // without force installing invalid peer dependencies
+    //
+    // TODO: ignore platform checks
+    force: false,
+  });
 
   // Returns dep name and version for npm install, example: ["react@16.6.0"]
   let args = installArgsWithVersion(depName, desiredVersion, requirements);
 
-  // To check peer dependencies requirements in all top level dependencies we
-  // need to explicitly tell npm to fetch all manifests by specifying the
-  // existing dependency name and version in npm install
-
-  // For example, if we have "react@15.6.2" and "react-dom@15.6.2" installed
-  // and we want to install react@16.6.0, we need get the existing version of
-  // react-dom and pass this to npm install along with the new version react,
-  // this way npm fetches the manifest for react-dom and determines that we
-  // can't install react@16.6.0 due to the peer dependency requirement in
-  // react-dom
-
-  // If we only pass the new dep@version to npm install, e.g. "react@16.6.0" npm
-  // will only fetch the manifest for react and not know that react-dom enforces
-  // a peerDependency on react
-
-  // Returns dep name and version for npm install, example: ["react-dom@15.6.2"]
-  // - given react and react-dom in top level deps
-  const otherDeps = (topLevelDependencies || [])
-    .filter((dep) => dep.name !== depName && dep.version)
-    .map((dep) =>
-      installArgsWithVersion(dep.name, dep.version, dep.requirements)
-    )
-    .reduce((acc, dep) => acc.concat(dep), []);
-
-  args = args.concat(otherDeps);
-
-  const initialInstaller = new installer.Installer(directory, dryRun, args, {
-    packageLockOnly: true,
-  });
-
-  // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
-
-  // There are some hard-to-prevent bits of output.
-  // This is horrible, but works.
-  const unmute = muteStderr();
-  try {
-    await runAsync(initialInstaller, initialInstaller.run, []);
-  } finally {
-    unmute();
-  }
-
-  const peerDependencyWarnings = initialInstaller.idealTree.warnings
-    .filter((warning) => warning.code === "EPEERINVALID")
-    .map((warning) => warning.message);
-
-  if (peerDependencyWarnings.length) {
-    throw new Error(peerDependencyWarnings.join("\n"));
-  }
+  return await arb
+    .buildIdealTree({
+      add: args,
+    })
+    .catch((er) => {
+      if (er.code === "ERESOLVE") {
+        // NOTE: Emulate the error message in npm 6 for compatibility with the
+        // version resolver
+        const conflictingDependencies = [
+          `${er.edge.from.name}@${er.edge.from.version} requires a peer of ${er.current.name}@${er.edge.spec} but none is installed.`,
+        ];
+        throw new Error(conflictingDependencies.join("\n"));
+      } else {
+        // TODO: Should we handle errors here?
+        //
+        // NOTE: Puting exception/resolution handling to the file updater. This
+        // is consistent with npm6 behaviour.
+        return [];
+      }
+    })
+    .then(() => []);
 }
 
 module.exports = { checkPeerDependencies };
