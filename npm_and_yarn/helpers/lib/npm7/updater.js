@@ -40,7 +40,9 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
     packageLockOnly: true,
     dryRun: false, // override dry-run set in the updater
     ignoreScripts: true,
-    force: true,
+    // TODO: seems to be no way to disable platform checks in arborist without force installing invalid peer deps
+    force: false,
+    engineStrict: false,
     quiet: true,
   });
 
