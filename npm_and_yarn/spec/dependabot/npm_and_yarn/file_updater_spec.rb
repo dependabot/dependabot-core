@@ -2026,6 +2026,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    describe "npm 7: updating subdependency with lockfile" do
+      let(:files) { project_dependency_files("npm7/subdependency-in-range") }
+
+      let(:dependency_name) { "ms" }
+      let(:version) { "2.1.3" }
+      let(:previous_version) { "2.1.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.1.1",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.1.1",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it "updates the files" do
+        expect(updated_files.count).to eq(1)
+        parsed_lockfile = JSON.parse(updated_npm_lock.content)
+        expect(parsed_lockfile["packages"]["node_modules/ms"]["version"]).to eq("2.1.3")
+        expect(parsed_lockfile["dependencies"]["ms"]["version"]).to eq("2.1.3")
+      end
+    end
+
     #######################
     # Yarn specific tests #
     #######################
@@ -2199,7 +2230,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           Dependabot::DependencyFile.new(
             name: "other_package/package.json",
             content:
-              fixture("package_files", "other_package.json")
+            fixture("package_files", "other_package.json")
           )
         end
 

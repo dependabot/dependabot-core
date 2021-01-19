@@ -1,74 +1,30 @@
 const fs = require("fs");
 const path = require("path");
-const npm = require("npm6");
-const installer = require("npm6/lib/install");
-const detectIndent = require("detect-indent");
-const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
-
-const { muteStderr, runAsync } = require("./helpers.js");
+const npm = require("npm7");
+const Arborist = require("@npmcli/arborist");
 
 async function updateDependencyFile(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
-  const lockfile = readFile(lockfileName);
-  const indent = detectIndent(lockfile).indent || "  ";
-  const lockfileObject = JSON.parse(lockfile);
-  // Remove the dependency we want to update from the lockfile and let
-  // npm find the latest resolvable version and fix the lockfile
-  const updatedLockfileObject = removeDependenciesFromLockfile(
-    lockfileObject,
-    dependencies.map((dep) => dep.name)
-  );
-  fs.writeFileSync(
-    path.join(directory, lockfileName),
-    JSON.stringify(updatedLockfileObject, null, indent)
-  );
-
-  // `force: true` ignores checks for platform (os, cpu) and engines
-  // in npm/lib/install/validate-args.js
-  // Platform is checked and raised from (EBADPLATFORM):
-  // https://github.com/npm/npm-install-checks
-  //
-  // `'prefer-offline': true` sets fetch() cache key to `force-cache`
-  // https://github.com/npm/npm-registry-fetch
-  //
-  // `'ignore-scripts': true` used to disable prepare and prepack scripts
-  // which are run when installing git dependencies
-  await runAsync(npm, npm.load, [
-    {
-      loglevel: "silent",
-      force: true,
-      audit: false,
-      "prefer-offline": true,
-      "ignore-scripts": true,
-    },
-  ]);
-
-  const dryRun = true;
-  const initialInstaller = new installer.Installer(directory, dryRun, [], {
-    packageLockOnly: true,
+  await new Promise((resolve) => {
+    npm.load(resolve);
   });
 
-  // A bug in npm means the initial install will remove any git dependencies
-  // from the lockfile. A subsequent install with no arguments fixes this.
-  const cleanupInstaller = new installer.Installer(directory, dryRun, [], {
+  const arb = new Arborist({
+    ...npm.flatOptions,
+    path: directory,
     packageLockOnly: true,
+    dryRun: false,
+    ignoreScripts: true,
+    force: true,
+    save: true,
   });
 
-  // Skip printing the success message
-  initialInstaller.printInstalled = (cb) => cb();
-  cleanupInstaller.printInstalled = (cb) => cb();
+  const dependencyNames = dependencies.map((dep) => dep.name);
+  await arb.buildIdealTree({ update: { names: dependencyNames }});
 
-  // There are some hard-to-prevent bits of output.
-  // This is horrible, but works.
-  const unmute = muteStderr();
-  try {
-    await runAsync(initialInstaller, initialInstaller.run, []);
-    await runAsync(cleanupInstaller, cleanupInstaller.run, []);
-  } finally {
-    unmute();
-  }
+  await arb.reify({})
 
   const updatedLockfile = readFile(lockfileName);
 
