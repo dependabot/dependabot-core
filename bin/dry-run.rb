@@ -66,7 +66,6 @@ require "dependabot/logger"
 
 Dependabot.logger = Logger.new($stdout)
 
-require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"

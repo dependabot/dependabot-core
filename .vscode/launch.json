@@ -5,54 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
-      "name": "vscode-jest-tests",
-      "request": "launch",
-      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
-      "args": [
-        "--runInBand",
-        "-c",
-        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "disableOptimisticBPs": true
-    },
-    {
-      "type": "node",
-      "name": "Run jest tests (watch)",
-      "request": "launch",
-      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
-      "args": [
-        "--runInBand",
-        "--watchAll",
-        "-c",
-        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "disableOptimisticBPs": true
-    },
-    {
-      "type": "node",
-      "name": "Run jest tests on opened file (watch)",
-      "request": "launch",
-      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
-      "args": [
-        "${fileBasenameNoExtension}",
-        "--runInBand",
-        "--watchAll",
-        "-c",
-        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
-      ],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "disableOptimisticBPs": true
-    },
-    {
       "name": "Debug dry run",
       "type": "Ruby",
       "request": "launch",
