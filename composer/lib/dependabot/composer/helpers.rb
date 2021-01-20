@@ -7,6 +7,7 @@ module Dependabot
     module Helpers
       # From composers json-schema: https://getcomposer.org/schema.json
       COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*$}.freeze
+      COMPOSER_PLATFORM_REGEX = %r{^php|(lib|ext)-.*+$/}.freeze
 
       def self.composer_version(composer_json, parsed_lockfile = nil)
         return "v1" if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
@@ -21,7 +22,7 @@ module Dependabot
         return false unless composer_json.key?("require")
 
         composer_json["require"].keys.any? do |key|
-          key != "php" && key !~ COMPOSER_V2_NAME_REGEX
+          key !~ COMPOSER_PLATFORM_REGEX && key !~ COMPOSER_V2_NAME_REGEX
         end
       end
       private_class_method :invalid_v2_requirement?
