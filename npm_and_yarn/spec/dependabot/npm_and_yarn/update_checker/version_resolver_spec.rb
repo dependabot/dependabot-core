@@ -88,6 +88,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     subject { resolver.latest_resolvable_version }
 
     context "with a npm 7 package-lock.json" do
+      context "updating a dependency without peer dependency issues" do
+        let(:dependency_files) { project_dependency_files("npm7/package-lock") }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+
       describe "updating a dependency with a peer requirement" do
         let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
@@ -245,7 +265,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with a package-lock.json" do
+    context "with a npm 6 package-lock.json" do
       let(:dependency_files) { [package_json, npm_lock] }
 
       context "updating a dependency without peer dependency issues" do
@@ -840,7 +860,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#latest_version_resolvable_with_full_unlock?" do
     subject { resolver.latest_version_resolvable_with_full_unlock? }
 
-    context "updating a tightly coupled monorepo dep" do
+    context "npm 6: updating a tightly coupled monorepo dep" do
       let(:dependency_files) { [package_json] }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
@@ -886,7 +906,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "updating a dependency that is a peer requirement" do
+    context "npm 6: updating a dependency that is a peer requirement" do
       let(:dependency_files) { [package_json, npm_lock] }
       let(:manifest_fixture_name) { "peer_dependency.json" }
       let(:npm_lock_fixture_name) { "peer_dependency.json" }
@@ -945,10 +965,131 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "updating a dependency with a peer requirement" do
+    context "npm 6: updating a dependency with a peer requirement" do
       let(:dependency_files) { [package_json, npm_lock] }
       let(:manifest_fixture_name) { "peer_dependency.json" }
       let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react-dom",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq(false) }
+    end
+
+    context "npm 7: updating a tightly coupled monorepo dep" do
+      let(:dependency_files) { project_dependency_files("npm7/monorepo_dep_multiple") }
+      let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "vue",
+          version: nil,
+          requirements: [{
+            file: "package.json",
+            requirement: "2.5.20",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:vue_template_compiler_registry_listing_url) do
+        "https://registry.npmjs.org/vue-template-compiler"
+      end
+      let(:vue_template_compiler_registry_response) do
+        fixture("npm_responses", "vue-template-compiler.json")
+      end
+      let(:vue_registry_listing_url) { "https://registry.npmjs.org/vue" }
+      let(:vue_registry_response) do
+        fixture("npm_responses", "vue.json")
+      end
+      before do
+        stub_request(:get, vue_template_compiler_registry_listing_url).
+          to_return(status: 200, body: vue_template_compiler_registry_response)
+        stub_request(
+          :get,
+          vue_template_compiler_registry_listing_url + "/latest"
+        ).to_return(status: 200, body: "{}")
+        stub_request(:get, vue_registry_listing_url).
+          to_return(status: 200, body: vue_registry_response)
+        stub_request(:get, vue_registry_listing_url + "/latest").
+          to_return(status: 200, body: "{}")
+      end
+
+      context "with other parts of the monorepo present" do
+        it { is_expected.to eq(true) }
+      end
+    end
+
+    context "npm 7: updating a dependency that is a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm7/peer_dependency_multiple") }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq(true) }
+
+      context "of multiple dependencies" do
+        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_multiple") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "0.14.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.14.2",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+
+        let(:react_modal_registry_listing_url) do
+          "https://registry.npmjs.org/react-modal"
+        end
+        let(:react_modal_registry_response) do
+          fixture("npm_responses", "react-modal.json")
+        end
+        before do
+          stub_request(:get, react_modal_registry_listing_url).
+            to_return(status: 200, body: react_modal_registry_response)
+          stub_request(:get, react_modal_registry_listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        # Support for React 16 gets added to react-modal after a new peer
+        # dependency on react-dom is added. Dependabot doesn't know how to
+        # handle updating packages with multiple peer dependencies, so bails.
+        it { is_expected.to eq(false) }
+      end
+    end
+
+    context "npm 7: updating a dependency with a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -971,7 +1112,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#dependency_updates_from_full_unlock" do
     subject { resolver.dependency_updates_from_full_unlock }
 
-    context "updating a tightly coupled monorepo dep" do
+    context "npm 6: updating a tightly coupled monorepo dep" do
       let(:dependency_files) { [package_json] }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
@@ -1051,7 +1192,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "updating a dependency that is a peer requirement" do
+    context "npm 6: updating a dependency that is a peer requirement" do
       let(:dependency_files) { [package_json, npm_lock] }
       let(:manifest_fixture_name) { "peer_dependency.json" }
       let(:npm_lock_fixture_name) { "peer_dependency.json" }
@@ -1106,7 +1247,60 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "updating a nested dependency that is a peer requirement" do
+    context "npm 7: updating a dependency that is a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "gets the right list of dependencies to update" do
+        expect(resolver.dependency_updates_from_full_unlock).
+          to contain_exactly(
+            {
+              dependency: Dependabot::Dependency.new(
+                name: "react",
+                version: "15.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^15.2.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+              previous_version: "15.2.0"
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "15.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^15.2.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+              previous_version: "15.2.0"
+            }
+          )
+      end
+    end
+
+    context "yarn: updating a nested dependency that is a peer requirement" do
       let(:dependency_files) do
         [package_json, yarn_lock, nested_package_json, nested_yarn_lock]
       end
