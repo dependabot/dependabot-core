@@ -1723,7 +1723,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     ######################
     # npm specific tests #
     ######################
-    describe "npm specific" do
+    describe "npm 6 specific" do
       let(:files) { [package_json, package_lock] }
 
       context "when the package lock is empty" do
@@ -1991,36 +1991,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
-    describe "npm 7: updating top-level dependency with lockfile" do
-      let(:files) { project_dependency_files("npm7/package-lock") }
+    describe "npm 7 specific" do
+      describe "updating top-level dependency with lockfile" do
+        let(:files) { project_dependency_files("npm7/package-lock") }
 
-      let(:dependency_name) { "left-pad" }
-      let(:version) { "1.3.0" }
-      let(:previous_version) { "1.0.1" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "1.3.0",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "1.0.1",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
+        let(:dependency_name) { "left-pad" }
+        let(:version) { "1.3.0" }
+        let(:previous_version) { "1.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.3.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
 
-      it "updates the files" do
-        expect(updated_files.count).to eq(2)
-        parsed_lockfile = JSON.parse(updated_npm_lock.content)
-        expect(parsed_lockfile["packages"]["node_modules/left-pad"]["version"]).
-          to eq("1.3.0")
-        expect(parsed_lockfile["dependencies"]["left-pad"]["version"]).
-          to eq("1.3.0")
+        it "updates the files" do
+          expect(updated_files.count).to eq(2)
+          parsed_lockfile = JSON.parse(updated_npm_lock.content)
+          expect(parsed_lockfile["packages"]["node_modules/left-pad"]["version"]).
+            to eq("1.3.0")
+          expect(parsed_lockfile["dependencies"]["left-pad"]["version"]).
+            to eq("1.3.0")
+        end
       end
     end
 
