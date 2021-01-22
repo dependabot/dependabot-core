@@ -543,10 +543,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3", "@npmcli/arborist@^2.0.5":
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.5.tgz#d4c4e0d3050084ac741af124410d9831f2b3da86"
-  integrity sha512-hUXn8XRChDG2Af4NpfPQpMiVbb0/IfhONdX1f1bcxjPXXKV54DMshU25tItcnKIeT5iKF1fqebQg8F3xHb5pCw==
+"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3", "@npmcli/arborist@^2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.6.tgz#b1036209455f2048b791915a8e050a4390f99202"
+  integrity sha512-3VF6rr3TlGABVZHksblQCcG+aXvsND+pdkUc7vKsKyvY5DB1b6QxXUHwJTPTZz7hKvFM5GQPewp8OxMUdMDMRQ==
   dependencies:
     "@npmcli/installed-package-contents" "^1.0.5"
     "@npmcli/map-workspaces" "^1.0.1"
@@ -565,7 +565,7 @@
     npm-package-arg "^8.1.0"
     npm-pick-manifest "^6.1.0"
     npm-registry-fetch "^9.0.0"
-    pacote "^11.2.1"
+    pacote "^11.2.3"
     parse-conflict-json "^1.1.1"
     promise-all-reject-late "^1.0.0"
     promise-call-limit "^1.0.1"
@@ -5844,10 +5844,10 @@ package-json@^4.0.0:
     registry-url "^3.0.3"
     semver "^5.1.0"
 
-pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4, pacote@^11.2.1:
-  version "11.2.1"
-  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.2.1.tgz#1b80e1ef24ca2a5000cb1a469a308072623f33dd"
-  integrity sha512-r5GzxJdmyLdWxP98xYcXinyyj1MIO3wwgJeJpaIIql7rnMBkcLx5k3WKCPpknZU11ybOiXCrIjWuZt3le0Es9A==
+pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4, pacote@^11.2.3:
+  version "11.2.3"
+  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.2.3.tgz#3c9f70d281c62c86ca3dc2e17df4234c63c698f1"
+  integrity sha512-Jphxyk1EjGyLzNwa+MkbcQUQeTIqlKcIoPq0t9ekR9ZxsTGjzhRjz/cOoL9PTVkqAW1FH7qBoVbYL4FqQGNNJg==
   dependencies:
     "@npmcli/git" "^2.0.1"
     "@npmcli/installed-package-contents" "^1.0.5"
