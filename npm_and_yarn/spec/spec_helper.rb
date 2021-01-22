@@ -25,7 +25,7 @@ def walk(node, &block)
 end
 
 RSpec.configure do |c|
-  c.after do
+  c.after(:all) do
     next unless ENV["AUTOFIX_PROJECT_FIXTURES"]
 
     ProjectFixtures::Finder.storage.each do |_, data|
@@ -56,7 +56,8 @@ RSpec.configure do |c|
         end
       end
 
-      ProjectFixtures::Autocorrector.new(file, nodes, dir).correct
+      start_loc = data.metadata[:line_number]
+      ProjectFixtures::Autocorrector.new(file, nodes, dir, start_loc).correct
     end
   end
 end

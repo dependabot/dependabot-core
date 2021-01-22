@@ -3,7 +3,7 @@
 module ProjectFixtures
   class Finder
     class << self
-      attr_accessor :storage, :current_group
+      attr_accessor :storage
     end
 
     self.storage = {}
@@ -48,7 +48,6 @@ module ProjectFixtures
 
           data.add_let(let)
         end
-        ProjectFixtures::Finder.current_group = data
         ProjectFixtures::Finder.storage[key] = data
       end
     end

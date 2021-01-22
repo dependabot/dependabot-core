@@ -3,12 +3,15 @@
 require "parser"
 
 module ProjectFixtures
+  TRACKER = Hash.new { false }
+
   class Autocorrector < Parser::TreeRewriter
     attr_reader :filename, :nodes, :buffer
 
-    def initialize(filename, nodes, project_name)
+    def initialize(filename, nodes, project_name, start_loc)
       @filename = filename
       @project_name = project_name
+      @start_loc = start_loc
       @nodes = nodes
       @buffer = Parser::Source::Buffer.new("(#{filename})")
       buffer.source = File.read(filename)
@@ -23,30 +26,38 @@ module ProjectFixtures
     end
 
     def on_block(node)
-      target_node = nodes.any? do |offense_node|
-        # TODO: replace_with_project_fixture(dir) if node == file_node
-        node == offense_node && node.location.line == offense_node.location.line
+      if node.location.line == @start_loc
+        # TODO: This messes up the indentation, rubocop can autofix this for us,
+        # but would be nice to figure out how to determine it. Breadcrumb:
+        # https://github.com/rubocop-hq/rubocop/blob/751edc7bf3df93d7ec5d59f5ac5b501627a6b723/lib/rubocop/cop/layout/heredoc_indentation.rb#L144-L155
+        child = node.children[-1].children.select { |n| n.type.equal?(:block) }.first
+        insert_before(
+          # This is gross, but we know this is a block, so the second child will
+          # be the actual block. Its children are the content of that block, and
+          # we want to insert before the first line in the block, ensuring that
+          # the first thing the block defines is a files definition.
+          block_range(child),
+          "let(:dependency_files) { project_dependency_files(\"#{@project_name}\") }\n"
+        )
+        return super
       end
 
-      if target_node
-        if files_node?(node)
-          replace(
-            removal_range(node),
-            "let(:#{let_name(node)}) { project_dependency_files(\"#{@project_name}\") }"
-          )
-        else
-          remove(removal_range(node))
-        end
+      target_node = nodes.any? do |offense_node|
+        node == offense_node && node.loc.line == offense_node.loc.line &&
+          # TODO: Why are we sent nodes that are not tracked?
+          Finder::TRACKED_LETS.include?(let_name(node))
       end
+
+      return super unless target_node && !TRACKER[node]
+
+      remove(block_range(node))
+
+      TRACKER[node] = true
 
       super
     end
 
     private
-
-    def files_node?(node)
-      Finder::FILE_NAMES.include?(let_name(node))
-    end
 
     def let_name(node)
       send, = *node
@@ -54,46 +65,12 @@ module ProjectFixtures
       name.children.last
     end
 
-    # This corrects for cases which contains heredocs which do not get removed in all cases if we
-    # just use the `expression` range.
-    def removal_range(node)
+    def block_range(node)
       Parser::Source::Range.new(
         buffer,
-        node.location.expression.begin_pos,
-        range_end(node)
+        node.loc.expression.begin_pos,
+        node.loc.expression.end_pos
       )
-    end
-
-    def range_end(node)
-      location = node.location.expression
-
-      last_line    = location.last_line
-      end_location = location.end
-
-      walk(node) do |child|
-        child_location = child.location
-
-        next unless child_location.respond_to?(:heredoc_end)
-
-        heredoc_end = child_location.heredoc_end
-
-        if heredoc_end.last_line > last_line
-          last_line    = heredoc_end.last_line
-          end_location = heredoc_end
-        end
-      end
-
-      end_location.end_pos
-    end
-
-    def walk(node, &block)
-      yield node
-
-      node.children.each do |child|
-        next unless child.is_a?(::Parser::AST::Node)
-
-        walk(child, &block)
-      end
     end
   end
 end
