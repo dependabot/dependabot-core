@@ -19,7 +19,7 @@ module Dependabot
           /maven\s*\{[^\}]*\surl[\s\(]=?\s*['"](?<url>[^'"]+)['"]/.freeze
 
         KOTLIN_MAVEN_REPO_REGEX =
-          /maven\((url\=)?["](?<url>[^"]+)["]\)/.freeze
+          /maven\((url\s?\=\s?)?["](?<url>[^"]+)["]\)/.freeze
 
         MAVEN_REPO_REGEX =
           /(#{KOTLIN_MAVEN_REPO_REGEX}|#{GROOVY_MAVEN_REPO_REGEX})/.freeze
