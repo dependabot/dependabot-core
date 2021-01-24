@@ -24,6 +24,7 @@
 # - maven
 # - gradle
 # - cargo
+# - helm
 # - hex
 # - composer
 # - nuget
@@ -47,6 +48,7 @@ $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./github_actions/lib"
 $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
+$LOAD_PATH << "./helm/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
@@ -82,6 +84,7 @@ require "dependabot/git_submodules"
 require "dependabot/github_actions"
 require "dependabot/go_modules"
 require "dependabot/gradle"
+require "dependabot/helm"
 require "dependabot/hex"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"

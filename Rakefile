@@ -26,6 +26,7 @@ GEMSPECS = %w(
   dep/dependabot-dep.gemspec
   npm_and_yarn/dependabot-npm_and_yarn.gemspec
   composer/dependabot-composer.gemspec
+  helm/dependabot-helm.gemspec
   hex/dependabot-hex.gemspec
   python/dependabot-python.gemspec
   omnibus/dependabot-omnibus.gemspec

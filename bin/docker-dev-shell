@@ -133,6 +133,10 @@ docker run --rm -ti \
   -v "$(pwd)/gradle/dependabot-gradle.gemspec:$CODE_DIR/gradle/dependabot-gradle.gemspec" \
   -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
   -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
+  -v "$(pwd)/helm/Gemfile:$CODE_DIR/helm/Gemfile" \
+  -v "$(pwd)/helm/dependabot-helm.gemspec:$CODE_DIR/helm/dependabot-helm.gemspec" \
+  -v "$(pwd)/helm/lib:$CODE_DIR/helm/lib" \
+  -v "$(pwd)/helm/spec:$CODE_DIR/helm/spec" \
   -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
   -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
