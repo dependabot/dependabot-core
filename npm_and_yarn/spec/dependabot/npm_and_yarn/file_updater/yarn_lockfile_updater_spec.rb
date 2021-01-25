@@ -12,29 +12,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-  let(:files) { [package_json, yarn_lock] }
+
   let(:credentials) do
     [{
       "type" => "git_source",
       "host" => "github.com"
     }]
   end
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      content: package_json_body,
-      name: "package.json"
-    )
-  end
-  let(:package_json_body) { fixture("package_files", manifest_fixture_name) }
-  let(:manifest_fixture_name) { "package.json" }
-  let(:yarn_lock) do
-    Dependabot::DependencyFile.new(
-      name: "yarn.lock",
-      content: yarn_lock_body
-    )
-  end
-  let(:yarn_lock_body) { fixture("yarn_lockfiles", yarn_lock_fixture_name) }
-  let(:yarn_lock_fixture_name) { "yarn.lock" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -64,6 +48,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       source: nil
     }]
   end
+  let(:yarn_lock) do
+    files.find { |f| f.name == "yarn.lock" }
+  end
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
@@ -73,7 +60,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
 
     context "with a dependency version that can't be found" do
-      let(:manifest_fixture_name) { "yanked_version.json" }
+      let(:files) { project_dependency_files("yarn/yanked_version") }
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }.
@@ -82,12 +69,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "with a sub dependency name that can't be found" do
-      let(:manifest_fixture_name) do
-        "github_sub_dependency_name_missing.json"
-      end
-      let(:yarn_lock_fixture_name) do
-        "github_sub_dependency_name_missing.lock"
-      end
+      let(:files) { project_dependency_files("yarn/github_sub_dependency_name_missing") }
 
       let(:dependency_name) { "test-missing-dep-name-npm-package" }
       let(:requirements) do
@@ -130,8 +112,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "with an invalid requirement in the package.json" do
-      let(:manifest_fixture_name) { "invalid_requirement.json" }
-      let(:yarn_lock_fixture_name) { "yarn.lock" }
+      let(:files) { project_dependency_files("yarn/invalid_requirement") }
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }.
@@ -140,8 +121,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "when there is a private dep we don't have access to" do
-      let(:manifest_fixture_name) { "private_source.json" }
-      let(:yarn_lock_fixture_name) { "private_source.lock" }
+      let(:files) { project_dependency_files("yarn/private_source") }
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }.
@@ -149,8 +129,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
 
       context "that is unscoped" do
-        let(:manifest_fixture_name) { "private_source_unscoped.json" }
-        let(:yarn_lock_fixture_name) { "private_source_unscoped.lock" }
+        let(:files) { project_dependency_files("yarn/private_source_unscoped") }
 
         let(:dependency_name) { "my-private-dep-asdlfkasdf" }
         let(:version) { "1.0.1" }
@@ -205,8 +184,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "because we're updating to a nonexistent version" do
-      let(:yarn_lock_fixture_name) { "yarn.lock" }
-      let(:manifest_fixture_name) { "package.json" }
+      let(:files) { project_dependency_files("yarn/simple") }
 
       let(:dependency_name) { "fetch-factory" }
       let(:version) { "5.0.2" }
@@ -226,8 +204,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "with a dependency that can't be found" do
-      let(:manifest_fixture_name) { "nonexistent_dependency.json" }
-      let(:yarn_lock_fixture_name) { "yanked_version.lock" }
+      let(:files) { project_dependency_files("yarn/nonexistent_dependency_yanked_version") }
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }.
@@ -236,16 +213,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "with a registry that times out" do
-      let(:manifest_fixture_name) { "package.json" }
-      let(:yarn_lock_fixture_name) { "yarn.lock" }
-      let(:yarnrc) do
-        Dependabot::DependencyFile.new(
-          name: ".yarnrc",
-          content: 'registry "https://timeout.cv/repository/mirror/"'
-        )
-      end
+      let(:files) { project_dependency_files("yarn/simple_with_registry_that_times_out") }
 
-      let(:files) { [package_json, yarn_lock, yarnrc] }
       # This test is extremely slow (it takes 1m45 to run) so should only be
       # run locally.
       # it "raises a helpful error" do
@@ -257,11 +226,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "when scoped sub dependency version is missing" do
-      let(:manifest_fixture_name) do
-        "github_scoped_sub_dependency_version_missing.json"
-      end
-      let(:yarn_lock_fixture_name) do
-        "github_scoped_sub_dependency_version_missing.lock"
+      let(:files) do
+        project_dependency_files("yarn/github_scoped_sub_dependency_version_missing")
       end
 
       let(:dependency_name) do
@@ -307,12 +273,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "when sub dependency version is missing" do
-      let(:manifest_fixture_name) do
-        "github_sub_dependency_version_missing.json"
-      end
-      let(:yarn_lock_fixture_name) do
-        "github_sub_dependency_version_missing.lock"
-      end
+      let(:files) { project_dependency_files("yarn/github_sub_dependency_version_missing") }
 
       let(:dependency_name) { "test-missing-dep-version-npm-package" }
       let(:requirements) do
@@ -355,8 +316,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
 
     context "when a git src dependency doesn't have a valid package.json" do
-      let(:manifest_fixture_name) { "git_missing_version.json" }
-      let(:yarn_lock_fixture_name) { "git_missing_version.lock" }
+      let(:files) { project_dependency_files("yarn/git_missing_version") }
 
       let(:dependency_name) { "raven-js" }
       let(:requirements) do
