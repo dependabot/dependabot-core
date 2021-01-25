@@ -13,7 +13,7 @@ if [ ! -d "$install_dir/bin" ]; then
 fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-github_url="https://github.com/kvz/json2hcl"
-url="${github_url}/releases/download/v0.0.6/json2hcl_v0.0.6_${os}_amd64"
-wget -O "$install_dir/bin/json2hcl" "$url"
-chmod +x "$install_dir/bin/json2hcl"
+github_url="https://github.com/tmccombs/hcl2json"
+url="${github_url}/releases/download/v0.3.2/hcl2json_${os}_amd64"
+wget -O "$install_dir/bin/hcl2json" "$url"
+chmod +x "$install_dir/bin/hcl2json"

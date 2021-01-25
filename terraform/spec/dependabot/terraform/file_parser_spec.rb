@@ -29,6 +29,10 @@ RSpec.describe Dependabot::Terraform::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
+    context "with terraform 12 - no interpolaction" do 
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with registry sources" do
       let(:terraform_fixture_name) { "registry.tf" }
 
@@ -46,6 +50,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
+      
       context "that can't be parsed" do
         let(:terraform_fixture_name) { "unparseable.tf" }
 
