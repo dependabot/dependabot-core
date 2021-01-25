@@ -216,7 +216,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             File.write("tmp.tf", file.content)
 
-            command = "#{terraform_parser_path} -reverse < tmp.tf"
+            command = "#{terraform_parser_path} < tmp.tf"
             start = Time.now
             stdout, stderr, process = Open3.capture3(command)
             time_taken = Time.now - start
@@ -241,7 +241,7 @@ module Dependabot
 
       def terraform_parser_path
         helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
-        Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
+        Pathname.new(File.join(helper_bin_dir, "hcl2json")).cleanpath.to_path
       end
 
       def native_helpers_root
