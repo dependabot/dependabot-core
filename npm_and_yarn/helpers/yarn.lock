@@ -331,10 +331,10 @@
     validate-npm-package-license "^3.0.4"
     yn "^2.0.0"
 
-"@eslint/eslintrc@^0.2.2":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.2.2.tgz#d01fc791e2fc33e88a29d6f3dc7e93d0cd784b76"
-  integrity sha512-EfB5OHNYp1F4px/LI/FEnGylop7nOqkQ1LRzCM0KccA2U8tvV8w01KBv37LbO7nW4H+YhKyo2LcJhRwjjV17QQ==
+"@eslint/eslintrc@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.3.0.tgz#d736d6963d7003b6514e6324bec9c602ac340318"
+  integrity sha512-1JTKgrOKAHVivSvOYw+sJOunkBjUOvjqWk1DPja7ZFhIS2mX/4EgTT8M7eTK9jrKhL/FvXXEbQwIs3pg1xp3dg==
   dependencies:
     ajv "^6.12.4"
     debug "^4.1.1"
@@ -343,7 +343,7 @@
     ignore "^4.0.6"
     import-fresh "^3.2.1"
     js-yaml "^3.13.1"
-    lodash "^4.17.19"
+    lodash "^4.17.20"
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
@@ -543,15 +543,15 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.3.tgz#d11f85c6609f542588bb946d0223b57c9a968650"
-  integrity sha512-iqahzDZaqdUyAHLG1SIG9jrbkLtT5xNbKX1ppAnx7mKx1u+BXYjkxi5ohewLAfyERH6IpODPAiRVc8c3kxA5jQ==
+"@npmcli/arborist@^2.0.0", "@npmcli/arborist@^2.0.3", "@npmcli/arborist@^2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@npmcli/arborist/-/arborist-2.0.6.tgz#b1036209455f2048b791915a8e050a4390f99202"
+  integrity sha512-3VF6rr3TlGABVZHksblQCcG+aXvsND+pdkUc7vKsKyvY5DB1b6QxXUHwJTPTZz7hKvFM5GQPewp8OxMUdMDMRQ==
   dependencies:
     "@npmcli/installed-package-contents" "^1.0.5"
     "@npmcli/map-workspaces" "^1.0.1"
-    "@npmcli/metavuln-calculator" "^1.0.0"
-    "@npmcli/move-file" "^1.0.1"
+    "@npmcli/metavuln-calculator" "^1.0.1"
+    "@npmcli/move-file" "^1.1.0"
     "@npmcli/name-from-folder" "^1.0.1"
     "@npmcli/node-gyp" "^1.0.1"
     "@npmcli/run-script" "^1.8.1"
@@ -564,7 +564,8 @@
     npm-install-checks "^4.0.0"
     npm-package-arg "^8.1.0"
     npm-pick-manifest "^6.1.0"
-    pacote "^11.1.14"
+    npm-registry-fetch "^9.0.0"
+    pacote "^11.2.3"
     parse-conflict-json "^1.1.1"
     promise-all-reject-late "^1.0.0"
     promise-call-limit "^1.0.1"
@@ -626,21 +627,22 @@
     minimatch "^3.0.4"
     read-package-json-fast "^1.2.1"
 
-"@npmcli/metavuln-calculator@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@npmcli/metavuln-calculator/-/metavuln-calculator-1.0.0.tgz#ee71f101581e36058084b533f99ec3e6c7ee7357"
-  integrity sha512-BzFNWElLl99WqqkxBWHPBSZbKGbH4qJa0vICgRff+PWl0nIT0nDn0wJV3EBCDDWnrVqomH29ZENZc1SkRQ0C7A==
+"@npmcli/metavuln-calculator@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@npmcli/metavuln-calculator/-/metavuln-calculator-1.0.1.tgz#2f8bfcd7b7ad4a2a95adb78dd7a7d0896015f14e"
+  integrity sha512-ezAi4lvICICG613CPvavqCn76jjkiQS+Hag8qMQInLitEjIyzVBud6ATfYIhDcH3d8RnxtMXe3kvKs6+JqTnJA==
   dependencies:
     cacache "^15.0.5"
     pacote "^11.1.11"
     semver "^7.3.2"
 
-"@npmcli/move-file@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@npmcli/move-file/-/move-file-1.0.1.tgz#de103070dac0f48ce49cf6693c23af59c0f70464"
-  integrity sha512-Uv6h1sT+0DrblvIrolFtbvM1FgWm+/sy4B3pvLp67Zys+thcukzS5ekn7HsZFGpWP4Q3fYJCljbWQE/XivMRLw==
+"@npmcli/move-file@^1.0.1", "@npmcli/move-file@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@npmcli/move-file/-/move-file-1.1.0.tgz#4ef8a53d727b9e43facf35404caf55ebf92cfec8"
+  integrity sha512-Iv2iq0JuyYjKeFkSR4LPaCdDZwlGK9X2cP/01nJcp3yMJ1FjNd9vpiEYvLUgzBxKPg2SFmaOhizoQsPc0LWeOQ==
   dependencies:
     mkdirp "^1.0.4"
+    rimraf "^2.7.1"
 
 "@npmcli/name-from-folder@^1.0.1":
   version "1.0.1"
@@ -2261,12 +2263,10 @@ escodegen@^1.14.1:
   optionalDependencies:
     source-map "~0.6.1"
 
-eslint-plugin-prettier@^3.3.1:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-prettier/-/eslint-plugin-prettier-3.3.1.tgz#7079cfa2497078905011e6f82e8dd8453d1371b7"
-  integrity sha512-Rq3jkcFY8RYeQLgk2cCwuc0P7SEFwDravPhsJZOQ5N4YI4DSg50NyqJ/9gdZHzQlHf8MvafSesbNJCcP/FF6pQ==
-  dependencies:
-    prettier-linter-helpers "^1.0.0"
+eslint-config-prettier@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-7.2.0.tgz#f4a4bd2832e810e8cc7c1411ec85b3e85c0c53f9"
+  integrity sha512-rV4Qu0C3nfJKPOAhFujFxB7RMP+URFyQqqOZW9DMRD7ZDTFyjaIlETU3xzHELt++4ugC0+Jm084HQYkkJe+Ivg==
 
 eslint-scope@^5.1.1:
   version "5.1.1"
@@ -2293,13 +2293,13 @@ eslint-visitor-keys@^2.0.0:
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-2.0.0.tgz#21fdc8fbcd9c795cc0321f0563702095751511a8"
   integrity sha512-QudtT6av5WXels9WjIM7qz1XD1cWGvX4gGXvp/zBn9nXG02D0utdU3Em2m/QjTnrsk6bBjmCygl3rmj118msQQ==
 
-eslint@^7.17.0:
-  version "7.17.0"
-  resolved "https://registry.yarnpkg.com/eslint/-/eslint-7.17.0.tgz#4ccda5bf12572ad3bf760e6f195886f50569adb0"
-  integrity sha512-zJk08MiBgwuGoxes5sSQhOtibZ75pz0J35XTRlZOk9xMffhpA9BTbQZxoXZzOl5zMbleShbGwtw+1kGferfFwQ==
+eslint@^7.18.0:
+  version "7.18.0"
+  resolved "https://registry.yarnpkg.com/eslint/-/eslint-7.18.0.tgz#7fdcd2f3715a41fe6295a16234bd69aed2c75e67"
+  integrity sha512-fbgTiE8BfUJZuBeq2Yi7J3RB3WGUQ9PNuNbmgi6jt9Iv8qrkxfy19Ds3OpL1Pm7zg3BtTVhvcUZbIRQ0wmSjAQ==
   dependencies:
     "@babel/code-frame" "^7.0.0"
-    "@eslint/eslintrc" "^0.2.2"
+    "@eslint/eslintrc" "^0.3.0"
     ajv "^6.10.0"
     chalk "^4.0.0"
     cross-spawn "^7.0.2"
@@ -2323,7 +2323,7 @@ eslint@^7.17.0:
     js-yaml "^3.13.1"
     json-stable-stringify-without-jsonify "^1.0.1"
     levn "^0.4.1"
-    lodash "^4.17.19"
+    lodash "^4.17.20"
     minimatch "^3.0.4"
     natural-compare "^1.4.0"
     optionator "^0.9.1"
@@ -2533,11 +2533,6 @@ fast-deep-equal@^3.1.1:
   version "3.1.3"
   resolved "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
-
-fast-diff@^1.1.2:
-  version "1.2.0"
-  resolved "https://registry.npmjs.org/fast-diff/-/fast-diff-1.2.0.tgz#73ee11982d86caaf7959828d519cfe927fac5f03"
-  integrity sha512-xJuoT5+L99XlZ8twedaRf6Ax2TgQVxvgZOYoPKqZufmJib0tL2tegPBOZb1pVNgIhlqDlA0eO0c3wBvQcmzx4w==
 
 fast-json-stable-stringify@^2.0.0:
   version "2.1.0"
@@ -5849,10 +5844,10 @@ package-json@^4.0.0:
     registry-url "^3.0.3"
     semver "^5.1.0"
 
-pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4:
-  version "11.1.14"
-  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.1.14.tgz#c60b9849ab05488d3f9ccd644c8a42543f2f36d6"
-  integrity sha512-6c5OhQelaJFDfiw/Zd8MfGCvvFHurSdeGzufZMPvRFImdbNOYFciOINf3DtUNUaU3h98eCb749UyHDsgvL19+A==
+pacote@^11.1.11, pacote@^11.1.14, pacote@^11.1.4, pacote@^11.2.3:
+  version "11.2.3"
+  resolved "https://registry.yarnpkg.com/pacote/-/pacote-11.2.3.tgz#3c9f70d281c62c86ca3dc2e17df4234c63c698f1"
+  integrity sha512-Jphxyk1EjGyLzNwa+MkbcQUQeTIqlKcIoPq0t9ekR9ZxsTGjzhRjz/cOoL9PTVkqAW1FH7qBoVbYL4FqQGNNJg==
   dependencies:
     "@npmcli/git" "^2.0.1"
     "@npmcli/installed-package-contents" "^1.0.5"
@@ -6103,13 +6098,6 @@ preserve@^0.2.0:
   version "0.2.0"
   resolved "https://registry.npmjs.org/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
   integrity sha1-gV7R9uvGWSb4ZbMQwHE7yzMVzks=
-
-prettier-linter-helpers@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/prettier-linter-helpers/-/prettier-linter-helpers-1.0.0.tgz#d23d41fe1375646de2d0104d3454a3008802cf7b"
-  integrity sha512-GbK2cP9nraSSUF9N2XwUwqfzlAFlMNYYl+ShE/V+H8a9uNl/oUqB1w2EL54Jh0OlyRSd8RfWYJ3coVS4TROP2w==
-  dependencies:
-    fast-diff "^1.1.2"
 
 prettier@^2.2.1:
   version "2.2.1"
