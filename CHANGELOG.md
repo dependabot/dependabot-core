@@ -1,3 +1,12 @@
+## v0.130.3, 25 January 2021
+
+- Extract yarn/npm lockfile updater specs from FileUpdater specs
+- Bump @npmcli/arborist from 2.0.5 to 2.0.6 in /npm_and_yarn/helpers
+- Gomod: go-1.15.7
+- Composer: Check for explicit composer plugin version before invalid plugins
+- Update eslint prettier extension
+- Fix JS debugging in vscode
+
 ## v0.130.2, 19 January 2021
 
 - gradle: repository url by assignment
