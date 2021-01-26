@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
-    context "with a name that is only valid in v1" do
+    context "with a dependency name that is only valid in v1" do
       let(:project_name) { "v1/invalid_v2_requirement" }
       let(:dependency_name) { "monolog/Monolog" }
       let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
