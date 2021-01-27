@@ -26,4 +26,19 @@ describe("updater", () => {
       helpers.loadFixture("updater/updated/package-lock.json").trim()
     );
   });
+
+  jest.setTimeout(10000);
+  it("returns an error with a git yarn reference that can't be found", async () => {
+    helpers.copyDependencies("updater/git_dependency_yarn_ref", tempDir);
+
+    await expect(updateDependencyFiles(tempDir, "package-lock.json", [
+      {
+        name: "fetch-factory",
+        version: "0.0.2",
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
+    ])).rejects.toThrow(
+      /fatal: destination path '.*' already exists and is not an empty directory/
+    );
+  });
 });
