@@ -20,6 +20,10 @@ const npm = require("npm7");
 const Arborist = require("@npmcli/arborist");
 const detectIndent = require("detect-indent");
 
+process.on('exit', () => {
+  console.log("error")
+})
+
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
@@ -58,9 +62,17 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
     );
   });
 
-  await arb.reify({
-    add: args,
-  });
+  try {
+    await arb.reify({
+      add: args,
+    });
+  } catch (error) {
+    if (error.message === "command failed") {
+      throw new Error(error.stderr);
+    } else {
+      throw error;
+    }
+  }
 
   // TODO: Do we need to do this for npm7?
   // Fix already present git sub-dependency with invalid "from" and "requires"
