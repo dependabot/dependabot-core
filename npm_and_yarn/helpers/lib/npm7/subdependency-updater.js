@@ -2,11 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const npm = require("npm7");
 const Arborist = require("@npmcli/arborist");
+const { formatErrorMessage } = require("./helpers");
 
-async function updateDependencyFile(directory, lockfileName, dependencies) {
-  const readFile = (fileName) =>
-    fs.readFileSync(path.join(directory, fileName)).toString();
-
+const install = async (directory, lockfileName, dependencies) => {
   await new Promise((resolve) => {
     npm.load(resolve);
   });
@@ -14,7 +12,7 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   const arb = new Arborist({
     ...npm.flatOptions,
     path: directory,
-    packageLockOnly: true,
+    packageLockOnly: false,
     dryRun: false,
     ignoreScripts: true,
     force: true,
@@ -22,13 +20,24 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
   });
 
   const dependencyNames = dependencies.map((dep) => dep.name);
-  await arb.buildIdealTree({ update: { names: dependencyNames }});
+  await arb.buildIdealTree({ update: { names: dependencyNames } });
 
-  await arb.reify({})
+  await arb.reify({
+    ...npm.flatOptions,
+    add: [],
+  });
 
-  const updatedLockfile = readFile(lockfileName);
+  const updatedLockfile = fs
+    .readFileSync(path.join(directory, lockfileName))
+    .toString();
 
   return { [lockfileName]: updatedLockfile };
-}
+};
+
+const updateDependencyFile = async (directory, lockfileName, dependencies) => {
+  return install(directory, lockfileName, dependencies).catch((error) => {
+    throw new Error(formatErrorMessage(error));
+  });
+};
 
 module.exports = { updateDependencyFile };
