@@ -61,8 +61,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
     subject(:npmrc_content) { npmrc_builder.npmrc_content }
 
     context "with a yarn.lock" do
-      let(:dependency_files) { [package_json, yarn_lock] }
-
       context "with no private sources and no credentials" do
         let(:manifest_fixture_name) { "package.json" }
         let(:yarn_lock_fixture_name) { "yarn.lock" }
@@ -172,8 +170,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
       end
 
       context "with a private source used for some dependencies" do
-        let(:manifest_fixture_name) { "private_source.json" }
-        let(:yarn_lock_fixture_name) { "private_source.lock" }
         it { is_expected.to eq("") }
 
         context "and some credentials" do
@@ -235,7 +231,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               expect(npmrc_content).
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token\n"\
-                      "//npm.fury.io/dep/:_authToken=my_other_token")
+                      "//npm.fury.io/dep/:_authToken=my_other_token\n")
+            end
+
+            context "using GitHub Package Registry" do
+              let(:files) { project_dependency_files("yarn/private_source_multiple_scopes") }
+
+              let(:credentials) do
+                [{
+                  "type" => "npm_registry",
+                  "registry" => "npm.pkg.github.com/",
+                  "token" => "token"
+                }]
+              end
+
+              it "adds auth details, and scopes them correctly for multiple scopes" do
+                expect(npmrc_content).
+                  to eq("@dependabot:registry=https://npm.pkg.github.com/\n"\
+                        "@jurre:registry=https://npm.pkg.github.com/\n"\
+                        "//npm.pkg.github.com/:_authToken=token")
+              end
             end
 
             context "using bintray" do
