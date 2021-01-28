@@ -354,7 +354,7 @@ module Dependabot
               end
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed => e
+            rescue SharedHelpers::HelperSubprocessFailed
               false
             end
         end
