@@ -270,7 +270,6 @@ module Dependabot
 
           if (error_message.start_with?("No matching vers", "404 Not Found") ||
              error_message.include?("not match any file(s) known to git") ||
-             error_message.include?("already exists and is not an empty directory") ||
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name")) &&
              !resolvable_before_update?(lockfile)
