@@ -55,6 +55,14 @@ module Dependabot
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
 
+        # TODO: look into fixing this in npm, seems like a bug in the git
+        # downloader introduced in npm 7
+        #
+        # NOTE: error message returned from arborist/npm 7 when trying to
+        # fetching a invalid/non-existent git ref
+        NPM7_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
+        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
+
         def top_level_dependencies
           dependencies.select(&:top_level?)
         end
@@ -268,11 +276,10 @@ module Dependabot
           end
 
           if (error_message.start_with?("No matching vers", "404 Not Found") ||
-             error_message.include?("not match any file(s) known to git") ||
              error_message.include?("Non-registry package missing package") ||
-             # npm 7 error message from git clone --mirror -q
-             error_message.include?("already exists and is not an empty directory") ||
-             error_message.include?("Invalid tag name")) &&
+             error_message.include?("Invalid tag name") ||
+             error_message.match?(NPM6_MISSING_GIT_REF) ||
+             error_message.match?(NPM7_MISSING_GIT_REF)) &&
              !resolvable_before_update?(lockfile)
             raise_resolvability_error(error_message, lockfile)
           end

@@ -36,9 +36,12 @@ const install = async (directory, lockfileName, dependencies) => {
     ...npm.flatOptions,
     path: directory,
     packageLockOnly: false,
-    dryRun: false, // override dry-run set in the updater
+    // NOTE: the updater sets a global .npmrc with dry-run: true to work around
+    // an issue in npm 6, we don't want that here
+    dryRun: false,
     ignoreScripts: true,
-    // // TODO: seems to be no way to disable platform checks in arborist without force installing invalid peer deps
+    // TODO: figure out if we need to disable platform checks (there's currently
+    // no way to disable these without force installing invalid peer deps)
     force: false,
     engineStrict: false,
     quiet: true,
