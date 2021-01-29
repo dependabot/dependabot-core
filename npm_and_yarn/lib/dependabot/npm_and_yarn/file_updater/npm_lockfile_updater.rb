@@ -48,6 +48,7 @@ module Dependabot
         attr_reader :dependencies, :dependency_files, :credentials
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
+        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/.freeze
         FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
         FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
@@ -247,10 +248,8 @@ module Dependabot
             handle_missing_package(sanitized_name, sanitized_error, lockfile)
           end
 
-          if error_message.match?(UNREACHABLE_GIT)
-            dependency_url =
-              error_message.match(UNREACHABLE_GIT).
-              named_captures.fetch("url")
+          if (git_error = error_message.match(UNREACHABLE_GIT) || error_message.match(FORBIDDEN_GIT))
+            dependency_url = git_error.named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
@@ -271,6 +270,8 @@ module Dependabot
           if (error_message.start_with?("No matching vers", "404 Not Found") ||
              error_message.include?("not match any file(s) known to git") ||
              error_message.include?("Non-registry package missing package") ||
+             # npm 7 error message from git clone --mirror -q
+             error_message.include?("already exists and is not an empty directory") ||
              error_message.include?("Invalid tag name")) &&
              !resolvable_before_update?(lockfile)
             raise_resolvability_error(error_message, lockfile)
