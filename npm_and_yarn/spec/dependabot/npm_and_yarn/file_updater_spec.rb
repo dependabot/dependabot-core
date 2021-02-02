@@ -1962,6 +1962,139 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
         end
       end
+
+      context "with workspaces" do
+        let(:files) { project_dependency_files("npm7/workspaces") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the package-lock.json and all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "package-lock.json" }
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+
+          parsed_lockfile = JSON.parse(lockfile.content)
+          expect(parsed_lockfile["dependencies"]["lodash"]["version"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["other_package"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["package1"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
+
+          expect(package.content).to include('"lodash": "1.3.1"')
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
+        end
+
+        context "with a dependency that doesn't appear in all the workspaces" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the yarn.lock and the correct package_json" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package-lock.json packages/package1/package.json))
+
+            lockfile = updated_files.find { |f| f.name == "package-lock.json" }
+            parsed_lockfile = JSON.parse(lockfile.content)
+            expect(parsed_lockfile["dependencies"]["chalk"]["version"]).to eq("0.4.0")
+          end
+        end
+
+        context "with a dependency that appears as a development dependency" do
+          let(:dependency_name) { "etag" }
+          let(:version) { "1.8.1" }
+          let(:previous_version) { "1.8.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.1.0",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the right file" do
+            root_lockfile = updated_files.find { |f| f.name == "package-lock.json" }
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package-lock.json packages/package1/package.json))
+            expect(JSON.parse(root_lockfile.content)["dependencies"]["etag"]["version"]).to eq("1.8.1")
+          end
+
+          it "updates the existing development declaration" do
+            file = updated_files.find do |f|
+              f.name == "packages/package1/package.json"
+            end
+            parsed_file = JSON.parse(file.content)
+            expect(parsed_file.dig("dependencies", "etag")).to be_nil
+            expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+          end
+        end
+      end
     end
 
     #######################

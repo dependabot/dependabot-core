@@ -72,11 +72,9 @@ module Dependabot
         end
 
         def updatable_dependencies(lockfile)
-          lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
           dependencies.reject do |dependency|
             dependency_up_to_date?(lockfile, dependency) ||
-              top_level_dependency_update_not_required?(dependency,
-                                                        lockfile_dir)
+              top_level_dependency_update_not_required?(dependency, lockfile)
           end
         end
 
@@ -103,17 +101,24 @@ module Dependabot
           existing_dep&.version == dependency.version
         end
 
-        # Prevent changes to the lockfile when the dependency has been
+        # NOTE: Prevent changes to npm 6 lockfiles when the dependency has been
         # required in a package.json outside the current folder (e.g. lerna
-        # proj)
-        def top_level_dependency_update_not_required?(dependency,
-                                                      lockfile_dir)
+        # proj). npm 7 introduces workspace support so we explitly want to
+        # update the root lockfile and check if the dependency is in the
+        # lockfile
+        def top_level_dependency_update_not_required?(dependency, lockfile)
+          lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
+
           requirements_for_path = dependency.requirements.select do |req|
             req_dir = Pathname.new(req[:file]).dirname.to_s
             req_dir == lockfile_dir
           end
 
-          dependency.top_level? && requirements_for_path.empty?
+          dependency_in_lockfile = lockfile_dependencies(lockfile).any? do |dep|
+            dep.name == dependency.name
+          end
+
+          dependency.top_level? && requirements_for_path.empty? && !dependency_in_lockfile
         end
 
         def run_current_npm_update(lockfile_name:, lockfile_content:)
@@ -160,7 +165,6 @@ module Dependabot
 
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
@@ -175,7 +179,6 @@ module Dependabot
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
 
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,

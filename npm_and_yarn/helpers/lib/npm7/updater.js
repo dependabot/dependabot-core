@@ -42,7 +42,7 @@ const install = async (directory, lockfileName, dependencies) => {
     ignoreScripts: true,
     // TODO: figure out if this will install invalid peer deps, we check peer
     // deps using the peer-dependency-checker but `force` is disabled, enforcing
-    // platform checks in the update checker
+    // platform checks in the update
     force: true,
     engineStrict: false,
     quiet: true,
