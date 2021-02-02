@@ -29,7 +29,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    context "with terraform 12 - no interpolaction" do 
+    context "with terraform 12 - no interpolaction" do
+      let(:terraform_fixture_name) { "terraform_12.tf" }
+      it "gets the reight dependdencies" do 
+        puts "Dependencies #{dependencies}"
+      end
       its(:length) { is_expected.to eq(1) }
     end
 
@@ -88,54 +92,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      describe "the second dependency (private registry with version)" do
+      describe "the second dependency (default registry with no version)" do
         subject(:dependency) { dependencies[1] }
-        let(:expected_requirements) do
-          [{
-            requirement: "0.9.3",
-            groups: [],
-            file: "main.tf",
-            source: {
-              type: "registry",
-              registry_hostname: "app.terraform.io",
-              module_identifier: "example_corp/vpc/aws"
-            }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("example_corp/vpc/aws")
-          expect(dependency.version).to eq("0.9.3")
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-
-      describe "the third dependency (default registry with version req)" do
-        subject(:dependency) { dependencies[2] }
-        let(:expected_requirements) do
-          [{
-            requirement: "~> 1.0.0",
-            groups: [],
-            file: "main.tf",
-            source: {
-              type: "registry",
-              registry_hostname: "registry.terraform.io",
-              module_identifier: "terraform-aws-modules/rds/aws"
-            }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("terraform-aws-modules/rds/aws")
-          expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-
-      describe "the fourth dependency (default registry with no version)" do
-        subject(:dependency) { dependencies[3] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -157,8 +115,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      describe "the fifth dependency (default registry with a sub-directory)" do
-        subject(:dependency) { dependencies[4] }
+      describe "the third dependency (default registry with a sub-directory)" do
+        subject(:dependency) { dependencies[2] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -179,63 +137,63 @@ RSpec.describe Dependabot::Terraform::FileParser do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
+
+      describe "the fourth dependency (default registry with version req)" do
+        subject(:dependency) { dependencies[3] }
+        let(:expected_requirements) do
+          [{
+            requirement: "~> 1.0.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "terraform-aws-modules/rds/aws"
+            }
+          }]
+        end
+  
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("terraform-aws-modules/rds/aws")
+          expect(dependency.version).to be_nil
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+  
+      describe "the fifth dependency (private registry with version)" do
+          subject(:dependency) { dependencies[4] }
+          let(:expected_requirements) do
+            [{
+              requirement: "0.9.3",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "app.terraform.io",
+                module_identifier: "example_corp/vpc/aws"
+              }
+            }]
+          end
+  
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("example_corp/vpc/aws")
+            expect(dependency.version).to eq("0.9.3")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end  
     end
+
+
 
     context "with git sources" do
       let(:terraform_fixture_name) { "git_tags.tf" }
 
       its(:length) { is_expected.to eq(6) }
 
-      describe "the first dependency (which uses git:: with a tag)" do
-        subject(:dependency) { dependencies.first }
-        let(:expected_requirements) do
-          [{
-            requirement: nil,
-            groups: [],
-            file: "main.tf",
-            source: {
-              type: "git",
-              url: "https://github.com/cloudposse/terraform-null-label.git",
-              branch: nil,
-              ref: "tags/0.3.7"
-            }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("origin_label")
-          expect(dependency.version).to eq("0.3.7")
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-
-      describe "the second dependency (which uses github.com with a tag)" do
-        subject(:dependency) { dependencies[1] }
-        let(:expected_requirements) do
-          [{
-            requirement: nil,
-            groups: [],
-            file: "main.tf",
-            source: {
-              type: "git",
-              url: "https://github.com/cloudposse/terraform-log-storage.git",
-              branch: nil,
-              ref: "tags/0.2.2"
-            }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("logs")
-          expect(dependency.version).to eq("0.2.2")
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-
-      describe "the third dependency (which uses bitbucket.org with no tag)" do
-        subject(:dependency) { dependencies[2] }
+      describe "the first dependency (which uses bitbucket.org with no tag)" do
+        subject(:dependency) { dependencies[0] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -258,8 +216,9 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      describe "the fourth dependency (which has a subdirectory and a tag)" do
-        subject(:dependency) { dependencies[3] }
+
+      describe "the second dependency (which has a subdirectory and a tag)" do
+        subject(:dependency) { dependencies[1] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -282,8 +241,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      describe "the sixth dependency (which uses git@github.com)" do
-        subject(:dependency) { dependencies[5] }
+      describe "the fourth dependency (which uses git@github.com)" do
+        subject(:dependency) { dependencies[3] }
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -305,7 +264,61 @@ RSpec.describe Dependabot::Terraform::FileParser do
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
+
+
+      describe "the fifth dependency (which uses github.com with a tag)" do
+        subject(:dependency) { dependencies[4] }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "git",
+              url: "https://github.com/cloudposse/terraform-log-storage.git",
+              branch: nil,
+              ref: "tags/0.2.2"
+            }
+          }]
+        end
+  
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("logs")
+          expect(dependency.version).to eq("0.2.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+  
+      describe "the sixth dependency (which uses git:: with a tag)" do
+          subject(:dependency) { dependencies[5] }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.3.7"
+              }
+            }]
+          end
+  
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("origin_label")
+            expect(dependency.version).to eq("0.3.7")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+  
     end
+
+    
+
+
 
     context "with a terragrunt file" do
       let(:files) { [terragrunt_file] }

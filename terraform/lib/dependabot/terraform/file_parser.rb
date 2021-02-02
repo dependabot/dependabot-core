@@ -22,7 +22,8 @@ module Dependabot
         dependency_set = DependencySet.new
 
         terraform_files.each do |file|
-          modules = parsed_file(file).fetch("module", []).map(&:first)
+
+          modules=  parsed_file(file).fetch("module",[])
           modules.each do |name, details|
             dependency_set << build_terraform_dependency(file, name, details)
           end
