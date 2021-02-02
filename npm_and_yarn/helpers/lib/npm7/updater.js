@@ -40,9 +40,10 @@ const install = async (directory, lockfileName, dependencies) => {
     // an issue in npm 6, we don't want that here
     dryRun: false,
     ignoreScripts: true,
-    // TODO: figure out if we need to disable platform checks (there's currently
-    // no way to disable these without force installing invalid peer deps)
-    force: false,
+    // TODO: figure out if this will install invalid peer deps, we check peer
+    // deps using the peer-dependency-checker but `force` is disabled, enforcing
+    // platform checks in the update checker
+    force: true,
     engineStrict: false,
     quiet: true,
   });
