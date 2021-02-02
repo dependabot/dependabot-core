@@ -284,6 +284,12 @@ module Dependabot
             raise_resolvability_error(error_message, lockfile)
           end
 
+          # NOTE: This check was introduced in npm7/arborist
+          if error_message.include?("must provide string spec")
+            msg = "Error parsing your package.json manifest: the version requirement must be a string"
+            raise Dependabot::DependencyFileNotParseable, msg
+          end
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
@@ -450,9 +456,14 @@ module Dependabot
               next unless details["version"]
               next unless details["version"].start_with?("git")
 
+              # npm 7 metadata
+              manifest_requirement = parsed_lockfile.dig("packages", "", "dependencies", nm)
+
               @git_dependencies_to_lock[nm] = {
                 version: details["version"],
-                from: details["from"]
+                from: details["from"],
+                manifest_requirement: manifest_requirement,
+                dependency_name: nm
               }
             end
           end
@@ -508,7 +519,7 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_npm_lockfile(original_content, updated_content)
+        def post_process_npm_lockfile(original_content, updated_content) # rubocop:disable Metrics/AbcSize
           updated_content =
             replace_project_metadata(updated_content, original_content)
 
@@ -528,9 +539,21 @@ module Dependabot
             # to be the git commit from the lockfile "version" field which
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
-            locked_from = %("from": "#{details[:version]}")
+            npm6_locked_from = %("from": "#{details[:version]}")
             original_from = %("from": "#{details[:from]}")
-            updated_content = updated_content.gsub(locked_from, original_from)
+            updated_content = updated_content.gsub(npm6_locked_from, original_from)
+
+            # NOTE: npm 7 specific metadata, restore the orignal `packages."".dependecies` requirement
+            next unless details[:manifest_requirement]
+
+            # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
+            npm7_locked_from = %("from": "#{details[:dependency_name]}@#{details[:version]}")
+            updated_content = updated_content.gsub(npm7_locked_from, original_from)
+
+            # NOTE: restore the version requirement before locking
+            locked_req = %("#{details[:dependency_name]}": "#{details[:version]}")
+            original_req = %("#{details[:dependency_name]}": "#{details[:manifest_requirement]}")
+            updated_content = updated_content.gsub(locked_req, original_req)
           end
 
           # Switch back the protocol of tarball resolutions if they've changed
