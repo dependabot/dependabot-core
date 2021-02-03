@@ -1,18 +1,16 @@
 /* DEPENDENCY FILE UPDATER
  *
  * Inputs:
- *  - directory containing an up-to-date package.json and a package-lock.json
- *    to be updated
- *  - name of the dependency to be updated
- *  - new dependency version
- *  - previous requirements for this dependency
+ *  - directory containing an up-to-date package.json and a package-lock.json to
+ *    be updated
  *  - the name of the lockfile (package-lock.json or npm-shrinkwrap.json)
+ *  - array of dependencies to be updated [{name, version, requirements}]
  *
  * Outputs:
- *  - updated package.json and package-lock.json files
+ *  - updated package-lock.json
  *
- * Update the dependency to the version specified and rewrite the package.json
- * and package-lock.json files.
+ * Update the dependency to the version specified and rewrite the
+ * package-lock.json files.
  */
 const fs = require("fs");
 const path = require("path");
@@ -43,7 +41,7 @@ const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
   try {
     // TODO: Enable dry-run and package-lock-only mode (currently disabled
     // because npm7/arborist does partial resolution which breaks specs
-    // expection resolution to fail)
+    // that expect resolution to fail)
 
     // - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
     //   work around an issue in npm 6, we don't want that here
