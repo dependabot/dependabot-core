@@ -208,7 +208,7 @@ module Dependabot
           # workspace project)
           sub_dep_local_path_error = "does not contain a package.json file"
           if error_message.match?(INVALID_PACKAGE) ||
-             error_message.start_with?("Invalid package name") ||
+             error_message.include?("Invalid package name") ||
              error_message.include?(sub_dep_local_path_error)
             raise_resolvability_error(error_message, lockfile)
           end
@@ -232,7 +232,7 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error_message.start_with?("No matching vers") &&
+          if error_message.include?("No matching vers") &&
              dependencies_in_error_message?(error_message) &&
              resolvable_before_update?(lockfile)
 
@@ -278,7 +278,8 @@ module Dependabot
                                                                lockfile)
           end
 
-          if (error_message.start_with?("No matching vers", "404 Not Found") ||
+          if (error_message.include?("No matching vers") ||
+             error_message.include?("404 Not Found") ||
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name") ||
              error_message.match?(NPM6_MISSING_GIT_REF) ||

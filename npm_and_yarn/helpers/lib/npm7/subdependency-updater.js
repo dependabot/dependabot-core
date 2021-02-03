@@ -1,43 +1,37 @@
 const fs = require("fs");
 const path = require("path");
-const npm = require("npm7");
-const Arborist = require("@npmcli/arborist");
-const { formatErrorMessage } = require("./helpers");
+const execa = require("execa");
 
-const install = async (directory, lockfileName, dependencies) => {
-  await new Promise((resolve) => {
-    npm.load(resolve);
-  });
-
-  const arb = new Arborist({
-    ...npm.flatOptions,
-    path: directory,
-    packageLockOnly: false,
-    // NOTE: the updater sets a global .npmrc with dry-run: true to work around
-    // an issue in npm 6, we don't want that here
-    dryRun: false,
-    ignoreScripts: true,
-    // TODO: does this force install invalid peer deps?
-    force: true,
-    save: true,
-  });
-
+const updateDependencyFile = async (directory, lockfileName, dependencies) => {
   const dependencyNames = dependencies.map((dep) => dep.name);
-  await arb.buildIdealTree({ update: { names: dependencyNames } });
 
-  await arb.reify();
+  try {
+    // TODO: Enable dry-run and package-lock-only mode (currently disabled
+    // because npm7/arborist does partial resolution which breaks specs
+    // expection resolution to fail)
+
+    // - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+    //   work around an issue in npm 6, we don't want that here
+    // - `--force` ignores checks for platform (os, cpu) and engines
+    // - `--ignore-scripts` disables prepare and prepack scripts which are run
+    //   when installing git dependencies
+    await execa("npm", [
+      "update",
+      ...dependencyNames,
+      "--force",
+      "--dry-run",
+      "false",
+      "--ignore-scripts",
+    ]);
+  } catch (e) {
+    throw new Error(e.stderr);
+  }
 
   const updatedLockfile = fs
     .readFileSync(path.join(directory, lockfileName))
     .toString();
 
   return { [lockfileName]: updatedLockfile };
-};
-
-const updateDependencyFile = async (directory, lockfileName, dependencies) => {
-  return install(directory, lockfileName, dependencies).catch((error) => {
-    throw new Error(formatErrorMessage(error));
-  });
 };
 
 module.exports = { updateDependencyFile };

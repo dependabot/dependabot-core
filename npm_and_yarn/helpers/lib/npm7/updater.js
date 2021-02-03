@@ -16,38 +16,10 @@
  */
 const fs = require("fs");
 const path = require("path");
-const npm = require("npm7");
-const Arborist = require("@npmcli/arborist");
+const execa = require("execa");
 const detectIndent = require("detect-indent");
-const { formatErrorMessage } = require("./helpers");
 
-const install = async (directory, lockfileName, dependencies) => {
-  await new Promise((resolve) => {
-    npm.load(resolve);
-  });
-
-  // `force` ignores checks for platform (os, cpu) and engines in
-  // npm/lib/install/validate-args.js Platform is checked and raised from
-  // (EBADPLATFORM): https://github.com/npm/npm-install-checks
-  //
-  // `ignoreScripts` is used to disable prepare and prepack scripts which are
-  // run when installing git dependencies
-  const arb = new Arborist({
-    ...npm.flatOptions,
-    path: directory,
-    packageLockOnly: false,
-    // NOTE: the updater sets a global .npmrc with dry-run: true to work around
-    // an issue in npm 6, we don't want that here
-    dryRun: false,
-    ignoreScripts: true,
-    // TODO: figure out if this will install invalid peer deps, we check peer
-    // deps using the peer-dependency-checker but `force` is disabled, enforcing
-    // platform checks in the update
-    force: true,
-    engineStrict: false,
-    quiet: true,
-  });
-
+const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
   const manifest = JSON.parse(
     fs.readFileSync(path.join(directory, "package.json")).toString()
   );
@@ -62,11 +34,33 @@ const install = async (directory, lockfileName, dependencies) => {
     );
   });
 
-  await arb.reify({ add: args });
-
-  // TODO: Do we need to do this for npm7?
-  // Fix already present git sub-dependency with invalid "from" and "requires"
+  // TODO: Figure out if this is still needed in npm 7
+  //
+  // NOTE: Fix already present git sub-dependency with invalid "from" and
+  // "requires"
   updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
+
+  try {
+    // TODO: Enable dry-run and package-lock-only mode (currently disabled
+    // because npm7/arborist does partial resolution which breaks specs
+    // expection resolution to fail)
+
+    // - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+    //   work around an issue in npm 6, we don't want that here
+    // - `--force` ignores checks for platform (os, cpu) and engines
+    // - `--ignore-scripts` disables prepare and prepack scripts which are run
+    //   when installing git dependencies
+    await execa("npm", [
+      "install",
+      ...args,
+      "--force",
+      "--dry-run",
+      "false",
+      "--ignore-scripts",
+    ]);
+  } catch (e) {
+    throw new Error(e.stderr);
+  }
 
   const updatedLockfile = fs
     .readFileSync(path.join(directory, lockfileName))
@@ -174,11 +168,5 @@ function removeInvalidGitUrlsInRequires(value) {
 
   return Object.assign({}, value, { requires });
 }
-
-const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
-  return install(directory, lockfileName, dependencies).catch((error) => {
-    throw new Error(formatErrorMessage(error));
-  });
-};
 
 module.exports = { updateDependencyFiles };
