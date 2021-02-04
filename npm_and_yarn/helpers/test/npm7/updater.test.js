@@ -23,7 +23,7 @@ describe("updater", () => {
       },
     ]);
     expect(result["package-lock.json"]).toEqual(
-      helpers.loadFixture("updater/updated/package-lock.json").trim()
+      helpers.loadFixture("updater/updated/package-lock.json")
     );
   });
 });
