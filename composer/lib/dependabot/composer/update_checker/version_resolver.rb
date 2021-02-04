@@ -254,9 +254,7 @@ module Dependabot
               error.message.match(/Failed to clone (?<url>.*?) via/).
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif error.message.start_with?("Could not parse version") ||
-                error.message.include?("does not allow connections to http://") ||
-                error.message.match?(/The `url` supplied for the path .* does not exist/)
+          elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
@@ -346,6 +344,13 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+
+        def unresolvable_error?(error)
+          error.message.start_with?("Could not parse version") ||
+            error.message.include?("does not allow connections to http://") ||
+            error.message.match?(/The `url` supplied for the path .* does not exist/) ||
+            error.message.start_with?("Invalid version string")
+        end
 
         def library?
           parsed_composer_file["type"] == "library"

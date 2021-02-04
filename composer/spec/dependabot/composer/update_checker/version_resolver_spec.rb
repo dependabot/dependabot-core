@@ -219,6 +219,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
+    context "with an invalid version string" do
+      let(:project_name) { "invalid_version_string" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     # This test is extremely slow, as it needs to wait for Composer to time out.
     # As a result we currently keep it commented out.
     # context "with an unreachable private registry" do
