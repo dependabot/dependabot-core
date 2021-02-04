@@ -47,10 +47,8 @@ module Dependabot
 
         attr_reader :dependencies, :dependency_files, :credentials
 
-        UNREACHABLE_GIT =
-          /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/.freeze
-        FORBIDDEN_PACKAGE =
-          %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
+        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
         FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
@@ -357,7 +355,7 @@ module Dependabot
               end
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed
+            rescue SharedHelpers::HelperSubprocessFailed => e
               false
             end
         end
