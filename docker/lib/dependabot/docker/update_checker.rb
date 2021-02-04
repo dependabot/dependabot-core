@@ -9,6 +9,29 @@ require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
 
+module DockerRegistry2
+  class Registry
+    private
+
+    # By default the Docker Registry client sets the Accept header to
+    # `application/vnd.docker.distribution.manifest.v2+json`
+    # This results in the digest of a specific platform to be returned, we
+    # want to override this header so we can fetch the generic digest
+    # associated with the given repo/tag.
+    def headers(payload: nil, bearer_token: nil)
+      headers = {}
+      headers["Authorization"] = "Bearer #{bearer_token}" unless bearer_token.nil?
+      if payload.nil?
+        headers["Accept"] =
+          "application/vnd.docker.distribution.manifest.list.v2+json, application/json"
+      end
+      headers["Content-Type"] = "application/vnd.docker.distribution.manifest.v2+json" unless payload.nil?
+
+      headers
+    end
+  end
+end
+
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -24,7 +47,7 @@ module Dependabot
           #{VERSION_WITH_PFX}|
           #{VERSION_WITH_SFX}|
           #{VERSION_WITH_PFX_AND_SFX}
-        /x.freeze
+      /x.freeze
 
       def latest_version
         @latest_version ||= fetch_latest_version
@@ -188,6 +211,7 @@ module Dependabot
         @tags_from_registry ||=
           begin
             client = docker_registry_client
+
             client.tags(docker_repo_name, auto_paginate: true).fetch("tags")
           rescue *transient_docker_errors
             attempt ||= 1
