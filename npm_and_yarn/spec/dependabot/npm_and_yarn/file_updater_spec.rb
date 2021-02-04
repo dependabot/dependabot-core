@@ -2251,7 +2251,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
                 parsed_npm_lock = JSON.parse(updated_npm_lock.content)
                 expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
-                  to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                  to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                         "af885e2e890b9ef0875edd2b117305119ee5bdc5")
               end
             end
@@ -2360,6 +2360,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               to eq("jonschlinkert/is-number#semver:^4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
+              to eq("jonschlinkert/is-number#semver:^4.0.0")
             expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
               to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
@@ -2377,6 +2379,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to eq("jonschlinkert/is-number#semver:^4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
+                to eq("jonschlinkert/is-number#semver:^4.0.0")
               expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
                 to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
@@ -2472,6 +2476,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
+                to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
               expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
                 to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")

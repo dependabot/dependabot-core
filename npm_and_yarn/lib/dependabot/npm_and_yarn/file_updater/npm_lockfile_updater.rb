@@ -37,7 +37,8 @@ module Dependabot
                 run_current_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
               end
               updated_content = updated_files.fetch(lockfile_name)
-              post_process_npm_lockfile(lockfile.content, updated_content)
+              manifest_name = lockfile.name.sub(lockfile_name, "package.json")
+              post_process_npm_lockfile(lockfile.content, updated_content, manifest_name)
             end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_npm_updater_error(e, lockfile)
@@ -409,6 +410,7 @@ module Dependabot
             #
             # NOTE: When updating a package-lock.json we have to manually lock
             # all git dependencies, otherwise npm will (unhelpfully) update them
+            lock_updated_package_dependencies(file, updated_content)
             updated_content = lock_git_deps(updated_content)
             updated_content = replace_ssh_sources(updated_content)
             updated_content = lock_deps_with_latest_reqs(updated_content)
@@ -433,6 +435,11 @@ module Dependabot
           end
         end
 
+        def lock_updated_package_dependencies(file, content)
+          @lock_updated_package_dependencies ||= {}
+          @lock_updated_package_dependencies[file.name] = content
+        end
+
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 
@@ -442,22 +449,11 @@ module Dependabot
               updated_version = git_dependencies_to_lock.dig(nm, :version)
               next unless updated_version
 
-              git_dependency_requirements_to_unlock[type] ||= {}
-              git_dependency_requirements_to_unlock[type][nm] = {
-                original_requirement: json[type][nm],
-                locked_requirement: git_dependencies_to_lock[nm][:version]
-              }
               json[type][nm] = git_dependencies_to_lock[nm][:version]
             end
           end
 
           json.to_json
-        end
-
-        def git_dependency_requirements_to_unlock
-          return @git_dependency_requirements_to_unlock if @git_dependency_requirements_to_unlock
-
-          @git_dependency_requirements_to_unlock = {}
         end
 
         def git_dependencies_to_lock
@@ -532,7 +528,7 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_npm_lockfile(original_content, updated_content)
+        def post_process_npm_lockfile(original_content, updated_content, manifest_name)
           updated_content = replace_project_metadata(updated_content, original_content)
 
           # Switch SSH requirements back for git dependencies
@@ -542,22 +538,50 @@ module Dependabot
           # changed because we locked them)
           updated_content = replace_locked_git_dependencies(updated_content)
 
+          updated_content = restore_locked_package_dependencies(manifest_name, updated_content)
+
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
           replace_tarball_urls(updated_content)
         end
 
-        def replace_swapped_git_ssh_requirements(content)
+        def restore_locked_package_dependencies(manifest_name, lockfile_content)
+          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
+          return lockfile_content unless npm_version == "npm7"
+
+          original_package = @lock_updated_package_dependencies.fetch(manifest_name, nil)
+          return lockfile_content unless original_package
+
+          parsed_package = JSON.parse(original_package)
+          parsed_lockfile = JSON.parse(lockfile_content)
+          dependencies_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
+
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
+            parsed_package.fetch(type, {}).each do |dependency_name, original_requirement|
+              next unless dependencies_to_restore.include?(dependency_name)
+
+              locked_requirement = parsed_lockfile.dig("packages", "", type, dependency_name)
+
+              locked_req = %("#{dependency_name}": "#{locked_requirement}")
+              original_req = %("#{dependency_name}": "#{original_requirement}")
+              lockfile_content = lockfile_content.gsub(locked_req, original_req)
+            end
+          end
+
+          lockfile_content
+        end
+
+        def replace_swapped_git_ssh_requirements(lockfile_content)
           git_ssh_requirements_to_swap.each do |req|
             new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
             old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
-            content = content.gsub(new_r, old_r)
+            lockfile_content = lockfile_content.gsub(new_r, old_r)
           end
 
-          content
+          lockfile_content
         end
 
-        def replace_locked_git_dependencies(content)
+        def replace_locked_git_dependencies(lockfile_content)
           # Switch from details back for git dependencies (they will have
           # changed because we locked them)
           git_dependencies_to_lock.each do |dependency_name, details|
@@ -569,45 +593,30 @@ module Dependabot
             # run npm install
             npm6_locked_from = %("from": "#{details[:version]}")
             original_from = %("from": "#{details[:from]}")
-            content = content.gsub(npm6_locked_from, original_from)
+            lockfile_content = lockfile_content.gsub(npm6_locked_from, original_from)
 
             # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
             npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-            content = content.gsub(npm7_locked_from, original_from)
+            lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
           end
 
-          # Restore locked git dependencies in npm 7 lockfiles (under the packages section)
-          git_dependency_requirements_to_unlock.each do |_type, requirements|
-            requirements.each do |dependency_name, dependency_req|
-              original_requirement = dependency_req[:original_requirement]
-              locked_requirement = dependency_req[:locked_requirement]
-
-              byebug
-
-              # NOTE: restore the version requirement before locking
-              locked_req = %("#{dependency_name}": "#{locked_requirement}")
-              original_req = %("#{dependency_name}": "#{original_requirement}")
-              content = content.gsub(locked_req, original_req)
-            end
-          end
-
-          content
+          lockfile_content
         end
 
-        def replace_tarball_urls(content)
+        def replace_tarball_urls(lockfile_content)
           tarball_urls.each do |url|
             trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
             incorrect_url = if url.start_with?("https")
                               trimmed_url.gsub(/^https:/, "http:")
                             else trimmed_url.gsub(/^http:/, "https:")
                             end
-            content = content.gsub(
+            lockfile_content = lockfile_content.gsub(
               /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,
               trimmed_url
             )
           end
 
-          content
+          lockfile_content
         end
 
         def replace_project_metadata(new_content, old_content)
