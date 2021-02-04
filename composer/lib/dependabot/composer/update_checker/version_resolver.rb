@@ -255,7 +255,8 @@ module Dependabot
               named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           elsif error.message.start_with?("Could not parse version") ||
-                error.message.include?("does not allow connections to http://")
+                error.message.include?("does not allow connections to http://") ||
+                error.message.match?(/The `url` supplied for the path .* does not exist/)
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
