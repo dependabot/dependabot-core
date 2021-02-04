@@ -159,7 +159,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
-            raise "No matching version for #{requirements}!" unless version_for_reqs(requirements)
+            next unless version_for_reqs(requirements)
 
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
