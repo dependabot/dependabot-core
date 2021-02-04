@@ -1,3 +1,10 @@
+## v0.131.1, 4 February 2021
+
+- Composer: handle invalid version string
+- Composer: Don't raise when adding temp platform extensions
+- Composer: Handle version constraints with both caret and dev postfix
+- Docker: Use the correct Docker digest when checking for updates
+
 ## v0.131.0, 4 February 2021
 
 - Composer: handle unreachable path vcs source
