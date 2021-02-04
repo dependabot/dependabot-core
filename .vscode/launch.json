@@ -63,7 +63,7 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "disableOptimisticBPs": true
-    },
+    }
   ],
   "inputs": [
     {

@@ -76,7 +76,7 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and Yarn
+# Install Node 14.0, Yarn and npm (updated after elm)
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y nodejs \
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
@@ -94,6 +94,10 @@ RUN npm install elm@0.18.0 \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz \
   && rm -rf ~/.npm
+
+# NOTE: This is a hack to get around the fact that elm 18 fails to install with
+# npm 7, we should look into deprecating elm 18
+RUN npm install -g npm@v7.5.2
 
 
 ### PHP

@@ -57,9 +57,79 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "errors" do
-    subject(:updated_npm_lock_content) { updater.updated_lockfile_content(package_lock) }
+  subject(:updated_npm_lock_content) { updater.updated_lockfile_content(package_lock) }
 
+  describe "npm 6 specific" do
+    # NOTE: This is no longer failing in npm 7
+    context "with a corrupted npm lockfile (version missing)" do
+      let(:files) { project_dependency_files("npm6/version_missing") }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).
+            to include(
+              "lockfile has some corrupt entries with missing versions"
+            )
+        end
+      end
+    end
+
+    # NOTE: This spec takes forever to run using npm 7
+    context "when a git src dependency doesn't have a valid package.json" do
+      let(:files) { project_dependency_files("npm6/git_missing_version") }
+
+      let(:dependency_name) { "raven-js" }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          file: "package.json",
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/getsentry/raven-js",
+            branch: nil,
+            ref: ref
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: nil,
+          file: "package.json",
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/getsentry/raven-js",
+            branch: nil,
+            ref: old_ref
+          }
+        }]
+      end
+      let(:previous_version) { "c2b377e7a254264fd4a1fe328e4e3cfc9e245570" }
+      let(:version) { "70b24ed25b73cc15472b2bd1c6032e22bf20d112" }
+      let(:ref) { "4.4.1" }
+      let(:old_ref) { "3.23.1" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        expect { updated_npm_lock_content }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "git sub-dependency with invalid from that is updating from an npm5 lockfile" do
+      let(:files) { project_dependency_files("npm5/git_sub_dep_invalid") }
+
+      it "cleans up from field and successfully updates" do
+        updated_fetch_factory_version =
+          JSON.parse(updated_npm_lock_content).
+          fetch("dependencies")["fetch-factory"]["version"]
+        expect(updated_fetch_factory_version).to eq("0.0.2")
+      end
+    end
+  end
+
+  describe "errors" do
     context "with a sub dependency name that can't be found" do
       let(:files) { project_dependency_files("npm6/github_sub_dependency_name_missing") }
 
