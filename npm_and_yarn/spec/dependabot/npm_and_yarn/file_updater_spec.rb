@@ -1155,40 +1155,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
-    context "with a .npmrc" do
-      context "that has an environment variable auth token" do
-        let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
-
-        it "updates the files" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-        end
-      end
-
-      context "that has an _auth line" do
-        let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
-
-        let(:credentials) do
-          [{
-            "type" => "npm_registry",
-            "registry" => "registry.npmjs.org",
-            "token" => "secret_token"
-          }]
-        end
-
-        it "updates the files" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-        end
-      end
-
-      context "that precludes updates to the lockfile" do
-        let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
-
-        specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
-      end
-    end
-
     context "when a wildcard is specified" do
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
@@ -1211,54 +1177,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           to include("fetch-factory@*:\n  version \"0.2.0\"")
         expect(updated_npm_lock.content).
           to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
-      end
-    end
-
-    context "when 'latest' is specified as version requirement" do
-      let(:dependency_name) { "extend" }
-      let(:version) { "3.0.2" }
-      let(:previous_version) { "2.0.1" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "^3.0.2",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.0.1",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-
-      context "with an npm lock file" do
-        let(:files) { project_dependency_files("npm6/latest_package_requirement") }
-
-        it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-          expect(updated_npm_lock.content).
-            to include("extend/-/extend-3.0.2.tgz")
-          expect(updated_npm_lock.content).
-            to include("etag/-/etag-1.7.0.tgz")
-        end
-      end
-
-      context "with a yarn lockfile" do
-        let(:files) { project_dependency_files("yarn/latest_package_requirement") }
-
-        it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json yarn.lock))
-          expect(updated_yarn_lock.content).
-            to include("extend@^3.0.2:\n  version \"3.0.2\"")
-          expect(updated_yarn_lock.content).
-            to include("etag@latest:\n  version \"1.7.0\"")
-        end
       end
     end
 
@@ -1285,104 +1203,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           to include("typescript@2.1.4:\n  version \"2.1.4\"")
         expect(updated_yarn_lock.content).
           to include("typescript@^2.1.1:\n  version \"2.9.1\"")
-      end
-    end
-
-    describe "the updated package-lock.json" do
-      let(:files) { project_dependency_files("npm6/simple") }
-
-      it "has details of the updated item" do
-        parsed_lockfile = JSON.parse(updated_npm_lock.content)
-        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-          to eq("0.0.2")
-      end
-
-      context "when the requirement has not been updated" do
-        let(:requirements) { previous_requirements }
-
-        it "has details of the updated item" do
-          parsed_lockfile = JSON.parse(updated_npm_lock.content)
-          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
-
-          expect(
-            parsed_lockfile.dig(
-              "dependencies", "fetch-factory", "requires", "es6-promise"
-            )
-          ).to eq("^3.0.2")
-        end
-      end
-    end
-
-    describe "the updated yarn_lock" do
-      let(:files) { project_dependency_files("yarn/simple") }
-
-      it "has details of the updated item" do
-        expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
-      end
-
-      context "when a dist-tag is specified" do
-        let(:files) { project_dependency_files("yarn/dist_tag") }
-
-        let(:dependency_name) { "npm" }
-        let(:version) { "5.9.0-next.0" }
-        let(:previous_version) { "5.8.0" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "next",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) { requirements }
-
-        it "has details of the updated item" do
-          expect(updated_yarn_lock.content).to include("npm@next:")
-
-          version =
-            updated_yarn_lock.content.
-            match(/npm\@next:\n  version "(?<version>.*?)"/).
-            named_captures["version"]
-
-          expect(Dependabot::NpmAndYarn::Version.new(version)).
-            to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
-        end
-      end
-
-      context "when the version is missing from the lockfile" do
-        let(:files) { project_dependency_files("yarn/missing_requirement") }
-
-        it "has details of the updated item (doesn't error)" do
-          expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
-        end
-      end
-
-      context "when updating only the lockfile" do
-        let(:files) { project_dependency_files("yarn/lockfile_only_change") }
-
-        let(:dependency_name) { "babel-jest" }
-        let(:version) { "22.4.3" }
-        let(:previous_version) { "22.0.4" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "^22.0.4",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) { requirements }
-
-        it "has details of the updated item, but doesn't update everything" do
-          # Updates the desired dependency
-          expect(updated_yarn_lock.content).
-            to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
-
-          # Doesn't update unrelated dependencies
-          expect(updated_yarn_lock.content).
-            to include("eslint@^4.14.0:\n  version \"4.14.0\"")
-        end
       end
     end
 
@@ -1641,6 +1461,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
         end
       end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("npm6/latest_package_requirement") }
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content).
+            to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content).
+            to include("etag/-/etag-1.7.0.tgz")
+        end
+      end
+
+      context "with a .npmrc" do
+        context "that has an environment variable auth token" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that has an _auth line" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
+
+          let(:credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "registry.npmjs.org",
+              "token" => "secret_token"
+            }]
+          end
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that precludes updates to the lockfile" do
+          let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
+
+          specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
     end
 
     describe "npm 7 specific" do
@@ -1837,6 +1723,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_npm_lock.content).to eq(
             fixture("npm_lockfiles", "npm7_subdependency_update_preserved_indentation.json")
           )
+        end
+      end
+
+      context "with a path-based dependency" do
+        let(:files) { project_dependency_files("npm7/path_dependency") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "has details of the updated item" do
+          parsed_lockfile = JSON.parse(updated_npm_lock.content)
+
+          expect(parsed_lockfile["dependencies"]["lodash"]["version"]).
+            to eq("1.3.1")
+
+          expect(updated_package_json.content).
+            to include('"lodash": "^1.3.1"')
+          expect(updated_package_json.content).
+            to include('"etag": "file:./deps/etag"')
         end
       end
 
@@ -2095,13 +2017,656 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
       end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("npm7/latest_package_requirement") }
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content).
+            to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content).
+            to include("etag/-/etag-1.7.0.tgz")
+        end
+      end
+
+      context "with a .npmrc" do
+        context "that has an environment variable auth token" do
+          let(:files) { project_dependency_files("npm7/npmrc_env_auth_token") }
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that has an _auth line" do
+          let(:files) { project_dependency_files("npm7/npmrc_env_global_auth") }
+
+          let(:credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "registry.npmjs.org",
+              "token" => "secret_token"
+            }]
+          end
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+      end
+
+      context "with a git dependency" do
+        let(:dependency_name) { "is-number" }
+        let(:requirements) do
+          [{
+            requirement: req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: ref
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: old_req,
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/jonschlinkert/is-number",
+              branch: nil,
+              ref: old_ref
+            }
+          }]
+        end
+        let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+        let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
+
+        context "without a requirement or reference" do
+          let(:req) { nil }
+          let(:ref) { "master" }
+          let(:old_req) { nil }
+          let(:old_ref) { "master" }
+
+          let(:files) { project_dependency_files("npm7/github_dependency_no_ref") }
+
+          it "only updates the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package-lock.json))
+          end
+
+          it "correctly update the lockfiles" do
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+
+          context "specified as a full URL" do
+            let(:files) { project_dependency_files("npm7/git_dependency") }
+
+            it "only updates the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package-lock.json))
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+
+            context "when the lockfile has an outdated source" do
+              let(:files) { project_dependency_files("npm7/git_dependency_outdated_source") }
+
+              it "updates the lockfile" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package-lock.json))
+
+                parsed_package_lock = JSON.parse(updated_npm_lock.content)
+                expect(
+                  parsed_package_lock["dependencies"]["is-number"]["version"]
+                ).to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                        "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              end
+            end
+
+            context "when the package lock is empty" do
+              let(:files) { project_dependency_files("npm7/git_dependency_empty_npm_lockfile") }
+
+              it "updates the lockfile" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package-lock.json))
+
+                parsed_package_lock = JSON.parse(updated_npm_lock.content)
+                expect(
+                  parsed_package_lock["dependencies"]["is-number"]["version"]
+                ).to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                        "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              end
+            end
+
+            context "that previously caused problems" do
+              let(:files) { project_dependency_files("npm7/git_dependency_git_url") }
+
+              let(:dependency_name) { "slick-carousel" }
+              let(:requirements) { previous_requirements }
+              let(:previous_requirements) do
+                [{
+                  requirement: old_req,
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/brianfryer/slick",
+                    branch: nil,
+                    ref: old_ref
+                  }
+                }]
+              end
+              let(:previous_version) do
+                "280b560161b751ba226d50c7db1e0a14a78c2de0"
+              end
+              let(:version) { "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1" }
+
+              it "only updates the lockfile" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package-lock.json))
+
+                parsed_package_lock = JSON.parse(updated_npm_lock.content)
+                npm_lockfile_version =
+                  parsed_package_lock["dependencies"]["slick-carousel"]["version"]
+                expect(npm_lockfile_version).
+                  to eq("git+ssh://git@github.com/brianfryer/slick.git#"\
+                        "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1")
+              end
+            end
+
+            context "that uses ssh" do
+              let(:files) { project_dependency_files("npm7/git_dependency_ssh") }
+
+              it "only updates the lockfile" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package-lock.json))
+
+                parsed_package_lock = JSON.parse(updated_npm_lock.content)
+                npm_lockfile_version =
+                  parsed_package_lock["dependencies"]["is-number"]["version"]
+                expect(npm_lockfile_version).
+                  to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                        "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              end
+            end
+
+            context "when updating another dependency" do
+              let(:dependency_name) { "chalk" }
+              let(:version) { "2.3.2" }
+              let(:previous_version) { "0.4.0" }
+              let(:requirements) do
+                [{
+                  requirement: "2.3.2",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              end
+              let(:previous_requirements) do
+                [{
+                  requirement: "0.4.0",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              end
+
+              it "doesn't remove the git dependency" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package.json package-lock.json))
+
+                parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+                expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
+                  to eq("git+https://github.com/jonschlinkert/is-number.git#"\
+                        "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+              end
+            end
+
+            context "when using a URL token" do
+              let(:files) { project_dependency_files("npm7/git_dependency_token") }
+
+              it "only updates the lockfile" do
+                expect(updated_files.map(&:name)).
+                  to match_array(%w(package-lock.json))
+
+                parsed_package_lock = JSON.parse(updated_npm_lock.content)
+                expect(
+                  parsed_package_lock["dependencies"]["is-number"]["version"]
+                ).to eq("git+https://dummy-token@github.com/jonschlinkert/"\
+                        "is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              end
+            end
+          end
+
+          context "when using git host URL: gitlab" do
+            let(:dependency_name) { "babel-preset-php" }
+            let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
+            let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
+            let(:requirements) do
+              [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://gitlab.com/kornelski/babel-preset-php",
+                  branch: nil,
+                  ref: "master"
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://gitlab.com/kornelski/babel-preset-php",
+                  branch: nil,
+                  ref: "master"
+                }
+              }]
+            end
+
+            let(:files) { project_dependency_files("npm7/githost_dependency") }
+
+            it "correctly update the lockfiles" do
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(
+                parsed_package_lock["dependencies"]["babel-preset-php"]["version"]
+              ).to eq("git+ssh://git@gitlab.com/kornelski/babel-preset-php.git#"\
+                      "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19")
+            end
+          end
+
+          context "when using git host URL: github" do
+            let(:files) { project_dependency_files("npm7/githost_dependency") }
+
+            it "correctly update the lockfiles" do
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+          end
+        end
+
+        context "with a requirement" do
+          let(:req) { "^4.0.0" }
+          let(:ref) { "master" }
+          let(:old_req) { "^2.0.0" }
+          let(:old_ref) { "master" }
+          let(:previous_version) { "2.0.2" }
+          let(:version) { "4.0.0" }
+
+          let(:files) { project_dependency_files("npm7/github_dependency_semver") }
+
+          before do
+            git_url = "https://github.com/jonschlinkert/is-number.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            pack_url = git_url + "/info/refs?service=git-upload-pack"
+            stub_request(:get, pack_url).
+              to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", git_pack_fixture_name),
+                headers: git_header
+              )
+          end
+          let(:git_pack_fixture_name) { "is-number" }
+
+          it "updates the package.json and the lockfiles" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+
+            parsed_package_json = JSON.parse(updated_package_json.content)
+            expect(parsed_package_json["devDependencies"]["is-number"]).
+              to eq("jonschlinkert/is-number#semver:^4.0.0")
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+
+          context "with a from line in the package-lock" do
+            let(:files) { project_dependency_files("npm7/github_dependency_semver_modern") }
+
+            it "updates the package-lock.json from line correctly" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json))
+
+              parsed_package_json = JSON.parse(updated_package_json.content)
+              expect(parsed_package_json["devDependencies"]["is-number"]).
+                to eq("jonschlinkert/is-number#semver:^4.0.0")
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["dependencies"]["is-number"]["from"]).
+                to eq("is-number@github:jonschlinkert/is-number#semver:^4.0.0")
+            end
+          end
+        end
+
+        context "with a reference" do
+          let(:req) { nil }
+          let(:ref) { "4.0.0" }
+          let(:old_req) { nil }
+          let(:old_ref) { "2.0.0" }
+
+          let(:files) { project_dependency_files("npm7/github_dependency") }
+
+          it "updates the package.json and the lockfile" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+
+            parsed_package_json = JSON.parse(updated_package_json.content)
+            expect(parsed_package_json["devDependencies"]["is-number"]).
+              to eq("jonschlinkert/is-number#4.0.0")
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
+              to eq("jonschlinkert/is-number#4.0.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          end
+
+          context "with a commit reference" do
+            let(:dependency_name) { "@reach/router" }
+            let(:requirements) do
+              [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/reach/router",
+                  branch: nil,
+                  ref: ref
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/reach/router",
+                  branch: nil,
+                  ref: old_ref
+                }
+              }]
+            end
+            let(:version) { "1c62524db6e156050552fa4938c2de363d3116df" }
+            let(:previous_version) { "2675f56127c921474b275ff91fbdad8ec33cbd74" }
+            let(:ref) { "1c62524db6e156050552fa4938c2de363d3116df" }
+            let(:old_ref) { "2675f56127c921474b275ff91fbdad8ec33cbd74" }
+
+            let(:files) { project_dependency_files("npm7/github_dependency_commit_ref") }
+
+            it "updates the package.json and the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json))
+
+              parsed_package_json = JSON.parse(updated_package_json.content)
+              expect(parsed_package_json["dependencies"]["@reach/router"]).
+                to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
+
+              parsed_npm_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"]).
+                to eq("git+ssh://git@github.com/reach/router.git#"\
+                      "1c62524db6e156050552fa4938c2de363d3116df")
+            end
+          end
+
+          context "when using full git URL" do
+            let(:files) { project_dependency_files("npm7/git_dependency_ref") }
+
+            it "updates the package.json and the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json))
+
+              parsed_package_json = JSON.parse(updated_package_json.content)
+              expect(parsed_package_json["devDependencies"]["is-number"]).
+                to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+          end
+
+          context "when using git host URL" do
+            let(:files) { project_dependency_files("npm7/githost_dependency_ref") }
+
+            it "updates the package.json and the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json))
+
+              parsed_package_json = JSON.parse(updated_package_json.content)
+              expect(parsed_package_json["devDependencies"]["is-number"]).
+                to eq("github:jonschlinkert/is-number#4.0.0")
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
+                to eq("github:jonschlinkert/is-number#4.0.0")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
+                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            end
+          end
+
+          context "updating to use the registry" do
+            let(:dependency_name) { "is-number" }
+            let(:version) { "4.0.0" }
+            let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+            let(:requirements) do
+              [{
+                requirement: "^4.0.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: nil,
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/jonschlinkert/is-number",
+                  branch: nil,
+                  ref: "d5ac058"
+                }
+              }]
+            end
+
+            let(:files) { project_dependency_files("npm7/git_dependency_commit_ref") }
+
+            it "updates the package.json and the lockfile" do
+              expect(updated_files.map(&:name)).
+                to match_array(%w(package.json package-lock.json))
+
+              parsed_package_json = JSON.parse(updated_package_json.content)
+              expect(parsed_package_json["devDependencies"]["is-number"]).
+                to eq("^4.0.0")
+
+              parsed_package_lock = JSON.parse(updated_npm_lock.content)
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+                to eq("4.0.0")
+            end
+          end
+
+          context "when updating to a dependency with file path sub-deps" do
+            let(:dependency_name) do
+              "@segment/analytics.js-integration-facebook-pixel"
+            end
+            let(:ref) { "master" }
+            let(:old_ref) { "2.4.1" }
+            let(:requirements) do
+              [{
+                requirement: req,
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/segmentio/analytics.js-integrations",
+                  branch: nil,
+                  ref: ref
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: old_req,
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/segmentio/analytics.js-integrations",
+                  branch: nil,
+                  ref: old_ref
+                }
+              }]
+            end
+            let(:previous_version) { "3b1bb80b302c2e552685dc8a029797ec832ea7c9" }
+            let(:version) { "5677730fd3b9de2eb2224b968259893e5fc9adac" }
+
+            # TODO: npm 7 silently ignores this issue and generates a broken lockfile
+            context "with a npm lockfile" do
+              let(:files) { project_dependency_files("npm7/git_dependency_local_file") }
+
+              pending "raises a helpful error" do
+                expect { updated_files }.
+                  to raise_error(
+                    Dependabot::DependencyFileNotResolvable,
+                    %r{@segment\/analytics\.js-integration-facebook-pixel}
+                  )
+              end
+            end
+          end
+        end
+      end
     end
 
     #######################
     # Yarn specific tests #
     #######################
     describe "Yarn specific" do
-      let(:files) { project_dependency_files("yarn/simple") }
+      describe "the updated yarn_lock" do
+        let(:files) { project_dependency_files("yarn/simple") }
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
+        end
+
+        context "when a dist-tag is specified" do
+          let(:files) { project_dependency_files("yarn/dist_tag") }
+
+          let(:dependency_name) { "npm" }
+          let(:version) { "5.9.0-next.0" }
+          let(:previous_version) { "5.8.0" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "next",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) { requirements }
+
+          it "has details of the updated item" do
+            expect(updated_yarn_lock.content).to include("npm@next:")
+
+            version =
+              updated_yarn_lock.content.
+              match(/npm\@next:\n  version "(?<version>.*?)"/).
+              named_captures["version"]
+
+            expect(Dependabot::NpmAndYarn::Version.new(version)).
+              to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
+          end
+        end
+
+        context "when the version is missing from the lockfile" do
+          let(:files) { project_dependency_files("yarn/missing_requirement") }
+
+          it "has details of the updated item (doesn't error)" do
+            expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
+          end
+        end
+
+        context "when updating only the lockfile" do
+          let(:files) { project_dependency_files("yarn/lockfile_only_change") }
+
+          let(:dependency_name) { "babel-jest" }
+          let(:version) { "22.4.3" }
+          let(:previous_version) { "22.0.4" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^22.0.4",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) { requirements }
+
+          it "has details of the updated item, but doesn't update everything" do
+            # Updates the desired dependency
+            expect(updated_yarn_lock.content).
+              to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
+
+            # Doesn't update unrelated dependencies
+            expect(updated_yarn_lock.content).
+              to include("eslint@^4.14.0:\n  version \"4.14.0\"")
+          end
+        end
+      end
 
       context "when a yarnrc would prevent updates to the yarn.lock" do
         let(:files) { project_dependency_files("yarn/frozen_lockfile") }
@@ -2459,6 +3024,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content).to include(
             "node-adodb@^5.0.2"
           )
+        end
+      end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("yarn/latest_package_requirement") }
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json yarn.lock))
+          expect(updated_yarn_lock.content).
+            to include("extend@^3.0.2:\n  version \"3.0.2\"")
+          expect(updated_yarn_lock.content).
+            to include("etag@latest:\n  version \"1.7.0\"")
         end
       end
     end

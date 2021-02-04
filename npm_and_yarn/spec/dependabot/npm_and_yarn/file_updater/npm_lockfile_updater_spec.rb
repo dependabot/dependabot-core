@@ -131,6 +131,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   %w(npm6 npm7).each do |npm_version|
     describe "#{npm_version} updates" do
+      let(:files) { project_dependency_files("#{npm_version}/simple") }
+
+      it "has details of the updated item" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+          to eq("0.0.2")
+      end
+
+      context "when the requirement has not been updated" do
+        let(:requirements) { previous_requirements }
+
+        it "has details of the updated item" do
+          parsed_lockfile = JSON.parse(updated_npm_lock_content)
+          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.0.2")
+
+          expect(
+            parsed_lockfile.dig(
+              "dependencies", "fetch-factory", "requires", "es6-promise"
+            )
+          ).to eq("^3.0.2")
+        end
+      end
+
       context "git sub-dependency with invalid from" do
         let(:files) { project_dependency_files("#{npm_version}/git_sub_dep_invalid_from") }
 
