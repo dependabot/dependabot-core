@@ -15,14 +15,18 @@ const updateDependencyFile = async (directory, lockfileName, dependencies) => {
     // - `--force` ignores checks for platform (os, cpu) and engines
     // - `--ignore-scripts` disables prepare and prepack scripts which are run
     //   when installing git dependencies
-    await execa("npm", [
-      "update",
-      ...dependencyNames,
-      "--force",
-      "--dry-run",
-      "false",
-      "--ignore-scripts",
-    ]);
+    await execa(
+      "npm",
+      [
+        "update",
+        ...dependencyNames,
+        "--force",
+        "--dry-run",
+        "false",
+        "--ignore-scripts",
+      ],
+      { cwd: directory }
+    );
   } catch (e) {
     throw new Error(e.stderr);
   }

@@ -34,10 +34,6 @@ async function checkPeerDependencies(
     npm.load(resolve);
   });
 
-  // `force` ignores checks for platform (os, cpu) and engines in
-  // npm/lib/install/validate-args.js Platform is checked and raised from
-  // (EBADPLATFORM): https://github.com/npm/npm-install-checks
-  //
   // `ignoreScripts` is used to disable prepare and prepack scripts which are
   // run when installing git dependencies
   const arb = new Arborist({
@@ -71,10 +67,8 @@ async function checkPeerDependencies(
         ];
         throw new Error(conflictingDependencies.join("\n"));
       } else {
-        // TODO: Should we handle errors here?
-        //
-        // NOTE: Puting exception/resolution handling to the file updater. This
-        // is consistent with npm6 behaviour.
+        // NOTE: Hand over exception handling to the file updater. This is
+        // consistent with npm6 behaviour.
         return [];
       }
     })

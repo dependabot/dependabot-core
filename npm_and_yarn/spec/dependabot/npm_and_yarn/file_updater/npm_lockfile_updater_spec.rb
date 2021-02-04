@@ -129,79 +129,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
-  # TODO: Figure out why this hangs forever in npm 7 and start running for both
-  context "when a git src dependency doesn't have a valid package.json" do
-    let(:files) { project_dependency_files("npm6/git_missing_version") }
-
-    let(:dependency_name) { "raven-js" }
-    let(:requirements) do
-      [{
-        requirement: nil,
-        file: "package.json",
-        groups: ["dependencies"],
-        source: {
-          type: "git",
-          url: "https://github.com/getsentry/raven-js",
-          branch: nil,
-          ref: ref
-        }
-      }]
-    end
-    let(:previous_requirements) do
-      [{
-        requirement: nil,
-        file: "package.json",
-        groups: ["dependencies"],
-        source: {
-          type: "git",
-          url: "https://github.com/getsentry/raven-js",
-          branch: nil,
-          ref: old_ref
-        }
-      }]
-    end
-    let(:previous_version) { "c2b377e7a254264fd4a1fe328e4e3cfc9e245570" }
-    let(:version) { "70b24ed25b73cc15472b2bd1c6032e22bf20d112" }
-    let(:ref) { "4.4.1" }
-    let(:old_ref) { "3.23.1" }
-
-    it "raises a DependencyFileNotResolvable error" do
-      expect { updated_npm_lock_content }.
-        to raise_error(Dependabot::DependencyFileNotResolvable)
-    end
-  end
-
-  context "git sub-dependency with invalid from" do
-    let(:files) { project_dependency_files("npm6/git_sub_dep_invalid_from") }
-
-    it "cleans up from field and successfully updates" do
-      expect(JSON.parse(updated_npm_lock_content)["dependencies"]["fetch-factory"]["version"]).
-        to eq("0.0.2")
-    end
-  end
-
-  context "git sub-dependency with invalid from that is updating from an npm5 lockfile (extra problems!)" do
-    let(:files) { project_dependency_files("npm6/git_sub_dep_invalid_npm5") }
-
-    it "cleans up from field and successfully updates" do
-      updated_fetch_factory_version =
-        JSON.parse(updated_npm_lock_content).
-        fetch("dependencies")["fetch-factory"]["version"]
-      expect(updated_fetch_factory_version).to eq("0.0.2")
-    end
-  end
-
-  # TODO: Fix hanging spec in npm 7
-  # context "git sub-dependency with invalid from" do
-  #   let(:files) { project_dependency_files("npm7/git_sub_dep_invalid_from") }
-
-  #   it "cleans up from field and successfully updates" do
-  #     expect(updated_npm_lock_content["dependencies"]["fetch-factory"]["version"]).
-  #       to eq("0.0.2")
-  #   end
-  # end
-
   %w(npm6 npm7).each do |npm_version|
+    describe "#{npm_version} updates" do
+      context "git sub-dependency with invalid from" do
+        let(:files) { project_dependency_files("#{npm_version}/git_sub_dep_invalid_from") }
+
+        it "cleans up from field and successfully updates" do
+          expect(JSON.parse(updated_npm_lock_content)["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.0.2")
+        end
+      end
+    end
+
     describe "#{npm_version} errors" do
       context "with a sub dependency name that can't be found" do
         let(:files) { project_dependency_files("#{npm_version}/github_sub_dependency_name_missing") }
@@ -402,48 +341,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
         end
       end
-
-      # TODO: Figure out why this hangs forever in npm 7
-      # context "when a git src dependency doesn't have a valid package.json" do
-      #   let(:files) { project_dependency_files("#{npm_version}/git_missing_version") }
-
-      #   let(:dependency_name) { "raven-js" }
-      #   let(:requirements) do
-      #     [{
-      #       requirement: nil,
-      #       file: "package.json",
-      #       groups: ["dependencies"],
-      #       source: {
-      #         type: "git",
-      #         url: "https://github.com/getsentry/raven-js",
-      #         branch: nil,
-      #         ref: ref
-      #       }
-      #     }]
-      #   end
-      #   let(:previous_requirements) do
-      #     [{
-      #       requirement: nil,
-      #       file: "package.json",
-      #       groups: ["dependencies"],
-      #       source: {
-      #         type: "git",
-      #         url: "https://github.com/getsentry/raven-js",
-      #         branch: nil,
-      #         ref: old_ref
-      #       }
-      #     }]
-      #   end
-      #   let(:previous_version) { "c2b377e7a254264fd4a1fe328e4e3cfc9e245570" }
-      #   let(:version) { "70b24ed25b73cc15472b2bd1c6032e22bf20d112" }
-      #   let(:ref) { "4.4.1" }
-      #   let(:old_ref) { "3.23.1" }
-
-      #   it "raises a DependencyFileNotResolvable error" do
-      #     expect { updated_npm_lock_content }.
-      #       to raise_error(Dependabot::DependencyFileNotResolvable)
-      #   end
-      # end
 
       context "with an invalid package name" do
         let(:files) { project_dependency_files("#{npm_version}/invalid_package_name") }
