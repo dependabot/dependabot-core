@@ -15,7 +15,6 @@
 const fs = require("fs");
 const path = require("path");
 const execa = require("execa");
-const detectIndent = require("detect-indent");
 
 const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
   const manifest = JSON.parse(
@@ -31,12 +30,6 @@ const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
       existingVersionRequirement
     );
   });
-
-  // TODO: Figure out if this is still needed in npm 7
-  //
-  // NOTE: Fix already present git sub-dependency with invalid "from" and
-  // "requires"
-  updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
 
   try {
     // TODO: Enable dry-run and package-lock-only mode (currently disabled
@@ -63,16 +56,6 @@ const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
 
   return { [lockfileName]: updatedLockfile };
 };
-
-function updateLockfileWithValidGitUrls(lockfilePath) {
-  const lockfile = fs.readFileSync(lockfilePath).toString();
-  const indent = detectIndent(lockfile).indent || "  ";
-  const updatedLockfileObject = removeInvalidGitUrls(JSON.parse(lockfile));
-  fs.writeFileSync(
-    lockfilePath,
-    JSON.stringify(updatedLockfileObject, null, indent)
-  );
-}
 
 function flattenAllDependencies(manifest) {
   return Object.assign(
@@ -116,52 +99,6 @@ function installArgs(
   } else {
     return `${depName}@${desiredVersion}`;
   }
-}
-
-// Note: Fixes bugs introduced in npm 6.6.0 for the following cases:
-//
-// - Fails when a sub-dependency has a "from" field that includes the dependency
-//   name for git dependencies (e.g. "bignumber.js@git+https://gi...)
-// - Fails when updating a npm@5 lockfile with git sub-dependencies, resulting
-//   in invalid "requires" that include the dependency name for git dependencies
-//   (e.g. "bignumber.js": "bignumber.js@git+https://gi...)
-function removeInvalidGitUrls(lockfile) {
-  if (!lockfile.dependencies) return lockfile;
-
-  const dependencies = Object.keys(lockfile.dependencies).reduce((acc, key) => {
-    let value = removeInvalidGitUrlsInFrom(lockfile.dependencies[key], key);
-    value = removeInvalidGitUrlsInRequires(value);
-    acc[key] = removeInvalidGitUrls(value);
-    return acc;
-  }, {});
-
-  return Object.assign({}, lockfile, { dependencies });
-}
-
-function removeInvalidGitUrlsInFrom(value, dependencyName) {
-  const matchKey = new RegExp(`^${dependencyName}@`);
-  let from = value.from;
-  if (value.from && value.from.match(matchKey)) {
-    from = value.from.replace(matchKey, "");
-  }
-
-  return Object.assign({}, value, { from });
-}
-
-function removeInvalidGitUrlsInRequires(value) {
-  if (!value.requires) return value;
-
-  const requires = Object.keys(value.requires).reduce((acc, reqKey) => {
-    let reqValue = value.requires[reqKey];
-    const requiresMatchKey = new RegExp(`^${reqKey}@`);
-    if (reqValue && reqValue.match(requiresMatchKey)) {
-      reqValue = reqValue.replace(requiresMatchKey, "");
-    }
-    acc[reqKey] = reqValue;
-    return acc;
-  }, {});
-
-  return Object.assign({}, value, { requires });
 }
 
 module.exports = { updateDependencyFiles };
