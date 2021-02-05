@@ -127,6 +127,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect(updated_fetch_factory_version).to eq("0.0.2")
       end
     end
+
+    # NOTE: This no longer raises in npm 7
+    context "when there is a private git dep we don't have access to" do
+      let(:files) { project_dependency_files("npm6/github_dependency_private") }
+
+      let(:dependency_name) { "strict-uri-encode" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls).
+            to eq(
+              [
+                "https://github.com/hmarr/dependabot-test-private-npm-package.git/"
+              ]
+            )
+        end
+      end
+    end
+  end
+
+  describe "npm 7 specific" do
+    # NOTE: This used to raise in npm 6
+    context "when there is a private git dep we don't have access to" do
+      let(:files) { project_dependency_files("npm7/github_dependency_private") }
+
+      let(:dependency_name) { "strict-uri-encode" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "updates the dependency and leaves the private git dep alone" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expect(parsed_lockfile.fetch("dependencies")["strict-uri-encode"]["version"]).
+          to eq("1.1.0")
+        expect(parsed_lockfile.fetch("dependencies")["bus-replacement-service"]["version"]).
+          to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
+      end
+    end
   end
 
   %w(npm6 npm7).each do |npm_version|
@@ -217,26 +257,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         it "raises a helpful error" do
           expect { updated_npm_lock_content }.
             to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
-      end
-
-      context "when there is a private git dep we don't have access to" do
-        let(:files) { project_dependency_files("#{npm_version}/github_dependency_private") }
-
-        let(:dependency_name) { "strict-uri-encode" }
-        let(:version) { "1.1.0" }
-        let(:requirements) { [] }
-
-        it "raises a helpful error" do
-          expect { updated_npm_lock_content }.
-            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls).
-              to eq(
-                [
-                  "https://github.com/hmarr/dependabot-test-private-npm-package.git/"
-                ]
-              )
-          end
         end
       end
 

@@ -6,10 +6,7 @@ const updateDependencyFile = async (directory, lockfileName, dependencies) => {
   const dependencyNames = dependencies.map((dep) => dep.name);
 
   try {
-    // TODO: Enable dry-run and package-lock-only mode (currently disabled
-    // because npm7/arborist does partial resolution which breaks specs
-    // expection resolution to fail)
-
+    // NOTE:
     // - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
     //   work around an issue in npm 6, we don't want that here
     // - `--force` ignores checks for platform (os, cpu) and engines
@@ -24,6 +21,7 @@ const updateDependencyFile = async (directory, lockfileName, dependencies) => {
         "--dry-run",
         "false",
         "--ignore-scripts",
+        "--package-lock-only",
       ],
       { cwd: directory }
     );

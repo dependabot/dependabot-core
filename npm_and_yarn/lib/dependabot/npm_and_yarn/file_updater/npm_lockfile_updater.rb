@@ -433,11 +433,6 @@ module Dependabot
           end
         end
 
-        def lock_updated_package_dependencies(file, content)
-          @lock_updated_package_dependencies ||= {}
-          @lock_updated_package_dependencies[file.name] = content
-        end
-
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 

@@ -12,16 +12,7 @@
 
 const npm = require("npm7");
 const Arborist = require("@npmcli/arborist");
-
-function installArgsWithVersion(depName, desiredVersion, reqs) {
-  const source = (reqs.find((req) => req.source) || {}).source;
-
-  if (source && source.type === "git") {
-    return [`${depName}@${source.url}#${desiredVersion}`];
-  } else {
-    return [`${depName}@${desiredVersion}`];
-  }
-}
+const { promisify } = require("util");
 
 async function checkPeerDependencies(
   directory,
@@ -30,9 +21,7 @@ async function checkPeerDependencies(
   requirements,
   _topLevelDependencies // included for compatibility with npm 6 implementation
 ) {
-  await new Promise((resolve) => {
-    npm.load(resolve);
-  });
+  await promisify(npm.load).bind(npm)();
 
   // `ignoreScripts` is used to disable prepare and prepack scripts which are
   // run when installing git dependencies
@@ -73,6 +62,16 @@ async function checkPeerDependencies(
       }
     })
     .then(() => []);
+}
+
+function installArgsWithVersion(depName, desiredVersion, reqs) {
+  const source = (reqs.find((req) => req.source) || {}).source;
+
+  if (source && source.type === "git") {
+    return [`${depName}@${source.url}#${desiredVersion}`];
+  } else {
+    return [`${depName}@${desiredVersion}`];
+  }
 }
 
 module.exports = { checkPeerDependencies };

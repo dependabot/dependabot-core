@@ -32,10 +32,7 @@ const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
   });
 
   try {
-    // TODO: Enable dry-run and package-lock-only mode (currently disabled
-    // because npm7/arborist does partial resolution which breaks specs
-    // that expect resolution to fail)
-
+    // NOTE:
     // - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
     //   work around an issue in npm 6, we don't want that here
     // - `--force` ignores checks for platform (os, cpu) and engines
@@ -43,7 +40,15 @@ const updateDependencyFiles = async (directory, lockfileName, dependencies) => {
     //   when installing git dependencies
     await execa(
       "npm",
-      ["install", ...args, "--force", "--dry-run", "false", "--ignore-scripts"],
+      [
+        "install",
+        ...args,
+        "--force",
+        "--dry-run",
+        "false",
+        "--ignore-scripts",
+        "--package-lock-only",
+      ],
       { cwd: directory }
     );
   } catch (e) {
@@ -67,6 +72,7 @@ function flattenAllDependencies(manifest) {
   );
 }
 
+// NOTE: Copied from npm 6 updater
 function installArgs(
   depName,
   desiredVersion,
