@@ -1138,57 +1138,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
-    context "when updating a sub dependency with multiple requirements" do
-      let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
-
-      let(:dependency_name) { "js-yaml" }
-      let(:version) { "3.12.0" }
-      let(:previous_version) { "3.9.0" }
-      let(:requirements) { [] }
-      let(:previous_requirements) { nil }
-
-      it "de-duplicates all entries to the same version" do
-        expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
-        expect(updated_yarn_lock.content).
-          to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n"\
-                     '  version "3.12.0"')
-      end
-    end
-
-    context "with a .npmrc" do
-      context "that has an environment variable auth token" do
-        let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
-
-        it "updates the files" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-        end
-      end
-
-      context "that has an _auth line" do
-        let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
-
-        let(:credentials) do
-          [{
-            "type" => "npm_registry",
-            "registry" => "registry.npmjs.org",
-            "token" => "secret_token"
-          }]
-        end
-
-        it "updates the files" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-        end
-      end
-
-      context "that precludes updates to the lockfile" do
-        let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
-
-        specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
-      end
-    end
-
     context "when a wildcard is specified" do
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
@@ -1211,178 +1160,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           to include("fetch-factory@*:\n  version \"0.2.0\"")
         expect(updated_npm_lock.content).
           to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
-      end
-    end
-
-    context "when 'latest' is specified as version requirement" do
-      let(:dependency_name) { "extend" }
-      let(:version) { "3.0.2" }
-      let(:previous_version) { "2.0.1" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "^3.0.2",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.0.1",
-          groups: ["dependencies"],
-          source: nil
-        }]
-      end
-
-      context "with an npm lock file" do
-        let(:files) { project_dependency_files("npm6/latest_package_requirement") }
-
-        it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-          expect(updated_npm_lock.content).
-            to include("extend/-/extend-3.0.2.tgz")
-          expect(updated_npm_lock.content).
-            to include("etag/-/etag-1.7.0.tgz")
-        end
-      end
-
-      context "with a yarn lockfile" do
-        let(:files) { project_dependency_files("yarn/latest_package_requirement") }
-
-        it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json yarn.lock))
-          expect(updated_yarn_lock.content).
-            to include("extend@^3.0.2:\n  version \"3.0.2\"")
-          expect(updated_yarn_lock.content).
-            to include("etag@latest:\n  version \"1.7.0\"")
-        end
-      end
-    end
-
-    context "when the exact version we're updating from is still requested" do
-      let(:files) { project_dependency_files("yarn/typedoc-plugin-ui-router") }
-
-      let(:dependency_name) { "typescript" }
-      let(:version) { "2.9.1" }
-      let(:previous_version) { "2.1.4" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.1.1",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) { requirements }
-
-      it "updates the lockfile" do
-        expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
-
-        expect(updated_yarn_lock.content).
-          to include("typescript@2.1.4:\n  version \"2.1.4\"")
-        expect(updated_yarn_lock.content).
-          to include("typescript@^2.1.1:\n  version \"2.9.1\"")
-      end
-    end
-
-    describe "the updated package-lock.json" do
-      let(:files) { project_dependency_files("npm6/simple") }
-
-      it "has details of the updated item" do
-        parsed_lockfile = JSON.parse(updated_npm_lock.content)
-        expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-          to eq("0.0.2")
-      end
-
-      context "when the requirement has not been updated" do
-        let(:requirements) { previous_requirements }
-
-        it "has details of the updated item" do
-          parsed_lockfile = JSON.parse(updated_npm_lock.content)
-          expect(parsed_lockfile["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
-
-          expect(
-            parsed_lockfile.dig(
-              "dependencies", "fetch-factory", "requires", "es6-promise"
-            )
-          ).to eq("^3.0.2")
-        end
-      end
-    end
-
-    describe "the updated yarn_lock" do
-      let(:files) { project_dependency_files("yarn/simple") }
-
-      it "has details of the updated item" do
-        expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
-      end
-
-      context "when a dist-tag is specified" do
-        let(:files) { project_dependency_files("yarn/dist_tag") }
-
-        let(:dependency_name) { "npm" }
-        let(:version) { "5.9.0-next.0" }
-        let(:previous_version) { "5.8.0" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "next",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) { requirements }
-
-        it "has details of the updated item" do
-          expect(updated_yarn_lock.content).to include("npm@next:")
-
-          version =
-            updated_yarn_lock.content.
-            match(/npm\@next:\n  version "(?<version>.*?)"/).
-            named_captures["version"]
-
-          expect(Dependabot::NpmAndYarn::Version.new(version)).
-            to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
-        end
-      end
-
-      context "when the version is missing from the lockfile" do
-        let(:files) { project_dependency_files("yarn/missing_requirement") }
-
-        it "has details of the updated item (doesn't error)" do
-          expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
-        end
-      end
-
-      context "when updating only the lockfile" do
-        let(:files) { project_dependency_files("yarn/lockfile_only_change") }
-
-        let(:dependency_name) { "babel-jest" }
-        let(:version) { "22.4.3" }
-        let(:previous_version) { "22.0.4" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "^22.0.4",
-            groups: ["dependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) { requirements }
-
-        it "has details of the updated item, but doesn't update everything" do
-          # Updates the desired dependency
-          expect(updated_yarn_lock.content).
-            to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
-
-          # Doesn't update unrelated dependencies
-          expect(updated_yarn_lock.content).
-            to include("eslint@^4.14.0:\n  version \"4.14.0\"")
-        end
       end
     end
 
@@ -1641,13 +1418,149 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
         end
       end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("npm6/latest_package_requirement") }
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content).
+            to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content).
+            to include("etag/-/etag-1.7.0.tgz")
+        end
+      end
+
+      context "with a .npmrc" do
+        context "that has an environment variable auth token" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that has an _auth line" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
+
+          let(:credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "registry.npmjs.org",
+              "token" => "secret_token"
+            }]
+          end
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that precludes updates to the lockfile" do
+          let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
+
+          specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
     end
 
     #######################
     # Yarn specific tests #
     #######################
     describe "Yarn specific" do
-      let(:files) { project_dependency_files("yarn/simple") }
+      describe "the updated yarn_lock" do
+        let(:files) { project_dependency_files("yarn/simple") }
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
+        end
+
+        context "when a dist-tag is specified" do
+          let(:files) { project_dependency_files("yarn/dist_tag") }
+
+          let(:dependency_name) { "npm" }
+          let(:version) { "5.9.0-next.0" }
+          let(:previous_version) { "5.8.0" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "next",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) { requirements }
+
+          it "has details of the updated item" do
+            expect(updated_yarn_lock.content).to include("npm@next:")
+
+            version =
+              updated_yarn_lock.content.
+              match(/npm\@next:\n  version "(?<version>.*?)"/).
+              named_captures["version"]
+
+            expect(Dependabot::NpmAndYarn::Version.new(version)).
+              to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
+          end
+        end
+
+        context "when the version is missing from the lockfile" do
+          let(:files) { project_dependency_files("yarn/missing_requirement") }
+
+          it "has details of the updated item (doesn't error)" do
+            expect(updated_yarn_lock.content).to include("fetch-factory@^0.0.2")
+          end
+        end
+
+        context "when updating only the lockfile" do
+          let(:files) { project_dependency_files("yarn/lockfile_only_change") }
+
+          let(:dependency_name) { "babel-jest" }
+          let(:version) { "22.4.3" }
+          let(:previous_version) { "22.0.4" }
+          let(:requirements) do
+            [{
+              file: "package.json",
+              requirement: "^22.0.4",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) { requirements }
+
+          it "has details of the updated item, but doesn't update everything" do
+            # Updates the desired dependency
+            expect(updated_yarn_lock.content).
+              to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
+
+            # Doesn't update unrelated dependencies
+            expect(updated_yarn_lock.content).
+              to include("eslint@^4.14.0:\n  version \"4.14.0\"")
+          end
+        end
+      end
 
       context "when a yarnrc would prevent updates to the yarn.lock" do
         let(:files) { project_dependency_files("yarn/frozen_lockfile") }
@@ -2005,6 +1918,82 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content).to include(
             "node-adodb@^5.0.2"
           )
+        end
+      end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("yarn/latest_package_requirement") }
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json yarn.lock))
+          expect(updated_yarn_lock.content).
+            to include("extend@^3.0.2:\n  version \"3.0.2\"")
+          expect(updated_yarn_lock.content).
+            to include("etag@latest:\n  version \"1.7.0\"")
+        end
+      end
+
+      context "when updating a sub dependency with multiple requirements" do
+        let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
+
+        let(:dependency_name) { "js-yaml" }
+        let(:version) { "3.12.0" }
+        let(:previous_version) { "3.9.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { nil }
+
+        it "de-duplicates all entries to the same version" do
+          expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
+          expect(updated_yarn_lock.content).
+            to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n"\
+                       '  version "3.12.0"')
+        end
+      end
+
+      context "when the exact version we're updating from is still requested" do
+        let(:files) { project_dependency_files("yarn/typedoc-plugin-ui-router") }
+
+        let(:dependency_name) { "typescript" }
+        let(:version) { "2.9.1" }
+        let(:previous_version) { "2.1.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.1.1",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
+
+          expect(updated_yarn_lock.content).
+            to include("typescript@2.1.4:\n  version \"2.1.4\"")
+          expect(updated_yarn_lock.content).
+            to include("typescript@^2.1.1:\n  version \"2.9.1\"")
         end
       end
     end
