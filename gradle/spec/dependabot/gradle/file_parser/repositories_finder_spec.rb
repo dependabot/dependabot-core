@@ -124,6 +124,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             %w(
               https://jcenter.bintray.com
               https://dl.bintray.com/magnusja/maven
+              https://kotlin.bintray.com/kotlinx
               https://maven.google.com
             )
           )

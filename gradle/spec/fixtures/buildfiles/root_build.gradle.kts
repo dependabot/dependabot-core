@@ -16,7 +16,8 @@ buildscript {
 
     repositories {
         jcenter()
-        maven("https://dl.bintray.com/magnusja/maven")
+        maven(url = "https://dl.bintray.com/magnusja/maven")
+        maven("https://kotlin.bintray.com/kotlinx/")
         google()
     }
     dependencies {
