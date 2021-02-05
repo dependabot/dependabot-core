@@ -2853,6 +2853,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to eq("0.2.0")
         end
       end
+
+      context "when 'latest' is specified as version requirement" do
+        let(:files) { project_dependency_files("npm6/latest_package_requirement") }
+        let(:dependency_name) { "extend" }
+        let(:version) { "3.0.2" }
+        let(:previous_version) { "2.0.1" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.0.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "only updates extend and locks etag" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content).
+            to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content).
+            to include("etag/-/etag-1.7.0.tgz")
+        end
+      end
+
+      context "with a .npmrc" do
+        context "that has an environment variable auth token" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that has an _auth line" do
+          let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
+
+          let(:credentials) do
+            [{
+              "type" => "npm_registry",
+              "registry" => "registry.npmjs.org",
+              "token" => "secret_token"
+            }]
+          end
+
+          it "updates the files" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package.json package-lock.json))
+          end
+        end
+
+        context "that precludes updates to the lockfile" do
+          let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
+
+          specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
     end
 
     #######################
