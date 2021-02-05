@@ -37,8 +37,7 @@ module Dependabot
                 run_current_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
               end
               updated_content = updated_files.fetch(lockfile_name)
-              manifest_name = lockfile.name.sub(lockfile_name, "package.json")
-              post_process_npm_lockfile(lockfile.content, updated_content, manifest_name)
+              post_process_npm_lockfile(lockfile.content, updated_content, lockfile.name)
             end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_npm_updater_error(e, lockfile)
@@ -410,7 +409,6 @@ module Dependabot
             #
             # NOTE: When updating a package-lock.json we have to manually lock
             # all git dependencies, otherwise npm will (unhelpfully) update them
-            lock_updated_package_dependencies(file, updated_content)
             updated_content = lock_git_deps(updated_content)
             updated_content = replace_ssh_sources(updated_content)
             updated_content = lock_deps_with_latest_reqs(updated_content)
@@ -528,7 +526,7 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_npm_lockfile(original_content, updated_content, manifest_name)
+        def post_process_npm_lockfile(original_content, updated_content, lockfile_name)
           updated_content = replace_project_metadata(updated_content, original_content)
 
           # Switch SSH requirements back for git dependencies
@@ -538,29 +536,35 @@ module Dependabot
           # changed because we locked them)
           updated_content = replace_locked_git_dependencies(updated_content)
 
-          updated_content = restore_locked_package_dependencies(manifest_name, updated_content)
+          # Switch back npm 7 lockfile "pacakages" requirements from the
+          # package.json because we locked git dependencies to a particular sha
+          # and because npm re-writes requirements when installing git
+          # dependencies using `npm install pkg@scm` compared to what's in
+          # package.json
+          updated_content = restore_locked_package_dependencies(lockfile_name, updated_content)
 
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
           replace_tarball_urls(updated_content)
         end
 
-        def restore_locked_package_dependencies(manifest_name, lockfile_content)
+        def restore_locked_package_dependencies(lockfile_name, lockfile_content)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
           return lockfile_content unless npm_version == "npm7"
 
-          original_package = @lock_updated_package_dependencies.fetch(manifest_name, nil)
+          original_package = updated_package_json_content_for_lockfile_name(lockfile_name)
           return lockfile_content unless original_package
 
           parsed_package = JSON.parse(original_package)
           parsed_lockfile = JSON.parse(lockfile_content)
-          dependencies_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
+          dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
           NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
             parsed_package.fetch(type, {}).each do |dependency_name, original_requirement|
-              next unless dependencies_to_restore.include?(dependency_name)
+              next unless dependency_names_to_restore.include?(dependency_name)
 
               locked_requirement = parsed_lockfile.dig("packages", "", type, dependency_name)
+              next unless locked_requirement
 
               locked_req = %("#{dependency_name}": "#{locked_requirement}")
               original_req = %("#{dependency_name}": "#{original_requirement}")
@@ -591,13 +595,16 @@ module Dependabot
             # to be the git commit from the lockfile "version" field which
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
-            npm6_locked_from = %("from": "#{details[:version]}")
             original_from = %("from": "#{details[:from]}")
-            lockfile_content = lockfile_content.gsub(npm6_locked_from, original_from)
-
-            # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
-            npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-            lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
+            npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
+            if npm_version == "npm7"
+              # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
+              npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
+              lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
+            else
+              npm6_locked_from = %("from": "#{details[:version]}")
+              lockfile_content = lockfile_content.gsub(npm6_locked_from, original_from)
+            end
           end
 
           lockfile_content
@@ -652,6 +659,15 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).npmrc_content
+        end
+
+        def updated_package_json_content_for_lockfile_name(lockfile_name)
+          lockfile_basename = Pathname.new(lockfile_name).basename.to_s
+          package_name = lockfile_name.sub(lockfile_basename, "package.json")
+          package_json = package_files.find { |f| f.name == package_name }
+          return unless package_json
+
+          updated_package_json_content(package_json)
         end
 
         def updated_package_json_content(file)
