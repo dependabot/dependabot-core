@@ -1,3 +1,9 @@
+## v0.131.2, 5 February 2021
+
+- Maven: handle invalid pom references
+- Maven: Raise DependencyFileNotResolvable when invalid repo is specified
+- Bump @npmcli/arborist from 2.1.1 to 2.2.0 in /npm_and_yarn/helpers
+
 ## v0.131.1, 4 February 2021
 
 - Composer: handle invalid version string
