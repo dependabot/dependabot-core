@@ -1138,23 +1138,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
-    context "when updating a sub dependency with multiple requirements" do
-      let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
-
-      let(:dependency_name) { "js-yaml" }
-      let(:version) { "3.12.0" }
-      let(:previous_version) { "3.9.0" }
-      let(:requirements) { [] }
-      let(:previous_requirements) { nil }
-
-      it "de-duplicates all entries to the same version" do
-        expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
-        expect(updated_yarn_lock.content).
-          to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n"\
-                     '  version "3.12.0"')
-      end
-    end
-
     context "when a wildcard is specified" do
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
@@ -1177,32 +1160,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           to include("fetch-factory@*:\n  version \"0.2.0\"")
         expect(updated_npm_lock.content).
           to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
-      end
-    end
-
-    context "when the exact version we're updating from is still requested" do
-      let(:files) { project_dependency_files("yarn/typedoc-plugin-ui-router") }
-
-      let(:dependency_name) { "typescript" }
-      let(:version) { "2.9.1" }
-      let(:previous_version) { "2.1.4" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "^2.1.1",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) { requirements }
-
-      it "updates the lockfile" do
-        expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
-
-        expect(updated_yarn_lock.content).
-          to include("typescript@2.1.4:\n  version \"2.1.4\"")
-        expect(updated_yarn_lock.content).
-          to include("typescript@^2.1.1:\n  version \"2.9.1\"")
       end
     end
 
@@ -1599,6 +1556,133 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)
+        end
+      end
+
+      context "with a name that needs sanitizing" do
+        let(:files) { project_dependency_files("npm7/invalid_name") }
+
+        it "updates the files" do
+          expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+          updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+          expect(updated_files.count).to eq(2)
+        end
+      end
+
+      context "with multiple dependencies" do
+        let(:files) { project_dependency_files("npm7/multiple_updates") }
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "etag",
+              version: "1.8.1",
+              previous_version: "1.0.1",
+              requirements: [{
+                file: "package.json",
+                requirement: "^1.8.1",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "^1.0.1",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "is-number",
+              version: "4.0.0",
+              previous_version: "2.0.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "^4.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "^2.0.0",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "updates both dependencies" do
+          parsed_package = JSON.parse(updated_package_json.content)
+          expect(parsed_package["dependencies"]["is-number"]).
+            to eq("^4.0.0")
+          expect(parsed_package["dependencies"]["etag"]).
+            to eq("^1.8.1")
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["packages"][""]["dependencies"]["is-number"]).
+            to eq("^4.0.0")
+          expect(parsed_package_lock["packages"][""]["dependencies"]["etag"]).
+            to eq("^1.8.1")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+            to eq("4.0.0")
+          expect(parsed_package_lock["dependencies"]["etag"]["version"]).
+            to eq("1.8.1")
+        end
+
+        context "lockfile only update" do
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "etag",
+                version: "1.2.0",
+                previous_version: "1.0.1",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^1.0.1",
+                  groups: ["dependencies"],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "package.json",
+                  requirement: "^1.0.1",
+                  groups: ["dependencies"],
+                  source: nil
+                }],
+                package_manager: "npm_and_yarn"
+              ),
+              Dependabot::Dependency.new(
+                name: "is-number",
+                version: "2.1.0",
+                previous_version: "2.0.0",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "^2.0.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "package.json",
+                  requirement: "^2.0.0",
+                  groups: ["dependencies"],
+                  source: nil
+                }],
+                package_manager: "npm_and_yarn"
+              )
+            ]
+          end
+
+          it "updates both dependencies" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(package-lock.json))
+
+            parsed_package_lock = JSON.parse(updated_npm_lock.content)
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
+              to eq("2.1.0")
+            expect(parsed_package_lock["dependencies"]["etag"]["version"]).
+              to eq("1.2.0")
+          end
         end
       end
 
@@ -2596,6 +2680,179 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
       end
+
+      context "with a lerna.json and npm lockfiles" do
+        let(:files) { project_dependency_files("npm7/lerna") }
+
+        let(:dependency_name) { "etag" }
+        let(:version) { "1.8.1" }
+        let(:previous_version) { "1.8.0" }
+        let(:requirements) do
+          [{
+            requirement: "^1.1.0",
+            file: "packages/package1/package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }, {
+            requirement: "^1.0.0",
+            file: "packages/other_package/package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^1.1.0",
+            file: "packages/package1/package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }, {
+            requirement: "^1.0.0",
+            file: "packages/other_package/package.json",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates both lockfiles" do
+          expect(updated_files.map(&:name)).
+            to match_array(
+              [
+                "packages/package1/package-lock.json",
+                "packages/other_package/package-lock.json"
+              ]
+            )
+
+          package1_npm_lock =
+            updated_files.
+            find { |f| f.name == "packages/package1/package-lock.json" }
+          parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+          other_package_npm_lock =
+            updated_files.
+            find { |f| f.name == "packages/other_package/package-lock.json" }
+          parsed_other_pkg_npm_lock = JSON.parse(other_package_npm_lock.content)
+
+          # Sets npm 7 metadata from corresponding package.json requirements
+          expect(parsed_package1_npm_lock["packages"][""]["devDependencies"]["etag"]).
+            to eq("^1.1.0")
+          expect(parsed_other_pkg_npm_lock["packages"][""]["devDependencies"]["etag"]).
+            to eq("^1.0.0")
+
+          expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"]).
+            to eq("1.8.1")
+          expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"]).
+            to eq("1.8.1")
+        end
+      end
+
+      context "when updating a sub dependency with npm lockfiles" do
+        let(:files) { project_dependency_files("npm7/nested_sub_dependency_update") }
+
+        let(:dependency_name) { "extend" }
+        let(:version) { "2.0.2" }
+        let(:previous_version) { "2.0.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { nil }
+
+        it "updates only relevant lockfiles" do
+          expect(updated_files.map(&:name)).
+            to match_array(
+              [
+                "packages/package1/package-lock.json"
+              ]
+            )
+
+          package1_npm_lock =
+            updated_files.
+            find { |f| f.name == "packages/package1/package-lock.json" }
+          parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+            to eq("2.0.2")
+        end
+
+        context "updates to lowest required version" do
+          let(:dependency_name) { "extend" }
+          let(:version) { "2.0.1" }
+          let(:previous_version) { "2.0.0" }
+          let(:requirements) { [] }
+          let(:previous_requirements) { nil }
+
+          it "updates only relevant lockfiles" do
+            expect(updated_files.map(&:name)).
+              to match_array(
+                [
+                  "packages/package1/package-lock.json"
+                ]
+              )
+
+            package1_npm_lock =
+              updated_files.
+              find { |f| f.name == "packages/package1/package-lock.json" }
+            parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+
+            # TODO: Change this to 2.0.1 once npm supports updating to specific
+            # sub dependency versions
+            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+              to eq("2.0.2")
+          end
+        end
+
+        context "when one lockfile version is out of range" do
+          let(:files) { project_dependency_files("npm7/nested_sub_dependency_update_npm_out_of_range") }
+
+          it "updates out of range to latest resolvable version" do
+            expect(updated_files.map(&:name)).
+              to match_array(
+                [
+                  "packages/package1/package-lock.json",
+                  "packages/package4/package-lock.json"
+                ]
+              )
+
+            package1_npm_lock =
+              updated_files.
+              find { |f| f.name == "packages/package1/package-lock.json" }
+            parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
+            package4_npm_lock =
+              updated_files.
+              find { |f| f.name == "packages/package4/package-lock.json" }
+            parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
+
+            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
+              to eq("2.0.2")
+
+            expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"]).
+              to eq("1.3.0")
+          end
+        end
+      end
+
+      context "when a wildcard is specified" do
+        let(:files) { project_dependency_files("npm7/wildcard") }
+
+        let(:version) { "0.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "*",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "only updates the lockfiles" do
+          expect(updated_files.map(&:name)).
+            to match_array(%w(package-lock.json))
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+
+          expect(parsed_package_lock["packages"][""]["dependencies"]["fetch-factory"]).
+            to eq("*")
+          expect(parsed_package_lock["dependencies"]["fetch-factory"]["version"]).
+            to eq("0.2.0")
+        end
+      end
     end
 
     #######################
@@ -3063,6 +3320,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to include("extend@^3.0.2:\n  version \"3.0.2\"")
           expect(updated_yarn_lock.content).
             to include("etag@latest:\n  version \"1.7.0\"")
+        end
+      end
+
+      context "when updating a sub dependency with multiple requirements" do
+        let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
+
+        let(:dependency_name) { "js-yaml" }
+        let(:version) { "3.12.0" }
+        let(:previous_version) { "3.9.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { nil }
+
+        it "de-duplicates all entries to the same version" do
+          expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
+          expect(updated_yarn_lock.content).
+            to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n"\
+                       '  version "3.12.0"')
+        end
+      end
+
+      context "when the exact version we're updating from is still requested" do
+        let(:files) { project_dependency_files("yarn/typedoc-plugin-ui-router") }
+
+        let(:dependency_name) { "typescript" }
+        let(:version) { "2.9.1" }
+        let(:previous_version) { "2.1.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.1.1",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
+
+          expect(updated_yarn_lock.content).
+            to include("typescript@2.1.4:\n  version \"2.1.4\"")
+          expect(updated_yarn_lock.content).
+            to include("typescript@^2.1.1:\n  version \"2.9.1\"")
         end
       end
     end
