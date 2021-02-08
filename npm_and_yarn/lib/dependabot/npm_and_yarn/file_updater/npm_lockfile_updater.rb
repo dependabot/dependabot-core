@@ -240,6 +240,9 @@ module Dependabot
           { lockfile_name => File.read(lockfile_name) }
         end
 
+        # TODO: Update the npm 6 updater to use these args as we currently do
+        # the same in the js updater helper, we've kept it seperate for the npm
+        # 7 rollout
         def npm_top_level_updater_args(dependencies)
           package_json_content = File.read("package.json")
           manifest = JSON.parse(package_json_content)
@@ -247,6 +250,11 @@ module Dependabot
             deps.merge(manifest[type] || {})
           end
           dependencies.map do |dependency|
+            # NOTE: For git dependencies we loose some information about the
+            # requirement that's only available in the package.json, e.g. when
+            # specifying a semver tag:
+            # `dependabot/depeendabot-core#semver:^0.1` - this is required to
+            # pass the correct install argument to `npm install`
             existing_version_requirement = flattenend_dependencies[dependency.fetch(:name)]
             npm_install_args(
               dependency.fetch(:name),
@@ -258,18 +266,18 @@ module Dependabot
         end
 
         def npm_install_args(dep_name, desired_version, requirements, existing_version_requirement)
-          git_req = requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_requirement = requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
-          if git_req
-            existing_version_requirement ||= git_req[:source][:url]
+          if git_requirement
+            existing_version_requirement ||= git_requirement[:source][:url]
 
-            # Git is configured to auth over https while updating
+            # NOTE: Git is configured to auth over https while updating
             existing_version_requirement = existing_version_requirement.gsub(
               %r{git\+ssh://git@(.*?)[:/]}, 'https://\1/'
             )
 
-            # Keep any semver range that has already been updated in the package
-            # requirement when installing the new version
+            # NOTE: Keep any semver range that has already been updated by the
+            # PackageJsonUpdater when installing the new version
             if existing_version_requirement.include?(desired_version)
               "#{dep_name}@#{existing_version_requirement}"
             else
@@ -624,11 +632,7 @@ module Dependabot
           # changed because we locked them)
           updated_content = replace_locked_git_dependencies(updated_content)
 
-          # Switch back npm 7 lockfile "pacakages" requirements from the
-          # package.json because we locked git dependencies to a particular sha
-          # and because npm re-writes requirements when installing git
-          # dependencies using `npm install pkg@scm` compared to what's in
-          # package.json
+          # Switch back npm 7 lockfile "pacakages" requirements from the package.json
           updated_content = restore_locked_package_dependencies(lockfile_name, updated_content)
 
           # Switch back the protocol of tarball resolutions if they've changed
@@ -636,6 +640,15 @@ module Dependabot
           replace_tarball_urls(updated_content)
         end
 
+        # NOTE: This is a workaround to "sync" what's in package.json
+        # requirements and the `packages.""` entry in npm 7 v2 lockfiles. These
+        # get out of sync because we lock git dependencies (that are not being
+        # updated) to a specific sha to prevent unrelated updates and the way we
+        # invoke the `npm install` cli, where we might tell npm to install a
+        # specific versionm e.g. `npm install eslint@1.1.8` but we keep the
+        # `package.json` requirement for eslint at `^1.0.0`, in which case we
+        # need to copy this from the manifest to the lockfile after the update
+        # has finished.
         def restore_locked_package_dependencies(lockfile_name, lockfile_content)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
           return lockfile_content unless npm_version == "npm7"
