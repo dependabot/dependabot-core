@@ -1,3 +1,7 @@
+## v0.132.0, 8 February 2021
+
+- npm: Add support for updating npm 7 lockfiles
+
 ## v0.131.3, 8 February 2021
 
 - Nuget: handle version ranges in VersionFinder
