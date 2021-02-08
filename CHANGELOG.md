@@ -1,3 +1,7 @@
+## v0.131.3, 8 February 2021
+
+- Nuget: handle version ranges in VersionFinder
+
 ## v0.131.2, 5 February 2021
 
 - Maven: handle invalid pom references
