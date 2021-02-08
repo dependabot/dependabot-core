@@ -139,7 +139,6 @@ RSpec.describe "describe main function", :pix4d do
     end
 
     it "when directory tree for staging branch is wanted" do
-
       allow(self).to receive(:file_fetcher).and_return([[dependency_file], expected_commit])
       allow(self).to receive(:file_parser).and_return([dependency_instance])
       allow(self).to receive(:checker_up_to_date).and_return(false)

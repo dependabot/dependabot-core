@@ -94,12 +94,7 @@ def main(project_data, github_token, docker_cred)
     "password" => github_token
   }]
 
-  input_files_path = recursive_path(
-    project_data["module"],
-    project_data["repo"],
-    project_data["dependency_dir"],
-    github_token
-  )
+  input_files_path = recursive_path(project_data, github_token)
 
   input_files_path.each do |file_path|
     print "  - Checking the files in #{file_path}\n"
