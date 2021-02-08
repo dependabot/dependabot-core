@@ -1,0 +1,17 @@
+{
+  "name": "meteor-react-redux-saga",
+  "private": true,
+  "scripts": {
+    "start": "meteor"
+  },
+  "dependencies": {
+    "fetch-factory": "^0.0.1",
+    "meteor-node-stubs": "^0.3.2"
+  },
+  "version": "1.0.0",
+  "description": "Structure for meteor react, redux and redux saga",
+  "main": "index.js",
+  "repository": "https://github.com/friendken/meteor-react-redux-saga.git",
+  "author": "Hao Nguyen",
+  "license": "MIT"
+}

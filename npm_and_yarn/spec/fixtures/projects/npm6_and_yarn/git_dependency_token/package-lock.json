@@ -1,0 +1,12 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "is-number": {
+      "version": "git+https://dummy-token@github.com/jonschlinkert/is-number.git#af885e2e890b9ef0875edd2b117305119ee5bdc5",
+      "from": "git+https://dummy-token@github.com/jonschlinkert/is-number.git#master"
+    }
+  }
+}

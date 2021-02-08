@@ -1,0 +1,22 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "babel-preset-php": {
+      "version": "gitlab:kornelski/babel-preset-php#c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced",
+      "from": "gitlab:kornelski/babel-preset-php#master",
+      "requires": {
+        "php-parser": "^2.0.6"
+      }
+    },
+    "is-number": {
+      "version": "github:jonschlinkert/is-number#d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+      "from": "github:jonschlinkert/is-number#master"
+    },
+    "php-parser": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/php-parser/-/php-parser-2.2.0.tgz",
+      "integrity": "sha1-ZzhPClkz2770C+qwqzHQuMWC/4g="
+    }
+  }
+}
