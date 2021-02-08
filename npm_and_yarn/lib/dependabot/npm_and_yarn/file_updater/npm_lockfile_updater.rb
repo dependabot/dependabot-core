@@ -164,9 +164,7 @@ module Dependabot
         end
 
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
-          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-
-          if npm_version == "npm7"
+          if npm7?(lockfile_content)
             run_npm_7_top_level_updater(
               lockfile_name: lockfile_name,
               top_level_dependency_updates: top_level_dependency_updates
@@ -174,7 +172,7 @@ module Dependabot
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
-              function: "#{npm_version}:update",
+              function: "npm6:update",
               args: [
                 Dir.pwd,
                 lockfile_name,
@@ -210,9 +208,7 @@ module Dependabot
         end
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
-          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-
-          if npm_version == "npm7"
+          if npm7?(lockfile_content)
             run_npm_7_subdependency_updater(lockfile_name: lockfile_name)
           else
             SharedHelpers.run_helper_subprocess(
@@ -659,8 +655,7 @@ module Dependabot
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
         def restore_locked_package_dependencies(lockfile_name, lockfile_content)
-          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          return lockfile_content unless npm_version == "npm7"
+          return lockfile_content unless npm7?(lockfile_content)
 
           original_package = updated_package_json_content_for_lockfile_name(lockfile_name)
           return lockfile_content unless original_package
@@ -706,8 +701,7 @@ module Dependabot
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
             original_from = %("from": "#{details[:from]}")
-            npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-            if npm_version == "npm7"
+            if npm7?(lockfile_content)
               # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
               npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
               lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
@@ -791,6 +785,10 @@ module Dependabot
 
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
+        end
+
+        def npm7?(lockfile_content)
+          Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content) == "npm7"
         end
 
         def sanitized_package_json_content(content)
