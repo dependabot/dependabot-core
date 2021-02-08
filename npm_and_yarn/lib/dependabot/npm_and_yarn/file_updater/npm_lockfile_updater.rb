@@ -167,25 +167,10 @@ module Dependabot
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
           if npm_version == "npm7"
-            # NOTE: npm 7 options
-            # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
-            #   work around an issue in npm 6, we don't want that here
-            # - `--force` ignores checks for platform (os, cpu) and engines
-            # - `--ignore-scripts` disables prepare and prepack scripts which are run
-            #   when installing git dependencies
-            args = npm_top_level_updater_args(top_level_dependency_updates)
-            command = [
-              "npm",
-              "install",
-              *args,
-              "--force",
-              "--dry-run",
-              "false",
-              "--ignore-scripts",
-              "--package-lock-only"
-            ].join(" ")
-            SharedHelpers.run_shell_command(command)
-            { lockfile_name => File.read(lockfile_name) }
+            run_npm_7_top_level_updater(
+              lockfile_name: lockfile_name,
+              top_level_dependency_updates: top_level_dependency_updates
+            )
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -199,29 +184,32 @@ module Dependabot
           end
         end
 
+        def run_npm_7_top_level_updater(lockfile_name:, top_level_dependency_updates:)
+          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+          #   work around an issue in npm 6, we don't want that here
+          # - `--force` ignores checks for platform (os, cpu) and engines
+          # - `--ignore-scripts` disables prepare and prepack scripts which are run
+          #   when installing git dependencies
+          args = npm_top_level_updater_args(top_level_dependency_updates)
+          command = [
+            "npm",
+            "install",
+            *args,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+          SharedHelpers.run_shell_command(command)
+          { lockfile_name => File.read(lockfile_name) }
+        end
+
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
           if npm_version == "npm7"
-            dependency_names = sub_dependencies.map(&:name)
-            # NOTE: npm options
-            # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
-            #   work around an issue in npm 6, we don't want that here
-            # - `--force` ignores checks for platform (os, cpu) and engines
-            # - `--ignore-scripts` disables prepare and prepack scripts which are run
-            #   when installing git dependencies
-            command = [
-              "npm",
-              "update",
-              *dependency_names,
-              "--force",
-              "--dry-run",
-              "false",
-              "--ignore-scripts",
-              "--package-lock-only"
-            ].join(" ")
-            SharedHelpers.run_shell_command(command)
-            { lockfile_name => File.read(lockfile_name) }
+            run_npm_7_subdependency_updater(lockfile_name: lockfile_name)
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -231,12 +219,35 @@ module Dependabot
           end
         end
 
+        def run_npm_7_subdependency_updater(lockfile_name:)
+          dependency_names = sub_dependencies.map(&:name)
+          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+          #   work around an issue in npm 6, we don't want that here
+          # - `--force` ignores checks for platform (os, cpu) and engines
+          # - `--ignore-scripts` disables prepare and prepack scripts which are run
+          #   when installing git dependencies
+          command = [
+            "npm",
+            "update",
+            *dependency_names,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+          SharedHelpers.run_shell_command(command)
+          { lockfile_name => File.read(lockfile_name) }
+        end
+
         def npm_top_level_updater_args(dependencies)
           package_json_content = File.read("package.json")
           manifest = JSON.parse(package_json_content)
+          flattenend_dependencies = NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
+            deps.merge(manifest[type] || {})
+          end
           dependencies.map do |dependency|
-            type = dependency.fetch(:groups, ["dependencies"]).first
-            existing_version_requirement = manifest.dig(type, dependency.fetch(:name))
+            existing_version_requirement = flattenend_dependencies[dependency.fetch(:name)]
             npm_install_args(
               dependency.fetch(:name),
               dependency.fetch(:version),
@@ -247,10 +258,10 @@ module Dependabot
         end
 
         def npm_install_args(dep_name, desired_version, requirements, existing_version_requirement)
-          source = (requirements.find { |req| req[:source] } || {})[:source]
+          git_req = requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
-          if source && source[:type] == "git"
-            existing_version_requirement ||= source[:url]
+          if git_req
+            existing_version_requirement ||= git_req[:source][:url]
 
             # Git is configured to auth over https while updating
             existing_version_requirement = existing_version_requirement.gsub(
