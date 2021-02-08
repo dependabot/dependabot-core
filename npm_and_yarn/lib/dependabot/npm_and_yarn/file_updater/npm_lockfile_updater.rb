@@ -37,7 +37,7 @@ module Dependabot
                 run_current_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
               end
               updated_content = updated_files.fetch(lockfile_name)
-              post_process_npm_lockfile(lockfile.content, updated_content)
+              post_process_npm_lockfile(lockfile.content, updated_content, lockfile.name)
             end
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_npm_updater_error(e, lockfile)
@@ -47,14 +47,21 @@ module Dependabot
 
         attr_reader :dependencies, :dependency_files, :credentials
 
-        UNREACHABLE_GIT =
-          /ls-remote (?:(-h -t)|(--tags --heads)) (?<url>.*)/.freeze
-        FORBIDDEN_PACKAGE =
-          %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
+        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/.freeze
+        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
         FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
+
+        # TODO: look into fixing this in npm, seems like a bug in the git
+        # downloader introduced in npm 7
+        #
+        # NOTE: error message returned from arborist/npm 7 when trying to
+        # fetching a invalid/non-existent git ref
+        NPM7_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
+        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
 
         def top_level_dependencies
           dependencies.select(&:top_level?)
@@ -65,11 +72,9 @@ module Dependabot
         end
 
         def updatable_dependencies(lockfile)
-          lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
           dependencies.reject do |dependency|
             dependency_up_to_date?(lockfile, dependency) ||
-              top_level_dependency_update_not_required?(dependency,
-                                                        lockfile_dir)
+              top_level_dependency_update_not_required?(dependency, lockfile)
           end
         end
 
@@ -96,17 +101,24 @@ module Dependabot
           existing_dep&.version == dependency.version
         end
 
-        # Prevent changes to the lockfile when the dependency has been
+        # NOTE: Prevent changes to npm 6 lockfiles when the dependency has been
         # required in a package.json outside the current folder (e.g. lerna
-        # proj)
-        def top_level_dependency_update_not_required?(dependency,
-                                                      lockfile_dir)
+        # proj). npm 7 introduces workspace support so we explitly want to
+        # update the root lockfile and check if the dependency is in the
+        # lockfile
+        def top_level_dependency_update_not_required?(dependency, lockfile)
+          lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
+
           requirements_for_path = dependency.requirements.select do |req|
             req_dir = Pathname.new(req[:file]).dirname.to_s
             req_dir == lockfile_dir
           end
 
-          dependency.top_level? && requirements_for_path.empty?
+          dependency_in_lockfile = lockfile_dependencies(lockfile).any? do |dep|
+            dep.name == dependency.name
+          end
+
+          dependency.top_level? && requirements_for_path.empty? && !dependency_in_lockfile
         end
 
         def run_current_npm_update(lockfile_name:, lockfile_content:)
@@ -152,29 +164,133 @@ module Dependabot
         end
 
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
-          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
+          if npm7?(lockfile_content)
+            run_npm_7_top_level_updater(
+              lockfile_name: lockfile_name,
+              top_level_dependency_updates: top_level_dependency_updates
+            )
+          else
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "npm6:update",
+              args: [
+                Dir.pwd,
+                lockfile_name,
+                top_level_dependency_updates
+              ]
+            )
+          end
+        end
 
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            function: "npm6:update",
-            args: [
-              Dir.pwd,
-              lockfile_name,
-              top_level_dependency_updates
-            ]
+        def run_npm_7_top_level_updater(lockfile_name:, top_level_dependency_updates:)
+          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+          #   work around an issue in npm 6, we don't want that here
+          # - `--force` ignores checks for platform (os, cpu) and engines
+          # - `--ignore-scripts` disables prepare and prepack scripts which are run
+          #   when installing git dependencies
+          flattenend_manifest_dependencies = flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
+          install_args = npm_top_level_updater_args(
+            top_level_dependency_updates: top_level_dependency_updates,
+            flattenend_manifest_dependencies: flattenend_manifest_dependencies
           )
+          command = [
+            "npm",
+            "install",
+            *install_args,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+          SharedHelpers.run_shell_command(command)
+          { lockfile_name => File.read(lockfile_name) }
         end
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
-          npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
-          Dependabot.logger.info(npm_version)
+          if npm7?(lockfile_content)
+            run_npm_7_subdependency_updater(lockfile_name: lockfile_name)
+          else
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "npm6:updateSubdependency",
+              args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
+            )
+          end
+        end
 
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            function: "npm6:updateSubdependency",
-            args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
-          )
+        def run_npm_7_subdependency_updater(lockfile_name:)
+          dependency_names = sub_dependencies.map(&:name)
+          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+          #   work around an issue in npm 6, we don't want that here
+          # - `--force` ignores checks for platform (os, cpu) and engines
+          # - `--ignore-scripts` disables prepare and prepack scripts which are run
+          #   when installing git dependencies
+          command = [
+            "npm",
+            "update",
+            *dependency_names,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+          SharedHelpers.run_shell_command(command)
+          { lockfile_name => File.read(lockfile_name) }
+        end
+
+        # TODO: Update the npm 6 updater to use these args as we currently do
+        # the same in the js updater helper, we've kept it seperate for the npm
+        # 7 rollout
+        def npm_top_level_updater_args(top_level_dependency_updates:, flattenend_manifest_dependencies:)
+          top_level_dependency_updates.map do |dependency|
+            # NOTE: For git dependencies we loose some information about the
+            # requirement that's only available in the package.json, e.g. when
+            # specifying a semver tag:
+            # `dependabot/depeendabot-core#semver:^0.1` - this is required to
+            # pass the correct install argument to `npm install`
+            existing_version_requirement = flattenend_manifest_dependencies[dependency.fetch(:name)]
+            npm_install_args(
+              dependency.fetch(:name),
+              dependency.fetch(:version),
+              dependency.fetch(:requirements),
+              existing_version_requirement
+            )
+          end
+        end
+
+        def flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
+          package_json_content = updated_package_json_content_for_lockfile_name(lockfile_name)
+          return {} unless package_json_content
+
+          parsed_package = JSON.parse(package_json_content)
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
+            deps.merge(parsed_package[type] || {})
+          end
+        end
+
+        def npm_install_args(dep_name, desired_version, requirements, existing_version_requirement)
+          git_requirement = requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+
+          if git_requirement
+            existing_version_requirement ||= git_requirement[:source][:url]
+
+            # NOTE: Git is configured to auth over https while updating
+            existing_version_requirement = existing_version_requirement.gsub(
+              %r{git\+ssh://git@(.*?)[:/]}, 'https://\1/'
+            )
+
+            # NOTE: Keep any semver range that has already been updated by the
+            # PackageJsonUpdater when installing the new version
+            if existing_version_requirement.include?(desired_version)
+              "#{dep_name}@#{existing_version_requirement}"
+            else
+              "#{dep_name}@#{existing_version_requirement.sub(/#.*/, '')}##{desired_version}"
+            end
+          else
+            "#{dep_name}@#{desired_version}"
+          end
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -198,7 +314,7 @@ module Dependabot
           # workspace project)
           sub_dep_local_path_error = "does not contain a package.json file"
           if error_message.match?(INVALID_PACKAGE) ||
-             error_message.start_with?("Invalid package name") ||
+             error_message.include?("Invalid package name") ||
              error_message.include?(sub_dep_local_path_error)
             raise_resolvability_error(error_message, lockfile)
           end
@@ -222,7 +338,7 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error_message.start_with?("No matching vers") &&
+          if error_message.include?("No matching vers") &&
              dependencies_in_error_message?(error_message) &&
              resolvable_before_update?(lockfile)
 
@@ -249,10 +365,8 @@ module Dependabot
             handle_missing_package(sanitized_name, sanitized_error, lockfile)
           end
 
-          if error_message.match?(UNREACHABLE_GIT)
-            dependency_url =
-              error_message.match(UNREACHABLE_GIT).
-              named_captures.fetch("url")
+          if (git_error = error_message.match(UNREACHABLE_GIT) || error_message.match(FORBIDDEN_GIT))
+            dependency_url = git_error.named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
@@ -270,12 +384,20 @@ module Dependabot
                                                                lockfile)
           end
 
-          if (error_message.start_with?("No matching vers", "404 Not Found") ||
-             error_message.include?("not match any file(s) known to git") ||
+          if (error_message.include?("No matching vers") ||
+             error_message.include?("404 Not Found") ||
              error_message.include?("Non-registry package missing package") ||
-             error_message.include?("Invalid tag name")) &&
+             error_message.include?("Invalid tag name") ||
+             error_message.match?(NPM6_MISSING_GIT_REF) ||
+             error_message.match?(NPM7_MISSING_GIT_REF)) &&
              !resolvable_before_update?(lockfile)
             raise_resolvability_error(error_message, lockfile)
+          end
+
+          # NOTE: This check was introduced in npm7/arborist
+          if error_message.include?("must provide string spec")
+            msg = "Error parsing your package.json manifest: the version requirement must be a string"
+            raise Dependabot::DependencyFileNotParseable, msg
           end
 
           raise error
@@ -388,8 +510,11 @@ module Dependabot
                 file.content
               end
 
-            # When updating a package-lock.json we have to manually lock all
-            # git dependencies, otherwise npm will (unhelpfully) update them
+            # TODO: Figure out if we need to lock git deps for npm 7 and can
+            # start deprecating this hornets nest
+            #
+            # NOTE: When updating a package-lock.json we have to manually lock
+            # all git dependencies, otherwise npm will (unhelpfully) update them
             updated_content = lock_git_deps(updated_content)
             updated_content = replace_ssh_sources(updated_content)
             updated_content = lock_deps_with_latest_reqs(updated_content)
@@ -502,46 +627,107 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_npm_lockfile(original_content, updated_content)
-          updated_content =
-            replace_project_metadata(updated_content, original_content)
+        def post_process_npm_lockfile(original_content, updated_content, lockfile_name)
+          updated_content = replace_project_metadata(updated_content, original_content)
 
           # Switch SSH requirements back for git dependencies
-          git_ssh_requirements_to_swap.each do |req|
-            new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
-            old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
-            updated_content = updated_content.gsub(new_r, old_r)
-          end
+          updated_content = replace_swapped_git_ssh_requirements(updated_content)
 
           # Switch from details back for git dependencies (they will have
           # changed because we locked them)
-          git_dependencies_to_lock.each do |_, details|
+          updated_content = replace_locked_git_dependencies(updated_content)
+
+          # Switch back npm 7 lockfile "pacakages" requirements from the package.json
+          updated_content = restore_locked_package_dependencies(lockfile_name, updated_content)
+
+          # Switch back the protocol of tarball resolutions if they've changed
+          # (fixes an npm bug, which appears to be applied inconsistently)
+          replace_tarball_urls(updated_content)
+        end
+
+        # NOTE: This is a workaround to "sync" what's in package.json
+        # requirements and the `packages.""` entry in npm 7 v2 lockfiles. These
+        # get out of sync because we lock git dependencies (that are not being
+        # updated) to a specific sha to prevent unrelated updates and the way we
+        # invoke the `npm install` cli, where we might tell npm to install a
+        # specific versionm e.g. `npm install eslint@1.1.8` but we keep the
+        # `package.json` requirement for eslint at `^1.0.0`, in which case we
+        # need to copy this from the manifest to the lockfile after the update
+        # has finished.
+        def restore_locked_package_dependencies(lockfile_name, lockfile_content)
+          return lockfile_content unless npm7?(lockfile_content)
+
+          original_package = updated_package_json_content_for_lockfile_name(lockfile_name)
+          return lockfile_content unless original_package
+
+          parsed_package = JSON.parse(original_package)
+          parsed_lockfile = JSON.parse(lockfile_content)
+          dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
+
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
+            parsed_package.fetch(type, {}).each do |dependency_name, original_requirement|
+              next unless dependency_names_to_restore.include?(dependency_name)
+
+              locked_requirement = parsed_lockfile.dig("packages", "", type, dependency_name)
+              next unless locked_requirement
+
+              locked_req = %("#{dependency_name}": "#{locked_requirement}")
+              original_req = %("#{dependency_name}": "#{original_requirement}")
+              lockfile_content = lockfile_content.gsub(locked_req, original_req)
+            end
+          end
+
+          lockfile_content
+        end
+
+        def replace_swapped_git_ssh_requirements(lockfile_content)
+          git_ssh_requirements_to_swap.each do |req|
+            new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
+            old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
+            lockfile_content = lockfile_content.gsub(new_r, old_r)
+          end
+
+          lockfile_content
+        end
+
+        def replace_locked_git_dependencies(lockfile_content)
+          # Switch from details back for git dependencies (they will have
+          # changed because we locked them)
+          git_dependencies_to_lock.each do |dependency_name, details|
             next unless details[:version] && details[:from]
 
             # When locking git dependencies in package.json we set the version
             # to be the git commit from the lockfile "version" field which
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
-            locked_from = %("from": "#{details[:version]}")
             original_from = %("from": "#{details[:from]}")
-            updated_content = updated_content.gsub(locked_from, original_from)
+            if npm7?(lockfile_content)
+              # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
+              npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
+              lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
+            else
+              npm6_locked_from = %("from": "#{details[:version]}")
+              lockfile_content = lockfile_content.gsub(npm6_locked_from, original_from)
+            end
           end
 
-          # Switch back the protocol of tarball resolutions if they've changed
-          # (fixes an npm bug, which appears to be applied inconsistently)
+          lockfile_content
+        end
+
+        def replace_tarball_urls(lockfile_content)
           tarball_urls.each do |url|
             trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
             incorrect_url = if url.start_with?("https")
                               trimmed_url.gsub(/^https:/, "http:")
                             else trimmed_url.gsub(/^http:/, "https:")
                             end
-            updated_content = updated_content.gsub(
+            lockfile_content = lockfile_content.gsub(
               /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,
               trimmed_url
             )
           end
 
-          updated_content
+          lockfile_content
         end
 
         def replace_project_metadata(new_content, old_content)
@@ -579,6 +765,15 @@ module Dependabot
           ).npmrc_content
         end
 
+        def updated_package_json_content_for_lockfile_name(lockfile_name)
+          lockfile_basename = Pathname.new(lockfile_name).basename.to_s
+          package_name = lockfile_name.sub(lockfile_basename, "package.json")
+          package_json = package_files.find { |f| f.name == package_name }
+          return unless package_json
+
+          updated_package_json_content(package_json)
+        end
+
         def updated_package_json_content(file)
           @updated_package_json_content ||= {}
           @updated_package_json_content[file.name] ||=
@@ -590,6 +785,10 @@ module Dependabot
 
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
+        end
+
+        def npm7?(lockfile_content)
+          Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content) == "npm7"
         end
 
         def sanitized_package_json_content(content)
