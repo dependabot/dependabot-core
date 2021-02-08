@@ -190,11 +190,15 @@ module Dependabot
           # - `--force` ignores checks for platform (os, cpu) and engines
           # - `--ignore-scripts` disables prepare and prepack scripts which are run
           #   when installing git dependencies
-          args = npm_top_level_updater_args(top_level_dependency_updates)
+          flattenend_manifest_dependencies = flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
+          install_args = npm_top_level_updater_args(
+            top_level_dependency_updates: top_level_dependency_updates,
+            flattenend_manifest_dependencies: flattenend_manifest_dependencies
+          )
           command = [
             "npm",
             "install",
-            *args,
+            *install_args,
             "--force",
             "--dry-run",
             "false",
@@ -243,25 +247,30 @@ module Dependabot
         # TODO: Update the npm 6 updater to use these args as we currently do
         # the same in the js updater helper, we've kept it seperate for the npm
         # 7 rollout
-        def npm_top_level_updater_args(dependencies)
-          package_json_content = File.read("package.json")
-          manifest = JSON.parse(package_json_content)
-          flattenend_dependencies = NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
-            deps.merge(manifest[type] || {})
-          end
-          dependencies.map do |dependency|
+        def npm_top_level_updater_args(top_level_dependency_updates:, flattenend_manifest_dependencies:)
+          top_level_dependency_updates.map do |dependency|
             # NOTE: For git dependencies we loose some information about the
             # requirement that's only available in the package.json, e.g. when
             # specifying a semver tag:
             # `dependabot/depeendabot-core#semver:^0.1` - this is required to
             # pass the correct install argument to `npm install`
-            existing_version_requirement = flattenend_dependencies[dependency.fetch(:name)]
+            existing_version_requirement = flattenend_manifest_dependencies[dependency.fetch(:name)]
             npm_install_args(
               dependency.fetch(:name),
               dependency.fetch(:version),
               dependency.fetch(:requirements),
               existing_version_requirement
             )
+          end
+        end
+
+        def flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
+          package_json_content = updated_package_json_content_for_lockfile_name(lockfile_name)
+          return {} unless package_json_content
+
+          parsed_package = JSON.parse(package_json_content)
+          NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
+            deps.merge(parsed_package[type] || {})
           end
         end
 
