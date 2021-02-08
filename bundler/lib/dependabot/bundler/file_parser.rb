@@ -21,10 +21,25 @@ module Dependabot
         dependency_set += gemfile_dependencies
         dependency_set += gemspec_dependencies
         dependency_set += lockfile_dependencies
+        check_external_code(dependency_set.dependencies)
         dependency_set.dependencies
       end
 
       private
+
+      def check_external_code(dependencies)
+        return unless @reject_external_code
+        return unless git_source?(dependencies)
+
+        # A git source dependency might contain a .gemspec that is evaluated
+        raise ::Dependabot::UnexpectedExternalCode
+      end
+
+      def git_source?(dependencies)
+        dependencies.any? do |dep|
+          dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
+        end
+      end
 
       def gemfile_dependencies
         dependencies = DependencySet.new
