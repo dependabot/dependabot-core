@@ -166,25 +166,107 @@ module Dependabot
         def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            function: "#{npm_version}:update",
-            args: [
-              Dir.pwd,
-              lockfile_name,
-              top_level_dependency_updates
-            ]
-          )
+          if npm_version == "npm7"
+            # NOTE: npm 7 options
+            # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+            #   work around an issue in npm 6, we don't want that here
+            # - `--force` ignores checks for platform (os, cpu) and engines
+            # - `--ignore-scripts` disables prepare and prepack scripts which are run
+            #   when installing git dependencies
+            args = npm_top_level_updater_args(top_level_dependency_updates)
+            command = [
+              "npm",
+              "install",
+              *args,
+              "--force",
+              "--dry-run",
+              "false",
+              "--ignore-scripts",
+              "--package-lock-only"
+            ].join(" ")
+            SharedHelpers.run_shell_command(command)
+            { lockfile_name => File.read(lockfile_name) }
+          else
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "#{npm_version}:update",
+              args: [
+                Dir.pwd,
+                lockfile_name,
+                top_level_dependency_updates
+              ]
+            )
+          end
         end
 
         def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
           npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            function: "#{npm_version}:updateSubdependency",
-            args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
-          )
+          if npm_version == "npm7"
+            dependency_names = sub_dependencies.map(&:name)
+            # NOTE: npm options
+            # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
+            #   work around an issue in npm 6, we don't want that here
+            # - `--force` ignores checks for platform (os, cpu) and engines
+            # - `--ignore-scripts` disables prepare and prepack scripts which are run
+            #   when installing git dependencies
+            command = [
+              "npm",
+              "update",
+              *dependency_names,
+              "--force",
+              "--dry-run",
+              "false",
+              "--ignore-scripts",
+              "--package-lock-only"
+            ].join(" ")
+            SharedHelpers.run_shell_command(command)
+            { lockfile_name => File.read(lockfile_name) }
+          else
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "npm6:updateSubdependency",
+              args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
+            )
+          end
+        end
+
+        def npm_top_level_updater_args(dependencies)
+          package_json_content = File.read("package.json")
+          manifest = JSON.parse(package_json_content)
+          dependencies.map do |dependency|
+            type = dependency.fetch(:groups, ["dependencies"]).first
+            existing_version_requirement = manifest.dig(type, dependency.fetch(:name))
+            npm_install_args(
+              dependency.fetch(:name),
+              dependency.fetch(:version),
+              dependency.fetch(:requirements),
+              existing_version_requirement
+            )
+          end
+        end
+
+        def npm_install_args(dep_name, desired_version, requirements, existing_version_requirement)
+          source = (requirements.find { |req| req[:source] } || {})[:source]
+
+          if source && source[:type] == "git"
+            existing_version_requirement ||= source[:url]
+
+            # Git is configured to auth over https while updating
+            existing_version_requirement = existing_version_requirement.gsub(
+              %r{git\+ssh://git@(.*?)[:/]}, 'https://\1/'
+            )
+
+            # Keep any semver range that has already been updated in the package
+            # requirement when installing the new version
+            if existing_version_requirement.include?(desired_version)
+              "#{dep_name}@#{existing_version_requirement}"
+            else
+              "#{dep_name}@#{existing_version_requirement.sub(/#.*/, '')}##{desired_version}"
+            end
+          else
+            "#{dep_name}@#{desired_version}"
+          end
         end
 
         # rubocop:disable Metrics/AbcSize
