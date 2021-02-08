@@ -99,7 +99,7 @@ module Dependabot
         end
 
         def parse_requirement_string(string)
-          return string if string.match?(NUGET_RANGE_REGEX)
+          return [string] if string.match?(NUGET_RANGE_REGEX)
 
           string.split(",").map(&:strip)
         end
