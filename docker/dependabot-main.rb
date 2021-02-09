@@ -4,6 +4,7 @@ require "dependabot/docker"
 require "dependabot/auto_merge"
 require "dependabot/pr_info"
 require "dependabot/path_level"
+require "yaml"
 
 def create_pr(source, commit, updated_deps, updated_files, credentials_github)
   # Create a pull request for the update
@@ -126,10 +127,11 @@ def main(project_data, github_token, docker_cred)
 end
 
 # LIST OF ENVIROMENTAL VARIABLES NEEDED:
-# FEATURE_PACKAGE i.e docker or concourse
-# PROJECT_PATH i.e. Pix4D/test-dependabot-docker
-# DEPENDENCY_DIRECTORY i.e. ci/docker or ci/pipelines
-# REPOSITORY_BRANCH default is master
+# REPOSITORY_DATA list of dictionaries. Each dictionary should contain the following keys:
+#   - repo i.e. Pix4D/test-dependabot-docker
+#   - module i.e docker or concourse
+#   - dependency_dir i.e. ci/docker or ci/pipelines
+#   - branch i.e master
 # GITHUB_ACCESS_TOKEN
 # DOCKER_REGISTRY i.e. docker.ci.pix4d.com
 # DOCKER_USER
@@ -143,14 +145,24 @@ if __FILE__ == $PROGRAM_NAME
     "username" => (ENV["DOCKER_USER"] || nil),
     "password" => (ENV["DOCKER_PASS"] || nil)
   }
-  # this is current behaviour, that we will change in the next PR to allow for project_data from multiple repositories
-  project_data = {
-    "module" => ENV["FEATURE_PACKAGE"],
-    "repo" => ENV["PROJECT_PATH"],
-    "branch" => ENV["REPOSITORY_BRANCH"],
-    "dependency_dir" => ENV["DEPENDENCY_DIRECTORY"]
-  }
+
   github_token = ENV["GITHUB_ACCESS_TOKEN"]
 
-  main(project_data, github_token, docker_cred)
+  ENV["REPOSITORY_DATA"] || raise("Environmental variable REPOSITORY_DATA is not set")
+
+  input_data = YAML.safe_load(ENV["REPOSITORY_DATA"], [], [], true)
+
+  unless input_data.is_a?(Array) && !input_data.empty?
+    raise TypeError,
+          "REPOSITORY_DATA should be a non-empty list of dictonaries"
+  end
+
+  input_data.each do |project_data|
+    raise KeyError, "REPOSITORY_DATA items should not be empty" if project_data.keys.empty?
+
+    missing_keys = %w(module repo branch dependency_dir) - project_data.keys
+    raise KeyError, "Each REPOSITORY_DATA item should contain 4 non empty keys" unless missing_keys.empty?
+
+    main(project_data, github_token, docker_cred)
+  end
 end
