@@ -1701,7 +1701,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the files" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.last.content).
-            to start_with("{\n    \"name\": \"{{ name }}\",\n")
+            to start_with("{\n    \"name\": \"project-name\",\n")
         end
       end
 
@@ -2063,6 +2063,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
+        context "with a dependency that's actually up-to-date but has the wrong previous version" do
+          let(:files) { project_dependency_files("npm7/workspaces_incorrect_version") }
+
+          let(:dependency_name) { "yargs" }
+          let(:version) { "16.2.0" }
+          let(:previous_version) { "14.2.3" }
+          let(:requirements) do
+            [{
+              file: "package/package.json",
+              requirement: "^16.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "package/package.json",
+              requirement: "^16.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "doesn't update any files and raises" do
+            expect { updated_files }.to raise_error(
+              described_class::NoChangeError, "No files were updated!"
+            )
+          end
+        end
+
         context "with a dependency that appears as a development dependency" do
           let(:dependency_name) { "etag" }
           let(:version) { "1.8.1" }
@@ -2086,9 +2116,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "updates the right file" do
             root_lockfile = updated_files.find { |f| f.name == "package-lock.json" }
+            parsed_root_lockfile = JSON.parse(root_lockfile.content)
             expect(updated_files.map(&:name)).
               to match_array(%w(package-lock.json packages/package1/package.json))
-            expect(JSON.parse(root_lockfile.content)["dependencies"]["etag"]["version"]).to eq("1.8.1")
+            expect(parsed_root_lockfile.dig("dependencies", "etag", "version")).to eq("1.8.1")
+            # Doesn't install etag as a top-level dependency
+            expect(parsed_root_lockfile.dig("packages", "", "dependencies", "etag")).to be_nil
           end
 
           it "updates the existing development declaration" do
