@@ -230,7 +230,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to include("depends on black (^18) which doesn't match any")
+              to include("depends on black (>=18,<19) which doesn't match any versions")
           end
       end
 
@@ -243,9 +243,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to include("Because pythonprojects depends on croniter "\
-                "(0.3.26) which doesn't match any versions, version solving "\
-                "failed.")
+                to include("depends on croniter (==0.3.26) which doesn't match any versions")
             end
         end
       end
@@ -294,8 +292,9 @@ RSpec.describe namespace::PoetryVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              puts error.message
               expect(error.message).
-                to include("depends on black (^18) which doesn't match any")
+                to include("depends on black (>=18,<19) which doesn't match any versions")
             end
         end
       end

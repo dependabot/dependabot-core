@@ -6,11 +6,12 @@ module Dependabot
       attr_reader :dependency_files, :repo_contents_path, :credentials, :source
 
       def initialize(dependency_files:, repo_contents_path: nil, source:,
-                     credentials: [])
+                     credentials: [], reject_external_code: false)
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
         @credentials = credentials
         @source = source
+        @reject_external_code = reject_external_code
 
         check_required_files
       end

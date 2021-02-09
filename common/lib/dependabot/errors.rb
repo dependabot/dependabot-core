@@ -217,4 +217,7 @@ module Dependabot
 
   # Raised by UpdateChecker if all candidate updates are ignored
   class AllVersionsIgnored < DependabotError; end
+
+  # Raised by FileParser if processing may execute external code in the update context
+  class UnexpectedExternalCode < DependabotError; end
 end
