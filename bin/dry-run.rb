@@ -103,6 +103,7 @@ $options = {
   write: false,
   clone: false,
   lockfile_only: false,
+  reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
@@ -165,6 +166,10 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--lockfile-only", "Only update the lockfile") do |_value|
     $options[:lockfile_only] = true
+  end
+
+  opts.on("--reject-external-code", "Reject external code") do |_value|
+    $options[:reject_external_code] = true
   end
 
   opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
@@ -454,7 +459,8 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
   repo_contents_path: $repo_contents_path,
   source: source,
-  credentials: $options[:credentials]
+  credentials: $options[:credentials],
+  reject_external_code: $options[:reject_external_code],
 )
 
 dependencies = cached_read("dependencies") { parser.parse }
