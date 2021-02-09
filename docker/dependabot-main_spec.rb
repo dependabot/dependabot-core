@@ -87,12 +87,12 @@ RSpec.describe "describe main function", :pix4d do
 
     it "returns the correct project_path" do
       allow(self).to receive(:recursive_path).and_return([dependency_dir])
-      allow(self).to receive(:file_fetcher).and_return([[dependency_file], expected_commit])
-      allow(self).to receive(:file_parser).and_return([dependency_instance])
+      allow(self).to receive(:fetch_files_and_commit).and_return([[dependency_file], expected_commit])
+      allow(self).to receive(:fetch_dependencies).and_return([dependency_instance])
       allow(self).to receive(:checker_up_to_date).and_return(false)
       allow(self).to receive(:requirements).and_return(":own")
       allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
-      allow(self).to receive(:pr_creator).and_return(pull_request)
+      allow(self).to receive(:create_pr).and_return(pull_request)
 
       actual = main(project_data, fake_token, docker_cred)
       expect(actual).to equal("Success")
@@ -139,12 +139,12 @@ RSpec.describe "describe main function", :pix4d do
     end
 
     it "when directory tree for staging branch is wanted" do
-      allow(self).to receive(:file_fetcher).and_return([[dependency_file], expected_commit])
-      allow(self).to receive(:file_parser).and_return([dependency_instance])
+      allow(self).to receive(:fetch_files_and_commit).and_return([[dependency_file], expected_commit])
+      allow(self).to receive(:fetch_dependencies).and_return([dependency_instance])
       allow(self).to receive(:checker_up_to_date).and_return(false)
       allow(self).to receive(:requirements).and_return(":own")
       allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
-      allow(self).to receive(:pr_creator).and_return(pull_request)
+      allow(self).to receive(:create_pr).and_return(pull_request)
       allow(self).to receive(:auto_merge).and_return("")
 
       actual = main(project_data, fake_token, docker_cred)

@@ -5,7 +5,7 @@ require "dependabot/auto_merge"
 require "dependabot/pr_info"
 require "dependabot/path_level"
 
-def pr_creator(source, commit, updated_deps, updated_files, credentials_github)
+def create_pr(source, commit, updated_deps, updated_files, credentials_github)
   # Create a pull request for the update
   pr = Dependabot::PullRequestCreator.new(
     source: source,
@@ -34,7 +34,7 @@ def requirements(checker)
   requirements
 end
 
-def file_fetcher(source, credentials_github)
+def fetch_files_and_commit(source, credentials_github)
   # Fetch the dependency files
   fetcher = Dependabot::FileFetchers.for_package_manager("docker").
             new(source: source, credentials: credentials_github)
@@ -45,7 +45,7 @@ def file_fetcher(source, credentials_github)
   [files, commit]
 end
 
-def file_parser(files, source)
+def fetch_dependencies(files, source)
   # Parse the dependency files
   parser = Dependabot::FileParsers.for_package_manager("docker").new(
     dependency_files: files, source: source
@@ -53,7 +53,7 @@ def file_parser(files, source)
   parser.parse
 end
 
-def file_updater(dep, updated_deps, files)
+def update_files(dep, updated_deps, files)
   # Generate updated dependency files
   print "  - Updating #{dep.name} (from #{dep.version}) \n"
   updater = Dependabot::FileUpdaters.for_package_manager("docker").new(
@@ -99,8 +99,8 @@ def main(project_data, github_token, docker_cred)
   input_files_path.each do |file_path|
     print "  - Checking the files in #{file_path}\n"
     source = source_init(file_path, project_data)
-    files, commit = file_fetcher(source, credentials_github)
-    dependencies = file_parser(files, source)
+    files, commit = fetch_files_and_commit(source, credentials_github)
+    dependencies = fetch_dependencies(files, source)
 
     dependencies.select(&:top_level?).each do |dep|
       checker = checker_init(dep, files, docker_cred)
@@ -112,8 +112,8 @@ def main(project_data, github_token, docker_cred)
       updated_deps = checker_updated_dependencies(checker, requirements_to_unlock)
       next if updated_deps.first.version == updated_deps.first.previous_version
 
-      updated_files = file_updater(dep, updated_deps, files)
-      pull_request = pr_creator(source, commit, updated_deps, updated_files, credentials_github)
+      updated_files = update_files(dep, updated_deps, files)
+      pull_request = create_pr(source, commit, updated_deps, updated_files, credentials_github)
       next unless pull_request
 
       puts pull_request[:html_url]
