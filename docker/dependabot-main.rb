@@ -97,6 +97,7 @@ def main(project_data, github_token, docker_cred)
 
   input_files_path = recursive_path(project_data, github_token)
 
+  print "Working in #{project_data['repo']}\n"
   input_files_path.each do |file_path|
     print "  - Checking the files in #{file_path}\n"
     source = source_init(file_path, project_data)
@@ -117,7 +118,8 @@ def main(project_data, github_token, docker_cred)
       pull_request = create_pr(source, commit, updated_deps, updated_files, credentials_github)
       next unless pull_request
 
-      puts pull_request[:html_url]
+      print "#{pull_request[:html_url]}\n\n"
+
       next unless project_data["module"] == "docker"
 
       auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_token)
