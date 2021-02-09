@@ -16,7 +16,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
   let(:lockfile) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: lockfile_body)
   end
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -24,6 +30,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       directory: "/"
     )
   end
+  let(:reject_external_code) { false }
   let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
   let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
   let(:gemfile_fixture_name) { "version_specified" }
@@ -278,6 +285,36 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("kaminari-actionview") }
         its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "rejecting external code" do
+      let(:reject_external_code) { true }
+
+      context "with no git sources" do
+        let(:gemfile_fixture_name) { "version_specified" }
+
+        it "does not raise exception" do
+          expect { parser.parse }.not_to raise_error
+        end
+      end
+
+      context "with a git source" do
+        let(:gemfile_fixture_name) { "git_source" }
+        let(:lockfile_fixture_name) { "git_source.lock" }
+
+        it "raises exception" do
+          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+        end
+      end
+
+      context "with a subdependency of a git source" do
+        let(:lockfile_fixture_name) { "git_source_undeclared.lock" }
+        let(:gemfile_fixture_name) { "git_source_undeclared" }
+
+        it "raises exception" do
+          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+        end
       end
     end
 

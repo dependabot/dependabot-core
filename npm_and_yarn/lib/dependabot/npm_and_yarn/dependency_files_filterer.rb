@@ -20,7 +20,7 @@ module Dependabot
             dependency_files.select do |file|
               package_files_requiring_update.include?(file) ||
                 package_required_lockfile?(file) ||
-                yarn_workspaces_lockfile?(file)
+                workspaces_lockfile?(file)
             end
           end
       end
@@ -51,8 +51,8 @@ module Dependabot
         end
       end
 
-      def yarn_workspaces_lockfile?(lockfile)
-        return false unless lockfile.name == "yarn.lock"
+      def workspaces_lockfile?(lockfile)
+        return false unless ["yarn.lock", "package-lock.json"].include?(lockfile.name)
         return false unless parsed_root_package_json["workspaces"]
 
         updated_dependencies_in_lockfile?(lockfile)

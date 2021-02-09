@@ -276,6 +276,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
+
+    context "with a version range specified" do
+      let(:dependency_files) { project_dependency_files("version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: [], source: nil }]
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
   end
 
   describe "#lowest_security_fix_version_details" do

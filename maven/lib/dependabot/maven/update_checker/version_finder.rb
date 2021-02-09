@@ -162,6 +162,8 @@ module Dependabot
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               false
+            rescue URI::InvalidURIError => e
+              raise DependencyFileNotResolvable, e.message
             end
         end
 
