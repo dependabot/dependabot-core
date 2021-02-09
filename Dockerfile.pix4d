@@ -1,4 +1,4 @@
-FROM ruby:2.7-alpine AS build
+FROM ruby:3.0-alpine AS build
 
 WORKDIR /home/dependabot/
 
@@ -16,7 +16,7 @@ RUN apk update && \
   libxml2-dev \
   make && \
   gem update --system && \
-  gem install bundler --no-document
+  gem install bundler -v 2.2.9 --no-document
 
 
 WORKDIR /home/dependabot/docker/
@@ -29,7 +29,7 @@ FROM build AS tests
 WORKDIR /home/dependabot/docker/
 RUN bundle exec rspec ./spec/
 
-FROM ruby:2.7-alpine AS main
+FROM ruby:3.0-alpine AS main
 LABEL "maintainer"="platform_ci_team@pix4d.com"
 LABEL "description"="Inspect Dockerfiles and Concourse pipelines to find possible updates to Docker images \
   by checking a specified registry."
@@ -39,5 +39,8 @@ WORKDIR /home/dependabot/
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \
   PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
+
+RUN gem update --system && \
+  gem install bundler -v 2.2.9 --no-document
 
 COPY --from=build /home/dependabot/ .
