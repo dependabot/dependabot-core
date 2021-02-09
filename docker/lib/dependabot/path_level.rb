@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-def recursive_path(feature_package, project_path, dependency_dir, github_token)
-  if feature_package == "docker"
+def recursive_path(project_data, github_token)
+  if project_data["module"] == "docker"
 
     client = Octokit::Client.new(access_token: github_token)
-    branch = client.branch(project_path, "master")
-    tree = client.tree(project_path, branch.commit.sha, recursive: true).tree
+    branch = client.branch(project_data["repo"], project_data["branch"])
+    tree = client.tree(project_data["repo"], branch.commit.sha, recursive: true).tree
 
-    selected_paths = tree.select { |f| f.path.include?(dependency_dir.to_s) }.
+    selected_paths = tree.select { |f| f.path.include?(project_data["dependency_dir"].to_s) }.
                      select { |f| f.path.include?("Dockerfile") }.
                      map(&:path)
 
@@ -17,6 +17,6 @@ def recursive_path(feature_package, project_path, dependency_dir, github_token)
       input_files_path << path
     end
   else
-    input_files_path = [dependency_dir]
+    input_files_path = [project_data["dependency_dir"]]
   end
 end
