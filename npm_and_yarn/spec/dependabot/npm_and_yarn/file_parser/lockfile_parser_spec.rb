@@ -307,5 +307,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         )
       end
     end
+
+    context "for an npm7 workspace project with a direct dependency in the workspace" do
+      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package") }
+      let(:dependency_name) { "yargs" }
+      let(:manifest_name) { "packages/build/package.json" }
+
+      it "finds the correct dependency" do
+        expect(lockfile_details).to eq(
+          "version" => "16.2.0",
+          "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+          "integrity" =>
+            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+        )
+      end
+    end
   end
 end
