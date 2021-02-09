@@ -1,3 +1,7 @@
+## v0.133.0, 9 February 2021
+
+- Bundler: Raise UnexpectedExternalCode if `reject_external_code: true` and the update involves external code
+
 ## v0.132.0, 8 February 2021
 
 - npm: Add support for updating npm 7 lockfiles
