@@ -157,7 +157,7 @@ module Dependabot
         end
 
         def run_npm_7_top_level_updater(top_level_dependencies:)
-          is_dependency_in_current_package_json = top_level_dependencies.any? do |dependency|
+          dependencies_in_current_package_json = top_level_dependencies.any? do |dependency|
             dependency_in_package_json?(dependency)
           end
 
@@ -167,7 +167,7 @@ module Dependabot
           # requirement, otherwise npm will add the dependency as a new
           # top-level dependency to the root lockfile.
           install_args = ""
-          if is_dependency_in_current_package_json
+          if dependencies_in_current_package_json
             # TODO: Update the npm 6 updater to use these args as we currently
             # do the same in the js updater helper, we've kept it seperate for
             # the npm 7 rollout
