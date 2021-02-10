@@ -1701,7 +1701,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the files" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.last.content).
-            to start_with("{\n    \"name\": \"{{ name }}\",\n")
+            to start_with("{\n    \"name\": \"project-name\",\n")
         end
       end
 
@@ -2086,9 +2086,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "updates the right file" do
             root_lockfile = updated_files.find { |f| f.name == "package-lock.json" }
+            parsed_root_lockfile = JSON.parse(root_lockfile.content)
             expect(updated_files.map(&:name)).
               to match_array(%w(package-lock.json packages/package1/package.json))
-            expect(JSON.parse(root_lockfile.content)["dependencies"]["etag"]["version"]).to eq("1.8.1")
+            expect(parsed_root_lockfile.dig("dependencies", "etag", "version")).to eq("1.8.1")
           end
 
           it "updates the existing development declaration" do

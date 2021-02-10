@@ -6,6 +6,7 @@ require "dependabot/npm_and_yarn/file_updater/npm_lockfile_updater"
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   let(:updater) do
     described_class.new(
+      lockfile: package_lock,
       dependency_files: files,
       dependencies: dependencies,
       credentials: credentials
@@ -57,7 +58,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  subject(:updated_npm_lock_content) { updater.updated_lockfile_content(package_lock) }
+  subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
 
   describe "npm 6 specific" do
     # NOTE: This is no longer failing in npm 7
@@ -251,8 +252,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       context "with an invalid requirement in the package.json" do
         let(:files) { project_dependency_files("#{npm_version}/invalid_requirement") }
-
-        let(:npm_lock_fixture_name) { "package-lock.json" }
 
         it "raises a helpful error" do
           expect { updated_npm_lock_content }.
