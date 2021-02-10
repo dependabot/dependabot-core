@@ -17,35 +17,22 @@ module Dependabot
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+          @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
         end
 
-        def updated_lockfile_content(lockfile)
-          return lockfile.content if npmrc_disables_lockfile?
-          return lockfile.content if updatable_dependencies(lockfile).empty?
-
-          @updated_lockfile_content ||= {}
-          @updated_lockfile_content[lockfile.name] ||=
-            SharedHelpers.in_a_temporary_directory do
-              path = Pathname.new(lockfile.name).dirname.to_s
-              lockfile_name = Pathname.new(lockfile.name).basename.to_s
-              write_temporary_dependency_files(lockfile.name)
-              updated_files = Dir.chdir(path) do
-                run_current_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
-              end
-              updated_content = updated_files.fetch(lockfile_name)
-              post_process_npm_lockfile(lockfile.content, updated_content, lockfile.name)
-            end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_npm_updater_error(e, lockfile)
+        def updated_lockfile
+          updated_file = lockfile.dup
+          updated_file.content = updated_lockfile_content
+          updated_file
         end
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :lockfile, :dependencies, :dependency_files, :credentials
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/.freeze
@@ -63,6 +50,21 @@ module Dependabot
         NPM7_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
         NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
 
+        def updated_lockfile_content
+          return lockfile.content if npmrc_disables_lockfile?
+          return lockfile.content unless updatable_dependencies.any?
+
+          @updated_lockfile_content ||=
+            SharedHelpers.in_a_temporary_directory do
+              write_temporary_dependency_files
+              updated_files = Dir.chdir(lockfile_directory) { run_current_npm_update }
+              updated_lockfile_content = updated_files.fetch(lockfile_basename)
+              post_process_npm_lockfile(updated_lockfile_content)
+            end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_npm_updater_error(e)
+        end
+
         def top_level_dependencies
           dependencies.select(&:top_level?)
         end
@@ -71,16 +73,14 @@ module Dependabot
           dependencies.reject(&:top_level?)
         end
 
-        def updatable_dependencies(lockfile)
+        def updatable_dependencies
           dependencies.reject do |dependency|
-            dependency_up_to_date?(lockfile, dependency) ||
-              top_level_dependency_update_not_required?(dependency, lockfile)
+            dependency_up_to_date?(dependency) || top_level_dependency_update_not_required?(dependency)
           end
         end
 
-        def lockfile_dependencies(lockfile)
-          @lockfile_dependencies ||= {}
-          @lockfile_dependencies[lockfile.name] ||=
+        def lockfile_dependencies
+          @lockfile_dependencies ||=
             NpmAndYarn::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
@@ -88,9 +88,8 @@ module Dependabot
             ).parse
         end
 
-        def dependency_up_to_date?(lockfile, dependency)
-          existing_dep = lockfile_dependencies(lockfile).
-                         find { |dep| dep.name == dependency.name }
+        def dependency_up_to_date?(dependency)
+          existing_dep = lockfile_dependencies.find { |dep| dep.name == dependency.name }
 
           # If the dependency is missing but top level it should be treated as
           # not up to date
@@ -106,93 +105,81 @@ module Dependabot
         # proj). npm 7 introduces workspace support so we explitly want to
         # update the root lockfile and check if the dependency is in the
         # lockfile
-        def top_level_dependency_update_not_required?(dependency, lockfile)
-          lockfile_dir = Pathname.new(lockfile.name).dirname.to_s
-
-          requirements_for_path = dependency.requirements.select do |req|
-            req_dir = Pathname.new(req[:file]).dirname.to_s
-            req_dir == lockfile_dir
-          end
-
-          dependency_in_lockfile = lockfile_dependencies(lockfile).any? do |dep|
-            dep.name == dependency.name
-          end
-
-          dependency.top_level? && requirements_for_path.empty? && !dependency_in_lockfile
+        def top_level_dependency_update_not_required?(dependency)
+          dependency.top_level? &&
+            !dependency_in_package_json?(dependency) &&
+            !dependency_in_lockfile?(dependency)
         end
 
-        def run_current_npm_update(lockfile_name:, lockfile_content:)
-          top_level_dependency_updates = top_level_dependencies.map do |d|
-            { name: d.name, version: d.version, requirements: d.requirements }
-          end
-
-          run_npm_updater(
-            lockfile_name: lockfile_name,
-            top_level_dependency_updates: top_level_dependency_updates,
-            lockfile_content: lockfile_content
-          )
+        def run_current_npm_update
+          run_npm_updater(top_level_dependencies: top_level_dependencies)
         end
 
-        def run_previous_npm_update(lockfile_name:, lockfile_content:)
+        def run_previous_npm_update
           previous_top_level_dependencies = top_level_dependencies.map do |d|
-            {
+            Dependabot::Dependency.new(
               name: d.name,
+              package_manager: d.package_manager,
               version: d.previous_version,
-              requirements: d.previous_requirements
-            }
+              previous_version: d.previous_version,
+              requirements: d.previous_requirements,
+              previous_requirements: d.previous_requirements
+            )
           end
 
-          run_npm_updater(
-            lockfile_name: lockfile_name,
-            top_level_dependency_updates: previous_top_level_dependencies,
-            lockfile_content: lockfile_content
-          )
+          run_npm_updater(top_level_dependencies: previous_top_level_dependencies)
         end
 
-        def run_npm_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
+        def run_npm_updater(top_level_dependencies:)
           SharedHelpers.with_git_configured(credentials: credentials) do
-            if top_level_dependency_updates.any?
-              run_npm_top_level_updater(
-                lockfile_name: lockfile_name,
-                top_level_dependency_updates: top_level_dependency_updates,
-                lockfile_content: lockfile_content
-              )
+            if top_level_dependencies.any?
+              run_npm_top_level_updater(top_level_dependencies: top_level_dependencies)
             else
-              run_npm_subdependency_updater(lockfile_name: lockfile_name, lockfile_content: lockfile_content)
+              run_npm_subdependency_updater
             end
           end
         end
 
-        def run_npm_top_level_updater(lockfile_name:, top_level_dependency_updates:, lockfile_content:)
-          if npm7?(lockfile_content)
-            run_npm_7_top_level_updater(
-              lockfile_name: lockfile_name,
-              top_level_dependency_updates: top_level_dependency_updates
-            )
+        def run_npm_top_level_updater(top_level_dependencies:)
+          if npm7?
+            run_npm_7_top_level_updater(top_level_dependencies: top_level_dependencies)
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "npm6:update",
               args: [
                 Dir.pwd,
-                lockfile_name,
-                top_level_dependency_updates
+                lockfile_basename,
+                top_level_dependencies.map(&:to_h)
               ]
             )
           end
         end
 
-        def run_npm_7_top_level_updater(lockfile_name:, top_level_dependency_updates:)
-          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
-          #   work around an issue in npm 6, we don't want that here
+        def run_npm_7_top_level_updater(top_level_dependencies:)
+          dependencies_in_current_package_json = top_level_dependencies.any? do |dependency|
+            dependency_in_package_json?(dependency)
+          end
+
+          # NOTE: When updating a dependency in a nested workspace project we
+          # need to run `npm install` without any arguments to update the root
+          # level lockfile after having updated the nested packages package.json
+          # requirement, otherwise npm will add the dependency as a new
+          # top-level dependency to the root lockfile.
+          install_args = ""
+          if dependencies_in_current_package_json
+            # TODO: Update the npm 6 updater to use these args as we currently
+            # do the same in the js updater helper, we've kept it seperate for
+            # the npm 7 rollout
+            install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          end
+
+          # NOTE: npm options
           # - `--force` ignores checks for platform (os, cpu) and engines
-          # - `--ignore-scripts` disables prepare and prepack scripts which are run
-          #   when installing git dependencies
-          flattenend_manifest_dependencies = flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
-          install_args = npm_top_level_updater_args(
-            top_level_dependency_updates: top_level_dependency_updates,
-            flattenend_manifest_dependencies: flattenend_manifest_dependencies
-          )
+          # - `--dry-run=false` the updater sets a global .npmrc with dry-run:
+          #   true to work around an issue in npm 6, we don't want that here
+          # - `--ignore-scripts` disables prepare and prepack scripts which are
+          #   run when installing git dependencies
           command = [
             "npm",
             "install",
@@ -204,26 +191,27 @@ module Dependabot
             "--package-lock-only"
           ].join(" ")
           SharedHelpers.run_shell_command(command)
-          { lockfile_name => File.read(lockfile_name) }
+          { lockfile_basename => File.read(lockfile_basename) }
         end
 
-        def run_npm_subdependency_updater(lockfile_name:, lockfile_content:)
-          if npm7?(lockfile_content)
-            run_npm_7_subdependency_updater(lockfile_name: lockfile_name)
+        def run_npm_subdependency_updater
+          if npm7?
+            run_npm_7_subdependency_updater
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "npm6:updateSubdependency",
-              args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
+              args: [Dir.pwd, lockfile_basename, sub_dependencies.map(&:to_h)]
             )
           end
         end
 
-        def run_npm_7_subdependency_updater(lockfile_name:)
+        def run_npm_7_subdependency_updater
           dependency_names = sub_dependencies.map(&:name)
+          # NOTE: npm options
+          # - `--force` ignores checks for platform (os, cpu) and engines
           # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
           #   work around an issue in npm 6, we don't want that here
-          # - `--force` ignores checks for platform (os, cpu) and engines
           # - `--ignore-scripts` disables prepare and prepack scripts which are run
           #   when installing git dependencies
           command = [
@@ -237,59 +225,64 @@ module Dependabot
             "--package-lock-only"
           ].join(" ")
           SharedHelpers.run_shell_command(command)
-          { lockfile_name => File.read(lockfile_name) }
+          { lockfile_basename => File.read(lockfile_basename) }
         end
 
-        # TODO: Update the npm 6 updater to use these args as we currently do
-        # the same in the js updater helper, we've kept it seperate for the npm
-        # 7 rollout
-        def npm_top_level_updater_args(top_level_dependency_updates:, flattenend_manifest_dependencies:)
-          top_level_dependency_updates.map do |dependency|
+        def updated_version_requirement_for_dependency(dependency)
+          flattenend_manifest_dependencies[dependency.name]
+        end
+
+        # TODO: Add the raw updated requirement to the Dependency instance
+        # instead of fishing it out of the updated package json, we need to do
+        # this because we don't store the same requirement in
+        # Dependency#requirements for git dependencies - see PackageJsonUpdater
+        def flattenend_manifest_dependencies
+          return @flattenend_manifest_dependencies if defined?(@flattenend_manifest_dependencies)
+
+          @flattenend_manifest_dependencies =
+            NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
+              deps.merge(parsed_package_json[type] || {})
+            end
+        end
+
+        def npm_install_args(dependency)
+          git_requirement = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+
+          if git_requirement
             # NOTE: For git dependencies we loose some information about the
             # requirement that's only available in the package.json, e.g. when
             # specifying a semver tag:
             # `dependabot/depeendabot-core#semver:^0.1` - this is required to
             # pass the correct install argument to `npm install`
-            existing_version_requirement = flattenend_manifest_dependencies[dependency.fetch(:name)]
-            npm_install_args(
-              dependency.fetch(:name),
-              dependency.fetch(:version),
-              dependency.fetch(:requirements),
-              existing_version_requirement
-            )
-          end
-        end
-
-        def flattenend_manifest_dependencies_for_lockfile_name(lockfile_name)
-          package_json_content = updated_package_json_content_for_lockfile_name(lockfile_name)
-          return {} unless package_json_content
-
-          parsed_package = JSON.parse(package_json_content)
-          NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
-            deps.merge(parsed_package[type] || {})
-          end
-        end
-
-        def npm_install_args(dep_name, desired_version, requirements, existing_version_requirement)
-          git_requirement = requirements.find { |req| req[:source] && req[:source][:type] == "git" }
-
-          if git_requirement
-            existing_version_requirement ||= git_requirement[:source][:url]
+            updated_version_requirement = updated_version_requirement_for_dependency(dependency)
+            updated_version_requirement ||= git_requirement[:source][:url]
 
             # NOTE: Git is configured to auth over https while updating
-            existing_version_requirement = existing_version_requirement.gsub(
+            updated_version_requirement = updated_version_requirement.gsub(
               %r{git\+ssh://git@(.*?)[:/]}, 'https://\1/'
             )
 
             # NOTE: Keep any semver range that has already been updated by the
             # PackageJsonUpdater when installing the new version
-            if existing_version_requirement.include?(desired_version)
-              "#{dep_name}@#{existing_version_requirement}"
+            if updated_version_requirement.include?(dependency.version)
+              "#{dependency.name}@#{updated_version_requirement}"
             else
-              "#{dep_name}@#{existing_version_requirement.sub(/#.*/, '')}##{desired_version}"
+              "#{dependency.name}@#{updated_version_requirement.sub(/#.*/, '')}##{dependency.version}"
             end
           else
-            "#{dep_name}@#{desired_version}"
+            "#{dependency.name}@#{dependency.version}"
+          end
+        end
+
+        def dependency_in_package_json?(dependency)
+          dependency.requirements.any? do |req|
+            req[:file] == package_json.name
+          end
+        end
+
+        def dependency_in_lockfile?(dependency)
+          lockfile_dependencies.any? do |dep|
+            dep.name == dependency.name
           end
         end
 
@@ -297,14 +290,14 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
-        def handle_npm_updater_error(error, lockfile)
+        def handle_npm_updater_error(error)
           error_message = error.message
           if error_message.match?(MISSING_PACKAGE)
             package_name = error_message.match(MISSING_PACKAGE).
                            named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, lockfile)
+            handle_missing_package(sanitized_name, sanitized_error)
           end
 
           # Invalid package: When the package.json doesn't include a name or
@@ -316,7 +309,7 @@ module Dependabot
           if error_message.match?(INVALID_PACKAGE) ||
              error_message.include?("Invalid package name") ||
              error_message.include?(sub_dep_local_path_error)
-            raise_resolvability_error(error_message, lockfile)
+            raise_resolvability_error(error_message)
           end
 
           # TODO: Move this logic to the version resolver and check if a new
@@ -340,7 +333,7 @@ module Dependabot
           # queries
           if error_message.include?("No matching vers") &&
              dependencies_in_error_message?(error_message) &&
-             resolvable_before_update?(lockfile)
+             resolvable_before_update?
 
             # Raise a bespoke error so we can capture and ignore it if
             # we're trying to create a new PR (which will be created
@@ -353,7 +346,7 @@ module Dependabot
                            named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, lockfile)
+            handle_missing_package(sanitized_name, sanitized_error)
           end
 
           # Some private registries return a 403 when the user is readonly
@@ -362,7 +355,7 @@ module Dependabot
                            named_captures["package_req"]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, lockfile)
+            handle_missing_package(sanitized_name, sanitized_error)
           end
 
           if (git_error = error_message.match(UNREACHABLE_GIT) || error_message.match(FORBIDDEN_GIT))
@@ -379,9 +372,8 @@ module Dependabot
           # people to re-generate their lockfiles (Future feature idea: add a
           # way to click-to-fix the lockfile from the issue)
           if error_message.include?("Cannot read property 'match' of ") &&
-             !resolvable_before_update?(lockfile)
-            raise_missing_lockfile_version_resolvability_error(error_message,
-                                                               lockfile)
+             !resolvable_before_update?
+            raise_missing_lockfile_version_resolvability_error(error_message)
           end
 
           if (error_message.include?("No matching vers") ||
@@ -390,8 +382,8 @@ module Dependabot
              error_message.include?("Invalid tag name") ||
              error_message.match?(NPM6_MISSING_GIT_REF) ||
              error_message.match?(NPM7_MISSING_GIT_REF)) &&
-             !resolvable_before_update?(lockfile)
-            raise_resolvability_error(error_message, lockfile)
+             !resolvable_before_update?
+            raise_resolvability_error(error_message)
           end
 
           # NOTE: This check was introduced in npm7/arborist
@@ -407,17 +399,15 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
 
-        def raise_resolvability_error(error_message, lockfile)
+        def raise_resolvability_error(error_message)
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in "\
                 "#{lockfile.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_missing_lockfile_version_resolvability_error(error_message,
-                                                               lockfile)
-          lockfile_dir = Pathname.new(lockfile.name).dirname
-          modules_path = lockfile_dir.join("node_modules")
+        def raise_missing_lockfile_version_resolvability_error(error_message)
+          modules_path = File.join(lockfile_directory, "node_modules")
           # NOTE: don't include the dependency names to prevent opening
           # multiple issues for each dependency that fails because we unique
           # issues on the error message (issue detail) on the backend
@@ -432,11 +422,10 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def handle_missing_package(package_name, error_message, lockfile)
-          missing_dep = lockfile_dependencies(lockfile).
-                        find { |dep| dep.name == package_name }
+        def handle_missing_package(package_name, error_message)
+          missing_dep = lockfile_dependencies.find { |dep| dep.name == package_name }
 
-          raise_resolvability_error(error_message, lockfile) unless missing_dep
+          raise_resolvability_error(error_message) unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -458,23 +447,14 @@ module Dependabot
           end
         end
 
-        def resolvable_before_update?(lockfile)
-          @resolvable_before_update ||= {}
-          return @resolvable_before_update[lockfile.name] if @resolvable_before_update.key?(lockfile.name)
+        def resolvable_before_update?
+          return @resolvable_before_update if defined?(@resolvable_before_update)
 
-          @resolvable_before_update[lockfile.name] =
+          @resolvable_before_update =
             begin
               SharedHelpers.in_a_temporary_directory do
-                write_temporary_dependency_files(
-                  lockfile.name,
-                  update_package_json: false
-                )
-
-                lockfile_name = Pathname.new(lockfile.name).basename.to_s
-                path = Pathname.new(lockfile.name).dirname.to_s
-                Dir.chdir(path) do
-                  run_previous_npm_update(lockfile_name: lockfile_name, lockfile_content: lockfile.content)
-                end
+                write_temporary_dependency_files(update_package_json: false)
+                Dir.chdir(lockfile_directory) { run_previous_npm_update }
               end
 
               true
@@ -492,12 +472,10 @@ module Dependabot
           end
         end
 
-        def write_temporary_dependency_files(lockfile_name,
-                                             update_package_json: true)
-          write_lockfiles(lockfile_name)
+        def write_temporary_dependency_files(update_package_json: true)
+          write_lockfiles
 
-          dir = Pathname.new(lockfile_name).dirname
-          File.write(File.join(dir, ".npmrc"), npmrc_content)
+          File.write(File.join(lockfile_directory, ".npmrc"), npmrc_content)
 
           package_files.each do |file|
             path = file.name
@@ -524,9 +502,9 @@ module Dependabot
           end
         end
 
-        def write_lockfiles(lockfile_name)
+        def write_lockfiles
           excluded_lock =
-            case lockfile_name
+            case lockfile.name
             when "package-lock.json" then "npm-shrinkwrap.json"
             when "npm-shrinkwrap.json" then "package-lock.json"
             end
@@ -627,22 +605,86 @@ module Dependabot
           @git_ssh_requirements_to_swap
         end
 
-        def post_process_npm_lockfile(original_content, updated_content, lockfile_name)
-          updated_content = replace_project_metadata(updated_content, original_content)
-
+        def post_process_npm_lockfile(updated_lockfile_content)
           # Switch SSH requirements back for git dependencies
-          updated_content = replace_swapped_git_ssh_requirements(updated_content)
+          updated_lockfile_content = replace_swapped_git_ssh_requirements(updated_lockfile_content)
 
           # Switch from details back for git dependencies (they will have
           # changed because we locked them)
-          updated_content = replace_locked_git_dependencies(updated_content)
+          updated_lockfile_content = replace_locked_git_dependencies(updated_lockfile_content)
+
+          parsed_updated_lockfile_content = JSON.parse(updated_lockfile_content)
+
+          # Restore lockfile name attribute from the original lockfile
+          updated_lockfile_content = replace_project_name(updated_lockfile_content, parsed_updated_lockfile_content)
+
+          # Restore npm 7 "packages" "name" entry from package.json if previously set
+          updated_lockfile_content = restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
 
           # Switch back npm 7 lockfile "pacakages" requirements from the package.json
-          updated_content = restore_locked_package_dependencies(lockfile_name, updated_content)
+          updated_lockfile_content = restore_locked_package_dependencies(
+            updated_lockfile_content, parsed_updated_lockfile_content
+          )
 
           # Switch back the protocol of tarball resolutions if they've changed
           # (fixes an npm bug, which appears to be applied inconsistently)
-          replace_tarball_urls(updated_content)
+          replace_tarball_urls(updated_lockfile_content)
+        end
+
+        def replace_project_name(updated_lockfile_content, parsed_updated_lockfile_content)
+          current_name = parsed_updated_lockfile_content["name"]
+          original_name = parsed_lockfile["name"]
+          if original_name
+            updated_lockfile_content = replace_lockfile_name_attribute(
+              current_name, original_name, updated_lockfile_content
+            )
+          end
+          updated_lockfile_content
+        end
+
+        def restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
+          return updated_lockfile_content unless npm7?
+
+          current_name = parsed_updated_lockfile_content.dig("packages", "", "name")
+          original_name = parsed_lockfile.dig("packages", "", "name")
+
+          # TODO: Submit a patch to npm fixing this issue making `npm install`
+          # consistent with `npm install --package-lock-only`
+          #
+          # NOTE: This is a workaround for npm adding a `name` attribute to the
+          # packages section in the lockfile because we install using
+          # `--package-lock-only`
+          if !original_name
+            updated_lockfile_content = remove_lockfile_packages_name_attribute(
+              current_name, updated_lockfile_content
+            )
+          elsif original_name && original_name != current_name
+            updated_lockfile_content = replace_lockfile_packages_name_attribute(
+              current_name, original_name, updated_lockfile_content
+            )
+          end
+
+          updated_lockfile_content
+        end
+
+        def replace_lockfile_name_attribute(current_name, original_name, updated_lockfile_content)
+          updated_lockfile_content.sub(
+            /"name":\s"#{current_name}"/,
+            "\"name\": \"#{original_name}\""
+          )
+        end
+
+        def replace_lockfile_packages_name_attribute(current_name, original_name, updated_lockfile_content)
+          packages_key_line = '"": {'
+          updated_lockfile_content.sub(
+            /(#{packages_key_line}[\n\s]+"name":\s)"#{current_name}"/,
+            '\1"' + original_name + '"'
+          )
+        end
+
+        def remove_lockfile_packages_name_attribute(current_name, updated_lockfile_content)
+          packages_key_line = '"": {'
+          updated_lockfile_content.gsub(/(#{packages_key_line})[\n\s]+"name":\s"#{current_name}",/, '\1')
         end
 
         # NOTE: This is a workaround to "sync" what's in package.json
@@ -654,43 +696,38 @@ module Dependabot
         # `package.json` requirement for eslint at `^1.0.0`, in which case we
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
-        def restore_locked_package_dependencies(lockfile_name, lockfile_content)
-          return lockfile_content unless npm7?(lockfile_content)
+        def restore_locked_package_dependencies(updated_lockfile_content, parsed_updated_lockfile_content)
+          return updated_lockfile_content unless npm7?
 
-          original_package = updated_package_json_content_for_lockfile_name(lockfile_name)
-          return lockfile_content unless original_package
-
-          parsed_package = JSON.parse(original_package)
-          parsed_lockfile = JSON.parse(lockfile_content)
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
           NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |type|
-            parsed_package.fetch(type, {}).each do |dependency_name, original_requirement|
+            parsed_package_json.fetch(type, {}).each do |dependency_name, original_requirement|
               next unless dependency_names_to_restore.include?(dependency_name)
 
-              locked_requirement = parsed_lockfile.dig("packages", "", type, dependency_name)
+              locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
               next unless locked_requirement
 
               locked_req = %("#{dependency_name}": "#{locked_requirement}")
               original_req = %("#{dependency_name}": "#{original_requirement}")
-              lockfile_content = lockfile_content.gsub(locked_req, original_req)
+              updated_lockfile_content = updated_lockfile_content.gsub(locked_req, original_req)
             end
           end
 
-          lockfile_content
+          updated_lockfile_content
         end
 
-        def replace_swapped_git_ssh_requirements(lockfile_content)
+        def replace_swapped_git_ssh_requirements(updated_lockfile_content)
           git_ssh_requirements_to_swap.each do |req|
             new_r = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'git+https://\1/')
             old_r = req.gsub(%r{git@(.*?)[:/]}, 'git@\1/')
-            lockfile_content = lockfile_content.gsub(new_r, old_r)
+            updated_lockfile_content = updated_lockfile_content.gsub(new_r, old_r)
           end
 
-          lockfile_content
+          updated_lockfile_content
         end
 
-        def replace_locked_git_dependencies(lockfile_content)
+        def replace_locked_git_dependencies(updated_lockfile_content)
           # Switch from details back for git dependencies (they will have
           # changed because we locked them)
           git_dependencies_to_lock.each do |dependency_name, details|
@@ -701,44 +738,33 @@ module Dependabot
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
             original_from = %("from": "#{details[:from]}")
-            if npm7?(lockfile_content)
+            if npm7?
               # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
               npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-              lockfile_content = lockfile_content.gsub(npm7_locked_from, original_from)
+              updated_lockfile_content = updated_lockfile_content.gsub(npm7_locked_from, original_from)
             else
               npm6_locked_from = %("from": "#{details[:version]}")
-              lockfile_content = lockfile_content.gsub(npm6_locked_from, original_from)
+              updated_lockfile_content = updated_lockfile_content.gsub(npm6_locked_from, original_from)
             end
           end
 
-          lockfile_content
+          updated_lockfile_content
         end
 
-        def replace_tarball_urls(lockfile_content)
+        def replace_tarball_urls(updated_lockfile_content)
           tarball_urls.each do |url|
             trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
             incorrect_url = if url.start_with?("https")
                               trimmed_url.gsub(/^https:/, "http:")
                             else trimmed_url.gsub(/^http:/, "https:")
                             end
-            lockfile_content = lockfile_content.gsub(
+            updated_lockfile_content = updated_lockfile_content.gsub(
               /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,
               trimmed_url
             )
           end
 
-          lockfile_content
-        end
-
-        def replace_project_metadata(new_content, old_content)
-          old_name = old_content.match(/(?<="name": ").*(?=",)/)&.to_s
-
-          if old_name
-            new_content = new_content.
-                          sub(/(?<="name": ").*(?=",)/, old_name)
-          end
-
-          new_content
+          updated_lockfile_content
         end
 
         def tarball_urls
@@ -765,15 +791,6 @@ module Dependabot
           ).npmrc_content
         end
 
-        def updated_package_json_content_for_lockfile_name(lockfile_name)
-          lockfile_basename = Pathname.new(lockfile_name).basename.to_s
-          package_name = lockfile_name.sub(lockfile_basename, "package.json")
-          package_json = package_files.find { |f| f.name == package_name }
-          return unless package_json
-
-          updated_package_json_content(package_json)
-        end
-
         def updated_package_json_content(file)
           @updated_package_json_content ||= {}
           @updated_package_json_content[file.name] ||=
@@ -787,8 +804,10 @@ module Dependabot
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
-        def npm7?(lockfile_content)
-          Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content) == "npm7"
+        def npm7?
+          return @npm7 if defined?(@npm7)
+
+          @npm7 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm7"
         end
 
         def sanitized_package_json_content(content)
@@ -800,6 +819,30 @@ module Dependabot
 
         def sanitize_package_name(package_name)
           package_name.gsub("%2f", "/").gsub("%2F", "/")
+        end
+
+        def lockfile_directory
+          Pathname.new(lockfile.name).dirname.to_s
+        end
+
+        def lockfile_basename
+          Pathname.new(lockfile.name).basename.to_s
+        end
+
+        def parsed_lockfile
+          @parsed_lockfile ||= JSON.parse(lockfile.content)
+        end
+
+        def parsed_package_json
+          return {} unless package_json
+          return @parsed_package_json if defined?(@parsed_package_json)
+
+          @parsed_package_json = JSON.parse(updated_package_json_content(package_json))
+        end
+
+        def package_json
+          package_name = lockfile.name.sub(lockfile_basename, "package.json")
+          package_files.find { |f| f.name == package_name }
         end
 
         def package_locks
