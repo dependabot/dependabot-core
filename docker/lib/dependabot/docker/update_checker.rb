@@ -14,16 +14,20 @@ module DockerRegistry2
     private
 
     # By default the Docker Registry client sets the Accept header to
-    # `application/vnd.docker.distribution.manifest.v2+json`
-    # This results in the digest of a specific platform to be returned, we
-    # want to override this header so we can fetch the generic digest
-    # associated with the given repo/tag.
+    # `application/vnd.docker.distribution.manifest.v2+json`. This is fine for
+    # most images, but for multi-architecture images, it fetches the digest of a
+    # specific architecture instead of the digest for the multi-architecture
+    # image. We override the header to tell the Docker API to vary its behavior
+    # depending on whether the image is a uses a traditional (non-list) manifest
+    # or a manifest list. If the image uses a traditional manifest, the API will
+    # return the manifest digest. If the image uses a manifest list, the API
+    # will return the manifest list digest.
     def headers(payload: nil, bearer_token: nil)
       headers = {}
       headers["Authorization"] = "Bearer #{bearer_token}" unless bearer_token.nil?
       if payload.nil?
         headers["Accept"] =
-          "application/vnd.docker.distribution.manifest.list.v2+json, application/json"
+          "application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/json"
       end
       headers["Content-Type"] = "application/vnd.docker.distribution.manifest.v2+json" unless payload.nil?
 
