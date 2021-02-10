@@ -115,7 +115,7 @@ RSpec.describe namespace::PipenvVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
-              "CRITICAL:pipenv.patched.notpip._internal.index:"\
+              "CRITICAL:pipenv.patched.notpip._internal.index.package_finder::"\
               "Could not find a version that satisfies the requirement "\
               "pytest==10.4.0"
             )
