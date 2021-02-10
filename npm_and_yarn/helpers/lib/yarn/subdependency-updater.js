@@ -90,11 +90,11 @@ async function updateDependencyFile(
 
     const dedupedYarnLock = fixDuplicates(lockfileContent, depName);
     fs.writeFileSync(path.join(directory, lockfileName), dedupedYarnLock);
+  } else {
+    const lockfile = await Lockfile.fromDirectory(directory, reporter);
+    const install = new LightweightInstall(flags, config, reporter, lockfile);
+    await install.init();
   }
-
-  const lockfile = await Lockfile.fromDirectory(directory, reporter);
-  const install = new LightweightInstall(flags, config, reporter, lockfile);
-  await install.init();
 
   const updatedYarnLock = readFile(lockfileName);
   const updatedYarnLockWithVersion = recoverVersionComments(
