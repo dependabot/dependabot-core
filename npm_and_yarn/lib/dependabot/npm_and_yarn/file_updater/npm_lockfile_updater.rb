@@ -157,10 +157,22 @@ module Dependabot
         end
 
         def run_npm_7_top_level_updater(top_level_dependencies:)
-          # TODO: Update the npm 6 updater to use these args as we currently
-          # do the same in the js updater helper, we've kept it seperate for
-          # the npm 7 rollout
-          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          dependencies_in_current_package_json = top_level_dependencies.any? do |dependency|
+            dependency_in_package_json?(dependency)
+          end
+
+          # NOTE: When updating a dependency in a nested workspace project we
+          # need to run `npm install` without any arguments to update the root
+          # level lockfile after having updated the nested packages package.json
+          # requirement, otherwise npm will add the dependency as a new
+          # top-level dependency to the root lockfile.
+          install_args = ""
+          if dependencies_in_current_package_json
+            # TODO: Update the npm 6 updater to use these args as we currently
+            # do the same in the js updater helper, we've kept it seperate for
+            # the npm 7 rollout
+            install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          end
 
           # NOTE: npm options
           # - `--force` ignores checks for platform (os, cpu) and engines
@@ -606,6 +618,9 @@ module Dependabot
           # Restore lockfile name attribute from the original lockfile
           updated_lockfile_content = replace_project_name(updated_lockfile_content, parsed_updated_lockfile_content)
 
+          # Restore npm 7 "packages" "name" entry from package.json if previously set
+          updated_lockfile_content = restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
+
           # Switch back npm 7 lockfile "pacakages" requirements from the package.json
           updated_lockfile_content = restore_locked_package_dependencies(
             updated_lockfile_content, parsed_updated_lockfile_content
@@ -627,11 +642,49 @@ module Dependabot
           updated_lockfile_content
         end
 
+        def restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
+          return updated_lockfile_content unless npm7?
+
+          current_name = parsed_updated_lockfile_content.dig("packages", "", "name")
+          original_name = parsed_lockfile.dig("packages", "", "name")
+
+          # TODO: Submit a patch to npm fixing this issue making `npm install`
+          # consistent with `npm install --package-lock-only`
+          #
+          # NOTE: This is a workaround for npm adding a `name` attribute to the
+          # packages section in the lockfile because we install using
+          # `--package-lock-only`
+          if !original_name
+            updated_lockfile_content = remove_lockfile_packages_name_attribute(
+              current_name, updated_lockfile_content
+            )
+          elsif original_name && original_name != current_name
+            updated_lockfile_content = replace_lockfile_packages_name_attribute(
+              current_name, original_name, updated_lockfile_content
+            )
+          end
+
+          updated_lockfile_content
+        end
+
         def replace_lockfile_name_attribute(current_name, original_name, updated_lockfile_content)
           updated_lockfile_content.sub(
             /"name":\s"#{current_name}"/,
             "\"name\": \"#{original_name}\""
           )
+        end
+
+        def replace_lockfile_packages_name_attribute(current_name, original_name, updated_lockfile_content)
+          packages_key_line = '"": {'
+          updated_lockfile_content.sub(
+            /(#{packages_key_line}[\n\s]+"name":\s)"#{current_name}"/,
+            '\1"' + original_name + '"'
+          )
+        end
+
+        def remove_lockfile_packages_name_attribute(current_name, updated_lockfile_content)
+          packages_key_line = '"": {'
+          updated_lockfile_content.gsub(/(#{packages_key_line})[\n\s]+"name":\s"#{current_name}",/, '\1')
         end
 
         # NOTE: This is a workaround to "sync" what's in package.json

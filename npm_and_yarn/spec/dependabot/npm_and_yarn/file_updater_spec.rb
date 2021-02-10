@@ -2063,12 +2063,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
+        context "with a dependency that's actually up-to-date but has the wrong previous version" do
+          let(:files) { project_dependency_files("npm7/workspaces_incorrect_version") }
+
+          let(:dependency_name) { "yargs" }
+          let(:version) { "16.2.0" }
+          let(:previous_version) { "14.2.3" }
+          let(:requirements) do
+            [{
+              file: "package/package.json",
+              requirement: "^16.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "package/package.json",
+              requirement: "^16.2.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "doesn't update any files and raises" do
+            expect { updated_files }.to raise_error(
+              described_class::NoChangeError, "No files were updated!"
+            )
+          end
+        end
+
         context "with a dependency that appears as a development dependency" do
           let(:dependency_name) { "etag" }
           let(:version) { "1.8.1" }
           let(:previous_version) { "1.8.0" }
           let(:requirements) do
             [{
+              file: "other_package/package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }, {
               file: "packages/package1/package.json",
               requirement: "^1.8.1",
               groups: ["devDependencies"],
@@ -2077,6 +2112,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
           let(:previous_requirements) do
             [{
+              file: "other_package/package.json",
+              requirement: "^1.0.0",
+              groups: ["devDependencies"],
+              source: nil
+            }, {
               file: "packages/package1/package.json",
               requirement: "^1.1.0",
               groups: ["devDependencies"],
@@ -2085,20 +2125,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the right file" do
-            root_lockfile = updated_files.find { |f| f.name == "package-lock.json" }
-            parsed_root_lockfile = JSON.parse(root_lockfile.content)
+            updated_npm_lock_content = updated_files.find { |f| f.name == "package-lock.json" }
+            expected_updated_npm_lock_content = fixture(
+              "updated_projects", "npm7", "workspaces_dev", "package-lock.json"
+            )
+            parsed_npm_lockfile = JSON.parse(updated_npm_lock_content.content)
             expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json packages/package1/package.json))
-            expect(parsed_root_lockfile.dig("dependencies", "etag", "version")).to eq("1.8.1")
+              to match_array(%w(package-lock.json other_package/package.json packages/package1/package.json))
+            expect(parsed_npm_lockfile.dig("dependencies", "etag", "version")).to eq("1.8.1")
+            expect(updated_npm_lock.content).to eq(expected_updated_npm_lock_content)
           end
 
           it "updates the existing development declaration" do
-            file = updated_files.find do |f|
+            package1 = updated_files.find do |f|
               f.name == "packages/package1/package.json"
             end
-            parsed_file = JSON.parse(file.content)
-            expect(parsed_file.dig("dependencies", "etag")).to be_nil
-            expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+            other_package = updated_files.find do |f|
+              f.name == "other_package/package.json"
+            end
+            parsed_package1 = JSON.parse(package1.content)
+            parsed_other_package = JSON.parse(other_package.content)
+            expect(parsed_package1.dig("dependencies", "etag")).to be_nil
+            expect(parsed_package1.dig("devDependencies", "etag")).to eq("^1.8.1")
+            expect(parsed_other_package.dig("dependencies", "etag")).to be_nil
+            expect(parsed_other_package.dig("devDependencies", "etag")).to eq("^1.8.1")
           end
         end
       end

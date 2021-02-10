@@ -5,7 +5,6 @@
 		"requires": true,
 		"packages": {
 				"": {
-						"name": "npm-sub-dep-test",
 						"version": "1.0.0",
 						"license": "ISC",
 						"dependencies": {

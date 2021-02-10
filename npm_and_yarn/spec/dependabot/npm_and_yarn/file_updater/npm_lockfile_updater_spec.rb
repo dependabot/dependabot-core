@@ -168,6 +168,81 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
       end
     end
+
+    context "when the packages name needs sanitizing" do
+      let(:files) { project_dependency_files("npm7/simple") }
+
+      it "restores the packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture("updated_projects", "npm7", "simple", "package-lock.json")
+        expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+        expect(parsed_lockfile.dig("packages", "", "name")).to eq("project-name")
+      end
+    end
+
+    context "when there's an out of date packages name attribute" do
+      let(:files) { project_dependency_files("npm7/packages_name_outdated") }
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.8.1",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_version) { "1.8.0" }
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it "maintains the original packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects", "npm7", "packages_name_outdated", "package-lock.json"
+        )
+        expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+        expect(parsed_lockfile.dig("packages", "", "name")).to eq("old-name")
+      end
+    end
+
+    context "when the original lockfile didn't have a packages name attribute" do
+      let(:files) { project_dependency_files("npm7/packages_name_missing") }
+      let(:dependency_name) { "etag" }
+      let(:version) { "1.8.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.8.1",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_version) { "1.8.0" }
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^1.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it "doesn't add a packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects", "npm7", "packages_name_missing", "package-lock.json"
+        )
+        expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+        expect(parsed_lockfile.dig("packages", "").key?("name")).to eq(false)
+      end
+    end
   end
 
   %w(npm6 npm7).each do |npm_version|

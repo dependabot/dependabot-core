@@ -1,0 +1,8 @@
+{
+    "name": "package-name",
+    "version": "1.0.0",
+    "description": "",
+    "dependencies": {
+        "etag": "^1.0.0"
+    }
+}
