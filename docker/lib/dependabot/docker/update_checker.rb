@@ -26,8 +26,11 @@ module DockerRegistry2
       headers = {}
       headers["Authorization"] = "Bearer #{bearer_token}" unless bearer_token.nil?
       if payload.nil?
-        headers["Accept"] =
-          "application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/json"
+        headers["Accept"] = %w(
+          application/vnd.docker.distribution.manifest.v2+json
+          application/vnd.docker.distribution.manifest.list.v2+json
+          application/json"
+        ).join(",")
       end
       headers["Content-Type"] = "application/vnd.docker.distribution.manifest.v2+json" unless payload.nil?
 
