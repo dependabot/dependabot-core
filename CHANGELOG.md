@@ -1,3 +1,8 @@
+## v0.133.2, 11 February 2021
+
+- Docker: Fix media types in Accept header for Docker Registry
+- Convert LockfileParserSpec to use project based fixtures
+
 ## v0.133.1, 10 February 2021
 
 - npm: fix npm 7 workspace bug when updating nested packages
