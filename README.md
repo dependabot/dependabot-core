@@ -180,6 +180,13 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
+## Profiling
+
+You can profile a dry-run by passing the `--profile` flag when running it. This
+will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
+can generate a flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
+
 ## Why is this public?
 
 As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
