@@ -66,6 +66,18 @@ RSpec.describe Dependabot::Clients::Azure do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
+
+    context "when response body does not contain commit details" do
+      before do
+        stub_request(:get, branch_url).
+        with(basic_auth: [username, password]).
+        to_return(status: 400, body: fixture("azure", "branch_not_found.json"))
+      end
+
+      it "raises a helpful error" do
+        expect {subject}.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
   end
 
   describe "#create_commit" do
