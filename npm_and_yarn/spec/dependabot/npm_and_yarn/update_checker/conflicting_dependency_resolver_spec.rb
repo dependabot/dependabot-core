@@ -18,13 +18,6 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
     )
   end
 
-  let(:manifest_fixture_name) { "subdependency_out_of_range_gt.json" }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", manifest_fixture_name)
-    )
-  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -46,15 +39,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
     end
 
     context "with npm lockfiles" do
-      let(:dependency_files) { [package_json, npm_lock] }
-
-      let(:npm_lock) do
-        Dependabot::DependencyFile.new(
-          name: "package-lock.json",
-          content: fixture("npm_lockfiles", npm_lock_fixture_name)
-        )
-      end
-      let(:npm_lock_fixture_name) { "subdependency_out_of_range_gt.json" }
+      let(:dependency_files) { project_dependency_files("npm6/subdependency_out_of_range_gt") }
 
       it "returns the right array of blocking dependencies" do
         expect(conflicting_dependencies).to match_array(
@@ -79,15 +64,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
     end
 
     context "with yarn lockfiles" do
-      let(:dependency_files) { [package_json, yarn_lock] }
-
-      let(:yarn_lock) do
-        Dependabot::DependencyFile.new(
-          name: "yarn.lock",
-          content: fixture("yarn_lockfiles", yarn_lock_fixture_name)
-        )
-      end
-      let(:yarn_lock_fixture_name) { "subdependency_out_of_range_gt.lock" }
+      let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
 
       it "returns the right array of blocking dependencies" do
         expect(conflicting_dependencies).to match_array(
