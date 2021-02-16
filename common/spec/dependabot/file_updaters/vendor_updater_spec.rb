@@ -89,6 +89,31 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       )
     end
 
+    context "with iso-8859 files" do
+      before do
+        in_cloned_repository(repo_contents_path) do
+          File.write("vendor/cache/utf8.txt", "special ü".encode("utf-8"))
+          File.write("vendor/cache/iso8859.txt", "special ü".encode("iso-8859-1"))
+        end
+      end
+
+      it "marks binary files as such" do
+        file = updated_files.find do |f|
+          f.name == "vendor/cache/iso8859.txt"
+        end
+
+        expect(file.binary?).to be_truthy
+      end
+
+      it "does not mark all files as binary" do
+        file = updated_files.find do |f|
+          f.name == "vendor/cache/utf8.txt"
+        end
+
+        expect(file.binary?).to be_falsy
+      end
+    end
+
     context "in a directory" do
       let(:project_name) { "nested_vendor_gems" }
       let(:directory) { "nested" }

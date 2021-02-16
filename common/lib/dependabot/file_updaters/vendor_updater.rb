@@ -53,7 +53,7 @@ module Dependabot
 
       private
 
-      BINARY_ENCODINGS = %w(application/x-tarbinary binary).freeze
+      TEXT_ENCODINGS = %w(us-ascii utf-8).freeze
 
       attr_reader :repo_contents_path, :vendor_dir
 
@@ -62,7 +62,7 @@ module Dependabot
 
         encoding = `file -b --mime-encoding #{path}`.strip
 
-        BINARY_ENCODINGS.include?(encoding)
+        !TEXT_ENCODINGS.include?(encoding)
       end
     end
   end

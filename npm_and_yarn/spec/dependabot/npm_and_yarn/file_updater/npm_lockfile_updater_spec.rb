@@ -469,6 +469,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
+
+      context "with a dependency version that can't be found" do
+        let(:files) { project_dependency_files("#{npm_version}/yanked_version") }
+
+        let(:dependency_name) { "etag" }
+        let(:version) { "1.8.0" }
+        let(:previous_version) { "1.0.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "raises a helpful error" do
+          expect { updated_npm_lock_content }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
     end
   end
 end

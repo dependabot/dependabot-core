@@ -162,7 +162,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:project_name) { "missing_meta_tag" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }
 
-      let(:dependency_name) { "web.archive.org/web/dependabot.com" }
+      let(:dependency_name) { "example.com/web/dependabot.com" }
       let(:dependency_version) { "1.7.0" }
 
       let(:go_mod) do
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { latest_resolvable_version }.
           to raise_error(error_class) do |error|
-          expect(error.message).to include("web.archive.org/web/dependabot.com")
+          expect(error.message).to include("example.com/web/dependabot.com")
         end
       end
     end
