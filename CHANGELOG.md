@@ -1,3 +1,15 @@
+## v0.133.3, 16 February 2021
+
+- common: when detecting changes in vendored dependencies, assume resources are binary
+- Bump phpstan/phpstan from 0.12.74 to 0.12.76 in /composer/helpers/v2
+- Bump eslint from 7.19.0 to 7.20.0 in /npm_and_yarn/helpers
+- Bump @npmcli/arborist from 2.2.1 to 2.2.2 in /npm_and_yarn/helpers
+- Only run flake8 on python helpers folder
+- Add option to profile dry-run using Stackprof
+- Fix go_modules flaky spec accessing archive.org
+- Restore npm6/7 yanked version spec
+- npm: Convert FileParser specs to project fixtures
+
 ## v0.133.2, 11 February 2021
 
 - Docker: Fix media types in Accept header for Docker Registry
