@@ -67,11 +67,11 @@ RSpec.describe Dependabot::Clients::Azure do
       end
     end
 
-    context "when response body does not contain commit details" do
+    context "when response is 400" do
       before do
         stub_request(:get, branch_url).
           with(basic_auth: [username, password]).
-          to_return(status: 400, body: fixture("azure", "branch_not_found.json"))
+          to_return(status: 400)
       end
 
       it "raises a helpful error" do
