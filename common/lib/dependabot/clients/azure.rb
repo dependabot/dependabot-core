@@ -183,6 +183,28 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pullrequests?api-version=5.0", content.to_json)
       end
+
+      def fetch_pull_request(pull_request_id)
+        response = get(source.api_endpoint +
+          source.organization + "/" + source.project +
+          "/_apis/git/pullrequests/" + pull_request_id)
+
+        JSON.parse(response.body)
+      end
+
+      def update_ref(branch_name, old_commit, new_commit)
+        content = [
+          {
+            name: "refs/heads/" + branch_name,
+            oldObjectId: old_commit,
+            newObjectId: new_commit
+          }
+        ]
+
+        post(source.api_endpoint + source.organization + "/" + source.project +
+          "/_apis/git/repositories/" + source.unscoped_repo +
+          "/refs?api-version=5.0", content.to_json)
+      end
       # rubocop:enable Metrics/ParameterLists
 
       def get(url)

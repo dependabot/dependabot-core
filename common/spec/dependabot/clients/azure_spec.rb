@@ -139,6 +139,77 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
+  describe "#fetch_pull_request" do
+    subject { client.fetch_pull_request(pull_request_id) }
+
+    let(:pull_request_id) { "1" }
+    let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
+
+    context "when response is 200" do
+      response_body = fixture("azure", "pull_request_details.json")
+
+      before do
+        stub_request(:get, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 200, body: response_body)
+      end
+
+      specify { expect { subject }.to_not raise_error }
+
+      it { is_expected.to eq(JSON.parse(response_body)) }
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:get, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
+  describe "#update_ref" do
+    subject(:update_ref) do
+      client.update_ref(
+        branch,
+        old_commit_id,
+        new_commit_id
+      )
+    end
+
+    let(:old_commit_id) { "oldcommitsha" }
+    let(:new_commit_id) { "newcommitsha" }
+    let(:update_ref_url) { repo_url + "/refs?api-version=5.0" }
+
+    it "sends update branch request with old and new commit id" do
+      stub_request(:post, update_ref_url).
+        with(basic_auth: [username, password]).
+        to_return(status: 200)
+
+      update_ref
+
+      expect(WebMock).
+        to(
+          have_requested(:post, update_ref_url).
+            with do |req|
+              json_body = JSON.parse(req.body)
+              expect(json_body.count).to eq(1)
+              ref_update_details = json_body.first
+              expect(ref_update_details.fetch("name")).
+                to eq("refs/heads/#{branch}")
+              expect(ref_update_details.fetch("oldObjectId")).
+                to eq(old_commit_id)
+              expect(ref_update_details.fetch("newObjectId")).
+                to eq(new_commit_id)
+            end
+        )
+    end
+  end
+
   describe "#get" do
     context "Using auth headers" do
       token = ":test_token"
