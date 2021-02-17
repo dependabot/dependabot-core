@@ -264,6 +264,18 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "without any dependencies" do
+      let(:go_mod_content) do
+        fixture("projects", "no_dependencies", "go.mod")
+      end
+
+      subject(:dependencies) do
+        parser.parse
+      end
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "that is not resolvable" do
       let(:go_mod_content) do
         fixture("projects", "unknown_vcs", "go.mod")

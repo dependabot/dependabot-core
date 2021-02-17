@@ -2,7 +2,9 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"

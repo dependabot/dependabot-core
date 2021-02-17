@@ -219,7 +219,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { subject }.
               to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message).
-                  to start_with("Could not find a version that matches boto3")
+                  to include("Could not find a version that matches boto3")
               end
           end
         end
@@ -245,7 +245,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to start_with("Could not find a version that matches boto3")
+              to include("Could not find a version that matches boto3")
           end
       end
     end
@@ -273,7 +273,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to start_with("Could not find a version that matches jupyter-server")
+              to include("Could not find a version that matches jupyter-server")
           end
       end
     end
@@ -518,7 +518,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to start_with("Could not find a version that matches boto3")
+                to include("Could not find a version that matches boto3")
             end
         end
       end

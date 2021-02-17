@@ -131,5 +131,23 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("1.1.0")
       end
     end
+
+    context "with a project that specifies a platform package" do
+      let(:updated_lockfile_content) do
+        updated_files.find { |f| f.name == "composer.lock" }.content
+      end
+      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
+      let(:updated_lockfile_entry) do
+        parsed_updated_lockfile_content["packages"].find do |package|
+          package["name"] == dependency.name
+        end
+      end
+      let(:project_name) { "platform_package" }
+
+      it "updates the dependency and does not downgrade the composer version" do
+        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.0.0")
+      end
+    end
   end
 end

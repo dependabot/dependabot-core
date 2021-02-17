@@ -276,6 +276,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with an invalid repository url specified" do
+      let(:dependency_files) { project_dependency_files("invalid_repository_url") }
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to start_with("bad URI(is not URI?): \"http://host:port/content/groups/public")
+        end
+      end
+    end
+
     context "with a custom repository" do
       let(:pom_fixture_name) { "custom_repositories_pom.xml" }
 

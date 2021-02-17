@@ -92,7 +92,8 @@ end
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("spec/fixtures/projects", project))
   Dir.chdir(project_path) do
-    files = Dir.glob("**/*")
+    # NOTE: Include dotfiles (e.g. .npmrc)
+    files = Dir.glob("**/*", File::FNM_DOTMATCH)
     files = files.select { |f| File.file?(f) }
     files.map do |filename|
       content = File.read(filename)
