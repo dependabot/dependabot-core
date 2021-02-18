@@ -11,6 +11,7 @@ fi
 mkdir -p $install_dir
 
 mix local.hex --force
+mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 
