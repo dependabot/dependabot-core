@@ -179,7 +179,9 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.0.2")) }
 
       context "when out of range version" do
-        let(:dependency_files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range") }
+        let(:dependency_files) do
+          project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range")
+        end
 
         it "updates out of range to latest resolvable version" do
           expect(latest_resolvable_version).to eq(Gem::Version.new("1.3.0"))
