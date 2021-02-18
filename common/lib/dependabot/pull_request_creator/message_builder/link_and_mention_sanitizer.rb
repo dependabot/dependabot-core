@@ -119,7 +119,7 @@ module Dependabot
 
         def build_mention_link_text_nodes(text)
           code_node = CommonMarker::Node.new(:code)
-          code_node.string_content = text
+          code_node.string_content = insert_zero_width_space_in_mention(text)
           [code_node]
         end
 
@@ -127,9 +127,17 @@ module Dependabot
           link_node = CommonMarker::Node.new(:link)
           code_node = CommonMarker::Node.new(:code)
           link_node.url = url
-          code_node.string_content = text
+          code_node.string_content = insert_zero_width_space_in_mention(text)
           link_node.append_child(code_node)
           link_node
+        end
+
+        # NOTE: Add a zero-width space between the @ and the username to prevent
+        # email replies on dependabot pull requests triggering notifications to
+        # users who've been mentioned in changelogs etc. PR email replies parse
+        # the content of the pull request body in plain text.
+        def insert_zero_width_space_in_mention(mention)
+          mention.sub("@", "@\u200B").encode("utf-8")
         end
 
         def parent_node_link?(node)
