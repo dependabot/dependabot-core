@@ -122,13 +122,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with a .npmrc file" do
       let(:npmrc_file) do
-        Dependabot::DependencyFile.new(
-          name: ".npmrc",
-          content: npmrc_content
-        )
+        project_dependency_files(project_name).find { |f| f.name == ".npmrc" }
       end
-      let(:npmrc_content) { fixture("npmrc", npmrc_fixture_name) }
-      let(:npmrc_fixture_name) { "auth_token" }
+      let(:project_name) { "npm6/npmrc_auth_token" }
 
       before do
         body = fixture("gemfury_response_etag.json")
@@ -140,27 +136,21 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       it { is_expected.to eq("npm.fury.io/dependabot") }
 
       context "with an environment variable URL" do
-        let(:npmrc_fixture_name) { "env_url" }
+        let(:project_name) { "npm6/npmrc_env_url" }
         it { is_expected.to eq("registry.npmjs.org") }
       end
 
       context "that includes a carriage return" do
-        let(:npmrc_content) do
-          "@dependabot:registry=https://npm.fury.io/dependabot/\r\n"\
-          "//npm.fury.io/dependabot/:_authToken=secret_token\r\n"
-        end
+        let(:project_name) { "npm6/npmrc_auth_token_carriage_return" }
         it { is_expected.to eq("npm.fury.io/dependabot") }
       end
     end
 
     context "with a .yarnrc file" do
       let(:yarnrc_file) do
-        Dependabot::DependencyFile.new(
-          name: ".yarnrc",
-          content: fixture("yarnrc", yarnrc_fixture_name)
-        )
+        project_dependency_files(project_name).find { |f| f.name == ".yarnrc" }
       end
-      let(:yarnrc_fixture_name) { "global_registry" }
+      let(:project_name) { "yarn/yarnrc_global_registry" }
 
       before do
         url = "https://npm-proxy.fury.io/password/dependabot/etag"
