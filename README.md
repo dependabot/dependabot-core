@@ -56,7 +56,7 @@ languages.
 
 To install the helpers for each language:
 
-1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+1. `cd npm_and_yarn/helpers && npm install --production && cd -`
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd hex/helpers && mix deps.get && cd -`

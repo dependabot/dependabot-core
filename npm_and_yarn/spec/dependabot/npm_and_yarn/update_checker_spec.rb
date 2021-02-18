@@ -34,14 +34,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
-  let(:dependency_files) { [package_json] }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", manifest_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "package.json" }
+  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
   let(:credentials) do
     [{
@@ -67,7 +60,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   describe "#up_to_date?", :vcr do
     context "with no lockfile" do
-      let(:manifest_fixture_name) { "peer_dependency_typescript.json" }
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency_typescript_no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "typescript",
@@ -188,6 +181,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_version" do
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     subject { checker.latest_version }
 
     it "delegates to LatestVersionFinder" do
@@ -519,6 +513,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     subject { checker.latest_resolvable_version_with_no_unlock }
 
     context "with a non-git dependency" do
+      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",
@@ -661,6 +656,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_resolvable_previous_version" do
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     let(:updated_version) { Gem::Version.new("1.7.0") }
     subject(:latest_resolvable_previous_version) do
       checker.latest_resolvable_previous_version(updated_version)
@@ -803,7 +799,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     context "with a library (that has a lockfile)" do
       # We've already stubbed hitting the registry for etag (since it's also
       # the dependency we're checking in this spec)
-      let(:manifest_fixture_name) { "etag.json" }
+      let(:dependency_files) { project_dependency_files("npm6/etag_no_lockfile") }
 
       it "delegates to the RequirementsUpdater" do
         expect(described_class::RequirementsUpdater).
@@ -990,7 +986,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "updating a deprecated dependency with a peer requirement" do
-      let(:manifest_fixture_name) { "peer_dependency.json" }
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
       let(:registry_listing_url) { "https://registry.npmjs.org/react-dom" }
       let(:registry_response) do
         fixture("npm_responses", "peer_dependency_deprecated.json")
@@ -1038,6 +1034,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   context "#updated_dependencies_after_full_unlock" do
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "etag",
