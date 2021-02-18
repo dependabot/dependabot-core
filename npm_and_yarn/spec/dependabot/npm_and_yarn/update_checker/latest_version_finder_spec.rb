@@ -322,7 +322,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "for a dependency hosted on another registry" do
       before do
-        body = fixture("gemfury_response_etag.json")
+        body = fixture("gemfury_responses", "gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
@@ -530,7 +530,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         context "without https" do
           before do
-            body = fixture("gemfury_response_etag.json")
+            body = fixture("gemfury_responses", "gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
