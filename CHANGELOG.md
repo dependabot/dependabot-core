@@ -1,3 +1,14 @@
+## v0.133.4, 18 February 2021
+
+- Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)
+- Common: Insert zero-width space in @mentions when sanitizing github pull request descriptions
+- Azure: raise NotFound error when response status code is 400 for fetch_commit (@milind009)
+- JS: Switch from yarn to npm for helper deps
+- JS: Convert spec fixtures to project based
+- Bump phpstan/phpstan from 0.12.74 to 0.12.77 in /composer/helpers/v1
+- Bump phpstan/phpstan from 0.12.76 to 0.12.77 in /composer/helpers/v2
+- Update rubocop requirement from ~> 1.9.0 to ~> 1.10.0 in /common
+
 ## v0.133.3, 16 February 2021
 
 - common: when detecting changes in vendored dependencies, assume resources are binary

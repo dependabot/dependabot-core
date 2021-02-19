@@ -416,5 +416,24 @@ RSpec.describe Dependabot::Hex::FileParser do
         )
       end
     end
+
+    context "with a nerves project" do
+      let(:mixfile_fixture_name) { "nerves" }
+
+      it "parses the dependencies correctly" do
+        expect(dependencies).to include(
+          Dependabot::Dependency.new(
+            name: "nerves",
+            requirements: [{
+              requirement: "~> 1.7.4",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "hex"
+          )
+        )
+      end
+    end
   end
 end
