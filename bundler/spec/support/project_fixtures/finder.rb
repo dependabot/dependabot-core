@@ -9,15 +9,12 @@ module ProjectFixtures
     self.storage = {}
 
     MANIFEST_FIXTURE_LETS = %i(
-      manifest_fixture_name
+      gemfile_fixture_name
+      gemspec_fixture_name
     ).freeze
 
     LOCKFILE_FIXTURE_LETS = %i(
-      npm_lockfile_fixture_name
-      npm_lock_fixture_name
-      npm_shrinkwrap_fixture_name
-      yarn_lock_fixture_name
-      yarn_lockfile_fixture_name
+      lockfile_fixture_name
     ).freeze
 
     LET_NAMES = MANIFEST_FIXTURE_LETS | LOCKFILE_FIXTURE_LETS

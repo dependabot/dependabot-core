@@ -27,23 +27,7 @@ module ProjectFixtures
     end
 
     def subfolder
-      if yarn_lock? && package_lock?
-        "generic"
-      elsif yarn_lock?
-        "yarn"
-      elsif package_lock?
-        "npm6"
-      else
-        "generic"
-      end
-    end
-
-    def yarn_lock?
-      data.files.map(&:name).include?("yarn.lock")
-    end
-
-    def package_lock?
-      data.files.map(&:name).include?("package-lock.json")
+      "bundler1"
     end
   end
 end
