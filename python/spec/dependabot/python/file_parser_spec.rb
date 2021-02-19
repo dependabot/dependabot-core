@@ -9,7 +9,13 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Python::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -17,6 +23,7 @@ RSpec.describe Dependabot::Python::FileParser do
       directory: "/"
     )
   end
+  let(:reject_external_code) { false }
 
   let(:files) { [requirements] }
   let(:requirements) do
@@ -1220,6 +1227,14 @@ RSpec.describe Dependabot::Python::FileParser do
             )
           end
         end
+      end
+    end
+
+    context "with reject_external_code" do
+      let(:reject_external_code) { true }
+
+      it "raises UnexpectedExternalCode" do
+        expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
       end
     end
   end
