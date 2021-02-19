@@ -1,3 +1,9 @@
+## v0.133.5, 19 February 2021
+
+- Python: Raise UnexpectedExternalCode if `reject_external_code: true`, regardless of the update involving external code
+- Hex: Raise UnexpectedExternalCode if `reject_external_code: true`, regardless of the update involving external code
+- JS: fix npm file updater spec
+
 ## v0.133.4, 18 February 2021
 
 - Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)
