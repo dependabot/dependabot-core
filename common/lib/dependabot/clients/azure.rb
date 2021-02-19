@@ -47,6 +47,8 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/stats/branches?name=" + branch)
 
+        raise NotFound if response.status == 400
+
         JSON.parse(response.body).fetch("commit").fetch("commitId")
       end
 
