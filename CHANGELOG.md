@@ -1,3 +1,8 @@
+## v0.133.6, 22 February 2021
+
+- npm: Use CLI for peer dep conflicts, and default to it without lockfile
+- Bump @npmcli/arborist from 2.2.2 to 2.2.3 in /npm_and_yarn/helpers
+
 ## v0.133.5, 19 February 2021
 
 - Python: Raise UnexpectedExternalCode if `reject_external_code: true`, regardless of the update involving external code
