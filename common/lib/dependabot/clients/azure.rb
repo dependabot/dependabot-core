@@ -184,7 +184,7 @@ module Dependabot
           "/pullrequests?api-version=5.0", content.to_json)
       end
 
-      def fetch_pull_request(pull_request_id)
+      def pull_request(pull_request_id)
         response = get(source.api_endpoint +
           source.organization + "/" + source.project +
           "/_apis/git/pullrequests/" + pull_request_id)

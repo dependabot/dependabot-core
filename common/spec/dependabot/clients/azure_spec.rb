@@ -139,8 +139,8 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
-  describe "#fetch_pull_request" do
-    subject { client.fetch_pull_request(pull_request_id) }
+  describe "#pull_request" do
+    subject { client.pull_request(pull_request_id) }
 
     let(:pull_request_id) { "1" }
     let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
