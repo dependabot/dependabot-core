@@ -153,6 +153,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       stub_request(:post, branch_update_url).
         to_return(status: 201)
 
+      allow(updater).to receive(:temp_branch_name).and_return(temp_branch)
       updater.update
 
       expect(WebMock).

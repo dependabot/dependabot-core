@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pandoc-ruby", "~> 2.0"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
+  spec.add_dependency "uuid", "~> 2.3.9"
 
   spec.add_development_dependency "byebug", "~> 11.0"
   spec.add_development_dependency "gpgme", "~> 2.0"

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/clients/azure"
+require "uuid"
 
 module Dependabot
   class PullRequestUpdater
@@ -18,6 +19,7 @@ module Dependabot
         @old_commit = old_commit
         @credentials = credentials
         @pull_request_number = pull_request_number
+        @uuid = UUID.new
       end
 
       def update
@@ -81,7 +83,8 @@ module Dependabot
       end
 
       def temp_branch_name
-        "#{source_branch_name}-temp"
+        @temp_branch_name ||=
+          "#{source_branch_name}-temp-#{@uuid.generate[0..6]}"
       end
 
       def update_branch(branch_name, old_commit, new_commit)
