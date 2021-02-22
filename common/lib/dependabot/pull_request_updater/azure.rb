@@ -61,7 +61,7 @@ module Dependabot
 
       def pull_request
         @pull_request ||=
-          azure_client_for_source.fetch_pull_request(pull_request_number.to_s)
+          azure_client_for_source.pull_request(pull_request_number.to_s)
       end
 
       def source_branch_name
