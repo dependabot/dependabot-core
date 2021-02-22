@@ -40,11 +40,20 @@ module Dependabot
         # Error message from npm install:
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
-        NPM_PEER_DEP_ERROR_REGEX =
+        NPM6_PEER_DEP_ERROR_REGEX =
           /
             (?<requiring_dep>[^\s]+)\s
             requires\sa\speer\sof\s
             (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
+          /x.freeze
+
+        # Error message from npm install:
+        # npm ERR! Could not resolve dependency:
+        # npm ERR! peer react@"^16.14.0" from react-dom@16.14.0
+        NPM7_PEER_DEP_ERROR_REGEX =
+          /
+            npm\sERR!\sCould\snot\sresolve\sdependency:\n
+            npm\sERR!\speer\s(?<required_dep>\S+@\S+)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x.freeze
 
         def initialize(dependency:, credentials:, dependency_files:,
@@ -239,8 +248,12 @@ module Dependabot
               run_checker(path: path, version: version)
             rescue SharedHelpers::HelperSubprocessFailed => e
               errors = []
-              if e.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-                e.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
+              if e.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
+                  errors << Regexp.last_match.named_captures
+                end
+              elsif e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM7_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
               elsif e.message.match?(YARN_PEER_DEP_ERROR_REGEX)
@@ -274,7 +287,7 @@ module Dependabot
             requirement_name:
               captures.fetch("required_dep").sub(/@[^@]+$/, ""),
             requirement_version:
-              captures.fetch("required_dep").split("@").last,
+              captures.fetch("required_dep").split("@").last.gsub('"', ""),
             requiring_dep_name:
               captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
           }
@@ -386,9 +399,8 @@ module Dependabot
 
         def run_checker(path:, version:)
           # If there are both yarn lockfiles and npm lockfiles only run the
-          # yarn updater, yarn is also used when only a package.json exists
-          if lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path).any? ||
-             lockfiles_for_path(lockfiles: dependency_files_builder.lockfiles, path: path).none?
+          # yarn updater
+          if lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path).any?
             return run_yarn_checker(path: path, version: version)
           end
 
@@ -421,9 +433,11 @@ module Dependabot
               end
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
 
+              return run_npm7_checker(version: version) if npm_version == "npm7"
+
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "#{npm_version}:checkPeerDependencies",
+                function: "npm6:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,
@@ -433,6 +447,25 @@ module Dependabot
                 ]
               )
             end
+          end
+        end
+
+        def run_npm7_checker(version:)
+          SharedHelpers.run_shell_command(
+            "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
+          )
+          nil
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
+        end
+
+        def version_install_arg(version:)
+          git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+
+          if git_source
+            "#{dependency.name}@#{git_req[:source][:url]}##{version}"
+          else
+            "#{dependency.name}@#{version}"
           end
         end
 
