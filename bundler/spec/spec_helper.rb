@@ -10,7 +10,7 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-require_relative "./support/project_fixtures"
+require_relative "./support/project_fixtures" if ENV["AUTOFIX_PROJECT_FIXTURES"] == "true"
 
 require "parser/current"
 
@@ -26,7 +26,7 @@ end
 
 RSpec.configure do |c|
   c.after(:all) do
-    next unless ENV["AUTOFIX_PROJECT_FIXTURES"]
+    next unless ENV["AUTOFIX_PROJECT_FIXTURES"] == "true"
 
     ProjectFixtures::Finder.storage.each do |_, data|
       dir = ProjectFixtures::Builder.new(data).run
@@ -40,7 +40,7 @@ RSpec.configure do |c|
       parsed_source = parser.parse(buffer)
 
       walk(parsed_source) do |node|
-        next unless node.loc.expression
+        next unless node&.loc&.expression
 
         source_map[node.loc.first_line] <<= node
       end
@@ -58,6 +58,19 @@ RSpec.configure do |c|
 
       start_loc = data.metadata[:line_number]
       ProjectFixtures::Autocorrector.new(file, nodes, dir, start_loc).correct
+    end
+
+    filename = ProjectFixtures::Finder.storage.values.first.lets.first.file
+    body = File.read(filename)
+    File.open(filename, "w") do |file|
+      body = body.lines.map do |line|
+        next if line.include?("pragma:delete")
+        next line unless line.include?("let(:dependency_files) { project_dependency_files")
+
+        line.split("#").join("\n")
+      end.join
+
+      file.write(body)
     end
   end
 end

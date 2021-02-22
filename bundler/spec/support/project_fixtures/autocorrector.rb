@@ -3,8 +3,6 @@
 require "parser"
 
 module ProjectFixtures
-  TRACKER = Hash.new { false }
-
   class Autocorrector < Parser::TreeRewriter
     attr_reader :filename, :nodes, :buffer
 
@@ -27,19 +25,21 @@ module ProjectFixtures
 
     def on_block(node)
       if node.location.line == @start_loc
-        # TODO: This messes up the indentation, rubocop can autofix this for us,
-        # but would be nice to figure out how to determine it. Breadcrumb:
-        # https://github.com/rubocop-hq/rubocop/blob/751edc7bf3df93d7ec5d59f5ac5b501627a6b723/lib/rubocop/cop/layout/heredoc_indentation.rb#L144-L155
-        #
-        # child = node.children[-1].children.select { |n| n.type.equal?(:block) }.first
-        insert_before(
-          # This is gross, but we know this is a block, so the second child will
-          # be the actual block. Its children are the content of that block, and
-          # we want to insert before the first line in the block, ensuring that
-          # the first thing the block defines is a files definition.
+        replace(
           block_range(node),
-          "let(:dependency_files) { project_dependency_files(\"#{@project_name}\") }\n"
+          # We put in a comment on the same line that we split out later, as to
+          # not change the line numbering which we need to preserve until we
+          # processed all specs. There may very well be a much better way to do
+          # this, but I don't know how.
+          node.loc.expression.source.split("\n").tap do |lines|
+            lines[0] = if lines[0].start_with?("its")
+                         "let(:dependency_files) { project_dependency_files(\"#{@project_name}\") }" + " # #{lines[0]}"
+                       else
+                         lines[0] + " # let(:dependency_files) { project_dependency_files(\"#{@project_name}\") }"
+                       end
+          end.join("\n")
         )
+
         return super
       end
 
@@ -49,11 +49,12 @@ module ProjectFixtures
           Finder::TRACKED_LETS.include?(let_name(node))
       end
 
-      return super unless target_node && !TRACKER[node]
+      return super unless target_node
 
-      remove(block_range(node))
-
-      TRACKER[node] = true
+      replace(
+        block_range(node),
+        node.loc.expression.source + " # pragma:delete"
+      )
 
       super
     end
