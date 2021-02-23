@@ -79,7 +79,12 @@ module ProjectFixtures
       end
 
       def project_name
-        fixture_names.map { |f| File.basename(f, File.extname(f)) }.join("_")
+        name = fixture_names.map { |f| File.basename(f, File.extname(f)) }.map(&:downcase).uniq.join("_")
+        if fixture_names.any? { |f| f.end_with?(".lock") || f.end_with?(".locked") }
+          name
+        else
+          name + "_no_lockfile"
+        end
       end
 
       def fixture_names
