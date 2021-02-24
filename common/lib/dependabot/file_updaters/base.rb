@@ -11,18 +11,34 @@ module Dependabot
       end
 
       def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
-                     credentials:, options: {})
+                     credentials:, source: nil, options: {})
         @dependencies = dependencies
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
         @credentials = credentials
         @options = options
+        @source = source
 
         check_required_files
       end
 
       def updated_dependency_files
         raise NotImplementedError
+      end
+
+      def pr_message
+        Dependabot::PullRequestCreator::MessageBuilder.new(
+          dependencies: dependencies,
+          files: updated_dependency_files,
+          credentials: credentials,
+          source: @source,
+          # TODO: from config file:
+          #   commit_message_options: {
+          #     prefix: update_job.commit_message_prefix,
+          #     prefix_development: update_job.commit_message_prefix_development,
+          #     include_scope: update_job.commit_message_include_scope,
+          #   }.compact,
+        )
       end
 
       private
