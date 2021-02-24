@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/message"
 
 RSpec.describe Dependabot::PullRequestCreator do
   subject(:creator) do
@@ -275,15 +276,20 @@ RSpec.describe Dependabot::PullRequestCreator do
           author_details: author_details,
           signature_key: signature_key,
           provider_metadata: provider_metadata,
-          pr_name: pr_name,
-          pr_message: pr_message,
-          commit_message: commit_message
+          message: message
         )
       end
 
       let(:pr_name) { "my awesome PR" }
       let(:pr_message) { "update dependency for more awesome" }
       let(:commit_message) { "awesome" }
+      let(:message) do
+        Dependabot::PullRequestCreator::Message.new(
+          pr_name: pr_name,
+          pr_message: pr_message,
+          commit_message: commit_message
+        )
+      end
       let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Github) }
 

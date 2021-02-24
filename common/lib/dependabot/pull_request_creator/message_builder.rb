@@ -9,6 +9,7 @@ require "dependabot/pull_request_creator"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
+    # MessageBuilder builds PR message for a dependency update
     class MessageBuilder
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
