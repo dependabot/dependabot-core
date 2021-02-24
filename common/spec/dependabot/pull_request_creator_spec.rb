@@ -259,5 +259,64 @@ RSpec.describe Dependabot::PullRequestCreator do
         creator.create
       end
     end
+
+    context "with prebuilt message" do
+      subject(:creator) do
+        described_class.new(
+          source: source,
+          base_commit: base_commit,
+          dependencies: dependencies,
+          files: files,
+          credentials: credentials,
+          custom_labels: custom_labels,
+          reviewers: reviewers,
+          assignees: assignees,
+          milestone: milestone,
+          author_details: author_details,
+          signature_key: signature_key,
+          provider_metadata: provider_metadata,
+          pr_name: pr_name,
+          pr_message: pr_message,
+          commit_message: commit_message
+        )
+      end
+
+      let(:pr_name) { "my awesome PR" }
+      let(:pr_message) { "update dependency for more awesome" }
+      let(:commit_message) { "awesome" }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
+
+      %i(pr_name pr_message commit_message).each do |field|
+        it "does not build a '#{field}' message" do
+          expect(dummy_message_builder).not_to receive(field)
+        end
+      end
+
+      it "delegates to PullRequestCreator::Github with correct params" do
+        expect(described_class::Github).
+          to receive(:new).
+          with(
+            source: source,
+            branch_name: "dependabot/bundler/business-1.5.0",
+            base_commit: base_commit,
+            credentials: credentials,
+            files: files,
+            author_details: author_details,
+            signature_key: signature_key,
+            custom_headers: nil,
+            labeler: instance_of(described_class::Labeler),
+            reviewers: reviewers,
+            assignees: assignees,
+            milestone: milestone,
+            require_up_to_date_base: false,
+            pr_name: pr_name,
+            pr_description: pr_message,
+            commit_message: commit_message
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
   end
 end
