@@ -1,0 +1,49 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://hackage.haskell.org/package/actions/checkout
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - excon/0.79.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 404
+      message: Not Found
+    headers:
+      Server:
+      - nginx/1.14.0 (Ubuntu)
+      Content-Type:
+      - text/plain
+      Content-Length:
+      - '43'
+      Accept-Ranges:
+      - bytes
+      Date:
+      - Thu, 25 Feb 2021 13:01:02 GMT
+      Via:
+      - 1.1 varnish
+      Connection:
+      - keep-alive
+      X-Served-By:
+      - cache-ams21040-AMS
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - '0'
+      X-Timer:
+      - S1614258062.783064,VS0,VE635
+      Vary:
+      - Accept-Encoding
+    body:
+      encoding: ASCII-8BIT
+      string: 'Page not found: Sorry, it''s just not here.
+
+        '
+  recorded_at: Thu, 25 Feb 2021 13:01:02 GMT
+recorded_with: VCR 6.0.0

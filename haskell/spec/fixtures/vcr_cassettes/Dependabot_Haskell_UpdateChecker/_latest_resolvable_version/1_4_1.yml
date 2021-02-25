@@ -1,0 +1,49 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://www.stackage.org/lts/package/actions/checkout
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - excon/0.79.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 303
+      message: See Other
+    headers:
+      Server:
+      - nginx/1.17.8
+      Date:
+      - Thu, 25 Feb 2021 13:01:00 GMT
+      Content-Type:
+      - text/plain; charset=utf-8
+      Content-Length:
+      - '0'
+      Connection:
+      - keep-alive
+      Cache-Control:
+      - no-cache, must-revalidate
+      Expires:
+      - Thu, 01 Jan 1970 05:05:05 GMT
+      Location:
+      - "/lts-17.4/package/actions/checkout"
+      Vary:
+      - Accept, Accept-Language
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Envoy-Upstream-Service-Time:
+      - '70'
+      X-Envoy-Decorator-Operation:
+      - stackage-server-prod.stackage.svc.cluster.local:3000/*
+      Strict-Transport-Security:
+      - max-age=15724800; includeSubDomains
+    body:
+      encoding: ASCII-8BIT
+      string: ''
+  recorded_at: Thu, 25 Feb 2021 13:01:00 GMT
+recorded_with: VCR 6.0.0

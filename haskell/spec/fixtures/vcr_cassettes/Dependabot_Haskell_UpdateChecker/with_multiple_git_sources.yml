@@ -1,0 +1,480 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: http://hackage.haskell.org/package/acme-missiles
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers: {}
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - nginx/1.14.0 (Ubuntu)
+      Content-Type:
+      - text/html; charset=utf-8
+      Cache-Control:
+      - public, max-age=300
+      Content-Encoding:
+      - gzip
+      Transfer-Encoding:
+      - chunked
+      Accept-Ranges:
+      - bytes
+      Date:
+      - Thu, 25 Feb 2021 11:24:11 GMT
+      Via:
+      - 1.1 varnish
+      Connection:
+      - keep-alive
+      X-Served-By:
+      - cache-ams21040-AMS
+      X-Cache:
+      - MISS
+      X-Cache-Hits:
+      - 0
+      X-Timer:
+      - S1614252251.046110,VS0,VE604
+      Vary:
+      - Accept-Encoding
+      X-DNS-Prefetch-Control:
+      - off
+    body:
+      encoding: UTF-8
+      string: >
+        <!DOCTYPE html>
+        <html>
+        <head>
+          
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" rel="stylesheet">
+        <link rel="stylesheet" href="/static/hackage.css" type="text/css" />
+        <link rel="icon" type="image/png" href="/static/favicon.png" />
+        <link rel="search" type="application/opensearchdescription+xml" title="Hackage" href="/packages/opensearch.xml" />
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-83290513-3"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'UA-83290513-3');
+        </script>
+
+          <title>
+            acme-missiles: Cause serious international side effects.
+          </title>
+          <meta name="twitter:card" content="summary" />
+          <meta name="twitter:site" content="@hackage" />
+          <meta property="og:url" content="//hackage.haskell.org/package/acme-missiles" />
+          <meta property="og:title" content="acme-missiles: Cause serious international side effects." />
+          <meta property="og:description" content="Install via `cabal&nbsp;install&nbsp;acme-missiles`. " />
+          <meta property="og:site_name" content="Hackage" />
+          <link rel="canonical" href="https://hackage.haskell.org/package/acme-missiles" />
+          <script src="/static/jquery.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+          <base href="//hackage.haskell.org/package/acme-missiles-0.3/" />
+        </head>
+
+        <body>
+          <div id="page-header">
+
+          <a class="caption" href="/">Hackage :: [Package]</a>
+
+        <ul class="links" id="page-menu">
+
+            <li>
+              <form action="/packages/search" method="get" class="search">
+                <button type="submit">Search&nbsp;</button>
+                <input type="text" name="terms" />
+              </form>
+            </li>
+
+            <li><a href="/packages/browse">Browse</a></li>
+
+            <li><a href="/packages/recent">What's new</a></li>
+
+            <li><a href="/upload">Upload</a></li>
+
+            <li><a href="/accounts">User accounts</a></li>
+
+        </ul>
+
+        </div>
+
+          <div id="content">
+            <h1><a href="//hackage.haskell.org/package/acme-missiles">acme-missiles</a>: <small>Cause serious international side effects.</small></h1>
+            <div style="font-size: small">
+              [ <a href="/packages/tag/acme">acme</a>, <a href="/packages/tag/library">library</a>, <a href="/packages/tag/public-domain">public-domain</a> ]
+              [ <a href="/package/acme-missiles/tags/edit">Propose Tags </a> ]
+            </div>
+
+            
+
+            <div id="description">
+                <p>The highly effectful <code>launchMissiles</code> action, as mentioned in <em>Beautiful concurrency</em>,
+        Simon Peyton Jones, 2007.</p>
+            
+            
+            </div>
+
+
+            <div id="properties">
+            <table class="properties">
+              <tbody>
+
+                <tr>
+                  <th>Versions<span style="font-weight:normal;"> [<a href="https://pvp.haskell.org/faq">faq</a>]</span></th>
+                  <td><a href="/package/acme-missiles-0.1.0.0">0.1.0.0</a>, <a href="/package/acme-missiles-0.1.1">0.1.1</a>, <a href="/package/acme-missiles-0.2">0.2</a>, <a href="/package/acme-missiles-0.2.1">0.2.1</a>, <strong>0.3</strong></td>
+                </tr>
+
+                
+
+                <tr>
+                  <th>Dependencies</th>
+                  <td><span style="white-space: nowrap"><a href="/package/base">base</a> (&gt;=3 &amp;&amp; &lt;5)</span>, <span style="white-space: nowrap"><a href="/package/stm">stm</a></span><span style="font-size: small"> [<a href="/package/acme-missiles-0.3/dependencies">details</a>]</span></td>
+                </tr>
+
+                <tr>
+                  <th>License</th>
+                  <td class="word-wrap">LicenseRef-PublicDomain</td>
+                </tr>
+
+                
+
+                <tr>
+                  <th>Author</th>
+                  <td class="word-wrap">Joey Adams</td>
+                </tr>
+                <tr>
+                  <th>Maintainer</th>
+                  <td class="word-wrap">joeyadams3.14159@gmail.com</td>
+                </tr>
+
+                
+
+                <!-- Obsolete/deprecated 'Stability' field hidden
+                    c.f. http://stackoverflow.com/questions/3841218/conventions-for-stability-field-of-cabal-packages
+                <tr>
+                  <th>Stability</th>
+                  <td>Unknown</td>
+                </tr>
+                -->
+
+                        <tr>
+                  <th>Category</th>
+                  <td><a href="/packages/#cat:Acme">Acme</a></td>
+                </tr>
+                
+
+                
+
+                
+
+                
+
+                <tr>
+                  <th>Uploaded</th>
+                  <td>by <a href="/user/JoeyAdams">JoeyAdams</a> at <span title="Sun Apr 15 04:08:20 UTC 2012">2012-04-15T04:08:20Z</span></td>
+                </tr>
+
+
+                        <tr>
+                  <th>Distributions</th>
+                  <td>NixOS:<a href="http://hydra.nixos.org/job/nixpkgs/trunk/haskellPackages.acme-missiles.x86_64-linux">0.3</a></td>
+                </tr>
+                
+
+                
+
+                <tr>
+                  <th>Downloads</th>
+                  <td>11710 total (39 in the last 30 days)</td>
+                </tr>
+
+                <tr>
+                  <th> Rating</th>
+            <td>(no votes yet)
+            <span style="font-size: small">[estimated by <a href="https://en.wikipedia.org/wiki/Bayesian_average">Bayesian average</a>]</span></td>
+          </tr>
+
+          <tr>
+            <th>Your&nbsp;Rating</th>
+            <td>
+                    <ul class="star-rating">
+                      <li class="star uncool" id="1">&lambda;</li>
+                      <li class="star uncool" id="2">&lambda;</li>
+                      <li class="star uncool" id="3">&lambda;</li>
+              </ul>
+                  
+                  </td>
+                </tr>
+                <tr>
+                  <th>Status</th>
+            <td><a href="https://matrix.hackage.haskell.org/package/acme-missiles"><img src="https://matrix.hackage.haskell.org/api/v2/packages/acme-missiles/badge" alt="Hackage Matrix CI" style="max-width:100%;" /></a><br/>Docs uploaded by user<br />Build status unknown <span style="font-size: small">[<a href="/package/acme-missiles-0.3/reports/">no reports yet</a>]</span></td>
+                </tr>
+              </tbody>
+            </table>
+            </div> <!-- /properties -->
+
+            <div id="modules">
+              <h2>Modules</h2><p style="font-size: small">[<a href="/package/acme-missiles-0.3/docs/doc-index.html">Index</a>]</p><div id="module-list"><ul class="modules"><li><i>Acme</i><ul class="modules"><li><span class="module"><a href="/package/acme-missiles-0.3/docs/Acme-Missiles.html">Acme.Missiles</a></span><ul class="modules"><li><span class="module"><a href="/package/acme-missiles-0.3/docs/Acme-Missiles-STM.html">Acme.Missiles.STM</a></span></li></ul></li></ul></li></ul></div>
+            </div>
+
+            
+
+            <div id="downloads">
+              <h2>Downloads</h2><ul><li><a href="/package/acme-missiles-0.3/acme-missiles-0.3.tar.gz">acme-missiles-0.3.tar.gz</a> [<a href="/package/acme-missiles-0.3/src/">browse</a>] (Cabal source package)</li><li><a href="/package/acme-missiles-0.3/acme-missiles.cabal">Package description</a> (as included in the package)</li></ul>
+            </div>
+
+            <div id="maintainer-corner">
+              <h4>Maintainer's Corner</h4>
+              <p>For package maintainers and hackage trustees</p>
+              <ul>
+                <li>
+                  <a href="//hackage.haskell.org/package/acme-missiles/maintain">
+                    edit package information
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            
+          </div> <!-- /content -->
+
+          <style>
+          div#overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            opacity: 0.5;
+            filter: alpha(opacity=50);
+          }
+
+          div#modal {
+            position: absolute;
+            width: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+            padding: 8px;
+          }
+
+          div#modal #content {
+            border-radius: 8px;
+            background: #fff;
+            padding: 20px;
+          }
+
+          div#modal #close {
+            position: absolute;
+            background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAbCAYAAABm409WAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABCdJREFUeNqcVl1IbFUUnjNzr47enLFkvKUoDNk1S0kxDPHBH4gCTfHJH4jgYgrpg1APmqjQS2gggiLViyBdkEAxjARFSPBBfPCv/LcRS5tSlLzXMcdxZvWt3d6HmTkzXW8LPs45a6/1rbX3XmvvYzL9hxBRC/AjRZcD4BGQE41Di0JciMfnQDF/n5+fm2ZmZkxnZ2e6TWFhoSknJ4T3a03TmkxPE5C/q9JbX1+nmpoaslgsxEPhSE9Pp6GhIbq5uVEuU8DztyLv7e2NShwOzIRcLpdy/S4auQNws0VHR8etiIORmppKh4eHKshXkQLwZtH4+Pgzkyvk5+cHL1dOMLmTNV6vV6xrsFNxcTHV1tZSSkpKiL6srIyam5spLS0tRM97IuWRHsDv97ezZmRkxJDV3t4enZ6e0sDAADkcDqGrqqqizc1NwdLe3m7YeFXCeoBAIPADa8rLyw0BZmdnhfX19TX19fVRY2OjTg4/amhoMPisra2J8YuLizeY3wzDfVY4nU6DcW5uLq2srAiHy8tLQi+I96urK1EM8fHxBp/h4WGV1EMOYOF3VsTExETdPO4JJZx5T08Pmc3miPZc4iwej+dTMweAwxOOZLfbja2uaSabzcaFoOtQKSYkY0pISIhY8jzGgqLx8zMO0xXp8XKEZ1NZWUk7Ozv6smxvb6vsaHBwkJKTkw0+XOossP2AAzx3dHQkeqClpcVgPDY2pm9yW1sblZSU0OLiotD5fD6qqKgIsefu56pj6ezsfJ0DJMzNzX3MCt798ADd3d20sbFBXV1dhOXSj4apqSmanp6mvLy8EPvq6mpBfnJysoLvFBEAyHK73aL26uvrQxx4CYqKigzVkp2dTRkZGSHnFb9vbW2JAPPz84MqwD3glYmJiS954Pj4WDj+n6Oiv7//3w47ONjhEx24zwGsQDrw9tLS0s/qmH7WINwTSpqamrqgywXE0X0XSAYKkpKSPgL572zEGxW+XNHuhNHRUZ28tbX1G+jLgQwuINHJgA14ALyXmJj4GY6H35TD8vKyqB5utri4OEHKs+Py5Y7l7mbBrefDMfI9xj8E3gJeBGLVtRkr1+tN4H3gC1TPT1gyD91CJicnT7Kysr6F3yfAOzJ7Lh6LupMt3HDAC3I/MoFXgZfr6upeKy0tvV9QUHAvMzPzjtVq1fb39/27u7vehYWFx2gq1+rq6hZseWP5+QvwB/AY8GlBl/8dIF4GSQWcEmmAg08SOVO2vQE8AP8FuAE+ml3Ar8CfktzLB7UW9odxV87ELjee1/ElGSBRjvGeXQMXwKkkdMusOeATOe6P9NuiZhIr+8MuiW2yImJkAJ7BpSQ7B/6S73/zsnDmssoi/hdpkkQFskrEyhlqMjvO8ioIPqkPPPXHK2hMkwWgYFbXuCRThIFwYiX/CDAA8quvgv5A6LkAAAAASUVORK5CYII=) 0 0 no-repeat;
+            width: 24px;
+            height: 27px;
+            display: block;
+            text-indent: -9999px;
+            top: -7px;
+            right: -7px;
+          }
+
+          .cool {
+            color: gold;
+            text-shadow:
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000;
+          }
+
+          .uncool {
+            color: white;
+            text-shadow:
+            -1px -1px 0 #000,
+            1px -1px 0 #000,
+            -1px 1px 0 #000,
+            1px 1px 0 #000;
+          }
+
+          .star-rating {
+            margin: 0;
+            list-style-type: none;
+            font-size: 150%;
+            color: black;
+          }
+
+          .star-rating li {
+            float: left;
+            margin: 0 1% 0 1%;
+            cursor: pointer;
+          }
+
+          .clear-rating {
+            font-size: small;
+          }
+
+        </style>
+
+        <script>
+          // Modals
+          var modal = (function() {
+            var
+              method = {},
+              overlay,
+              modal,
+              content,
+              close;
+
+            // Center the modal in the viewport
+            method.center = function() {
+              var top, left;
+
+              top = Math.max($(window).height() - modal.outerHeight(), 0) / 2;
+              left = Math.max($(window).width() - modal.outerWidth(), 0) / 2;
+
+              modal.css({
+                top: top + $(window).scrollTop(),
+                left: left + $(window).scrollLeft()
+              });
+            };
+
+            // Open the modal
+            method.open = function(settings) {
+              content.empty().append(settings.content);
+
+              modal.css({
+                width: settings.width || 'auto',
+                height: settings.height || 'auto'
+              });
+
+              method.center();
+              $(window).bind('resize.modal', method.center);
+              modal.show();
+              overlay.show();
+            };
+
+            // Close the modal
+            method.close = function() {
+              modal.hide();
+              overlay.hide();
+              content.empty();
+              $(window).unbind('resize.modal');
+            };
+
+            // Generate the HTML and add it to the document
+            overlay = $('<div id="overlay"></div>');
+            modal = $('<div id="modal"></div>');
+            content = $('<div id="content"></div>');
+            close = $('<a id="close" href="#">close</a>');
+
+            modal.hide();
+            overlay.hide();
+            modal.append(content, close);
+
+            $(document).ready(function() {
+              $('body').append(overlay, modal);
+            });
+
+            close.click(function(e) {
+              e.preventDefault();
+              method.close();
+            });
+
+            return method;
+          }());
+        </script>
+
+        <script>
+          // Voting
+          var votesUrl = '/package/acme-missiles/votes';
+          var star = {
+            "id"       : undefined,
+            "selected" : false
+          };
+          $('.star').mouseenter(function() {
+            if (star.selected === false) {
+              fill_stars(this.id, "in");
+            }
+          });
+          $('.star').mouseleave(function() {
+            if (star.selected === false) {
+              fill_stars(this.id, "out");
+            }
+          });
+          $('.star').click(function() {
+            fill_stars(3, "out");
+            fill_stars(this.id, "in");
+            star.selected = true;
+            star.id = this.id;
+            var formData = {
+              score: this.id
+            }
+            $.post(votesUrl, formData).done(function(data) {
+                if(data != "Package voted for successfully") {
+                    modal.open({ content: data});
+          }
+            });
+          });
+          $('.clear-rating').click(function(e) {
+            e.preventDefault()
+            fill_stars(3, "out");
+            star.selected = false;
+            $.ajax({
+              url: votesUrl,
+              type: 'DELETE',
+              success: function(result) {
+                if(result != "Package vote removed successfully") {
+                  modal.open({ content: result });
+          }
+              }
+            });
+          });
+          $(function() {
+              var userRating = parseInt($("#userRating").val(),10);
+              if(userRating > 0) {
+                fill_stars(userRating,"in")
+                star.selected = true;
+                star.id       = userRating;
+              }
+          });
+          var fill_stars = function(num, direction) {
+            if (direction === "in")
+              for (i = 0; i <= parseInt(num); i++)
+                $("#" + i).removeClass('uncool').addClass('cool');
+            else
+              for (i = 0; i <= parseInt(num); i++)
+                $("#" + i).removeClass('cool').addClass('uncool');
+          }
+        </script>
+
+        <script>
+            // Responsive layout change
+            $(function()  {
+                  var onResize = function() {
+                      if(jQuery(window).width()<=950) {
+                        jQuery("#properties").insertAfter(jQuery("#description"));
+                      } else {
+                          jQuery("#properties").insertBefore(jQuery("#description"));
+                    }
+                    }
+                    $(window).resize(onResize);
+                    onResize();
+            });
+        </script>
+          <div style="clear:both"></div>
+          <div id="footer">
+          <p>
+            Produced by <a href="/">hackage</a> and <a href="http://haskell.org/cabal/">Cabal</a> 3.0.2.99.
+          </p>
+        </div>
+
+          
+        </body>
+        </html>
+    http_version: 
+  recorded_at: Thu, 05 Mar 2020 21:55:03 GMT
+recorded_with: VCR 5.0.0
