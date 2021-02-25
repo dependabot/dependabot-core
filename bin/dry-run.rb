@@ -547,7 +547,6 @@ def file_updater_for(dependencies)
 
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
-    source: $source,
     dependency_files: $files,
     repo_contents_path: $repo_contents_path,
     credentials: $options[:credentials],
@@ -696,7 +695,12 @@ dependencies.each do |dep|
   end
 
   if $options[:pull_request]
-    msg = updater.pr_message
+    msg =  Dependabot::PullRequestCreator::MessageBuilder.new(
+      dependencies: updated_deps,
+      files: updated_files,
+      credentials: $options[:credentials],
+      source: $source,
+    )
     puts "Pull Request Title: #{msg.pr_name}"
     puts "--description--\n#{msg.pr_message}\n--/description--"
     puts "--commit--\n#{msg.commit_message}\n--/commit--"

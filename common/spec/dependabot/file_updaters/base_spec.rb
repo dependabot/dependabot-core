@@ -22,11 +22,9 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       credentials: [{
         "type" => "git_source",
         "host" => "github.com"
-      }],
-      source: source,
+      }]
     )
   end
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump")}
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -92,20 +90,5 @@ RSpec.describe Dependabot::FileUpdaters::Base do
     its(:directory) { is_expected.to eq(file.directory) }
 
     specify { expect { updated_file }.to_not(change { file.content }) }
-  end
-
-  describe "#pr_message" do
-    subject(:message) { updater_instance.pr_message }
-
-    before do
-      allow(updater_instance).to receive(:updated_dependency_files).and_return([])
-      allow(::Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).and_return(dummy_message_builder)
-      allow(dummy_message_builder).to receive(:pr_name).and_return(pr_name)
-    end
-    let(:dummy_message_builder) { instance_double(Dependabot::PullRequestCreator::MessageBuilder) }
-    let(:pr_name) { "PR name"}
-
-    its(:pr_name) { should eq(pr_name) }
   end
 end
