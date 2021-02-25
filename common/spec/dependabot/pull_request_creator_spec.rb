@@ -69,7 +69,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   end
   before do
     allow(described_class::MessageBuilder).
-      to receive(:new).and_return(dummy_message_builder)
+      to receive(:new).once.and_return(dummy_message_builder)
     allow(dummy_message_builder).
       to receive(:commit_message).
       and_return("Commit msg")
