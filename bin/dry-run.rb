@@ -700,7 +700,7 @@ dependencies.each do |dep|
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
-    )
+    ).message
     puts "Pull Request Title: #{msg.pr_name}"
     puts "--description--\n#{msg.pr_message}\n--/description--"
     puts "--commit--\n#{msg.commit_message}\n--/commit--"
