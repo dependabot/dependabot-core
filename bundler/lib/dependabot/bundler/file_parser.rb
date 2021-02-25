@@ -5,6 +5,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 require "dependabot/bundler/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -129,8 +130,8 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "parsed_gemfile",
               args: {
                 gemfile_name: gemfile.name,
@@ -159,8 +160,8 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "parsed_gemspec",
               args: {
                 gemspec_name: file.name,
@@ -297,6 +298,10 @@ module Dependabot
         dependency_files.
           select { |f| f.name.end_with?(".rb") }.
           reject { |f| f.name == "gems.rb" }
+      end
+
+      def bundler_version
+        @bundler_version ||= Helpers.bundler_version(lockfile)
       end
     end
   end
