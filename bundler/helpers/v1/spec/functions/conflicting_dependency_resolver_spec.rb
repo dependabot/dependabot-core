@@ -10,15 +10,14 @@ RSpec.describe Functions::ConflictingDependencyResolver do
     described_class.new(
       dependency_name: dependency_name,
       target_version: target_version,
-      lockfile_name: lockfile_name
+      lockfile_name: "Gemfile.lock"
     )
   end
 
   let(:dependency_name) { "dummy-pkg-a" }
   let(:target_version) { "2.0.0" }
 
-  let(:gemfile_fixture_name) { "blocked_by_subdep" }
-  let(:lockfile_fixture_name) { "blocked_by_subdep.lock" }
+  let(:project_name) { "blocked_by_subdep" }
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
@@ -37,8 +36,7 @@ RSpec.describe Functions::ConflictingDependencyResolver do
     end
 
     context "for nested transitive dependencies" do
-      let(:gemfile_fixture_name) { "transitive_blocking" }
-      let(:lockfile_fixture_name) { "transitive_blocking.lock" }
+      let(:project_name) { "transitive_blocking" }
       let(:dependency_name) { "activesupport" }
       let(:target_version) { "6.0.0" }
 
@@ -96,8 +94,7 @@ RSpec.describe Functions::ConflictingDependencyResolver do
       let(:dependency_name) { "activesupport" }
       let(:current_version) { "5.0.0" }
       let(:target_version) { "6.0.0" }
-      let(:gemfile_fixture_name) { "multiple_blocking" }
-      let(:lockfile_fixture_name) { "multiple_blocking.lock" }
+      let(:project_name) { "multiple_blocking" }
 
       it "returns all of the blocking dependencies" do
         expect(conflicting_dependencies).to match_array(
