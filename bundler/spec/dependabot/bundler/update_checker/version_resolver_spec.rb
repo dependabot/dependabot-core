@@ -291,7 +291,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       let(:requirement_string) { "~> 1.4.0" }
 
       context "without a downloaded gemspec" do
-        let(:dependency_files) { project_dependency_files("bundler1/path_source") }
+        let(:dependency_files) { project_dependency_files("bundler1/path_source_not_reachable") }
 
         it "raises a PathDependenciesNotReachable error" do
           expect { subject }.
