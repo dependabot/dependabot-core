@@ -1812,4 +1812,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
   end
+
+  describe "#message" do
+    subject(:message) { builder.message }
+
+    pr_name = "PR title"
+    pr_message = "PR message"
+    commit_message = "Commit message"
+    before do
+      allow(builder).to receive(:pr_name).and_return(pr_name)
+      allow(builder).to receive(:pr_message).and_return(pr_message)
+      allow(builder).to receive(:commit_message).and_return(commit_message)
+    end
+
+    it "returns a Message" do
+      expect(message).to be_a(Dependabot::PullRequestCreator::Message)
+    end
+    its(:pr_name) { should eq(pr_name) }
+    its(:pr_message) { should eq(pr_message) }
+    its(:commit_message) { should eq(commit_message) }
+  end
 end

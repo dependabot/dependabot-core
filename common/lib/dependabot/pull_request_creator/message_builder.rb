@@ -5,10 +5,12 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/message"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
+    # MessageBuilder builds PR message for a dependency update
     class MessageBuilder
       require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
@@ -54,6 +56,14 @@ module Dependabot
         message += metadata_links
         message += "\n\n" + message_trailers if message_trailers
         message
+      end
+
+      def message
+        Dependabot::PullRequestCreator::Message.new(
+          pr_name: pr_name,
+          pr_message: pr_message,
+          commit_message: commit_message
+        )
       end
 
       private
