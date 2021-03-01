@@ -236,6 +236,7 @@ module Dependabot
           end
 
           raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
