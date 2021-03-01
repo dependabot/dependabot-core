@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    json (1.4.3-java)
+
+PLATFORMS
+  java
+
+DEPENDENCIES
+  json
+
+BUNDLED WITH
+   1.15.1
