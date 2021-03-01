@@ -214,8 +214,6 @@ module Dependabot
             raise Dependabot::GitDependencyReferenceNotFound, dependency_url
           end
 
-          raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
-
           if workspace_native_library_update_error?(error.message)
             # This happens when we're updating one part of a workspace which
             # triggers an update of a subdependency that uses a native library,
@@ -237,6 +235,7 @@ module Dependabot
             return nil
           end
 
+          raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
           raise error
         end
         # rubocop:enable Metrics/AbcSize
