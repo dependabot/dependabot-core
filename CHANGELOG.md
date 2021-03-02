@@ -1,3 +1,8 @@
+## v0.134.1, 2 March 2021
+
+- Run Bundler v1 native helpers with an explicit version setting the stage for
+  Bundler v2 support
+
 ## v0.134.0, 1 March 2021
 
 - Introduce `Dependabot::PullRequestCreator::Message` as an alternative to `Dependabot::PullRequestCreator::MessageBuilder`
