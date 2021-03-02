@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+# TODO: Look into removing this. "find" used to get required from common's
+# gemspec so we've added it here for backwards compatability during bundler 2
+# rollout.
+#
+# NOTE: If we don't require it and a customers `.gemspec` uses Find without
+# requiring it, we'll start raising a DependencyFileNotEvaluatable error which
+# is probably the right thing to do
+require "find"
+
+source "https://rubygems.org"
+
+# NOTE: This is intentionally left blank as it's currently only used to force
+# bundler to use v1 when executing native helpers by pointing the BUNDLE_GEMFILE
+# env to this Gemfile in Dependabot::Bundler::NativeHelpers
