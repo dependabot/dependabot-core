@@ -538,14 +538,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:dependency_name) { "ructe" }
       let(:dependency_version) { "0b8acfe5eea15713bc56c156f974fa05967d0353" }
       let(:string_req) { nil }
-      let(:source) do
-        {
-          type: "git",
-          url: "https://github.com/kaj/ructe",
-          branch: nil,
-          ref: nil
-        }
-      end
+      let(:source) { { type: "git", url: "https://github.com/kaj/ructe" } }
       let(:dependency_files) { project_dependency_files("version_conflict") }
       let(:unprepared_dependency_files) { project_dependency_files("version_conflict") }
 
