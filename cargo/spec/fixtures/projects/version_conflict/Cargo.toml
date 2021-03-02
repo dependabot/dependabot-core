@@ -1,9 +1,7 @@
 [package]
-name = "template-benchmarks-rs"
+name = "version_conflict"
 version = "0.1.0"
-authors = ["Mona Octocat <mona@example.com>"]
-build = "src/build.rs"
-edition = "2018"
+authors = ["support@dependabot.com"]
 
 [dependencies]
 askama = { git = "https://github.com/djc/askama", branch = "main" }
