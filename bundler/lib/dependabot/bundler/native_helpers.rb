@@ -10,19 +10,24 @@ module Dependabot
           command: helper_path(bundler_version: bundler_version),
           function: function,
           args: args,
+          unsetenv_others: true,
           env: {
             # Bundler will pick the matching installed major version
             "BUNDLER_VERSION" => bundler_version,
-            # Force bundler to use the helper Gemfile that has been bundled with
-            # v1, otherwise it will point to core's bundler/Gemfile which will
-            # be bundled with v2 once it's installed
-            "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_version), "Gemfile"),
-            # Unset ruby env set by running dependabot-core with bundle exec,
-            # forcing bundler to reset them from helpers/v1
-            "RUBYLIB" => nil,
-            "RUBYOPT" => nil,
-            "GEM_PATH" => nil,
-            "GEM_HOME" => nil
+            # Required to find the ruby bin
+            "PATH" => ENV["PATH"],
+            # # Requried to create tmp directories in a writeable folder
+            "HOME" => ENV["HOME"],
+            # Required to git clone to a writeable folder
+            "GEM_HOME" => ENV["GEM_HOME"],
+            # Required by git fetch
+            "SSH_AUTH_SOCK" => ENV["SSH_AUTH_SOCK"],
+            # Env set by the runner
+            "SSL_CERT_FILE" => ENV["SSL_CERT_FILE"],
+            "http_proxy" => ENV["http_proxy"],
+            "HTTP_PROXY" => ENV["HTTP_PROXY"],
+            "https_proxy" => ENV["https_proxy"],
+            "HTTPS_PROXY" => ENV["HTTPS_PROXY"]
           }
         )
       end
@@ -33,7 +38,7 @@ module Dependabot
       end
 
       def self.helper_path(bundler_version:)
-        "bundle exec ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
+        "ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
       end
 
       def self.native_helpers_root

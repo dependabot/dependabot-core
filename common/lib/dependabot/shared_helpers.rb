@@ -71,7 +71,8 @@ module Dependabot
     # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
-                                   allow_unsafe_shell_command: false)
+                                   allow_unsafe_shell_command: false,
+                                   unsetenv_others: false)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -86,7 +87,7 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
+      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data, unsetenv_others: unsetenv_others)
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
