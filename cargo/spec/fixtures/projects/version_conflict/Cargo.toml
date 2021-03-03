@@ -5,24 +5,6 @@ authors = ["support@dependabot.com"]
 
 [dependencies]
 askama = { git = "https://github.com/djc/askama", branch = "main" }
-criterion = "0.3"
-handlebars = { git = "https://github.com/sunng87/handlebars-rust" }
-horrorshow = { git = "https://github.com/Stebalien/horrorshow-rs" }
-liquid = { git = "https://github.com/cobalt-org/liquid-rust" }
-markup = { git = "https://github.com/utkarshkukreti/markup.rs" }
-sailfish = { git = "https://github.com/Kogia-sima/sailfish" }
-sailfish-macros = { git = "https://github.com/Kogia-sima/sailfish" }
-serde = "1"
-serde_derive = "1"
-serde_json = "1"
-serde_yaml = "0.8"
-tera = { git = "https://github.com/Keats/tera" }
-fomat-macros = { git = "https://github.com/krdln/fomat-macros" }
-maud = { git = "https://github.com/lambda-fairy/maud" }
 
 [build-dependencies]
 ructe = { git = "https://github.com/kaj/ructe" }
-
-[[bench]]
-name = "all"
-harness = false
