@@ -1,0 +1,23 @@
+{
+    "value": [
+        {
+            "name": "refs/heads/dependabot/npm_and_yarn/business-1.5.0",
+            "objectId": "9c8376e9b2e943c2c72fac4b239876f377f0305a",
+            "creator": {
+                "displayName": "Bob Jones",
+                "url": "https://app.vssps.visualstudio.com/A3aa6c2ad-bb93-43c9-b957-ef1b14cf6ada/_apis/Identities/5ca0c171-a590-4ceb-a8d4-36c593907c1a",
+                "_links": {
+                    "avatar": {
+                        "href": "https://dev.azure.com/org/_apis/GraphProfile/MemberAvatars/aad.MTRjNTllMmQtODU2Yi03OTZlLThjZGQtZmU0ZTVhYWUyNGNa"
+                    }
+                },
+                "id": "5ca0c171-a590-4ceb-a8d4-36c593907c1a",
+                "uniqueName": "Bob.Jones@org.com",
+                "imageUrl": "https://dev.azure.com/org/_api/_common/identityImage?id=5ca0c171-a590-4ceb-a8d4-36c593907c1a",
+                "descriptor": "aad.MTRjNTllMmQtODU2Yi03OTZlLThjZGQtZmU0ZTVhYWUyNGNa"
+            },
+            "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/refs?filter=heads%2Fdependabot%2Fnpm_and_yarn%2Fbusiness-1.5.0"
+        }
+    ],
+    "count": 1
+}
