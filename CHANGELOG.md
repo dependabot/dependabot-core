@@ -1,3 +1,9 @@
+## v0.134.2, 3 March 2021
+
+- Revert: Run Bundler v1 native helpers with an explicit version
+- Update rubocop requirement from ~> 1.10.0 to ~> 1.11.0 in /common
+- Bump @npmcli/arborist from 2.2.4 to 2.2.6 in /npm_and_yarn/helpers
+
 ## v0.134.1, 2 March 2021
 
 - Run Bundler v1 native helpers with an explicit version setting the stage for
