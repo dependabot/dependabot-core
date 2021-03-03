@@ -2,8 +2,8 @@
 
 require "spec_helper"
 
-$LOAD_PATH.unshift(File.expand_path("../helpers/v1/lib", __dir__))
-$LOAD_PATH.unshift(File.expand_path("../helpers/v1/monkey_patches", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../helpers/lib", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../helpers/monkey_patches", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"

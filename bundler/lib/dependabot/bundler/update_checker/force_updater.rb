@@ -3,7 +3,6 @@
 require "dependabot/bundler/file_parser"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
-require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/update_checker/requirements_updater"
 require "dependabot/errors"
@@ -44,8 +43,8 @@ module Dependabot
 
         def force_update
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            updated_deps, specs = NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
+            updated_deps, specs = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
               function: "force_update",
               args: {
                 dir: tmp_dir,
@@ -146,10 +145,6 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

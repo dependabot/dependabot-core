@@ -2,7 +2,6 @@
 
 require "excon"
 
-require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/requirement"
@@ -76,8 +75,8 @@ module Dependabot
             # some errors we want to handle specifically ourselves, including
             # potentially retrying in the case of the Ruby version being locked
             in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-              details = NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
+              details =  SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
                 function: "resolve_version",
                 args: {
                   dependency_name: dependency.name,
@@ -218,10 +217,6 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

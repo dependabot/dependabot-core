@@ -8,20 +8,11 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-if [ ! -d "$install_dir" ]; then
-  mkdir -p "$install_dir"
-fi
-
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/monkey_patches" \
   "$helpers_dir/run.rb" \
-  "$helpers_dir/Gemfile" \
   "$install_dir"
 
 cd "$install_dir"
-
-# NOTE: Sets `BUNDLED WITH` to match the installed v1 version in Gemfile.lock
-# forcing specs and native helpers to run with the same version
-BUNDLER_VERSION=1 bundle install
