@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/bundler/native_helpers"
-require "dependabot/bundler/helpers"
-
 module Dependabot
   module Bundler
     class UpdateChecker
@@ -56,8 +53,8 @@ module Dependabot
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|
-                NativeHelpers.run_bundler_subprocess(
-                  bundler_version: bundler_version,
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
                   function: "depencency_source_latest_git_version",
                   args: {
                     dir: tmp_dir,
@@ -101,8 +98,8 @@ module Dependabot
           def private_registry_versions
             @private_registry_versions ||=
               in_a_native_bundler_context do |tmp_dir|
-                NativeHelpers.run_bundler_subprocess(
-                  bundler_version: bundler_version,
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
                   function: "private_registry_versions",
                   args: {
                     dir: tmp_dir,
@@ -121,8 +118,8 @@ module Dependabot
             return @source_type = RUBYGEMS unless gemfile
 
             @source_type = in_a_native_bundler_context do |tmp_dir|
-              NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
                 function: "dependency_source_type",
                 args: {
                   dir: tmp_dir,
@@ -137,15 +134,6 @@ module Dependabot
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" } ||
               dependency_files.find { |f| f.name == "gems.rb" }
-          end
-
-          def lockfile
-            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
-              dependency_files.find { |f| f.name == "gems.locked" }
-          end
-
-          def bundler_version
-            @bundler_version ||= Helpers.bundler_version(lockfile)
           end
         end
       end

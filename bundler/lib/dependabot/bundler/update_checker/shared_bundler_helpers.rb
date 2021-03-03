@@ -4,7 +4,6 @@ require "excon"
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
-require "dependabot/bundler/helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -164,8 +163,8 @@ module Dependabot
 
         def inaccessible_git_dependencies
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            git_specs = NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
+            git_specs = SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
               function: "git_specs",
               args: {
                 dir: tmp_dir,
@@ -188,8 +187,8 @@ module Dependabot
 
         def jfrog_source
           in_a_native_bundler_context(error_handling: false) do |dir|
-            NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
               function: "jfrog_source",
               args: {
                 dir: dir,
@@ -236,10 +235,6 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

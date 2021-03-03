@@ -75,17 +75,13 @@ module Dependabot
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-
-      # NOTE: For debugging native helpers in specs and dry-run: outputs the
-      # bash command to run in the tmp directory created by
-      # in_a_temporary_directory
+      env_cmd = [env, cmd].compact
       if ENV["DEBUG_FUNCTION"] == function
-        puts helper_subprocess_bash_command(stdin_data: stdin_data, command: cmd, env: env)
+        escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
+        puts "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_cmd.join(' ')}"
         # Pause execution so we can run helpers inside the temporary directory
         byebug # rubocop:disable Lint/Debugger
       end
-
-      env_cmd = [env, cmd].compact
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
@@ -290,12 +286,5 @@ module Dependabot
         error_context: error_context
       )
     end
-
-    def self.helper_subprocess_bash_command(command:, stdin_data:, env:)
-      escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
-      env_keys = env ? env.compact.map { |k, v| "#{k}=#{v}" }.join(" ") + " " : ""
-      "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
-    end
-    private_class_method :helper_subprocess_bash_command
   end
 end

@@ -2,7 +2,6 @@
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
-require "dependabot/bundler/helpers"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -29,8 +28,8 @@ module Dependabot
         #   * requirement [String] the requirement on the target_dependency
         def conflicting_dependencies(dependency:, target_version:)
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
               function: "conflicting_dependencies",
               args: {
                 dir: tmp_dir,
@@ -42,12 +41,6 @@ module Dependabot
               }
             )
           end
-        end
-
-        private
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end
