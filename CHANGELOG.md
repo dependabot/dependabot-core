@@ -1,3 +1,8 @@
+## v0.135.0, 4 March 2021
+
+- Gracefully handle cargo version conflicts #3213
+- Pull request updater for azure client #3153 (@milind009)
+
 ## v0.134.2, 3 March 2021
 
 - Revert: Run Bundler v1 native helpers with an explicit version
