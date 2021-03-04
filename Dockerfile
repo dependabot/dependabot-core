@@ -137,8 +137,8 @@ RUN add-apt-repository ppa:ondrej/php \
 ### GO
 
 # Install Go and dep
-ARG GOLANG_VERSION=1.15.7
-ARG GOLANG_CHECKSUM=0d142143794721bb63ce6c8a6180c4062bcf8ef4715e7d6d6609f3a8282629b3
+ARG GOLANG_VERSION=1.16
+ARG GOLANG_CHECKSUM=013a489ebb3e24ef3d915abe5b94c3286c070dfe0818d5bca8108f1d6e8440d2
 RUN curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
