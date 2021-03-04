@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const npm = require("npm6");
-const installer = require("npm6/lib/install");
+const npm = require("npm");
+const installer = require("npm/lib/install");
 const detectIndent = require("detect-indent");
 const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
 
