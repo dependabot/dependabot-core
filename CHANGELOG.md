@@ -1,3 +1,13 @@
+## v0.134.3, 4 March 2021
+
+- Merge pull request #3213 from dependabot/updates/issues/1104-rust-issues
+- Merge pull request #3153 from GiriB/azure_pr_updater
+- using securerandom instead of uuid
+- adding uuid to temp branch name
+- renaming function call in azure pull request updater
+- renaming fetch_pull_request function
+- adding pull request updater for azure client
+
 ## v0.134.2, 3 March 2021
 
 - Revert: Run Bundler v1 native helpers with an explicit version
