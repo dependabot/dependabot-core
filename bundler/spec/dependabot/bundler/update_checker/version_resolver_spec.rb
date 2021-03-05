@@ -323,6 +323,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
     context "with a gemspec and a Gemfile" do
       let(:dependency_files) { project_dependency_files("bundler1/imports_gemspec_small_example_no_lockfile") }
       let(:unlock_requirement) { true }
+      let(:latest_allowable_version) { "2.1.0" }
       let(:current_version) { nil }
       let(:requirements) do
         [{
