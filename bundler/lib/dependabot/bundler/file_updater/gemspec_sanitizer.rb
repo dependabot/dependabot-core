@@ -234,11 +234,8 @@ module Dependabot
           def remove_unnecessary_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if unnecessary_assignment?(node) &&
-               node.children.last&.location.respond_to?(:heredoc_end)
-              range_to_remove = node.loc.expression.join(
-                node.children.last.location.heredoc_end
-              )
+            if unnecessary_assignment?(node) && node_includes_heredoc?(node)
+              range_to_remove = node.loc.expression.join(find_heredoc_end_range(node))
               return replace(range_to_remove, '"sanitized"')
             elsif unnecessary_assignment?(node)
               return replace(node.loc.expression, '"sanitized"')
@@ -247,6 +244,30 @@ module Dependabot
             node.children.each do |child|
               remove_unnecessary_assignments(child)
             end
+          end
+
+          def node_includes_heredoc?(node)
+            find_heredoc_end_range(node)
+          end
+
+          # Performs a depth-first search for the first heredoc in the given
+          # Parser::AST::Node.
+          #
+          # Returns a Parser::Source::Range identifying the location of the end
+          #   of the heredoc, or nil if no heredoc was found.
+          def find_heredoc_end_range(node)
+            return unless node.is_a?(Parser::AST::Node)
+
+            node.children.each do |child|
+              next unless child.is_a?(Parser::AST::Node)
+
+              return child.location.heredoc_end if child.location.respond_to?(:heredoc_end)
+
+              range = find_heredoc_end_range(child)
+              return range if range
+            end
+
+            nil
           end
 
           def unnecessary_assignment?(node)
