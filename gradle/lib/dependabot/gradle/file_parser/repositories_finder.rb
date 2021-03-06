@@ -36,9 +36,7 @@ module Dependabot
           repository_urls += own_buildfile_repository_urls
           repository_urls = repository_urls.uniq
 
-          return repository_urls unless repository_urls.empty?
-
-          [CENTRAL_REPO_URL]
+          return (repository_urls + [CENTRAL_REPO_URL]).uniq
         end
 
         private

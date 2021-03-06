@@ -39,16 +39,47 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             https://jcenter.bintray.com
             https://dl.bintray.com/magnusja/maven
             https://maven.google.com
+            https://repo.maven.apache.org/maven2
           )
         )
       end
+
+    context "when there is only maven central defined" do
+      let(:buildfile_fixture_name) { "maven_central_only.gradle" }
+
+      it "it is not duplicated" do
+        expect(repository_urls).to match_array(
+          %w(
+            https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+    end
+
+    context "when there are private only repository declarations" do
+      let(:buildfile_fixture_name) { "private_only_repos_build.gradle" }
+
+      it "includes private repo as well as maven central as a fallback" do
+        expect(repository_urls).to match_array(
+          %w(
+            https://nexus.noyoucanthaveaccess.net/repository/maven
+            https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+    end
 
       context "some of which are for subprojects" do
         let(:buildfile_fixture_name) { "subproject_repos.gradle" }
 
         it "doesn't include the subproject declarations" do
           expect(repository_urls).
-            to match_array(%w(https://jcenter.bintray.com))
+            to match_array(
+              %w(
+                https://jcenter.bintray.com
+                https://repo.maven.apache.org/maven2
+              )
+            )
         end
 
         context "and this is a subproject" do
@@ -67,6 +98,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
                 https://jcenter.bintray.com
                 https://dl.bintray.com/magnusja/maven
                 https://maven.google.com
+                https://repo.maven.apache.org/maven2
               )
             )
           end
@@ -81,6 +113,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             %w(
               https://jcenter.bintray.com
               https://maven.google.com
+              https://repo.maven.apache.org/maven2
             )
           )
         end
@@ -98,6 +131,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
               https://kotlin.bintray.com/kotlinx
               https://kotlin.bintray.com/ktor
               https://kotlin.bintray.com/kotlin-dev/
+              https://repo.maven.apache.org/maven2
             )
           )
         end
@@ -111,6 +145,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             %w(
               https://jcenter.bintray.com
               https://hub.spigotmc.org/nexus/content/repositories/snapshots
+              https://repo.maven.apache.org/maven2
             )
           )
         end
@@ -126,6 +161,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
               https://dl.bintray.com/magnusja/maven
               https://kotlin.bintray.com/kotlinx
               https://maven.google.com
+              https://repo.maven.apache.org/maven2
             )
           )
         end
