@@ -44,30 +44,30 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         )
       end
 
-    context "when there is only maven central defined" do
-      let(:buildfile_fixture_name) { "maven_central_only.gradle" }
+      context "when there is only maven central defined" do
+        let(:buildfile_fixture_name) { "maven_central_only.gradle" }
 
-      it "it is not duplicated" do
-        expect(repository_urls).to match_array(
-          %w(
-            https://repo.maven.apache.org/maven2
+        it "it is not duplicated" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://repo.maven.apache.org/maven2
+            )
           )
-        )
+        end
       end
-    end
 
-    context "when there are private only repository declarations" do
-      let(:buildfile_fixture_name) { "private_only_repos_build.gradle" }
+      context "when there are private only repository declarations" do
+        let(:buildfile_fixture_name) { "private_only_repos_build.gradle" }
 
-      it "includes private repo as well as maven central as a fallback" do
-        expect(repository_urls).to match_array(
-          %w(
-            https://nexus.noyoucanthaveaccess.net/repository/maven
-            https://repo.maven.apache.org/maven2
+        it "includes private repo as well as maven central as a fallback" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://nexus.noyoucanthaveaccess.net/repository/maven
+              https://repo.maven.apache.org/maven2
+            )
           )
-        )
+        end
       end
-    end
 
       context "some of which are for subprojects" do
         let(:buildfile_fixture_name) { "subproject_repos.gradle" }
