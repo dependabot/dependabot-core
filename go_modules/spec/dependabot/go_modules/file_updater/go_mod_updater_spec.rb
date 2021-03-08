@@ -103,6 +103,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include("go 1.13") }
         end
 
+        context "when a retract directive is present" do
+          let(:project_name) { "go_retracted" }
+
+          it { is_expected.to include("// reason for retraction") }
+          it { is_expected.to include("retract v1.0.5") }
+        end
+
         describe "a dependency who's module path has changed (inc version)" do
           let(:project_name) { "module_path_and_version_changed" }
 
