@@ -1,3 +1,10 @@
+## v0.136.0, 8 March 2021
+
+- Bundler: Run Bundler v1 native helpers with an explicit version setting the
+  stage for Bundler v2 support (take 2) #3223
+- Bundler: Fix gemspec sanitization bug when heredoc has methods chained onto it
+  #3220
+
 ## v0.135.0, 4 March 2021
 
 - Gracefully handle cargo version conflicts #3213
