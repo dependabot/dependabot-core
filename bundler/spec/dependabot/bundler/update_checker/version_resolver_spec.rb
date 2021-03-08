@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:current_version) { "1.4.0" }
 
         let(:dependency_files) { project_dependency_files("bundler1/git_source_circular") }
-        its([:version]) { is_expected.to eq(Gem::Version.new("2.1.0")) }
+        its([:version]) { is_expected.to eq(Gem::Version.new("2.2.0")) }
       end
 
       context "with a ruby exec command that fails" do
@@ -340,7 +340,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
       it "unlocks the latest version" do
         expect(resolver.latest_resolvable_version_details[:version]).
-          to eq(Gem::Version.new("2.1.0"))
+          to eq(Gem::Version.new("2.2.0"))
       end
 
       context "with an upper bound that is lower than the current req" do

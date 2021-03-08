@@ -136,6 +136,23 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           )
         end
       end
+
+      context "that uses a heredoc with methods chained onto it" do
+        let(:content) do
+          %(Spec.new do |s|
+              s.version = "0.1.0"
+              s.post_install_message = <<~DESCRIPTION.strip.downcase
+                My description
+              DESCRIPTION
+            end)
+        end
+        it "removes the whole heredoc" do
+          expect(rewrite).to eq(
+            "Spec.new do |s|\n              s.version = \"0.1.0\""\
+            "\n              \"sanitized\"\n            end"
+          )
+        end
+      end
     end
 
     describe "version assignment" do

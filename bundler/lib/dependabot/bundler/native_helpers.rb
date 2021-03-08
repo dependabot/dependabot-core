@@ -1,30 +1,26 @@
 # frozen_string_literal: true
 
+require "bundler"
 require "dependabot/shared_helpers"
 
 module Dependabot
   module Bundler
     module NativeHelpers
       def self.run_bundler_subprocess(function:, args:, bundler_version:)
-        SharedHelpers.run_helper_subprocess(
-          command: helper_path(bundler_version: bundler_version),
-          function: function,
-          args: args,
-          env: {
-            # Bundler will pick the matching installed major version
-            "BUNDLER_VERSION" => bundler_version,
-            # Force bundler to use the helper Gemfile that has been bundled with
-            # v1, otherwise it will point to core's bundler/Gemfile which will
-            # be bundled with v2 once it's installed
-            "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_version), "Gemfile"),
-            # Unset ruby env set by running dependabot-core with bundle exec,
-            # forcing bundler to reset them from helpers/v1
-            "RUBYLIB" => nil,
-            "RUBYOPT" => nil,
-            "GEM_PATH" => nil,
-            "GEM_HOME" => nil
-          }
-        )
+        # Run helper suprocess with all bundler-related ENV variables removed
+        ::Bundler.with_original_env do
+          SharedHelpers.run_helper_subprocess(
+            command: helper_path(bundler_version: bundler_version),
+            function: function,
+            args: args,
+            env: {
+              # Bundler will pick the matching installed major version
+              "BUNDLER_VERSION" => bundler_version,
+              "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_version), "Gemfile"),
+              "BUNDLE_PATH" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle")
+            }
+          )
+        end
       end
 
       def self.versioned_helper_path(bundler_version:)
@@ -33,7 +29,7 @@ module Dependabot
       end
 
       def self.helper_path(bundler_version:)
-        "bundle exec ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
+        "ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
       end
 
       def self.native_helpers_root
