@@ -141,10 +141,10 @@ RSpec.describe namespace::PipenvVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to eq(
+            expect(error.message).to start_with(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.7.9"
+              "but the running Python is 3."
             )
           end
       end
