@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+install_dir=$1
+if [ -z "$install_dir" ]; then
+  echo "usage: $0 INSTALL_DIR"
+  exit 1
+fi
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cp -r \
+  "$helpers_dir/.bundle" \
+  "$helpers_dir/lib" \
+  "$helpers_dir/monkey_patches" \
+  "$helpers_dir/run.rb" \
+  "$helpers_dir/Gemfile" \
+  "$install_dir"
+
+cd "$install_dir"
+
+# NOTE: Sets `BUNDLED WITH` to match the installed v1 version in Gemfile.lock
+# forcing specs and native helpers to run with the same version
+#
+# TODO: Change to BUNDLER_VERSION=2 once it is installed
+BUNDLER_VERSION=1 bundle install
