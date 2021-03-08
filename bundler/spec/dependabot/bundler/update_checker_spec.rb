@@ -195,18 +195,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       before do
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_helper_subprocess).
+        allow(Dependabot::Bundler::NativeHelpers).
+          to receive(:run_bundler_subprocess).
           with({
-                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 bundler_version: "1",
                  function: "dependency_source_type",
                  args: anything
                }).and_call_original
 
-        allow(Dependabot::SharedHelpers).
-          to receive(:run_helper_subprocess).
+        allow(Dependabot::Bundler::NativeHelpers).
+          to receive(:run_bundler_subprocess).
           with({
-                 command: Dependabot::Bundler::NativeHelpers.helper_path,
+                 bundler_version: "1",
                  function: "private_registry_versions",
                  args: anything
                }).

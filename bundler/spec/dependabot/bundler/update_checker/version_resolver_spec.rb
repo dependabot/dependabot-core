@@ -188,10 +188,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           end
 
           before do
-            allow(Dependabot::SharedHelpers).
-              to receive(:run_helper_subprocess).
+            allow(Dependabot::Bundler::NativeHelpers).
+              to receive(:run_bundler_subprocess).
               with({
-                     command: Dependabot::Bundler::NativeHelpers.helper_path,
+                     bundler_version: "1",
                      function: "resolve_version",
                      args: anything
                    }).
