@@ -8,12 +8,9 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-if [ ! -d "$install_dir" ]; then
-  mkdir -p "$install_dir"
-fi
-
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
+  "$helpers_dir/.bundle" \
   "$helpers_dir/lib" \
   "$helpers_dir/monkey_patches" \
   "$helpers_dir/run.rb" \

@@ -1319,48 +1319,49 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
 
       it "gets the right list of dependencies to update" do
-        expect(resolver.dependency_updates_from_full_unlock).
-          to contain_exactly(
-            {
-              dependency: Dependabot::Dependency.new(
-                name: "react",
-                version: nil,
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }, {
-                  file: "packages/package2/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: "15.6.2"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: nil,
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }, {
-                  file: "packages/package2/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.6.2"
-            }
-          )
+        resolved_dependencies = resolver.dependency_updates_from_full_unlock
+        react = resolved_dependencies.find { |d| d[:dependency].name == "react" }
+        react_dom = resolved_dependencies.find { |d| d[:dependency].name == "react-dom" }
+        expect(react[:dependency].to_h).to eq(
+          {
+            "name" => "react",
+            "requirements" => [
+              {
+                file: "packages/package1/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: nil
+              },
+              {
+                file: "packages/package2/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: nil
+              }
+            ],
+            "package_manager" => "npm_and_yarn"
+          }
+        )
+        expect(react_dom[:dependency].to_h).to eq(
+          {
+            "name" => "react-dom",
+            "requirements" => [
+              {
+                requirement: "15.6.2",
+                file: "packages/package2/package.json",
+                groups: ["dependencies"],
+                source: nil
+              },
+              {
+                requirement: "15.6.2",
+                file: "packages/package1/package.json",
+                groups: ["dependencies"],
+                source: nil
+              }
+            ],
+            "package_manager" => "npm_and_yarn"
+          }
+        )
       end
     end
 
