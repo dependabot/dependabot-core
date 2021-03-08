@@ -6,6 +6,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 
 module Dependabot
   module Bundler
@@ -64,8 +65,8 @@ module Dependabot
             ) do |tmp_dir|
               write_temporary_dependency_files
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
+              NativeHelpers.run_bundler_subprocess(
+                bundler_version: bundler_version,
                 function: "update_lockfile",
                 args: {
                   gemfile_name: gemfile.name,
@@ -300,6 +301,10 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
+        end
+
+        def bundler_version
+          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end
