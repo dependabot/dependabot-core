@@ -35,7 +35,7 @@ module Dependabot
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
       def parse
-        dependency_set = DependencySet.new
+        dependencies = []
 
         dockerfiles.each do |dockerfile|
           dockerfile.content.each_line do |line|
@@ -47,7 +47,7 @@ module Dependabot
             version = version_from(parsed_from_line)
             next unless version
 
-            dependency_set << Dependency.new(
+            current =  Dependency.new(
               name: parsed_from_line.fetch("image"),
               version: version,
               package_manager: "docker",
@@ -58,10 +58,16 @@ module Dependabot
                 source: source_from(parsed_from_line)
               ]
             )
+            existing = dependencies.find {|d| d.name == current.name && d.version == current.version }
+            if existing
+              existing.requirements.push(*current.requirements).uniq!
+            else
+              dependencies << current
+            end
           end
         end
 
-        dependency_set.dependencies
+        dependencies
       end
 
       private
