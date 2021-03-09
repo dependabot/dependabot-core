@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# NOTE: This is intentionally left blank as it's currently only used to force
+# bundler to use v1 when executing native helpers by pointing the BUNDLE_GEMFILE
+# env to this Gemfile in Dependabot::Bundler::NativeHelpers

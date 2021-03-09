@@ -68,10 +68,10 @@ RUN apt-get install -y software-properties-common \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.22 && cd - \
-  && pyenv install 3.9.1 \
+  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
+  && pyenv install 3.9.2 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.9.1
+  && pyenv global 3.9.2
 
 
 ### JAVASCRIPT
@@ -94,7 +94,7 @@ RUN npm install elm@0.18.0 \
 
 # NOTE: This is a hack to get around the fact that elm 18 fails to install with
 # npm 7, we should look into deprecating elm 18
-RUN npm install -g npm@v7.5.4
+RUN npm install -g npm@v7.6.1
 
 
 ### PHP
@@ -139,7 +139,7 @@ RUN add-apt-repository ppa:ondrej/php \
 # Install Go and dep
 ARG GOLANG_VERSION=1.15.7
 ARG GOLANG_CHECKSUM=0d142143794721bb63ce6c8a6180c4062bcf8ef4715e7d6d6609f3a8282629b3
-RUN curl -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+RUN curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
   && mkdir /opt/go/gopath \
@@ -194,7 +194,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
-  bash /opt/bundler/helpers/build /opt/bundler && \
+  mkdir -p /opt/bundler/v1 && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \

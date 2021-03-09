@@ -1,3 +1,49 @@
+## v0.136.0, 8 March 2021
+
+- Bundler: Run Bundler v1 native helpers with an explicit version setting the
+  stage for Bundler v2 support (take 2) #3223
+- Bundler: Fix gemspec sanitization bug when heredoc has methods chained onto it
+  #3220
+
+## v0.135.0, 4 March 2021
+
+- Gracefully handle cargo version conflicts #3213
+- Pull request updater for azure client #3153 (@milind009)
+
+## v0.134.2, 3 March 2021
+
+- Revert: Run Bundler v1 native helpers with an explicit version
+- Update rubocop requirement from ~> 1.10.0 to ~> 1.11.0 in /common
+- Bump @npmcli/arborist from 2.2.4 to 2.2.6 in /npm_and_yarn/helpers
+
+## v0.134.1, 2 March 2021
+
+- Run Bundler v1 native helpers with an explicit version setting the stage for
+  Bundler v2 support
+
+## v0.134.0, 1 March 2021
+
+- Introduce `Dependabot::PullRequestCreator::Message` as an alternative to `Dependabot::PullRequestCreator::MessageBuilder`
+- Test: convert Bundler specs to projects
+- Test: fix npm6 fixture
+- Bump composer/composer from 2.0.9 to 2.0.10 in /composer/helpers/v2
+- Bump @npmcli/arborist from 2.2.3 to 2.2.4 in /npm_and_yarn/helpers
+- Bump eslint-config-prettier from 7.2.0 to 8.0.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.77 to 0.12.78 in /composer/helpers/v2
+- Bump phpstan/phpstan from 0.12.77 to 0.12.78 in /composer/helpers/v1
+- Bump cython from 0.29.21 to 0.29.22 in /python/helpers
+
+## v0.133.6, 22 February 2021
+
+- npm: Use CLI for peer dep conflicts, and default to it without lockfile
+- Bump @npmcli/arborist from 2.2.2 to 2.2.3 in /npm_and_yarn/helpers
+
+## v0.133.5, 19 February 2021
+
+- Python: Raise UnexpectedExternalCode if `reject_external_code: true`, regardless of the update involving external code
+- Hex: Raise UnexpectedExternalCode if `reject_external_code: true`, regardless of the update involving external code
+- JS: fix npm file updater spec
+
 ## v0.133.4, 18 February 2021
 
 - Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)

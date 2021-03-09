@@ -48,7 +48,7 @@ module Dependabot
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: "github-redirect.dependabot.com",
                    custom_headers: nil, require_up_to_date_base: false,
-                   provider_metadata: {})
+                   provider_metadata: {}, message: nil)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -72,6 +72,7 @@ module Dependabot
       @custom_headers             = custom_headers
       @require_up_to_date_base    = require_up_to_date_base
       @provider_metadata          = provider_metadata
+      @message                    = message
 
       check_dependencies_have_previous_version
     end
@@ -126,9 +127,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         signature_key: signature_key,
         labeler: labeler,
@@ -147,9 +148,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         approvers: reviewers,
@@ -165,9 +166,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         work_item: provider_metadata&.fetch(:work_item, nil)
@@ -181,9 +182,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         work_item: provider_metadata&.fetch(:work_item, nil)
@@ -197,17 +198,17 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         require_up_to_date_base: require_up_to_date_base?
       )
     end
 
-    def message_builder
-      @message_builder ||
+    def message
+      @message ||=
         MessageBuilder.new(
           source: source,
           dependencies: dependencies,

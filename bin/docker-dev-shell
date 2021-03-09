@@ -160,6 +160,7 @@ docker run --rm -ti \
   -v "$(pwd)/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
   -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
   -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
+  -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
   -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
   -v "$(pwd)/bundler/helpers:/opt/bundler" \
   -v "$(pwd)/bundler/helpers:/opt/bundler/helpers" \
