@@ -94,7 +94,7 @@ RUN npm install elm@0.18.0 \
 
 # NOTE: This is a hack to get around the fact that elm 18 fails to install with
 # npm 7, we should look into deprecating elm 18
-RUN npm install -g npm@v7.5.4
+RUN npm install -g npm@v7.6.1
 
 
 ### PHP
