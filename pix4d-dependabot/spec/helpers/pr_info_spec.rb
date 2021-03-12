@@ -1,5 +1,5 @@
 # rubocop:disable Style/FrozenStringLiteralComment
-require "dependabot/pr_info"
+require "helpers/pr_info"
 require "dependabot/dependency"
 
 def make_dependency_with_registry(registry)

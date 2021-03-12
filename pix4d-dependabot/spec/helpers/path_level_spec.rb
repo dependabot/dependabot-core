@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "dependabot/path_level"
-require "spec_helper"
+require "helpers/path_level"
+require_relative "spec_helper"
 
 RSpec.describe "recursive_path", :pix4d do
   context "using a concourse feature_package" do

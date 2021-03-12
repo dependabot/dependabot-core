@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "dependabot-main"
-require "spec_helper"
+require "helpers/helper_dependabot"
+require_relative "spec_helper"
 
-# rubocop:disable Metrics/BlockLength
-RSpec.describe "describe main function", :pix4d do
+RSpec.describe "describe pix4_dependabot function", :pix4d do
   def fixture(*name)
-    File.read(File.join("spec", "fixtures", *name))
+    File.read(File.join("..", "docker", "spec", "fixtures", *name))
   end
 
   let(:fake_token) { "github_token" }
@@ -79,7 +78,22 @@ RSpec.describe "describe main function", :pix4d do
         "dependency_dir" => "ci/pipelines/"
       }
     end
-
+    let(:docker_cred) do
+      {
+        "type" => "docker_registry",
+        "registry" => "registry.hub.docker.com",
+        "username" => nil,
+        "password" => nil
+      }
+    end
+    let(:git_cred) do
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "dependabot-script",
+        "password" => fake_token
+      }
+    end
     let(:fixture_file) { fixture("pipelines", file_name) }
     let(:dependency_dir) { project_data["dependency_dir"] }
     let(:repo) { project_data["repo"] }
@@ -94,7 +108,7 @@ RSpec.describe "describe main function", :pix4d do
       allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
       allow(self).to receive(:create_pr).and_return(pull_request)
 
-      actual = main(project_data, fake_token, docker_cred)
+      actual = pix4_dependabot("docker", project_data, git_cred, docker_cred)
       expect(actual).to equal("Success")
     end
   end
@@ -147,9 +161,8 @@ RSpec.describe "describe main function", :pix4d do
       allow(self).to receive(:create_pr).and_return(pull_request)
       allow(self).to receive(:auto_merge).and_return("")
 
-      actual = main(project_data, fake_token, docker_cred)
+      actual = pix4_dependabot("docker", project_data, fake_token, docker_cred)
       expect(actual).to equal("Success")
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

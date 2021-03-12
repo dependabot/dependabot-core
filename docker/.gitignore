@@ -4,4 +4,3 @@
 /dependabot-*.gem
 Gemfile.lock
 requirements/
-run_script.sh
