@@ -22,7 +22,7 @@ module Dependabot
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
 
       def self.required_files_in?(filenames)
-        filenames.include?("package.json", "rush.json")
+        filenames.include?("package.json")
       end
 
       def self.required_files_message
@@ -37,7 +37,7 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files += manifest_files
+        fetched_files += root_manifest_files
         fetched_files << package_lock if package_lock && !ignore_package_lock?
         fetched_files << yarn_lock if yarn_lock
         fetched_files << shrinkwrap if shrinkwrap
@@ -52,8 +52,8 @@ module Dependabot
         fetched_files.uniq
       end
 
-      def manifest_files
-        @manifest_files ||= fetch_manifest_files
+      def root_manifest_files
+        @manifest_files ||= fetch_root_manifest_files
       end
 
       def package_json
@@ -142,7 +142,7 @@ module Dependabot
         ].compact
       end
 
-      def fetch_manifest_files
+      def fetch_root_manifest_files
         raise Dependabot::ManifestFileNotFound unless package_json || rush_json
 
         [package_json, rush_json].compact
@@ -387,6 +387,8 @@ module Dependabot
       end
 
       def parsed_package_json
+        return {} unless package_json
+
         JSON.parse(package_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
