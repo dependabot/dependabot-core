@@ -151,7 +151,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            options: options
           ).updated_lockfile_content
       end
 
