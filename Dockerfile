@@ -54,12 +54,13 @@ RUN apt-get update \
 
 # Install Ruby 2.6.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN apt-get install -y software-properties-common \
+RUN apt-get update && apt-get install -y software-properties-common \
   && apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y ruby2.6 ruby2.6-dev \
-  && gem update --system 3.0.3 \
-  && gem install bundler -v 1.17.3 --no-document
+  && gem update --system 3.2.14 \
+  && gem install bundler -v 1.17.3 --no-document \
+  && gem install bundler -v 2.2.11 --no-document
 
 
 ### PYTHON
