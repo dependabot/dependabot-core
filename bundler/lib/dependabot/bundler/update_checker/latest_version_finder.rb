@@ -15,7 +15,7 @@ module Dependabot
       class LatestVersionFinder
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, ignored_versions:, raise_on_ignored: false,
-                       security_advisories:)
+                       security_advisories:, options:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @repo_contents_path  = repo_contents_path
@@ -23,6 +23,7 @@ module Dependabot
           @ignored_versions    = ignored_versions
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
+          @options             = options
         end
 
         def latest_version_details
@@ -36,7 +37,8 @@ module Dependabot
         private
 
         attr_reader :dependency, :dependency_files, :repo_contents_path,
-                    :credentials, :ignored_versions, :security_advisories
+                    :credentials, :ignored_versions, :security_advisories,
+                    :options
 
         def fetch_latest_version_details
           return dependency_source.latest_git_version_details if dependency_source.git?
@@ -103,7 +105,8 @@ module Dependabot
           @dependency_source ||= DependencySource.new(
             dependency: dependency,
             dependency_files: dependency_files,
-            credentials: credentials
+            credentials: credentials,
+            options: options
           )
         end
 

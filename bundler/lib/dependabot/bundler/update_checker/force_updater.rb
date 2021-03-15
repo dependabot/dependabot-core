@@ -149,7 +149,7 @@ module Dependabot
         end
 
         def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
+          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
         end
       end
     end

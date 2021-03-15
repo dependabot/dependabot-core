@@ -110,7 +110,8 @@ module Dependabot
         ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           repo_contents_path: repo_contents_path,
-          credentials: credentials
+          credentials: credentials,
+          options: options
         ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version
@@ -386,7 +387,8 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
-              security_advisories: security_advisories
+              security_advisories: security_advisories,
+              options: options
             )
           end
       end
