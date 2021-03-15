@@ -216,9 +216,11 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       let(:auth_token) { ":secretToken" }
       let(:encoded_token) { Base64.encode64(auth_token).delete("\n") }
 
-      stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
-        with(headers: { "Authorization" => "Basic #{encoded_token}" }).
-        to_return(status: 200, body: npm_latest_version_response)
+      before do
+        stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
+          with(headers: { "Authorization" => "Basic #{encoded_token}" }).
+          to_return(status: 200, body: npm_latest_version_response)
+      end
 
       context "using Basic authorization" do
         context "with non encoded token in credentials" do
@@ -251,11 +253,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
 
       context "using Bearer authorization" do
-        stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
-          with(headers: { "Authorization" => "Bearer secret_token" }).
-          to_return(status: 200, body: npm_latest_version_response)
-
-        let(:credentials)  do
+        let(:credentials) do
           [
             {
               "type" => "npm_registry",
@@ -263,6 +261,12 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
               "token" => "secret_token"
             }
           ]
+
+          before do
+            stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
+              with(headers: { "Authorization" => "Bearer secret_token" }).
+              to_return(status: 200, body: npm_latest_version_response)
+          end
         end
 
         it { is_expected.to eq("https://github.com/jshttp/etag") }
