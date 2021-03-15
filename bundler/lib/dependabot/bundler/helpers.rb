@@ -6,9 +6,9 @@ module Dependabot
       V1 = "1"
       V2 = "2"
 
-      # TODO: Add support for bundler v2
-      # return "v2" if lockfile.content.match?(/BUNDLED WITH\s+2/m)
       def self.bundler_version(_lockfile)
+        return V2 if lockfile.content.match?(/BUNDLED WITH\s+2/m)
+
         V1
       end
     end
