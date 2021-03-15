@@ -1728,7 +1728,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
     describe "updated_dependency_files" do
        it "fails as the native helper is not yet implemented" do
          expect { updater.updated_dependency_files }.
-           to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+           to raise_error(Dependabot::NotImplemented,
                           "Bundler 2 adapter does not yet implement vendor_cache_dir")
        end
      end

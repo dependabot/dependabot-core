@@ -741,9 +741,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
     describe "parse" do
       it "fails as the native helper is not yet implemented" do
         expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotEvaluatable,
-                         "Functions::NotImplementedError with message: Bundler 2 adapter " \
-                         "does not yet implement parsed_gemfile")
+          to raise_error(Dependabot::NotImplemented,
+                         "Bundler 2 adapter does not yet implement parsed_gemfile")
       end
     end
   end

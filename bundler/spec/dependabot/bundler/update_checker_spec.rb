@@ -2092,7 +2092,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#latest_version" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.latest_version }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2100,7 +2100,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#lowest_security_fix_version" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.lowest_security_fix_version }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2108,7 +2108,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#latest_version_resolvable_with_full_unlock?" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.send(:latest_version_resolvable_with_full_unlock?) }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2116,7 +2116,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#updated_dependencies_after_full_unlock" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.send(:updated_dependencies_after_full_unlock) }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2124,7 +2124,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#conflicting_dependencies" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.conflicting_dependencies }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2132,7 +2132,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#latest_resolvable_version" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.latest_resolvable_version }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2140,7 +2140,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#preferred_resolvable_version" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.preferred_resolvable_version }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2148,7 +2148,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#latest_resolvable_version_with_no_unlock" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.latest_resolvable_version_with_no_unlock }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
@@ -2156,7 +2156,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     describe "#updated_requirements" do
       it "fails as the native helper is not yet implemented" do
         expect { checker.updated_requirements }.
-          to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+          to raise_error(Dependabot::NotImplemented,
                          "Bundler 2 adapter does not yet implement dependency_source_type")
       end
     end
