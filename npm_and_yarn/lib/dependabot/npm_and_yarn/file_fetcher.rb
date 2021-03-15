@@ -26,7 +26,7 @@ module Dependabot
       end
 
       def self.required_files_message
-        "Repo must contain a package.json."
+        "Repo must contain a package.json/rush.json."
       end
 
       def npmrc_content
@@ -37,7 +37,7 @@ module Dependabot
 
       def fetch_files
         fetched_files = []
-        fetched_files << package_json
+        fetched_files += root_manifest_files
         fetched_files << package_lock if package_lock && !ignore_package_lock?
         fetched_files << yarn_lock if yarn_lock
         fetched_files << shrinkwrap if shrinkwrap
@@ -52,8 +52,12 @@ module Dependabot
         fetched_files.uniq
       end
 
+      def root_manifest_files
+        @root_manifest_files ||= fetch_root_manifest_files
+      end
+
       def package_json
-        @package_json ||= fetch_file_from_host("package.json")
+        @package_json ||= fetch_file_if_present("package.json")
       end
 
       def package_lock
@@ -112,7 +116,7 @@ module Dependabot
       end
 
       def rush_files
-        @rush_files ||= [rush_json, *rush_configs, *rush_packages].compact
+        @rush_files ||= [*rush_configs, *rush_packages].compact
       end
 
       def rush_json
@@ -136,6 +140,12 @@ module Dependabot
           fetch_file_if_present("common/config/rush/common-versions.json"),
           fetch_file_if_present("common/config/rush/version-policies.json")
         ].compact
+      end
+
+      def fetch_root_manifest_files
+        raise Dependabot::ManifestFileNotFound unless package_json || rush_json
+
+        [package_json, rush_json].compact
       end
 
       def workspace_package_jsons
@@ -377,6 +387,8 @@ module Dependabot
       end
 
       def parsed_package_json
+        return {} unless package_json
+
         JSON.parse(package_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path

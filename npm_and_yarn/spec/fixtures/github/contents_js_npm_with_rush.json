@@ -1,0 +1,19 @@
+[
+    {
+      "name": "rush.json",
+      "path": "rush.json",
+      "sha": "d429264c8c2f0f306a422900c2f41123e07c31b4",
+      "size": 2433,
+      "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/package.json?ref=develop",
+      "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/package.json",
+      "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+      "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/develop/package.json",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/package.json?ref=develop",
+        "git": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/d429264c8c2f0f306a422900c2f41123e07c31b4",
+        "html": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/develop/package.json"
+      }
+    }
+  ]
+  
