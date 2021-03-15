@@ -163,7 +163,8 @@ module Dependabot
               credentials: credentials,
               target_version: version,
               requirements_update_strategy: requirements_update_strategy,
-              update_multiple_dependencies: false
+              update_multiple_dependencies: false,
+              options: options
             ).updated_dependencies
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -184,7 +185,8 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
-              replacement_git_pin: tag
+              replacement_git_pin: tag,
+              options: options
             ).latest_resolvable_version_details
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -340,7 +342,8 @@ module Dependabot
             repo_contents_path: repo_contents_path,
             credentials: credentials,
             target_version: latest_version,
-            requirements_update_strategy: requirements_update_strategy
+            requirements_update_strategy: requirements_update_strategy,
+            options: options
           )
       end
 
@@ -366,7 +369,8 @@ module Dependabot
               raise_on_ignored: raise_on_ignored,
               remove_git_source: remove_git_source,
               unlock_requirement: unlock_requirement,
-              latest_allowable_version: latest_version
+              latest_allowable_version: latest_version,
+              options: options
             )
           end
       end

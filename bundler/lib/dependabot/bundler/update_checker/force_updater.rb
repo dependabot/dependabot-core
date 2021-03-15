@@ -19,7 +19,8 @@ module Dependabot
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, target_version:,
                        requirements_update_strategy:,
-                       update_multiple_dependencies: true)
+                       update_multiple_dependencies: true,
+                       options:)
           @dependency                   = dependency
           @dependency_files             = dependency_files
           @repo_contents_path           = repo_contents_path
@@ -27,6 +28,7 @@ module Dependabot
           @target_version               = target_version
           @requirements_update_strategy = requirements_update_strategy
           @update_multiple_dependencies = update_multiple_dependencies
+          @options                      = options
         end
 
         def updated_dependencies
@@ -36,7 +38,8 @@ module Dependabot
         private
 
         attr_reader :dependency, :dependency_files, :repo_contents_path,
-                    :credentials, :target_version, :requirements_update_strategy
+                    :credentials, :target_version, :requirements_update_strategy,
+                    :options
 
         def update_multiple_dependencies?
           @update_multiple_dependencies

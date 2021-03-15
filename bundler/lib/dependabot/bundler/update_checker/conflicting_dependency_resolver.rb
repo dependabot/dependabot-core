@@ -12,6 +12,8 @@ module Dependabot
         require_relative "shared_bundler_helpers"
         include SharedBundlerHelpers
 
+        attr_reader :options
+
         def initialize(dependency_files:, repo_contents_path:, credentials:, options:)
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
