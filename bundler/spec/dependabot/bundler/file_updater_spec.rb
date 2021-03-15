@@ -1708,4 +1708,29 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
     end
   end
+
+  context "with bundler 2 support enabled" do
+    let(:updater) do
+      described_class.new(
+        dependency_files: dependency_files,
+        dependencies: dependencies,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }],
+        repo_contents_path: repo_contents_path,
+        options: {
+          bundler_2_available: true
+        }
+      )
+    end
+
+    describe "updated_dependency_files" do
+       it "fails as the native helper is not yet implemented" do
+         expect { updater.updated_dependency_files }.
+           to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed,
+                          "Bundler 2 adapter does not yet implement vendor_cache_dir")
+       end
+     end
+  end
 end
