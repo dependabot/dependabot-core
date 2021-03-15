@@ -53,7 +53,7 @@ module Dependabot
       end
 
       def root_manifest_files
-        @manifest_files ||= fetch_root_manifest_files
+        @root_manifest_files ||= fetch_root_manifest_files
       end
 
       def package_json
