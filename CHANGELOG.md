@@ -1,3 +1,7 @@
+## v0.137.1, 15 March 2021
+
+- Bundler: Install dependabot-core's gems using Bundler v2 (unused for updates)
+
 ## v0.137.0, 15 March 2021
 
 - Bump npm from 7.5.4 to 7.6.1
