@@ -394,8 +394,8 @@ module Dependabot
         end
 
         def run_yarn_checker(path:, version:)
-        puts "running sub process"
-        SharedHelpers.with_git_configured(credentials: credentials) do
+          puts "running sub process"
+          SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
