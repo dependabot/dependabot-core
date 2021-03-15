@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "tmpdir"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 

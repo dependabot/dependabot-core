@@ -1,2 +1,3 @@
 ---
 BUNDLE_PATH: ".bundle"
+BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS: "true"
