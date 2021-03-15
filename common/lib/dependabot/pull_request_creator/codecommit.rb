@@ -34,7 +34,7 @@ module Dependabot
       end
 
       def pull_request_exists
-        return branch_exists?(branch_name) && unmerged_pull_request_exists?
+        branch_exists?(branch_name) && unmerged_pull_request_exists?
       end
 
       private
