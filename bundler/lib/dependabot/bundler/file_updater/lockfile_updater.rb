@@ -33,7 +33,7 @@ module Dependabot
         end
 
         def initialize(dependencies:, dependency_files:,
-                       repo_contents_path: nil, credentials:, options: {})
+                       repo_contents_path: nil, credentials:, options:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
