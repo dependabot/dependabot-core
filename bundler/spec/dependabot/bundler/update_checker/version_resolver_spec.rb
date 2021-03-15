@@ -19,7 +19,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         "password" => "token"
       }],
       unlock_requirement: unlock_requirement,
-      latest_allowable_version: latest_allowable_version
+      latest_allowable_version: latest_allowable_version,
+      options: {}
     )
   end
   let(:ignored_versions) { [] }
