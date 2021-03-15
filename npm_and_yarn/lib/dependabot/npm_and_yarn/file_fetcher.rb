@@ -135,7 +135,7 @@ module Dependabot
           fetch_file_if_present("common/config/pnpmfile-dependencies.json"),
           fetch_file_if_present("common/config/rush/common-versions.json"),
           fetch_file_if_present("common/config/rush/version-policies.json")
-        ].compact        
+        ].compact
       end
 
       def workspace_package_jsons
@@ -295,7 +295,7 @@ module Dependabot
         workspace_paths(parsed_rush_json["projects"]).each do |workspace|
           dependency_files += fetch_rush_packages_from_path(workspace["projectFolder"])
         end
-      
+
         dependency_files
       end
 
@@ -330,16 +330,16 @@ module Dependabot
         dependency_files
       end
 
-      def fetch_rush_packages_from_path(path, nested = false)
+      def fetch_rush_packages_from_path(path, _nested = false)
         puts "Fetching rush package Path: #{path}"
-        
+
         dependency_files = []
         package_json_path = File.join(path, "package.json")
-        
+
         # Currently we fetch just the package.json
         # TODO: Do we need nested lookup here? Do we need wildcard matching?
         dependency_files << fetch_file_from_host(package_json_path)
-        
+
         dependency_files
       end
 

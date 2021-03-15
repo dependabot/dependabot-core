@@ -193,7 +193,6 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     end
 
     context "for a package with private registry source" do
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -214,16 +213,17 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }
       let(:npm_latest_version_response) { fixture("npm_responses", "etag-1.0.0.json") }
 
-      let(:auth_token) {":secretToken"}
-      let(:encoded_token) { Base64.encode64(auth_token).delete("\n")  }
+      let(:auth_token) { ":secretToken" }
+      let(:encoded_token) { Base64.encode64(auth_token).delete("\n") }
 
-      stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
+      before do
+        stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
           with(headers: { "Authorization" => "Basic #{encoded_token}" }).
           to_return(status: 200, body: npm_latest_version_response)
+      end
 
-      context 'using Basic authorization' do
-
-        context 'with non encoded token in credentials' do
+      context "using Basic authorization" do
+        context "with non encoded token in credentials" do
           let(:credentials) do
             [
               {
@@ -237,8 +237,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           it { is_expected.to eq("https://github.com/jshttp/etag") }
         end
 
-        context 'with encoded token in credentials' do
-          let(:credentials)  do
+        context "with encoded token in credentials" do
+          let(:credentials) do
             [
               {
                 "type" => "npm_registry",
@@ -252,12 +252,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
-      context 'using Bearer authorization' do
-        stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
-          with(headers: { "Authorization" => "Bearer secret_token" }).
-          to_return(status: 200, body: npm_latest_version_response)
-
-        let(:credentials)  do
+      context "using Bearer authorization" do
+        let(:credentials) do
           [
             {
               "type" => "npm_registry",
@@ -267,9 +263,14 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           ]
         end
 
+        before do
+          stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 200, body: npm_latest_version_response)
+        end
+
         it { is_expected.to eq("https://github.com/jshttp/etag") }
       end
-
     end
 
     context "for a scoped package name" do
