@@ -8,14 +8,14 @@ RSpec.describe Functions::DependencySource do
 
   let(:dependency_source) do
     described_class.new(
-      gemfile_name: gemfile_name,
+      gemfile_name: "Gemfile",
       dependency_name: dependency_name
     )
   end
 
   let(:dependency_name) { "business" }
 
-  let(:gemfile_fixture_name) { "specified_source" }
+  let(:project_name) { "specified_source_no_lockfile" }
   let(:registry_url) { "https://repo.fury.io/greysteil/" }
   let(:gemfury_business_url) do
     "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
@@ -47,7 +47,7 @@ RSpec.describe Functions::DependencySource do
     end
 
     context "specified as the default source" do
-      let(:gemfile_fixture_name) { "specified_default_source" }
+      let(:project_name) { "specified_default_source_no_lockfile" }
 
       it "returns all versions from the private source" do
         is_expected.to eq([
@@ -152,7 +152,7 @@ RSpec.describe Functions::DependencySource do
     end
 
     context "that only implements the old Bundler index format..." do
-      let(:gemfile_fixture_name) { "sidekiq_pro" }
+      let(:project_name) { "sidekiq_pro" }
       let(:dependency_name) { "sidekiq-pro" }
       let(:registry_url) { "https://gems.contribsys.com/" }
 
