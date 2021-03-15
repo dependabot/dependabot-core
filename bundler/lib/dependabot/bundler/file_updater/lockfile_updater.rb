@@ -33,11 +33,12 @@ module Dependabot
         end
 
         def initialize(dependencies:, dependency_files:,
-                       repo_contents_path: nil, credentials:)
+                       repo_contents_path: nil, credentials:, options: {})
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @options = options
         end
 
         def updated_lockfile_content
@@ -54,7 +55,7 @@ module Dependabot
         private
 
         attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials
+                    :credentials, :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
@@ -304,6 +305,9 @@ module Dependabot
         end
 
         def bundler_version
+          # Force use of Bundler 2 if the experiment is enabled.
+          return "2" if options[:bundler_2_available]
+
           @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
