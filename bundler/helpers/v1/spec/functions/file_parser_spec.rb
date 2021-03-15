@@ -12,8 +12,7 @@ RSpec.describe Functions::FileParser do
     )
   end
 
-  let(:gemfile_fixture_name) { "Gemfile" }
-  let(:lockfile_fixture_name) { "Gemfile.lock" }
+  let(:project_name) { "gemfile" }
 
   describe "#parsed_gemfile" do
     subject(:parsed_gemfile) do

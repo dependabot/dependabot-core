@@ -3,8 +3,6 @@
 require "native_spec_helper"
 require "shared_contexts"
 
-require "dependabot/dependency"
-
 RSpec.describe Functions::VersionResolver do
   include_context "in a temporary bundler directory"
   include_context "stub rubygems compact index"
@@ -13,8 +11,8 @@ RSpec.describe Functions::VersionResolver do
     described_class.new(
       dependency_name: dependency_name,
       dependency_requirements: dependency_requirements,
-      gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name
+      gemfile_name: "Gemfile",
+      lockfile_name: "Gemfile.lock"
     )
   end
 
@@ -37,8 +35,7 @@ RSpec.describe Functions::VersionResolver do
       in_tmp_folder { version_resolver.version_details }
     end
 
-    let(:gemfile_fixture_name) { "Gemfile" }
-    let(:lockfile_fixture_name) { "Gemfile.lock" }
+    let(:project_name) { "gemfile" }
     let(:requirement_string) { " >= 0" }
 
     its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
@@ -47,8 +44,7 @@ RSpec.describe Functions::VersionResolver do
     context "with a private gemserver source" do
       include_context "stub rubygems compact index"
 
-      let(:gemfile_fixture_name) { "specified_source" }
-      let(:lockfile_fixture_name) { "specified_source.lock" }
+      let(:project_name) { "specified_source" }
       let(:requirement_string) { ">= 0" }
 
       before do
@@ -72,8 +68,7 @@ RSpec.describe Functions::VersionResolver do
     end
 
     context "with a git source" do
-      let(:gemfile_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source.lock" }
+      let(:project_name) { "git_source" }
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0")) }
       its([:fetcher]) { is_expected.to be_nil }
