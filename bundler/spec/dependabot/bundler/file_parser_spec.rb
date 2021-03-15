@@ -725,4 +725,26 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
   end
+
+  context "with bundler 2 support enabled" do
+    let(:parser) do
+      described_class.new(
+        dependency_files: dependency_files,
+        source: source,
+        reject_external_code: reject_external_code,
+        options: {
+          bundler_2_available: true
+        }
+      )
+    end
+
+    describe "parse" do
+      it "Fails as the native helper is not yet implemented" do
+        expect { parser.parse }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable,
+                         "Functions::NotImplementedError with message: Bundler 2 adapter " \
+                         "does not yet implement parsed_gemfile")
+      end
+    end
+  end
 end
