@@ -305,10 +305,7 @@ module Dependabot
         end
 
         def bundler_version
-          # Force use of Bundler 2 if the experiment is enabled.
-          return "2" if options[:bundler_2_available]
-
-          @bundler_version ||= Helpers.bundler_version(lockfile)
+          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
         end
       end
     end
