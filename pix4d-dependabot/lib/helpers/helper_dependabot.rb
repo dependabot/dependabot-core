@@ -4,10 +4,11 @@ require_relative "path_level"
 require_relative "pr_info"
 require_relative "auto_merge"
 require "dependabot/docker"
+require "dependabot/python"
 
 # rubocop:disable Metrics/ParameterLists
-def create_pr(_package_manager, source, commit, updated_deps, updated_files, credentials_github)
-  pr_message_footer = pr_info(updated_deps.first)
+def create_pr(package_manager, source, commit, updated_deps, updated_files, credentials_github)
+  pr_message_footer = pr_info(updated_deps.first) unless package_manager == "pip"
 
   # Create a pull request for the update
   pr = Dependabot::PullRequestCreator.new(
@@ -57,11 +58,11 @@ def fetch_dependencies(package_manager, files, source)
   parser.parse
 end
 
-def update_files(package_manager, dep, updated_deps, files)
+def update_files(package_manager, dep, updated_deps, files, github_credentials)
   # Generate updated dependency files
   print "  - Updating #{dep.name} (from #{dep.version}) \n"
   updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
-    dependencies: updated_deps, dependency_files: files, credentials: nil
+    dependencies: updated_deps, dependency_files: files, credentials: github_credentials
   )
   updater.updated_dependency_files
 end
@@ -102,7 +103,7 @@ def pix4_dependabot(package_manager, project_data, github_credentials, extra_cre
     dependencies = fetch_dependencies(package_manager, files, source)
 
     dependencies.select(&:top_level?).each do |dep|
-      checker = checker_init(package_manager, dep, files, [extra_credentials])
+      checker = checker_init(package_manager, dep, files, extra_credentials)
       next if checker_up_to_date(checker)
 
       requirements_to_unlock = requirements(checker)
@@ -111,7 +112,7 @@ def pix4_dependabot(package_manager, project_data, github_credentials, extra_cre
       updated_deps = checker_updated_dependencies(checker, requirements_to_unlock)
       next if updated_deps.first.version == updated_deps.first.previous_version
 
-      updated_files = update_files(package_manager, dep, updated_deps, files)
+      updated_files = update_files(package_manager, dep, updated_deps, files, [github_credentials])
 
       pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files,
                                [github_credentials])

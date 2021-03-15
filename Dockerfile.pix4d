@@ -8,6 +8,7 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
 
 COPY common /home/dependabot/common
 COPY docker /home/dependabot/docker
+COPY python /home/dependabot/python
 COPY pix4d-dependabot /home/dependabot/pix4d-dependabot
 
 RUN apk update && \
