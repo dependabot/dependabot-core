@@ -54,12 +54,13 @@ RUN apt-get update \
 
 # Install Ruby 2.6.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN apt-get install -y software-properties-common \
+RUN apt-get update && apt-get install -y software-properties-common \
   && apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y ruby2.6 ruby2.6-dev \
-  && gem update --system 3.0.3 \
-  && gem install bundler -v 1.17.3 --no-document
+  && gem update --system 3.2.14 \
+  && gem install bundler -v 1.17.3 --no-document \
+  && gem install bundler -v 2.2.11 --no-document
 
 
 ### PYTHON
@@ -68,10 +69,10 @@ RUN apt-get install -y software-properties-common \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.22 && cd - \
-  && pyenv install 3.9.1 \
+  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
+  && pyenv install 3.9.2 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.9.1
+  && pyenv global 3.9.2
 
 
 ### JAVASCRIPT
@@ -94,7 +95,7 @@ RUN npm install elm@0.18.0 \
 
 # NOTE: This is a hack to get around the fact that elm 18 fails to install with
 # npm 7, we should look into deprecating elm 18
-RUN npm install -g npm@v7.5.4
+RUN npm install -g npm@v7.6.1
 
 
 ### PHP
