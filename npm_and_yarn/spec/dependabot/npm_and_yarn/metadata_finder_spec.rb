@@ -261,12 +261,12 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
               "token" => "secret_token"
             }
           ]
+        end
 
-          before do
-            stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
-              with(headers: { "Authorization" => "Bearer secret_token" }).
-              to_return(status: 200, body: npm_latest_version_response)
-          end
+        before do
+          stub_request(:get, "https://npm.private-registry.io/dependabot/etag/latest").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 200, body: npm_latest_version_response)
         end
 
         it { is_expected.to eq("https://github.com/jshttp/etag") }
