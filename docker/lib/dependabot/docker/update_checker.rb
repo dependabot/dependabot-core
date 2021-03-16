@@ -57,7 +57,7 @@ module Dependabot
       /x.freeze
 
       def latest_version
-        @latest_version ||= fetch_latest_version(dependency.version)
+        fetch_latest_version(dependency.version)
       end
 
       def latest_resolvable_version
@@ -132,27 +132,32 @@ module Dependabot
       # NOTE: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_version(version)
-        return version unless version.match?(NAME_WITH_VERSION)
+        @versions ||= {}
+        return @versions[version] if @versions.key?(version)
 
-        # Prune out any downgrade tags before checking for pre-releases
-        # (which requires a call to the registry for each tag, so can be slow)
-        candidate_tags = comparable_tags_from_registry(version)
-        non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
-        candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
+        @versions[version] = begin
+          return version unless version.match?(NAME_WITH_VERSION)
 
-        unless prerelease?(version)
-          candidate_tags =
-            candidate_tags.
-            reject { |tag| prerelease?(tag) }
-        end
+          # Prune out any downgrade tags before checking for pre-releases
+          # (which requires a call to the registry for each tag, so can be slow)
+          candidate_tags = comparable_tags_from_registry(version)
+          non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
+          candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        latest_tag =
-          filter_ignored(candidate_tags).
-          max_by do |tag|
-            [version_class.new(numeric_version_from(tag)), tag.length]
+          unless prerelease?(version)
+            candidate_tags =
+              candidate_tags.
+              reject { |tag| prerelease?(tag) }
           end
 
-        latest_tag || version
+          latest_tag =
+            filter_ignored(candidate_tags).
+            max_by do |tag|
+              [version_class.new(numeric_version_from(tag)), tag.length]
+            end
+
+          latest_tag || version
+        end
       end
 
       def comparable_tags_from_registry(version)
