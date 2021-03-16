@@ -124,7 +124,7 @@ module Dependabot
       end
 
       def check_required_files
-        raise "No package.json!" unless get_original_file("package.json")
+        raise "No manifest file!" unless get_original_file("package.json") || get_original_file("rush.json")
       end
 
       def ignore_requirement?(requirement)
