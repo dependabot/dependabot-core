@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "dependabot/auto_merge"
-require "spec_helper"
+require "helpers/auto_merge"
+require_relative "spec_helper"
 
 RSpec.describe "auto_merge", :pix4d do
   context "using a docker feature_package" do

@@ -21,7 +21,7 @@ Figure: Example of a PR opened by Dependabot in linux-image-build repository
 *Problem*:
 In Pix4D, Concourse runs all Linux jobs and all the resources in Linux containers (Docker images) which we would like to keep up to date. From the experience we know that using tag “latest” often leads to broken pipelines, while pinning the tag and manually updating it can lead to using too old Docker images across many pipelines. Therefore we needed an automated dependency updater like Dependabot but for yaml files.
 
-Unfortunately, at this moment Depenabot Docker package manager can only fetch and parse Dockerfiles. This is quite a limitation, since in Pix4D we mostly use Docker images in Concourse pipelines by configuring the Docker image repository name (name and tag) in pipeline templates yml files. In the below example we use the Docker image _cpp-builder-ubuntu-18.04_ with a pinned tag in the format _YYYYMMDDHHMMSS_ 
+Unfortunately, at this moment Depenabot Docker package manager can only fetch and parse Dockerfiles. This is quite a limitation, since in Pix4D we mostly use Docker images in Concourse pipelines by configuring the Docker image repository name (name and tag) in pipeline templates yml files. In the below example we use the Docker image _cpp-builder-ubuntu-18.04_ with a pinned tag in the format _YYYYMMDDHHMMSS_
 
 ```
 ---
@@ -54,7 +54,7 @@ git log --pretty="%H" --author="Pix4D" | while read commit_hash; do git show --o
 ```
 
 [MASTER PIPELINE](https://builder.ci.pix4d.com/teams/developers/pipelines/dependabot-master)
-contains two jobs: 
+contains two jobs:
 - test-dependabot
 - merge-upstream
 
@@ -99,7 +99,7 @@ After installation of Ruby bundler, execute the below command inside `docker` pa
 
 ```
 bundle config set path '../../requirements'
-bundle install 
+bundle install
 ```
 
 ## Executing tests
@@ -117,7 +117,7 @@ bundle exec rspec -f d
 ```
 
 To run only the tests added by PCI team, run the following command:
-```shell 
+```shell
 bundle exec rspec --tag pix4d
 ```
 
@@ -155,7 +155,7 @@ The Pix4D Dependabot main script (bot) calling each of the Dependabot main compo
 
 *FEATURE_PACKAGE* i.e docker or concourse. Selecting the concourse option, we will parse the pipeline template _yml_ file. Selecting the docker option, the script will recursively find all Dockerfiles in the repository below a path set by: *DEPENDENCY_DIRECTORY* and for each file, it will propose an update of the base Docker image used in each of the Dockerfiles.
 
-We currently run dependabot in both mods: 
+We currently run dependabot in both mods:
 - `docker` (updates base image of a Dockerfile): used in [linux-image-build] repository to update the tag for the base images in all Dockerfiles that can be found in the repository. The PR that is opened, is also immediately auto-merged by the bot.
 
 - `concourse` (updates Docker image tags for each Dockerfile in Concourse pipeline template yml file): for all other repositories set in github-automation-tools [configuration file](https://github.com/Pix4D/terraform-tomato/blob/master/ci/github-automation-tools/pipeline_generator/repositories.yml). For each project that activated `docker: true` option we have one job in [github-automation-master](https://builder.ci.pix4d.com/teams/main/pipelines/github-automation-master) pipeline running a Dependabot configured in concourse mod for this exact project/repository
@@ -166,7 +166,7 @@ We currently run dependabot in both mods:
 
 *REPOSITORY_BRANCH* - Github repository branch containing the file we want to fetch (default is `master`). PR will be opened against this branch
 
-*GITHUB_ACCESS_TOKEN* - personal access token for authentication to GitHub (in the CI we use the token for the Pix4D-Janus user). The user needs to have read and write access to the repository. 
+*GITHUB_ACCESS_TOKEN* - personal access token for authentication to GitHub (in the CI we use the token for the Pix4D-Janus user). The user needs to have read and write access to the repository.
 
 The following must be set when we want to update Docker images from private Docker registry, otherwise, these can be considered as optional parameters:
 
@@ -192,7 +192,7 @@ Concourse job running Dependabot in concourse mode for [github-automation-playgr
 
 - a new PR in [github-automation-playground] repository is created, proposing the update of the tag. PR is opened against the branch set by `REPOSITORY_BRANCH` environmental variable (defaults to master)
 
-*IMPORTANT:* The user for which the `GITHUB_ACCESS_TOKEN` is set needs to have read and write access to the repository. 
+*IMPORTANT:* The user for which the `GITHUB_ACCESS_TOKEN` is set needs to have read and write access to the repository.
 
 ```
 ---
@@ -240,7 +240,7 @@ Concourse job running Dependabot in dependabot mode for [linux-image-build] Gith
 
 - check if a newer tag exists in the Docker repository. If newer tag is found the _FROM_ line in the Dockerfile file is updated
 
-- a new PR in [linux-image-build] repository is created, proposing the update of the tag. PR is opened against the branch set by `REPOSITORY_BRANCH` environmental variable (defaults to `master`). The PR will be auto merged immediately, with no human interaction needed.  
+- a new PR in [linux-image-build] repository is created, proposing the update of the tag. PR is opened against the branch set by `REPOSITORY_BRANCH` environmental variable (defaults to `master`). The PR will be auto merged immediately, with no human interaction needed.
 
 
 *IMPORTANT:* The user for which the `GITHUB_ACCESS_TOKEN` is set needs to have admin access to the repository, to be able to auto-merge and bypass any master branch protection rules that are set in place (i.e. PR reviews required)

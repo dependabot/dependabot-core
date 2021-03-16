@@ -8,6 +8,7 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
 
 COPY common /home/dependabot/common
 COPY docker /home/dependabot/docker
+COPY pix4d-dependabot /home/dependabot/pix4d-dependabot
 
 RUN apk update && \
   apk add --no-cache \
@@ -19,15 +20,18 @@ RUN apk update && \
   gem install bundler -v 2.2.9 --no-document
 
 
-WORKDIR /home/dependabot/docker/
+WORKDIR /home/dependabot/pix4d-dependabot/
 
 RUN bundle config build.nokogiri --use-system-libraries
 RUN bundle install
 
 FROM build AS tests
 
+WORKDIR /home/dependabot/pix4d-dependabot/
+RUN bundle exec rspec .
+
 WORKDIR /home/dependabot/docker/
-RUN bundle exec rspec ./spec/
+RUN bundle exec rspec .
 
 FROM ruby:3.0-alpine AS main
 LABEL "maintainer"="platform_ci_team@pix4d.com"
