@@ -1,3 +1,9 @@
+## v0.137.2, 16 March 2021
+
+- Bundler: Fix permission error when vendoring gems
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
 ## v0.137.1, 15 March 2021
 
 - Bundler: Install dependabot-core's gems using Bundler v2 (unused for updates)
