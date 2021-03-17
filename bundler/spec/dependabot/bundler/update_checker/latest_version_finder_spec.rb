@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: {}
+      options: { bundler_2_available: true }
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }

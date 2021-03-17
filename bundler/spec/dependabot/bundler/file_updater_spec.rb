@@ -20,7 +20,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         "type" => "git_source",
         "host" => "github.com"
       }],
-      repo_contents_path: repo_contents_path
+      repo_contents_path: repo_contents_path,
+      options: { bundler_2_available: true }
     )
   end
   let(:dependencies) { [dependency] }

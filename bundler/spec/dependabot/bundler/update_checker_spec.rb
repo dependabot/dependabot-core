@@ -16,7 +16,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      options: { bundler_2_available: true }
     )
   end
   let(:credentials) do

@@ -13,7 +13,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
     described_class.new(
       dependency_files: dependency_files,
       source: source,
-      reject_external_code: reject_external_code
+      reject_external_code: reject_external_code,
+      options: { bundler_2_available: true }
     )
   end
   let(:source) do
@@ -736,27 +737,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
       expect(events.last.payload).to eq(
         { ecosystem: "bundler", package_managers: { "bundler" => "1" } }
       )
-    end
-  end
-
-  context "with bundler 2 support enabled" do
-    let(:parser) do
-      described_class.new(
-        dependency_files: dependency_files,
-        source: source,
-        reject_external_code: reject_external_code,
-        options: {
-          bundler_2_available: true
-        }
-      )
-    end
-
-    describe "parse" do
-      it "fails as the native helper is not yet implemented" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::NotImplemented,
-                         "Bundler 2 adapter does not yet implement parsed_gemfile")
-      end
     end
   end
 end
