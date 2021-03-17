@@ -166,6 +166,20 @@ module Dependabot
               }
             end
 
+          disabled_sources =
+            doc.css("configuration > disabledPackageSources > add").map do |node|
+              value = node.attribute("value")&.value&.strip&.downcase ||
+                node.at_xpath("./value")&.content&.strip&.downcase
+              if value == "true"
+                node.attribute("key")&.value&.strip ||
+                  node.at_xpath("./key")&.content&.strip
+              end
+          end
+
+          sources.reject! do |s|
+            disabled_sources.include?(s[:key])
+          end
+
           unless doc.css("configuration > packageSources > clear").any?
             sources << { url: DEFAULT_REPOSITORY_URL, key: nil }
           end
