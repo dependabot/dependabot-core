@@ -11,6 +11,7 @@ COPY .rubocop.yml /home/dependabot/dependabot-core/
 RUN mkdir -p \
   ${CODE_DIR}/bundler \
   ${CODE_DIR}/cargo \
+  ${CODE_DIR}/cocoapods \
   ${CODE_DIR}/common \
   ${CODE_DIR}/composer \
   ${CODE_DIR}/dep \
@@ -70,6 +71,7 @@ RUN cd omnibus && bundle install
 COPY common/ ${CODE_DIR}/common/
 COPY bundler/ ${CODE_DIR}/bundler/
 COPY cargo/ ${CODE_DIR}/cargo/
+COPY cocoapods/ ${CODE_DIR}/cocoapods/
 COPY composer/ ${CODE_DIR}/composer/
 COPY dep/ ${CODE_DIR}/dep/
 COPY docker/ ${CODE_DIR}/docker/

@@ -1,0 +1,11 @@
+platform :ios, '9.0'
+use_frameworks!
+
+def core_pods
+  pod 'Alamofire', '>= 1.0.0', "< 3.0.0"
+  pod 'Nimble', '~> 2.0.0'
+end
+
+target 'MyApp' do
+  core_pods
+end
