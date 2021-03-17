@@ -1,3 +1,7 @@
+## v0.138.0, 16 March 2021
+
+- Go: Bump golang to v1.16.2
+
 ## v0.137.2, 16 March 2021
 
 - Bundler: Fix permission error when vendoring gems
