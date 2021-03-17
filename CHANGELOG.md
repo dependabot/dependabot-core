@@ -1,3 +1,9 @@
+## v0.138.1, 17 March 2021
+
+- Bundler: Add instrumentation to capture the bundler verison being used
+- Bundler: [Prerelease] Add a stubbed out native helper for Bundler 2
+- Bundler: [Prerelease] Allow the v2 native helper to be invoked via an options argument
+
 ## v0.138.0, 16 March 2021
 
 - Go: Bump golang to v1.16.2

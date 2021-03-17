@@ -23,6 +23,7 @@ module Dependabot
         dependency_set += gemspec_dependencies
         dependency_set += lockfile_dependencies
         check_external_code(dependency_set.dependencies)
+        instrument_package_manager_version
         dependency_set.dependencies
       end
 
@@ -40,6 +41,17 @@ module Dependabot
         dependencies.any? do |dep|
           dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
         end
+      end
+
+      def instrument_package_manager_version
+        version = Helpers.detected_bundler_version(lockfile)
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "bundler",
+          package_managers: {
+            "bundler" => version
+          }
+        )
       end
 
       def gemfile_dependencies
@@ -301,7 +313,7 @@ module Dependabot
       end
 
       def bundler_version
-        @bundler_version ||= Helpers.bundler_version(lockfile)
+        @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
       end
     end
   end
