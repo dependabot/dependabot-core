@@ -9,12 +9,14 @@ module Dependabot
     class Base
       attr_reader :dependency, :dependency_files, :repo_contents_path,
                   :credentials, :ignored_versions, :raise_on_ignored,
-                  :security_advisories, :requirements_update_strategy
+                  :security_advisories, :requirements_update_strategy,
+                  :options
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                      credentials:, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil)
+                     requirements_update_strategy: nil,
+                     options: {})
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -23,6 +25,7 @@ module Dependabot
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
+        @options = options
       end
 
       def up_to_date?

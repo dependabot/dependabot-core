@@ -107,6 +107,11 @@ jobs:
         run: |
           docker run --rm "$CORE_CI_IMAGE" bash -c \
             "cd /home/dependabot/dependabot-core/bundler/helpers/v1 && BUNDLER_VERSION=1 bundle install && BUNDLER_VERSION=1 bundle exec rspec spec"
+      - name: Run bundler v2 native helper specs
+        if: matrix.suite == 'bundler'
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/bundler/helpers/v2 && BUNDLER_VERSION=2 bundle install && BUNDLER_VERSION=2 bundle exec rspec spec"
       - name: Run ${{ matrix.suite }} tests with rspec
         run: |
           docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --rm "$CORE_CI_IMAGE" bash -c \

@@ -47,6 +47,8 @@ module Dependabot
 
   class OutOfMemory < DependabotError; end
 
+  class NotImplemented < DependabotError; end
+
   #####################
   # Repo level errors #
   #####################

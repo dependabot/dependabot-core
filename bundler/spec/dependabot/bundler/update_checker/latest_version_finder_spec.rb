@@ -19,7 +19,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      }],
+      options: {}
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }

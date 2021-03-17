@@ -20,7 +20,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
         "host" => "github.com",
         "username" => "x-access-token",
         "password" => "token"
-      }]
+      }],
+      options: {}
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
