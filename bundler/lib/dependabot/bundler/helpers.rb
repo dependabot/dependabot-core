@@ -10,6 +10,7 @@ module Dependabot
       def self.bundler_version(lockfile, options:)
         # For now, force V2 if bundler_2_available
         return V2 if options[:bundler_2_available]
+        return V1 unless lockfile
 
         # TODO: Add support for bundler v2 based on lockfile
         return V2 if lockfile.content.match?(/BUNDLED WITH\s+2/m)
