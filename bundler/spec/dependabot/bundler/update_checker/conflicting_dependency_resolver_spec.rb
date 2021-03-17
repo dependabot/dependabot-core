@@ -21,7 +21,7 @@ RSpec.describe(
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: { bundler_2_available: true }
+      options: { bundler_2_available: bundler_2_available }
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -49,31 +49,37 @@ RSpec.describe(
     fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
   end
 
-  describe "#conflicting_dependencies" do
-    subject(:conflicting_dependencies) do
-      resolver.conflicting_dependencies(
-        dependency: dependency,
-        target_version: target_version
-      )
-    end
+  [false, true].each do |bundler_2_available|
+    context "running bundler v#{bundler_2_available ? '2' : '1'}" do
+      let(:bundler_2_available) { bundler_2_available }
 
-    it "returns the right array of blocking dependencies" do
-      expect(conflicting_dependencies).to match_array(
-        [
-          {
-            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
-            "name" => "dummy-pkg-b",
-            "version" => "1.0.0",
-            "requirement" => "< 2.0.0"
-          }
-        ]
-      )
-    end
+      describe "#conflicting_dependencies" do
+        subject(:conflicting_dependencies) do
+          resolver.conflicting_dependencies(
+            dependency: dependency,
+            target_version: target_version
+          )
+        end
 
-    context "with no blocking dependencies" do
-      let(:target_version) { "1.5.0" }
-      it "returns an empty array" do
-        expect(conflicting_dependencies).to match_array([])
+        it "returns the right array of blocking dependencies" do
+          expect(conflicting_dependencies).to match_array(
+            [
+              {
+                "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+                "name" => "dummy-pkg-b",
+                "version" => "1.0.0",
+                "requirement" => "< 2.0.0"
+              }
+            ]
+          )
+        end
+
+        context "with no blocking dependencies" do
+          let(:target_version) { "1.5.0" }
+          it "returns an empty array" do
+            expect(conflicting_dependencies).to match_array([])
+          end
+        end
       end
     end
   end

@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: { bundler_2_available: true }
+      options: { bundler_2_available: bundler_2_available }
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -62,185 +62,191 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
 
-  describe "#updated_dependencies" do
-    subject(:updated_dependencies) { updater.updated_dependencies }
+  [false, true].each do |bundler_2_available|
+    context "running bundler v#{bundler_2_available ? '2' : '1'}" do
+      let(:bundler_2_available) { bundler_2_available }
 
-    context "when updating the dependency that requires the other" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict.lock")
-      end
-      let(:target_version) { "3.6.0" }
-      let(:dependency_name) { "rspec-mocks" }
-      let(:requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "3.5.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
-      let(:expected_requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "3.6.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
+      describe "#updated_dependencies" do
+        subject(:updated_dependencies) { updater.updated_dependencies }
 
-      it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
-          [
-            Dependabot::Dependency.new(
-              name: "rspec-mocks",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
-            ),
-            Dependabot::Dependency.new(
-              name: "rspec-support",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
+        context "when updating the dependency that requires the other" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "version_conflict.lock")
+          end
+          let(:target_version) { "3.6.0" }
+          let(:dependency_name) { "rspec-mocks" }
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "3.5.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+          let(:expected_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "3.6.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+
+          it "returns the right array of updated dependencies" do
+            expect(updated_dependencies).to eq(
+              [
+                Dependabot::Dependency.new(
+                  name: "rspec-mocks",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                ),
+                Dependabot::Dependency.new(
+                  name: "rspec-support",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                )
+              ]
             )
-          ]
-        )
-      end
-    end
+          end
+        end
 
-    context "when updating the dependency that is required by the other" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict.lock")
-      end
-      let(:target_version) { "3.6.0" }
-      let(:dependency_name) { "rspec-support" }
-      let(:requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "3.5.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
-      let(:expected_requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "3.6.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
+        context "when updating the dependency that is required by the other" do
+          let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "version_conflict.lock")
+          end
+          let(:target_version) { "3.6.0" }
+          let(:dependency_name) { "rspec-support" }
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "3.5.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+          let(:expected_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "3.6.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
 
-      it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
-          [
-            Dependabot::Dependency.new(
-              name: "rspec-support",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
-            ),
-            Dependabot::Dependency.new(
-              name: "rspec-mocks",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
+          it "returns the right array of updated dependencies" do
+            expect(updated_dependencies).to eq(
+              [
+                Dependabot::Dependency.new(
+                  name: "rspec-support",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                ),
+                Dependabot::Dependency.new(
+                  name: "rspec-mocks",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                )
+              ]
             )
-          ]
-        )
-      end
-    end
+          end
+        end
 
-    context "when two dependencies require the same subdependency" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "version_conflict_mutual_sub")
-      end
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict_mutual_sub.lock")
-      end
+        context "when two dependencies require the same subdependency" do
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "version_conflict_mutual_sub")
+          end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "version_conflict_mutual_sub.lock")
+          end
 
-      let(:dependency_name) { "rspec-mocks" }
-      let(:target_version) { "3.6.0" }
-      let(:requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "~> 3.5.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
-      let(:expected_requirements) do
-        [{
-          file: "Gemfile",
-          requirement: "~> 3.6.0",
-          groups: [:default],
-          source: nil
-        }]
-      end
+          let(:dependency_name) { "rspec-mocks" }
+          let(:target_version) { "3.6.0" }
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "~> 3.5.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
+          let(:expected_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: "~> 3.6.0",
+              groups: [:default],
+              source: nil
+            }]
+          end
 
-      it "returns the right array of updated dependencies" do
-        expect(updated_dependencies).to eq(
-          [
-            Dependabot::Dependency.new(
-              name: "rspec-mocks",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
-            ),
-            Dependabot::Dependency.new(
-              name: "rspec-expectations",
-              version: "3.6.0",
-              previous_version: "3.5.0",
-              requirements: expected_requirements,
-              previous_requirements: requirements,
-              package_manager: "bundler"
+          it "returns the right array of updated dependencies" do
+            expect(updated_dependencies).to eq(
+              [
+                Dependabot::Dependency.new(
+                  name: "rspec-mocks",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                ),
+                Dependabot::Dependency.new(
+                  name: "rspec-expectations",
+                  version: "3.6.0",
+                  previous_version: "3.5.0",
+                  requirements: expected_requirements,
+                  previous_requirements: requirements,
+                  package_manager: "bundler"
+                )
+              ]
             )
-          ]
-        )
-      end
-    end
+          end
+        end
 
-    context "when another dependency would need to be downgraded" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "subdep_blocked_by_subdep")
-      end
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
-      end
-      let(:target_version) { "2.0.0" }
-      let(:dependency_name) { "dummy-pkg-a" }
+        context "when another dependency would need to be downgraded" do
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "subdep_blocked_by_subdep")
+          end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
+          end
+          let(:target_version) { "2.0.0" }
+          let(:dependency_name) { "dummy-pkg-a" }
 
-      it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
+          it "raises a resolvability error" do
+            expect { updater.updated_dependencies }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
 
-    context "when the ruby version would need to change" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "legacy_ruby")
-      end
-      let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "legacy_ruby.lock")
-      end
-      let(:target_version) { "2.0.5" }
-      let(:dependency_name) { "public_suffix" }
+        context "when the ruby version would need to change" do
+          let(:gemfile_body) do
+            fixture("ruby", "gemfiles", "legacy_ruby")
+          end
+          let(:lockfile_body) do
+            fixture("ruby", "lockfiles", "legacy_ruby.lock")
+          end
+          let(:target_version) { "2.0.5" }
+          let(:dependency_name) { "public_suffix" }
 
-      it "raises a resolvability error" do
-        expect { updater.updated_dependencies }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+          it "raises a resolvability error" do
+            expect { updater.updated_dependencies }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
       end
     end
   end
