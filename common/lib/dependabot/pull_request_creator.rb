@@ -13,6 +13,18 @@ module Dependabot
     require "dependabot/pull_request_creator/branch_namer"
     require "dependabot/pull_request_creator/labeler"
 
+    # Dependabot programmatically creates PRs which often include a large
+    # number of links to objects on `github.com`. GitHub hydrates these into
+    # rich links that leave a 'mention' on target Issues/Pull Requests.
+    #
+    # Due to the volume and nature of Dependabot PRs, these mentions are not
+    # useful and can overwhelm maintainers, so we use a redirection service
+    # to avoid enrichment.
+    #
+    # If you wish to disable this behaviour when using Dependabot Core directly,
+    # pass a nil value when initialising this class.
+    DEFAULT_GITHUB_REDIRECTION_SERVICE = "github-redirect.dependabot.com"
+
     class RepoNotFound < StandardError; end
 
     class RepoArchived < StandardError; end
@@ -46,7 +58,7 @@ module Dependabot
                    reviewers: nil, assignees: nil, milestone: nil,
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
-                   github_redirection_service: "github-redirect.dependabot.com",
+                   github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
                    provider_metadata: {}, message: nil)
       @dependencies               = dependencies
