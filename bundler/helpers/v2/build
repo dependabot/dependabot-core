@@ -10,7 +10,6 @@ fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
-  "$helpers_dir/.bundle" \
   "$helpers_dir/lib" \
   "$helpers_dir/run.rb" \
   "$helpers_dir/Gemfile" \
