@@ -151,7 +151,6 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -167,16 +166,7 @@ module Dependabot
               }
             end
 
-          disabled_sources =
-            doc.css("configuration > disabledPackageSources > add").map do |node|
-              value = node.attribute("value")&.value&.strip&.downcase ||
-                      node.at_xpath("./value")&.content&.strip&.downcase
-              if value == "true"
-                node.attribute("key")&.value&.strip ||
-                  node.at_xpath("./key")&.content&.strip
-              end
-            end
-
+          disabled_sources = disabled_sources(doc)
           sources.reject! do |s|
             disabled_sources.include?(s[:key])
           end
@@ -197,7 +187,6 @@ module Dependabot
 
           sources
         end
-        # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
@@ -213,6 +202,20 @@ module Dependabot
             repository_type: "v3"
           }
         end
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def disabled_sources(doc)
+          doc.css("configuration > disabledPackageSources > add").map do |node|
+            value = node.attribute("value")&.value ||
+                    node.at_xpath("./value")&.content
+
+            if value&.strip&.downcase == "true"
+              node.attribute("key")&.value&.strip ||
+                node.at_xpath("./key")&.content&.strip
+            end
+          end
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
         def add_config_file_credentials(sources:, doc:)
