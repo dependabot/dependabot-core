@@ -70,6 +70,21 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
+    context "given an outdated requirement" do
+      let(:version) { "17.10" }
+
+      before do
+        dependency.requirements << {
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile.other",
+          source: { tag: "17.04" }
+        }
+      end
+
+      it { is_expected.to be_truthy }
+    end
+
     context "given a purely numeric version" do
       let(:version) { "1234567890" }
       it { is_expected.to be_truthy }

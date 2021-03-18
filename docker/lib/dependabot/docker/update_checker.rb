@@ -97,17 +97,22 @@ module Dependabot
 
       def version_up_to_date?
         # If the tag isn't up-to-date then we can definitely update
-        return false if version_tag_up_to_date? == false
+        return false if version_tag_up_to_date?(dependency.version) == false
+        return false if dependency.requirements.any? do |req|
+                          version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
+                        end
 
         # Otherwise, if the Dockerfile specifies a digest check that that is
         # up-to-date
         digest_up_to_date?
       end
 
-      def version_tag_up_to_date?
-        return unless dependency.version.match?(NAME_WITH_VERSION)
+      def version_tag_up_to_date?(version)
+        return unless version&.match?(NAME_WITH_VERSION)
 
-        old_v = numeric_version_from(dependency.version)
+        latest_version = fetch_latest_version(version)
+
+        old_v = numeric_version_from(version)
         latest_v = numeric_version_from(latest_version)
 
         return true if version_class.new(latest_v) <= version_class.new(old_v)
@@ -117,7 +122,7 @@ module Dependabot
         # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
         return false if old_v.split(".").count == latest_v.split(".").count
 
-        digest_of(dependency.version) == digest_of(latest_version)
+        digest_of(version) == digest_of(latest_version)
       end
 
       def digest_up_to_date?
