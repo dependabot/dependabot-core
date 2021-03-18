@@ -151,6 +151,7 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/MethodLength
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -169,12 +170,12 @@ module Dependabot
           disabled_sources =
             doc.css("configuration > disabledPackageSources > add").map do |node|
               value = node.attribute("value")&.value&.strip&.downcase ||
-                node.at_xpath("./value")&.content&.strip&.downcase
+                      node.at_xpath("./value")&.content&.strip&.downcase
               if value == "true"
                 node.attribute("key")&.value&.strip ||
                   node.at_xpath("./key")&.content&.strip
               end
-          end
+            end
 
           sources.reject! do |s|
             disabled_sources.include?(s[:key])
@@ -196,6 +197,7 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
