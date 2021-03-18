@@ -379,7 +379,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           # end
 
           context "when an old required ruby is specified in the gemspec" do
-            let(:dependency_files) { project_dependency_files("bundler1/imports_gemspec_old_required_ruby_no_lockfile") }
+            let(:dependency_files) do
+              project_dependency_files("bundler1/imports_gemspec_old_required_ruby_no_lockfile")
+            end
             let(:dependency_name) { "statesman" }
             let(:latest_allowable_version) { "7.2.0" }
 
