@@ -165,4 +165,83 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
       expect(actual).to equal("Success")
     end
   end
+
+  context "happy path for python module" do
+    let(:project_data) do
+      {
+        "module" => "pip",
+        "repo" => "Pix4D/test_repo",
+        "branch" => "master",
+        "dependency_dir" => "/"
+      }
+    end
+    let(:artifactory_cred) do
+      {
+        "EXTRA_INDEX_URL" => "https://artifactory.test.ci.pix4d.com/artifactory/api/pypi/pix4d-pypi-local/simple",
+        "username" => nil,
+        "password" => nil
+      }
+    end
+    let(:git_cred) do
+      {
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "dependabot-script",
+        "password" => fake_token
+      }
+    end
+    let(:file_name) { "base_requirements.txt" }
+    let(:fixture_file) do
+      File.read(File.join("..", "python", "spec", "fixtures", "requirements", "base_requirements.txt"))
+    end
+    let(:dependency_dir) { project_data["dependency_dir"] }
+    let(:repo) { project_data["repo"] }
+    let(:branch) { project_data["branch"] }
+    let(:dependency_name) { "requests" }
+    let(:dependency_instance) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "2.18.4",
+        requirements: [{
+          requirement: "==2.18.4",
+          groups: ["dependencies"],
+          file: file_name,
+          source: nil
+        }],
+        package_manager: "pip"
+      )
+    end
+    let(:updated_dependency_instance) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "2.25.1",
+        previous_version: "2.18.4",
+        requirements: [{
+          requirement: "==2.25.1",
+          groups: ["dependencies"],
+          file: file_name,
+          source: nil
+        }],
+        previous_requirements: [{
+          requirement: "==2.18.4",
+          groups: ["dependencies"],
+          file: file_name,
+          source: nil
+        }],
+        package_manager: "pip"
+      )
+    end
+    it "returns the correct project_path" do
+      allow(self).to receive(:recursive_path).and_return([dependency_dir])
+      allow(self).to receive(:fetch_files_and_commit).and_return([[dependency_file], expected_commit])
+      allow(self).to receive(:fetch_dependencies).and_return([dependency_instance])
+      allow(self).to receive(:checker_up_to_date).and_return(false)
+      allow(self).to receive(:requirements).and_return(":own")
+      allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
+      allow(self).to receive(:create_pr).and_return(pull_request)
+
+      actual = pix4_dependabot("pip", project_data, git_cred, artifactory_cred)
+      expect(actual).to equal("Success")
+    end
+  end
 end

@@ -162,10 +162,14 @@ module Dependabot
             compact.
             map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
 
+          # We include a bugfix for the opened issue upstream
+          # https://github.com/dependabot/dependabot-core/issues/1681
+          # but not yet merged https://github.com/dependabot/dependabot-core/pull/1687
           regexp = url.
-                   sub(%r{(?<=://).+@}, "").
+                   sub(%r{(?<=://).+@}, "@").
                    split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
+                   map { |part| part.sub("@", ".+") }.
                    join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }
           return authed_url if authed_url

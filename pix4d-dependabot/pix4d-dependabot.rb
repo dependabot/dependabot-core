@@ -13,20 +13,35 @@ require "yaml"
 
 # REQUIRED DEPENDING ON MODULE:
 
+## PYTHON MODULE
+## ARTIFACTORY_USERNAME
+## ARTIFACTORY_PASSWORD
+## EXTRA_INDEX_URL i.e https://artifactory.ci.pix4d.com/artifactory/api/pypi/pix4d-pypi-local/simple/
+
 ## DOCKER/CONCOURSE MODULE
 ## DOCKER_REGISTRY i.e. docker.ci.pix4d.com
 ## DOCKER_USER
 ## DOCKER_PASS
 
 def create_extra_credentials(package_manager)
+  if package_manager == "pip"
+    return [
+      {
+        "type" => "python_index",
+        "index-url" => ENV["EXTRA_INDEX_URL"],
+        "token" => "#{ENV['ARTIFACTORY_USERNAME']}:#{ENV['ARTIFACTORY_PASSWORD']}"
+      }
+    ]
+  end
+
   return unless package_manager == "docker"
 
-  {
+  [{
     "type" => "docker_registry",
     "registry" => (ENV["DOCKER_REGISTRY"] || "registry.hub.docker.com"),
     "username" => (ENV["DOCKER_USER"] || nil),
     "password" => (ENV["DOCKER_PASS"] || nil)
-  }
+  }]
 end
 
 def main

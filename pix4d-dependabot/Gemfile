@@ -4,5 +4,6 @@ source "https://rubygems.org"
 
 gem "dependabot-common", path: "../common"
 gem "dependabot-docker", path: "../docker"
+gem "dependabot-python", path: "../python"
 
 gemspec
