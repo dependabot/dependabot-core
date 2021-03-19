@@ -14,7 +14,7 @@ def create_pr(package_manager, source, commit, updated_deps, updated_files, cred
   pr = Dependabot::PullRequestCreator.new(
     source: source,
     base_commit: commit,
-    dependencies: updated_deps,
+    dependencies: updated_deps.first,
     files: updated_files,
     credentials: credentials_github,
     label_language: true,
@@ -92,11 +92,13 @@ def checker_updated_dependencies(checker, requirements_to_unlock)
 end
 
 # rubocop:disable Metrics/AbcSize
+# rubocop:disable Metrics/PerceivedComplexity
 def pix4_dependabot(package_manager, project_data, github_credentials, extra_credentials)
   input_files_path = recursive_path(project_data, github_credentials["password"])
 
   print "Working in #{project_data['repo']}\n"
   input_files_path.each do |file_path|
+    updated_deps = []
     print "  - Checking the files in #{file_path}\n"
     source = source_init(file_path, project_data)
     files, commit = fetch_files_and_commit(package_manager, source, [github_credentials])
@@ -109,22 +111,26 @@ def pix4_dependabot(package_manager, project_data, github_credentials, extra_cre
       requirements_to_unlock = requirements(checker)
       next if requirements_to_unlock == :update_not_possible
 
-      updated_deps = checker_updated_dependencies(checker, requirements_to_unlock)
-      next if updated_deps.first.version == updated_deps.first.previous_version
+      updated_dep = checker_updated_dependencies(checker, requirements_to_unlock)
+      next if updated_dep.first.version == updated_dep.first.previous_version
 
-      updated_files = update_files(package_manager, dep, updated_deps, files, [github_credentials])
-
-      pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files,
-                               [github_credentials])
-      next unless pull_request
-
-      print "#{pull_request[:html_url]}\n\n"
-
-      next unless project_data["module"] == "docker" && project_data["repo"] == "Pix4D/linux-image-build"
-
-      auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_credentials["password"])
+      files = update_files(package_manager, dep, updated_dep, files, [github_credentials])
+      updated_deps << updated_dep
     end
+
+    next if updated_deps.empty?
+
+    pull_request = create_pr(package_manager, source, commit, updated_deps, files,
+                             [github_credentials])
+    next unless pull_request
+
+    print "#{pull_request[:html_url]}\n\n"
+
+    next unless project_data["module"] == "docker" && project_data["repo"] == "Pix4D/linux-image-build"
+
+    auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_credentials["password"])
   end
   "Success"
 end
 # rubocop:enable Metrics/AbcSize
+# rubocop:enable Metrics/PerceivedComplexity
