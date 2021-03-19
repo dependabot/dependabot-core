@@ -14,7 +14,7 @@ def create_pr(package_manager, source, commit, updated_deps, updated_files, cred
   pr = Dependabot::PullRequestCreator.new(
     source: source,
     base_commit: commit,
-    dependencies: updated_deps.first,
+    dependencies: updated_deps,
     files: updated_files,
     credentials: credentials_github,
     label_language: true,
@@ -120,7 +120,7 @@ def pix4_dependabot(package_manager, project_data, github_credentials, extra_cre
 
     next if updated_deps.empty?
 
-    pull_request = create_pr(package_manager, source, commit, updated_deps, files,
+    pull_request = create_pr(package_manager, source, commit, updated_deps.flatten(1), files,
                              [github_credentials])
     next unless pull_request
 
