@@ -1,51 +1,85 @@
-FROM ruby:3.0-alpine AS build
+FROM ubuntu:18.04 as build
 
-WORKDIR /home/dependabot/
+LABEL "maintainer"="platform_ci_team@pix4d.com"
+LABEL "description"="Pix4D Dependabot for updating your dependencies."
+
+### SYSTEM DEPENDENCIES
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+  LC_ALL="en_US.UTF-8" \
+  LANG="en_US.UTF-8"
+
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+  git \
+  make \
+  build-essential \
+  libssl-dev \
+  zlib1g-dev \
+  libbz2-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  wget \
+  curl \
+  llvm \
+  libncurses5-dev \
+  xz-utils \
+  tk-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  libffi-dev \
+  liblzma-dev \
+  locales \
+  && locale-gen en_US.UTF-8
+
+### RUBY
+# Install Ruby 2.6.6, update RubyGems, and install Bundler
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+RUN apt-get update && apt-get install -y software-properties-common \
+  && apt-add-repository ppa:brightbox/ruby-ng \
+  && apt-get update \
+  && apt-get install -y ruby2.6 ruby2.6-dev \
+  && gem update --system 3.2.14 \
+  && gem install bundler -v 2.2.11 --no-document
+
+### PYTHON
+# Install Python 3.9 with pyenv. Using pyenv lets us support multiple Pythons
+ENV PYENV_ROOT=/usr/local/.pyenv \
+  PATH="/usr/local/.pyenv/bin:$PATH"
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
+  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
+  && pyenv install 3.9.2 \
+  && pyenv install 2.7.18 \
+  && pyenv global 3.9.2
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \
   PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
+  PATH="$PATH:/opt/python/bin"
 
 COPY common /home/dependabot/common
 COPY docker /home/dependabot/docker
 COPY python /home/dependabot/python
+COPY python/helpers /opt/python/helpers
 COPY pix4d-dependabot /home/dependabot/pix4d-dependabot
+COPY .rubocop.yml /home/dependabot/
 
-RUN apk update && \
-  apk add --no-cache \
-  g++ \
-  libxslt-dev \
-  libxml2-dev \
-  make && \
-  gem update --system && \
-  gem install bundler -v 2.2.9 --no-document
-
+### NEW NATIVE HELPERS
+RUN bash /opt/python/helpers/build /opt/python
 
 WORKDIR /home/dependabot/pix4d-dependabot/
 
+### Install ruby requirements
 RUN bundle config build.nokogiri --use-system-libraries
 RUN bundle install
 
-FROM build AS tests
-
-WORKDIR /home/dependabot/pix4d-dependabot/
-RUN bundle exec rspec .
+### Run rubocop and rspec tests (missing: run rspec also in pix4d-dependabot)
+RUN bundle exec rubocop -c ../.rubocop.yml ../
 
 WORKDIR /home/dependabot/docker/
 RUN bundle exec rspec .
 
-FROM ruby:3.0-alpine AS main
-LABEL "maintainer"="platform_ci_team@pix4d.com"
-LABEL "description"="Inspect Dockerfiles and Concourse pipelines to find possible updates to Docker images \
-  by checking a specified registry."
-
 WORKDIR /home/dependabot/
-
-ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-  BUNDLE_BIN=".bundle/binstubs" \
-  PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
-
-RUN gem update --system && \
-  gem install bundler -v 2.2.9 --no-document
-
-COPY --from=build /home/dependabot/ .
