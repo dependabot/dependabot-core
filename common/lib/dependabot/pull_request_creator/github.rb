@@ -3,11 +3,12 @@
 require "octokit"
 require "securerandom"
 require "dependabot/clients/github_with_retries"
+require "dependabot/pull_request/github"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
+
 module Dependabot
   class PullRequestCreator
-    # rubocop:disable Metrics/ClassLength
     class Github
       MAX_PR_DESCRIPTION_LENGTH = 65_536 # characters (see #create_pull_request)
 
@@ -37,6 +38,9 @@ module Dependabot
         @assignees               = assignees
         @milestone               = milestone
         @require_up_to_date_base = require_up_to_date_base
+
+        @commit_creation = 0
+        @tree_creation = 0
       end
 
       def create
@@ -131,7 +135,8 @@ module Dependabot
       end
 
       def create_commit
-        tree = create_tree
+        pull_reguest_client = Dependabot::PullRequest::Github.new(github_client_for_source)
+        tree = pull_reguest_client.create_tree(source.repo, base_commit, files)
 
         begin
           github_client_for_source.create_commit(
@@ -167,43 +172,6 @@ module Dependabot
         end
 
         options
-      end
-
-      def create_tree
-        file_trees = files.map do |file|
-          if file.type == "submodule"
-            {
-              path: file.path.sub(%r{^/}, ""),
-              mode: "160000",
-              type: "commit",
-              sha: file.content
-            }
-          else
-            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
-                        { sha: nil }
-                      elsif file.binary?
-                        sha = github_client_for_source.create_blob(
-                          source.repo, file.content, "base64"
-                        )
-                        { sha: sha }
-                      else
-                        { content: file.content }
-                      end
-
-            {
-              path: (file.symlink_target ||
-                     file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob"
-            }.merge(content)
-          end
-        end
-
-        github_client_for_source.create_tree(
-          source.repo,
-          file_trees,
-          base_tree: base_commit
-        )
       end
 
       def create_or_update_branch(commit)
@@ -477,6 +445,5 @@ module Dependabot
         end
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

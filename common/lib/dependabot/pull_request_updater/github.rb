@@ -2,6 +2,7 @@
 
 require "octokit"
 require "dependabot/clients/github_with_retries"
+require "dependabot/pull_request/github"
 require "dependabot/pull_request_creator/commit_signer"
 require "dependabot/pull_request_updater"
 
@@ -91,14 +92,8 @@ module Dependabot
       end
 
       def create_commit
-        tree = create_tree
-
-        options = author_details&.any? ? { author: author_details } : {}
-
-        if options[:author]&.any? && signature_key
-          options[:author][:date] = Time.now.utc.iso8601
-          options[:signature] = commit_signature(tree, options[:author])
-        end
+        pull_reguest_client = Dependabot::PullRequest::Github.new(github_client_for_source)
+        tree = pull_reguest_client.create_tree(source.repo, base_commit, files)
 
         begin
           github_client_for_source.create_commit(
@@ -106,7 +101,7 @@ module Dependabot
             commit_message,
             tree.sha,
             base_commit,
-            options
+            commit_options(tree)
           )
         rescue Octokit::UnprocessableEntity => e
           raise unless e.message == "Tree SHA does not exist"
@@ -122,41 +117,15 @@ module Dependabot
         end
       end
 
-      def create_tree
-        file_trees = files.map do |file|
-          if file.type == "submodule"
-            {
-              path: file.path.sub(%r{^/}, ""),
-              mode: "160000",
-              type: "commit",
-              sha: file.content
-            }
-          else
-            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
-                        { sha: nil }
-                      elsif file.binary?
-                        sha = github_client_for_source.create_blob(
-                          source.repo, file.content, "base64"
-                        )
-                        { sha: sha }
-                      else
-                        { content: file.content }
-                      end
+      def commit_options(tree)
+        options = author_details&.any? ? { author: author_details } : {}
 
-            {
-              path: (file.symlink_target ||
-                     file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob"
-            }.merge(content)
-          end
+        if options[:author]&.any? && signature_key
+          options[:author][:date] = Time.now.utc.iso8601
+          options[:signature] = commit_signature(tree, options[:author])
         end
 
-        github_client_for_source.create_tree(
-          source.repo,
-          file_trees,
-          base_tree: base_commit
-        )
+        options
       end
 
       def update_branch(commit)
