@@ -686,5 +686,37 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           )
       end
     end
+
+    context "when specified with tags with different prefixes in separate files" do
+      let(:version) { "trusty-20170728" }
+      let(:source) { { tag: "trusty-20170728" } }
+
+      before do
+        dependency.requirements << {
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile.other",
+          source: { tag: "xenial-20170802" }
+        }
+      end
+
+      it "updates the tags" do
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "trusty-20170817" }
+            },
+             {
+               requirement: nil,
+               groups: [],
+               file: "Dockerfile.other",
+               source: { tag: "xenial-20170915" }
+             }]
+          )
+      end
+    end
   end
 end
