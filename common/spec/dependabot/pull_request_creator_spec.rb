@@ -197,7 +197,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             author_details: author_details,
             signature_key: signature_key,
             custom_headers: nil,
-            labeler: instance_of(described_class::Labeler),
+            labeler: instance_of(described_class::Labelers::Github),
             reviewers: reviewers,
             assignees: assignees,
             milestone: milestone,
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }
 
-      it "delegates to PullRequestCreator::Github with correct params" do
+      it "delegates to PullRequestCreator::Gitlab with correct params" do
         expect(described_class::Gitlab).
           to receive(:new).
           with(
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_description: "PR msg",
             pr_name: "PR name",
             author_details: author_details,
-            labeler: instance_of(described_class::Labeler),
+            labeler: instance_of(described_class::Labelers::Gitlab),
             approvers: reviewers,
             assignees: nil,
             milestone: milestone
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             pr_description: "PR msg",
             pr_name: "PR name",
             author_details: author_details,
-            labeler: instance_of(described_class::Labeler),
+            labeler: instance_of(described_class::Labelers::Azure),
             work_item: 123
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
@@ -311,7 +311,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             author_details: author_details,
             signature_key: signature_key,
             custom_headers: nil,
-            labeler: instance_of(described_class::Labeler),
+            labeler: instance_of(described_class::Labelers::Github),
             reviewers: reviewers,
             assignees: assignees,
             milestone: milestone,

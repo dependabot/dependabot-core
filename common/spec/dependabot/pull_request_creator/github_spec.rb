@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/github"
+require "dependabot/pull_request_creator/labelers/github"
 
 RSpec.describe Dependabot::PullRequestCreator::Github do
   subject(:creator) do
@@ -51,15 +52,21 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   let(:assignees) { nil }
   let(:milestone) { nil }
   let(:require_up_to_date_base) { false }
-  let(:labeler) do
-    Dependabot::PullRequestCreator::Labeler.new(
+  let(:client) do
+    Dependabot::Clients::GithubWithRetries.for_source(
       source: source,
-      credentials: credentials,
+      credentials: credentials
+    )
+  end
+  let(:labeler) do
+    Dependabot::PullRequestCreator::Labelers::Github.new(
+      source: source,
       custom_labels: custom_labels,
       includes_security_fixes: false,
       dependencies: [dependency],
       label_language: false,
-      automerge_candidate: false
+      automerge_candidate: false,
+      client: client
     )
   end
   let(:custom_labels) { nil }

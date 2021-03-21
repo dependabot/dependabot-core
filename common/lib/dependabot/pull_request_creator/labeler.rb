@@ -2,6 +2,7 @@
 
 require "octokit"
 require "dependabot/pull_request_creator"
+
 module Dependabot
   class PullRequestCreator
     class Labeler
@@ -26,12 +27,11 @@ module Dependabot
         end
       end
 
-      def initialize(source:, custom_labels:, credentials:, dependencies:,
+      def initialize(source:, custom_labels:, dependencies:,
                      includes_security_fixes:, label_language:,
                      automerge_candidate:)
         @source                  = source
         @custom_labels           = custom_labels
-        @credentials             = credentials
         @dependencies            = dependencies
         @includes_security_fixes = includes_security_fixes
         @label_language          = label_language
@@ -53,29 +53,13 @@ module Dependabot
         ].compact.uniq
       end
 
-      def label_pull_request(pull_request_number)
-        create_default_labels_if_required
-
-        return if labels_for_pr.none?
-        raise "Only GitHub!" unless source.provider == "github"
-
-        github_client_for_source.add_labels_to_an_issue(
-          source.repo,
-          pull_request_number,
-          labels_for_pr
-        )
-      rescue Octokit::UnprocessableEntity, Octokit::NotFound
-        retry_count ||= 0
-        retry_count += 1
-        raise if retry_count > 10
-
-        sleep(rand(1..1.99))
-        retry
+      def label_pull_request(_pull_request_number)
+        raise "Only GitHub!"
       end
 
       private
 
-      attr_reader :source, :custom_labels, :credentials, :dependencies
+      attr_reader :source, :custom_labels, :dependencies
 
       def label_language?
         @label_language
@@ -226,181 +210,35 @@ module Dependabot
       end
 
       def language_label
-        label_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
-        labels.find { |l| l.casecmp(label_name).zero? }
+        labels.find { |l| l.casecmp(language_name).zero? }
       end
 
       def labels
-        @labels ||=
-          case source.provider
-          when "github" then fetch_github_labels
-          when "gitlab" then fetch_gitlab_labels
-          when "azure" then fetch_azure_labels
-          else raise "Unsupported provider #{source.provider}"
-          end
-      end
-
-      def fetch_github_labels
-        client = github_client_for_source
-
-        labels =
-          client.
-          labels(source.repo, per_page: 100).
-          map(&:name)
-
-        next_link = client.last_response.rels[:next]
-
-        while next_link
-          next_page = next_link.get
-          labels += next_page.data.map(&:name)
-          next_link = next_page.rels[:next]
-        end
-
-        labels
-      end
-
-      def fetch_gitlab_labels
-        gitlab_client_for_source.
-          labels(source.repo, per_page: 100).
-          auto_paginate.
-          map(&:name)
-      end
-
-      def fetch_azure_labels
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
-
-        @labels = [
-          *@labels,
-          DEFAULT_DEPENDENCIES_LABEL,
-          DEFAULT_SECURITY_LABEL,
-          langauge_name
-        ].uniq
+        raise "Unsupported provider #{source.provider}"
       end
 
       def create_dependencies_label
-        case source.provider
-        when "github" then create_github_dependencies_label
-        when "gitlab" then create_gitlab_dependencies_label
-        when "azure" then @labels # Azure does not have centralised labels
-        else raise "Unsupported provider #{source.provider}"
-        end
+        raise "Unsupported provider #{source.provider}"
       end
 
       def create_security_label
-        case source.provider
-        when "github" then create_github_security_label
-        when "gitlab" then create_gitlab_security_label
-        when "azure" then @labels # Azure does not have centralised labels
-        else raise "Unsupported provider #{source.provider}"
-        end
+        raise "Unsupported provider #{source.provider}"
       end
 
       def create_language_label
-        case source.provider
-        when "github" then create_github_language_label
-        when "gitlab" then create_gitlab_language_label
-        when "azure" then @labels # Azure does not have centralised labels
-        else raise "Unsupported provider #{source.provider}"
-        end
-      end
-
-      def create_github_dependencies_label
-        github_client_for_source.add_label(
-          source.repo, DEFAULT_DEPENDENCIES_LABEL, "0366d6",
-          description: "Pull requests that update a dependency file",
-          accept: "application/vnd.github.symmetra-preview+json"
-        )
-        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
-      rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
-
-        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
-      end
-
-      def create_gitlab_dependencies_label
-        gitlab_client_for_source.create_label(
-          source.repo, DEFAULT_DEPENDENCIES_LABEL, "#0366d6",
-          description: "Pull requests that update a dependency file"
-        )
-        @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
-      end
-
-      def create_github_security_label
-        github_client_for_source.add_label(
-          source.repo, DEFAULT_SECURITY_LABEL, "ee0701",
-          description: "Pull requests that address a security vulnerability",
-          accept: "application/vnd.github.symmetra-preview+json"
-        )
-        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
-      rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
-
-        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
-      end
-
-      def create_gitlab_security_label
-        gitlab_client_for_source.create_label(
-          source.repo, DEFAULT_SECURITY_LABEL, "#ee0701",
-          description: "Pull requests that address a security vulnerability"
-        )
-        @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
-      end
-
-      def create_github_language_label
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
-        github_client_for_source.add_label(
-          source.repo,
-          langauge_name,
-          self.class.label_details_for_package_manager(package_manager).
-            fetch(:colour),
-          description: "Pull requests that update #{langauge_name.capitalize} "\
-                       "code",
-          accept: "application/vnd.github.symmetra-preview+json"
-        )
-        @labels = [*@labels, langauge_name].uniq
-      rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
-
-        @labels = [*@labels, langauge_name].uniq
-      end
-
-      def create_gitlab_language_label
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
-        gitlab_client_for_source.create_label(
-          source.repo,
-          langauge_name,
-          "#" + self.class.label_details_for_package_manager(package_manager).
-                fetch(:colour)
-        )
-        @labels = [*@labels, langauge_name].uniq
-      end
-
-      def github_client_for_source
-        @github_client_for_source ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def gitlab_client_for_source
-        @gitlab_client_for_source ||=
-          Dependabot::Clients::GitlabWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
+        raise "Unsupported provider #{source.provider}"
       end
 
       def package_manager
         @package_manager ||= dependencies.first.package_manager
+      end
+
+      def language_name
+        @language_name ||= self.class.label_details_for_package_manager(package_manager).fetch(:name)
+      end
+
+      def colour
+        @colour ||= self.class.label_details_for_package_manager(package_manager).fetch(:colour)
       end
 
       def version_class

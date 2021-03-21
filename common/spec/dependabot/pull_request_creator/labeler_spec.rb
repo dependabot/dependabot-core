@@ -5,10 +5,11 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/pull_request_creator/labeler"
+require "dependabot/pull_request_creator/labelers/factory"
 
-RSpec.describe Dependabot::PullRequestCreator::Labeler do
+RSpec.describe Dependabot::PullRequestCreator::Labelers::Factory do
   subject(:labeler) do
-    described_class.new(
+    described_class.for_source(
       source: source,
       credentials: credentials,
       custom_labels: custom_labels,
@@ -58,7 +59,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
   let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
 
   describe ".package_manager_labels" do
-    subject { described_class.package_manager_labels }
+    subject { labeler.package_manager_labels }
 
     it { is_expected.to eq("dummy" => { colour: "ce2d2d", name: "ruby" }) }
   end

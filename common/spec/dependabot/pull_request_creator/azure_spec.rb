@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/azure"
+require "dependabot/pull_request_creator/labelers/azure"
 
 RSpec.describe Dependabot::PullRequestCreator::Azure do
   subject(:creator) do
@@ -44,9 +45,8 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:assignee) { nil }
   let(:milestone) { nil }
   let(:labeler) do
-    Dependabot::PullRequestCreator::Labeler.new(
+    Dependabot::PullRequestCreator::Labelers::Azure.new(
       source: source,
-      credentials: credentials,
       custom_labels: custom_labels,
       includes_security_fixes: false,
       dependencies: [dependency],

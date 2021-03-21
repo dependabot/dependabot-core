@@ -12,6 +12,7 @@ module Dependabot
     require "dependabot/pull_request_creator/message_builder"
     require "dependabot/pull_request_creator/branch_namer"
     require "dependabot/pull_request_creator/labeler"
+    require "dependabot/pull_request_creator/labelers/factory"
 
     class RepoNotFound < StandardError; end
 
@@ -225,7 +226,7 @@ module Dependabot
 
     def labeler
       @labeler ||=
-        Labeler.new(
+        Dependabot::PullRequestCreator::Labelers::Factory.for_source(
           source: source,
           custom_labels: custom_labels,
           credentials: credentials,

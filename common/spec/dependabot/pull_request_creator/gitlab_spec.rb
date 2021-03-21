@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/gitlab"
+require "dependabot/pull_request_creator/labelers/gitlab"
 
 RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   subject(:creator) do
@@ -45,15 +46,21 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:approvers) { nil }
   let(:assignees) { nil }
   let(:milestone) { nil }
-  let(:labeler) do
-    Dependabot::PullRequestCreator::Labeler.new(
+  let(:client) do
+    Dependabot::Clients::GitlabWithRetries.for_source(
       source: source,
-      credentials: credentials,
+      credentials: credentials
+    )
+  end
+  let(:labeler) do
+    Dependabot::PullRequestCreator::Labelers::Gitlab.new(
+      source: source,
       custom_labels: custom_labels,
       includes_security_fixes: false,
       dependencies: [dependency],
       label_language: false,
-      automerge_candidate: false
+      automerge_candidate: false,
+      client: client
     )
   end
   let(:custom_labels) { nil }
