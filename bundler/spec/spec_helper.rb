@@ -9,3 +9,68 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+require_relative "./support/project_fixtures" if ENV["AUTOFIX_PROJECT_FIXTURES"] == "true"
+
+require "parser/current"
+
+def walk(node, &block)
+  yield node
+
+  node.children.each do |child|
+    next unless child.is_a?(::Parser::AST::Node)
+
+    walk(child, &block)
+  end
+end
+
+RSpec.configure do |c|
+  c.after(:all) do
+    next unless ENV["AUTOFIX_PROJECT_FIXTURES"] == "true"
+
+    ProjectFixtures::Finder.storage.each do |_, data|
+      dir = ProjectFixtures::Builder.new(data).run
+
+      source_map = Hash.new { [] }
+
+      file = data.lets.first.file
+      raw_source = Pathname.new(file).read
+      parser = Parser::CurrentRuby.new(Parser::Builders::Default.new)
+      buffer = Parser::Source::Buffer.new(file, source: raw_source)
+      parsed_source = parser.parse(buffer)
+
+      walk(parsed_source) do |node|
+        next unless node&.loc&.expression
+
+        source_map[node.loc.first_line] <<= node
+      end
+
+      nodes = data.lets.flat_map do |let|
+        block_nodes = source_map.fetch(let.line, []).select { |node| node.type.equal?(:block) }
+
+        block_nodes.select do |node|
+          send, = *node
+          _receiver, selector = *send
+
+          selector.equal?(:let)
+        end
+      end
+
+      start_loc = data.metadata[:line_number]
+      ProjectFixtures::Autocorrector.new(file, nodes, dir, start_loc).correct
+    end
+
+    filename = ProjectFixtures::Finder.storage.values.first.lets.first.file
+    body = File.read(filename)
+    File.open(filename, "w") do |file|
+      body = body.lines.map do |line|
+        next if line.include?("pragma:delete")
+        next line unless line.include?("let(:dependency_files) { project_dependency_files")
+
+        line.split("#").join("\n")
+      end.join
+
+      file.write(body)
+    end
+  end
+end
