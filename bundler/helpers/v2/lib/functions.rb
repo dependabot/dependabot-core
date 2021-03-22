@@ -1,12 +1,20 @@
+require "functions/file_parser"
+
 module Functions
   class NotImplementedError < StandardError; end
 
   def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: [],
+      using_bundler2: false)
+    FileParser.new(lockfile_name: lockfile_name).
+      parsed_gemfile(gemfile_name: gemfile_name)
   end
 
   def self.parsed_gemspec(lockfile_name:, gemspec_name:, dir:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: [],
+      using_bundler2: false)
+    FileParser.new(lockfile_name: lockfile_name).
+      parsed_gemspec(gemspec_name: gemspec_name)
   end
 
   def self.vendor_cache_dir(dir:)
@@ -57,7 +65,47 @@ module Functions
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:,
                                              using_bundler2:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    dir = dir ? Pathname.new(dir) : dir
+    Bundler.instance_variable_set(:@root, dir)
+
+    # Remove installed gems from the default Rubygems index
+    Gem::Specification.all =
+      Gem::Specification.send(:default_stubs, "*.gemspec")
+
+    # Set auth details
+    relevant_credentials(credentials).each do |cred|
+      token = cred["token"] ||
+              "#{cred['username']}:#{cred['password']}"
+
+      Bundler.settings.set_command_option(
+        cred.fetch("host"),
+        token.gsub("@", "%40F").gsub("?", "%3F")
+      )
+    end
+
+    # NOTE: Prevent bundler from printing resolution information
+    Bundler.ui = Bundler::UI::Silent.new
+
+    # Use HTTPS for GitHub if lockfile
+    Bundler.settings.set_command_option("forget_cli_options", "true")
+    Bundler.settings.set_command_option("github.https", "true")
+  end
+
+  def self.relevant_credentials(credentials)
+    [
+      *git_source_credentials(credentials),
+      *private_registry_credentials(credentials)
+    ].select { |cred| cred["password"] || cred["token"] }
+  end
+
+  def self.private_registry_credentials(credentials)
+    credentials.
+      select { |cred| cred["type"] == "rubygems_server" }
+  end
+
+  def self.git_source_credentials(credentials)
+    credentials.
+      select { |cred| cred["type"] == "git_source" }
   end
 
   def self.conflicting_dependencies(dir:, dependency_name:, target_version:,
