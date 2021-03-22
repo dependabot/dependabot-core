@@ -38,6 +38,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Free up disk space
+        run: |
+          sudo apt autoremove --purge && sudo apt -y clean
+          docker system prune -af --volumes
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          df -h
       - name: Prepare environment variables
         run: |
           echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
