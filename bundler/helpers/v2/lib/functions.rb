@@ -1,4 +1,5 @@
 require "functions/file_parser"
+require "functions/version_resolver"
 
 module Functions
   class NotImplementedError < StandardError; end
@@ -52,7 +53,13 @@ module Functions
   def self.resolve_version(dependency_name:, dependency_requirements:,
                            gemfile_name:, lockfile_name:, using_bundler2:,
                            dir:, credentials:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials, using_bundler2: using_bundler2)
+    VersionResolver.new(
+      dependency_name: dependency_name,
+      dependency_requirements: dependency_requirements,
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name
+    ).version_details
   end
 
   def self.jfrog_source(dir:, gemfile_name:, credentials:, using_bundler2:)

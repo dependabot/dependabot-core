@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
-      options: {}
+      options: { bundler_2_available: bundler_2_available? }
     )
   end
   let(:ignored_versions) { [] }
@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         # end
       end
 
-      context "with a Bundler version specified" do
+      context "with a Bundler version specified", :bundler_v1_only do
         let(:requirement_string) { "~> 1.4.0" }
 
         let(:dependency_files) { project_dependency_files("bundler1/bundler_specified") }
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             allow(Dependabot::Bundler::NativeHelpers).
               to receive(:run_bundler_subprocess).
               with({
-                     bundler_version: "1",
+                     bundler_version: bundler_2_available? ? "2" : "1",
                      function: "resolve_version",
                      args: anything
                    }).
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             to eq(Gem::Version.new("2.0.1"))
         end
 
-        context "that isn't satisfied by the dependencies" do
+        context "that isn't satisfied by the dependencies", :bundler_v1_only do
           let(:dependency_files) do
             project_dependency_files("bundler1/imports_gemspec_version_clash_old_required_ruby_no_lockfile")
           end

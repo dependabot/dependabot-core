@@ -13,8 +13,6 @@ RSpec.describe Functions do
     depencency_source_latest_git_version: [ :gemfile_name, :dependency_name, :dir, :credentials, :dependency_source_url,
                                             :dependency_source_branch  ],
     private_registry_versions: [:gemfile_name, :dependency_name, :dir, :credentials ],
-    resolve_version: [:dependency_name, :dependency_requirements, :gemfile_name, :lockfile_name, :using_bundler2,
-                      :dir, :credentials],
     jfrog_source: [:dir, :gemfile_name, :credentials, :using_bundler2],
     git_specs: [:dir, :gemfile_name, :credentials, :using_bundler2],
     conflicting_dependencies: [:dir, :dependency_name, :target_version, :lockfile_name, :using_bundler2, :credentials]
