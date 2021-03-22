@@ -40,6 +40,71 @@ RSpec.describe Functions::FileParser do
       ]
       is_expected.to eq(parsed_gemfile)
     end
+
+    context "with a git source" do
+      let(:project_name) { "git_source" }
+
+      it "parses gemfile" do
+        parsed_gemfile = [
+          {
+            groups: [:default],
+            name: "business",
+            requirement: Gem::Requirement.new("~> 1.6.0"),
+            source: {
+              branch: "master",
+              ref: "a1b78a9",
+              type: "git",
+              url: "git@github.com:gocardless/business"
+            },
+            type: :runtime
+          },
+          {
+            groups: [:default],
+            name: "statesman",
+            requirement: Gem::Requirement.new("~> 1.2.0"),
+            source: nil,
+            type: :runtime
+          },
+          {
+            groups: [:default],
+            name: "prius",
+            requirement:  Gem::Requirement.new(">= 0"),
+            source: {
+              branch: "master",
+              ref: "master",
+              type: "git",
+              url: "https://github.com/gocardless/prius"
+            },
+            type: :runtime
+          },
+          {
+            groups: [:default],
+            name: "que",
+            requirement:  Gem::Requirement.new(">= 0"),
+            source: {
+              branch: "master",
+              ref: "v0.11.6",
+              type: "git",
+              url: "git@github.com:chanks/que"
+            },
+            type: :runtime
+          },
+          {
+            groups: [:default],
+            name: "uk_phone_numbers",
+            requirement:  Gem::Requirement.new(">= 0"),
+            source: {
+              branch: "master",
+              ref: "master",
+              type: "git",
+              url: "http://github.com/gocardless/uk_phone_numbers"
+            },
+            type: :runtime
+          }
+        ]
+        is_expected.to eq(parsed_gemfile)
+      end
+    end
   end
 
   describe "#parsed_gemspec" do

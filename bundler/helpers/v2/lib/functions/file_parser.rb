@@ -63,11 +63,12 @@ module Functions
       details
     end
 
+    # TODO: Remove default `master` branch
     def git_source_details(source)
       {
         url: source.uri,
         branch: source.branch || "master",
-        ref: source.ref
+        ref: source.ref || "master"
       }
     end
 
