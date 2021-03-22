@@ -169,7 +169,7 @@ module Dependabot
             end
 
           scopes = affected_urls.map do |url|
-            url.split(/\%40|@/)[1]&.split(%r{\%2F|/})&.first
+            url.split(/\%40|@/)[1]&.split(%r{\%2[fF]|/})&.first
           end
 
           # Registry used for unscoped packages
