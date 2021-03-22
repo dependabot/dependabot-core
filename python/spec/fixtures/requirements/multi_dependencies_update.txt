@@ -1,0 +1,2 @@
+requests==2.25.1
+luigi==1.2.0
