@@ -5,8 +5,7 @@ require "webmock/rspec"
 require "byebug"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
-# TODO: Fork `v1/monkey_patches` into `v2/monkey_patches` ?
-$LOAD_PATH.unshift(File.expand_path("../../v1/monkey_patches", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
