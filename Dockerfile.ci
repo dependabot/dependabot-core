@@ -7,17 +7,11 @@ ARG DEPENDABOT_HOME=/home/${USERNAME}
 ARG CODE_DIR=${DEPENDABOT_HOME}/dependabot-core
 
 # Install project dependencies as an unprivileged user
-RUN useradd -m ${USERNAME} && mkdir ${CODE_DIR}
-RUN chown -R ${USERNAME}:${USERNAME} \
-  ${CODE_DIR} \
-  /usr/local/.pyenv \
-  /opt/go/gopath \
-  /opt/rust/ \
-  /opt/bundler/
-
-WORKDIR ${CODE_DIR}
+RUN useradd -m ${USERNAME}
 
 USER ${USERNAME}
+RUN mkdir ${CODE_DIR}
+WORKDIR ${CODE_DIR}
 
 ENV BUNDLE_PATH="${CODE_DIR}/.bundle" \
   BUNDLE_BIN=".bundle/bin"
