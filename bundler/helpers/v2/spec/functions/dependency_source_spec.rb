@@ -72,12 +72,11 @@ RSpec.describe Functions::DependencySource do
       end
 
       it "blows up with a useful error" do
-        error_class = Bundler::Fetcher::AuthenticationRequiredError
-        error_message = "Authentication is required for repo.fury.io"
+        error_class = Bundler::Fetcher::BadAuthenticationError
         expect { private_registry_versions }.
           to raise_error do |error|
             expect(error).to be_a(error_class)
-            expect(error.message).to include(error_message)
+            expect(error.message).to include("Bad username or password for")
           end
       end
     end
@@ -100,8 +99,7 @@ RSpec.describe Functions::DependencySource do
         expect { private_registry_versions }.
           to raise_error do |error|
             expect(error).to be_a(error_class)
-            expect(error.message).
-              to include("Bad username or password for")
+            expect(error.message).to include("Bad username or password for")
           end
       end
     end
