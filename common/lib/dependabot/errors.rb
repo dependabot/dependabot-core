@@ -4,7 +4,7 @@ require "dependabot/utils"
 
 module Dependabot
   class DependabotError < StandardError
-    BASIC_AUTH_REGEX = %r{://(?<auth>[^:]*:[^@%\s]+(@|%40))}.freeze
+    BASIC_AUTH_REGEX = %r{://(?<auth>[^@%\s]+(@|%40))}.freeze
     # Remove any path segment from fury.io sources
     FURY_IO_PATH_REGEX = %r{fury\.io/(?<path>.+)}.freeze
 

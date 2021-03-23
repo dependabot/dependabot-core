@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         )
       end
 
-      context "that we don't have authentication details for" do
+      context "that we don't have authentication details for", :bundler_v1_only do
         let(:error_message) do
           <<~ERR
             Authentication is required for repo.fury.io.
@@ -317,6 +317,39 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq("repo.fury.io")
+            end
+        end
+      end
+
+      context "that we don't have authentication details for", :bundler_v2_only do
+        let(:error_message) do
+          <<~ERR
+            Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
+            Please double-check your credentials and correct them.
+          ERR
+        end
+
+        let(:error_class) do
+          "Bundler::Fetcher::BadAuthenticationError"
+        end
+
+        before do
+          allow(Dependabot::Bundler::NativeHelpers).
+            to receive(:run_bundler_subprocess).
+            with({
+                   bundler_version: bundler_version,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_raise(subprocess_error)
+        end
+
+        it "blows up with a useful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { finder.latest_version_details }.
+            to raise_error do |error|
+              expect(error).to be_a(error_class)
+              expect(error.source).to eq("https://repo.fury.io/<redacted>")
             end
         end
       end
