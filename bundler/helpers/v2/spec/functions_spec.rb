@@ -5,8 +5,6 @@ require "native_spec_helper"
 RSpec.describe Functions do
   # Verify v1 method signatures are exist, but raise as NYI
   {
-    vendor_cache_dir: [ :dir ],
-    update_lockfile: [ :dir, :gemfile_name, :lockfile_name, :using_bundler2, :credentials, :dependencies ],
     force_update: [ :dir, :dependency_name, :target_version, :gemfile_name, :lockfile_name, :using_bundler2,
                     :credentials, :update_multiple_dependencies ],
     dependency_source_type: [ :gemfile_name, :dependency_name, :dir, :credentials ],
