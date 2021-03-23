@@ -91,7 +91,24 @@ def checker_updated_dependencies(checker, requirements_to_unlock)
   )
 end
 
-# rubocop:disable Metrics/AbcSize
+def dependencies_updater(package_manager, files, dependencies, github_credentials, extra_credentials)
+  updated_deps = []
+  dependencies.select(&:top_level?).each do |dep|
+    checker = checker_init(package_manager, dep, files, extra_credentials)
+    next if checker_up_to_date(checker)
+
+    requirements_to_unlock = requirements(checker)
+    next if requirements_to_unlock == :update_not_possible
+
+    updated_dep = checker_updated_dependencies(checker, requirements_to_unlock)
+    next if updated_dep.first.version == updated_dep.first.previous_version
+
+    files = update_files(package_manager, dep, updated_dep, files, [github_credentials])
+    updated_deps << updated_dep
+  end
+  [files, updated_deps.flatten(1)]
+end
+
 def pix4_dependabot(package_manager, project_data, github_credentials, extra_credentials)
   input_files_path = recursive_path(project_data, github_credentials["password"])
 
@@ -101,30 +118,19 @@ def pix4_dependabot(package_manager, project_data, github_credentials, extra_cre
     source = source_init(file_path, project_data)
     files, commit = fetch_files_and_commit(package_manager, source, [github_credentials])
     dependencies = fetch_dependencies(package_manager, files, source)
+    updated_files, updated_deps = dependencies_updater(package_manager, files, dependencies, github_credentials,
+                                                       extra_credentials)
+    next if updated_deps.empty?
 
-    dependencies.select(&:top_level?).each do |dep|
-      checker = checker_init(package_manager, dep, files, extra_credentials)
-      next if checker_up_to_date(checker)
+    pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files,
+                             [github_credentials])
+    next unless pull_request
 
-      requirements_to_unlock = requirements(checker)
-      next if requirements_to_unlock == :update_not_possible
+    print "#{pull_request[:html_url]}\n\n"
 
-      updated_deps = checker_updated_dependencies(checker, requirements_to_unlock)
-      next if updated_deps.first.version == updated_deps.first.previous_version
+    next unless project_data["module"] == "docker" && project_data["repo"] == "Pix4D/linux-image-build"
 
-      updated_files = update_files(package_manager, dep, updated_deps, files, [github_credentials])
-
-      pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files,
-                               [github_credentials])
-      next unless pull_request
-
-      print "#{pull_request[:html_url]}\n\n"
-
-      next unless project_data["module"] == "docker" && project_data["repo"] == "Pix4D/linux-image-build"
-
-      auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_credentials["password"])
-    end
+    auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_credentials["password"])
   end
   "Success"
 end
-# rubocop:enable Metrics/AbcSize
