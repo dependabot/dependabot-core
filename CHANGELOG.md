@@ -1,6 +1,15 @@
+## v0.138.2, 23 March 2021
+
+- npm: support private registries using lowercase URI components (e.g. `%40dependabot%2fdependabot-core`)
+- Bundler: [Prerelease] Add a file parser for Bundler 2
+- Nuget: add support for disablePackageSources in NuGet.Config (@AshleighAdams)
+- Bump phpstan/phpstan from 0.12.81 to 0.12.82
+- Bump friendsofphp/php-cs-fixer to 2.18.4
+- CI: reduce disk space
+
 ## v0.138.1, 17 March 2021
 
-- Bundler: Add instrumentation to capture the bundler verison being used
+- Bundler: Add instrumentation to capture the bundler version being used
 - Bundler: [Prerelease] Add a stubbed out native helper for Bundler 2
 - Bundler: [Prerelease] Allow the v2 native helper to be invoked via an options argument
 
