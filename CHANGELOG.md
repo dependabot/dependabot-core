@@ -1,3 +1,7 @@
+## v0.138.3, 23 March 2021
+
+- docker: Improve handling of tags with prefixes or suffixes
+
 ## v0.138.2, 23 March 2021
 
 - npm: support private registries using lowercase URI components (e.g. `%40dependabot%2fdependabot-core`)
