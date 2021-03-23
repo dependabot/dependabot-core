@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         # end
       end
 
-      context "with a Bundler version specified", :bundler_v1_only do
+      context "with a Bundler v1 version specified", :bundler_v1_only do
         let(:requirement_string) { "~> 1.4.0" }
 
         let(:dependency_files) { project_dependency_files("bundler1/bundler_specified") }
@@ -127,6 +127,67 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
           #   pending { is_expected.to be_nil }
           # end
+        end
+      end
+
+      context "with a Bundler v2 version specified", :bundler_v2_only do
+        let(:requirement_string) { "~> 1.4.0" }
+
+        let(:dependency_files) { project_dependency_files("bundler2/bundler_specified") }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
+
+        context "attempting to update Bundler" do
+          let(:dependency_name) { "bundler" }
+          let(:requirement_string) { "~> 2.2.0" }
+
+          let(:dependency_files) { project_dependency_files("bundler2/bundler_specified") }
+
+          it "returns nil as resolution returns the bundler version installed by core" do
+            expect(subject).to be_nil
+          end
+        end
+      end
+
+      context "with a dependency that requiers bundler v1", :bundler_v1_only do
+        let(:dependency_name) { "guard-bundler" }
+        let(:requirement_string) { "2.2.1" }
+
+        let(:dependency_files) { project_dependency_files("bundler1/requires_bundler") }
+        its([:version]) { is_expected.to eq(Gem::Version.new("2.2.1")) }
+      end
+
+      context "when bundled with v1 and requesting a version that requires bundler v2", :bundler_v1_only do
+        let(:dependency_name) { "guard-bundler" }
+        let(:requirement_string) { "~> 3.0.0" }
+
+        let(:dependency_files) { project_dependency_files("bundler1/requires_bundler") }
+
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
+      context "with a dependency that requiers bundler v2", :bundler_v2_only do
+        let(:dependency_name) { "guard-bundler" }
+        let(:requirement_string) { "3.0.0" }
+
+        let(:dependency_files) { project_dependency_files("bundler2/requires_bundler") }
+
+        pending "resolves version" do
+          expect(subject.version).to eq(Gem::Version.new("3.0.0"))
+        end
+      end
+
+      context "when bundled with v2 and requesting a version that requires bundler v1", :bundler_v2_only do
+        let(:dependency_name) { "guard-bundler" }
+        let(:requirement_string) { "~> 2.2.0" }
+
+        let(:dependency_files) { project_dependency_files("bundler2/requires_bundler") }
+
+        pending "raises a DependencyFileNotResolvable error" do
+          expect { subject }.
+            to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -388,12 +449,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:dependency_files) do
             project_dependency_files("bundler1/imports_gemspec_version_clash_old_required_ruby_no_lockfile")
           end
-          let(:gemfile_fixture_name) { "imports_gemspec_version_clash" }
           let(:current_version) { "3.0.1" }
 
           it "ignores the minimum ruby version in the gemspec" do
             expect(resolver.latest_resolvable_version_details[:version]).
               to eq(Gem::Version.new("7.2.0"))
+          end
+        end
+
+        context "that isn't satisfied by the dependencies", :bundler_v2_only do
+          let(:dependency_files) do
+            project_dependency_files("bundler2/imports_gemspec_version_clash_old_required_ruby_no_lockfile")
+          end
+          let(:current_version) { "3.0.1" }
+
+          it "raises a DependencyFileNotResolvable error" do
+            expect { subject }.
+              to raise_error(Dependabot::DependencyFileNotResolvable)
           end
         end
       end
