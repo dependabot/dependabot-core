@@ -42,8 +42,8 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
   let(:lockfile) do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
   end
-  let(:gemfile_body) { fixture("ruby", "projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile") }
-  let(:lockfile_body) { fixture("ruby", "projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile.lock") }
+  let(:gemfile_body) { fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile") }
+  let(:lockfile_body) { fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile.lock") }
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
