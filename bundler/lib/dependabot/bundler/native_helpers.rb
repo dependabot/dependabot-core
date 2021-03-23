@@ -17,9 +17,16 @@ module Dependabot
               # Bundler will pick the matching installed major version
               "BUNDLER_VERSION" => bundler_version,
               "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_version), "Gemfile"),
-              "BUNDLE_PATH" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle")
+              "BUNDLE_PATH" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle"),
+              # Prevent the GEM_HOME from being set to a folder owned by root
+              "GEM_HOME" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle")
             }
           )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          # TODO: Remove once we stop stubbing out the V2 native helper
+          raise Dependabot::NotImplemented, e.message if e.error_class == "Functions::NotImplementedError"
+
+          raise
         end
       end
 

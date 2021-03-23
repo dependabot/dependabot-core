@@ -151,7 +151,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            options: options
           ).updated_lockfile_content
       end
 
@@ -162,7 +163,7 @@ module Dependabot
       end
 
       def bundler_version
-        @bundler_version ||= Helpers.bundler_version(lockfile)
+        @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
       end
     end
   end

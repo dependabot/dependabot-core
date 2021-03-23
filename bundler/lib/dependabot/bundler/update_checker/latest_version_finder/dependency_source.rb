@@ -17,14 +17,16 @@ module Dependabot
           OTHER = "other"
 
           attr_reader :dependency, :dependency_files, :repo_contents_path,
-                      :credentials
+                      :credentials, :options
 
           def initialize(dependency:,
                          dependency_files:,
-                         credentials:)
+                         credentials:,
+                         options:)
             @dependency          = dependency
             @dependency_files    = dependency_files
             @credentials         = credentials
+            @options             = options
           end
 
           # The latest version details for the dependency from a registry
@@ -145,7 +147,7 @@ module Dependabot
           end
 
           def bundler_version
-            @bundler_version ||= Helpers.bundler_version(lockfile)
+            @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
           end
         end
       end

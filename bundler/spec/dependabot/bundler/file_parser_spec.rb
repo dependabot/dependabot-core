@@ -13,7 +13,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
     described_class.new(
       dependency_files: dependency_files,
       source: source,
-      reject_external_code: reject_external_code
+      reject_external_code: reject_external_code,
+      options: { bundler_2_available: bundler_2_available? }
     )
   end
   let(:source) do
@@ -209,7 +210,32 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency" do
+      describe "a github dependency", :bundler_v2_only do
+        let(:dependency_files) { project_dependency_files("bundler1/github_source") }
+
+        subject { dependencies.find { |d| d.name == "business" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business.git",
+              branch: "master",
+              ref: "master"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
+        end
+      end
+
+      describe "a github dependency", :bundler_v1_only do
         let(:dependency_files) { project_dependency_files("bundler1/github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
@@ -723,6 +749,19 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.map(&:name)).to_not include("statesman")
         end
       end
+    end
+
+    it "instruments the package manager version" do
+      events = []
+      Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
+        events << ActiveSupport::Notifications::Event.new(*args)
+      end
+
+      parser.parse
+
+      expect(events.last.payload).to eq(
+        { ecosystem: "bundler", package_managers: { "bundler" => "1" } }
+      )
     end
   end
 end

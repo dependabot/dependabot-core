@@ -237,10 +237,6 @@ module Dependabot
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
         end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
-        end
       end
     end
   end

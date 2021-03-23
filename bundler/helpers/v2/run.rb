@@ -2,7 +2,7 @@ require "bundler"
 require "json"
 
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
-$LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../v1/monkey_patches", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
@@ -11,16 +11,16 @@ require "git_source_patch"
 
 require "functions"
 
-MAX_BUNDLER_VERSION="2.0.0"
+MIN_BUNDLER_VERSION = "2.0.0"
 
 def validate_bundler_version!
   return true if correct_bundler_version?
 
-  raise StandardError, "Called with Bundler '#{Bundler::VERSION}', expected < '#{MAX_BUNDLER_VERSION}'"
+  raise StandardError, "Called with Bundler '#{Bundler::VERSION}', expected >= '#{MIN_BUNDLER_VERSION}'"
 end
 
 def correct_bundler_version?
-  Gem::Version.new(Bundler::VERSION) < Gem::Version.new(MAX_BUNDLER_VERSION)
+  Gem::Version.new(Bundler::VERSION) >= Gem::Version.new(MIN_BUNDLER_VERSION)
 end
 
 def output(obj)

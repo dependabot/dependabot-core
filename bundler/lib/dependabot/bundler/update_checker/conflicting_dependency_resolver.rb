@@ -12,10 +12,13 @@ module Dependabot
         require_relative "shared_bundler_helpers"
         include SharedBundlerHelpers
 
-        def initialize(dependency_files:, repo_contents_path:, credentials:)
+        attr_reader :options
+
+        def initialize(dependency_files:, repo_contents_path:, credentials:, options:)
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @options = options
         end
 
         # Finds any dependencies in the lockfile that have a subdependency on
@@ -47,7 +50,7 @@ module Dependabot
         private
 
         def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
+          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
         end
       end
     end
