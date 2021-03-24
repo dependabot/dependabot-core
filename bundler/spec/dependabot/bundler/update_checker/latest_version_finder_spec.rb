@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "that we don't have authentication details for", :bundler_v2_only do
         let(:error_message) do
           <<~ERR
-            Bad username or password for https://SECRET_CODES@repo.fury.io/greysteil/.
+            Bad username or password for https://user:secret@repo.fury.io/greysteil/.
             Please double-check your credentials and correct them.
           ERR
         end
