@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           it "updates the lockfile correctly" do
             expect(file.content).to include("dummy-pkg-a (1.1.0)")
-            expect(file.content).to_not include("\n  dummy-pkg-a (= 1.1.0)")
+            expect(file.content).not_to include("\n  dummy-pkg-a (= 1.1.0)")
           end
         end
       end
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         it "doesn't add in a RUBY VERSION" do
-          expect(file.content).to_not include("RUBY VERSION")
+          expect(file.content).not_to include("RUBY VERSION")
         end
 
         context "for a gems.rb setup" do
@@ -512,7 +512,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           let(:lockfile_fixture_name) { "Gemfile.lock" }
 
           it "doesn't add in a RUBY VERSION" do
-            expect(file.content).to_not include("RUBY VERSION")
+            expect(file.content).not_to include("RUBY VERSION")
           end
         end
 
@@ -575,7 +575,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:lockfile_fixture_name) { "no_bundled_with.lock" }
 
         it "doesn't add in a BUNDLED WITH" do
-          expect(file.content).to_not include "BUNDLED WITH"
+          expect(file.content).not_to include "BUNDLED WITH"
         end
       end
 
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             new_lock[new_lock.find_index(original_remote_line) + 1]
 
           expect(new_remote_line).to eq(original_remote_line)
-          expect(new_revision_line).to_not eq(original_revision_line)
+          expect(new_revision_line).not_to eq(original_revision_line)
           expect(new_lock.index(new_remote_line)).
             to eq(old_lock.index(original_remote_line))
         end
@@ -875,7 +875,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               new_lock[new_lock.find_index(original_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
-            expect(new_revision_line).to_not eq(original_revision_line)
+            expect(new_revision_line).not_to eq(original_revision_line)
             expect(new_lock.index(new_remote_line)).
               to eq(old_lock.index(original_remote_line))
           end
@@ -925,7 +925,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               new_lock[new_lock.find_index(original_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
-            expect(new_revision_line).to_not eq(original_revision_line)
+            expect(new_revision_line).not_to eq(original_revision_line)
             expect(new_lock.index(new_remote_line)).
               to eq(old_lock.index(original_remote_line))
           end
