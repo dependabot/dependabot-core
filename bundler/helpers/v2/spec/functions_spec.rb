@@ -7,9 +7,6 @@ RSpec.describe Functions do
   {
     force_update: [ :dir, :dependency_name, :target_version, :gemfile_name, :lockfile_name, :using_bundler2,
                     :credentials, :update_multiple_dependencies ],
-    dependency_source_type: [ :gemfile_name, :dependency_name, :dir, :credentials ],
-    depencency_source_latest_git_version: [ :gemfile_name, :dependency_name, :dir, :credentials, :dependency_source_url,
-                                            :dependency_source_branch  ],
     private_registry_versions: [:gemfile_name, :dependency_name, :dir, :credentials ],
     resolve_version: [:dependency_name, :dependency_requirements, :gemfile_name, :lockfile_name, :using_bundler2,
                       :dir, :credentials],

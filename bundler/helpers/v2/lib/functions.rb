@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "functions/conflicting_dependency_resolver"
+require "functions/dependency_source"
 require "functions/file_parser"
 require "functions/lockfile_updater"
 
@@ -46,14 +47,28 @@ module Functions
 
   def self.dependency_source_type(gemfile_name:, dependency_name:, dir:,
                                   credentials:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: false)
+
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name
+    ).type
   end
 
   def self.depencency_source_latest_git_version(gemfile_name:, dependency_name:,
                                                 dir:, credentials:,
                                                 dependency_source_url:,
                                                 dependency_source_branch:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: false)
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name
+    ).latest_git_version(
+      dependency_source_url: dependency_source_url,
+      dependency_source_branch: dependency_source_branch
+    )
   end
 
   def self.private_registry_versions(gemfile_name:, dependency_name:, dir:,
