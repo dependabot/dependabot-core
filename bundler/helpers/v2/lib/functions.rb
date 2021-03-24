@@ -3,8 +3,9 @@
 require "functions/conflicting_dependency_resolver"
 require "functions/dependency_source"
 require "functions/file_parser"
-require "functions/version_resolver"
+require "functions/force_updater"
 require "functions/lockfile_updater"
+require "functions/version_resolver"
 
 module Functions
   class NotImplementedError < StandardError; end
@@ -43,7 +44,15 @@ module Functions
   def self.force_update(dir:, dependency_name:, target_version:, gemfile_name:,
                         lockfile_name:, using_bundler2:, credentials:,
                         update_multiple_dependencies:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: using_bundler2)
+    ForceUpdater.new(
+      dependency_name: dependency_name,
+      target_version: target_version,
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name,
+      update_multiple_dependencies: update_multiple_dependencies
+    ).run
   end
 
   def self.dependency_source_type(gemfile_name:, dependency_name:, dir:,

@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: {}
+      options: { bundler_2_available: bundler_2_available? }
     )
   end
   let(:dependency_files) { [gemfile, lockfile] }
@@ -66,9 +66,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     subject(:updated_dependencies) { updater.updated_dependencies }
 
     context "when updating the dependency that requires the other" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+      let(:gemfile_body) { fixture("projects", "bundler1", "version_conflict", "Gemfile") }
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict.lock")
+        fixture("projects", "bundler1", "version_conflict", "Gemfile.lock")
       end
       let(:target_version) { "3.6.0" }
       let(:dependency_name) { "rspec-mocks" }
@@ -114,9 +114,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     end
 
     context "when updating the dependency that is required by the other" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "version_conflict") }
+      let(:gemfile_body) { fixture("projects", "bundler1", "version_conflict", "Gemfile") }
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict.lock")
+        fixture("projects", "bundler1", "version_conflict", "Gemfile.lock")
       end
       let(:target_version) { "3.6.0" }
       let(:dependency_name) { "rspec-support" }
@@ -162,11 +162,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     end
 
     context "when two dependencies require the same subdependency" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "version_conflict_mutual_sub")
-      end
+      let(:gemfile_body) { fixture("projects", "bundler1", "version_conflict_mutual_sub", "Gemfile") }
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "version_conflict_mutual_sub.lock")
+        fixture("projects", "bundler1", "version_conflict_mutual_sub", "Gemfile.lock")
       end
 
       let(:dependency_name) { "rspec-mocks" }
@@ -213,11 +211,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     end
 
     context "when another dependency would need to be downgraded" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "subdep_blocked_by_subdep")
-      end
+      let(:gemfile_body) { fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile") }
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
+        fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile.lock")
       end
       let(:target_version) { "2.0.0" }
       let(:dependency_name) { "dummy-pkg-a" }
@@ -229,11 +225,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
     end
 
     context "when the ruby version would need to change" do
-      let(:gemfile_body) do
-        fixture("ruby", "gemfiles", "legacy_ruby")
-      end
+      let(:gemfile_body) { fixture("projects", "bundler1", "legacy_ruby", "Gemfile") }
       let(:lockfile_body) do
-        fixture("ruby", "lockfiles", "legacy_ruby.lock")
+        fixture("projects", "bundler1", "legacy_ruby", "Gemfile.lock")
       end
       let(:target_version) { "2.0.5" }
       let(:dependency_name) { "public_suffix" }
