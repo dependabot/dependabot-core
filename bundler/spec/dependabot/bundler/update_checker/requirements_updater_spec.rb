@@ -335,6 +335,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
               end
             end
           end
+
+          context "when latest version is denied" do
+            let(:latest_version) { "2.0.4" }
+            let(:latest_resolvable_version) { "2.0.3" }
+            let(:gemspec_requirement_string) { ">= 2.0.0, != 2.0.4" }
+
+            its([:requirement]) { is_expected.to eq(">= 2.0.0, != 2.0.4") }
+          end
         end
 
         context "when a beta version was used in the old requirement" do
