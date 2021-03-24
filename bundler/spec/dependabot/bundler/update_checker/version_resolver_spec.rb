@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
-      options: { bundler_2_available: bundler_2_available? }
+      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
     )
   end
   let(:ignored_versions) { [] }
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             allow(Dependabot::Bundler::NativeHelpers).
               to receive(:run_bundler_subprocess).
               with({
-                     bundler_version: bundler_2_available? ? "2" : "1",
+                     bundler_version: PackageManagerHelper.bundler_version,
                      function: "resolve_version",
                      args: anything
                    }).

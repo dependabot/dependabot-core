@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       }],
       repo_contents_path: repo_contents_path,
       options: {
-        bundler_2_available: bundler_2_available?
+        bundler_2_available: PackageManagerHelper.use_bundler_2?
       }
     )
   end

@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       dependency_files: dependency_files,
       source: source,
       reject_external_code: reject_external_code,
-      options: { bundler_2_available: bundler_2_available? }
+      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
     )
   end
   let(:source) do
