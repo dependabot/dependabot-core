@@ -17,7 +17,6 @@ RSpec.describe Functions do
                       :dir, :credentials],
     jfrog_source: [:dir, :gemfile_name, :credentials, :using_bundler2],
     git_specs: [:dir, :gemfile_name, :credentials, :using_bundler2],
-    conflicting_dependencies: [:dir, :dependency_name, :target_version, :lockfile_name, :using_bundler2, :credentials]
   }.each do |function, kwargs|
     describe "::#{function}" do
       let(:args) do

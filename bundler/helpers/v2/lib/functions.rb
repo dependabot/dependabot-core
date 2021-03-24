@@ -1,4 +1,5 @@
 require "functions/file_parser"
+require "functions/conflicting_dependency_resolver"
 
 module Functions
   class NotImplementedError < StandardError; end
@@ -110,6 +111,12 @@ module Functions
 
   def self.conflicting_dependencies(dir:, dependency_name:, target_version:,
                                     lockfile_name:, using_bundler2:, credentials:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: using_bundler2)
+    ConflictingDependencyResolver.new(
+      dependency_name: dependency_name,
+      target_version: target_version,
+      lockfile_name: lockfile_name
+    ).conflicting_dependencies
   end
 end
