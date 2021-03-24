@@ -41,7 +41,7 @@ RSpec.describe Dependabot::DependabotError do
         "git://user@github.com error"
       end
 
-      it { is_expected.to eq("git://user@github.com error") }
+      it { is_expected.to eq("git://github.com error") }
     end
 
     context "with http basic auth missing username" do
