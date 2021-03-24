@@ -5,17 +5,11 @@ require "native_spec_helper"
 RSpec.describe Functions do
   # Verify v1 method signatures are exist, but raise as NYI
   {
-    vendor_cache_dir: [ :dir ],
-    update_lockfile: [ :dir, :gemfile_name, :lockfile_name, :using_bundler2, :credentials, :dependencies ],
     force_update: [ :dir, :dependency_name, :target_version, :gemfile_name, :lockfile_name, :using_bundler2,
                     :credentials, :update_multiple_dependencies ],
-    dependency_source_type: [ :gemfile_name, :dependency_name, :dir, :credentials ],
-    depencency_source_latest_git_version: [ :gemfile_name, :dependency_name, :dir, :credentials, :dependency_source_url,
-                                            :dependency_source_branch  ],
     private_registry_versions: [:gemfile_name, :dependency_name, :dir, :credentials ],
     jfrog_source: [:dir, :gemfile_name, :credentials, :using_bundler2],
     git_specs: [:dir, :gemfile_name, :credentials, :using_bundler2],
-    conflicting_dependencies: [:dir, :dependency_name, :target_version, :lockfile_name, :using_bundler2, :credentials]
   }.each do |function, kwargs|
     describe "::#{function}" do
       let(:args) do

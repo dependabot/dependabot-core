@@ -15,19 +15,17 @@ RUN apt-get update && apt-get install -y vim strace ltrace gdb
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 ARG USERNAME=dependabot
-ARG DEPENDABOT_HOME=/home/${USERNAME}
 
 RUN groupadd -o --gid "${USER_GID}" "${USERNAME}" && \
   useradd --uid "${USER_UID}" --gid "${USER_GID}" -m "${USERNAME}"
 RUN chown -R "${USERNAME}":"${USERNAME}" \
   /usr/local/.pyenv \
   /opt/go/gopath \
-  /opt/rust/ \
-  /opt/bundler/
+  /opt/rust/
 USER $USERNAME
 RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
 
-ARG CODE_DIR=${DEPENDABOT_HOME}/dependabot-core
+ARG CODE_DIR=/home/$USERNAME/dependabot-core
 
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
@@ -35,8 +33,8 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla
 RUN mkdir -p ${CODE_DIR}/common/lib/dependabot
 WORKDIR ${CODE_DIR}
 
-ENV BUNDLE_PATH="${CODE_DIR}/.bundle" \
-  BUNDLE_BIN=".bundle/bin"
+ENV BUNDLE_PATH="/home/$USERNAME/.bundle" \
+  BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 
 COPY common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/

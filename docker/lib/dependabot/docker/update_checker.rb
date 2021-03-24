@@ -57,7 +57,7 @@ module Dependabot
       /x.freeze
 
       def latest_version
-        @latest_version ||= fetch_latest_version
+        fetch_latest_version(dependency.version)
       end
 
       def latest_resolvable_version
@@ -74,7 +74,7 @@ module Dependabot
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
           updated_source[:digest] = updated_digest if req[:source][:digest]
-          updated_source[:tag] = latest_version if req[:source][:tag]
+          updated_source[:tag] = fetch_latest_version(req[:source][:tag]) if req[:source][:tag]
 
           req.merge(source: updated_source)
         end
@@ -97,17 +97,22 @@ module Dependabot
 
       def version_up_to_date?
         # If the tag isn't up-to-date then we can definitely update
-        return false if version_tag_up_to_date? == false
+        return false if version_tag_up_to_date?(dependency.version) == false
+        return false if dependency.requirements.any? do |req|
+                          version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
+                        end
 
         # Otherwise, if the Dockerfile specifies a digest check that that is
         # up-to-date
         digest_up_to_date?
       end
 
-      def version_tag_up_to_date?
-        return unless dependency.version.match?(NAME_WITH_VERSION)
+      def version_tag_up_to_date?(version)
+        return unless version&.match?(NAME_WITH_VERSION)
 
-        old_v = numeric_version_from(dependency.version)
+        latest_version = fetch_latest_version(version)
+
+        old_v = numeric_version_from(version)
         latest_v = numeric_version_from(latest_version)
 
         return true if version_class.new(latest_v) <= version_class.new(old_v)
@@ -117,7 +122,7 @@ module Dependabot
         # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
         return false if old_v.split(".").count == latest_v.split(".").count
 
-        digest_of(dependency.version) == digest_of(latest_version)
+        digest_of(version) == digest_of(latest_version)
       end
 
       def digest_up_to_date?
@@ -131,34 +136,39 @@ module Dependabot
 
       # NOTE: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
-      def fetch_latest_version
-        return dependency.version unless dependency.version.match?(NAME_WITH_VERSION)
+      def fetch_latest_version(version)
+        @versions ||= {}
+        return @versions[version] if @versions.key?(version)
 
-        # Prune out any downgrade tags before checking for pre-releases
-        # (which requires a call to the registry for each tag, so can be slow)
-        candidate_tags = comparable_tags_from_registry
-        non_downgrade_tags = remove_version_downgrades(candidate_tags)
-        candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
+        @versions[version] = begin
+          return version unless version.match?(NAME_WITH_VERSION)
 
-        unless prerelease?(dependency.version)
-          candidate_tags =
-            candidate_tags.
-            reject { |tag| prerelease?(tag) }
-        end
+          # Prune out any downgrade tags before checking for pre-releases
+          # (which requires a call to the registry for each tag, so can be slow)
+          candidate_tags = comparable_tags_from_registry(version)
+          non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
+          candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        latest_tag =
-          filter_ignored(candidate_tags).
-          max_by do |tag|
-            [version_class.new(numeric_version_from(tag)), tag.length]
+          unless prerelease?(version)
+            candidate_tags =
+              candidate_tags.
+              reject { |tag| prerelease?(tag) }
           end
 
-        latest_tag || dependency.version
+          latest_tag =
+            filter_ignored(candidate_tags).
+            max_by do |tag|
+              [version_class.new(numeric_version_from(tag)), tag.length]
+            end
+
+          latest_tag || version
+        end
       end
 
-      def comparable_tags_from_registry
-        original_prefix = prefix_of(dependency.version)
-        original_suffix = suffix_of(dependency.version)
-        original_format = format_of(dependency.version)
+      def comparable_tags_from_registry(version)
+        original_prefix = prefix_of(version)
+        original_suffix = suffix_of(version)
+        original_format = format_of(version)
 
         tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
@@ -168,10 +178,10 @@ module Dependabot
           reject { |tag| commit_sha_suffix?(tag) }
       end
 
-      def remove_version_downgrades(candidate_tags)
+      def remove_version_downgrades(candidate_tags, version)
         candidate_tags.select do |tag|
           version_class.new(numeric_version_from(tag)) >=
-            version_class.new(numeric_version_from(dependency.version))
+            version_class.new(numeric_version_from(version))
         end
       end
 

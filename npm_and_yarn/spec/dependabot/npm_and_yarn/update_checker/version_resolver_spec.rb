@@ -1322,44 +1322,32 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         resolved_dependencies = resolver.dependency_updates_from_full_unlock
         react = resolved_dependencies.find { |d| d[:dependency].name == "react" }
         react_dom = resolved_dependencies.find { |d| d[:dependency].name == "react-dom" }
-        expect(react[:dependency].to_h).to eq(
+        expect(react[:dependency].requirements).to contain_exactly(
           {
-            "name" => "react",
-            "requirements" => [
-              {
-                file: "packages/package1/package.json",
-                requirement: "15.6.2",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                file: "packages/package2/package.json",
-                requirement: "15.6.2",
-                groups: ["dependencies"],
-                source: nil
-              }
-            ],
-            "package_manager" => "npm_and_yarn"
+            file: "packages/package1/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          },
+          {
+            file: "packages/package2/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
           }
         )
-        expect(react_dom[:dependency].to_h).to eq(
+        expect(react_dom[:dependency].requirements).to contain_exactly(
           {
-            "name" => "react-dom",
-            "requirements" => [
-              {
-                requirement: "15.6.2",
-                file: "packages/package2/package.json",
-                groups: ["dependencies"],
-                source: nil
-              },
-              {
-                requirement: "15.6.2",
-                file: "packages/package1/package.json",
-                groups: ["dependencies"],
-                source: nil
-              }
-            ],
-            "package_manager" => "npm_and_yarn"
+            requirement: "15.6.2",
+            file: "packages/package2/package.json",
+            groups: ["dependencies"],
+            source: nil
+          },
+          {
+            requirement: "15.6.2",
+            file: "packages/package1/package.json",
+            groups: ["dependencies"],
+            source: nil
           }
         )
       end

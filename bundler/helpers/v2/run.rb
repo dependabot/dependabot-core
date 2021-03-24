@@ -11,11 +11,25 @@ require "git_source_patch"
 
 require "functions"
 
+MIN_BUNDLER_VERSION = "2.0.0"
+
+def validate_bundler_version!
+  return true if correct_bundler_version?
+
+  raise StandardError, "Called with Bundler '#{Bundler::VERSION}', expected >= '#{MIN_BUNDLER_VERSION}'"
+end
+
+def correct_bundler_version?
+  Gem::Version.new(Bundler::VERSION) >= Gem::Version.new(MIN_BUNDLER_VERSION)
+end
+
 def output(obj)
   print JSON.dump(obj)
 end
 
 begin
+  validate_bundler_version!
+
   request = JSON.parse($stdin.read)
 
   function = request["function"]
