@@ -324,14 +324,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
 
           context "and one is a != requirement" do
             context "that is binding" do
-              let(:gemspec_requirement_string) { "~> 1.4, != 1.8.0" }
+              let(:gemspec_requirement_string) { "~> 1.4, != #{latest_version}" }
               its([:requirement]) { is_expected.to eq("~> 1.4") }
             end
 
             context "that is not binding" do
-              let(:gemspec_requirement_string) { "~> 1.4.0, != 1.5.0" }
+              let(:gemspec_requirement_string) { "~> 1.4, != #{latest_resolvable_version}" }
               its([:requirement]) do
-                is_expected.to eq(">= 1.4, != 1.5.0, < 1.9")
+                is_expected.to eq("~> 1.4, != #{latest_resolvable_version}")
               end
             end
           end
@@ -400,6 +400,20 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           context "when there are multiple requirements" do
             let(:gemspec_requirement_string) { "> 1.0.0, <= 1.4.0" }
             its([:requirement]) { is_expected.to eq("> 1.0.0, <= 1.9.0") }
+
+            context "and one is a != requirement" do
+              context "that is binding" do
+                let(:gemspec_requirement_string) { "~> 1.4, != #{latest_resolvable_version}" }
+                its([:requirement]) { is_expected.to eq("~> 1.4") }
+              end
+
+              context "that is not binding" do
+                let(:gemspec_requirement_string) { "~> 1.4, != #{latest_version}" }
+                its([:requirement]) do
+                  is_expected.to eq("~> 1.4, != #{latest_version}")
+                end
+              end
+            end
           end
 
           context "when a beta version was used in the old requirement" do
