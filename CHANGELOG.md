@@ -1,3 +1,12 @@
+## v0.138.3, 24 March 2021
+
+- Docker: Improve handling of tags with prefixes or suffixes
+- Bump @npmcli/arborist from 2.2.6 to 2.2.9 in /npm_and_yarn/helpers
+- Bump eslint from 7.21.0 to 7.22.0 in /npm_and_yarn/helpers
+- Bundler: fix deprecated --without flag in build
+- Bundler [Prerelease]: Add conflicting dependency resolver
+- Bundler: Avoid subtle runtime failures by raising if bundler is improperly invoked
+
 ## v0.138.2, 23 March 2021
 
 - npm: support private registries using lowercase URI components (e.g. `%40dependabot%2fdependabot-core`)
