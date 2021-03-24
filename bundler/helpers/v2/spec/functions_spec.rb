@@ -8,8 +8,6 @@ RSpec.describe Functions do
     force_update: [ :dir, :dependency_name, :target_version, :gemfile_name, :lockfile_name, :using_bundler2,
                     :credentials, :update_multiple_dependencies ],
     private_registry_versions: [:gemfile_name, :dependency_name, :dir, :credentials ],
-    resolve_version: [:dependency_name, :dependency_requirements, :gemfile_name, :lockfile_name, :using_bundler2,
-                      :dir, :credentials],
     jfrog_source: [:dir, :gemfile_name, :credentials, :using_bundler2],
     git_specs: [:dir, :gemfile_name, :credentials, :using_bundler2],
   }.each do |function, kwargs|
