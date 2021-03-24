@@ -256,6 +256,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         end
       end
 
+      context "with inequality matchers" do
+        let(:previous_requirement) { ">= 2.0.0, != 2.0.3, != 2.0.4" }
+        let(:updated_requirement) { "~> 2.0.1, != 2.0.3, != 2.0.4" }
+        let(:content) do
+          %(s.add_runtime_dependency("business", "~> 2.0.1", "!= 2.0.3", "!= 2.0.4"))
+        end
+
+        it { is_expected.to eq(content) }
+      end
+
       context "when declared with `add_development_dependency`" do
         let(:dependency_name) { "rspec" }
         it { is_expected.to include(%(ent_dependency "rspec", "~> 1.5.0"\n)) }
