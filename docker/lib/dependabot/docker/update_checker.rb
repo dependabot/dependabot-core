@@ -29,7 +29,7 @@ module DockerRegistry2
         headers["Accept"] = %w(
           application/vnd.docker.distribution.manifest.v2+json
           application/vnd.docker.distribution.manifest.list.v2+json
-          application/json"
+          application/json
         ).join(",")
       end
       headers["Content-Type"] = "application/vnd.docker.distribution.manifest.v2+json" unless payload.nil?
