@@ -1179,7 +1179,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { project_dependency_files("bundler2/private_git_source") }
+            let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
 
             it "updates the dependency" do
               expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
@@ -1205,7 +1205,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { project_dependency_files("bundler2/bad_ref") }
+            let(:dependency_files) { bundler_project_dependency_files("bad_ref") }
 
             it "updates the dependency" do
               expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
