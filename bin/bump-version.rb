@@ -53,6 +53,7 @@ puts "git push origin HEAD:v#{new_version}-release-notes"
 puts "# ... create PR, verify, merge, for example:"
 puts "gh pr create"
 puts "# tag the approved release notes:"
-puts "git tag 'v#{new_version}' 'v#{new_version}-release-notes'"
+puts "git fetch"
+puts "git tag 'v#{new_version}' 'origin/v#{new_version}-release-notes'"
 puts "git push --tags"
 puts
