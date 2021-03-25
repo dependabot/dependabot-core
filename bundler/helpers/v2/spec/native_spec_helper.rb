@@ -26,7 +26,11 @@ end
 LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
 
 def project_dependency_files(project)
+  # TODO: Retrieve files from bundler2 folder once it is fully up to date
   project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler1", project))
+
+  raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
+
   Dir.chdir(project_path) do
     # NOTE: Include dotfiles (e.g. .npmrc)
     files = Dir.glob("**/*", File::FNM_DOTMATCH)
