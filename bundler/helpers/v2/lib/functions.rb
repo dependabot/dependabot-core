@@ -83,7 +83,13 @@ module Functions
 
   def self.private_registry_versions(gemfile_name:, dependency_name:, dir:,
                                      credentials:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: false)
+
+    DependencySource.new(
+      gemfile_name: gemfile_name,
+      dependency_name: dependency_name
+    ).private_registry_versions
   end
 
   def self.resolve_version(dependency_name:, dependency_requirements:,
@@ -103,7 +109,26 @@ module Functions
   end
 
   def self.git_specs(dir:, gemfile_name:, credentials:, using_bundler2:)
-    raise NotImplementedError, "Bundler 2 adapter does not yet implement #{__method__}"
+    set_bundler_flags_and_credentials(dir: dir, credentials: credentials,
+                                      using_bundler2: using_bundler2)
+
+    git_specs = Bundler::Definition.build(gemfile_name, nil, {}).dependencies.
+                select do |spec|
+      spec.source.is_a?(Bundler::Source::Git)
+    end
+    git_specs.map do |spec|
+      # Piggy-back off some private Bundler methods to configure the
+      # URI with auth details in the same way Bundler does.
+      git_proxy = spec.source.send(:git_proxy)
+      auth_uri = spec.source.uri.gsub("git://", "https://")
+      auth_uri = git_proxy.send(:configured_uri_for, auth_uri)
+      auth_uri += ".git" unless auth_uri.end_with?(".git")
+      auth_uri += "/info/refs?service=git-upload-pack"
+      {
+        uri: spec.source.uri,
+        auth_uri: auth_uri
+      }
+    end
   end
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:,
