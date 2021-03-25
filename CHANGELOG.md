@@ -1,10 +1,23 @@
+## v0.138.4, 25 March 2021
+
+- Docker: fix invalid Accept header when checking for updates
+- Bundler: fix invalid requirement replacement when using `!=` filters
+- Bundler [Prerelease]: Add UpdateChecker for Bundler 2
+- Bundler [Prerelease]: Add version resolver for Bundler 2
+- Bundler [Prerelease]: Add file updater for Bundler 2
+- Dependabot::PullRequestCreator::MessageBuilder::new - github_redirection_service is a required argument
+- CI: Fix flaky npm spec
+- CI: Extend npm retries and max attempts
+- CI: Skip coverage reports
+- Update npm from 7.6.1 to 7.7.0
+
 ## v0.138.3, 24 March 2021
 
 - Docker: Improve handling of tags with prefixes or suffixes
 - Bump @npmcli/arborist from 2.2.6 to 2.2.9 in /npm_and_yarn/helpers
 - Bump eslint from 7.21.0 to 7.22.0 in /npm_and_yarn/helpers
 - Bundler: fix deprecated --without flag in build
-- Bundler [Prerelease]: Add conflicting dependency resolver
+- Bundler [Prerelease]: Add conflicting dependency resolver for Bundler 2
 - Bundler: Avoid subtle runtime failures by raising if bundler is improperly invoked
 
 ## v0.138.2, 23 March 2021
