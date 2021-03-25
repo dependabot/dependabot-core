@@ -1,6 +1,6 @@
 GEM
   remote: https://rubygems.org/
-  remote: https://wxuokzLuQTRgMGtEYMPJ@repo.fury.io/greysteil/
+  remote: https://SECRET_CODES@repo.fury.io/greysteil/
   specs:
     business (1.5.0)
     statesman (2.0.1)
