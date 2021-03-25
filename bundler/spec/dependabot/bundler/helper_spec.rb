@@ -78,12 +78,12 @@ RSpec.describe Dependabot::Bundler::Helpers do
         expect(described_method(no_lockfile)).to eql("2")
       end
 
-      it "is 2 if there is no bundled with string" do
-        expect(described_method(lockfile_bundled_with_missing)).to eql("2")
+      it "is 1 if there is no bundled with string" do
+        expect(described_method(lockfile_bundled_with_missing)).to eql("1")
       end
 
-      it "is 2 if it was bundled with a v1.x version" do
-        expect(described_method(lockfile_bundled_with_1)).to eql("2")
+      it "is 1 if it was bundled with a v1.x version" do
+        expect(described_method(lockfile_bundled_with_1)).to eql("1")
       end
 
       it "is 2 if it was bundled with a v2.x version" do
@@ -117,9 +117,8 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(lockfile_bundled_with_2)).to eql("2")
     end
 
-    # This is semantically surprising, but documents existing behaviour.
     it "is 1 if it was bundled with a future version" do
-      expect(described_method(lockfile_bundled_with_future_version)).to eql("1")
+      expect(described_method(lockfile_bundled_with_future_version)).to eql("3")
     end
   end
 end
