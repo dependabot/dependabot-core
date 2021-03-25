@@ -760,7 +760,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       parser.parse
 
       expect(events.last.payload).to eq(
-        { ecosystem: "bundler", package_managers: { "bundler" => "1" } }
+        { ecosystem: "bundler", package_managers: { "bundler" => PackageManagerHelper.bundler_version } }
       )
     end
   end

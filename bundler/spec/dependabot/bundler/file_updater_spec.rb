@@ -349,7 +349,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("BUNDLED WITH\n   2.2.0")
         end
 
-
         it "doesn't add in a RUBY VERSION" do
           expect(file.content).not_to include("RUBY VERSION")
         end
