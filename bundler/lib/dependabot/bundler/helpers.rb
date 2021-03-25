@@ -13,7 +13,7 @@ module Dependabot
       # it was created with an old version that didn't add this information
       FAILOVER = V1
 
-      BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
+      BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m.freeze
 
       # NOTE: options is a manditory argument to ensure we pass it from all calling classes
       def self.bundler_version(lockfile, options:)
@@ -21,7 +21,7 @@ module Dependabot
         return V1 unless options[:bundler_2_available]
         return DEFAULT unless lockfile
 
-        if matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX)
+        if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version].to_i >= 2 ? V2 : V1
         else
           FAILOVER
@@ -30,7 +30,8 @@ module Dependabot
 
       def self.detected_bundler_version(lockfile)
         return "unknown" unless lockfile
-        if matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX)
+
+        if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version]
         else
           FAILOVER

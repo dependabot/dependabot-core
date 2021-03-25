@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_1) do
+  let(:lockfile_bundled_with_v1) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
 
@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_2) do
+  let(:lockfile_bundled_with_v2) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
 
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     end
 
     context "when bundler 2 is not available" do
-      let(:options) { Hash.new }
+      let(:options) { {} }
 
       it "is 1 if there is no lockfile" do
         expect(described_method(no_lockfile)).to eql("1")
@@ -57,11 +57,11 @@ RSpec.describe Dependabot::Bundler::Helpers do
       end
 
       it "is 1 if it was bundled with a v1.x version" do
-        expect(described_method(lockfile_bundled_with_1)).to eql("1")
+        expect(described_method(lockfile_bundled_with_v1)).to eql("1")
       end
 
       it "is 1 if it was bundled with a v2.x version" do
-        expect(described_method(lockfile_bundled_with_2)).to eql("1")
+        expect(described_method(lockfile_bundled_with_v2)).to eql("1")
       end
 
       it "is 1 if it was bundled with a future version" do
@@ -83,11 +83,11 @@ RSpec.describe Dependabot::Bundler::Helpers do
       end
 
       it "is 1 if it was bundled with a v1.x version" do
-        expect(described_method(lockfile_bundled_with_1)).to eql("1")
+        expect(described_method(lockfile_bundled_with_v1)).to eql("1")
       end
 
       it "is 2 if it was bundled with a v2.x version" do
-        expect(described_method(lockfile_bundled_with_2)).to eql("2")
+        expect(described_method(lockfile_bundled_with_v2)).to eql("2")
       end
 
       it "is 2 if it was bundled with a future version" do
@@ -110,11 +110,11 @@ RSpec.describe Dependabot::Bundler::Helpers do
     end
 
     it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_1)).to eql("1")
+      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
     end
 
     it "is 2 if it was bundled with a v2.x version" do
-      expect(described_method(lockfile_bundled_with_2)).to eql("2")
+      expect(described_method(lockfile_bundled_with_v2)).to eql("2")
     end
 
     it "is 1 if it was bundled with a future version" do
