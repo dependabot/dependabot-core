@@ -1,7 +1,5 @@
 ## v0.138.5, 26 March 2021
 
-- Update maven/spec/dependabot/maven/version_spec.rb
-- Update gradle/spec/dependabot/gradle/version_spec.rb
 - Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
 - Bundler v2 [pre-release]: Add and test jfrog source helper
 - Cargo: Update Rust to 1.51.0
