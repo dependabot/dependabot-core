@@ -25,11 +25,21 @@ module Dependabot
         fetched_files << pom
         fetched_files += child_poms
         fetched_files += relative_path_parents(fetched_files)
+        unless extensions.nil?
+          fetched_files << extensions
+        end
         fetched_files.uniq
       end
 
       def pom
         @pom ||= fetch_file_from_host("pom.xml")
+      end
+
+      def extensions
+        @extensions ||= fetch_file_from_host(".mvn/extensions.xml")
+      rescue Dependabot::DependencyFileNotFound
+        # extensions.xml is optional
+        nil
       end
 
       def child_poms
