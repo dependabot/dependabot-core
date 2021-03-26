@@ -458,7 +458,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::DependencyFileNotResolvable
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
-            expect(error.message).to include("go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: invalid pseudo-version:")
+          expect(error.message).to include(
+            "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
+            "invalid pseudo-version:"
+          )
         end
       end
     end
