@@ -33,6 +33,7 @@ changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
 changelog_contents = File.read(changelog_path)
 
 commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
+commit_subjects = commit_subjects.reject { |s| s.start_with?("Merge pull request #") }
 proposed_changes = commit_subjects.map { |line| "- #{line}" }.join("")
 
 new_changelog_contents = [
