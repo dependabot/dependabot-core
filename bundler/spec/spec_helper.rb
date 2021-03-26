@@ -14,6 +14,11 @@ def bundler_2_available?
   ENV["SUITE_NAME"] == "bundler2"
 end
 
+# Load project files prepended with the bundler version, which is currently only ever bundler1
+def bundler_project_dependency_files(project)
+  project_dependency_files(File.join("bundler1", project))
+end
+
 RSpec.configure do |config|
   config.around do |example|
     if bundler_2_available? && example.metadata[:bundler_v1_only]

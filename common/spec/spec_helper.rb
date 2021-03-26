@@ -93,6 +93,9 @@ end
 
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+
+  raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
+
   Dir.chdir(project_path) do
     # NOTE: Include dotfiles (e.g. .npmrc)
     files = Dir.glob("**/*", File::FNM_DOTMATCH)
