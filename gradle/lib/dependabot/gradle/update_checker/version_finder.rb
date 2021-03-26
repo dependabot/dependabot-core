@@ -17,8 +17,6 @@ module Dependabot
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java).freeze
 
-        GRADLE_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
-
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -99,10 +97,10 @@ module Dependabot
           filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(parse_requirement_string(req))
+            ignore_requirements = Gradle::Requirement.requirements_array(req)
             filtered =
               filtered.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+              reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
           raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
@@ -126,12 +124,6 @@ module Dependabot
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
-        end
-
-        def parse_requirement_string(string)
-          return string if string.match?(GRADLE_RANGE_REGEX)
-
-          string.split(",").map(&:strip)
         end
 
         def wants_prerelease?

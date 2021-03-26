@@ -925,6 +925,11 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("v1.11.1") }
         end
 
+        context "multiple ignore conditions" do
+          let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+        end
+
         context "all versions ignored" do
           let(:ignored_versions) { [">= 0"] }
           it "returns nil" do

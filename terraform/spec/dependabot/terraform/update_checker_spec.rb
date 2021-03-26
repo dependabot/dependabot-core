@@ -13,7 +13,8 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: credentials
+      credentials: credentials,
+      ignored_versions: ignored_versions
     )
   end
   let(:credentials) do
@@ -24,6 +25,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       "password" => "token"
     }]
   end
+  let(:ignored_versions) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -98,6 +100,11 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.3.8")) }
+
+      context "when the user is ignoring the latest version" do
+        let(:ignored_versions) { [">= 0.3.8, < 0.4.0"] }
+        it { is_expected.to eq(Gem::Version.new("0.3.7")) }
+      end
 
       context "for a custom registry" do
         let(:source) do

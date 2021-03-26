@@ -155,6 +155,11 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
     end
 
+    context "when ignoring several versions" do
+      let(:ignored_versions) { [">= 5.0.0, < 5.1.0"] }
+      it { is_expected.to eq(Dependabot::Elm::Version.new("5.1.1")) }
+    end
+
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
       it "returns nil" do
