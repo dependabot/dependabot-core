@@ -1,3 +1,11 @@
+## v0.138.6, 26 March 2021
+
+- chore: export LOCAL_GITHUB_ACCESS_TOKEN to docker dev container
+- fix: Raise resolvability error when pseudo version does not match version control
+- test: Add a helper method to load bundler fixtures by version
+- test: Explicitly raise if attempting to load a missing project fixture
+- test: Project fixtures for UpdateChecker spec
+
 ## v0.138.5, 26 March 2021
 
 - Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
