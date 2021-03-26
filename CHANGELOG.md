@@ -2,7 +2,7 @@
 
 - Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
 - Bundler v2 [pre-release]: Add and test jfrog source helper
-- Cargo: Update Rust to 1.51.0
+- Cargo: Update Rust to 1.51.0 (thanks @CryZe)
 - Bump npm from 6.14.11 to 6.14.12 in /npm_and_yarn/helpers
 - Internal: bump-version: re-tag the release notes ref
 - Azure: adding azure pr updater reference in pr updater common class
