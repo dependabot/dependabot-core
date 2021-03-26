@@ -20,7 +20,7 @@ def bundler_project_dependency_files(project)
 end
 
 def bundler_project_dependency_file(project, filename:)
-  dependency_file = bundler_project_dependency_files(project).find{ |file| file.name == filename }
+  dependency_file = bundler_project_dependency_files(project).find { |file| file.name == filename }
 
   raise "Dependency File '#{filename} does not exist for project '#{project}'" unless dependency_file
 
