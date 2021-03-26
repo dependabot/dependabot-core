@@ -13,7 +13,7 @@ module Dependabot
       def self.updated_files_regex
         [
           /^pom\.xml$/, %r{/pom\.xml$},
-          /^extensions.\.xml$/, %r{/extensions\.xml$},
+          /^extensions.\.xml$/, %r{/extensions\.xml$}
         ]
       end
 

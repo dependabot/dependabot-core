@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       describe "the sole dependency" do
         subject(:dependency) { dependencies[3] }
 
-        it "has the right details" do 
+        it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("io.takari.polyglot:polyglot-yaml")
           expect(dependency.version).to eq("0.4.6")
