@@ -353,7 +353,7 @@ module Dependabot
           branch_name,
           pr_name,
           pr_description,
-          headers: custom_headers || {}
+          options: custom_headers || {}
         )
       rescue Octokit::UnprocessableEntity => e
         return handle_pr_creation_error(e) if e.message.include? "Error summary"
