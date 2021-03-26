@@ -173,7 +173,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
             expect(error.message).
-              to include("feature `namespaced-features` is required")
+              to include("feature `metabuild` is required")
           end
       end
     end
