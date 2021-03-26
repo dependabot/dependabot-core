@@ -1,0 +1,15 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    i18n (0.7.0.beta1)
+    ibandit (0.7.0)
+      i18n (~> 0.7.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  ibandit (~> 0.7.0)
+
+BUNDLED WITH
+   1.16.1
