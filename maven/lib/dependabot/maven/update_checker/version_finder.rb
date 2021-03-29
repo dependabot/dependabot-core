@@ -155,7 +155,7 @@ module Dependabot
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: repository_details.fetch("custom_headers"))
               )
 
               response.status < 400
@@ -176,7 +176,7 @@ module Dependabot
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults
+                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("custom_headers"))
               )
               check_response(response, repository_details.fetch("url"))
 
@@ -219,7 +219,7 @@ module Dependabot
             new(dependency_files: dependency_files).
             repository_urls(pom: pom).
             map do |url|
-              { "url" => url, "username" => nil, "password" => nil }
+              { "url" => url, "username" => nil, "password" => nil, "custom_headers" => nil }
             end
         end
 
@@ -230,7 +230,8 @@ module Dependabot
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
                 "username" => cred.fetch("username", nil),
-                "password" => cred.fetch("password", nil)
+                "password" => cred.fetch("password", nil),
+                "custom_headers" => cred.fetch("custom_headers", nil)
               }
             end
         end
