@@ -27,6 +27,10 @@ def bundler_project_dependency_file(project, filename:)
   dependency_file
 end
 
+def bundler_build_tmp_repo(project)
+  build_tmp_repo(project, path: "projects/bundler1")
+end
+
 RSpec.configure do |config|
   config.around do |example|
     if bundler_2_available? && example.metadata[:bundler_v1_only]
