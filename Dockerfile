@@ -50,6 +50,11 @@ RUN apt-get update \
     python3-enchant \
   && locale-gen en_US.UTF-8
 
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid "${USER_GID}" dependabot \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
 
 ### RUBY
 
