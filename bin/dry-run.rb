@@ -110,7 +110,8 @@ $options = {
   updater_options: {},
   security_advisories: [],
   security_updates_only: false,
-  pull_request: false
+  pull_request: false,
+  trace: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -212,6 +213,11 @@ option_parse = OptionParser.new do |opts|
   opts.on("--pull-request",
     "Output pull request information: title, description") do
     $options[:pull_request] = true
+  end
+
+  opts.on("--trace",
+    "Print error backtrace") do
+    $options[:trace] = true
   end
 end
 
@@ -432,6 +438,7 @@ def handle_dependabot_error(error:, dependency:)
 
   puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
        "#{error_details.fetch(:'error-detail')}"
+  puts error.backtrace if $options[:trace]
 end
 
 StackProf.start(raw: true) if $options[:profile]
@@ -447,15 +454,19 @@ $source = Dependabot::Source.new(
 always_clone = Dependabot::Utils.
                always_clone_for_package_manager?($package_manager)
 if $options[:clone] || always_clone
-  $repo_contents_path = Dir.mktmpdir
-  puts "=> cloning into #{$repo_contents_path}"
+  $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 end
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
           new(source: $source, credentials: $options[:credentials],
               repo_contents_path: $repo_contents_path)
 $files = if $options[:clone] || always_clone
-           fetcher.clone_repo_contents
+           unless $options[:cache_steps].include?("files") && Dir.exist?(File.join($repo_contents_path, ".git"))
+             puts "=> cloning into #{$repo_contents_path}"
+             fetcher.clone_repo_contents
+           else
+             puts "=> reading cached clone from #{$repo_contents_path}"
+           end
            fetcher.files
          else
            cached_dependency_files_read do
