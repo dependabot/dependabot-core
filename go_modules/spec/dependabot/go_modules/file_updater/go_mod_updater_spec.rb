@@ -465,6 +465,39 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
+
+    context "for an unknown revision version" do
+      let(:project_name) { "unknown_revision_version" }
+      let(:dependency_name) do
+        "github.com/deislabs/oras"
+      end
+      let(:dependency_version) { "v0.10.0" }
+      let(:dependency_previous_version) { "v0.9.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/deislabs/oras"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "go: github.com/deislabs/oras@v0.10.0 requires\n"\
+            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
+            "invalid version: unknown revision"
+          )
+        end
+      end
+    end
   end
 
   describe "#updated_go_sum_content" do
