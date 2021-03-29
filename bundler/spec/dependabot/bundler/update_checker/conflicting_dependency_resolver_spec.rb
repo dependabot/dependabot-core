@@ -22,7 +22,9 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
       options: { bundler_2_available: bundler_2_available? }
     )
   end
-  let(:dependency_files) { [gemfile, lockfile] }
+  let(:dependency_files) do
+    bundler_project_dependency_files("subdep_blocked_by_subdep")
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -35,15 +37,6 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
   let(:dependency_name) { "dummy-pkg-a" }
   let(:current_version) { "1.0.1" }
   let(:target_version) { "2.0.0" }
-
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
-  end
-  let(:gemfile_body) { fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile") }
-  let(:lockfile_body) { fixture("projects", "bundler1", "subdep_blocked_by_subdep", "Gemfile.lock") }
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
@@ -68,6 +61,7 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
 
     context "with no blocking dependencies" do
       let(:target_version) { "1.5.0" }
+
       it "returns an empty array" do
         expect(conflicting_dependencies).to match_array([])
       end
