@@ -9,8 +9,7 @@ RUN apt-get install -y vim strace ltrace gdb
 # FIXME: migrate ownership to earlier layers
 RUN chown -R dependabot:dependabot \
   /usr/local/.pyenv \
-  /opt/go/gopath \
-  /opt/rust/
+  /opt/go/gopath
 
 USER dependabot
 RUN git config --global user.name dependabot-ci \
