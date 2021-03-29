@@ -355,7 +355,7 @@ RSpec.describe "describe dependencies_updater function", :pix4d do
         [updated_dependency(dependency_name1, updated_version1, version1, "Pipfile")],
         [updated_dependency(dependency_name2, updated_version2, version2, "Pipfile")]
       )
-      updated_files,_ = dependencies_updater("pip", files, dependencies, {}, {})
+      updated_files, = dependencies_updater("pip", files, dependencies, {}, {})
 
       expect(updated_files[0].name).to eq(expected_files[0].name)
       expect(updated_files[0].content).to eq(expected_files[0].content)

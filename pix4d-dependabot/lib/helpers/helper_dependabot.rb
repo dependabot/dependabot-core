@@ -58,11 +58,11 @@ def fetch_dependencies(package_manager, files, source)
   parser.parse
 end
 
-def update_files(package_manager, dep, updated_deps, files, github_credentials)
+def update_files(package_manager, dep, updated_deps, files, credentials)
   # Generate updated dependency files
   print "  - Updating #{dep.name} (from #{dep.version}) \n"
   updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
-    dependencies: updated_deps, dependency_files: files, credentials: github_credentials
+    dependencies: updated_deps, dependency_files: files, credentials: credentials
   )
   updater.updated_dependency_files
 end
@@ -103,7 +103,12 @@ def dependencies_updater(package_manager, files, dependencies, github_credential
     updated_dep = checker_updated_dependencies(checker, requirements_to_unlock)
     next if updated_dep.first.version == updated_dep.first.previous_version
 
-    files = update_files(package_manager, dep, updated_dep, files, [github_credentials])
+    updated_files = update_files(package_manager, dep, updated_dep, files,
+                                 [github_credentials, extra_credentials.first])
+    updated_files.each do |updated_file|
+      files.map! { |file| file.name == updated_file.name ? updated_file : file }
+    end
+
     updated_deps << updated_dep
   end
   [files, updated_deps.flatten(1)]
