@@ -110,8 +110,8 @@ module Dependabot
       end
 
       def version_tag_up_to_date?(version)
-        unless  version&.match?(NAME_WITH_VERSION) ||
-          version == BOOTSTRAP_TAG
+        unless version&.match?(NAME_WITH_VERSION) ||
+               version == BOOTSTRAP_TAG
           return
         end
         return false if version == BOOTSTRAP_TAG
@@ -148,27 +148,20 @@ module Dependabot
 
         @versions[version] = begin
           unless version.match?(NAME_WITH_VERSION) ||
-                version == BOOTSTRAP_TAG
+                 version == BOOTSTRAP_TAG
             return version
           end
-        end
 
-        # Prune out any downgrade tags before checking for pre-releases
-        # (which requires a call to the registry for each tag, so can be slow)
-        candidate_tags = comparable_tags_from_registry(version)
-        non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
-        candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
+          # Prune out any downgrade tags before checking for pre-releases
+          # (which requires a call to the registry for each tag, so can be slow)
+          candidate_tags = comparable_tags_from_registry(version)
+          non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
+          candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
 
-        unless prerelease?(version)
-          candidate_tags =
-            candidate_tags.
-            reject { |tag| prerelease?(tag) }
-        end
-
-        latest_tag =
-          filter_ignored(candidate_tags).
-          max_by do |tag|
-            [version_class.new(numeric_version_from(tag)), tag.length]
+          unless prerelease?(version)
+            candidate_tags =
+              candidate_tags.
+              reject { |tag| prerelease?(tag) }
           end
 
           latest_tag =
