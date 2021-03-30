@@ -341,10 +341,14 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("statesman (1.2.1)")
         end
 
-        # TODO: Split test when we have separate bundler 2 fixtures
-        it "preserves the BUNDLED WITH line in the lockfile" do
+        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
           expect(file.content).to include("BUNDLED WITH\n   1.10.6")
         end
+
+        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+          expect(file.content).to include("BUNDLED WITH\n   2.2.0")
+        end
+
 
         it "doesn't add in a RUBY VERSION" do
           expect(file.content).not_to include("RUBY VERSION")
@@ -620,8 +624,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        # TODO: Re-enable test for bundler2 with v2 fixtures
-        context "that specifies the dependency using github:", :bundler_v1_only do
+        context "that specifies the dependency using github:" do
           let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
           it "doesn't update the git dependencies" do
@@ -805,7 +808,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        # TODO: Unpend test when we have v2 fixtures
         context "when a git source is specified that multiple deps use for bundler v2", :bundler_v2_only do
           let(:dependency_files) { bundler_project_dependency_files("git_source_with_multiple_deps") }
           let(:dependency) do
@@ -833,7 +835,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             }]
           end
 
-          xit "updates the dependency's revision" do
+          it "updates the dependency's revision" do
             old_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }.content.split(/^/)
             new_lock = file.content.split(/^/)
 
