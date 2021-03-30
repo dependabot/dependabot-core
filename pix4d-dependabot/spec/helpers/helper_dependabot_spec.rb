@@ -293,3 +293,74 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
     end
   end
 end
+
+RSpec.describe "describe dependencies_updater function", :pix4d do
+  def dep_file(file_name, path)
+    Dependabot::DependencyFile.new(name: file_name, content: File.read(File.join("#{path}/#{file_name}")),
+                                   directory: "/")
+  end
+
+  def dependency(name, version, file_name)
+    Dependabot::Dependency.new(
+      name: name,
+      version: version,
+      requirements: [{
+        requirement: "<=#{version}",
+        groups: ["default"],
+        file: file_name,
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
+
+  def updated_dependency(name, updated_version, previous_version, file_name)
+    Dependabot::Dependency.new(
+      name: name,
+      version: updated_version,
+      previous_version: previous_version,
+      requirements: [{
+        requirement: "<#{updated_version}",
+        groups: ["default"],
+        file: file_name,
+        source: nil
+      }],
+      previous_requirements: [{
+        requirement: "<=#{previous_version}",
+        groups: ["default"],
+        file: file_name,
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
+
+  context "for multiple python dependencies" do
+    let(:dependency_name1) { "requests" }
+    let(:version1) { "2.18.4" }
+    let(:updated_version1) { "2.25.2" }
+    let(:dependency_name2) { "luigi" }
+    let(:version2) { "1.2.0" }
+    let(:updated_version2) { "3.1.0" }
+    let(:fixtures_path) { "spec/fixtures/pipfiles" }
+
+    it "updates the correct files" do
+      files = [dep_file("Pipfile", fixtures_path), dep_file(".python-version", fixtures_path)]
+      expected_files = [dep_file("Pipfile", "#{fixtures_path}/updated_pipfiles"), files[1]]
+      dependencies = [dependency(dependency_name1, version1, "Pipfile"),
+                      dependency(dependency_name2, version2, "Pipfile")]
+      allow(self).to receive(:checker_up_to_date).and_return(false, false)
+      allow(self).to receive(:requirements).and_return(":own", ":own")
+      allow(self).to receive(:checker_updated_dependencies).and_return(
+        [updated_dependency(dependency_name1, updated_version1, version1, "Pipfile")],
+        [updated_dependency(dependency_name2, updated_version2, version2, "Pipfile")]
+      )
+      updated_files, = dependencies_updater("pip", files, dependencies, {}, {})
+
+      expect(updated_files[0].name).to eq(expected_files[0].name)
+      expect(updated_files[0].content).to eq(expected_files[0].content)
+      expect(updated_files[1].name).to eq(expected_files[1].name)
+      expect(updated_files[1].content).to eq(expected_files[1].content)
+    end
+  end
+end
