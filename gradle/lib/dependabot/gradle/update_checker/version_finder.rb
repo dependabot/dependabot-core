@@ -187,7 +187,7 @@ module Dependabot
                 user: repository_details.fetch("username"),
                 password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: repository_details.fetch("custom_headers"))
               )
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
@@ -240,7 +240,8 @@ module Dependabot
             {
               "url" => cred.fetch("url").gsub(%r{/+$}, ""),
               "username" => cred.fetch("username", nil),
-              "password" => cred.fetch("password", nil)
+              "password" => cred.fetch("password", nil),
+              "custom_headers" => cred.fetch("custom_headers", nil)
             }
           end
         end
@@ -258,7 +259,7 @@ module Dependabot
                 target_dependency_file: target_file
               ).repository_urls.
                 map do |url|
-                  { "url" => url, "username" => nil, "password" => nil }
+                  { "url" => url, "username" => nil, "password" => nil, "custom_headers" => nil }
                 end
             end.uniq
         end
@@ -267,7 +268,8 @@ module Dependabot
           [{
             "url" => GRADLE_PLUGINS_REPO,
             "username" => nil,
-            "password" => nil
+            "password" => nil,
+            "custom_headers" => nil
           }] + dependency_repository_details
         end
 

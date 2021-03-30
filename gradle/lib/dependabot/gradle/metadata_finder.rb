@@ -112,7 +112,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_details.merge(custom_headers))
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -135,7 +135,7 @@ module Dependabot
           "#{version}/"\
           "#{artifact_id}-#{version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_details.merge(custom_headers))
         )
 
         Nokogiri::XML(response.body)
@@ -185,6 +185,21 @@ module Dependabot
         token = cred.fetch("username") + ":" + cred.fetch("password")
         encoded_token = Base64.encode64(token).delete("\n")
         { "Authorization" => "Basic #{encoded_token}" }
+      end
+
+      def custom_headers
+        cred =
+          credentials.select { |c| c["type"] == "maven_repository" }.
+          find do |c|
+            cred_url = c.fetch("url").gsub(%r{/+$}, "")
+            next false unless cred_url == maven_repo_url
+
+            c.fetch("custom_headers", nil)
+          end
+
+        return {} unless cred
+
+        cred.fetch("custom_headers")
       end
     end
   end

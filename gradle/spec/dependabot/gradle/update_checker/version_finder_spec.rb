@@ -213,6 +213,34 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
+      context "that requires custom header token" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "custom_headers" => { "job-token" => "dependabotToken" }
+          }]
+        end
+
+        let(:private_registry_metadata_url) do
+          "https://private.registry.org/repo/"\
+          "com/google/guava/guava/maven-metadata.xml"
+        end
+
+        before do
+          stub_request(:get, maven_central_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_registry_metadata_url).
+            with(headers: { "job-token" => "dependabotToken" }).
+            to_return(status: 200, body: maven_central_releases)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/repo")
+        end
+      end
+
       context "but no auth details" do
         let(:credentials) do
           [{
