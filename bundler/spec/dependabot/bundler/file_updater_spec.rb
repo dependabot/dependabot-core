@@ -1443,6 +1443,33 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
     end
 
+    context "for a gem that depends on bundler" do
+      subject(:updated_gemfile) do
+        updated_files.find { |f| f.name == "Gemfile" }
+      end
+
+      let(:dependency_files) { bundler_project_dependency_files("guard_bundler") }
+      let(:dependency_name) { "guard-bundler" }
+      let(:dependency_version) { "3.0.0" }
+      let(:dependency_previous_version) { "2.2.1" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 2.2.1",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises an error", :bundler_v1_only do
+        expect { updated_gemfile }.to raise_error(/Bundler could not find compatible versions for gem "bundler"/)
+      end
+
+      it "returns the latest version", :bundler_v2_only do
+        expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
+      end
+    end
+
     context "vendoring" do
       let(:project_name) { "vendored_gems" }
       let(:dependency_files) { bundler_project_dependency_files(project_name) }
