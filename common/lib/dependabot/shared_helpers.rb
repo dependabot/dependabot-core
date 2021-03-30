@@ -161,6 +161,10 @@ module Dependabot
       reset_global_git_config(backup_git_config_path)
     end
 
+    def self.credential_helper_path
+      File.join(__dir__, "../../bin/git-credential-store-immutable")
+    end
+
     # rubocop:disable Metrics/AbcSize
     def self.configure_git_to_use_https_with_credentials(credentials)
       File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|
@@ -171,8 +175,6 @@ module Dependabot
       # Under the hood this uses git credential-store, but it's invoked through
       # a wrapper binary that only allows non-mutating commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
-      credential_helper_path =
-        File.join(__dir__, "../../bin/git-credential-store-immutable")
       run_shell_command(
         "git config --global credential.helper "\
         "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
