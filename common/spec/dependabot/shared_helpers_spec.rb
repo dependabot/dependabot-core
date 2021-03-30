@@ -338,12 +338,16 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(with_git_configured[0]).to include("ssh://git@github.com/")
       end
 
-      it "gitconfig contains the git@github.com/ alternative" do
-        expect(with_git_configured[0]).to include("git@github.com/")
+      it "gitconfig contains the ssh://git@github.com: alternative" do
+        expect(with_git_configured[0]).to include("ssh://git@github.com:")
       end
 
       it "gitconfig contains the git@github.com: alternative" do
         expect(with_git_configured[0]).to include("git@github.com:")
+      end
+
+      it "gitconfig contains the git@github.com/ alternative" do
+        expect(with_git_configured[0]).to include("git@github.com/")
       end
 
       it "gitconfig contains the git://github.com/ alternative" do
@@ -375,12 +379,16 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(with_git_configured[0]).to include("ssh://git@github.com/")
       end
 
-      it "gitconfig contains the git@github.com/ alternative" do
-        expect(with_git_configured[0]).to include("git@github.com/")
+      it "gitconfig contains the ssh://git@github.com: alternative" do
+        expect(with_git_configured[0]).to include("ssh://git@github.com:")
       end
 
       it "gitconfig contains the git@github.com: alternative" do
         expect(with_git_configured[0]).to include("git@github.com:")
+      end
+
+      it "gitconfig contains the git@github.com/ alternative" do
+        expect(with_git_configured[0]).to include("git@github.com/")
       end
 
       it "gitconfig contains the git://github.com/ alternative" do
@@ -391,12 +399,16 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(with_git_configured[0]).to include("ssh://git@private.com/")
       end
 
-      it "gitconfig contains the git@private.com/ alternative" do
-        expect(with_git_configured[0]).to include("git@private.com/")
+      it "gitconfig contains the ssh://git@private.com: alternative" do
+        expect(with_git_configured[0]).to include("ssh://git@private.com:")
       end
 
-      it "gitconfig contains the git@github.com: alternative" do
+      it "gitconfig contains the git@private.com: alternative" do
         expect(with_git_configured[0]).to include("git@private.com:")
+      end
+
+      it "gitconfig contains the git@private.com/ alternative" do
+        expect(with_git_configured[0]).to include("git@private.com/")
       end
 
       it "gitconfig contains the git://private.com/ alternative" do
