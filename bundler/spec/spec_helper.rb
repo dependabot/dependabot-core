@@ -9,3 +9,32 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+def bundler_2_available?
+  ENV["SUITE_NAME"] == "bundler2"
+end
+
+# Load project files prepended with the bundler version, which is currently only ever bundler1
+def bundler_project_dependency_files(project)
+  project_dependency_files(File.join("bundler1", project))
+end
+
+def bundler_project_dependency_file(project, filename:)
+  dependency_file = bundler_project_dependency_files(project).find { |file| file.name == filename }
+
+  raise "Dependency File '#{filename} does not exist for project '#{project}'" unless dependency_file
+
+  dependency_file
+end
+
+RSpec.configure do |config|
+  config.around do |example|
+    if bundler_2_available? && example.metadata[:bundler_v1_only]
+      example.skip
+    elsif !bundler_2_available? && example.metadata[:bundler_v2_only]
+      example.skip
+    else
+      example.run
+    end
+  end
+end

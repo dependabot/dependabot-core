@@ -166,6 +166,11 @@ module Dependabot
               }
             end
 
+          disabled_sources = disabled_sources(doc)
+          sources.reject! do |s|
+            disabled_sources.include?(s[:key])
+          end
+
           unless doc.css("configuration > packageSources > clear").any?
             sources << { url: DEFAULT_REPOSITORY_URL, key: nil }
           end
@@ -197,6 +202,20 @@ module Dependabot
             repository_type: "v3"
           }
         end
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def disabled_sources(doc)
+          doc.css("configuration > disabledPackageSources > add").map do |node|
+            value = node.attribute("value")&.value ||
+                    node.at_xpath("./value")&.content
+
+            if value&.strip&.downcase == "true"
+              node.attribute("key")&.value&.strip ||
+                node.at_xpath("./key")&.content&.strip
+            end
+          end
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
         def add_config_file_credentials(sources:, doc:)

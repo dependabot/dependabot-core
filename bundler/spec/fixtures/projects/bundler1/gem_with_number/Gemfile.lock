@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    i18n (0.4.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  i18n (~> 0.4.0)
+
+BUNDLED WITH
+   1.15.0
