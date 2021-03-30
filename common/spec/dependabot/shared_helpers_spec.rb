@@ -339,19 +339,19 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when providing no extra credentials" do
       let(:credentials) { [] }
 
-      it "gitconfig contains the dependabot header" do
+      it "creates a .gitconfig that contains the Dependabot header" do
         expect(with_git_configured[0]).to include(config_header)
       end
 
-      it "gitconfig contains the credentials helper" do
+      it "creates a .gitconfig that contains the credentials helper" do
         expect(with_git_configured[0]).to include(credentials_helper)
       end
 
-      it "gitconfig contains the github.com alternatives" do
+      it "creates a .gitconfig that contains the github.com alternatives" do
         expect(with_git_configured[0]).to include(alternatives("github.com"))
       end
 
-      it "git credentials store is empty" do
+      it "creates a git credentials store that is empty" do
         expect(with_git_configured[1]).to eq("")
       end
     end
@@ -368,19 +368,19 @@ RSpec.describe Dependabot::SharedHelpers do
         ]
       end
 
-      it "gitconfig contains the dependabot header" do
+      it "creates a .gitconfig that contains the dependabot header" do
         expect(with_git_configured[0]).to include(config_header)
       end
 
-      it "gitconfig contains the credentials helper" do
+      it "creates a .gitconfig that contains the credentials helper" do
         expect(with_git_configured[0]).to include(credentials_helper)
       end
 
-      it "gitconfig contains the github.com alternatives" do
+      it "creates a .gitconfig that contains the github.com alternatives" do
         expect(with_git_configured[0]).to include(alternatives("github.com"))
       end
 
-      it "git credentials store should contain github.com git credentials" do
+      it "creates a git credentials store that contains github.com credentials" do
         expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@github.com\n")
       end
     end
@@ -403,7 +403,7 @@ RSpec.describe Dependabot::SharedHelpers do
         ]
       end
 
-      it "git credentials store should contain the non-app-token github.com git credentials" do
+      it "creates a git credentials store that contains non-app-token github.com credentials" do
         expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@github.com\n")
       end
     end
@@ -420,23 +420,23 @@ RSpec.describe Dependabot::SharedHelpers do
         ]
       end
 
-      it "gitconfig contains the dependabot header" do
+      it "creates a .gitconfig that contains the dependabot header" do
         expect(with_git_configured[0]).to include(config_header)
       end
 
-      it "gitconfig contains the credentials helper" do
+      it "creates a .gitconfig that contains the credentials helper" do
         expect(with_git_configured[0]).to include(credentials_helper)
       end
 
-      it "gitconfig contains the github.com alternatives" do
+      it "creates a .gitconfig that contains the github.com alternatives" do
         expect(with_git_configured[0]).to include(alternatives("github.com"))
       end
 
-      it "gitconfig contains the private.com alternatives" do
+      it "creates a .gitconfig that contains the private.com alternatives" do
         expect(with_git_configured[0]).to include(alternatives("private.com"))
       end
 
-      it "git credentials store should contain private git credentials" do
+      it "creates a git credentials store that contains private git credentials" do
         expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@private.com\n")
       end
     end
