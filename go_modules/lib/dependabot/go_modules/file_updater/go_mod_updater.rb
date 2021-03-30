@@ -222,18 +222,12 @@ module Dependabot
         # process afterwards.
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            begin
-              # Find all the local replacements, and return them with a stub
-              # path we can use in their place. Using generated paths is safer
-              # as it means we don't need to worry about references to parent
-              # directories, etc.
-              (manifest["Replace"] || []).
-                map { |r| r["New"]["Path"] }.
-                compact.
-                select { |p| stub_replace_path?(p) }.
-                map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
-                to_h
-            end
+            (manifest["Replace"] || []).
+            map { |r| r["New"]["Path"] }.
+            compact.
+            select { |p| stub_replace_path?(p) }.
+            map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
+            to_h
         end
 
         # returns true if the provided path should be replaced with a stub

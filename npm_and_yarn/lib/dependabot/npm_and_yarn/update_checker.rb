@@ -165,17 +165,13 @@ module Dependabot
 
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
-          begin
-            # If there's been a release that includes the current pinned ref
-            # or that the current branch is behind, we switch to that release.
-            if git_branch_or_ref_in_latest_release?
-              latest_released_version
-            elsif version_class.correct?(dependency.version)
-              latest_git_version_details[:version] &&
-                version_class.new(latest_git_version_details[:version])
-            else
-              latest_git_version_details[:sha]
-            end
+          if git_branch_or_ref_in_latest_release?
+            latest_released_version
+          elsif version_class.correct?(dependency.version)
+            latest_git_version_details[:version] &&
+              version_class.new(latest_git_version_details[:version])
+          else
+            latest_git_version_details[:sha]
           end
       end
 
