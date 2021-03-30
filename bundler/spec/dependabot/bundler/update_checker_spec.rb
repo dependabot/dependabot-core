@@ -363,6 +363,36 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
       end
     end
+
+    context "for a gem that depends on bundler" do
+      let(:dependenc_files) { bundler_project_dependency_files("guard_bundler") }
+
+      before do
+        rubygems_response = fixture("ruby", "rubygems_response_guard_bundler.json")
+        stub_request(:get, rubygems_url + "versions/guard-bundler.json").
+          to_return(status: 200, body: rubygems_response)
+      end
+
+      let(:dependency_name) { "guard-bundler" }
+      let(:current_version) { "2.2.1" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "~> 2.2.1",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      context "bundler v1", :bundler_v1_only do
+        # Surprisingly, this returns the incompatible version 3.0.0.
+        xit { is_expected.to eq(Gem::Version.new("2.2.1")) }
+      end
+
+      context "bundler v2", :bundler_v2_only do
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do
