@@ -18,7 +18,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       options: {
-        bundler_2_available: bundler_2_available?
+        bundler_2_available: PackageManagerHelper.use_bundler_2?
       }
     )
   end
@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end
       before do
-        bundler_version = bundler_2_available? ? "2" : "1"
+        bundler_version = PackageManagerHelper.bundler_version
 
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
@@ -1179,7 +1179,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { project_dependency_files("bundler2/private_git_source") }
+            let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
 
             it "updates the dependency" do
               expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
@@ -1205,7 +1205,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { project_dependency_files("bundler2/bad_ref") }
+            let(:dependency_files) { bundler_project_dependency_files("bad_ref") }
 
             it "updates the dependency" do
               expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
