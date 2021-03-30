@@ -27,7 +27,12 @@ module Dependabot
           )
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
+            # The following types are possible to be returned:
+            # M = Modified = Default for DependencyFile
+            # D = Deleted
+            # ?? = Untracked = Created
             deleted = type == "D"
+            created = type == "??"
             encoding = ""
             encoded_content = File.read(path) unless deleted
             if binary_file?(path)
@@ -45,6 +50,7 @@ module Dependabot
               content: encoded_content,
               directory: base_directory,
               deleted: deleted,
+              created: created,
               content_encoding: encoding
             )
           end

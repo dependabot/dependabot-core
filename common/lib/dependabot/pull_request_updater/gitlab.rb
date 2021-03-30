@@ -62,10 +62,21 @@ module Dependabot
         gitlab_client_for_source.commit(source.repo, old_commit)
       end
 
+      # @param [DependencyFile] file
+      def file_action(file)
+        if file.deleted
+          "delete"
+        elsif file.created
+          "create"
+        else
+          "update"
+        end
+      end
+
       def create_commit
         actions = files.map do |file|
           {
-            action: "update",
+            action: file_action(file),
             file_path: file.type == "symlink" ? file.symlink_target : file.path,
             content: file.content
           }
