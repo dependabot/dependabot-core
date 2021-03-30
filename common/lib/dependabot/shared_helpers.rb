@@ -190,6 +190,9 @@ module Dependabot
         github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
         github_credentials.first
 
+      # Make sure we always have https alternatives for github.com.
+      configure_git_to_use_https("github.com") if github_credential.nil?
+
       deduped_credentials = credentials -
                             github_credentials +
                             [github_credential].compact
@@ -205,7 +208,7 @@ module Dependabot
           "@#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
-        configure_git_to_use_https(cred.fetch('host'))
+        configure_git_to_use_https(cred.fetch("host"))
       end
 
       # Save the file
@@ -213,6 +216,7 @@ module Dependabot
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
+    # rubocop:disable Metrics/AbcSize
     def self.configure_git_to_use_https(host)
       # NOTE: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
@@ -237,6 +241,7 @@ module Dependabot
         "insteadOf git://#{host}/"
       )
     end
+    # rubocop:enable Metrics/AbcSize
 
     def self.reset_git_repo(path)
       Dir.chdir(path) do
