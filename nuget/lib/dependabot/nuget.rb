@@ -10,9 +10,9 @@ require "dependabot/nuget/metadata_finder"
 require "dependabot/nuget/requirement"
 require "dependabot/nuget/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("nuget", name: ".NET", colour: "7121c6")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("nuget", name: ".NET", colour: "7121c6")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("nuget", ->(_) { true })

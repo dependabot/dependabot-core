@@ -10,9 +10,9 @@ require "dependabot/bundler/metadata_finder"
 require "dependabot/bundler/requirement"
 require "dependabot/bundler/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("bundler", name: "ruby", colour: "ce2d2d")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("bundler", name: "ruby", colour: "ce2d2d")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(

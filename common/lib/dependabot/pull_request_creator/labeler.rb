@@ -9,22 +9,7 @@ module Dependabot
       DEFAULT_DEPENDENCIES_LABEL = "dependencies"
       DEFAULT_SECURITY_LABEL = "security"
 
-      @package_manager_labels = {}
-
-      class << self
-        attr_reader :package_manager_labels
-
-        def label_details_for_package_manager(package_manager)
-          label_details = @package_manager_labels[package_manager]
-          return label_details if label_details
-
-          raise "Unsupported package_manager #{package_manager}"
-        end
-
-        def register_label_details(package_manager, label_details)
-          @package_manager_labels[package_manager] = label_details
-        end
-      end
+      Labels = Dependabot::PullRequestCreator::Labelers::PackageManagerLabels
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,
                      includes_security_fixes:, label_language:,
@@ -226,10 +211,8 @@ module Dependabot
       end
 
       def language_label
-        label_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
-        labels.find { |l| l.casecmp(label_name).zero? }
+        label = Labels.details(package_manager)
+        labels.find { |l| l.casecmp(label.language).zero? }
       end
 
       def labels
@@ -269,15 +252,13 @@ module Dependabot
       end
 
       def fetch_azure_labels
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+        label = Labels.details(package_manager)
 
         @labels = [
           *@labels,
           DEFAULT_DEPENDENCIES_LABEL,
           DEFAULT_SECURITY_LABEL,
-          langauge_name
+          label.language
         ].uniq
       end
 
@@ -351,36 +332,30 @@ module Dependabot
       end
 
       def create_github_language_label
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+        label = Labels.details(package_manager)
         github_client_for_source.add_label(
           source.repo,
-          langauge_name,
-          self.class.label_details_for_package_manager(package_manager).
-            fetch(:colour),
-          description: "Pull requests that update #{langauge_name.capitalize} "\
+          label.language,
+          label.colour,
+          description: "Pull requests that update #{label.language.capitalize} "\
                        "code",
           accept: "application/vnd.github.symmetra-preview+json"
         )
-        @labels = [*@labels, langauge_name].uniq
+        @labels = [*@labels, label.language].uniq
       rescue Octokit::UnprocessableEntity => e
         raise unless e.errors.first.fetch(:code) == "already_exists"
 
-        @labels = [*@labels, langauge_name].uniq
+        @labels = [*@labels, label.language].uniq
       end
 
       def create_gitlab_language_label
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+        label = Labels.details(package_manager)
         gitlab_client_for_source.create_label(
           source.repo,
-          langauge_name,
-          "#" + self.class.label_details_for_package_manager(package_manager).
-                fetch(:colour)
+          label.language,
+          "#" + label.colour
         )
-        @labels = [*@labels, langauge_name].uniq
+        @labels = [*@labels, label.language].uniq
       end
 
       def github_client_for_source

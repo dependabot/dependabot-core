@@ -10,9 +10,9 @@ require "dependabot/github_actions/metadata_finder"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details(
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label(
     "github_actions",
     name: "github_actions",
     colour: "000000"

@@ -10,9 +10,9 @@ require "dependabot/git_submodules/metadata_finder"
 require "dependabot/git_submodules/requirement"
 require "dependabot/git_submodules/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("submodules", name: "submodules", colour: "000000")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("submodules", name: "submodules", colour: "000000")
 
 require "dependabot/dependency"
 Dependabot::Dependency.

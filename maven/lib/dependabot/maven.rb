@@ -10,9 +10,9 @@ require "dependabot/maven/metadata_finder"
 require "dependabot/maven/requirement"
 require "dependabot/maven/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("maven", name: "java", colour: "ffa221")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("maven", name: "java", colour: "ffa221")
 
 require "dependabot/dependency"
 Dependabot::Dependency.

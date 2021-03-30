@@ -10,9 +10,9 @@ require "dependabot/cargo/metadata_finder"
 require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("cargo", name: "rust", colour: "000000")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("cargo", name: "rust", colour: "000000")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check("cargo", ->(_) { true })

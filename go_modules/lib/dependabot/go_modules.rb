@@ -10,9 +10,9 @@ require "dependabot/go_modules/metadata_finder"
 require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/version"
 
-require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("go_modules", name: "go", colour: "16e2e2")
+require "dependabot/pull_request_creator/labelers/package_manager_labels"
+Dependabot::PullRequestCreator::Labelers::PackageManagerLabels.
+  register_label("go_modules", name: "go", colour: "16e2e2")
 
 require "dependabot/dependency"
 Dependabot::Dependency.
