@@ -11,7 +11,7 @@ require "git_source_patch"
 
 require "functions"
 
-MIN_BUNDLER_VERSION = "2.0.0"
+MIN_BUNDLER_VERSION = "2.1.0"
 
 def validate_bundler_version!
   return true if correct_bundler_version?

@@ -70,8 +70,8 @@ end
 # @param project [String] the project directory, located in
 # "spec/fixtures/projects"
 # @return [String] the path to the new temp repo.
-def build_tmp_repo(project)
-  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+def build_tmp_repo(project, path: "projects")
+  project_path = File.expand_path(File.join("spec/fixtures", path, project))
 
   tmp_dir = Dependabot::Utils::BUMP_TMP_DIR_PATH
   prefix = Dependabot::Utils::BUMP_TMP_FILE_PREFIX
