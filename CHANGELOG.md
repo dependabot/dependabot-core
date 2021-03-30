@@ -1,3 +1,9 @@
+## v0.139.0, 30 March 2021
+
+- Bundler [Beta]: Detect and run Bundler V1 or V2 based on Gemfile.lock
+  - Requires `options: { bundler_2_available: true }` to be passed to Bundler classes for this release
+- Dockerfile: promote software-properties-common
+
 ## v0.138.7, 30 March 2021
 
 - Go mod: Handle multi-line error messages
