@@ -27,11 +27,17 @@ run:
 
       bundle config build.nokogiri --use-system-libraries
       bundle config set path '../../requirements'
+
       cd dependabot-core.git/pix4d-dependabot
       bundle install
       bundle exec rubocop -c ../.rubocop.yml ../
       cd ..
-      cd docker && bundle exec rspec . && cd -
-      cd pix4d-dependabot && bundle exec rspec . && cd -
+
+      cd docker
+      bundle exec rspec .
+      cd ..
+
+      cd pix4d-dependabot
+      bundle exec rspec .
       export COMMIT_HASH=$(cat ../.git/ref)
       bundle exec ruby ../ci/tasks/pr_auto_merge.rb

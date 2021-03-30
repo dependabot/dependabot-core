@@ -167,6 +167,8 @@ module Dependabot
             req_string.include?(" ")
           end
 
+          EQUALITY_OPERATOR = /(?<![<>!])=/.freeze
+
           def use_equality_operator?(requirement_nodes)
             return true if requirement_nodes.none?
 
@@ -178,7 +180,7 @@ module Dependabot
                 requirement_nodes.first.children.first.loc.expression.source
               end
 
-            req_string.match?(/(?<![<>])=/)
+            req_string.match?(EQUALITY_OPERATOR)
           end
 
           def new_requirement_string(quote_characters:,
@@ -203,7 +205,7 @@ module Dependabot
             # Gem::Requirement serializes exact matches as a string starting
             # with `=`. We may need to remove that equality operator if it
             # wasn't used originally.
-            tmp_req = tmp_req.gsub(/(?<![<>])=/, "") unless use_equality_operator
+            tmp_req = tmp_req.gsub(EQUALITY_OPERATOR, "") unless use_equality_operator
 
             tmp_req.strip
           end

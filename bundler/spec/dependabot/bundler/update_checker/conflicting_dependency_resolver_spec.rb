@@ -6,9 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker/conflicting_dependency_resolver"
 
-RSpec.describe(
-  Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
-) do
+RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver) do
   include_context "stub rubygems compact index"
 
   let(:resolver) do
@@ -21,10 +19,12 @@ RSpec.describe(
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: {}
+      options: { bundler_2_available: bundler_2_available? }
     )
   end
-  let(:dependency_files) { [gemfile, lockfile] }
+  let(:dependency_files) do
+    bundler_project_dependency_files("subdep_blocked_by_subdep")
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -37,17 +37,6 @@ RSpec.describe(
   let(:dependency_name) { "dummy-pkg-a" }
   let(:current_version) { "1.0.1" }
   let(:target_version) { "2.0.0" }
-
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
-  end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", "subdep_blocked_by_subdep") }
-  let(:lockfile_body) do
-    fixture("ruby", "lockfiles", "subdep_blocked_by_subdep.lock")
-  end
 
   describe "#conflicting_dependencies" do
     subject(:conflicting_dependencies) do
@@ -72,6 +61,7 @@ RSpec.describe(
 
     context "with no blocking dependencies" do
       let(:target_version) { "1.5.0" }
+
       it "returns an empty array" do
         expect(conflicting_dependencies).to match_array([])
       end

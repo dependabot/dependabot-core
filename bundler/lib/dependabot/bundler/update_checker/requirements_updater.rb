@@ -188,7 +188,7 @@ module Dependabot
               req
             end
           when "<", "<=" then [update_greatest_version(req, latest_version)]
-          when "~>" then convert_twidle_to_range(req, latest_version)
+          when "~>" then convert_twiddle_to_range(req, latest_version)
           when "!=" then []
           when ">", ">=" then raise UnfixableRequirement
           else raise "Unexpected operation for requirement: #{op}"
@@ -214,7 +214,7 @@ module Dependabot
           end
         end
 
-        def convert_twidle_to_range(requirement, version_to_be_permitted)
+        def convert_twiddle_to_range(requirement, version_to_be_permitted)
           version = requirement.requirements.first.last
           version = version.release if version.prerelease?
 

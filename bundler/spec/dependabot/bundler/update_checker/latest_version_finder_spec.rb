@@ -20,10 +20,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: {}
+      options: {
+        bundler_2_available: bundler_2_available?
+      }
     )
   end
-  let(:dependency_files) { [gemfile, lockfile] }
+  let(:bundler_version) { bundler_2_available? ? "2" : "1" }
+  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
@@ -49,27 +52,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:source) { nil }
   let(:requirement_string) { ">= 0" }
 
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(
-      content: fixture("ruby", "gemfiles", gemfile_fixture_name),
-      name: "Gemfile"
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      content: fixture("ruby", "lockfiles", lockfile_fixture_name),
-      name: "Gemfile.lock"
-    )
-  end
-  let(:gemspec) do
-    Dependabot::DependencyFile.new(
-      content: fixture("ruby", "gemspecs", gemspec_fixture_name),
-      name: "example.gemspec"
-    )
-  end
-  let(:gemfile_fixture_name) { "Gemfile" }
-  let(:lockfile_fixture_name) { "Gemfile.lock" }
-  let(:gemspec_fixture_name) { "example" }
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   describe "#latest_version_details" do
@@ -101,32 +83,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "with a gems.rb setup" do
-        let(:gemfile) do
-          Dependabot::DependencyFile.new(
-            content: fixture("ruby", "gemfiles", gemfile_fixture_name),
-            name: "gems.rb"
-          )
-        end
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            content: fixture("ruby", "lockfiles", lockfile_fixture_name),
-            name: "gems.locked"
-          )
-        end
-        let(:requirements) do
-          [{
-            file: "gems.rb",
-            requirement: requirement_string,
-            groups: [],
-            source: source
-          }]
-        end
+        let(:dependency_files) { bundler_project_dependency_files("gems_rb") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
       context "when the gem is Bundler" do
-        let(:gemfile_fixture_name) { "bundler_specified" }
+        let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
         let(:dependency_name) { "bundler" }
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
@@ -137,7 +100,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "wrapped in a source block" do
-          let(:gemfile_fixture_name) { "bundler_specified_in_source" }
+          let(:dependency_files) { bundler_project_dependency_files("bundler_specified_in_source_bundler_specified") }
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
         end
       end
@@ -163,7 +126,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "with a prerelease version specified" do
-        let(:gemfile_fixture_name) { "prerelease_specified" }
+        let(:dependency_files) { bundler_project_dependency_files("prerelease_specified") }
         let(:requirement_string) { "~> 1.4.0.rc1" }
 
         before do
@@ -175,29 +138,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "with a Ruby version specified" do
-        let(:gemfile_fixture_name) { "explicit_ruby" }
+        let(:dependency_files) { bundler_project_dependency_files("explicit_ruby") }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
       context "given a Gemfile that loads a .ruby-version file" do
-        let(:gemfile_fixture_name) { "ruby_version_file" }
-        let(:ruby_version_file) do
-          Dependabot::DependencyFile.new content: "2.2.0", name: ".ruby-version"
-        end
-        let(:dependency_files) { [gemfile, lockfile, ruby_version_file] }
+        let(:dependency_files) { bundler_project_dependency_files("ruby_version_file") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
       context "with a gemspec and a Gemfile" do
-        let(:dependency_files) { [gemfile, gemspec] }
-        let(:gemspec_fixture_name) { "small_example" }
-        let(:gemfile_fixture_name) { "imports_gemspec" }
+        let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "with a dependency that only appears in the gemspec" do
-          let(:gemspec_fixture_name) { "example" }
+          let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
           let(:dependency_name) { "octokit" }
 
           before do
@@ -209,30 +166,27 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
           context "when there is no default source" do
-            let(:gemfile_fixture_name) { "imports_gemspec_no_default_source" }
+            let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_default_source_no_lockfile") }
             its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
           end
         end
       end
 
       context "with only a gemspec" do
-        let(:dependency_files) { [gemspec] }
-        let(:gemspec_fixture_name) { "small_example" }
+        let(:dependency_files) { bundler_project_dependency_files("gemspec_small_example_no_lockfile") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
       context "with only a Gemfile" do
-        let(:dependency_files) { [gemfile] }
-        let(:gemfile_fixture_name) { "Gemfile" }
+        let(:dependency_files) { bundler_project_dependency_files("no_lockfile") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
     end
 
     context "with a private rubygems source" do
-      let(:gemfile_fixture_name) { "specified_source" }
-      let(:lockfile_fixture_name) { "specified_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       let(:source) { { type: "rubygems" } }
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
@@ -245,7 +199,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: "1",
+                 bundler_version: bundler_version,
                  function: "dependency_source_type",
                  args: anything
                }).and_call_original
@@ -253,7 +207,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: "1",
+                 bundler_version: bundler_version,
                  function: "private_registry_versions",
                  args: anything
                }).
@@ -265,8 +219,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
 
       context "specified as the default source" do
-        let(:gemfile_fixture_name) { "specified_default_source" }
-        let(:lockfile_fixture_name) { "specified_source.lock" }
+        let(:dependency_files) { bundler_project_dependency_files("specified_default_source") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
       end
@@ -284,7 +237,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         )
       end
 
-      context "that we don't have authentication details for" do
+      context "that we don't have authentication details for", :bundler_v1_only do
         let(:error_message) do
           <<~ERR
             Authentication is required for repo.fury.io.
@@ -301,7 +254,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: "1",
+                   bundler_version: bundler_version,
                    function: "private_registry_versions",
                    args: anything
                  }).
@@ -314,6 +267,39 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             to raise_error do |error|
               expect(error).to be_a(error_class)
               expect(error.source).to eq("repo.fury.io")
+            end
+        end
+      end
+
+      context "that we don't have authentication details for", :bundler_v2_only do
+        let(:error_message) do
+          <<~ERR
+            Bad username or password for https://user:secret@repo.fury.io/greysteil/.
+            Please double-check your credentials and correct them.
+          ERR
+        end
+
+        let(:error_class) do
+          "Bundler::Fetcher::BadAuthenticationError"
+        end
+
+        before do
+          allow(Dependabot::Bundler::NativeHelpers).
+            to receive(:run_bundler_subprocess).
+            with({
+                   bundler_version: bundler_version,
+                   function: "private_registry_versions",
+                   args: anything
+                 }).
+            and_raise(subprocess_error)
+        end
+
+        it "blows up with a useful error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { finder.latest_version_details }.
+            to raise_error do |error|
+              expect(error).to be_a(error_class)
+              expect(error.source).to eq("https://repo.fury.io/<redacted>")
             end
         end
       end
@@ -334,7 +320,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: "1",
+                   bundler_version: bundler_version,
                    function: "private_registry_versions",
                    args: anything
                  }).
@@ -367,7 +353,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: "1",
+                   bundler_version: bundler_version,
                    function: "private_registry_versions",
                    args: anything
                  }).
@@ -389,7 +375,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: "1",
+                   bundler_version: bundler_version,
                    function: "private_registry_versions",
                    args: anything
                  }).
@@ -403,8 +389,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "given a git source" do
-      let(:gemfile_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
       context "that is the gem we're checking for" do
         let(:dependency_name) { "business" }
@@ -425,8 +410,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
 
         context "when the gem has a bad branch" do
-          let(:gemfile_fixture_name) { "bad_branch_business" }
-          let(:lockfile_fixture_name) { "bad_branch_business.lock" }
+          let(:dependency_files) { bundler_project_dependency_files("bad_branch_business") }
           let(:source) do
             {
               type: "git",
@@ -448,8 +432,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "that is not the gem we're checking" do
-        let(:gemfile_fixture_name) { "git_source" }
-        let(:lockfile_fixture_name) { "git_source.lock" }
         let(:dependency_name) { "statesman" }
 
         before do
@@ -463,8 +445,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "that is private" do
-          let(:gemfile_fixture_name) { "private_git_source" }
-          let(:lockfile_fixture_name) { "private_git_source.lock" }
+          let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
         end
@@ -472,8 +453,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "given a path source" do
-      let(:gemfile_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("path_source") }
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
@@ -482,14 +462,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       end
 
       context "with a downloaded gemspec" do
-        let(:dependency_files) { [gemfile, lockfile, gemspec] }
-        let(:gemspec_fixture_name) { "example" }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            content: fixture("ruby", "gemspecs", gemspec_fixture_name),
-            name: "plugins/example/example.gemspec"
-          )
-        end
+        let(:dependency_files) { bundler_project_dependency_files("path_source") }
 
         context "that is not the gem we're checking" do
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -530,8 +503,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "with a private rubygems source" do
-      let(:gemfile_fixture_name) { "specified_source" }
-      let(:lockfile_fixture_name) { "specified_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       let(:source) { { type: "rubygems" } }
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
@@ -544,7 +516,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: "1",
+                 bundler_version: bundler_version,
                  function: "dependency_source_type",
                  args: anything
                }).and_call_original
@@ -552,7 +524,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: "1",
+                 bundler_version: bundler_version,
                  function: "private_registry_versions",
                  args: anything
                }).
@@ -565,15 +537,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     end
 
     context "with a git source" do
-      let(:gemfile_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
       it { is_expected.to be_nil }
     end
 
     context "with a path source" do
-      let(:gemfile_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("path_source") }
 
       let(:dependency_name) { "example" }
       let(:source) { { type: "path" } }

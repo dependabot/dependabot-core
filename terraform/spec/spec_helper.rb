@@ -10,5 +10,7 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-# TODO: Bring branch coverage up
-SimpleCov.minimum_coverage line: 80, branch: 55
+if ENV["COVERAGE"]
+  # TODO: Bring branch coverage up
+  SimpleCov.minimum_coverage line: 80, branch: 55
+end

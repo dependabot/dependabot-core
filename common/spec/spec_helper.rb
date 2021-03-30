@@ -10,21 +10,23 @@ require "simplecov-console"
 require "dependabot/dependency_file"
 require_relative "dummy_package_manager/dummy"
 
-SimpleCov::Formatter::Console.output_style = "block"
-SimpleCov.formatter = if ENV["CI"]
-                        SimpleCov::Formatter::Console
-                      else
-                        SimpleCov::Formatter::HTMLFormatter
-                      end
+if ENV["COVERAGE"]
+  SimpleCov::Formatter::Console.output_style = "block"
+  SimpleCov.formatter = if ENV["CI"]
+                          SimpleCov::Formatter::Console
+                        else
+                          SimpleCov::Formatter::HTMLFormatter
+                        end
 
-SimpleCov.start do
-  add_filter "/spec/"
+  SimpleCov.start do
+    add_filter "/spec/"
 
-  enable_coverage :branch
-  minimum_coverage line: 80, branch: 70
-  # TODO: Enable minimum coverage per file once outliers have been increased
-  # minimum_coverage_by_file 80
-  refuse_coverage_drop
+    enable_coverage :branch
+    minimum_coverage line: 80, branch: 70
+    # TODO: Enable minimum coverage per file once outliers have been increased
+    # minimum_coverage_by_file 80
+    refuse_coverage_drop
+  end
 end
 
 RSpec.configure do |config|
@@ -91,6 +93,9 @@ end
 
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+
+  raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
+
   Dir.chdir(project_path) do
     # NOTE: Include dotfiles (e.g. .npmrc)
     files = Dir.glob("**/*", File::FNM_DOTMATCH)

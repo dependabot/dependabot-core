@@ -581,6 +581,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/")
             end
           end
+
+          context "that match a scoped package with lowercase escaped slash" do
+            let(:dependency_files) { project_dependency_files("npm6/private_source_lower") }
+            let(:credentials) do
+              [{
+                "type" => "git_source",
+                "host" => "github.com"
+              }, {
+                "type" => "npm_registry",
+                "registry" => "npm.fury.io/dependabot"
+              }]
+            end
+            it "adds auth details, and scopes them correctly" do
+              expect(npmrc_content).
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot/")
+            end
+          end
         end
       end
 
