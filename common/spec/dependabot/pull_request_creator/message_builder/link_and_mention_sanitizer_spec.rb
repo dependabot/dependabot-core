@@ -35,11 +35,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that includes a slash" do
-        let(:text) { "Great work on @greysteil/repo!" }
-        it { is_expected.to eq("<p>Great work on @greysteil/repo!</p>\n") }
-      end
-
       context "that is in brackets" do
         let(:text) { "The team (by @greysteil) etc." }
 
@@ -197,6 +192,36 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
               "<code>@\u200Bfeelepxyz</code></a></p>\n"
             )
           end
+        end
+      end
+
+      context "team mentions" do
+        let(:text) { "Thanks @dependabot/reviewers" }
+
+        it "sanitizes the team mention" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Thanks <code>@\u200Bdependabot/reviewers</code></p>\n"
+          )
+        end
+      end
+
+      context "multiple team mentions" do
+        let(:text) { "Thanks @dependabot/reviewers @dependabot/developers" }
+
+        it "sanitizes the team mentions" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Thanks <code>@\u200Bdependabot/reviewers</code> <code>@\u200Bdependabot/developers</code></p>\n"
+          )
+        end
+      end
+
+      context "team mention and non-mention line" do
+        let(:text) { "Thanks @dependabot/reviewers\n\nAnd more regular text" }
+
+        it "sanitizes the team mention" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Thanks <code>@\u200Bdependabot/reviewers</code></p>\n<p>And more regular text</p>\n"
+          )
         end
       end
     end
