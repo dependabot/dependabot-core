@@ -87,7 +87,7 @@ module Dependabot
 
         def replace_github_host(text)
           text.gsub(
-            "github.com", github_redirection_service || "github.com"
+            /(www\.)?github.com/, github_redirection_service || "github.com"
           )
         end
 

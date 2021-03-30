@@ -4,8 +4,7 @@ require "spec_helper"
 require "dependabot/pull_request_creator/message_builder/"\
         "link_and_mention_sanitizer"
 
-namespace = Dependabot::PullRequestCreator::MessageBuilder
-RSpec.describe namespace::LinkAndMentionSanitizer do
+RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSanitizer do
   subject(:sanitizer) do
     described_class.new(github_redirection_service: github_redirection_service)
   end
@@ -224,6 +223,17 @@ RSpec.describe namespace::LinkAndMentionSanitizer do
 
     context "with a GitHub link" do
       let(:text) { "Check out https://github.com/my/repo/issues/5" }
+
+      it do
+        is_expected.to eq(
+          "<p>Check out <a href=\"https://github-redirect.com/my/repo/"\
+          "issues/5\">my/repo#5</a></p>\n"
+        )
+      end
+    end
+
+    context "with a GitHub link including www" do
+      let(:text) { "Check out https://www.github.com/my/repo/issues/5" }
 
       it do
         is_expected.to eq(
