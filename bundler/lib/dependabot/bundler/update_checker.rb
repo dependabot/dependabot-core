@@ -359,20 +359,18 @@ module Dependabot
         @version_resolver ||= {}
         @version_resolver[remove_git_source] ||= {}
         @version_resolver[remove_git_source][unlock_requirement] ||=
-          begin
-            VersionResolver.new(
-              dependency: dependency,
-              unprepared_dependency_files: dependency_files,
-              repo_contents_path: repo_contents_path,
-              credentials: credentials,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              remove_git_source: remove_git_source,
-              unlock_requirement: unlock_requirement,
-              latest_allowable_version: latest_version,
-              options: options
-            )
-          end
+          VersionResolver.new(
+            dependency: dependency,
+            unprepared_dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            remove_git_source: remove_git_source,
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: latest_version,
+            options: options
+          )
       end
 
       def latest_version_finder(remove_git_source:)
