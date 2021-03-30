@@ -15,6 +15,8 @@ module Dependabot
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
+        # regex to match a team mention on github
+        TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
         COMMONMARKER_OPTIONS = %i(
@@ -35,8 +37,10 @@ module Dependabot
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )
 
+          sanitize_team_mentions(doc)
           sanitize_mentions(doc)
           sanitize_links(doc)
+
           mode = unsafe ? :UNSAFE : :DEFAULT
           doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
@@ -57,6 +61,26 @@ module Dependabot
                 node.insert_before(n)
               end
 
+              node.delete
+            end
+          end
+        end
+
+        # When we come across something that looks like a team mention (e.g. @dependabot/reviewers),
+        # we replace it with a text node.
+        # This is because there are ecosystems that have packages that follow the same pattern
+        # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
+        # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
+        def sanitize_team_mentions(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(TEAM_MENTION_REGEX)
+
+              nodes = build_team_mention_nodes(node.string_content)
+
+              nodes.each do |n|
+                node.insert_before(n)
+              end
               node.delete
             end
           end
@@ -108,6 +132,30 @@ module Dependabot
               nodes << create_link_node(
                 "https://github.com/#{mention.tr('@', '')}", mention.to_s
               )
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def build_team_mention_nodes(text)
+          nodes = []
+
+          scan = StringScanner.new(text)
+          until scan.eos?
+            line = scan.scan_until(TEAM_MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(TEAM_MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes += build_mention_link_text_nodes(mention.to_s)
             else
               text_node.string_content = line
               nodes << text_node
