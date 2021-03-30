@@ -368,7 +368,7 @@ RSpec.describe Dependabot::SharedHelpers do
         ]
       end
 
-      it "creates a .gitconfig that contains the dependabot header" do
+      it "creates a .gitconfig that contains the Dependabot header" do
         expect(with_git_configured[0]).to include(config_header)
       end
 
@@ -420,7 +420,7 @@ RSpec.describe Dependabot::SharedHelpers do
         ]
       end
 
-      it "creates a .gitconfig that contains the dependabot header" do
+      it "creates a .gitconfig that contains the Dependabot header" do
         expect(with_git_configured[0]).to include(config_header)
       end
 
