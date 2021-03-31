@@ -1,5 +1,7 @@
 FROM ubuntu:18.04 as build
 
+ARG PYTHON_VERSIONS="2.7.18 3.6.13 3.7.10 3.8.8 3.9.2"
+
 LABEL "maintainer"="platform_ci_team@pix4d.com"
 LABEL "description"="Pix4D Dependabot for updating your dependencies."
 
@@ -48,10 +50,9 @@ RUN apt-get update && apt-get install -y software-properties-common \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
-  && pyenv install 3.9.2 \
-  && pyenv install 2.7.18 \
-  && pyenv global 3.9.2
+  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd -
+
+RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* }
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \
