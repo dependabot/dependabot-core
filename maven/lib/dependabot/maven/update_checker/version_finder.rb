@@ -152,10 +152,8 @@ module Dependabot
               url = repository_details.fetch("url")
               response = Excon.head(
                 dependency_files_url(url, version),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults(headers: repository_details.fetch("custom_headers"))
+                **SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_details"))
               )
 
               response.status < 400
@@ -173,10 +171,8 @@ module Dependabot
             begin
               response = Excon.get(
                 dependency_metadata_url(repository_details.fetch("url")),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
                 idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("custom_headers"))
+                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_details"))
               )
               check_response(response, repository_details.fetch("url"))
 
@@ -206,10 +202,10 @@ module Dependabot
 
           @repositories =
             details.reject do |repo|
-              next if repo["password"]
+              next if repo["auth_details"]
 
-              # Reject this entry if an identical one with a password exists
-              details.any? { |r| r["url"] == repo["url"] && r["password"] }
+              # Reject this entry if an identical one with non-empty auth_details exists
+              details.any? { |r| r["url"] == repo["url"] && r["auth_details"] != {} }
             end
         end
 
@@ -219,7 +215,7 @@ module Dependabot
             new(dependency_files: dependency_files).
             repository_urls(pom: pom).
             map do |url|
-              { "url" => url, "username" => nil, "password" => nil, "custom_headers" => nil }
+              { "url" => url, "auth_details" => {} }
             end
         end
 
@@ -229,9 +225,7 @@ module Dependabot
             map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "username" => cred.fetch("username", nil),
-                "password" => cred.fetch("password", nil),
-                "custom_headers" => cred.fetch("custom_headers", nil)
+                "auth_details" => auth_details(cred.fetch("url").gsub(%r{/+$}, ""))
               }
             end
         end
@@ -287,6 +281,38 @@ module Dependabot
             gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
+        end
+
+        def auth_details(maven_repo_url)
+          cred =
+            credentials.select { |c| c["type"] == "maven_repository" }.
+            find do |c|
+              cred_url = c.fetch("url").gsub(%r{/+$}, "")
+              next false unless cred_url == maven_repo_url
+
+              c.fetch("username", nil)
+            end
+
+          return gitlab_auth_details(maven_repo_url) unless cred
+
+          token = cred.fetch("username") + ":" + cred.fetch("password")
+          encoded_token = Base64.encode64(token).delete("\n")
+          { "Authorization" => "Basic #{encoded_token}" }
+        end
+
+        def gitlab_auth_details(maven_repo_url)
+          cred =
+            credentials.select { |c| c["type"] == "git_source" }.
+            find do |c|
+              cred_host = c.fetch("host").gsub(%r{/+$}, "")
+              next false unless URI(maven_repo_url).host == cred_host
+
+              c.fetch("password", nil)
+            end
+
+          return {} unless cred
+
+          { "Private-Token" => cred.fetch("password") }
         end
       end
     end

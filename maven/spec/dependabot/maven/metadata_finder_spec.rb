@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           it { is_expected.to eq("https://github.com/mockito/mockito") }
         end
 
-        context "that include custom_headers" do
+        context "that include gitlab maven repo" do
           let(:credentials) do
             [
               {
@@ -322,16 +322,17 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 "password" => "token"
               },
               {
-                "type" => "maven_repository",
-                "url" => "https://custom.registry.org/maven2",
-                "custom_headers" => { "job-token" => "dependabotToken" }
+                "type" => "git_source",
+                "host" => "custom.registry.org",
+                "username" => "x-access-token",
+                "password" => "customToken"
               }
             ]
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url).
-              with(headers: { "job-token" => "dependabotToken" }).
+              with(headers: { "Private-Token" => "customToken" }).
               to_return(status: 200, body: maven_response)
           end
 

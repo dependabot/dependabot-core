@@ -241,13 +241,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "that requires custom header token" do
+      context "that requires gitlab header token" do
         let(:credentials) do
-          [{
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo/",
-            "custom_headers" => { "job-token" => "dependabotToken" }
-          }]
+          [
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/repo/"
+            },
+            {
+              "type" => "git_source",
+              "host" => "private.registry.org",
+              "username" => "x-access-token",
+              "password" => "customToken"
+            }
+          ]
         end
 
         let(:private_registry_metadata_url) do
@@ -259,7 +266,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           stub_request(:get, maven_central_metadata_url).
             to_return(status: 404)
           stub_request(:get, private_registry_metadata_url).
-            with(headers: { "job-token" => "dependabotToken" }).
+            with(headers: { "Private-Token" => "customToken" }).
             to_return(status: 200, body: maven_central_releases)
         end
 

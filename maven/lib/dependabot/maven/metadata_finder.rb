@@ -104,7 +104,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{dependency_artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details.merge(custom_headers))
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -135,7 +135,7 @@ module Dependabot
         response = Excon.get(
           substitute_properties_in_source_url(url, pom),
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details.merge(custom_headers))
+          **SharedHelpers.excon_defaults(headers: auth_details)
         )
 
         Nokogiri::XML(response.body)
@@ -166,26 +166,26 @@ module Dependabot
             c.fetch("username", nil)
           end
 
-        return {} unless cred
+        return gitlab_auth_details unless cred
 
         token = cred.fetch("username") + ":" + cred.fetch("password")
         encoded_token = Base64.encode64(token).delete("\n")
         { "Authorization" => "Basic #{encoded_token}" }
       end
 
-      def custom_headers
+      def gitlab_auth_details
         cred =
-          credentials.select { |c| c["type"] == "maven_repository" }.
+          credentials.select { |c| c["type"] == "git_source" }.
           find do |c|
-            cred_url = c.fetch("url").gsub(%r{/+$}, "")
-            next false unless cred_url == maven_repo_url
+            cred_host = c.fetch("host").gsub(%r{/+$}, "")
+            next false unless URI(maven_repo_url).host == cred_host
 
-            c.fetch("custom_headers", nil)
+            c.fetch("password", nil)
           end
 
         return {} unless cred
 
-        cred.fetch("custom_headers")
+        { "Private-Token" => cred.fetch("password") }
       end
     end
   end
