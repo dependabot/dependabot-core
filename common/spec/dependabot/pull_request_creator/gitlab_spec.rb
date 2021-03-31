@@ -186,6 +186,48 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
     end
 
+    context "with a deleted file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "deleted_file",
+            content: nil,
+            operation: Dependabot::DependencyFile::Operation::DELETE
+          )
+        ]
+      end
+
+      it "pushes a commit to GitLab and creates a merge request" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/repository/commits")
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests")
+      end
+    end
+
+    context "with a created file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "created_file",
+            content: "created",
+            operation: Dependabot::DependencyFile::Operation::CREATE
+          )
+        ]
+      end
+
+      it "pushes a commit to GitLab and creates a merge request" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/repository/commits")
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests")
+      end
+    end
+
     context "when the branch already exists" do
       before do
         stub_request(

@@ -66,7 +66,7 @@ module Dependabot
       def file_action(file)
         if file.operation == Dependabot::DependencyFile::Operation::DELETE
           "delete"
-        elsif file.created == Dependabot::DependencyFile::Operation::CREATE
+        elsif file.operation == Dependabot::DependencyFile::Operation::CREATE
           "create"
         else
           "update"
