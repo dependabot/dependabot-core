@@ -20,7 +20,7 @@ module Dependabot
 
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, operation: Operation::UPDATE)
+                   content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
       @name = name
       @content = content
       @directory = clean_directory(directory)
@@ -28,6 +28,10 @@ module Dependabot
       @support_file = support_file
       @content_encoding = content_encoding
       @operation = operation
+
+      # Make deleted override the operation. Deleted is kept when operation
+      # was introduced to keep compatibility with downstream dependants.
+      @operation = Operation::DELETE if deleted
 
       # Type is used *very* sparingly. It lets the git_modules updater know that
       # a "file" is actually a submodule, and lets our Go updaters know which
@@ -50,6 +54,7 @@ module Dependabot
         "type" => type,
         "support_file" => support_file,
         "content_encoding" => content_encoding,
+        "deleted" => deleted,
         "operation" => operation
       }
 
@@ -81,8 +86,12 @@ module Dependabot
       @support_file
     end
 
-    def deleted?
+    def deleted
       operation == Operation::DELETE
+    end
+
+    def deleted?
+      deleted
     end
 
     def binary?
