@@ -17,6 +17,7 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/poetry_files_parser"
       require_relative "file_parser/setup_file_parser"
+      require_relative "file_parser/setup_cfg_file_parser"
 
       POETRY_DEPENDENCY_TYPES =
         %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
@@ -45,6 +46,7 @@ module Dependabot
         dependency_set += poetry_dependencies if using_poetry?
         dependency_set += requirement_dependencies if requirement_files.any?
         dependency_set += setup_file_dependencies if setup_file
+        dependency_set += setup_cfg_file_dependencies if setup_cfg_file
 
         dependency_set.dependencies
       end
@@ -137,6 +139,13 @@ module Dependabot
           dependency_set
       end
 
+      def setup_cfg_file_dependencies
+        @setup_cfg_file_dependencies ||=
+          SetupCfgFileParser.
+          new(dependency_files: dependency_files).
+          dependency_set
+      end
+
       def lockfile_for_pip_compile_file?(filename)
         return false unless pip_compile_files.any?
         return false unless filename.end_with?(".txt")
@@ -207,8 +216,9 @@ module Dependabot
         return if pipfile
         return if pyproject
         return if setup_file
+        return if setup_cfg_file
 
-        raise "No requirements.txt or setup.py!"
+        raise "Missing required files!"
       end
 
       def pipfile
@@ -246,6 +256,10 @@ module Dependabot
 
       def setup_file
         @setup_file ||= get_original_file("setup.py")
+      end
+
+      def setup_cfg_file
+        @setup_cfg_file ||= get_original_file("setup.cfg")
       end
 
       def pip_compile_files
