@@ -1196,7 +1196,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
                 "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
                 "<code>@\u200Bhmarr</code></a> for the "\
-                "@angular/scope work - see <a href=\"https://github.com/"\
+                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/"\
                 "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>."\
                 "</p>\n"\
                 "</blockquote>\n"\

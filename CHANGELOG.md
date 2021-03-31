@@ -1,3 +1,9 @@
+## v0.139.1, 30 March 2021
+
+- Pull Requests: Fix github redirect for www.github.com links
+- Pull Requests: Sanitize team mentions
+- Bundler 2 [Beta]: Add test for bundler dependency
+
 ## v0.139.0, 30 March 2021
 
 - Bundler [Beta]: Detect and run Bundler V1 or V2 based on Gemfile.lock
