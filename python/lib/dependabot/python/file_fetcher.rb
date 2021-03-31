@@ -25,6 +25,7 @@ module Dependabot
         # If this repo is using Poetry return true
         return true if filenames.include?("pyproject.toml")
 
+        # FIXME: this assumption is no longer true
         filenames.include?("setup.py")
       end
 
