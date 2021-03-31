@@ -138,7 +138,7 @@ RSpec.describe Dependabot::DependencyFile do
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
-          "deleted" => false ,
+          "deleted" => false,
           "operation" => Dependabot::DependencyFile::Operation::CREATE
         )
       end
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::DependencyFile do
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
-          "deleted" => false ,
+          "deleted" => false,
           "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
       end

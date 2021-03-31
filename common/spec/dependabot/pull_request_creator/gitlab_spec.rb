@@ -37,7 +37,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       "password" => "token"
     }]
   end
-  let(:files) { [gemfile, gemfile_lock] }
+  let(:files) { [gemfile, gemfile_lock, created_file, deleted_file] }
   let(:commit_message) { "Commit msg" }
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
@@ -78,6 +78,20 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
     Dependabot::DependencyFile.new(
       name: "Gemfile.lock",
       content: fixture("ruby", "gemfiles", "Gemfile")
+    )
+  end
+  let(:created_file) do
+    Dependabot::DependencyFile.new(
+      name: "created-file",
+      content: "created",
+      operation: Dependabot::DependencyFile::Operation::CREATE
+    )
+  end
+  let(:deleted_file) do
+    Dependabot::DependencyFile.new(
+      name: "deleted-file",
+      content: nil,
+      operation: Dependabot::DependencyFile::Operation::DELETE
     )
   end
 
@@ -123,7 +137,36 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       creator.create
 
       expect(WebMock).
-        to have_requested(:post, "#{repo_api_url}/repository/commits")
+        to have_requested(:post, "#{repo_api_url}/repository/commits").
+        with(
+          body: {
+            branch: branch_name,
+            commit_message: commit_message,
+            actions: [
+              {
+                action: "update",
+                file_path: gemfile.path,
+                content: gemfile.content
+              },
+              {
+                action: "update",
+                file_path: gemfile_lock.path,
+                content: gemfile_lock.content
+              },
+              {
+                action: "create",
+                file_path: created_file.path,
+                content: created_file.content
+              },
+              {
+                action: "delete",
+                file_path: deleted_file.path,
+                content: ""
+              }
+            ]
+          }
+        )
+
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/merge_requests")
     end
@@ -180,49 +223,21 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         creator.create
 
         expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/repository/commits")
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests")
-      end
-    end
-
-    context "with a deleted file" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "deleted_file",
-            content: nil,
-            operation: Dependabot::DependencyFile::Operation::DELETE
+          to have_requested(:post, "#{repo_api_url}/repository/commits").
+          with(
+            body: {
+              branch: branch_name,
+              commit_message: commit_message,
+              actions: [
+                {
+                  action: "update",
+                  file_path: files[0].symlink_target,
+                  content: files[0].content
+                }
+              ]
+            }
           )
-        ]
-      end
 
-      it "pushes a commit to GitLab and creates a merge request" do
-        creator.create
-
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/repository/commits")
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/merge_requests")
-      end
-    end
-
-    context "with a created file" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "created_file",
-            content: "created",
-            operation: Dependabot::DependencyFile::Operation::CREATE
-          )
-        ]
-      end
-
-      it "pushes a commit to GitLab and creates a merge request" do
-        creator.create
-
-        expect(WebMock).
-          to have_requested(:post, "#{repo_api_url}/repository/commits")
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
