@@ -16,7 +16,7 @@ module Dependabot
       BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m.freeze
 
       # NOTE: options is a manditory argument to ensure we pass it from all calling classes
-      def self.bundler_version(lockfile, _options:)
+      def self.bundler_version(lockfile)
         return DEFAULT unless lockfile
 
         if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
