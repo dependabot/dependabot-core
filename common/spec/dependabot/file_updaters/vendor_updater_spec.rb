@@ -60,6 +60,8 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/business-1.5.0.gem"
       end
 
+      expect(file.deleted).to be_falsey
+      expect(file.deleted?).to be_falsey
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
     end
 
@@ -68,6 +70,8 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/test-change.txt"
       end
 
+      expect(file.deleted).to be_falsey
+      expect(file.deleted?).to be_falsey
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
     end
 
@@ -76,6 +80,8 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/business-1.4.0.gem"
       end
 
+      expect(file.deleted).to be_truthy
+      expect(file.deleted?).to be_truthy
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
     end
 
