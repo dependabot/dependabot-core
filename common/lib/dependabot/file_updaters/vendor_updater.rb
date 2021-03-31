@@ -31,13 +31,14 @@ module Dependabot
             # M = Modified = Default for DependencyFile
             # D = Deleted
             # ?? = Untracked = Created
-            deleted = type == "D"
-            created = type == "??"
+            operation = Dependabot::DependencyFile::Operation::UPDATE
+            operation = Dependabot::DependencyFile::Operation::DELETE if type == "D"
+            operation = Dependabot::DependencyFile::Operation::CREATE if type == "??"
             encoding = ""
-            encoded_content = File.read(path) unless deleted
+            encoded_content = File.read(path) unless operation == Dependabot::DependencyFile::Operation::DELETE
             if binary_file?(path)
               encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-              encoded_content = Base64.encode64(encoded_content) unless deleted
+              encoded_content = Base64.encode64(encoded_content) unless operation == Dependabot::DependencyFile::Operation::DELETE
             end
 
             project_root =
@@ -49,8 +50,7 @@ module Dependabot
               name: file_path.to_s,
               content: encoded_content,
               directory: base_directory,
-              deleted: deleted,
-              created: created,
+              operation: operation,
               content_encoding: encoding
             )
           end

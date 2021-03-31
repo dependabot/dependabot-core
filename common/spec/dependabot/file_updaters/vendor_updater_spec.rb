@@ -60,8 +60,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/business-1.5.0.gem"
       end
 
-      expect(file.created).to be_truthy
-      expect(file.deleted).to be_falsey
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
     end
 
     it "marks updated files as such" do
@@ -69,8 +68,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/test-change.txt"
       end
 
-      expect(file.created).to be_falsey
-      expect(file.deleted).to be_falsey
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
     end
 
     it "marks deleted files as such" do
@@ -78,8 +76,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/business-1.4.0.gem"
       end
 
-      expect(file.deleted).to be_truthy
-      expect(file.created).to be_falsey
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
     end
 
     it "base64 encodes binary files" do

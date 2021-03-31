@@ -93,9 +93,9 @@ module Dependabot
 
       # @param [DependencyFile] file
       def file_action(file)
-        if file.deleted
+        if file.operation == Dependabot::DependencyFile::Operation::DELETE
           "delete"
-        elsif file.created
+        elsif file.created == Dependabot::DependencyFile::Operation::CREATE
           "create"
         else
           "update"

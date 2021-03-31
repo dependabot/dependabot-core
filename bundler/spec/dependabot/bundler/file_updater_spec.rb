@@ -1485,7 +1485,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           f.name == "vendor/cache/business-1.4.0.gem"
         end
 
-        expect(file.deleted?).to eq true
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
 
       context "persistent gems after clean" do
@@ -1590,7 +1590,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             f.name == "#{removed}/.bundlecache"
           end
 
-          expect(file&.deleted?).to eq true
+          expect(file&.operation).to eq Dependabot::DependencyFile::Operation::DELETE
         end
 
         it "does not base64 encode vendored code" do
