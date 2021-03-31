@@ -81,6 +81,10 @@ module Dependabot
       @support_file
     end
 
+    def deleted?
+      operation == Operation::DELETE
+    end
+
     def binary?
       content_encoding == ContentEncoding::BASE64
     end
