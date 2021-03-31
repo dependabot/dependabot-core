@@ -336,32 +336,30 @@ RSpec.describe Dependabot::SharedHelpers do
 
     let(:credentials) { [] }
 
-    subject(:with_git_configured) do
-      Dependabot::SharedHelpers.with_git_configured(credentials: credentials) do
-        [git_config.call, git_credentials.call]
-      end
+    def with_git_configured(&block)
+      Dependabot::SharedHelpers.with_git_configured(credentials: credentials) { block.call }
     end
 
-    let(:git_config) { -> { `cat ~/.gitconfig` } }
-    let(:git_credentials) { -> { `cat #{Dir.pwd}/git.store` } }
+    let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
+    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when providing no extra credentials" do
       let(:credentials) { [] }
 
       it "creates a .gitconfig that contains the Dependabot header" do
-        expect(with_git_configured[0]).to include(config_header)
+        expect(configured_git_config).to include(config_header)
       end
 
       it "creates a .gitconfig that contains the credentials helper" do
-        expect(with_git_configured[0]).to include(credentials_helper)
+        expect(configured_git_config).to include(credentials_helper)
       end
 
       it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(with_git_configured[0]).to include(alternatives("github.com"))
+        expect(configured_git_config).to include(alternatives("github.com"))
       end
 
       it "creates a git credentials store that is empty" do
-        expect(with_git_configured[1]).to eq("")
+        expect(configured_git_credentials).to eq("")
       end
     end
 
@@ -378,19 +376,19 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "creates a .gitconfig that contains the Dependabot header" do
-        expect(with_git_configured[0]).to include(config_header)
+        expect(configured_git_config).to include(config_header)
       end
 
       it "creates a .gitconfig that contains the credentials helper" do
-        expect(with_git_configured[0]).to include(credentials_helper)
+        expect(configured_git_config).to include(credentials_helper)
       end
 
       it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(with_git_configured[0]).to include(alternatives("github.com"))
+        expect(configured_git_config).to include(alternatives("github.com"))
       end
 
       it "creates a git credentials store that contains github.com credentials" do
-        expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@github.com\n")
+        expect(configured_git_credentials).to eq("https://x-access-token:fake-token@github.com\n")
       end
     end
 
@@ -413,7 +411,7 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "creates a git credentials store that contains non-app-token github.com credentials" do
-        expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@github.com\n")
+        expect(configured_git_credentials).to eq("https://x-access-token:fake-token@github.com\n")
       end
     end
 
@@ -430,23 +428,23 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "creates a .gitconfig that contains the Dependabot header" do
-        expect(with_git_configured[0]).to include(config_header)
+        expect(configured_git_config).to include(config_header)
       end
 
       it "creates a .gitconfig that contains the credentials helper" do
-        expect(with_git_configured[0]).to include(credentials_helper)
+        expect(configured_git_config).to include(credentials_helper)
       end
 
       it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(with_git_configured[0]).to include(alternatives("github.com"))
+        expect(configured_git_config).to include(alternatives("github.com"))
       end
 
       it "creates a .gitconfig that contains the private.com alternatives" do
-        expect(with_git_configured[0]).to include(alternatives("private.com"))
+        expect(configured_git_config).to include(alternatives("private.com"))
       end
 
       it "creates a git credentials store that contains private git credentials" do
-        expect(with_git_configured[1]).to eq("https://x-access-token:fake-token@private.com\n")
+        expect(configured_git_credentials).to eq("https://x-access-token:fake-token@private.com\n")
       end
     end
   end
