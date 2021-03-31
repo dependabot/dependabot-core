@@ -187,14 +187,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
     context "with a repository from credentials" do
       let(:credentials) do
-        [
-          {
-            "type" => "maven_repository",
-            "url" => "https://private.registry.org/repo/",
-            "username" => "dependabot",
-            "password" => "dependabotPassword"
-          }
-        ]
+        [{
+          "type" => "maven_repository",
+          "url" => "https://private.registry.org/repo/",
+          "username" => "dependabot",
+          "password" => "dependabotPassword"
+        }]
       end
 
       let(:private_registry_metadata_url) do
