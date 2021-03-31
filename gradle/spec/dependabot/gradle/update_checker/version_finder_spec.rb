@@ -193,7 +193,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
             "url" => "https://private.registry.org/repo/",
             "username" => "dependabot",
             "password" => "dependabotPassword"
-        }]
+          }
+        ]
       end
 
       let(:private_registry_metadata_url) do
