@@ -52,7 +52,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd -
 
-RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global 3.9.2
+RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* }
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \
