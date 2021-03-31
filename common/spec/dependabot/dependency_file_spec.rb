@@ -82,6 +82,12 @@ RSpec.describe Dependabot::DependencyFile do
           "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
       end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
     end
 
     context "with a symlink" do
@@ -106,6 +112,128 @@ RSpec.describe Dependabot::DependencyFile do
           "deleted" => false,
           "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
+    end
+
+    context "with a new file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false ,
+          "operation" => Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
+      end
+    end
+
+    context "with a changed file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false ,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
+    end
+
+    context "with a deleted file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
+
+    context "with a deleted file using the legacy method" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          deleted: true
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
   end
