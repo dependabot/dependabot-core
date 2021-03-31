@@ -87,7 +87,11 @@ module Dependabot
     end
 
     def deleted
-      operation == Operation::DELETE
+      @operation == Operation::DELETE
+    end
+
+    def deleted=(deleted)
+      @operation = deleted ? Operation::DELETE : Operation::UPDATE
     end
 
     def deleted?

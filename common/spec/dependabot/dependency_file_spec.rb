@@ -208,13 +208,43 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
 
-    context "with a deleted file using the legacy method" do
+    context "with a deleted file using the legacy initializer method" do
       let(:file) do
         described_class.new(
           name: "Gemfile",
           content: "a",
           deleted: true
         )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
+
+    context "with a deleted file using the legacy setter method" do
+      let(:file) do
+        file = described_class.new(
+          name: "Gemfile",
+          content: "a"
+        )
+        file.deleted = true
+        file
       end
 
       it "returns the correct array" do
