@@ -187,7 +187,9 @@ module Dependabot
         end
 
         def jfrog_source
-          in_a_native_bundler_context(error_handling: false) do |dir|
+          return @jfrog_source unless defined?(@jfrog_source)
+
+          @jfrog_source = in_a_native_bundler_context(error_handling: false) do |dir|
             NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "jfrog_source",
@@ -236,10 +238,6 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

@@ -1,3 +1,104 @@
+## v0.139.1, 30 March 2021
+
+- Pull Requests: Fix github redirect for www.github.com links
+- Pull Requests: Sanitize team mentions
+- Bundler 2 [Beta]: Add test for bundler dependency
+
+## v0.139.0, 30 March 2021
+
+- Bundler [Beta]: Detect and run Bundler V1 or V2 based on Gemfile.lock
+  - Requires `options: { bundler_2_available: true }` to be passed to Bundler classes for this release
+- Dockerfile: promote software-properties-common
+
+## v0.138.7, 30 March 2021
+
+- Go mod: Handle multi-line error messages
+- Bump golang.org/x/mod from 0.4.1 to 0.4.2 in /go_modules/helpers
+- Update rubocop requirement from ~> 1.11.0 to ~> 1.12.0 in /common
+- Bump flake8 from 3.8.4 to 3.9.0 in /python/helpers
+- Bump eslint from 7.22.0 to 7.23.0 in /npm_and_yarn/helpers
+- Bundler [Prerelease]: Bump bundler to 2.2.15
+- Bundler: Use project fixtures
+- Docs: change ci url @flaxel
+
+## v0.138.6, 26 March 2021
+
+- chore: export LOCAL_GITHUB_ACCESS_TOKEN to docker dev container
+- fix: Raise resolvability error when pseudo version does not match version control
+- test: Add a helper method to load bundler fixtures by version
+- test: Explicitly raise if attempting to load a missing project fixture
+- test: Project fixtures for UpdateChecker spec
+
+## v0.138.5, 26 March 2021
+
+- Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
+- Bundler v2 [pre-release]: Add and test jfrog source helper
+- Cargo: Update Rust to 1.51.0 (thanks @CryZe)
+- Bump npm from 6.14.11 to 6.14.12 in /npm_and_yarn/helpers
+- Internal: bump-version: re-tag the release notes ref
+- Azure: adding azure pr updater reference in pr updater common class
+
+## v0.138.4, 25 March 2021
+
+- Docker: fix invalid Accept header when checking for updates
+- Bundler: fix invalid requirement replacement when using `!=` filters
+- Bundler [Prerelease]: Add UpdateChecker for Bundler 2
+- Bundler [Prerelease]: Add version resolver for Bundler 2
+- Bundler [Prerelease]: Add file updater for Bundler 2
+- Dependabot::PullRequestCreator::MessageBuilder::new - github_redirection_service is a required argument
+- CI: Fix flaky npm spec
+- CI: Extend npm retries and max attempts
+- CI: Skip coverage reports
+- Update npm from 7.6.1 to 7.7.0
+
+## v0.138.3, 24 March 2021
+
+- Docker: Improve handling of tags with prefixes or suffixes
+- Bump @npmcli/arborist from 2.2.6 to 2.2.9 in /npm_and_yarn/helpers
+- Bump eslint from 7.21.0 to 7.22.0 in /npm_and_yarn/helpers
+- Bundler: fix deprecated --without flag in build
+- Bundler [Prerelease]: Add conflicting dependency resolver for Bundler 2
+- Bundler: Avoid subtle runtime failures by raising if bundler is improperly invoked
+
+## v0.138.2, 23 March 2021
+
+- npm: support private registries using lowercase URI components (e.g. `%40dependabot%2fdependabot-core`)
+- Bundler: [Prerelease] Add a file parser for Bundler 2
+- Nuget: add support for disablePackageSources in NuGet.Config (@AshleighAdams)
+- Bump phpstan/phpstan from 0.12.81 to 0.12.82
+- Bump friendsofphp/php-cs-fixer to 2.18.4
+- CI: reduce disk space
+
+## v0.138.1, 17 March 2021
+
+- Bundler: Add instrumentation to capture the bundler version being used
+- Bundler: [Prerelease] Add a stubbed out native helper for Bundler 2
+- Bundler: [Prerelease] Allow the v2 native helper to be invoked via an options argument
+
+## v0.138.0, 16 March 2021
+
+- Go: Bump golang to v1.16.2
+
+## v0.137.2, 16 March 2021
+
+- Bundler: Fix permission error when vendoring gems
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.137.1, 15 March 2021
+
+- Bundler: Install dependabot-core's gems using Bundler v2 (unused for updates)
+
+## v0.137.0, 15 March 2021
+
+- Bump npm from 7.5.4 to 7.6.1
+- Python: Add python versions 3.9.2, 3.8.8, 3.7.10 and 3.6.13
+- Bundler: Run v1 native helpers with bundler v1
+- Bump composer/composer from 2.0.10 to 2.0.11 in /composer/helpers/v2
+- Bump eslint-config-prettier from 8.0.0 to 8.1.0 in /npm_and_yarn/helpers
+- Bump phpstan/phpstan from 0.12.78 to 0.12.81 in /composer/helpers/v2
+- Bump phpstan/phpstan from 0.12.78 to 0.12.81 in /composer/helpers/v1
+
 ## v0.136.0, 8 March 2021
 
 - Bundler: Run Bundler v1 native helpers with an explicit version setting the

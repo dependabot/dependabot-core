@@ -53,7 +53,7 @@ Assuming you're working on a single language, the best thing to do is just to in
 * [Install the latest Ruby](https://github.com/rbenv/rbenv#installing-ruby-versions)
 * Install Bundler with `gem install bundler` (this is Ruby's package manager)
 * Install Dependabot's Ruby dependencies with `bundle install`
-* Install the language dependencies for whatever languages you're working on (see [how we do it in CI](.circleci/config.yml))
+* Install the language dependencies for whatever languages you're working on (see [how we do it in CI](.github/workflows/ci.yml))
 * Run the tests for the file you're working on with `bundle exec rspec spec/dependabot/file_updaters/elixir/` (for example). They should be green (although might need an internet connection).
 
 ## Project layout

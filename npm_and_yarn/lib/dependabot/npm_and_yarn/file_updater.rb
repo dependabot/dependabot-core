@@ -62,18 +62,16 @@ module Dependabot
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          begin
-            if dependencies.select(&:top_level?).any?
-              DependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            else
-              SubDependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            end
+          if dependencies.select(&:top_level?).any?
+            DependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
+          else
+            SubDependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
           end
       end
 

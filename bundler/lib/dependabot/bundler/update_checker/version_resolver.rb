@@ -23,7 +23,8 @@ module Dependabot
                        raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
-                       latest_allowable_version: nil)
+                       latest_allowable_version: nil,
+                       options:)
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
@@ -34,6 +35,7 @@ module Dependabot
           @remove_git_source           = remove_git_source
           @unlock_requirement          = unlock_requirement
           @latest_allowable_version    = latest_allowable_version
+          @options                     = options
         end
 
         def latest_resolvable_version_details
@@ -45,7 +47,8 @@ module Dependabot
 
         attr_reader :dependency, :unprepared_dependency_files,
                     :repo_contents_path, :credentials, :ignored_versions,
-                    :replacement_git_pin, :latest_allowable_version
+                    :replacement_git_pin, :latest_allowable_version,
+                    :options
 
         def remove_git_source?
           @remove_git_source
@@ -164,7 +167,8 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
-              security_advisories: []
+              security_advisories: [],
+              options: options
             ).latest_version_details
         end
 
@@ -221,7 +225,7 @@ module Dependabot
         end
 
         def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
+          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
         end
       end
     end

@@ -18,15 +18,13 @@ module Dependabot
 
       def files_requiring_update
         @files_requiring_update ||=
-          begin
-            lockfiles.select do |lockfile|
-              lockfile_dependencies(lockfile).any? do |sub_dep|
-                updated_dependencies.any? do |updated_dep|
-                  next false unless sub_dep.name == updated_dep.name
+          lockfiles.select do |lockfile|
+            lockfile_dependencies(lockfile).any? do |sub_dep|
+              updated_dependencies.any? do |updated_dep|
+                next false unless sub_dep.name == updated_dep.name
 
-                  version_class.new(updated_dep.version) >
-                    version_class.new(sub_dep.version)
-                end
+                version_class.new(updated_dep.version) >
+                  version_class.new(sub_dep.version)
               end
             end
           end
