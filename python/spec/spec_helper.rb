@@ -25,11 +25,11 @@ RSpec.configure do |config|
     $installed_versions[spec.metadata[:full_description]] = $current_python_version
   end
 
-  config.after(:all) do
+  config.after(:suite) do
     $installed_versions.each do |example, version|
       puts "\n\n#{example} installed #{version}"
     end
 
-    puts "Used python versions: \n: #{$installed_versions.values.uniq.sort.join("\n")}"
+    puts "Used python versions: \n#{$installed_versions.values.uniq.sort.join("\n")}"
   end
 end
