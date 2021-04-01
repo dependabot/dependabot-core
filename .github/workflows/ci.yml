@@ -53,7 +53,12 @@ jobs:
           echo "CORE_CI_IMAGE=ghcr.io/${{ github.repository_owner }}/dependabot-core/dependabot-core-ci" >> $GITHUB_ENV
       - name: Log in to Docker registry
         run: |
-          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          if [ -n "${{ secrets.GHCR_PAT }}" ] ]; then
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "DOCKER_LOGGED_IN=true" >> $GITHUB_ENV
+          else
+            echo "No Docker credentials, skipping login"
+          fi
       - name: Set test env credentials
         run: |
           echo "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
@@ -75,6 +80,7 @@ jobs:
             --cache-from "$CORE_IMAGE:latest" \
             .
       - name: Push dependabot-core image to Docker registry
+        if: env.DOCKER_LOGGED_IN == 'true'
         run: |
           docker push "$CORE_CI_IMAGE:core--$BRANCH_REF"
       - name: Build dependabot-core-ci image
@@ -88,6 +94,7 @@ jobs:
             --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
             .
       - name: Push dependabot-core-ci image to Docker registry
+        if: env.DOCKER_LOGGED_IN == 'true'
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
