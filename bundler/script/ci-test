@@ -5,13 +5,13 @@ bundle exec rubocop .
 bundle exec rspec spec
 
 [ "$SUITE_NAME" == "bundler1" ] &&\
-  cd /home/dependabot/dependabot-core/bundler/helpers/v1 && \
+  cd helpers/v1 && \
   BUNDLER_VERSION=1 bundle install && \
   BUNDLER_VERSION=1 bundle exec rspec spec &&\
   cd -
 
 [ "$SUITE_NAME" == "bundler2" ] &&\
-  cd /home/dependabot/dependabot-core/bundler/helpers/v2 && \
+  cd helpers/v2 && \
   BUNDLER_VERSION=2 bundle install && \
   BUNDLER_VERSION=2 bundle exec rspec spec &&\
   cd -
