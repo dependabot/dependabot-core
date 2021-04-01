@@ -1412,6 +1412,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
       end
     end
+
+    context "with a gem that depends on bundler" do
+      let(:dependency_files) { bundler_project_dependency_files("guard_bundler") }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 2.2.1, <= 3.0.0", groups: [], source: nil }]
+      end
+      let(:dependency_name) { "guard-bundler" }
+      let(:current_version) { "2.2.1" }
+
+      context "using bundler v1", :bundler_v1_only do
+        it { is_expected.to eq(Gem::Version.new("2.2.1")) }
+      end
+
+      context "using bundler v2", :bundler_v2_only do
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+      end
+    end
   end
 
   describe "#preferred_resolvable_version" do
