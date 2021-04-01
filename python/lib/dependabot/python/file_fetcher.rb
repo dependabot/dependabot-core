@@ -25,12 +25,13 @@ module Dependabot
         # If this repo is using Poetry return true
         return true if filenames.include?("pyproject.toml")
 
-        # FIXME: this assumption is no longer true
-        filenames.include?("setup.py")
+        return true if filenames.include?("setup.py")
+
+        filename.include?("setup.cfg")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
+        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, "\
         "or a Pipfile."
       end
 
