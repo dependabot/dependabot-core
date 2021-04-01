@@ -53,7 +53,7 @@ jobs:
           echo "CORE_CI_IMAGE=ghcr.io/${{ github.repository_owner }}/dependabot-core/dependabot-core-ci" >> $GITHUB_ENV
       - name: Log in to Docker registry
         run: |
-          if [ -n "${{ secrets.GHCR_PAT }}" ] ]; then
+          if [[ -z "${{ secrets.GHCR_PAT }}" ]]; then
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             echo "DOCKER_LOGGED_IN=true" >> $GITHUB_ENV
           else
