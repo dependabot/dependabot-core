@@ -77,6 +77,7 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
 
                 if python_version && !pre_installed_python?(python_version)
+                  python_version_installed(python_version)
                   run_poetry_command("pyenv install -s #{python_version}")
                   run_poetry_command(
                     "pyenv exec pip install -r "\

@@ -339,6 +339,7 @@ module Dependabot
         def install_required_python
           return if run_command("pyenv versions").include?("#{python_version}\n")
 
+          python_version_installed(python_version)
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install -r"\
                       "#{NativeHelpers.python_requirements_path}")
