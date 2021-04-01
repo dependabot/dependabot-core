@@ -140,9 +140,9 @@ def parse_setup(directory):
 
 
 def parse_setup_cfg(directory):
-    # Parse the setup.py
     setup_packages = []
-    if os.path.isfile(directory + '/setup.cfg'):
+    if os.path.isfile(directory + "/setup.cfg"):
+
         def version_from_install_req(install_req):
             if install_req.is_pinned:
                 return next(iter(install_req.specifier)).version
@@ -152,35 +152,45 @@ def parse_setup_cfg(directory):
             if install_req.original_link:
                 return
 
-            setup_packages.append({
-                "name": install_req.req.name,
-                "version": version_from_install_req(install_req),
-                "markers": str(install_req.markers) or None,
-                "file": "setup.cfg",
-                "requirement": str(install_req.specifier) or None,
-                "requirement_type": req_type,
-                "extras": sorted(list(install_req.extras))
-            })
+            setup_packages.append(
+                {
+                    "name": install_req.req.name,
+                    "version": version_from_install_req(install_req),
+                    "markers": str(install_req.markers) or None,
+                    "file": "setup.cfg",
+                    "requirement": str(install_req.specifier) or None,
+                    "requirement_type": req_type,
+                    "extras": sorted(list(install_req.extras)),
+                }
+            )
 
         def parse_requirements(requires, req_type):
             for req in requires:
                 parse_requirement(req, req_type)
 
         config = configparser.ConfigParser()
-        config.read(directory + '/setup.cfg')
+        config.read(directory + "/setup.cfg")
 
-        for req_type in ['setup_requires', 'install_requires', 'tests_require']:
+        for req_type in [
+            "setup_requires",
+            "install_requires",
+            "tests_require",
+        ]:
             requires = [
                 r
-                for r in config.get('options', req_type, fallback='').strip().split('\n')
-                if r != ''
+                for r in config.get("options", req_type, fallback="")
+                .strip()
+                .split("\n")
+                if r != ""
             ]
             parse_requirements(requires, req_type)
 
-        extras_require_section = 'options.extras_require'
+        extras_require_section = "options.extras_require"
         if config.has_section(extras_require_section):
             section = config[extras_require_section]
             for key, value in section.items():
-                parse_requirements(value.strip().split('\n'), 'extras_require:{}'.format(key))
+                parse_requirements(
+                    value.strip().split("\n"), "extras_require:{}".format(key)
+                )
 
     return json.dumps({"result": setup_packages})
