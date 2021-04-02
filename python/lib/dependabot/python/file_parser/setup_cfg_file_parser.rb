@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "./setup_file_parser_base"
+require_relative "setup_file_parser_base"
 
 module Dependabot
   module Python
