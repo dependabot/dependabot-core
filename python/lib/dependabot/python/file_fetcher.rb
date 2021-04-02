@@ -27,7 +27,7 @@ module Dependabot
 
         return true if filenames.include?("setup.py")
 
-        filename.include?("setup.cfg")
+        filenames.include?("setup.cfg")
       end
 
       def self.required_files_message
