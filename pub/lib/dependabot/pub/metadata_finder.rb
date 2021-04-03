@@ -1,0 +1,70 @@
+# frozen_string_literal: true
+
+# TODO: File and specs need to be updated
+
+require "excon"
+require "json"
+require "dependabot/metadata_finders"
+require "dependabot/metadata_finders/base"
+require "dependabot/shared_helpers"
+
+module Dependabot
+  module Pub
+    class MetadataFinder < Dependabot::MetadataFinders::Base
+      private
+
+      def look_up_source
+        case new_source_type
+        when "git" then find_source_from_git_url
+        when "registry" then find_source_from_registry_details
+        else raise "Unexpected source type: #{new_source_type}"
+        end
+      end
+
+      def new_source_type
+        sources =
+          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+
+        return "default" if sources.empty?
+        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+
+        sources.first[:type] || sources.first.fetch("type")
+      end
+
+      def find_source_from_git_url
+        info = dependency.requirements.map { |r| r[:source] }.compact.first
+
+        url = info[:url] || info.fetch("url")
+        Source.from_url(url)
+      end
+
+      # Registry API docs:
+      # https://www.terraform.io/docs/registry/api.html
+      def find_source_from_registry_details
+        info = dependency.requirements.map { |r| r[:source] }.compact.first
+
+        hostname = info[:registry_hostname] || info["registry_hostname"]
+
+        # TODO: Implement service discovery for custom registries
+        return unless hostname == "registry.pub.io"
+
+        url = "https://registry.pub.io/v1/modules/"\
+              "#{dependency.name}/#{dependency.version}"
+
+        response = Excon.get(
+          url,
+          idempotent: true,
+          **SharedHelpers.excon_defaults
+        )
+
+        raise "Response from registry was #{response.status}" unless response.status == 200
+
+        source_url = JSON.parse(response.body).fetch("source")
+        Source.from_url(source_url) if source_url
+      end
+    end
+  end
+end
+
+Dependabot::MetadataFinders.
+  register("pub", Dependabot::Pub::MetadataFinder)
