@@ -13,6 +13,18 @@ module Dependabot
     require "dependabot/pull_request_creator/branch_namer"
     require "dependabot/pull_request_creator/labeler"
 
+    # Dependabot programmatically creates PRs which often include a large
+    # number of links to objects on `github.com`. GitHub hydrates these into
+    # rich links that leave a 'mention' on target Issues/Pull Requests.
+    #
+    # Due to the volume and nature of Dependabot PRs, these mentions are not
+    # useful and can overwhelm maintainers, so we use a redirection service
+    # to avoid enrichment.
+    #
+    # If you wish to disable this behaviour when using Dependabot Core directly,
+    # pass a nil value when initialising this class.
+    DEFAULT_GITHUB_REDIRECTION_SERVICE = "github-redirect.dependabot.com"
+
     class RepoNotFound < StandardError; end
 
     class RepoArchived < StandardError; end
@@ -46,9 +58,9 @@ module Dependabot
                    reviewers: nil, assignees: nil, milestone: nil,
                    branch_name_separator: "/", branch_name_prefix: "dependabot",
                    label_language: false, automerge_candidate: false,
-                   github_redirection_service: "github-redirect.dependabot.com",
+                   github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
-                   provider_metadata: {})
+                   provider_metadata: {}, message: nil)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -72,6 +84,7 @@ module Dependabot
       @custom_headers             = custom_headers
       @require_up_to_date_base    = require_up_to_date_base
       @provider_metadata          = provider_metadata
+      @message                    = message
 
       check_dependencies_have_previous_version
     end
@@ -116,9 +129,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         signature_key: signature_key,
         labeler: labeler,
@@ -137,9 +150,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         approvers: reviewers,
@@ -155,9 +168,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         work_item: provider_metadata&.fetch(:work_item, nil)
@@ -171,9 +184,9 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         work_item: provider_metadata&.fetch(:work_item, nil)
@@ -187,17 +200,17 @@ module Dependabot
         base_commit: base_commit,
         credentials: credentials,
         files: files,
-        commit_message: message_builder.commit_message,
-        pr_description: message_builder.pr_message,
-        pr_name: message_builder.pr_name,
+        commit_message: message.commit_message,
+        pr_description: message.pr_message,
+        pr_name: message.pr_name,
         author_details: author_details,
         labeler: labeler,
         require_up_to_date_base: require_up_to_date_base?
       )
     end
 
-    def message_builder
-      @message_builder ||
+    def message
+      @message ||=
         MessageBuilder.new(
           source: source,
           dependencies: dependencies,

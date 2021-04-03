@@ -160,6 +160,7 @@ docker run --rm -ti \
   -v "$(pwd)/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
   -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
   -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
+  -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
   -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
   -v "$(pwd)/bundler/helpers:/opt/bundler" \
   -v "$(pwd)/bundler/helpers:/opt/bundler/helpers" \
@@ -167,7 +168,9 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
   -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
+  -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   --name "$CONTAINER_NAME" \
+  --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

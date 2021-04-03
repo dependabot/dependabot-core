@@ -103,6 +103,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include("go 1.13") }
         end
 
+        context "when a retract directive is present" do
+          let(:project_name) { "go_retracted" }
+
+          it { is_expected.to include("// reason for retraction") }
+          it { is_expected.to include("retract v1.0.5") }
+        end
+
         describe "a dependency who's module path has changed (inc version)" do
           let(:project_name) { "module_path_and_version_changed" }
 
@@ -229,16 +236,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
 
-            # NOTE: We explitly don't want to raise a resolvability error from go mod tidy
-            it "does not raises a DependencyFileNotResolvable error" do
+            it "raises a DependencyFileNotResolvable error" do
+              error_class = Dependabot::DependencyFileNotResolvable
               expect { updater.updated_go_sum_content }.
-                to_not raise_error
-            end
-
-            it "updates the go.mod" do
-              expect(updater.updated_go_mod_content).to include(
-                %(github.com/googleapis/gnostic v0.5.1 // indirect\n)
-              )
+                to raise_error(error_class) do |error|
+                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
+              end
             end
           end
         end
@@ -427,6 +430,71 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
           expect(error.message).to include("go.mod has post-v0 module path")
+        end
+      end
+    end
+
+    context "for a invalid pseudo version" do
+      let(:project_name) { "invalid_pseudo_version" }
+      let(:dependency_name) do
+        "rsc.io/quote"
+      end
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
+            "invalid pseudo-version:"
+          )
+        end
+      end
+    end
+
+    context "for an unknown revision version" do
+      let(:project_name) { "unknown_revision_version" }
+      let(:dependency_name) do
+        "github.com/deislabs/oras"
+      end
+      let(:dependency_version) { "v0.10.0" }
+      let(:dependency_previous_version) { "v0.9.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/deislabs/oras"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "go: github.com/deislabs/oras@v0.10.0 requires\n"\
+            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
+            "invalid version: unknown revision"
+          )
         end
       end
     end

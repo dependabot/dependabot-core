@@ -1,0 +1,21 @@
+GIT
+  remote: https://github.com/svenfuchs/i18n
+  revision: d049c7115f59689efb123d61430c078c6feb7537
+  specs:
+    i18n (0.7.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ibandit (0.6.6)
+      i18n (~> 0.7.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  i18n!
+  ibandit (~> 0.6.0)
+
+BUNDLED WITH
+   1.16.3

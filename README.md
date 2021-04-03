@@ -56,7 +56,7 @@ languages.
 
 To install the helpers for each language:
 
-1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+1. `cd npm_and_yarn/helpers && npm install --production && cd -`
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd hex/helpers && mix deps.get && cd -`
@@ -179,6 +179,13 @@ The high-level flow looks like this:
 This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
+
+## Profiling
+
+You can profile a dry-run by passing the `--profile` flag when running it. This
+will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
+can generate a flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
 
 ## Why is this public?
 

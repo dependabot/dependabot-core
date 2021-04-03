@@ -253,6 +253,27 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             )
           end
         end
+
+        context "that has disabled package sources" do
+          let(:config_file_fixture_name) { "disabled_sources.config" }
+
+          it "only includes the enabled package sources" do
+            expect(dependency_urls).to match_array(
+              [{
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "flatcontainer/microsoft.extensions."\
+                                "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
+                                "query?q=microsoft.extensions.dependencymodel"\
+                                "&prerelease=true",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
+          end
+        end
       end
 
       context "that has a numeric key" do

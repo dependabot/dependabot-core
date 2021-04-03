@@ -6,6 +6,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 
 module Dependabot
   module Bundler
@@ -32,11 +33,12 @@ module Dependabot
         end
 
         def initialize(dependencies:, dependency_files:,
-                       repo_contents_path: nil, credentials:)
+                       repo_contents_path: nil, credentials:, options:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @options = options
         end
 
         def updated_lockfile_content
@@ -53,7 +55,7 @@ module Dependabot
         private
 
         attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials
+                    :credentials, :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
@@ -64,8 +66,8 @@ module Dependabot
             ) do |tmp_dir|
               write_temporary_dependency_files
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
+              NativeHelpers.run_bundler_subprocess(
+                bundler_version: bundler_version,
                 function: "update_lockfile",
                 args: {
                   gemfile_name: gemfile.name,
@@ -300,6 +302,10 @@ module Dependabot
           return unless lockfile
 
           lockfile.content.match?(/BUNDLED WITH\s+2/m)
+        end
+
+        def bundler_version
+          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
         end
       end
     end

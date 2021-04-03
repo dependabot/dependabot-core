@@ -1194,9 +1194,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<blockquote>\n"\
                 "<h2>v1.6.0</h2>\n"\
                 "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
-                "<code>@greysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
-                "<code>@hmarr</code></a> for the "\
-                "@angular/scope work - see <a href=\"https://github.com/"\
+                "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
+                "<code>@\u200Bhmarr</code></a> for the "\
+                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/"\
                 "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>."\
                 "</p>\n"\
                 "</blockquote>\n"\
@@ -1811,5 +1811,25 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end
+  end
+
+  describe "#message" do
+    subject(:message) { builder.message }
+
+    pr_name = "PR title"
+    pr_message = "PR message"
+    commit_message = "Commit message"
+    before do
+      allow(builder).to receive(:pr_name).and_return(pr_name)
+      allow(builder).to receive(:pr_message).and_return(pr_message)
+      allow(builder).to receive(:commit_message).and_return(commit_message)
+    end
+
+    it "returns a Message" do
+      expect(message).to be_a(Dependabot::PullRequestCreator::Message)
+    end
+    its(:pr_name) { should eq(pr_name) }
+    its(:pr_message) { should eq(pr_message) }
+    its(:commit_message) { should eq(commit_message) }
   end
 end

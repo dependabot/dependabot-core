@@ -16,25 +16,26 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - bundler
-          - cargo
-          - common
-          - composer
-          - dep
-          - docker
-          - elm
-          - git_submodules
-          - github_actions
-          - go_modules
-          - gradle
-          - hex
-          - maven
-          - npm_and_yarn
-          - nuget
-          - omnibus
-          - python
-          - terraform
-          - pub
+        - { path: bundler, name: bundler1 }
+        - { path: bundler, name: bundler2 }
+        - { path: cargo, name: cargo }
+        - { path: common, name: common }
+        - { path: composer, name: composer }
+        - { path: dep, name: dep }
+        - { path: docker, name: docker }
+        - { path: elm, name: elm }
+        - { path: git_submodules, name: git_submodules }
+        - { path: github_actions, name: github_actions }
+        - { path: go_modules, name: go_modules }
+        - { path: gradle, name: gradle }
+        - { path: hex, name: hex }
+        - { path: maven, name: maven }
+        - { path: npm_and_yarn, name: npm_and_yarn }
+        - { path: nuget, name: nuget }
+        - { path: omnibus, name: omnibus }
+        - { path: python, name: python }
+        - { path: terraform, name: terraform }
+        - { path: pub, name: pub }
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -91,19 +92,7 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
-      - name: Run Python flake8 linting
-        if: matrix.suite == 'python'
+      - name: Run ${{ matrix.suite.name }} tests
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "pyenv exec flake8 . --count --exclude=./.*,./python/spec/fixtures --show-source --statistics"
-      - name: Run Ruby Rubocop linting
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop ."
-      - name: Run js linting and tests
-        if: matrix.suite == 'npm_and_yarn'
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn lint"
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
-      - name: Run ${{ matrix.suite }} tests with rspec
-        run: |
-          docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --rm "$CORE_CI_IMAGE" bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --env "SUITE_NAME=${{ matrix.suite.name }}" --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"

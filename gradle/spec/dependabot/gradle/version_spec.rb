@@ -92,6 +92,11 @@ RSpec.describe Dependabot::Gradle::Version do
       let(:version_string) { "1.2.1-1.3.40-eap13-67" }
       it { is_expected.to eq(true) }
     end
+
+    context "with a dev token" do
+      let(:version_string) { "1.2.1-dev-65" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#<=>" do

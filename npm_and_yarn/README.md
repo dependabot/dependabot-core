@@ -7,7 +7,7 @@ Yarn and npm support for [`dependabot-core`][core-repo].
 1. Install native helpers
 
    ```
-   $ cd helpers && yarn install && cd -
+   $ cd helpers && npm install && cd -
    ```
 
 2. Install Ruby dependencies

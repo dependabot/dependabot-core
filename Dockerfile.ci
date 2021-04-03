@@ -6,6 +6,10 @@ ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \
   PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
 
+RUN pyenv install -s 3.6.13
+RUN pyenv install -s 3.7.1
+RUN pyenv install -s 3.7.10
+
 COPY .rubocop.yml /home/dependabot/dependabot-core/
 
 RUN mkdir -p \
@@ -47,25 +51,6 @@ COPY nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
 COPY python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
 COPY omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
-
-RUN cd common && bundle install
-RUN cd bundler && bundle install
-RUN cd cargo && bundle install
-RUN cd composer && bundle install
-RUN cd dep && bundle install
-RUN cd docker && bundle install
-RUN cd elm && bundle install
-RUN cd git_submodules && bundle install
-RUN cd github_actions && bundle install
-RUN cd go_modules && bundle install
-RUN cd gradle && bundle install
-RUN cd hex && bundle install
-RUN cd maven && bundle install
-RUN cd npm_and_yarn && bundle install
-RUN cd nuget && bundle install
-RUN cd python && bundle install
-RUN cd terraform && bundle install
-RUN cd omnibus && bundle install
 
 COPY common/ ${CODE_DIR}/common/
 COPY bundler/ ${CODE_DIR}/bundler/

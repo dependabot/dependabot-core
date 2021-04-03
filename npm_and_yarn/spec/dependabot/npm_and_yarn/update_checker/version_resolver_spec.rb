@@ -45,36 +45,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       to_return(status: 200, body: "{}")
   end
 
-  let(:dependency_files) { [package_json] }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", manifest_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "package.json" }
-  let(:yarn_lock) do
-    Dependabot::DependencyFile.new(
-      name: "yarn.lock",
-      content: fixture("yarn_lockfiles", yarn_lock_fixture_name)
-    )
-  end
-  let(:yarn_lock_fixture_name) { "yarn.lock" }
-  let(:npm_lock) do
-    Dependabot::DependencyFile.new(
-      name: "package-lock.json",
-      content: fixture("npm_lockfiles", npm_lock_fixture_name)
-    )
-  end
-  let(:npm_lock_fixture_name) { "package-lock.json" }
-  let(:shrinkwrap) do
-    Dependabot::DependencyFile.new(
-      name: "npm-shrinkwrap.json",
-      content: fixture("npm_lockfiles", shrinkwrap_fixture_name)
-    )
-  end
-  let(:shrinkwrap_fixture_name) { "package-lock.json" }
-
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -266,11 +236,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "with a npm 6 package-lock.json" do
-      let(:dependency_files) { [package_json, npm_lock] }
-
       context "updating a dependency without peer dependency issues" do
-        let(:manifest_fixture_name) { "package.json" }
-        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:dependency_files) { project_dependency_files("npm6/simple") }
         let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -318,8 +285,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency with a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:npm_lock_fixture_name) { "peer_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -346,8 +312,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "that has (old) peer requirements that aren't included" do
-          let(:manifest_fixture_name) { "peer_dependency_changed.json" }
-          let(:npm_lock_fixture_name) { "peer_dependency_changed.json" }
+          let(:dependency_files) { project_dependency_files("npm6/peer_dependency_changed") }
           let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -384,8 +349,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "that previously had the peer dependency as a normal dep" do
-          let(:manifest_fixture_name) { "peer_dependency_switch.json" }
-          let(:npm_lock_fixture_name) { "peer_dependency_switch.json" }
+          let(:dependency_files) { project_dependency_files("npm6/peer_dependency_switch") }
           let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -421,8 +385,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency that is a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:npm_lock_fixture_name) { "peer_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -441,8 +404,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
 
         context "of multiple dependencies" do
-          let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
-          let(:npm_lock_fixture_name) { "peer_dependency_multiple.json" }
+          let(:dependency_files) { project_dependency_files("npm6/peer_dependency_multiple") }
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "react",
@@ -463,13 +425,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "with a npm-shrinkwrap.json" do
-      let(:dependency_files) { [package_json, shrinkwrap] }
-
       # Shrinkwrap case is mainly covered by package-lock.json specs (since
       # resolution is identical). Single spec ensures things are working
       context "updating a dependency with a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:shrinkwrap_fixture_name) { "peer_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_shrinkwrap") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -490,9 +449,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "with no lockfile" do
-      let(:dependency_files) { [package_json] }
-
       context "updating a tightly coupled monorepo dep" do
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
         let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -509,18 +467,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "with other parts of the monorepo present" do
-          let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+          let(:dependency_files) { project_dependency_files("npm6/monorepo_dep_multiple_no_lockfile") }
           it { is_expected.to be_nil }
         end
 
         context "without other parts of the monorepo" do
-          let(:manifest_fixture_name) { "monorepo_dep_single.json" }
+          let(:dependency_files) { project_dependency_files("npm6/monorepo_dep_single_no_lockfile") }
           it { is_expected.to eq(latest_allowable_version) }
         end
       end
 
       context "updating a dependency without peer dependency issues" do
-        let(:manifest_fixture_name) { "package.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
         let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -539,7 +497,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(latest_allowable_version) }
 
         context "that is a git dependency" do
-          let(:manifest_fixture_name) { "git_dependency.json" }
+          let(:dependency_files) { project_dependency_files("npm6/git_dependency_no_lockfile") }
           let(:latest_allowable_version) do
             "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
           end
@@ -567,7 +525,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency with a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -592,7 +550,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "that is a git dependency" do
-          let(:manifest_fixture_name) { "peer_dependency_git.json" }
+          let(:dependency_files) { project_dependency_files("npm6/peer_dependency_git_no_lockfile") }
           let(:latest_allowable_version) do
             "1af607cc24ee57b338c18e1a67eae445da86b316"
           end
@@ -620,7 +578,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency that is a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_no_lockfile") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -640,7 +598,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "when there are already peer requirement issues" do
-        let(:manifest_fixture_name) { "peer_dependency_mismatch.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_mismatch_no_lockfile") }
 
         context "for a dependency with issues" do
           let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
@@ -680,7 +638,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           it { is_expected.to eq(Gem::Version.new("0.2.1")) }
 
           context "with a dependency version that can't be found" do
-            let(:manifest_fixture_name) { "yanked_version.json" }
+            let(:dependency_files) { project_dependency_files("npm6/yanked_version_no_lockfile") }
             let(:latest_allowable_version) { Gem::Version.new("99.0.0") }
             let(:dependency) do
               Dependabot::Dependency.new(
@@ -706,11 +664,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "with a yarn.lock" do
-      let(:dependency_files) { [package_json, yarn_lock] }
-
       context "updating a dependency without peer dependency issues" do
-        let(:manifest_fixture_name) { "package.json" }
-        let(:yarn_lock_fixture_name) { "yarn.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/simple") }
         let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -729,8 +684,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(latest_allowable_version) }
 
         context "that is a git dependency" do
-          let(:manifest_fixture_name) { "git_dependency.json" }
-          let(:yarn_lock_fixture_name) { "git_dependency.lock" }
+          let(:dependency_files) { project_dependency_files("yarn/git_dependency") }
           let(:latest_allowable_version) do
             "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
           end
@@ -758,8 +712,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency with a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:yarn_lock_fixture_name) { "peer_dependency.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -778,8 +731,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(Gem::Version.new("15.2.0")) }
 
         context "that previously had the peer dependency as a normal dep" do
-          let(:manifest_fixture_name) { "peer_dependency_switch.json" }
-          let(:yarn_lock_fixture_name) { "peer_dependency_switch.lock" }
+          let(:dependency_files) { project_dependency_files("yarn/peer_dependency_switch") }
           let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -815,8 +767,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "updating a dependency that is a peer requirement" do
-        let(:manifest_fixture_name) { "peer_dependency.json" }
-        let(:yarn_lock_fixture_name) { "peer_dependency.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -835,8 +786,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
 
         context "of multiple dependencies" do
-          let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
-          let(:yarn_lock_fixture_name) { "peer_dependency_multiple.lock" }
+          let(:dependency_files) { project_dependency_files("yarn/peer_dependency_multiple") }
           let(:dependency) do
             Dependabot::Dependency.new(
               name: "react",
@@ -861,7 +811,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     subject { resolver.latest_version_resolvable_with_full_unlock? }
 
     context "npm 6: updating a tightly coupled monorepo dep" do
-      let(:dependency_files) { [package_json] }
+      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -907,9 +857,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "npm 6: updating a dependency that is a peer requirement" do
-      let(:dependency_files) { [package_json, npm_lock] }
-      let(:manifest_fixture_name) { "peer_dependency.json" }
-      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -928,8 +876,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it { is_expected.to eq(true) }
 
       context "of multiple dependencies" do
-        let(:manifest_fixture_name) { "peer_dependency_multiple.json" }
-        let(:npm_lock_fixture_name) { "peer_dependency_multiple.json" }
+        let(:dependency_files) { project_dependency_files("npm6/peer_dependency_multiple") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -966,9 +913,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "npm 6: updating a dependency with a peer requirement" do
-      let(:dependency_files) { [package_json, npm_lock] }
-      let(:manifest_fixture_name) { "peer_dependency.json" }
-      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -1113,7 +1058,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     subject { resolver.dependency_updates_from_full_unlock }
 
     context "npm 6: updating a tightly coupled monorepo dep" do
-      let(:dependency_files) { [package_json] }
+      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -1153,7 +1098,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       context "with other parts of the monorepo present" do
-        let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+        let(:dependency_files) { project_dependency_files("npm6/monorepo_dep_multiple_no_lockfile") }
 
         it "gets the right list of dependencies to update" do
           expect(resolver.dependency_updates_from_full_unlock).
@@ -1193,9 +1138,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "npm 6: updating a dependency that is a peer requirement" do
-      let(:dependency_files) { [package_json, npm_lock] }
-      let(:manifest_fixture_name) { "peer_dependency.json" }
-      let(:npm_lock_fixture_name) { "peer_dependency.json" }
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -1301,23 +1244,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "yarn: updating a nested dependency that is a peer requirement" do
-      let(:dependency_files) do
-        [package_json, yarn_lock, nested_package_json, nested_yarn_lock]
-      end
-      let(:manifest_fixture_name) { "package.json" }
-      let(:yarn_lock_fixture_name) { "yarn.lock" }
-      let(:nested_package_json) do
-        Dependabot::DependencyFile.new(
-          name: "packages/package1/package.json",
-          content: fixture("package_files", "nested_peer_dependency.json")
-        )
-      end
-      let(:nested_yarn_lock) do
-        Dependabot::DependencyFile.new(
-          name: "packages/package1/yarn.lock",
-          content: fixture("yarn_lockfiles", "nested_peer_dependency.lock")
-        )
-      end
+      let(:dependency_files) { project_dependency_files("yarn/peer_dependency_nested") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -1370,22 +1297,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "updating duplicate nested dependencies with peer requirements" do
-      let(:dependency_files) do
-        [package_json, nested_package_json, nested_package_json2]
-      end
-      let(:manifest_fixture_name) { "package.json" }
-      let(:nested_package_json) do
-        Dependabot::DependencyFile.new(
-          name: "packages/package1/package.json",
-          content: fixture("package_files", "nested_peer_dependency.json")
-        )
-      end
-      let(:nested_package_json2) do
-        Dependabot::DependencyFile.new(
-          name: "packages/package2/package.json",
-          content: fixture("package_files", "nested_peer_dependency.json")
-        )
-      end
+      let(:dependency_files) { project_dependency_files("npm6/peer_dependency_duplicate_nested_no_lockfile") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "react",
@@ -1407,54 +1319,42 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
 
       it "gets the right list of dependencies to update" do
-        expect(resolver.dependency_updates_from_full_unlock).
-          to match_array(
-            [{
-              dependency: Dependabot::Dependency.new(
-                name: "react",
-                version: nil,
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }, {
-                  file: "packages/package2/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: "15.6.2"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: nil,
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }, {
-                  file: "packages/package2/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: nil
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.6.2"
-            }]
-          )
+        resolved_dependencies = resolver.dependency_updates_from_full_unlock
+        react = resolved_dependencies.find { |d| d[:dependency].name == "react" }
+        react_dom = resolved_dependencies.find { |d| d[:dependency].name == "react-dom" }
+        expect(react[:dependency].requirements).to contain_exactly(
+          {
+            file: "packages/package1/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          },
+          {
+            file: "packages/package2/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: nil
+          }
+        )
+        expect(react_dom[:dependency].requirements).to contain_exactly(
+          {
+            requirement: "15.6.2",
+            file: "packages/package2/package.json",
+            groups: ["dependencies"],
+            source: nil
+          },
+          {
+            requirement: "15.6.2",
+            file: "packages/package1/package.json",
+            groups: ["dependencies"],
+            source: nil
+          }
+        )
       end
     end
 
     context "#dependency_updates_from_full_unlock resolves previous version" do
-      let(:dependency_files) { [package_json] }
-      let(:manifest_fixture_name) { "exact_version_requirements.json" }
+      let(:dependency_files) { project_dependency_files("npm6/exact_version_requirements_no_lockfile") }
       subject do
         resolver.dependency_updates_from_full_unlock.first[:previous_version]
       end
@@ -1491,8 +1391,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "#latest_resolvable_previous_version" do
-      let(:dependency_files) { [package_json] }
-      let(:manifest_fixture_name) { "exact_version_requirements.json" }
+      let(:dependency_files) { project_dependency_files("npm6/exact_version_requirements_no_lockfile") }
       subject do
         resolver.latest_resolvable_previous_version(latest_allowable_version)
       end
