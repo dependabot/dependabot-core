@@ -1,0 +1,19 @@
+name: git_https_with_path
+description: A simple command-line application.
+version: 1.0.0
+homepage: https://www.example.com
+
+environment:
+  sdk: '>=2.10.0 <3.0.0'
+
+dependencies:
+  riverpod:
+    git:
+      url: https://github.com/rrousselGit/river_pod.git
+      path: packages/riverpod
+
+dev_dependencies:
+  freezed:
+    git:
+      url: https://github.com/rrousselGit/freezed.git
+      path: packages/freezed

@@ -1,0 +1,18 @@
+{
+	"name": "pubspec.yaml",
+	"path": "examples/git_ssh_with_path_and_ref/pubspec.yaml",
+	"sha": "5d631a5a9a6355fb2da45f6cf3a2f02775a8c766",
+	"size": 441,
+	"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/git_ssh_with_path_and_ref/pubspec.yaml?ref=main",
+	"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/git_ssh_with_path_and_ref/pubspec.yaml",
+	"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/5d631a5a9a6355fb2da45f6cf3a2f02775a8c766",
+	"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/git_ssh_with_path_and_ref/pubspec.yaml",
+	"type": "file",
+	"content": "bmFtZTogZ2l0X3NzaF93aXRoX3BhdGhfYW5kX3JlZgpkZXNjcmlwdGlvbjog\nQSBzaW1wbGUgY29tbWFuZC1saW5lIGFwcGxpY2F0aW9uLgp2ZXJzaW9uOiAx\nLjAuMApob21lcGFnZTogaHR0cHM6Ly93d3cuZXhhbXBsZS5jb20KCmVudmly\nb25tZW50OgogIHNkazogJz49Mi4xMC4wIDwzLjAuMCcKCmRlcGVuZGVuY2ll\nczoKICByaXZlcnBvZDoKICAgIGdpdDoKICAgICAgdXJsOiBnaXRAZ2l0aHVi\nLmNvbTpycm91c3NlbEdpdC9yaXZlcl9wb2QuZ2l0CiAgICAgIHBhdGg6IHBh\nY2thZ2VzL3JpdmVycG9kCiAgICAgIHJlZjogdjAuMTIuNAoKZGV2X2RlcGVu\nZGVuY2llczoKICBmcmVlemVkOgogICAgZ2l0OgogICAgICB1cmw6IGdpdEBn\naXRodWIuY29tOnJyb3Vzc2VsR2l0L2ZyZWV6ZWQuZ2l0CiAgICAgIHBhdGg6\nIHBhY2thZ2VzL2ZyZWV6ZWQKICAgICAgcmVmOiB2MC4xMi43\n",
+	"encoding": "base64",
+	"_links": {
+	  "self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/git_ssh_with_path_and_ref/pubspec.yaml?ref=main",
+	  "git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/5d631a5a9a6355fb2da45f6cf3a2f02775a8c766",
+	  "html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/git_ssh_with_path_and_ref/pubspec.yaml"
+	}
+  }

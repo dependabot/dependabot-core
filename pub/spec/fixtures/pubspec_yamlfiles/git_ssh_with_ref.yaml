@@ -1,0 +1,19 @@
+name: git_ssh_with_ref
+description: A simple command-line application.
+version: 1.0.0
+homepage: https://www.example.com
+
+environment:
+  sdk: '>=2.10.0 <3.0.0'
+
+dependencies:
+  path:
+    git:
+      url: git@github.com:dart-lang/path.git
+      ref: 1.7.0
+
+dev_dependencies:
+  pedantic:
+    git:
+      url: git@github.com:google/pedantic.git
+      ref: v1.9.1

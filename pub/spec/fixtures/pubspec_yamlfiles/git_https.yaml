@@ -1,0 +1,15 @@
+name: git_https
+description: A simple command-line application.
+version: 1.0.0
+homepage: https://www.example.com
+
+environment:
+  sdk: '>=2.10.0 <3.0.0'
+
+dependencies:
+  path:
+    git: https://github.com/dart-lang/path.git
+
+dev_dependencies:
+  pedantic:
+    git: https://github.com/google/pedantic.git
