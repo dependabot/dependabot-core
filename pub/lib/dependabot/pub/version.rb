@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-# TODO: File and specs need to be updated
-
-# Terraform pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
+# Pub pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
 # converts into 1.0.1.pre.rc1. We override the `to_s` method to stop that
 # alteration.
 #

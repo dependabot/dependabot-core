@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Pub::Version do
       it { is_expected.to eq "1.0.0.pre1" }
     end
 
-    context "with a Terraform-style prerelease" do
+    context "with a Pub-style prerelease" do
       let(:version_string) { "1.0.0-pre1" }
       it { is_expected.to eq "1.0.0-pre1" }
     end
