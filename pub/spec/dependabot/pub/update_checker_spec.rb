@@ -284,7 +284,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
-    context "with a registry dependency" do
+    context "with a hosted dependency" do
       let(:source) do
         {
           type: "hosted",
