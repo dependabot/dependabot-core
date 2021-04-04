@@ -69,7 +69,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout 32ba5d5e617b7d7fb1c9b79c1c0e8f1cfe642cd1 && cd - \
+  && cd /usr/local/.pyenv && git checkout v1.2.25 && cd - \
   && pyenv install 3.9.3 \
   && pyenv install 2.7.18 \
   && pyenv global 3.9.3
