@@ -35,7 +35,7 @@ module Dependabot
 
         pubspec_yaml_files.each do |file|
           DEPENDENCY_TYPES.each do |type|
-            deps = YAML.load(file.content)[type] || {}
+            deps = YAML.safe_load(file.content)[type] || {}
             deps.each do |name, requirement|
               dep = build_dependency(
                 file: file, type: type, name: name, requirement: requirement
@@ -159,7 +159,7 @@ module Dependabot
       end
 
       def lock_file_packages(file)
-        YAML.load(file.content)["packages"] || {}
+        YAML.safe_load(file.content)["packages"] || {}
       end
 
       def pubspec_yaml_files
