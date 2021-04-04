@@ -73,8 +73,8 @@ module Dependabot
         return req if req.fetch(:requirement).nil?
 
         string_req = req.fetch(:requirement).strip
-        ruby_req = requirement_class.new(string_req)
-        return req if ruby_req.satisfied_by?(latest_version)
+        # ruby_req = requirement_class.new(string_req)
+        # return req if ruby_req.satisfied_by?(latest_version)
 
         new_req =
           SharedHelpers.in_a_temporary_directory do

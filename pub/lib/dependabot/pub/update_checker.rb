@@ -21,8 +21,10 @@ module Dependabot
       end
 
       def latest_resolvable_version
-        return latest_version if git_dependency?
-        return latest_resolvable_version_for_hosted_dependency if hosted_dependency?
+        version = latest_version if git_dependency?
+        version = latest_resolvable_version_for_hosted_dependency if hosted_dependency?
+
+        return version unless version == dependency.version
         # Other sources (path dependencies) just return `nil`
       end
 
@@ -33,11 +35,10 @@ module Dependabot
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          # update_strategy: requirements_update_strategy,
-          # updated_source: updated_source,
           latest_version: latest_version,
-          # latest_resolvable_version: latest_resolvable_version,
-          tag_for_latest_version: tag_for_latest_version
+          update_strategy: requirements_update_strategy,
+          tag_for_latest_version: tag_for_latest_version,
+          commit_hash_for_latest_version: commit_hash_for_latest_version
         ).updated_requirements
       end
 
@@ -90,7 +91,7 @@ module Dependabot
 
       def hosted_package_versions
         packages = packages_information["packages"]
-        package = packages.find {|p| p["package"] == dependency.name }
+        package = packages.find { |p| p["package"] == dependency.name }
         package
       end
 
@@ -134,25 +135,27 @@ module Dependabot
         latest_tag
       end
 
-      def updated_source
-        # Never need to update source, unless a git_dependency
-        return dependency_source_details unless git_dependency?
+      def commit_hash_for_latest_version
+        return unless git_commit_checker.git_dependency?
+        return unless git_commit_checker.pinned?
+        return unless git_commit_checker.pinned_ref_looks_like_version?
 
-        # Update the git tag if updating a pinned version
-        if git_commit_checker.pinned_ref_looks_like_version? &&
-           !git_commit_checker.local_tag_for_latest_version.nil?
-          new_tag = git_commit_checker.local_tag_for_latest_version
-          return dependency_source_details.merge(ref: new_tag.fetch(:tag))
-        end
+        latest_commit_hash = git_commit_checker.local_tag_for_latest_version&.
+                     fetch(:commit_sha)
+        latest_tag = git_commit_checker.local_tag_for_latest_version&.
+                     fetch(:tag)
 
-        # Otherwise return the original source
-        dependency_source_details
+        version_rgx = GitCommitChecker::VERSION_REGEX
+        return unless latest_tag.match(version_rgx)
+
+        latest_commit_hash
       end
 
       def library?
-        pubspec = YAML.load(pubspec_files.fetch(:yaml).content)
+        # pubspec = YAML.safe_load(pubspec_files.fetch(:yaml).content)
         # Assume that a library does not have publish_to: none set, apps should set this.
-        @library = pubspec["publish_to"] != "none"
+        # TODO: Check this later how to deal with it
+        @library = false # pubspec["publish_to"] != "none"
       end
 
       def hosted_dependency?

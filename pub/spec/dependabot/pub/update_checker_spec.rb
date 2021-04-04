@@ -103,7 +103,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(fixture("pub_outdated", pubspec_fixture_name + ".json"))
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_shell_command).
+          and_return(fixture("pub_outdated", pubspec_fixture_name + ".json"))
       end
 
       it { is_expected.to eq(Gem::Version.new("2.1.0")) }
@@ -151,7 +153,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return(fixture("pub_outdated", pubspec_fixture_name + ".json"))
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_shell_command).
+          and_return(fixture("pub_outdated", pubspec_fixture_name + ".json"))
       end
 
       it { is_expected.to eq(Gem::Version.new("1.8.0")) }
@@ -189,7 +193,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       it { is_expected.to eq(true) }
     end
 
-    context "with a registry dependency" do
+    context "with a hosted dependency" do
       let(:pubspec_fixture_name) { "hosted" }
       let(:source) do
         {
@@ -197,8 +201,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           url: "https://pub.dartlang.org"
         }
       end
-      let(:version) { nil }
-      let(:requirement) { "> 1.7.0" }
+      let(:requirement) { "^1.7.0" }
 
       before do
         allow(checker).to receive(:latest_version).
@@ -207,11 +210,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
       it { is_expected.to eq(true) }
 
-      # context "when the requirement is already up-to-date" do
-      #   let(:requirement) { "> 1.8.0" }
-      #   it { is_expected.to be_falsey }
-      # end
+      context "when the requirement is already up-to-date" do
+        let(:requirement) { "^1.8.0" }
+        let(:version) { "1.8.0" }
+        it { is_expected.to be_falsey }
+      end
 
+      # TODO: Figure out what that :none is about :D
       # context "when no requirements can be unlocked" do
       #   subject { checker.can_update?(requirements_to_unlock: :none) }
       #   it { is_expected.to be_falsey }
@@ -223,31 +228,34 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     subject(:updated_requirements) { checker.updated_requirements }
 
     context "with a git dependency" do
+      let(:pubspec_fixture_name) { "git_ssh_with_ref" }
       let(:source) do
         {
           type: "git",
-          url: "https://github.com/cloudposse/pub-null-label.git",
+          url: "git@github.com:dart-lang/path.git",
+          path: ".",
           branch: nil,
-          ref: ref
+          ref: ref,
+          resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b"
         }
       end
-      let(:ref) { "tags/0.3.7" }
+      let(:ref) { "1.7.0" }
 
       before do
-        git_url = "https://github.com/cloudposse/pub-null-label.git"
+        git_url = "https://github.com/dart-lang/path.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
         stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
           to_return(
             status: 200,
-            body: fixture("git", "upload_packs", "pub-null-label"),
+            body: fixture("git", "upload_packs", "pub-path-label"),
             headers: git_header
           )
       end
 
       context "with a reference" do
-        let(:ref) { "tags/0.3.7" }
+        let(:ref) { "1.7.0" }
 
         it "updates the reference" do
           expect(updated_requirements).
@@ -255,12 +263,14 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
               [{
                 requirement: nil,
                 groups: [],
-                file: "main.tf",
+                file: "pubspec.yaml",
                 source: {
                   type: "git",
-                  url: "https://github.com/cloudposse/pub-null-label.git",
+                  url: "git@github.com:dart-lang/path.git",
+                  path: ".",
                   branch: nil,
-                  ref: "tags/0.4.1"
+                  ref: "1.8.0",
+                  resolved_ref: "407ab76187fade41c31e39c745b39661b710106c"
                 }
               }]
             )
@@ -268,12 +278,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       context "without a reference" do
-        let(:ref) { nil }
-        it { is_expected.to eq(requirements) }
-      end
-
-      context "with a git SHA as the latest version" do
-        let(:ref) { "master" }
+        let(:pubspec_fixture_name) { "git_ssh" }
+        let(:ref) { "HEAD" }
         it { is_expected.to eq(requirements) }
       end
     end
@@ -281,58 +287,36 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     context "with a registry dependency" do
       let(:source) do
         {
-          type: "registry",
-          registry_hostname: "registry.pub.io",
-          module_identifier: "hashicorp/consul/aws"
+          type: "hosted",
+          url: "https://pub.dartlang.org"
         }
       end
-      let(:requirement) { "~> 0.2.1" }
+      let(:requirement) { "^1.7.0" }
 
       before do
         allow(checker).to receive(:latest_version).
-          and_return(Gem::Version.new("0.3.8"))
+          and_return(Gem::Version.new("1.8.0"))
       end
 
       it "updates the requirement" do
         expect(updated_requirements).
           to eq(
             [{
-              requirement: "~> 0.3.8",
+              requirement: "^1.8.0",
               groups: [],
-              file: "main.tf",
+              file: "pubspec.yaml",
               source: {
-                type: "registry",
-                registry_hostname: "registry.pub.io",
-                module_identifier: "hashicorp/consul/aws"
+                type: "hosted",
+                url: "https://pub.dartlang.org"
               }
             }]
           )
       end
 
       context "when the requirement is already up-to-date" do
-        let(:requirement) { "~> 0.3.1" }
+        let(:requirement) { "^1.8.0" }
         it { is_expected.to eq(requirements) }
       end
-    end
-  end
-
-  describe "#requirements_unlocked_or_can_be?" do
-    subject { checker.requirements_unlocked_or_can_be? }
-
-    it { is_expected.to eq(true) }
-
-    context "with a source that came from an http proxy" do
-      let(:source) do
-        {
-          type: "git",
-          url: "https://github.com/cloudposse/pub-null-label.git",
-          branch: nil,
-          ref: "tags/0.3.7",
-          proxy_url: "https://my.example.com"
-        }
-      end
-
-      it { is_expected.to eq(false) }
     end
   end
 end
