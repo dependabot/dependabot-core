@@ -86,15 +86,9 @@ module Dependabot
       end
 
       def requirement_for(requirement)
-        if requirement.is_a?(String)
-          return SharedHelpers.in_a_temporary_directory do
-            SharedHelpers.run_helper_subprocess(
-              command: "#{NativeHelpers.helper_path}",
-              function: "version_parser",
-              args: ["--version", requirement]
-            )
-          end
-        elsif requirement.is_a?(Hash) && requirement.key?("git")
+        return requirement if requirement.is_a?(String)
+
+        if requirement.is_a?(Hash) && requirement.key?("git")
           git = requirement["git"]
 
           return "git:#{git}" if git.is_a?(String)

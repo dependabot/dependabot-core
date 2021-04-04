@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
           [{
-            requirement: ">= 1.7.0 and < 2.0.0-0",
+            requirement: "^1.7.0",
             groups: ["dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("path")
-          expect(dependency.version).to eq("1.8.0")
+          expect(dependency.version).to eq("1.7.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies[1] }
         let(:expected_requirements) do
           [{
-            requirement: ">= 1.9.0 and < 2.0.0-0",
+            requirement: "^1.9.0",
             groups: ["dev_dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("pedantic")
-          expect(dependency.version).to eq("1.11.0")
+          expect(dependency.version).to eq("1.9.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -126,7 +126,9 @@ RSpec.describe Dependabot::Pub::FileParser do
             source: {
               type: "git",
               url: "git@github.com:dart-lang/path.git",
-              resolved_ref: "49a015d612541e549cfbe657ef48145ca32a98f8",
+              ref: "HEAD",
+              resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b",
+              branch: nil,
               path: "."
             }
           }]
@@ -135,7 +137,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("path")
-          expect(dependency.version).to eq("1.8.1-dev")
+          expect(dependency.version).to eq("1.7.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -150,7 +152,9 @@ RSpec.describe Dependabot::Pub::FileParser do
             source: {
               type: "git",
               url: "git@github.com:google/pedantic.git",
-              resolved_ref: "66f2f6c27581c7936482e83be80b27be2719901c",
+              ref: "HEAD",
+              resolved_ref: "2574dd14cabfe718a3bd4ef6651a9d6455e29fcb",
+              branch: nil,
               path: "."
             }
           }]
@@ -159,7 +163,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("pedantic")
-          expect(dependency.version).to eq("1.11.0")
+          expect(dependency.version).to eq("1.9.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -179,7 +183,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "git@github.com:rrousselGit/river_pod.git",
+                ref: "HEAD",
                 resolved_ref: "843adaa56bc34d617b07b14bdf4570afb907ee77",
+                branch: nil,
                 path: "packages/riverpod"
               }
             }]
@@ -203,7 +209,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "git@github.com:rrousselGit/freezed.git",
+                ref: "HEAD",
                 resolved_ref: "cd29a64c3369bff6ccbe794c323b995adf15ac6a",
+                branch: nil,
                 path: "packages/freezed"
               }
             }]
@@ -235,6 +243,7 @@ RSpec.describe Dependabot::Pub::FileParser do
                 url: "git@github.com:dart-lang/path.git",
                 ref: "1.7.0",
                 resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b",
+                branch: nil,
                 path: "."
               }
             }]
@@ -258,7 +267,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "git@github.com:google/pedantic.git",
+                ref: "v1.9.1",
                 resolved_ref: "d7fe6f0ca73a10542f3d7abed1818dd0a0693dd4",
+                branch: nil,
                 path: "."
               }
             }]
@@ -290,6 +301,7 @@ RSpec.describe Dependabot::Pub::FileParser do
                 url: "git@github.com:rrousselGit/river_pod.git",
                 ref: "v0.12.4",
                 resolved_ref: "97e31d3481b68e4293408b4eef99dc7916dc8147",
+                branch: nil,
                 path: "packages/riverpod"
               }
             }]
@@ -313,7 +325,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "git@github.com:rrousselGit/freezed.git",
+                ref: "v0.12.7",
                 resolved_ref: "2fe149026c3edf4735641255923157fded532b0b",
+                branch: nil,
                 path: "packages/freezed"
               }
             }]
@@ -344,7 +358,9 @@ RSpec.describe Dependabot::Pub::FileParser do
             source: {
               type: "git",
               url: "https://github.com/dart-lang/path.git",
+              ref: "HEAD",
               resolved_ref: "49a015d612541e549cfbe657ef48145ca32a98f8",
+              branch: nil,
               path: "."
             }
           }]
@@ -368,7 +384,9 @@ RSpec.describe Dependabot::Pub::FileParser do
             source: {
               type: "git",
               url: "https://github.com/google/pedantic.git",
+              ref: "HEAD",
               resolved_ref: "66f2f6c27581c7936482e83be80b27be2719901c",
+              branch: nil,
               path: "."
             }
           }]
@@ -397,7 +415,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/rrousselGit/river_pod.git",
+                ref: "HEAD",
                 resolved_ref: "843adaa56bc34d617b07b14bdf4570afb907ee77",
+                branch: nil,
                 path: "packages/riverpod"
               }
             }]
@@ -421,7 +441,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/rrousselGit/freezed.git",
+                ref: "HEAD",
                 resolved_ref: "cd29a64c3369bff6ccbe794c323b995adf15ac6a",
+                branch: nil,
                 path: "packages/freezed"
               }
             }]
@@ -453,6 +475,7 @@ RSpec.describe Dependabot::Pub::FileParser do
                 url: "https://github.com/dart-lang/path.git",
                 ref: "1.7.0",
                 resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b",
+                branch: nil,
                 path: "."
               }
             }]
@@ -476,7 +499,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/google/pedantic.git",
+                ref: "v1.9.1",
                 resolved_ref: "d7fe6f0ca73a10542f3d7abed1818dd0a0693dd4",
+                branch: nil,
                 path: "."
               }
             }]
@@ -508,6 +533,7 @@ RSpec.describe Dependabot::Pub::FileParser do
                 url: "https://github.com/rrousselGit/river_pod.git",
                 ref: "v0.12.4",
                 resolved_ref: "97e31d3481b68e4293408b4eef99dc7916dc8147",
+                branch: nil,
                 path: "packages/riverpod"
               }
             }]
@@ -531,7 +557,9 @@ RSpec.describe Dependabot::Pub::FileParser do
               source: {
                 type: "git",
                 url: "https://github.com/rrousselGit/freezed.git",
+                ref: "v0.12.7",
                 resolved_ref: "2fe149026c3edf4735641255923157fded532b0b",
+                branch: nil,
                 path: "packages/freezed"
               }
             }]
