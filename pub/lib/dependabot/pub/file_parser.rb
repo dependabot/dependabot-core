@@ -89,7 +89,7 @@ module Dependabot
         if requirement.is_a?(String)
           return SharedHelpers.in_a_temporary_directory do
             SharedHelpers.run_helper_subprocess(
-              command: "#{NativeHelpers.helper_path} version --version \"#{requirement}\"",
+              command: "#{NativeHelpers.helper_path}",
               function: "version_parser",
               args: ["--version", requirement]
             )

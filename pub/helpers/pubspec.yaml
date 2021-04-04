@@ -10,4 +10,7 @@ dev_dependencies:
   pedantic: ^1.9.0
 dependencies: 
   args: ^2.0.0
-  pub_semver: ^2.0.0
+  pub_semver:
+    git:
+      url: https://github.com/simpleclub-extended/pub_semver.git
+      ref: upgrade-constraints

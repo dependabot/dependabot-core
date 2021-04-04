@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       it { is_expected.to eq(true) }
     end
 
-    context "with a registry dependency", :focus do
+    context "with a registry dependency" do
       let(:pubspec_fixture_name) { "hosted" }
       let(:source) do
         {

@@ -5,28 +5,34 @@
 require "dependabot/utils"
 require "dependabot/pub/version"
 
-# Just ensures that Terraform requirements use Terraform versions
+# Override all essential methods to make it possible to delegate all work to the
+# dedicated Dart library for parsing and updating Dart version constraints.
 module Dependabot
   module Pub
     class Requirement < Gem::Requirement
+      def initialize(requirements)
+        @requirements = requirements.to_s
+      end
+
       def self.parse(obj)
-        return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
-
-        unless (matches = PATTERN.match(obj.to_s))
-          msg = "Illformed requirement [#{obj.inspect}]"
-          raise BadRequirementError, msg
-        end
-
-        return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
-
-        [matches[1] || "=", Terraform::Version.new(matches[2])]
+        obj.to_s
       end
 
       # For consistency with other langauges, we define a requirements array.
-      # Terraform doesn't have an `OR` separator for requirements, so it
+      # Pub doesn't have an `OR` separator for requirements, so it
       # always contains a single element.
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
+      end
+
+      def satisfied_by?(version)
+        SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path.to_s,
+            function: "requirement_checker",
+            args: ["--requirement", requirements, "--version", version.to_s]
+          )
+        end
       end
     end
   end

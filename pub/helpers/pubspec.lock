@@ -25,9 +25,11 @@ packages:
   pub_semver:
     dependency: "direct main"
     description:
-      name: pub_semver
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.0"
+      path: "."
+      ref: upgrade-constraints
+      resolved-ref: "127a31dd677f89deeb32ae067ff3a43ba1e659cd"
+      url: "https://github.com/simpleclub-extended/pub_semver.git"
+    source: git
+    version: "2.1.0"
 sdks:
   dart: ">=2.12.0 <3.0.0"
