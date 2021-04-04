@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
           [{
-            requirement: "git:git@github.com:dart-lang/path.git",
+            requirement: "git@github.com:dart-lang/path.git",
             groups: ["dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -146,7 +146,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies[1] }
         let(:expected_requirements) do
           [{
-            requirement: "git:git@github.com:google/pedantic.git",
+            requirement: "git@github.com:google/pedantic.git",
             groups: ["dev_dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:rrousselGit/river_pod.git/packages/riverpod",
+              requirement: "git@github.com:rrousselGit/river_pod.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:rrousselGit/freezed.git/packages/freezed",
+              requirement: "git@github.com:rrousselGit/freezed.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:dart-lang/path.git#1.7.0",
+              requirement: "git@github.com:dart-lang/path.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:google/pedantic.git#v1.9.1",
+              requirement: "git@github.com:google/pedantic.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:rrousselGit/river_pod.git/packages/riverpod#v0.12.4",
+              requirement: "git@github.com:rrousselGit/river_pod.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:git@github.com:rrousselGit/freezed.git/packages/freezed#v0.12.7",
+              requirement: "git@github.com:rrousselGit/freezed.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies.first }
         let(:expected_requirements) do
           [{
-            requirement: "git:https://github.com/dart-lang/path.git",
+            requirement: "https://github.com/dart-lang/path.git",
             groups: ["dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -378,7 +378,7 @@ RSpec.describe Dependabot::Pub::FileParser do
         subject(:dependency) { dependencies[1] }
         let(:expected_requirements) do
           [{
-            requirement: "git:https://github.com/google/pedantic.git",
+            requirement: "https://github.com/google/pedantic.git",
             groups: ["dev_dependencies"],
             file: "pubspec.yaml",
             source: {
@@ -409,7 +409,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/rrousselGit/river_pod.git/packages/riverpod",
+              requirement: "https://github.com/rrousselGit/river_pod.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/rrousselGit/freezed.git/packages/freezed",
+              requirement: "https://github.com/rrousselGit/freezed.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -467,7 +467,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/dart-lang/path.git#1.7.0",
+              requirement: "https://github.com/dart-lang/path.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/google/pedantic.git#v1.9.1",
+              requirement: "https://github.com/google/pedantic.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -525,7 +525,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies.first }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/rrousselGit/river_pod.git/packages/riverpod#v0.12.4",
+              requirement: "https://github.com/rrousselGit/river_pod.git",
               groups: ["dependencies"],
               file: "pubspec.yaml",
               source: {
@@ -551,7 +551,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           subject(:dependency) { dependencies[1] }
           let(:expected_requirements) do
             [{
-              requirement: "git:https://github.com/rrousselGit/freezed.git/packages/freezed#v0.12.7",
+              requirement: "https://github.com/rrousselGit/freezed.git",
               groups: ["dev_dependencies"],
               file: "pubspec.yaml",
               source: {

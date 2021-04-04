@@ -91,17 +91,11 @@ module Dependabot
         if requirement.is_a?(Hash) && requirement.key?("git")
           git = requirement["git"]
 
-          return "git:#{git}" if git.is_a?(String)
+          return "#{git}" if git.is_a?(String)
 
           url = git["url"]
-          path = git["path"]
-          ref = git["ref"]
 
-          req = "git:#{url}"
-          req += "/#{path}" if path
-          req += "##{ref}" if ref
-
-          return req
+          return url
         end
 
         nil

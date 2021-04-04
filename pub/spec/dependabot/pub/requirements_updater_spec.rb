@@ -4,7 +4,7 @@ require "spec_helper"
 require "dependabot/pub/version"
 require "dependabot/pub/requirements_updater"
 
-RSpec.describe Dependabot::Pub::RequirementsUpdater, :focus do
+RSpec.describe Dependabot::Pub::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
