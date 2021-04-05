@@ -186,9 +186,8 @@ ENV PUB_CACHE=/opt/dart-sdk/.pub-cache \
   PATH="${PATH}:/opt/dart-sdk/bin"
 RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-x64-release.zip" > "${HOME}/dartsdk.zip" \
   && unzip "${HOME}/dartsdk.zip" -d "/opt" > /dev/null \
-  && rm "${HOME}/dartsdk.zip"
-
-RUN dart --version
+  && rm "${HOME}/dartsdk.zip" \
+  && dart --version
 
 ### NEW NATIVE HELPERS
 
