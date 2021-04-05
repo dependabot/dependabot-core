@@ -4,7 +4,7 @@ module Dependabot
   module Pub
     module NativeHelpers
       def self.helper_path
-        "dart run #{File.join(native_helpers_root, './bin/run.dart')}"
+        "dart --no-sound-null-safety run #{File.join(native_helpers_root, './bin/run.dart')}"
       end
 
       def self.native_helpers_root
