@@ -16,7 +16,7 @@ module Dependabot
       def look_up_source
         case new_source_type
         when "git" then find_source_from_git_url
-        when "registry" then find_source_from_registry_details
+        when "hosted" then find_source_from_hosted_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -38,29 +38,38 @@ module Dependabot
         Source.from_url(url)
       end
 
-      # Registry API docs:
-      # https://www.terraform.io/docs/registry/api.html
-      def find_source_from_registry_details
+      # Hosted Pub Repository API docs:
+      # https://github.com/dart-lang/pub/blob/master/doc/repository-spec-v2.md
+      def find_source_from_hosted_details
         info = dependency.requirements.map { |r| r[:source] }.compact.first
 
-        hostname = info[:registry_hostname] || info["registry_hostname"]
+        hostname = info[:url] || info["url"]
 
-        # TODO: Implement service discovery for custom registries
-        return unless hostname == "registry.pub.io"
-
-        url = "https://registry.pub.io/v1/modules/"\
-              "#{dependency.name}/#{dependency.version}"
+        url = "#{hostname}/api/packages/"\
+              "#{dependency.name}"
 
         response = Excon.get(
           url,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(
+            {
+              headers: {
+                accept: "application/vnd.pub.v2+json"
+                # TODO: Condier adding X-Pub-Headers (https://github.com/dart-lang/pub/blob/master/doc/repository-spec-v2.md)
+              }
+            }
+          )
         )
 
-        raise "Response from registry was #{response.status}" unless response.status == 200
+        raise "Response from hosted pub repository was #{response.status}" unless response.status == 200
 
-        source_url = JSON.parse(response.body).fetch("source")
-        Source.from_url(source_url) if source_url
+        latest_version = JSON.parse(response.body).fetch("latest", nil)
+        pubspec = latest_version.fetch("pubspec", nil) if latest_version
+        repository = pubspec.fetch("repository", nil) if pubspec
+        homepage = pubspec.fetch("homepage", nil) if pubspec
+
+        return Source.from_url(repository) if repository
+        return Source.from_url(homepage) if homepage
       end
     end
   end

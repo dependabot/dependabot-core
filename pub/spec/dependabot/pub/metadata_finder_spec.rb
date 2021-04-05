@@ -5,34 +5,38 @@ require "dependabot/dependency"
 require "dependabot/pub/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::Pub::MetadataFinder do
+RSpec.describe Dependabot::Pub::MetadataFinder, :focus do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "origin_label",
-      version: "tags/0.4.1",
-      previous_version: nil,
+      name: "path",
+      version: "1.8.0",
+      previous_version: "1.7.0",
       requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
+        requirement: "git@github.com:dart-lang/path.git",
+        groups: ["dependencies"],
+        file: "pubspec.yaml",
         source: {
           type: "git",
-          url: "https://github.com/cloudposse/pub-null.git",
+          url: "git@github.com:dart-lang/path.git",
+          path: ".",
           branch: nil,
-          ref: "tags/0.4.1"
+          ref: "1.8.0",
+          resolved_ref: "407ab76187fade41c31e39c745b39661b710106c"
         }
       }],
       previous_requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
+        requirement: "git@github.com:dart-lang/path.git",
+        groups: ["dependencies"],
+        file: "pubspec.yaml",
         source: {
           type: "git",
-          url: "https://github.com/cloudposse/pub-null.git",
+          url: "git@github.com:dart-lang/path.git",
+          path: ".",
           branch: nil,
-          ref: "tags/0.3.7"
+          ref: "1.7.0",
+          resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b"
         }
       }],
       package_manager: "pub"
@@ -49,56 +53,54 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
       "password" => "token"
     }]
   end
-  let(:dependency_name) { "rtfeldman/elm-css" }
+  let(:dependency_name) { "path" }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    it { is_expected.to eq("https://github.com/cloudposse/pub-null") }
+    it { is_expected.to eq("https://github.com/dart-lang/path") }
 
-    context "with a registry-based dependency" do
+    context "with a hosted dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "hashicorp/consul/aws",
-          version: "0.3.8",
-          previous_version: "0.1.0",
+          name: "path",
+          version: "1.8.0",
+          previous_version: "1.7.0",
           requirements: [{
-            requirement: "0.3.8",
-            groups: [],
-            file: "main.tf",
+            requirement: "^1.8.0",
+            groups: ["dependencies"],
+            file: "pubspec.yaml",
             source: {
-              type: "registry",
-              registry_hostname: "registry.pub.io",
-              module_identifier: "hashicorp/consul/aws"
+              type: "hosted",
+              url: "https://pub.dartlang.org"
             }
           }],
           previous_requirements: [{
-            requirement: "0.1.0",
-            groups: [],
-            file: "main.tf",
+            requirement: "^1.7.0",
+            groups: ["dependencies"],
+            file: "pubspec.yaml",
             source: {
-              type: "registry",
-              registry_hostname: "registry.pub.io",
-              module_identifier: "hashicorp/consul/aws"
+              type: "hosted",
+              url: "https://pub.dartlang.org"
             }
           }],
           package_manager: "pub"
         )
       end
 
-      let(:registry_url) do
-        "https://registry.pub.io/v1/modules/hashicorp/consul/aws/0.3.8"
+      let(:hosted_url) do
+        "https://pub.dartlang.org/api/packages/path"
       end
-      let(:registry_response) do
-        fixture("registry_responses", "hashicorp_consul_aws_0.3.8.json")
+      let(:hosted_response) do
+        fixture("hosted_responses", "path_versions.json")
       end
       before do
-        stub_request(:get, registry_url).
-          to_return(status: 200, body: registry_response)
+        stub_request(:get, hosted_url).
+          to_return(status: 200, body: hosted_response)
       end
 
       it do
-        is_expected.to eq("https://github.com/hashicorp/pub-aws-consul")
+        is_expected.to eq("https://github.com/dart-lang/path")
       end
     end
   end
