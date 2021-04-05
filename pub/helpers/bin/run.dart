@@ -2,21 +2,25 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:deep_pick/deep_pick.dart';
 import 'package:pub_semver/pub_semver.dart';
+
+import 'file_updater.dart';
 
 void main(List<String> arguments) async {
   exitCode = 0;
   final runner = CommandRunner('pub-helper', 'A pub helper for dependabot')
     ..addCommand(VersionParserCommand())
     ..addCommand(RequirementCheckerCommand())
-    ..addCommand(RequirementUpdaterCommand());
+    ..addCommand(RequirementUpdaterCommand())
+    ..addCommand(FileUpdaterCommand());
   if (arguments.isEmpty) {
     final inputLine =
         stdin.readLineSync(encoding: Encoding.getByName('utf-8')!);
     final input = jsonDecode(inputLine!);
     final result = await runner.run([
-      input['function'] as String,
-      ...List<String?>.from(input['args']).whereType<String>(),
+      pick(input, 'function').asStringOrThrow(),
+      ...pick(input, 'args').asListOrThrow((pick) => pick.asStringOrThrow()),
     ]);
     stdout.write(jsonEncode({'result': result}));
   } else {
@@ -153,6 +157,63 @@ class RequirementUpdaterCommand extends Command {
       stderr.writeln(e.message);
       exitCode = 2;
       return null;
+    }
+  }
+}
+
+class FileUpdaterCommand extends Command {
+  FileUpdaterCommand() {
+    argParser.addOption(
+      'type',
+      allowed: ['yaml', 'lock'],
+    );
+    argParser.addOption('content');
+    argParser.addOption('dependency');
+    argParser.addOption('version');
+    argParser.addOption('requirement');
+  }
+
+  @override
+  String name = 'file_updater';
+
+  @override
+  String description = 'Updates a given pubspec file with the requirement';
+
+  @override
+  String? run() {
+    final type = argResults?['type'];
+    final content = argResults?['content'];
+    final dependency = argResults?['dependency'];
+    final version = argResults?['version'];
+    final stringRequirement = argResults?['requirement'];
+    if (content == null ||
+        stringRequirement == null ||
+        version == null ||
+        type == null) {
+      stderr.writeln(
+        'error: --type, --content, --dependency, --version, and --requirement must be set',
+      );
+      exitCode = 2;
+      return null;
+    }
+    final requirement = Requirement.fromMap(jsonDecode(stringRequirement));
+    switch (type) {
+      case 'yaml':
+        return updatePubspecYamlFile(
+          content,
+          dependency,
+          version,
+          requirement,
+        );
+      case 'lock':
+        return updatePubspecLockFile(
+          content,
+          dependency,
+          version,
+          requirement,
+        );
+      default:
+        throw UnimplementedError('--type $type is not handled');
     }
   }
 }
