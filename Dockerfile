@@ -181,9 +181,14 @@ RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup defa
 ### DART
 
 # Install Dart 
-RUN wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list \
-  && apt-get install dart
+ENV PUB_CACHE=/opt/dart-sdk/.pub-cache \
+  PATH="${PATH}:/opt/dart-sdk/.pub-cache/bin" \
+  PATH="${PATH}:/opt/dart-sdk/bin"
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-x64-release.zip" > "${HOME}/dartsdk.zip" \
+  && unzip "${HOME}/dartsdk.zip" -d "/opt" > /dev/null \
+  && rm "${HOME}/dartsdk.zip"
+
+RUN dart --version
 
 ### NEW NATIVE HELPERS
 

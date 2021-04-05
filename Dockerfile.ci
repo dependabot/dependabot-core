@@ -29,9 +29,9 @@ RUN mkdir -p \
   ${CODE_DIR}/npm_and_yarn \
   ${CODE_DIR}/nuget \
   ${CODE_DIR}/omnibus \
+  ${CODE_DIR}/pub \
   ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform \
-  ${CODE_DIR}/pub
+  ${CODE_DIR}/terraform
 
 COPY common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/version.rb
 COPY common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
