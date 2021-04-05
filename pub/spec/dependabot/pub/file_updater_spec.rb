@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       credentials: credentials
     )
   end
-  let(:files) { [terraform_config, irrelevant_config] }
+  let(:files) { [pubspec_yaml, pubspec_lock] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -25,44 +25,50 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:irrelevant_config) do
+  let(:pubspec_lock) do
     Dependabot::DependencyFile.new(
-      name: "other.tf",
-      content: fixture("config_files", "registry.tf")
+      name: "pubspec.lock",
+      content: pubspec_lock_content
     )
   end
-  let(:terraform_config) do
+  let(:pubspec_yaml) do
     Dependabot::DependencyFile.new(
-      name: "main.tf",
-      content: terraform_body
+      name: "pubspec.yaml",
+      content: pubspec_yaml_content
     )
   end
-  let(:terraform_body) { fixture("config_files", "git_tags.tf") }
+  let(:pubspec_yaml_content) { fixture("pubspec_yamlfiles", pubspec_fixture_name + ".yaml") }
+  let(:pubspec_lock_content) { fixture("pubspec_lockfiles", pubspec_fixture_name + ".lock") }
+  let(:pubspec_fixture_name) { "git_ssh_with_ref" }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "origin_label",
-      version: "0.4.1",
-      previous_version: "0.3.7",
+      name: "path",
+      version: "1.8.0",
+      previous_version: "1.7.0",
       requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
+        requirement: "git@github.com:dart-lang/path.git",
+        groups: ["dependencies"],
+        file: "pubspec.yaml",
         source: {
           type: "git",
-          url: "https://github.com/cloudposse/pub-null-label.git",
+          url: "git@github.com:dart-lang/path.git",
+          path: ".",
           branch: nil,
-          ref: "tags/0.4.1"
+          ref: "1.8.0",
+          resolved_ref: "407ab76187fade41c31e39c745b39661b710106c"
         }
       }],
       previous_requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
+        requirement: "git@github.com:dart-lang/path.git",
+        groups: ["dependencies"],
+        file: "pubspec.yaml",
         source: {
           type: "git",
-          url: "https://github.com/cloudposse/pub-null-label.git",
+          url: "git@github.com:dart-lang/path.git",
+          path: ".",
           branch: nil,
-          ref: "tags/0.3.7"
+          ref: "1.7.0",
+          resolved_ref: "10c778c799b2fc06036cbd0aa0e399ad4eb1ff5b"
         }
       }],
       package_manager: "pub"
@@ -76,122 +82,133 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    its(:length) { is_expected.to eq(1) }
+    its(:length) { is_expected.to eq(2) }
 
     describe "the updated file" do
-      subject(:updated_file) { updated_files.find { |f| f.name == "main.tf" } }
+      subject(:updated_pubspec_yaml) do
+        file = updated_files.find { |f| f.name == "pubspec.yaml" }
+        YAML.safe_load(file.content, symbolize_names: true)
+      end
+      subject(:updated_pubspec_lock) do
+        file = updated_files.find { |f| f.name == "pubspec.lock" }
+        YAML.safe_load(file.content, symbolize_names: true)
+      end
 
       context "with a git dependency" do
-        it "updates the requirement" do
-          expect(updated_file.content).to include(
-            "module \"origin_label\" {\n"\
-            "  source     = \"git::https://github.com/cloudposse/"\
-            "pub-null-label.git?ref=tags/0.4.1\"\n"
-          )
+        let(:expected_package_yaml) do
+          {
+            git: {
+              url: "git@github.com:dart-lang/path.git",
+              ref: "1.8.0"
+            }
+          }
+        end
+        let(:expected_package_lock) do
+          {
+            dependency: "direct main",
+            description: {
+              path: ".",
+              ref: "1.8.0",
+              "resolved-ref": "407ab76187fade41c31e39c745b39661b710106c",
+              url: "git@github.com:dart-lang/path.git"
+            },
+            source: "git",
+            version: "1.8.0"
+          }
         end
 
-        it "doesn't update the duplicate" do
-          expect(updated_file.content).to include(
-            "module \"duplicate_label\" {\n"\
-            "  source     = \"git::https://github.com/cloudposse/"\
-            "pub-null-label.git?ref=tags/0.3.7\"\n"
-          )
+        it "updates the yaml file" do
+          expect(updated_pubspec_yaml[:dependencies][:path]).to eq(expected_package_yaml)
+        end
+
+        it "updates the lock file" do
+          expect(updated_pubspec_lock[:packages][:path]).to eq(expected_package_lock)
         end
       end
 
-      context "with a registry dependency" do
-        let(:terraform_body) do
-          fixture("config_files", "registry.tf")
-        end
+      context "with a hosted dependency" do
+        let(:pubspec_fixture_name) { "hosted" }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "hashicorp/consul/aws",
-            version: "0.3.1",
-            previous_version: "0.1.0",
+            name: "path",
+            version: "1.8.0",
+            previous_version: "1.7.0",
             requirements: [{
-              requirement: "0.3.1",
-              groups: [],
-              file: "main.tf",
+              requirement: "^1.8.0",
+              groups: ["dependencies"],
+              file: "pubspec.yaml",
               source: {
-                type: "registry",
-                registry_hostname: "registry.pub.io",
-                module_identifier: "hashicorp/consul/aws"
+                type: "hosted",
+                url: "https://pub.dartlang.org"
               }
             }],
             previous_requirements: [{
-              requirement: "0.1.0",
-              groups: [],
-              file: "main.tf",
+              requirement: "^1.7.0",
+              groups: ["dependencies"],
+              file: "pubspec.yaml",
               source: {
-                type: "registry",
-                registry_hostname: "registry.pub.io",
-                module_identifier: "hashicorp/consul/aws"
+                type: "hosted",
+                url: "https://pub.dartlang.org"
               }
             }],
             package_manager: "pub"
           )
         end
 
-        it "updates the requirement" do
-          expect(updated_file.content).to include(
-            "module \"consul\" {\n"\
-            "  source = \"hashicorp/consul/aws\"\n"\
-            "  version = \"0.3.1\"\n"\
-            "}"
-          )
+        let(:expected_package_yaml) { "^1.8.0" }
+        let(:expected_package_lock) do
+          {
+            dependency: "direct main",
+            description: {
+              name: "path",
+              url: "https://pub.dartlang.org"
+            },
+            source: "hosted",
+            version: "1.8.0"
+          }
+        end
+
+        it "updates the yaml file" do
+          expect(updated_pubspec_yaml[:dependencies][:path]).to eq(expected_package_yaml)
+        end
+
+        it "updates the lock file" do
+          expect(updated_pubspec_lock[:packages][:path]).to eq(expected_package_lock)
         end
       end
+    end
 
-      context "with a terragrunt file" do
-        subject(:updated_file) do
-          updated_files.find { |f| f.name == "main.tfvars" }
-        end
+    describe "with unchanged dependencies" do
+      let(:pubspec_fixture_name) { "hosted" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "path",
+          version: "1.7.0",
+          previous_version: "1.7.0",
+          requirements: [{
+            requirement: "^1.7.0",
+            groups: ["dependencies"],
+            file: "pubspec.yaml",
+            source: {
+              type: "hosted",
+              url: "https://pub.dartlang.org"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "^1.7.0",
+            groups: ["dependencies"],
+            file: "pubspec.yaml",
+            source: {
+              type: "hosted",
+              url: "https://pub.dev"
+            }
+          }],
+          package_manager: "pub"
+        )
+      end
 
-        let(:files) { [terragrunt_config, irrelevant_config] }
-        let(:terragrunt_config) do
-          Dependabot::DependencyFile.new(
-            name: "main.tfvars",
-            content: fixture("config_files", "terragrunt.tfvars")
-          )
-        end
-
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "gruntwork-io/modules-example",
-            version: "0.0.5",
-            previous_version: "0.0.2",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "main.tfvars",
-              source: {
-                type: "git",
-                url: "git@github.com:gruntwork-io/modules-example.git",
-                branch: nil,
-                ref: "v0.0.5"
-              }
-            }],
-            previous_requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "main.tfvars",
-              source: {
-                type: "git",
-                url: "git@github.com:gruntwork-io/modules-example.git",
-                branch: nil,
-                ref: "v0.0.2"
-              }
-            }],
-            package_manager: "pub"
-          )
-        end
-
-        it "updates the requirement" do
-          expect(updated_file.content).to include(
-            "source = \"git::git@github.com:gruntwork-io/modules-example.git//"\
-            "consul?ref=v0.0.5\""
-          )
-        end
+      it "raises an error" do
+        expect { updater.updated_dependency_files }.to raise_error(RuntimeError, "Content didn't change!")
       end
     end
   end

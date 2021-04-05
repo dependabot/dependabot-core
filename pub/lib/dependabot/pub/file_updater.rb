@@ -17,19 +17,19 @@ module Dependabot
         updated_files = []
 
         pubspec_file_pairs.each do |files|
-          next unless file_changed?(files.yaml) || file_changed?(files.lock)
+          next unless file_changed?(files[:yaml]) || file_changed?(files[:lock])
 
           updated_contents = updated_pubspec_file_contents(files)
           content_changed = false
 
-          if updated_contents.yaml != files.yaml.content
+          if updated_contents[:yaml] != files[:yaml].content
             content_changed = true
-            updated_files << updated_file(file: files.yaml, content: updated_contents.yaml)
+            updated_files << updated_file(file: files[:yaml], content: updated_contents[:yaml])
           end
 
-          if updated_contents.lock == files.lock.content
+          if updated_contents[:lock] != files[:lock].content
             content_changed = true
-            updated_files << updated_file(file: files.lock, content: updated_contents.lock)
+            updated_files << updated_file(file: files[:lock], content: updated_contents[:lock])
           end
 
           raise "Content didn't change!" unless content_changed
@@ -43,7 +43,8 @@ module Dependabot
       private
 
       def updated_pubspec_file_contents(files)
-        content = file.content.dup
+        yaml_content = files[:yaml].content
+        lock_content = files[:lock].content if files[:lock]
 
         reqs = dependency.requirements.zip(dependency.previous_requirements).
                reject { |new_req, old_req| new_req == old_req }
@@ -51,46 +52,94 @@ module Dependabot
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == old_req[:file]
-          next unless new_req.fetch(:file) == file.name
 
-          case new_req[:source][:type]
-          when "git"
-            update_git_declaration(new_req, old_req, content, file.name)
-          when "registry"
-            update_registry_declaration(new_req, old_req, content)
-          else
-            raise "Don't know how to update a #{new_req[:source][:type]} "\
-                  "declaration!"
-          end
+          yaml_content = update_pubspec_yaml_file(new_req, yaml_content) if new_req.fetch(:file) == files[:yaml].name
+          lock_content = update_pubspec_lock_file(new_req, lock_content) if lock_content
         end
 
-        content
+        {
+          yaml: yaml_content,
+          lock: lock_content
+        }
       end
 
-      def update_git_declaration(new_req, old_req, updated_content, filename)
-        url = old_req.fetch(:source)[:url].gsub(%r{^https://}, "")
-        tag = old_req.fetch(:source)[:ref]
-        url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
-
-        declaration_regex = git_declaration_regex(filename)
-
-        updated_content.sub!(declaration_regex) do |regex_match|
-          regex_match.sub(url_regex) do |url_match|
-            url_match.sub(old_req[:source][:ref], new_req[:source][:ref])
-          end
+      def update_pubspec_yaml_file(new_req, updated_content)
+        updated_content = SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path.to_s,
+            function: "file_updater",
+            args: [
+              "--type",
+              "yaml",
+              "--content",
+              updated_content,
+              "--dependency",
+              dependency.name,
+              "--version",
+              dependency.version.to_s,
+              "--requirement",
+              JSON.dump(
+                {
+                  'requirement': new_req[:requirement],
+                  'file': new_req[:file],
+                  'groups': new_req[:groups],
+                  'source': {
+                    'type': new_req[:source][:type],
+                    'url': new_req[:source][:url],
+                    'path': new_req[:source][:path],
+                    'ref': new_req[:source][:ref],
+                    'resolved_ref': new_req[:source][:resolved_ref],
+                    'relative': new_req[:source][:relative]
+                  }
+                }
+              )
+            ]
+          )
         end
+
+        updated_content
       end
 
-      def update_registry_declaration(new_req, old_req, updated_content)
-        updated_content.sub!(registry_declaration_regex) do |regex_match|
-          regex_match.sub(/version\s*=.*/) do |req_line_match|
-            req_line_match.sub(old_req[:requirement], new_req[:requirement])
-          end
+      def update_pubspec_lock_file(new_req, updated_content)
+        updated_content = SharedHelpers.in_a_temporary_directory do
+          SharedHelpers.run_helper_subprocess(
+            command: NativeHelpers.helper_path.to_s,
+            function: "file_updater",
+            args: [
+              "--type",
+              "lock",
+              "--content",
+              updated_content,
+              "--dependency",
+              dependency.name,
+              "--version",
+              dependency.version,
+              "--requirement",
+              JSON.dump(
+                {
+                  'requirement': new_req[:requirement],
+                  'file': new_req[:file],
+                  'groups': new_req[:groups],
+                  'source': {
+                    'type': new_req[:source][:type],
+                    'url': new_req[:source][:url],
+                    'path': new_req[:source][:path],
+                    'ref': new_req[:source][:ref],
+                    'resolved_ref': new_req[:source][:resolved_ref],
+                    'relative': new_req[:source][:relative]
+                  }
+                }
+              )
+            ]
+          )
         end
+
+        updated_content
       end
 
+      # TODO: Check if we can make multi dependency updates work
       def dependency
-        # Terraform updates will only ever be updating a single dependency
+        # Pub updates will only ever be updating a single dependency
         dependencies.first
       end
 
@@ -121,28 +170,6 @@ module Dependabot
 
         raise "No pubspec.yaml configuration file!"
       end
-
-      # def registry_declaration_regex
-      #   /
-      #     (?<=\{)
-      #     (?:(?!^\}).)*
-      #     source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
-      #     (?:(?!^\}).)*
-      #   /mx
-      # end
-
-      # def git_declaration_regex(filename)
-      #   # For terragrunt dependencies there's not a lot we can base the
-      #   # regex on. Just look for declarations within a `pub` block
-      #   return /pub\s*\{(?:(?!^\}).)*/m if filename.end_with?(".tfvars")
-
-      #   # For modules we can do better - filter for module blocks that use the
-      #   # name of the dependency
-      #   /
-      #     module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
-      #     (?:(?!^\}).)*
-      #   /mx
-      # end
     end
   end
 end
