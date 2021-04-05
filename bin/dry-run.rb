@@ -700,6 +700,7 @@ dependencies.each do |dep|
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
+      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE,
     ).message
     puts "Pull Request Title: #{msg.pr_name}"
     puts "--description--\n#{msg.pr_message}\n--/description--"
