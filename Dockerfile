@@ -48,6 +48,7 @@ RUN apt-get update \
     libxmlsec1-dev \
     libgeos-dev \
     python3-enchant \
+    apt-transport-https \
   && locale-gen en_US.UTF-8
 
 
@@ -177,6 +178,13 @@ RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
 
 
+### DART
+
+# Install Dart 
+RUN wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+  && wget -qO- https://storage.googleapis.com/download.dartlang.org/linux/debian/dart_stable.list > /etc/apt/sources.list.d/dart_stable.list \
+  && apt-get install dart
+
 ### NEW NATIVE HELPERS
 
 COPY composer/helpers /opt/composer/helpers
@@ -185,6 +193,7 @@ COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY pub/helpers /opt/pub/helpers
 COPY python/helpers /opt/python/helpers
 COPY terraform/helpers /opt/terraform/helpers
 
