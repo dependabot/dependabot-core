@@ -1,0 +1,18 @@
+{
+	"name": "pubspec.yaml",
+	"path": "examples/hosted/pubspec.yaml",
+	"sha": "bed06742a371232281bd0faf77dc3c68611baa22",
+	"size": 217,
+	"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.yaml?ref=main",
+	"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.yaml",
+	"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/bed06742a371232281bd0faf77dc3c68611baa22",
+	"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/pubspec.yaml",
+	"type": "file",
+	"content": "bmFtZTogaG9zdGVkCmRlc2NyaXB0aW9uOiBBIHNpbXBsZSBjb21tYW5kLWxp\nbmUgYXBwbGljYXRpb24uCnZlcnNpb246IDEuMC4wCmhvbWVwYWdlOiBodHRw\nczovL3d3dy5leGFtcGxlLmNvbQoKZW52aXJvbm1lbnQ6CiAgc2RrOiAnPj0y\nLjEwLjAgPDMuMC4wJwoKZGVwZW5kZW5jaWVzOgogIHBhdGg6IF4xLjcuMAoK\nZGV2X2RlcGVuZGVuY2llczoKICBwZWRhbnRpYzogXjEuOS4wCg==\n",
+	"encoding": "base64",
+	"_links": {
+	  "self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.yaml?ref=main",
+	  "git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/bed06742a371232281bd0faf77dc3c68611baa22",
+	  "html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.yaml"
+	}
+}

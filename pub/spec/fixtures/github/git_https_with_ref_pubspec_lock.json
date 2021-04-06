@@ -1,0 +1,18 @@
+{
+	"name": "pubspec.lock",
+	"path": "examples/git_https_with_ref/pubspec.lock",
+	"sha": "e863207a124c4ea7eebcb60dd99b4a8200d7195f",
+	"size": 746,
+	"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/git_https_with_ref/pubspec.lock?ref=main",
+	"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/git_https_with_ref/pubspec.lock",
+	"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/e863207a124c4ea7eebcb60dd99b4a8200d7195f",
+	"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/git_https_with_ref/pubspec.lock",
+	"type": "file",
+	"content": "IyBHZW5lcmF0ZWQgYnkgcHViCiMgU2VlIGh0dHBzOi8vZGFydC5kZXYvdG9v\nbHMvcHViL2dsb3NzYXJ5I2xvY2tmaWxlCnBhY2thZ2VzOgogIG1ldGE6CiAg\nICBkZXBlbmRlbmN5OiB0cmFuc2l0aXZlCiAgICBkZXNjcmlwdGlvbjoKICAg\nICAgbmFtZTogbWV0YQogICAgICB1cmw6ICJodHRwczovL3B1Yi5kYXJ0bGFu\nZy5vcmciCiAgICBzb3VyY2U6IGhvc3RlZAogICAgdmVyc2lvbjogIjEuMy4w\nIgogIHBhdGg6CiAgICBkZXBlbmRlbmN5OiAiZGlyZWN0IG1haW4iCiAgICBk\nZXNjcmlwdGlvbjoKICAgICAgcGF0aDogIi4iCiAgICAgIHJlZjogIjEuNy4w\nIgogICAgICByZXNvbHZlZC1yZWY6ICIxMGM3NzhjNzk5YjJmYzA2MDM2Y2Jk\nMGFhMGUzOTlhZDRlYjFmZjViIgogICAgICB1cmw6ICJodHRwczovL2dpdGh1\nYi5jb20vZGFydC1sYW5nL3BhdGguZ2l0IgogICAgc291cmNlOiBnaXQKICAg\nIHZlcnNpb246ICIxLjcuMCIKICBwZWRhbnRpYzoKICAgIGRlcGVuZGVuY3k6\nICJkaXJlY3QgZGV2IgogICAgZGVzY3JpcHRpb246CiAgICAgIHBhdGg6ICIu\nIgogICAgICByZWY6ICJ2MS45LjEiCiAgICAgIHJlc29sdmVkLXJlZjogZDdm\nZTZmMGNhNzNhMTA1NDJmM2Q3YWJlZDE4MThkZDBhMDY5M2RkNAogICAgICB1\ncmw6ICJodHRwczovL2dpdGh1Yi5jb20vZ29vZ2xlL3BlZGFudGljLmdpdCIK\nICAgIHNvdXJjZTogZ2l0CiAgICB2ZXJzaW9uOiAiMS45LjEiCnNka3M6CiAg\nZGFydDogIj49Mi4xMi4wLTAgPDMuMC4wIgo=\n",
+	"encoding": "base64",
+	"_links": {
+	  "self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/git_https_with_ref/pubspec.lock?ref=main",
+	  "git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/e863207a124c4ea7eebcb60dd99b4a8200d7195f",
+	  "html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/git_https_with_ref/pubspec.lock"
+	}
+  }

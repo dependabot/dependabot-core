@@ -57,6 +57,7 @@ RUN mkdir -p \
   ${CODE_DIR}/npm_and_yarn \
   ${CODE_DIR}/nuget \
   ${CODE_DIR}/omnibus \
+  ${CODE_DIR}/pub \
   ${CODE_DIR}/python \
   ${CODE_DIR}/terraform
 
@@ -75,6 +76,7 @@ COPY maven/Gemfile maven/dependabot-maven.gemspec ${CODE_DIR}/maven/
 COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
 COPY nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
 COPY omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
+COPY pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
 

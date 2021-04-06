@@ -48,6 +48,7 @@ RUN apt-get update \
     libxmlsec1-dev \
     libgeos-dev \
     python3-enchant \
+    apt-transport-https \
   && locale-gen en_US.UTF-8
 
 
@@ -177,6 +178,18 @@ RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
 
 
+### DART
+
+# Install Dart 
+ENV PUB_CACHE=/opt/dart-sdk/.pub-cache \
+  PUB_ENVIRONMENT="dependabot" \
+  PATH="${PATH}:/opt/dart-sdk/.pub-cache/bin" \
+  PATH="${PATH}:/opt/dart-sdk/bin"
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-x64-release.zip" > "${HOME}/dartsdk.zip" \
+  && unzip "${HOME}/dartsdk.zip" -d "/opt" > /dev/null \
+  && rm "${HOME}/dartsdk.zip" \
+  && dart --version
+
 ### NEW NATIVE HELPERS
 
 COPY composer/helpers /opt/composer/helpers
@@ -185,6 +198,7 @@ COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY pub/helpers /opt/pub/helpers
 COPY python/helpers /opt/python/helpers
 COPY terraform/helpers /opt/terraform/helpers
 
@@ -193,6 +207,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
+  bash /opt/pub/helpers/build /opt/pub && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
   mkdir -p /opt/bundler/v1 && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \

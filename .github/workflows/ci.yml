@@ -35,6 +35,7 @@ jobs:
         - { path: omnibus, name: omnibus }
         - { path: python, name: python }
         - { path: terraform, name: terraform }
+        - { path: pub, name: pub }
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
