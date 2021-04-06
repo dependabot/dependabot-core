@@ -94,7 +94,7 @@ module Dependabot
         end
 
         def update_version_string(req_string)
-          new_target_parts = target_version.to_s.sub(/\+.*/, '').split(".")
+          new_target_parts = target_version.to_s.sub(/\+.*/, "").split(".")
           req_string.sub(VERSION_REGEX) do |old_version|
             # For pre-release versions, just use the full version string
             next target_version.to_s if old_version.match?(/\d-/)
