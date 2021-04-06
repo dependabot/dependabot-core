@@ -6,24 +6,24 @@ RUN pyenv install -s 3.7.1
 RUN pyenv install -s 3.7.10
 
 RUN mkdir -p \
-  ${CODE_DIR}/bundler \
-  ${CODE_DIR}/cargo \
-  ${CODE_DIR}/common \
-  ${CODE_DIR}/composer \
-  ${CODE_DIR}/dep \
-  ${CODE_DIR}/docker \
-  ${CODE_DIR}/elm \
-  ${CODE_DIR}/git_submodules \
-  ${CODE_DIR}/github_actions \
-  ${CODE_DIR}/go_modules \
-  ${CODE_DIR}/gradle \
-  ${CODE_DIR}/hex \
-  ${CODE_DIR}/maven \
-  ${CODE_DIR}/npm_and_yarn \
-  ${CODE_DIR}/nuget \
-  ${CODE_DIR}/omnibus \
-  ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform
+  /home/dependabot/dependabot-core/bundler \
+  /home/dependabot/dependabot-core/cargo \
+  /home/dependabot/dependabot-core/common \
+  /home/dependabot/dependabot-core/composer \
+  /home/dependabot/dependabot-core/dep \
+  /home/dependabot/dependabot-core/docker \
+  /home/dependabot/dependabot-core/elm \
+  /home/dependabot/dependabot-core/git_submodules \
+  /home/dependabot/dependabot-core/github_actions \
+  /home/dependabot/dependabot-core/go_modules \
+  /home/dependabot/dependabot-core/gradle \
+  /home/dependabot/dependabot-core/hex \
+  /home/dependabot/dependabot-core/maven \
+  /home/dependabot/dependabot-core/npm_and_yarn \
+  /home/dependabot/dependabot-core/nuget \
+  /home/dependabot/dependabot-core/omnibus \
+  /home/dependabot/dependabot-core/python \
+  /home/dependabot/dependabot-core/terraform
 
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
