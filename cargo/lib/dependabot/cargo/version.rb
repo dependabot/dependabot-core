@@ -29,6 +29,12 @@ module Dependabot
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
       end
+
+      def self.correct?(version)
+        return false if version.nil?
+
+        version.to_s.match?(ANCHORED_VERSION_PATTERN)
+      end
     end
   end
 end
