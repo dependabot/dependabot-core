@@ -307,6 +307,12 @@ RSpec.describe Dependabot::Maven::Version do
           let(:other_version) { described_class.new("1-alpha-1") }
           it { is_expected.to eq(0) }
         end
+
+        context "comparing string versions with integer ones" do
+          let(:version) { described_class.new("181") }
+          let(:other_version) { described_class.new("dev") }
+          it { is_expected.to eq(1) }
+        end
       end
     end
   end

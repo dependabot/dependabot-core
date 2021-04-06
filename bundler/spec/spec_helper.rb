@@ -11,13 +11,12 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 module PackageManagerHelper
-  # TODO: Make bundler 2 the default if no `SUITE_NAME` is set
   def self.use_bundler_1?
-    !use_bundler_2?
+    ENV["SUITE_NAME"] == "bundler1"
   end
 
   def self.use_bundler_2?
-    ENV["SUITE_NAME"] == "bundler2"
+    !use_bundler_1?
   end
 
   def self.bundler_version
