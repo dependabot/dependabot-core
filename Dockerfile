@@ -72,7 +72,7 @@ RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout v1.2.26 && cd - \
   && pyenv install 3.9.4 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.9.3
+  && pyenv global 3.9.4
 
 
 ### JAVASCRIPT
