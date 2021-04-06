@@ -23,7 +23,25 @@ RUN mkdir -p \
   /home/dependabot/dependabot-core/nuget \
   /home/dependabot/dependabot-core/omnibus \
   /home/dependabot/dependabot-core/python \
-  /home/dependabot/dependabot-core/terraform
+  /home/dependabot/dependabot-core/terraform \
+  /home/dependabot/dependabot-core/bundler/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/cargo/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/common/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/composer/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/dep/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/docker/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/elm/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/git_submodules/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/github_actions/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/go_modules/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/gradle/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/hex/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/maven/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/npm_and_yarn/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/nuget/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/omnibus/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/python/spec/fixtures/vcr_cassettes \
+  /home/dependabot/dependabot-core/terraform/spec/fixtures/vcr_cassettes
 
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
