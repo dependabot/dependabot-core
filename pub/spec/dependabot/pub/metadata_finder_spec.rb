@@ -5,7 +5,7 @@ require "dependabot/dependency"
 require "dependabot/pub/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
-RSpec.describe Dependabot::Pub::MetadataFinder, :focus do
+RSpec.describe Dependabot::Pub::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
