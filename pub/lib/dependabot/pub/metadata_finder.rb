@@ -54,7 +54,8 @@ module Dependabot
           **SharedHelpers.excon_defaults(
             {
               headers: {
-                accept: "application/vnd.pub.v2+json"
+                accept: "application/vnd.pub.v2+json",
+                "X-Pub-Environment": "dependabot"
                 # TODO: Condier adding X-Pub-Headers (https://github.com/dart-lang/pub/blob/master/doc/repository-spec-v2.md)
               }
             }

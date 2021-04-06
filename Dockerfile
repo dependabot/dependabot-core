@@ -182,6 +182,7 @@ RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup defa
 
 # Install Dart 
 ENV PUB_CACHE=/opt/dart-sdk/.pub-cache \
+  PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart-sdk/.pub-cache/bin" \
   PATH="${PATH}:/opt/dart-sdk/bin"
 RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-x64-release.zip" > "${HOME}/dartsdk.zip" \
