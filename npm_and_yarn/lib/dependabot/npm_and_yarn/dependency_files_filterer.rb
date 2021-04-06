@@ -16,12 +16,10 @@ module Dependabot
 
       def files_requiring_update
         @files_requiring_update ||=
-          begin
-            dependency_files.select do |file|
-              package_files_requiring_update.include?(file) ||
-                package_required_lockfile?(file) ||
-                workspaces_lockfile?(file)
-            end
+          dependency_files.select do |file|
+            package_files_requiring_update.include?(file) ||
+              package_required_lockfile?(file) ||
+              workspaces_lockfile?(file)
           end
       end
 

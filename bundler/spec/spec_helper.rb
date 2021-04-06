@@ -10,13 +10,22 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-def bundler_2_available?
-  ENV["SUITE_NAME"] == "bundler2"
+module PackageManagerHelper
+  def self.use_bundler_1?
+    ENV["SUITE_NAME"] == "bundler1"
+  end
+
+  def self.use_bundler_2?
+    !use_bundler_1?
+  end
+
+  def self.bundler_version
+    use_bundler_2? ? "2" : "1"
+  end
 end
 
-# Load project files prepended with the bundler version, which is currently only ever bundler1
 def bundler_project_dependency_files(project)
-  project_dependency_files(File.join("bundler1", project))
+  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project))
 end
 
 def bundler_project_dependency_file(project, filename:)
@@ -27,11 +36,15 @@ def bundler_project_dependency_file(project, filename:)
   dependency_file
 end
 
+def bundler_build_tmp_repo(project)
+  build_tmp_repo(project, path: "projects/bundler1")
+end
+
 RSpec.configure do |config|
   config.around do |example|
-    if bundler_2_available? && example.metadata[:bundler_v1_only]
+    if PackageManagerHelper.use_bundler_2? && example.metadata[:bundler_v1_only]
       example.skip
-    elsif !bundler_2_available? && example.metadata[:bundler_v2_only]
+    elsif PackageManagerHelper.use_bundler_1? && example.metadata[:bundler_v2_only]
       example.skip
     else
       example.run

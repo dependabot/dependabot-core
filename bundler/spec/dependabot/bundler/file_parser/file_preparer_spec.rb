@@ -7,31 +7,30 @@ require "dependabot/bundler/file_parser/file_preparer"
 RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
   let(:preparer) { described_class.new(dependency_files: dependency_files) }
 
-  let(:dependency_files) { [gemfile, lockfile] }
-
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile")
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(content: lockfile_body, name: "Gemfile.lock")
-  end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
-  let(:lockfile_body) { fixture("ruby", "lockfiles", "Gemfile.lock") }
+  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
 
   describe "#prepared_dependency_files" do
     subject(:prepared_dependency_files) { preparer.prepared_dependency_files }
 
     describe "the updated Gemfile" do
       subject { prepared_dependency_files.find { |f| f.name == "Gemfile" } }
-      its(:content) { is_expected.to eq(gemfile.content) }
+      its(:content) { is_expected.to include('gem "business", "~> 1.4.0"') }
     end
 
-    describe "the updated lockfile" do
+    describe "the updated lockfile", :bundler_v1_only do
       subject do
         prepared_dependency_files.find { |f| f.name == "Gemfile.lock" }
       end
 
-      its(:content) { is_expected.to eq(lockfile.content) }
+      its(:content) { is_expected.to include("1.10.6") }
+    end
+
+    describe "the updated lockfile", :bundler_v2_only do
+      subject do
+        prepared_dependency_files.find { |f| f.name == "Gemfile.lock" }
+      end
+
+      its(:content) { is_expected.to include("2.2.0") }
     end
 
     describe "the updated gemspec" do
@@ -39,13 +38,7 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
         prepared_dependency_files.find { |f| f.name == "example.gemspec" }
       end
 
-      let(:dependency_files) { [gemfile, lockfile, gemspec] }
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          content: fixture("ruby", "gemspecs", "with_require"),
-          name: "example.gemspec"
-        )
-      end
+      let(:dependency_files) { bundler_project_dependency_files("gemfile_gemspec_with_require") }
 
       its(:content) { is_expected.to include("begin\nrequire ") }
       its(:content) { is_expected.to include(%(version      = "0.0.1")) }
@@ -56,31 +49,19 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
         prepared_dependency_files.find { |f| f.name == ".ruby-version" }
       end
 
-      let(:dependency_files) { [gemfile, lockfile, ruby_version] }
-      let(:ruby_version) do
-        Dependabot::DependencyFile.new(
-          content: "2.4.1",
-          name: ".ruby-version"
-        )
-      end
+      let(:dependency_files) { bundler_project_dependency_files("ruby_version_file") }
 
-      its(:content) { is_expected.to eq(ruby_version.content) }
+      its(:content) { is_expected.to eq("2.2.0\n") }
     end
 
     describe "the updated .specification file" do
       subject do
-        prepared_dependency_files.find { |f| f.name == ".specification" }
+        prepared_dependency_files.find { |f| f.name == "plugins/example/.specification" }
       end
 
-      let(:dependency_files) { [gemfile, lockfile, specification] }
-      let(:specification) do
-        Dependabot::DependencyFile.new(
-          content: fixture("ruby", "specifications", "statesman"),
-          name: ".specification"
-        )
-      end
+      let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile_specification") }
 
-      its(:content) { is_expected.to eq(specification.content) }
+      its(:content) { is_expected.to start_with("--- !ruby/object:Gem::Specification") }
     end
   end
 end

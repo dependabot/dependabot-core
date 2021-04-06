@@ -5,23 +5,37 @@ module Dependabot
     module Helpers
       V1 = "1"
       V2 = "2"
+      # If we are updating a project with no Gemfile.lock, we default to the
+      # newest version we support
+      DEFAULT = V2
+      # If we are updating a project with a Gemfile.lock that does not specify
+      # the version it was bundled with, with failover to V1 on the assumption
+      # it was created with an old version that didn't add this information
+      FAILOVER = V1
+
+      BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m.freeze
 
       # NOTE: options is a manditory argument to ensure we pass it from all calling classes
-      def self.bundler_version(_lockfile, options:)
-        # For now, force V2 if bundler_2_available
-        return V2 if options[:bundler_2_available]
+      def self.bundler_version(lockfile, options:)
+        # TODO: Remove once bundler 2 is fully supported
+        return V1 unless options[:bundler_2_available]
+        return DEFAULT unless lockfile
 
-        # TODO: Add support for bundler v2 based on lockfile
-        # return V2 if lockfile.content.match?(/BUNDLED WITH\s+2/m)
-
-        V1
+        if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
+          matches[:version].to_i >= 2 ? V2 : V1
+        else
+          FAILOVER
+        end
       end
 
       def self.detected_bundler_version(lockfile)
         return "unknown" unless lockfile
-        return V2 if lockfile.content.match?(/BUNDLED WITH\s+2/m)
 
-        V1
+        if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
+          matches[:version]
+        else
+          FAILOVER
+        end
       end
     end
   end

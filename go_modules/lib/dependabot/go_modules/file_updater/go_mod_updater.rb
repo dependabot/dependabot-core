@@ -222,18 +222,12 @@ module Dependabot
         # process afterwards.
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            begin
-              # Find all the local replacements, and return them with a stub
-              # path we can use in their place. Using generated paths is safer
-              # as it means we don't need to worry about references to parent
-              # directories, etc.
-              (manifest["Replace"] || []).
-                map { |r| r["New"]["Path"] }.
-                compact.
-                select { |p| stub_replace_path?(p) }.
-                map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
-                to_h
-            end
+            (manifest["Replace"] || []).
+            map { |r| r["New"]["Path"] }.
+            compact.
+            select { |p| stub_replace_path?(p) }.
+            map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
+            to_h
         end
 
         # returns true if the provided path should be replaced with a stub
@@ -269,22 +263,20 @@ module Dependabot
           write_go_mod(body)
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def handle_subprocess_error(stderr)
           stderr = stderr.gsub(Dir.getwd, "")
 
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
-            lines = stderr.lines.drop_while { |l| error_regex !~ l }
-            raise Dependabot::DependencyFileNotResolvable, lines.join
+            error_message = filter_error_message(message: stderr, regex: error_regex)
+            raise Dependabot::DependencyFileNotResolvable, error_message
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
-            lines = stderr.lines.drop_while { |l| repo_error_regex !~ l }
-            ResolvabilityErrors.handle(lines.join, credentials: credentials)
+            error_message = filter_error_message(message: stderr, regex: repo_error_regex)
+            ResolvabilityErrors.handle(error_message, credentials: credentials)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
@@ -296,16 +288,22 @@ module Dependabot
 
           out_of_disk_regex = OUT_OF_DISK_REGEXES.find { |r| stderr =~ r }
           if out_of_disk_regex
-            lines = stderr.lines.select { |l| out_of_disk_regex =~ l }
-            raise Dependabot::OutOfDisk.new, lines.join
+            error_message = filter_error_message(message: stderr, regex: out_of_disk_regex)
+            raise Dependabot::OutOfDisk.new, error_message
           end
 
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/AbcSize
+
+        def filter_error_message(message:, regex:)
+          lines = message.lines.select { |l| regex =~ l }
+          return lines.join if lines.any?
+
+          # In case the regex is multi-line, match the whole string
+          message.match(regex).to_s
+        end
 
         def go_mod_path
           return "go.mod" if directory == "/"

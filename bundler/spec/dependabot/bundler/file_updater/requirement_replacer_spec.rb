@@ -40,13 +40,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
   describe "#rewrite" do
     subject(:rewrite) { replacer.rewrite(content) }
 
-    let(:content) { fixture("ruby", "gemfiles", "git_source") }
-
     context "with a Gemfile" do
       let(:file_type) { :gemfile }
 
       context "when the declaration spans multiple lines" do
-        let(:content) { fixture("ruby", "gemfiles", "git_source") }
+        let(:content) do
+          bundler_project_dependency_file("git_source", filename: "Gemfile").content
+        end
         it { is_expected.to include(%(gem "business", "~> 1.5.0",\n    git: )) }
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
@@ -214,7 +214,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
 
     context "with a gemspec" do
       let(:file_type) { :gemspec }
-      let(:content) { fixture("ruby", "gemspecs", "example") }
+      let(:content) do
+        bundler_project_dependency_file("gemfile_example", filename: "example.gemspec").content
+      end
 
       context "when declared with `add_runtime_dependency`" do
         let(:dependency_name) { "bundler" }
@@ -239,7 +241,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
       end
 
       context "with an exact requirement" do
-        let(:content) { fixture("ruby", "gemspecs", "exact") }
+        let(:content) do
+          bundler_project_dependency_file("gemfile_exact", filename: "example.gemspec").content
+        end
 
         context "when declared with `=` operator" do
           let(:dependency_name) { "statesman" }

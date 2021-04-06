@@ -65,7 +65,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y ruby2.6 ruby2.6-dev \
   && gem update --system 3.2.14 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.11 --no-document
+  && gem install bundler -v 2.2.15 --no-document
 
 
 ### PYTHON
