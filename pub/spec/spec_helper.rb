@@ -10,9 +10,7 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
-RSpec.configure do |config|
-  config.filter_run_when_matching :focus
+if ENV["COVERAGE"]
+  # TODO: Bring branch coverage up
+  SimpleCov.minimum_coverage line: 80, branch: 55
 end
-
-# TODO: Bring branch coverage up
-SimpleCov.minimum_coverage line: 80, branch: 55
