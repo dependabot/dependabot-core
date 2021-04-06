@@ -37,7 +37,7 @@ build_image() {
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "USER_UID=$UID" \
-    --build-arg "USER_GID=$(id -g)" \
+    --cache-from "dependabot/dependabot-core:latest" \
     -t dependabot/dependabot-core .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
   docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t "$IMAGE_NAME" -f "$DOCKERFILE" .
