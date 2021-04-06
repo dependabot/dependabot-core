@@ -445,18 +445,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             to eq(Gem::Version.new("2.0.1"))
         end
 
-        context "that isn't satisfied by the dependencies", :bundler_v1_only do
-          let(:dependency_files) do
-            bundler_project_dependency_files("imports_gemspec_version_clash_old_required_ruby_no_lockfile")
-          end
-          let(:current_version) { "3.0.1" }
-
-          it "ignores the minimum ruby version in the gemspec" do
-            expect(resolver.latest_resolvable_version_details[:version]).
-              to eq(Gem::Version.new("7.2.0"))
-          end
-        end
-
         context "that isn't satisfied by the dependencies", :bundler_v2_only do
           let(:dependency_files) do
             bundler_project_dependency_files("imports_gemspec_version_clash_old_required_ruby_no_lockfile")
