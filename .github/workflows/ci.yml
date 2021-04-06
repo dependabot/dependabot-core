@@ -53,13 +53,6 @@ jobs:
           else
             echo "No Docker credentials, skipping login"
           fi
-      - name: Pull Docker base images & warm Docker cache
-        run: |
-          docker pull "$BASE_IMAGE"
-          docker pull "$CORE_IMAGE:branch--$BRANCH_REF" ||
-            docker pull "$CORE_IMAGE:latest" || true
-          docker pull "$CORE_CI_IMAGE:branch--$BRANCH_REF" ||
-            docker pull "$CORE_CI_IMAGE:latest" || true
       - name: Build dependabot-core image
         run: |
           DOCKER_BUILDKIT=1 docker build \

@@ -17,10 +17,6 @@ jobs:
         run: |
           echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
           echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
-      - name: Pull Docker base image & warm Docker cache
-        run: |
-          docker pull "$BASE_IMAGE"
-          docker pull "$CORE_IMAGE:latest"
       - name: Build dependabot-core image
         env:
           DOCKER_BUILDKIT: 1
