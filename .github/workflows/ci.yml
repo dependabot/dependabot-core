@@ -53,9 +53,6 @@ jobs:
           else
             echo "No Docker credentials, skipping login"
           fi
-      - name: Set test env credentials
-        run: |
-          echo "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Pull Docker base images & warm Docker cache
         run: |
           docker pull "$BASE_IMAGE"
@@ -212,7 +209,7 @@ jobs:
             -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
             -v "$(pwd)/omnibus/script:$CODE_DIR/omnibus/script" \
             --env "CI=true" \
-            --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" \
+            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "BUNDLE_PATH=/home/dependabot/.bundle" \
             -w "$CODE_DIR" \
