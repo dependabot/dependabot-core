@@ -1,7 +1,9 @@
 FROM dependabot/dependabot-core
 
+USER dependabot
 RUN pyenv install -s 3.6.13
 RUN pyenv install -s 3.7.1
 RUN pyenv install -s 3.7.10
 
-RUN git config --global user.name dependabot-ci && git config --global user.email no-reply@github.com
+RUN git config --global user.name dependabot-ci && \
+  git config --global user.email no-reply@github.com

@@ -55,6 +55,7 @@ ARG USER_GID=$USER_UID
 
 RUN groupadd --gid "${USER_GID}" dependabot \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
+RUN mkdir -p /opt && chown -R dependabot:dependabot /opt
 
 ### RUBY
 
@@ -73,12 +74,14 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
+RUN mkdir -p /usr/local/.pyenv && chown -R dependabot:dependabot /usr/local/.pyenv
+USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
   && pyenv install 3.9.2 \
   && pyenv install 2.7.18 \
   && pyenv global 3.9.2
-
+USER root
 
 ### JAVASCRIPT
 
@@ -107,8 +110,8 @@ RUN npm install -g npm@v7.7.4
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
+COPY --chown=dependabot:dependabot --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
+COPY --chown=dependabot:dependabot --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y \
@@ -145,7 +148,9 @@ RUN add-apt-repository ppa:ondrej/php \
 # Install Go and dep
 ARG GOLANG_VERSION=1.16.2
 ARG GOLANG_CHECKSUM=542e936b19542e62679766194364f45141fde55169db2d8d01046555ca9eb4b8
-RUN curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+USER dependabot
+RUN cd /home/dependabot \
+  && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
   && mkdir /opt/go/gopath \
@@ -153,7 +158,7 @@ RUN curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.lin
   && chmod +x /opt/go/bin/dep \
   && rm go.tar.gz
 ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
-
+USER root
 
 ### ELIXIR
 
@@ -178,28 +183,28 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 # Install Rust 1.51.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
-RUN mkdir -p "$RUSTUP_HOME" && \
-  chown -R dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
+RUN mkdir -p "$RUSTUP_HOME"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
 USER root
 
-
 ### NEW NATIVE HELPERS
 
-COPY composer/helpers /opt/composer/helpers
-COPY dep/helpers /opt/dep/helpers
-COPY bundler/helpers /opt/bundler/helpers
-COPY go_modules/helpers /opt/go_modules/helpers
-COPY hex/helpers /opt/hex/helpers
-COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY python/helpers /opt/python/helpers
-COPY terraform/helpers /opt/terraform/helpers
+COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
+COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
+COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
+COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
+
+USER dependabot
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
