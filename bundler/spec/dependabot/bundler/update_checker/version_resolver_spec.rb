@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
-      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
+      options: {}
     )
   end
   let(:ignored_versions) { [] }
