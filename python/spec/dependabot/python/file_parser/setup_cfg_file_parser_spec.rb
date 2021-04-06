@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupCfgFileParser do
           [{
             requirement: "==0.12.2",
             file: "setup.cfg",
-            groups: ["extras_require:API"],
+            groups: ["extras_require:api"],
             source: nil
           }]
         )

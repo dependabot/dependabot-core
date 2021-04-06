@@ -169,33 +169,26 @@ def parse_setup_cfg(directory):
                 parse_requirement(req, req_type)
 
         try:
-            config = configparser.ConfigParser()
-            # preserve case
-            config.optionxform = str
-            config.read(directory + "/setup.cfg")
+            config = setuptools.config.read_configuration(
+                directory + "/setup.cfg"
+            )
 
             for req_type in [
                 "setup_requires",
                 "install_requires",
                 "tests_require",
             ]:
-                requires = [
-                    r
-                    for r in config.get("options", req_type, fallback="")
-                    .strip()
-                    .split("\n")
-                    if r != ""
-                ]
+                requires = config.get("options", {}).get(req_type, [])
                 parse_requirements(requires, req_type)
 
-                extras_require_section = "options.extras_require"
-                if config.has_section(extras_require_section):
-                    section = config[extras_require_section]
-                    for key, value in section.items():
-                        parse_requirements(
-                            value.strip().split("\n"),
-                            "extras_require:{}".format(key),
-                        )
+            extras_require = config.get("options", {}).get(
+                "extras_require", {}
+            )
+            for key, value in extras_require.items():
+                parse_requirements(
+                    value,
+                    "extras_require:{}".format(key),
+                )
         except Exception as e:
             print(json.dumps({"error": repr(e)}))
             exit(1)
