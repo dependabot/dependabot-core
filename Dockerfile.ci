@@ -1,7 +1,5 @@
 FROM dependabot/dependabot-core
 
-ARG CODE_DIR=/home/dependabot/dependabot-core
-
 # We pre-install these versions of python as they're known to be used in the
 # test suite. These used to be installed in-line, and pre-installing them helps
 # with the performance of the python test suite.
@@ -12,24 +10,5 @@ RUN pyenv install -s 3.7.10
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
 
-RUN mkdir -p \
-  ${CODE_DIR}/bundler \
-  ${CODE_DIR}/cargo \
-  ${CODE_DIR}/common \
-  ${CODE_DIR}/composer \
-  ${CODE_DIR}/dep \
-  ${CODE_DIR}/docker \
-  ${CODE_DIR}/elm \
-  ${CODE_DIR}/git_submodules \
-  ${CODE_DIR}/github_actions \
-  ${CODE_DIR}/go_modules \
-  ${CODE_DIR}/gradle \
-  ${CODE_DIR}/hex \
-  ${CODE_DIR}/maven \
-  ${CODE_DIR}/npm_and_yarn \
-  ${CODE_DIR}/nuget \
-  ${CODE_DIR}/omnibus \
-  ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform
-
+ARG CODE_DIR=/home/dependabot/dependabot-core
 COPY --chown=dependabot:dependabot . ${CODE_DIR}
