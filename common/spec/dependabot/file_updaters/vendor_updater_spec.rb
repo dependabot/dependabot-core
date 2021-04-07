@@ -33,6 +33,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         next unless File.exist?("vendor/cache/business-1.4.0.gem")
 
         `mv vendor/cache/business-1.4.0.gem vendor/cache/business-1.5.0.gem`
+        `echo change >> vendor/cache/test-change.txt`
       end
     end
 
@@ -40,6 +41,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       expect(updated_files.map(&:name)).to eq(
         %w(
           vendor/cache/business-1.4.0.gem
+          vendor/cache/test-change.txt
           vendor/cache/business-1.5.0.gem
         )
       )
@@ -53,12 +55,34 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       expect(file.binary?).to be_truthy
     end
 
+    it "marks created files as such" do
+      file = updated_files.find do |f|
+        f.name == "vendor/cache/business-1.5.0.gem"
+      end
+
+      expect(file.deleted).to be_falsey
+      expect(file.deleted?).to be_falsey
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
+    end
+
+    it "marks updated files as such" do
+      file = updated_files.find do |f|
+        f.name == "vendor/cache/test-change.txt"
+      end
+
+      expect(file.deleted).to be_falsey
+      expect(file.deleted?).to be_falsey
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+    end
+
     it "marks deleted files as such" do
       file = updated_files.find do |f|
         f.name == "vendor/cache/business-1.4.0.gem"
       end
 
-      expect(file).to be_deleted
+      expect(file.deleted).to be_truthy
+      expect(file.deleted?).to be_truthy
+      expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
     end
 
     it "base64 encodes binary files" do
