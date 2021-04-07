@@ -100,7 +100,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         [{
           requirement: ::Gem::Version.new(dependency_version),
           file: "go.mod",
-          source: { type: "default", source: "github.com/go-openapi/spec" },
+          source: { type: "default", source: dependency_name },
           groups: []
         }]
       end
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         [{
           requirement: "v#{dependency_previous_version}",
           file: "go.mod",
-          source: { type: "default", source: "github.com/go-openapi/spec" },
+          source: { type: "default", source: dependency_name },
           groups: []
         }]
       end
