@@ -1,4 +1,4 @@
-module github.com/kubeflow/pytorch-operator
+module github.com/dependabot/vgotest
 
 go 1.13
 
