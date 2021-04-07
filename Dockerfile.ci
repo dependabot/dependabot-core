@@ -31,23 +31,23 @@ RUN mkdir -p \
   ${CODE_DIR}/python \
   ${CODE_DIR}/terraform
 
-COPY --chown=dependabot:dependabot bundler/spec/fixtures/  ${CODE_DIR}/bundler/spec/
-COPY --chown=dependabot:dependabot cargo/spec/fixtures/ ${CODE_DIR}/cargo/spec/
-COPY --chown=dependabot:dependabot common/spec/fixtures/ ${CODE_DIR}/common/spec/
-COPY --chown=dependabot:dependabot composer/spec/fixtures/ ${CODE_DIR}/composer/spec/
-COPY --chown=dependabot:dependabot dep/spec/fixtures/ ${CODE_DIR}/dep/spec/
-COPY --chown=dependabot:dependabot docker/spec/fixtures/ ${CODE_DIR}/docker/spec/
-COPY --chown=dependabot:dependabot elm/spec/fixtures/ ${CODE_DIR}/elm/spec/
-COPY --chown=dependabot:dependabot git_submodules/spec/fixtures/ ${CODE_DIR}/gi/spec/
-COPY --chown=dependabot:dependabot github_actions/spec/fixtures/ ${CODE_DIR}/gi/spec/
-COPY --chown=dependabot:dependabot go_modules/spec/fixtures/ ${CODE_DIR}/go_modules/spec/
-COPY --chown=dependabot:dependabot gradle/spec/fixtures/ ${CODE_DIR}/gradle/spec/
-COPY --chown=dependabot:dependabot hex/spec/fixtures/ ${CODE_DIR}/hex/spec/
-COPY --chown=dependabot:dependabot maven/spec/fixtures/ ${CODE_DIR}/maven/spec/
-COPY --chown=dependabot:dependabot npm_and_yarn/spec/fixtures/ ${CODE_DIR}/npm_and_/spec/
-COPY --chown=dependabot:dependabot nuget/spec/fixtures/ ${CODE_DIR}/nuget/spec/
-COPY --chown=dependabot:dependabot python/spec/fixtures/ ${CODE_DIR}/python/spec/
-COPY --chown=dependabot:dependabot terraform/spec/fixtures/ ${CODE_DIR}/terraform/spec/
+COPY --chown=dependabot:dependabot bundler/spec  ${CODE_DIR}/bundler/
+COPY --chown=dependabot:dependabot cargo/spec ${CODE_DIR}/cargo/
+COPY --chown=dependabot:dependabot common/spec ${CODE_DIR}/common/
+COPY --chown=dependabot:dependabot composer/spec ${CODE_DIR}/composer/
+COPY --chown=dependabot:dependabot dep/spec ${CODE_DIR}/dep/
+COPY --chown=dependabot:dependabot docker/spec ${CODE_DIR}/docker/
+COPY --chown=dependabot:dependabot elm/spec ${CODE_DIR}/elm/
+COPY --chown=dependabot:dependabot git_submodules/spec ${CODE_DIR}/gi/
+COPY --chown=dependabot:dependabot github_actions/spec ${CODE_DIR}/gi/
+COPY --chown=dependabot:dependabot go_modules/spec ${CODE_DIR}/go_modules/
+COPY --chown=dependabot:dependabot gradle/spec ${CODE_DIR}/gradle/
+COPY --chown=dependabot:dependabot hex/spec ${CODE_DIR}/hex/
+COPY --chown=dependabot:dependabot maven/spec ${CODE_DIR}/maven/
+COPY --chown=dependabot:dependabot npm_and_yarn/spec ${CODE_DIR}/npm_and_/
+COPY --chown=dependabot:dependabot nuget/spec ${CODE_DIR}/nuget/
+COPY --chown=dependabot:dependabot python/spec ${CODE_DIR}/python/
+COPY --chown=dependabot:dependabot terraform/spec ${CODE_DIR}/terraform/
 
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
