@@ -77,11 +77,12 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p /usr/local/.pyenv && chown -R dependabot:dependabot /usr/local/.pyenv
 USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout 9ee109b66148bc39a685926050b7b56cb4bb184b && cd - \
-  && pyenv install 3.9.2 \
+  && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
+  && pyenv install 3.9.4 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.9.2
+  && pyenv global 3.9.4
 USER root
+
 
 ### JAVASCRIPT
 

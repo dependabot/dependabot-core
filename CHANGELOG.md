@@ -1,3 +1,15 @@
+## v0.139.2, 6 April 2021
+
+- Cargo: fix error when upgrading to a version with a build annotation (e.g. `0.7.0+zstd.1.4.9`)
+- Maven: fix error when comparing string and integer versions
+- Generate alternatives for every git source (thanks @jerbob92)
+- CI: performance improvements
+- Bump phpstan/phpstan from 0.12.82 to 0.12.83 in /composer/helpers/v2
+- Bump phpstan/phpstan from 0.12.82 to 0.12.83 in /composer/helpers/v1
+- Bump composer/composer from 2.0.11 to 2.0.12 in /composer/helpers/v2
+- Bump composer/composer from 1.10.20 to 1.10.21 in /composer/helpers/v1
+- Bump @npmcli/arborist from 2.2.9 to 2.3.0 in /npm_and_yarn/helpers
+
 ## v0.139.1, 30 March 2021
 
 - Pull Requests: Fix github redirect for www.github.com links

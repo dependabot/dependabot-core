@@ -60,4 +60,24 @@ RSpec.describe Dependabot::Cargo::Version do
       it { is_expected.to eq(true) }
     end
   end
+
+  describe "#correct?" do
+    subject { described_class.correct?(version_string) }
+
+    valid = %w(1.0.0 1.0.0.pre1 1.0.0-pre1 1.0.0-pre1+something)
+    valid.each do |version|
+      context "with version #{version}" do
+        let(:version_string) { version }
+        it { is_expected.to eq(true) }
+      end
+    end
+
+    invalid = %w(☃ questionmark?)
+    invalid.each do |version|
+      context "with version #{version}" do
+        let(:version_string) { version }
+        it { is_expected.to eq(false) }
+      end
+    end
+  end
 end
