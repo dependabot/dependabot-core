@@ -114,7 +114,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "raises a helpful error" do
-        expect { updated_files }.to raise_error(%r{repository 'https://github\.com/mholt/caddy/' not found})
+        expect { updated_files }.to raise_error(Dependabot::GitDependenciesNotReachable, /github\.com\/mholt\/caddy/)
+      end
+
+      context "when the provided credentials do not have access" do
+        before do
+          credentials.each do |credential|
+            credential["password"] = "invalid"
+          end
+        end
+
+        it "raises a helpful error" do
+          expect { updated_files }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /github\.com\/mholt\/caddy/)
+        end
       end
     end
 
