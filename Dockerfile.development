@@ -2,23 +2,15 @@ FROM dependabot/dependabot-core
 
 # Temporarily switch to root user in order to install packages
 USER root
-
-# Add debugging tools
 RUN apt-get install -y vim strace ltrace gdb
-
 USER dependabot
+
 RUN git config --global user.name dependabot-ci \
   && git config --global user.email no-reply@github.com
-
-ARG CODE_DIR=/home/dependabot/dependabot-core
-
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
-ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-  BUNDLE_BIN=".bundle/binstubs"
-ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-
+ARG CODE_DIR=/home/dependabot/dependabot-core
 WORKDIR ${CODE_DIR}
 
 RUN mkdir -p \

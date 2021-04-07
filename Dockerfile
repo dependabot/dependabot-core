@@ -71,7 +71,6 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && gem install bundler -v 2.2.15 --no-document \
   && rm -Rf /var/lib/gems/2.6.0/cache/*
 
-
 ### PYTHON
 
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
@@ -220,3 +219,8 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/hex/helpers/build /opt/hex && \
   bash /opt/composer/helpers/v2/build /opt/composer/v2 && \
   bash /opt/composer/helpers/v1/build /opt/composer/v1
+
+# Allow further gem installs as the dependabot user:
+ENV BUNDLE_PATH="/home/dependabot/.bundle"
+ENV BUNDLE_BIN="/home/dependabot/.bundle/binstubs"
+ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
