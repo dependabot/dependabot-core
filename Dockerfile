@@ -52,8 +52,9 @@ RUN apt-get update \
 
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+ARG OSTYPE=Linux
 
-RUN groupadd --gid "${USER_GID}" dependabot \
+RUN bash -c "[ \"$OSTYPE\" = \"Linux\" ] && groupadd --gid \"${USER_GID}\" dependabot" \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
 RUN mkdir -p /opt && chown dependabot:dependabot /opt
 
