@@ -116,12 +116,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "raises a helpful error" do
-        problematic_repo = /github\.com\/mholt\/caddy/
-        if credentials[0]['password'] == default_token
-          expect { updated_files }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure, problematic_repo)
-        else
-          expect { updated_files }.to raise_error(Dependabot::GitDependenciesNotReachable, problematic_repo)
-        end
+        expect { updated_files }.to raise_error(
+          credentials[0]['password'] == default_token ?
+            Dependabot::PrivateSourceAuthenticationFailure :
+            Dependabot::GitDependenciesNotReachable,
+          /github\.com\/mholt\/caddy/
+        )
       end
     end
 
