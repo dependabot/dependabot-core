@@ -15,7 +15,8 @@ module Dependabot
         ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
 
         RESOLVABILITY_ERROR_REGEXES = [
-          # The checksum in go.sum does not match the dowloaded content
+          /repository '.+' not found/,
+          # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
           /go: .*: go.mod has post-v\d+ module path/
         ].freeze
@@ -193,8 +194,7 @@ module Dependabot
         end
 
         def in_repo_path(&block)
-          SharedHelpers.
-            in_a_temporary_repo_directory(directory, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               block.call
             end

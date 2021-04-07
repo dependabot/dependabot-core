@@ -91,6 +91,41 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
     end
 
+    context "with a repo not found" do
+      let(:project_name) { "repo_not_found" }
+      let(:dependency_name) { "github.com/go-openapi/spec" }
+      let(:dependency_version) { "0.20.3" }
+      let(:dependency_previous_version) { "0.19.2" }
+      let(:requirements) do
+        [{
+          requirement: ::Gem::Version.new(dependency_version),
+          file: "go.mod",
+          source: { type: "default", source: "github.com/go-openapi/spec" },
+          groups: [],
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: "v#{dependency_previous_version}",
+          file: "go.mod",
+          source: { type: "default", source: "github.com/go-openapi/spec" },
+          groups: [],
+        }]
+      end
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", "token")
+        }]
+      end
+
+      specify do
+        expect { updated_files }.to raise_error(/repository 'https:\/\/github\.com\/mholt\/caddy\/' not found/)
+      end
+    end
+
     context "without a go.sum" do
       let(:project_name) { "simple" }
       let(:files) { [go_mod] }

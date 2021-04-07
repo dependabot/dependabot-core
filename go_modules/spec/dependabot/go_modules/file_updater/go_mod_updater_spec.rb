@@ -498,29 +498,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
-
-    context "for a repository that is not found" do
-      let(:project_name) { "unknown_revision_version" }
-      let(:dependency_name) { "github.com/go-openapi/spec" }
-      let(:dependency_version) { "0.20.3" }
-      let(:dependency_previous_version) { "0.19.2" }
-      let(:requirements) do
-        [{
-          file: "go.mod",
-          requirement: dependency_version,
-          groups: [],
-          source: {
-            type: "default",
-            source: "github.com/DavidSpek/pytorch-operator"
-          }
-        }]
-      end
-      let(:previous_requirements) { [] }
-
-      specify do
-        expect { updater.updated_go_sum_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
   end
 
   describe "#updated_go_sum_content" do
