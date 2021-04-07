@@ -1,47 +1,49 @@
 FROM dependabot/dependabot-core
 
+ARG CODE_DIR=/home/dependabot/dependabot-core
+
 USER dependabot
 RUN pyenv install -s 3.6.13
 RUN pyenv install -s 3.7.1
 RUN pyenv install -s 3.7.10
 
 RUN mkdir -p \
-  /home/dependabot/dependabot-core/bundler \
-  /home/dependabot/dependabot-core/cargo \
-  /home/dependabot/dependabot-core/common \
-  /home/dependabot/dependabot-core/composer \
-  /home/dependabot/dependabot-core/dep \
-  /home/dependabot/dependabot-core/docker \
-  /home/dependabot/dependabot-core/elm \
-  /home/dependabot/dependabot-core/git_submodules \
-  /home/dependabot/dependabot-core/github_actions \
-  /home/dependabot/dependabot-core/go_modules \
-  /home/dependabot/dependabot-core/gradle \
-  /home/dependabot/dependabot-core/hex \
-  /home/dependabot/dependabot-core/maven \
-  /home/dependabot/dependabot-core/npm_and_yarn \
-  /home/dependabot/dependabot-core/nuget \
-  /home/dependabot/dependabot-core/omnibus \
-  /home/dependabot/dependabot-core/python \
-  /home/dependabot/dependabot-core/terraform \
-  /home/dependabot/dependabot-core/bundler/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/cargo/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/common/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/composer/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/dep/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/docker/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/elm/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/git_submodules/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/github_actions/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/go_modules/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/gradle/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/hex/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/maven/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/npm_and_yarn/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/nuget/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/omnibus/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/python/spec/fixtures/vcr_cassettes \
-  /home/dependabot/dependabot-core/terraform/spec/fixtures/vcr_cassettes
+  ${CODE_DIR}/bundler \
+  ${CODE_DIR}/cargo \
+  ${CODE_DIR}/common \
+  ${CODE_DIR}/composer \
+  ${CODE_DIR}/dep \
+  ${CODE_DIR}/docker \
+  ${CODE_DIR}/elm \
+  ${CODE_DIR}/git_submodules \
+  ${CODE_DIR}/github_actions \
+  ${CODE_DIR}/go_modules \
+  ${CODE_DIR}/gradle \
+  ${CODE_DIR}/hex \
+  ${CODE_DIR}/maven \
+  ${CODE_DIR}/npm_and_yarn \
+  ${CODE_DIR}/nuget \
+  ${CODE_DIR}/omnibus \
+  ${CODE_DIR}/python \
+  ${CODE_DIR}/terraform
+
+COPY --chown=dependabot:dependabot bundler/spec/fixtures/  ${CODE_DIR}/bundler/spec/
+COPY --chown=dependabot:dependabot cargo/spec/fixtures/ ${CODE_DIR}/cargo/spec/
+COPY --chown=dependabot:dependabot common/spec/fixtures/ ${CODE_DIR}/common/spec/
+COPY --chown=dependabot:dependabot composer/spec/fixtures/ ${CODE_DIR}/composer/spec/
+COPY --chown=dependabot:dependabot dep/spec/fixtures/ ${CODE_DIR}/dep/spec/
+COPY --chown=dependabot:dependabot docker/spec/fixtures/ ${CODE_DIR}/docker/spec/
+COPY --chown=dependabot:dependabot elm/spec/fixtures/ ${CODE_DIR}/elm/spec/
+COPY --chown=dependabot:dependabot git_submodules/spec/fixtures/ ${CODE_DIR}/gi/spec/
+COPY --chown=dependabot:dependabot github_actions/spec/fixtures/ ${CODE_DIR}/gi/spec/
+COPY --chown=dependabot:dependabot go_modules/spec/fixtures/ ${CODE_DIR}/go_modules/spec/
+COPY --chown=dependabot:dependabot gradle/spec/fixtures/ ${CODE_DIR}/gradle/spec/
+COPY --chown=dependabot:dependabot hex/spec/fixtures/ ${CODE_DIR}/hex/spec/
+COPY --chown=dependabot:dependabot maven/spec/fixtures/ ${CODE_DIR}/maven/spec/
+COPY --chown=dependabot:dependabot npm_and_yarn/spec/fixtures/ ${CODE_DIR}/npm_and_/spec/
+COPY --chown=dependabot:dependabot nuget/spec/fixtures/ ${CODE_DIR}/nuget/spec/
+COPY --chown=dependabot:dependabot python/spec/fixtures/ ${CODE_DIR}/python/spec/
+COPY --chown=dependabot:dependabot terraform/spec/fixtures/ ${CODE_DIR}/terraform/spec/
 
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
