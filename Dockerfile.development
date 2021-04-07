@@ -11,8 +11,6 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
 ARG CODE_DIR=/home/dependabot/dependabot-core
-WORKDIR ${CODE_DIR}
-
 RUN mkdir -p \
   ${CODE_DIR}/bundler \
   ${CODE_DIR}/cargo \
@@ -32,6 +30,7 @@ RUN mkdir -p \
   ${CODE_DIR}/omnibus \
   ${CODE_DIR}/python \
   ${CODE_DIR}/terraform
+WORKDIR ${CODE_DIR}
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
