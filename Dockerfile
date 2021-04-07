@@ -55,7 +55,7 @@ ARG USER_GID=$USER_UID
 
 RUN groupadd --gid "${USER_GID}" dependabot \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
-RUN mkdir -p /opt && chown -R dependabot:dependabot /opt
+RUN mkdir -p /opt && chown dependabot:dependabot /opt
 
 ### RUBY
 
@@ -74,7 +74,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN mkdir -p /usr/local/.pyenv && chown -R dependabot:dependabot /usr/local/.pyenv
+RUN mkdir -p /usr/local/.pyenv && chown dependabot:dependabot /usr/local/.pyenv
 USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
