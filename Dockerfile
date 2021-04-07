@@ -151,17 +151,17 @@ RUN add-apt-repository ppa:ondrej/php \
 # Install Go and dep
 ARG GOLANG_VERSION=1.16.2
 ARG GOLANG_CHECKSUM=542e936b19542e62679766194364f45141fde55169db2d8d01046555ca9eb4b8
-USER dependabot
-RUN cd /home/dependabot \
+ENV PATH=/opt/go/bin:$PATH \
+  GOPATH=/opt/go/gopath
+RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
-  && mkdir /opt/go/gopath \
+  && rm go.tar.gz \
+  && mkdir "$GOPATH" \
+  && chown dependabot:dependabot "$GOPATH" \
   && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep \
-  && rm go.tar.gz
-ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
-USER root
+  && chmod +x /opt/go/bin/dep
 
 ### ELIXIR
 
