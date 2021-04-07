@@ -54,9 +54,11 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 ARG OSTYPE=Linux
 
-RUN bash -c "[ \"$OSTYPE\" = \"Linux\" ] && groupadd --gid \"${USER_GID}\" dependabot" \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
-RUN mkdir -p /opt && chown dependabot:dependabot /opt
+RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
+  && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \
+     else groupmod -n dependabot $GROUP_NAME ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt
 
 ### RUBY
 
