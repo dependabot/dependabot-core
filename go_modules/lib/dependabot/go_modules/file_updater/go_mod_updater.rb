@@ -292,7 +292,7 @@ module Dependabot
             raise Dependabot::OutOfDisk.new, error_message
           end
 
-          if matches = stderr.match(/Authentication failed for '(?<url>.+)'/)
+          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
             raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
