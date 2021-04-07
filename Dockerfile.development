@@ -11,29 +11,13 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
 ARG CODE_DIR=/home/dependabot/dependabot-core
-RUN mkdir -p \
-  ${CODE_DIR}/bundler \
-  ${CODE_DIR}/cargo \
-  ${CODE_DIR}/common \
-  ${CODE_DIR}/composer \
-  ${CODE_DIR}/dep \
-  ${CODE_DIR}/docker \
-  ${CODE_DIR}/elm \
-  ${CODE_DIR}/git_submodules \
-  ${CODE_DIR}/github_actions \
-  ${CODE_DIR}/go_modules \
-  ${CODE_DIR}/gradle \
-  ${CODE_DIR}/hex \
-  ${CODE_DIR}/maven \
-  ${CODE_DIR}/npm_and_yarn \
-  ${CODE_DIR}/nuget \
-  ${CODE_DIR}/omnibus \
-  ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform
-WORKDIR ${CODE_DIR}
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
+WORKDIR ${CODE_DIR}
+RUN cd common \
+  && bundle install
+
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
 COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
@@ -48,16 +32,10 @@ COPY --chown=dependabot:dependabot hex/Gemfile hex/dependabot-hex.gemspec ${CODE
 COPY --chown=dependabot:dependabot maven/Gemfile maven/dependabot-maven.gemspec ${CODE_DIR}/maven/
 COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
 COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
-COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
-
-RUN cd common \
-  && bundle install
-
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/omnibus/Gemfile" \
     -not -path "${CODE_DIR}/common/Gemfile" \
     -name 'Gemfile' | xargs dirname`; do \
     echo && \
@@ -67,7 +45,9 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
     cd $d && bundle install; \
   done
 
-RUN cd omnibus && bundle install
+COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
+RUN cd omnibus \
+  && bundle install
 # Make omnibus gems available to bundler in root directory
 RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
 
