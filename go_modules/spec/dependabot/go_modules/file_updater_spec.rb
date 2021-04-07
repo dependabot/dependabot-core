@@ -116,7 +116,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       it "raises a helpful error" do
         expect { updated_files }.to raise_error(
           Dependabot::PrivateSourceAuthenticationFailure,
-          /github\.com\/mholt\/caddy/
+          %r{github\.com/mholt/caddy}
         )
       end
 
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         let(:credentials) { github_credentials }
 
         it "raises a helpful error" do
-          expect { updated_files }.to raise_error(Dependabot::GitDependenciesNotReachable, /github\.com\/mholt\/caddy/)
+          expect { updated_files }.to raise_error(Dependabot::GitDependenciesNotReachable, %r{github\.com/mholt/caddy})
         end
       end
     end
