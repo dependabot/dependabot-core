@@ -1,8 +1,7 @@
 package main
 
 import (
-  _ "github.com/go-openapi/spec"
+	_ "github.com/go-openapi/spec"
 )
 
-func main() {
-}
+func main() {}
