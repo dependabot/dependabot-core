@@ -301,6 +301,8 @@ module Dependabot
         end
 
         def gitlab_auth_details(maven_repo_url)
+          return {} unless gitlab_maven_repo?(URI(maven_repo_url).path)
+
           cred =
             credentials.select { |c| c["type"] == "git_source" }.
             find do |c|
@@ -313,6 +315,11 @@ module Dependabot
           return {} unless cred
 
           { "Private-Token" => cred.fetch("password") }
+        end
+
+        def gitlab_maven_repo?(maven_repo_path)
+          gitlab_maven_repo_reg = %r{^(/api/v4).*(/packages/maven)/?$}.freeze
+          maven_repo_path.match?(gitlab_maven_repo_reg)
         end
       end
     end
