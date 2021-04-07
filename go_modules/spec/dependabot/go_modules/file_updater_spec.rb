@@ -22,15 +22,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
   let(:files) { [go_mod, go_sum] }
   let(:project_name) { "go_sum" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
-  let(:default_token) { "token" }
-  let(:dev_token) { ENV["LOCAL_GITHUB_ACCESS_TOKEN"] }
 
   let(:credentials) do
     [{
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => dev_token && dev_token.length > 0 ? dev_token : default_token
+      "password" => "token"
     }]
   end
 
@@ -117,11 +115,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
 
       it "raises a helpful error" do
         expect { updated_files }.to raise_error(
-          credentials[0]['password'] == default_token ?
-            Dependabot::PrivateSourceAuthenticationFailure :
-            Dependabot::GitDependenciesNotReachable,
+          Dependabot::PrivateSourceAuthenticationFailure,
           /github\.com\/mholt\/caddy/
         )
+      end
+
+      context "with github credentials" do
+        let(:credentials) { github_credentials }
+
+        it "raises a helpful error" do
+          expect { updated_files }.to raise_error(Dependabot::GitDependenciesNotReachable, /github\.com\/mholt\/caddy/)
+        end
       end
     end
 
