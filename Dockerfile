@@ -77,7 +77,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN mkdir -p /usr/local/.pyenv && chown dependabot:dependabot /usr/local/.pyenv
+RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
