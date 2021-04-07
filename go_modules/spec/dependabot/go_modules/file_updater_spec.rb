@@ -28,7 +28,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => "token"
+      "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", "token")
     }]
   end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           requirement: ::Gem::Version.new(dependency_version),
           file: "go.mod",
           source: { type: "default", source: "github.com/go-openapi/spec" },
-          groups: [],
+          groups: []
         }]
       end
       let(:previous_requirements) do
@@ -109,20 +109,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           requirement: "v#{dependency_previous_version}",
           file: "go.mod",
           source: { type: "default", source: "github.com/go-openapi/spec" },
-          groups: [],
-        }]
-      end
-      let(:credentials) do
-        [{
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", "token")
+          groups: []
         }]
       end
 
-      specify do
-        expect { updated_files }.to raise_error(/repository 'https:\/\/github\.com\/mholt\/caddy\/' not found/)
+      it "raises a helpful error" do
+        expect { updated_files }.to raise_error(%r{repository 'https://github\.com/mholt/caddy/' not found})
       end
     end
 
