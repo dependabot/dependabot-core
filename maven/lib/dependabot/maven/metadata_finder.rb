@@ -6,6 +6,7 @@ require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/utils/auth_details_finder"
 
 module Dependabot
   module Maven
@@ -156,43 +157,12 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
+      def auth_details_finder
+        @auth_details_finder ||= Utils::AuthDetailsFinder.new(credentials)
+      end
+
       def auth_details
-        cred =
-          credentials.select { |c| c["type"] == "maven_repository" }.
-          find do |c|
-            cred_url = c.fetch("url").gsub(%r{/+$}, "")
-            next false unless cred_url == maven_repo_url
-
-            c.fetch("username", nil)
-          end
-
-        return gitlab_auth_details unless cred
-
-        token = cred.fetch("username") + ":" + cred.fetch("password")
-        encoded_token = Base64.encode64(token).delete("\n")
-        { "Authorization" => "Basic #{encoded_token}" }
-      end
-
-      def gitlab_auth_details
-        return {} unless gitlab_maven_repo?(URI(maven_repo_url).path)
-
-        cred =
-          credentials.select { |c| c["type"] == "git_source" }.
-          find do |c|
-            cred_host = c.fetch("host").gsub(%r{/+$}, "")
-            next false unless URI(maven_repo_url).host == cred_host
-
-            c.fetch("password", nil)
-          end
-
-        return {} unless cred
-
-        { "Private-Token" => cred.fetch("password") }
-      end
-
-      def gitlab_maven_repo?(maven_repo_path)
-        gitlab_maven_repo_reg = %r{^(/api/v4).*(/packages/maven)/?$}.freeze
-        maven_repo_path.match?(gitlab_maven_repo_reg)
+        auth_details_finder.auth_details(maven_repo_url)
       end
     end
   end

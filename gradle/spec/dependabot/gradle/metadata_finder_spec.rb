@@ -283,27 +283,73 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
           it { is_expected.to eq("https://github.com/mockito/mockito") }
         end
 
-        context "that include gitlab maven repo" do
+      end
+    end
+
+    context "when using a gitlab maven repository" do
+      let(:dependency_source) do
+        { type: "maven_repo", url: "https://gitlab.com/api/v4/groups/some-group/-/packages/maven" }
+      end
+      let(:maven_url) do
+        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/"\
+        "guava/23.3-jre/guava-23.3-jre.pom"
+      end
+      let(:maven_response) do
+        fixture("poms", "mockito-core-2.11.0.xml")
+      end
+
+      before do
+        stub_request(:get, maven_url).
+          to_return(status: 200, body: maven_response)
+      end
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "type" => "git_source",
+              "host" => "gitlab.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "type" => "maven_repository",
+              "url" => "https://gitlab.com/api/v4/groups/some-group/-/packages/maven"
+            }
+          ]
+        end
+
+        before do
+          stub_request(:get, maven_url).to_return(status: 404)
+          stub_request(:get, maven_url).
+            with(headers: { "Private-Token" => "token" }).
+            to_return(status: 200, body: maven_response)
+        end
+
+        it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+        context "that include a username and password" do
           let(:credentials) do
             [
               {
                 "type" => "git_source",
-                "host" => "github.com",
+                "host" => "gitlab.com",
                 "username" => "x-access-token",
                 "password" => "token"
               },
               {
-                "type" => "git_source",
-                "host" => "custom.registry.org",
-                "username" => "x-access-token",
-                "password" => "customToken"
+                "type" => "maven_repository",
+                "url" => "https://gitlab.com/api/v4/groups/some-group/-/packages/maven",
+                "username" => "dependabot",
+                "password" => "dependabotPassword"
               }
             ]
           end
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url).
-              with(headers: { "private-token" => "customToken" }).
+              with(basic_auth: %w(dependabot dependabotPassword)).
               to_return(status: 200, body: maven_response)
           end
 

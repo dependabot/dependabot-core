@@ -213,12 +213,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "that requires gitlab header token" do
+      context "that is a gitlab maven repository" do
         let(:credentials) do
           [
             {
               "type" => "maven_repository",
-              "url" => "https://private.registry.org/repo/"
+              "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
             },
             {
               "type" => "git_source",
@@ -230,7 +230,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
 
         let(:private_registry_metadata_url) do
-          "https://private.registry.org/repo/"\
+          "https://private.registry.org/api/v4/groups/-/packages/maven/"\
           "com/google/guava/guava/maven-metadata.xml"
         end
 
@@ -238,13 +238,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           stub_request(:get, maven_central_metadata_url).
             to_return(status: 404)
           stub_request(:get, private_registry_metadata_url).
-            with(headers: { "private-token" => "customToken" }).
+            with(headers: { "Private-Token" => "customToken" }).
             to_return(status: 200, body: maven_central_releases)
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
         its([:source_url]) do
-          is_expected.to eq("https://private.registry.org/repo")
+          is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
         end
       end
 
