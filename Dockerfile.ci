@@ -2,8 +2,6 @@ FROM dependabot/dependabot-core
 
 ARG CODE_DIR=/home/dependabot/dependabot-core
 
-USER dependabot
-
 # We pre-install these versions of python as they're known to be used in the
 # test suite. These used to be installed in-line, and pre-installing them helps
 # with the performance of the python test suite.
