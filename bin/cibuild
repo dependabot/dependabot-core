@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+export SUITE_NAME=${1:-cargo}
+export DOCKER_BUILDKIT=1
+export CORE_IMAGE=dependabot/dependabot-core
+export CORE_CI_IMAGE=dependabot/dependabot-core-ci
+
+docker build -t "$CORE_IMAGE" .
+docker build -t "$CORE_CI_IMAGE" -f Dockerfile.ci .
+
+docker run --rm \
+  --env "CI=true" \
+  --env "DEPENDABOT_TEST_ACCESS_TOKEN=${GITHUB_TOKEN}" \
+  --env "SUITE_NAME=$SUITE_NAME" \
+  --rm "$CORE_CI_IMAGE" \
+  bash -c \
+    "cd /home/dependabot/dependabot-core/${SUITE_NAME} && ./script/ci-test"

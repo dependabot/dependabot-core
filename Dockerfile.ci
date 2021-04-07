@@ -31,3 +31,5 @@ RUN mkdir -p \
   ${CODE_DIR}/omnibus \
   ${CODE_DIR}/python \
   ${CODE_DIR}/terraform
+
+COPY --chown=dependabot:dependabot . ${CODE_DIR}
