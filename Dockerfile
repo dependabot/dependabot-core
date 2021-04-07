@@ -52,7 +52,6 @@ RUN apt-get update \
 
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
-ARG OSTYPE=Linux
 
 RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
   && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \

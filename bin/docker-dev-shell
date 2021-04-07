@@ -38,7 +38,6 @@ build_image() {
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
-    --build-arg OSTYPE="$(uname)" \
     --cache-from "dependabot/dependabot-core:latest" \
     -t dependabot/dependabot-core .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"

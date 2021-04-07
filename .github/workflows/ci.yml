@@ -61,7 +61,6 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg "USER_UID=$(id -u)" \
             --build-arg "USER_GID=$(id -g)" \
-            --build-arg OSTYPE="$(uname)" \
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_IMAGE:branch--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
