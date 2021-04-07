@@ -41,18 +41,18 @@ RSpec.shared_context "stub rubygems compact index" do
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(
         status: 200,
-        body: fixture("ruby", "rubygems_responses", "index")
+        body: fixture("rubygems_responses", "index")
       )
 
     # Stub the Rubygems response for each dependency we have a fixture for
     fixtures =
-      Dir[File.join("../../spec", "fixtures", "ruby", "rubygems_responses", "info-*")]
+      Dir[File.join("../../spec", "fixtures", "rubygems_responses", "info-*")]
     fixtures.each do |path|
       dep_name = path.split("/").last.gsub("info-", "")
       stub_request(:get, "https://index.rubygems.org/info/#{dep_name}").
         to_return(
           status: 200,
-          body: fixture("ruby", "rubygems_responses", "info-#{dep_name}")
+          body: fixture("rubygems_responses", "info-#{dep_name}")
         )
     end
   end

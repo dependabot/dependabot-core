@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           end
 
           let(:rubygems_versions) do
-            fixture("ruby", "rubygems_responses", "versions-public_suffix.json")
+            fixture("rubygems_responses", "versions-public_suffix.json")
           end
 
           before do
