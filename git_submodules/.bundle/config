@@ -1,0 +1,5 @@
+---
+BUNDLE_PATH: ".bundle"
+BUNDLE_CACHE_PATH: "../vendor"
+BUNDLE_CACHE_ALL: "false"
+BUNDLE_CACHE_ALL_PLATFORMS: "true"
