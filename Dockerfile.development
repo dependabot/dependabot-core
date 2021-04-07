@@ -41,24 +41,6 @@ RUN mkdir -p \
   ${CODE_DIR}/python \
   ${CODE_DIR}/terraform
 
-COPY --chown=dependabot:dependabot bundler/spec/fixtures/ ${CODE_DIR}/bundler/spec/
-COPY --chown=dependabot:dependabot cargo/spec/fixtures/ ${CODE_DIR}/cargo/spec/
-COPY --chown=dependabot:dependabot common/spec/fixtures/ ${CODE_DIR}/common/spec/
-COPY --chown=dependabot:dependabot composer/spec/fixtures/ ${CODE_DIR}/composer/spec/
-COPY --chown=dependabot:dependabot dep/spec/fixtures/ ${CODE_DIR}/dep/spec/
-COPY --chown=dependabot:dependabot docker/spec/fixtures/ ${CODE_DIR}/docker/spec/
-COPY --chown=dependabot:dependabot elm/spec/fixtures/ ${CODE_DIR}/elm/spec/
-COPY --chown=dependabot:dependabot git_submodules/spec/fixtures/ ${CODE_DIR}/gi/spec/
-COPY --chown=dependabot:dependabot github_actions/spec/fixtures/ ${CODE_DIR}/gi/spec/
-COPY --chown=dependabot:dependabot go_modules/spec/fixtures/ ${CODE_DIR}/go_modules/spec/
-COPY --chown=dependabot:dependabot gradle/spec/fixtures/ ${CODE_DIR}/gradle/spec/
-COPY --chown=dependabot:dependabot hex/spec/fixtures/ ${CODE_DIR}/hex/spec/
-COPY --chown=dependabot:dependabot maven/spec/fixtures/ ${CODE_DIR}/maven/spec/
-COPY --chown=dependabot:dependabot npm_and_yarn/spec/fixtures/ ${CODE_DIR}/npm_and_/spec/
-COPY --chown=dependabot:dependabot nuget/spec/fixtures/ ${CODE_DIR}/nuget/spec/
-COPY --chown=dependabot:dependabot python/spec/fixtures/ ${CODE_DIR}/python/spec/
-COPY --chown=dependabot:dependabot terraform/spec/fixtures/ ${CODE_DIR}/terraform/spec/
-
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/

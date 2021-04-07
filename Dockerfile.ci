@@ -11,43 +11,5 @@ RUN pyenv install -s 3.6.13
 RUN pyenv install -s 3.7.1
 RUN pyenv install -s 3.7.10
 
-RUN mkdir -p \
-  ${CODE_DIR}/bundler \
-  ${CODE_DIR}/cargo \
-  ${CODE_DIR}/common \
-  ${CODE_DIR}/composer \
-  ${CODE_DIR}/dep \
-  ${CODE_DIR}/docker \
-  ${CODE_DIR}/elm \
-  ${CODE_DIR}/git_submodules \
-  ${CODE_DIR}/github_actions \
-  ${CODE_DIR}/go_modules \
-  ${CODE_DIR}/gradle \
-  ${CODE_DIR}/hex \
-  ${CODE_DIR}/maven \
-  ${CODE_DIR}/npm_and_yarn \
-  ${CODE_DIR}/nuget \
-  ${CODE_DIR}/omnibus \
-  ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform
-
-COPY --chown=dependabot:dependabot bundler/spec  ${CODE_DIR}/bundler/
-COPY --chown=dependabot:dependabot cargo/spec ${CODE_DIR}/cargo/
-COPY --chown=dependabot:dependabot common/spec ${CODE_DIR}/common/
-COPY --chown=dependabot:dependabot composer/spec ${CODE_DIR}/composer/
-COPY --chown=dependabot:dependabot dep/spec ${CODE_DIR}/dep/
-COPY --chown=dependabot:dependabot docker/spec ${CODE_DIR}/docker/
-COPY --chown=dependabot:dependabot elm/spec ${CODE_DIR}/elm/
-COPY --chown=dependabot:dependabot git_submodules/spec ${CODE_DIR}/gi/
-COPY --chown=dependabot:dependabot github_actions/spec ${CODE_DIR}/gi/
-COPY --chown=dependabot:dependabot go_modules/spec ${CODE_DIR}/go_modules/
-COPY --chown=dependabot:dependabot gradle/spec ${CODE_DIR}/gradle/
-COPY --chown=dependabot:dependabot hex/spec ${CODE_DIR}/hex/
-COPY --chown=dependabot:dependabot maven/spec ${CODE_DIR}/maven/
-COPY --chown=dependabot:dependabot npm_and_yarn/spec ${CODE_DIR}/npm_and_/
-COPY --chown=dependabot:dependabot nuget/spec ${CODE_DIR}/nuget/
-COPY --chown=dependabot:dependabot python/spec ${CODE_DIR}/python/
-COPY --chown=dependabot:dependabot terraform/spec ${CODE_DIR}/terraform/
-
 RUN git config --global user.name dependabot-ci && \
   git config --global user.email no-reply@github.com
