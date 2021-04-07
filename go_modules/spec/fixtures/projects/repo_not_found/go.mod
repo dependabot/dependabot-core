@@ -1,4 +1,4 @@
-module github.com/dependabot/vgotest
+module github.com/dependabot/dependabot-core/go_modules/spec/fixtures/projects/repo_not_found
 
 go 1.13
 
