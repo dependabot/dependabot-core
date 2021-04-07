@@ -60,6 +60,7 @@ jobs:
             -t "$CORE_IMAGE:branch--$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg "USER_UID=$UID" \
+            --build-arg "USER_GID=$(id -g)" \
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_IMAGE:branch--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
