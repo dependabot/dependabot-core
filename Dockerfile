@@ -216,9 +216,7 @@ RUN mkdir -p /opt/dep \
   && bash /opt/terraform/helpers/build /opt/terraform \
   && bash /opt/python/helpers/build /opt/python \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
-  && bash /opt/hex/helpers/build /opt/hex \
-  && bash /opt/composer/helpers/v2/build /opt/composer/v2 \
-  bash /opt/composer/helpers/v1/build /opt/composer/v1
+  && bash /opt/hex/helpers/build /opt/hex
 
 # Build native helpers as dependabot to make the /opt/go/gopath and .bundle
 # folders writeable from updates
@@ -226,7 +224,9 @@ USER dependabot
 RUN bash /opt/dep/helpers/build /opt/dep \
   && bash /opt/go_modules/helpers/build /opt/go_modules \
   && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
-  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2
+  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
+  && bash /opt/composer/helpers/v2/build /opt/composer/v2 \
+  bash /opt/composer/helpers/v1/build /opt/composer/v1
 
 # Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
