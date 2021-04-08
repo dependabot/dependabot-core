@@ -1,8 +1,0 @@
-# frozen_string_literal: true
-
-source "https://rubygems.org"
-
-gem "openssl", "~> 2.1.2"
-
-gem "business", "~> 1.4"
-gem "statesman", "~> 1.2"
