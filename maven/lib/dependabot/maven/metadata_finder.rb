@@ -157,12 +157,8 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
-      def auth_headers_finder
-        @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
-      end
-
       def auth_headers
-        auth_headers_finder.auth_headers(maven_repo_url)
+        @auth_headers ||= Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
       end
     end
   end

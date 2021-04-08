@@ -5,7 +5,7 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/gradle/file_parser/repositories_finder"
-require 'dependabot/gradle/utils/auth_headers_finder'
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Gradle
@@ -171,12 +171,8 @@ module Dependabot
         plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
       end
 
-      def auth_headers_finder
-        @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
-      end
-
       def auth_headers
-        auth_headers_finder.auth_headers(maven_repo_url)
+        @auth_headers ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
       end
     end
   end

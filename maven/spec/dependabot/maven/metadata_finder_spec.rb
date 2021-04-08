@@ -311,7 +311,6 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
         end
-
       end
     end
 

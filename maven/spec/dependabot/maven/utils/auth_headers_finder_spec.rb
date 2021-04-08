@@ -45,7 +45,6 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
     end
 
     context "with matching credentials" do
-
       let(:maven_repo_url) do
         "https://repo.maven.apache.org/maven2"
       end
@@ -56,7 +55,6 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
     end
 
     context "with matching gitlab credentials" do
-
       let(:maven_repo_url) do
         "https://gitlab.com/api/v4/groups/some-group/-/packages/maven"
       end
@@ -72,7 +70,6 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
       end
 
       context "and gitlab credentials" do
-
         let(:credentials) do
           [
             {
@@ -99,7 +96,6 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
       end
 
       context "but not a gitlab maven repo" do
-
         let(:credentials) do
           [
             {
@@ -117,6 +113,5 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({}) }
       end
     end
-
   end
 end

@@ -6,7 +6,7 @@ require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
-require "dependabot/gradle/utils/auth_headers_finder"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Gradle
@@ -331,12 +331,8 @@ module Dependabot
           Gradle::Version
         end
 
-        def auth_headers_finder
-          @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
-        end
-
         def auth_headers(maven_repo_url)
-          auth_headers_finder.auth_headers(maven_repo_url)
+          @auth_headers ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
         end
       end
     end

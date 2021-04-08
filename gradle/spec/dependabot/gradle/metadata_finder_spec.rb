@@ -282,7 +282,6 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
           it { is_expected.to eq("https://github.com/mockito/mockito") }
         end
-
       end
     end
 

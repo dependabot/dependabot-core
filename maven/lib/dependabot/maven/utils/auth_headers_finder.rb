@@ -4,7 +4,6 @@ module Dependabot
   module Maven
     module Utils
       class AuthHeadersFinder
-
         def initialize(credentials)
           @credentials = credentials
         end
@@ -55,4 +54,3 @@ module Dependabot
     end
   end
 end
-
