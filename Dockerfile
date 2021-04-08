@@ -186,9 +186,9 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 # Install Rust 1.51.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
-RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
-RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
-RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
+RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
+  && export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y \
+  && rustup toolchain install 1.51.0 && rustup default 1.51.0
 
 ### NEW NATIVE HELPERS
 
