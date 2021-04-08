@@ -88,7 +88,5 @@ jobs:
             --env "CI=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --env "BUNDLE_PATH=/home/dependabot/.bundle" \
-            -w "$CODE_DIR" \
             --rm "$CORE_CI_IMAGE" bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
