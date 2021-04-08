@@ -1,3 +1,7 @@
+## v0.140.2, 8 April 2021
+
+- Go mod: Handle repo not found errors projects https://github.com/dependabot/dependabot-core/pull/3456
+
 ## v0.140.1, 8 April 2021
 
 - Python: Disabled poetry experimental new installer @honnix
