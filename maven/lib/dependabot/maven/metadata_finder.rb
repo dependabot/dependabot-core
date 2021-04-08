@@ -6,7 +6,7 @@ require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
-require "dependabot/maven/utils/auth_details_finder"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Maven
@@ -105,7 +105,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{dependency_artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -136,7 +136,7 @@ module Dependabot
         response = Excon.get(
           substitute_properties_in_source_url(url, pom),
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         Nokogiri::XML(response.body)
@@ -157,12 +157,12 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
-      def auth_details_finder
-        @auth_details_finder ||= Utils::AuthDetailsFinder.new(credentials)
+      def auth_headers_finder
+        @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
       end
 
-      def auth_details
-        auth_details_finder.auth_details(maven_repo_url)
+      def auth_headers
+        auth_headers_finder.auth_headers(maven_repo_url)
       end
     end
   end

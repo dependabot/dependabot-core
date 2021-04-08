@@ -5,7 +5,7 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/gradle/file_parser/repositories_finder"
-require 'dependabot/gradle/utils/auth_details_finder'
+require 'dependabot/gradle/utils/auth_headers_finder'
 
 module Dependabot
   module Gradle
@@ -113,7 +113,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -136,7 +136,7 @@ module Dependabot
           "#{version}/"\
           "#{artifact_id}-#{version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         Nokogiri::XML(response.body)
@@ -171,12 +171,12 @@ module Dependabot
         plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
       end
 
-      def auth_details_finder
-        @auth_details_finder ||= Utils::AuthDetailsFinder.new(credentials)
+      def auth_headers_finder
+        @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
       end
 
-      def auth_details
-        auth_details_finder.auth_details(maven_repo_url)
+      def auth_headers
+        auth_headers_finder.auth_headers(maven_repo_url)
       end
     end
   end

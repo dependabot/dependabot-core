@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/gradle/utils/auth_details_finder"
+require "dependabot/gradle/utils/auth_headers_finder"
 
-RSpec.describe Dependabot::Gradle::Utils::AuthDetailsFinder do
+RSpec.describe Dependabot::Gradle::Utils::AuthHeadersFinder do
   subject(:finder) { described_class.new(credentials) }
   let(:credentials) do
     [
@@ -34,8 +34,8 @@ RSpec.describe Dependabot::Gradle::Utils::AuthDetailsFinder do
     ]
   end
 
-  describe "#auth_details" do
-    subject(:found_auth_details) { finder.auth_details(maven_repo_url) }
+  describe "#auth_headers" do
+    subject(:found_auth_headers) { finder.auth_headers(maven_repo_url) }
     let(:maven_repo_url) do
       "https://custom.repo.org/maven2"
     end

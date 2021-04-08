@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 module Dependabot
-  module Gradle
+  module Maven
     module Utils
-      class AuthDetailsFinder
+      class AuthHeadersFinder
 
         def initialize(credentials)
           @credentials = credentials
         end
 
-        def auth_details(maven_repo_url)
+        def auth_headers(maven_repo_url)
           cred =
             credentials.select { |c| c["type"] == "maven_repository" }.
             find do |c|
@@ -19,7 +19,7 @@ module Dependabot
               c.fetch("username", nil)
             end
 
-          return gitlab_auth_details(maven_repo_url) unless cred
+          return gitlab_auth_headers(maven_repo_url) unless cred
 
           token = cred.fetch("username") + ":" + cred.fetch("password")
           encoded_token = Base64.strict_encode64(token)
@@ -30,7 +30,7 @@ module Dependabot
 
         attr_reader :credentials
 
-        def gitlab_auth_details(maven_repo_url)
+        def gitlab_auth_headers(maven_repo_url)
           return {} unless gitlab_maven_repo?(URI(maven_repo_url).path)
 
           cred =

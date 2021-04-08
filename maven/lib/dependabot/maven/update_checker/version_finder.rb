@@ -6,7 +6,7 @@ require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
-require "dependabot/maven/utils/auth_details_finder"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Maven
@@ -154,7 +154,7 @@ module Dependabot
               response = Excon.head(
                 dependency_files_url(url, version),
                 idempotent: true,
-                **SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_details"))
+                **SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
               )
 
               response.status < 400
@@ -173,7 +173,7 @@ module Dependabot
               response = Excon.get(
                 dependency_metadata_url(repository_details.fetch("url")),
                 idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_details"))
+                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
               )
               check_response(response, repository_details.fetch("url"))
 
@@ -203,10 +203,10 @@ module Dependabot
 
           @repositories =
             details.reject do |repo|
-              next if repo["auth_details"]
+              next if repo["auth_headers"]
 
-              # Reject this entry if an identical one with non-empty auth_details exists
-              details.any? { |r| r["url"] == repo["url"] && r["auth_details"] != {} }
+              # Reject this entry if an identical one with non-empty auth_headers exists
+              details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
         end
 
@@ -216,7 +216,7 @@ module Dependabot
             new(dependency_files: dependency_files).
             repository_urls(pom: pom).
             map do |url|
-              { "url" => url, "auth_details" => {} }
+              { "url" => url, "auth_headers" => {} }
             end
         end
 
@@ -226,7 +226,7 @@ module Dependabot
             map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "auth_details" => auth_details(cred.fetch("url").gsub(%r{/+$}, ""))
+                "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
               }
             end
         end
@@ -284,12 +284,12 @@ module Dependabot
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
 
-        def auth_details_finder
-          @auth_details_finder ||= Utils::AuthDetailsFinder.new(credentials)
+        def auth_headers_finder
+          @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
         end
 
-        def auth_details(maven_repo_url)
-          auth_details_finder.auth_details(maven_repo_url)
+        def auth_headers(maven_repo_url)
+          auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
     end
