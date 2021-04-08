@@ -22,7 +22,7 @@ module Dependabot
           return gitlab_auth_details(maven_repo_url) unless cred
 
           token = cred.fetch("username") + ":" + cred.fetch("password")
-          encoded_token = Base64.encode64(token).delete("\n")
+          encoded_token = Base64.strict_encode64(token)
           { "Authorization" => "Basic #{encoded_token}" }
         end
 

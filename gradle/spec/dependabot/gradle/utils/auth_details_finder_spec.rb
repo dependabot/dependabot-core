@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Gradle::Utils::AuthDetailsFinder do
           "https://gitlab.com/api/v4/groups/some-group/-/packages/maven"
         end
 
-        encoded_token = Base64.encode64("dependabot:dependabotPassword").delete("\n")
+        encoded_token = Base64.strict_encode64("dependabot:dependabotPassword")
 
         it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
       end

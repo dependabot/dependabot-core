@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthDetailsFinder do
         "https://repo.maven.apache.org/maven2"
       end
 
-      encoded_token = Base64.encode64("dependabot:dependabotPassword").delete("\n")
+      encoded_token = Base64.strict_encode64("dependabot:dependabotPassword")
 
       it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
     end
