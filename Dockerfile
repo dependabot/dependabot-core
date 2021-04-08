@@ -192,7 +192,7 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
   && export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
 
-COPY composer/helpers /opt/composer/helpers
+COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY dep/helpers /opt/dep/helpers
 COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
@@ -209,10 +209,14 @@ RUN mkdir -p /opt/dep \
   && mkdir -p /opt/go_modules \
   && mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2 \
+  && mkdir -p /opt/composer/v1 \
+  && mkdir -p /opt/composer/v2 \
   && chown dependabot:dependabot /opt/dep \
   && chown dependabot:dependabot /opt/go_modules \
   && chown dependabot:dependabot /opt/bundler/v1 \
   && chown dependabot:dependabot /opt/bundler/v2 \
+  && chown dependabot:dependabot /opt/composer/v1 \
+  && chown dependabot:dependabot /opt/composer/v2 \
   && bash /opt/terraform/helpers/build /opt/terraform \
   && bash /opt/python/helpers/build /opt/python \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
