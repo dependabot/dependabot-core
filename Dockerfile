@@ -221,6 +221,6 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/composer/helpers/v1/build /opt/composer/v1
 
 # Allow further gem installs as the dependabot user:
-ENV BUNDLE_PATH="/home/dependabot/.bundle"
-ENV BUNDLE_BIN=".bundle/binstubs"
+ENV BUNDLE_PATH="/home/dependabot/.bundle" \
+    BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
