@@ -56,8 +56,8 @@ ARG USER_GID=$USER_UID
 RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
   && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \
      else groupmod -n dependabot $GROUP_NAME ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
+
 
 ### RUBY
 
@@ -71,19 +71,18 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && gem install bundler -v 2.2.15 --no-document \
   && rm -Rf /var/lib/gems/2.6.0/cache/*
 
+
 ### PYTHON
 
 # Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
-USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
   && pyenv install 3.9.4 \
   && pyenv install 2.7.18 \
   && pyenv global 3.9.4
-USER root
 
 
 ### JAVASCRIPT
@@ -186,11 +185,9 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 # Install Rust 1.51.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
-USER dependabot
-RUN mkdir -p "$RUSTUP_HOME"
+RUN mkdir -p "$RUSTUP_HOME" && chown -chown=dependabot:dependabot "$RUSTUP_HOME"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
-USER root
 
 ### NEW NATIVE HELPERS
 
@@ -207,13 +204,15 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-USER dependabot
+RUN mkdir -p /opt/bundler/v1 && mkdir -p /opt/bundler/v2 \
+  && -chown=dependabot:dependabot /opt/bundler/v1 \
+  && -chown=dependabot:dependabot /opt/bundler/v2
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
-  mkdir -p /opt/bundler/v1 && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
-  mkdir -p /opt/bundler/v2 && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 && \
+  bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
+  bash /opt/bundler/helpers/v2/build /opt/bundler/v2 && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
@@ -224,3 +223,5 @@ RUN bash /opt/terraform/helpers/build /opt/terraform && \
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
+
+USER dependabot
