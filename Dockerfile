@@ -230,5 +230,5 @@ RUN bash /opt/dep/helpers/build /opt/dep \
 
 # Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-    BUNDLE_BIN=".bundle/binstubs"
+    BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
