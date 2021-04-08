@@ -185,7 +185,7 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
 # Install Rust 1.51.0
 ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
-RUN mkdir -p "$RUSTUP_HOME" && chown -chown=dependabot:dependabot "$RUSTUP_HOME"
+RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN export CARGO_HOME=/opt/rust ; rustup toolchain install 1.51.0 && rustup default 1.51.0
 
@@ -205,8 +205,8 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 RUN mkdir -p /opt/bundler/v1 && mkdir -p /opt/bundler/v2 \
-  && -chown=dependabot:dependabot /opt/bundler/v1 \
-  && -chown=dependabot:dependabot /opt/bundler/v2
+  && chown dependabot:dependabot /opt/bundler/v1 \
+  && chown dependabot:dependabot /opt/bundler/v2
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
