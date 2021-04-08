@@ -78,12 +78,13 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
+USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
   && pyenv install 3.9.4 \
   && pyenv install 2.7.18 \
   && pyenv global 3.9.4
-
+USER root
 
 ### JAVASCRIPT
 
@@ -204,24 +205,24 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-RUN mkdir -p /opt/bundler/v1 && mkdir -p /opt/bundler/v2 \
-  && chown dependabot:dependabot /opt/bundler/v1 \
-  && chown dependabot:dependabot /opt/bundler/v2
-
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
-  bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
-  bash /opt/bundler/helpers/v2/build /opt/bundler/v2 && \
   bash /opt/go_modules/helpers/build /opt/go_modules && \
   bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
   bash /opt/hex/helpers/build /opt/hex && \
   bash /opt/composer/helpers/v2/build /opt/composer/v2 && \
   bash /opt/composer/helpers/v1/build /opt/composer/v1
 
-# Allow further gem installs as the dependabot user:
+RUN mkdir -p /opt/bundler/v1 && mkdir -p /opt/bundler/v2 \
+  && chown dependabot:dependabot /opt/bundler/v1 \
+  && chown dependabot:dependabot /opt/bundler/v2
+
+USER dependabot
+RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
+  bash /opt/bundler/helpers/v2/build /opt/bundler/v2 &&
+
+# Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
     BUNDLE_BIN=".bundle/binstubs"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-
-USER dependabot
