@@ -16,10 +16,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories,
-      options: {
-        bundler_2_available: PackageManagerHelper.use_bundler_2?
-      }
+      security_advisories: security_advisories
     )
   end
   let(:credentials) do
@@ -1365,15 +1362,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
-        end
-
-        it "raises a helpful error", :bundler_v1_only do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
-              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["git://github.com/fundingcircle/prius.git"])
-            end
         end
 
         it "raises a helpful error", :bundler_v2_only do
