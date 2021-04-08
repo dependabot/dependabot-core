@@ -1,3 +1,8 @@
+## v0.140.1, 8 April 2021
+
+- Python: Disabled poetry experimental new installer @honnix
+- GitLab: Implement delete/create action in client @jerbob92
+
 ## v0.140.0, 7 April 2021
 
 - Bundler: Detecting and using the correct major Bundler version is now enabled by default
