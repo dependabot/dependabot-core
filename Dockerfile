@@ -56,7 +56,8 @@ ARG USER_GID=$USER_UID
 RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
   && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \
      else groupmod -n dependabot $GROUP_NAME ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt
 
 
 ### RUBY
@@ -205,32 +206,19 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-RUN mkdir -p /opt/dep \
-  && mkdir -p /opt/go_modules \
-  && mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2 \
-  && mkdir -p /opt/composer/v1 \
-  && mkdir -p /opt/composer/v2 \
-  && chown dependabot:dependabot /opt/dep \
-  && chown dependabot:dependabot /opt/go_modules \
-  && chown dependabot:dependabot /opt/bundler/v1 \
-  && chown dependabot:dependabot /opt/bundler/v2 \
-  && chown dependabot:dependabot /opt/composer/v1 \
-  && chown dependabot:dependabot /opt/composer/v2 \
-  && bash /opt/terraform/helpers/build /opt/terraform \
-  && bash /opt/python/helpers/build /opt/python \
-  && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
-  && bash /opt/hex/helpers/build /opt/hex
-
-# Build native helpers as dependabot to make the /opt/go/gopath and .bundle
-# folders writeable from updates
 USER dependabot
-RUN bash /opt/dep/helpers/build /opt/dep \
-  && bash /opt/go_modules/helpers/build /opt/go_modules \
+RUN mkdir -p /opt/bundler/v1 \
+  && mkdir -p /opt/bundler/v2 \
   && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
   && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
-  && bash /opt/composer/helpers/v2/build /opt/composer/v2 \
-  bash /opt/composer/helpers/v1/build /opt/composer/v1
+  && bash /opt/dep/helpers/build /opt/dep \
+  && bash /opt/go_modules/helpers/build /opt/go_modules \
+  && bash /opt/hex/helpers/build /opt/hex \
+  && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
+  && bash /opt/python/helpers/build /opt/python \
+  && bash /opt/terraform/helpers/build /opt/terraform \
+  && bash /opt/composer/helpers/v1/build /opt/composer/v1 \
+  && bash /opt/composer/helpers/v2/build /opt/composer/v2
 
 # Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
