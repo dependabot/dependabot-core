@@ -11,5 +11,4 @@ RUN pyenv install -s 3.6.13 \
 
 ARG CODE_DIR=/home/dependabot/dependabot-core
 WORKDIR ${CODE_DIR}
-
 COPY --chown=dependabot:dependabot . ${CODE_DIR}
