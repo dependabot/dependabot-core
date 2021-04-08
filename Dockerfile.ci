@@ -84,5 +84,4 @@ COPY --chown=dependabot:dependabot bundler/spec ${CODE_DIR}/bundler/spec
 COPY --chown=dependabot:dependabot bundler/script ${CODE_DIR}/bundler/script
 COPY --chown=dependabot:dependabot omnibus/.rubocop.yml omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 COPY --chown=dependabot:dependabot omnibus/lib ${CODE_DIR}/omnibus/lib
-COPY --chown=dependabot:dependabot omnibus/spec ${CODE_DIR}/omnibus/spec
 COPY --chown=dependabot:dependabot omnibus/script ${CODE_DIR}/omnibus/script
