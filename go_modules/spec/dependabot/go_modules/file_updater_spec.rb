@@ -91,7 +91,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
     end
 
-    context "with a repo not found" do
+    context "with an indirect dependency from an unreachable repo" do
       let(:project_name) { "repo_not_found" }
       let(:dependency_name) { "github.com/go-openapi/spec" }
       let(:dependency_version) { "0.20.3" }
