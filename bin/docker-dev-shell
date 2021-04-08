@@ -3,8 +3,8 @@
 set -e
 
 IMAGE_NAME="${IMAGE_NAME:=dependabot/dependabot-core-development}"
-CONTAINER_NAME="${CONTAINER_NAME:=dependabot-core-development}"
-DOCKERFILE="Dockerfile.development"
+CONTAINER_NAME="${CONTAINER_NAME:=dependabot-core-ci}"
+DOCKERFILE="Dockerfile.ci"
 HELP=false
 REBUILD=false
 

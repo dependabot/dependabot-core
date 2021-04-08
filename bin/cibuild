@@ -5,8 +5,13 @@ export DOCKER_BUILDKIT=1
 export CORE_IMAGE=dependabot/dependabot-core
 export CORE_CI_IMAGE=dependabot/dependabot-core-ci
 
-docker build -t "$CORE_IMAGE" .
-docker build -t "$CORE_CI_IMAGE" -f Dockerfile.ci .
+docker build \
+  --build-arg BUILDKIT_INLINE_CACHE=1 \
+  --cache-from "dependabot/dependabot-core:latest" \
+  -t "$CORE_IMAGE" .
+docker build \
+  --build-arg BUILDKIT_INLINE_CACHE=1 \
+  -t "$CORE_CI_IMAGE" -f Dockerfile.ci .
 
 docker run --rm \
   --env "CI=true" \
