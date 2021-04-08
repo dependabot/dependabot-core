@@ -194,13 +194,13 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY dep/helpers /opt/dep/helpers
-COPY bundler/helpers /opt/bundler/helpers
-COPY go_modules/helpers /opt/go_modules/helpers
-COPY hex/helpers /opt/hex/helpers
-COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY python/helpers /opt/python/helpers
-COPY terraform/helpers /opt/terraform/helpers
+COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
+COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
+COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
