@@ -220,7 +220,7 @@ RUN mkdir -p /opt/bundler/v1 && mkdir -p /opt/bundler/v2 \
 
 USER dependabot
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
-  bash /opt/bundler/helpers/v2/build /opt/bundler/v2 &&
+  bash /opt/bundler/helpers/v2/build /opt/bundler/v2
 
 # Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
