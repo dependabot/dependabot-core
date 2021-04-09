@@ -361,14 +361,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       before do
         stub_request(:get, maven_central_metadata_url).
           to_return(status: 404)
-        stub_request(:get, private_registry_metadata_url).
-          with(basic_auth: %w(dependabot dependabotPassword)).
-          to_return(status: 200, body: maven_central_releases)
         stub_request(:get, second_repo).
           with(basic_auth: %w(dependabot2 dependabotPassword2)).
-          to_return(status: 200, body: maven_central_releases)
+          to_return(status: 404)
         stub_request(:get, gitlab_maven_repo).
           with(headers: { "Private-Token" => "customToken" }).
+          to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url).
+          with(basic_auth: %w(dependabot dependabotPassword)).
           to_return(status: 200, body: maven_central_releases)
       end
 
