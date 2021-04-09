@@ -209,7 +209,8 @@ RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2 \
   && mkdir -p /opt/go_modules/bin \
   && mkdir -p /opt/dep/bin \
-  && chown -R dependabot:dependabot /opt/bundler \
+  && chown dependabot:dependabot /opt/bundler/v1 \
+  && chown dependabot:dependabot /opt/bundler/v2 \
   && chown dependabot:dependabot /opt/go_modules/bin \
   && chown dependabot:dependabot /opt/dep/bin \
   && bash /opt/hex/helpers/build /opt/hex \
