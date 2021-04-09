@@ -219,15 +219,20 @@ RUN mkdir -p /opt/bundler/v1 \
   && bash /opt/composer/helpers/v1/build /opt/composer/v1 \
   && bash /opt/composer/helpers/v2/build /opt/composer/v2
 
+# NOTE: Install go and bundler dependencies as dependabot to keep the
+# /opt/bundler/vx/.bundle and /opt/go/gopath directories writable from updates
 USER dependabot
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
   && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
   && bash /opt/dep/helpers/build /opt/dep \
   && bash /opt/go_modules/helpers/build /opt/go_modules
+
+# NOTE: Change the owner back to root for native helpers scripts, not including
+# the /opt/bundler/vx/.bundle folders
 USER root
 RUN chown root -R /opt/bundler/v1/* && chown root -R /opt/bundler/v2/* \
-  && chown root /opt/dep/bin/helper && chmod +x /opt/dep/bin/helper \
-  && chown root /opt/go_modules/bin/helper && chmod +x /opt/go_modules/bin/helper
+  && chown root -R /opt/dep/bin && chmod +x /opt/dep/bin/helper \
+  && chown root -R /opt/go_modules/bin && chmod +x /opt/go_modules/bin/helper
 USER dependabot
 
 # Allow further gem installs as the dependabot user
