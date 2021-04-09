@@ -331,8 +331,12 @@ module Dependabot
           Gradle::Version
         end
 
+        def auth_headers_finder
+          @auth_headers_finder ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials)
+        end
+
         def auth_headers(maven_repo_url)
-          @auth_headers ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
+          auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
     end
