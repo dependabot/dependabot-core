@@ -56,8 +56,7 @@ ARG USER_GID=$USER_UID
 RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
   && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \
      else groupmod -n dependabot $GROUP_NAME ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot
 
 
 ### RUBY
@@ -193,32 +192,43 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
   && export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
 
-COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
-COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
-COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
-COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
-COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
+COPY composer/helpers /opt/composer/helpers
+COPY dep/helpers /opt/dep/helpers
+COPY bundler/helpers /opt/bundler/helpers
+COPY go_modules/helpers /opt/go_modules/helpers
+COPY hex/helpers /opt/hex/helpers
+COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY python/helpers /opt/python/helpers
+COPY terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-USER dependabot
 RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2 \
-  && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
-  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
-  && bash /opt/dep/helpers/build /opt/dep \
-  && bash /opt/go_modules/helpers/build /opt/go_modules \
+  && mkdir -p /opt/go_modules/bin \
+  && mkdir -p /opt/dep/bin \
+  && chown dependabot:dependabot /opt/bundler/v1 \
+  && chown dependabot:dependabot /opt/bundler/v2 \
   && bash /opt/hex/helpers/build /opt/hex \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
   && bash /opt/python/helpers/build /opt/python \
   && bash /opt/terraform/helpers/build /opt/terraform \
   && bash /opt/composer/helpers/v1/build /opt/composer/v1 \
   && bash /opt/composer/helpers/v2/build /opt/composer/v2
+
+# NOTE: Install go and bundler dependencies as dependabot to keep the
+# /opt/bundler/vx/.bundle and /opt/go/gopath directories writable from updates
+USER dependabot
+RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
+  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
+  && bash /opt/dep/helpers/build /opt/dep \
+  && bash /opt/go_modules/helpers/build /opt/go_modules
+USER root
+RUN chown root -R /opt/dep/bin && chmod +x /opt/dep/bin/helper \
+  && chown root -R /opt/go_modules/bin && chmod +x /opt/go_modules/bin/helper
+USER dependabot
 
 # Allow further gem installs as the dependabot user
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
