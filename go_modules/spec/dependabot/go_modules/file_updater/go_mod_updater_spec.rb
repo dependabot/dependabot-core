@@ -283,6 +283,30 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    context "when the remote end hangs up unexpectedly" do
+      let(:dependency_name) { "github.com/spf13/viper" }
+      let(:dependency_version) { "v1.7.1" }
+      let(:dependency_previous_version) { "v1.7.1" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+      let(:exit_status) { double(status: 128, success?: false) }
+      let(:stderr) do
+        <<~ERROR
+          go: github.com/spf13/viper@v1.7.1 requires
+          	github.com/grpc-ecosystem/grpc-gateway@v1.9.0 requires
+          	gopkg.in/yaml.v2@v2.0.0-20170812160011-eb3733d160e7: invalid version: git fetch --unshallow -f origin in /opt/go/gopath/pkg/mod/cache/vcs/sha1: exit status 128:
+          	fatal: The remote end hung up unexpectedly
+        ERROR
+      end
+
+      before do
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+      end
+
+      it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
+    end
+
     context "for an explicit indirect dependency" do
       let(:project_name) { "indirect" }
       let(:dependency_name) { "github.com/mattn/go-isatty" }
