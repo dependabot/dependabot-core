@@ -135,8 +135,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "from a gems.rb and gems.locked", :bundler_v2_only do
-      let(:dependency_files) { bundler_project_dependency_files("version_specified_bundler_2") }
+    context "from a gems.rb and gems.locked" do
+      let(:dependency_files) { bundler_project_dependency_files("version_specified_gems_rb") }
 
       its(:length) { is_expected.to eq(2) }
 
