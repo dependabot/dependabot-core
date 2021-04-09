@@ -193,9 +193,9 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
 
 COPY composer/helpers /opt/composer/helpers
-COPY dep/helpers /opt/dep/helpers
-COPY bundler/helpers /opt/bundler/helpers
-COPY go_modules/helpers /opt/go_modules/helpers
+COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 COPY python/helpers /opt/python/helpers
@@ -205,15 +205,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2 \
-  && mkdir -p /opt/go_modules/bin \
-  && mkdir -p /opt/dep/bin \
-  && chown dependabot:dependabot /opt/bundler/v1 \
-  && chown dependabot:dependabot /opt/bundler/v2 \
-  && chown dependabot:dependabot /opt/go_modules/bin \
-  && chown dependabot:dependabot /opt/dep/bin \
-  && bash /opt/hex/helpers/build /opt/hex \
+RUN bash /opt/hex/helpers/build /opt/hex \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
   && bash /opt/python/helpers/build /opt/python \
   && bash /opt/terraform/helpers/build /opt/terraform \
@@ -223,7 +215,9 @@ RUN mkdir -p /opt/bundler/v1 \
 # NOTE: Install go and bundler dependencies as dependabot to keep the
 # /opt/bundler/vx/.bundle and /opt/go/gopath directories writable from updates
 USER dependabot
-RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
+RUN mkdir -p /opt/bundler/v1 \
+  && mkdir -p /opt/bundler/v2 \
+  && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
   && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
   && bash /opt/dep/helpers/build /opt/dep \
   && bash /opt/go_modules/helpers/build /opt/go_modules
