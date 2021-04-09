@@ -1,3 +1,7 @@
+## v0.140.3, 9 April 2021
+
+- fix(Go mod): detect when remote end hangs up
+
 ## v0.140.2, 8 April 2021
 
 - Go mod: Handle repo not found errors projects https://github.com/dependabot/dependabot-core/pull/3456
