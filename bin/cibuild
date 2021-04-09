@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+# NOTE: This script is currently only used to test the cibuild in development.
 export SUITE_NAME=${1:-cargo}
 export DOCKER_BUILDKIT=1
 export CORE_IMAGE=dependabot/dependabot-core
