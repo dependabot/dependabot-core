@@ -21,6 +21,7 @@ module Dependabot
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
+          /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
           /go: .*: git fetch .*: exit status 128/.freeze,
