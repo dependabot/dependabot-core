@@ -230,7 +230,8 @@ RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
 # NOTE: Change the owner back to root for native helpers scripts, not including
 # the /opt/bundler/vx/.bundle folders
 USER root
-RUN chown root -R /opt/bundler/v1/* && chown root -R /opt/bundler/v2/* \
+RUN chown root -R /opt/bundler/v1 && chown root -R /opt/bundler/v2 \
+  && chown dependabot:dependabot -R /opt/bundler/v1/.bundle && chown dependabot:dependabot -R /opt/bundler/v2/.bundle \
   && chown root -R /opt/dep/bin && chmod +x /opt/dep/bin/helper \
   && chown root -R /opt/go_modules/bin && chmod +x /opt/go_modules/bin/helper
 USER dependabot
