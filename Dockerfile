@@ -211,6 +211,8 @@ RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/dep/bin \
   && chown dependabot:dependabot /opt/bundler/v1 \
   && chown dependabot:dependabot /opt/bundler/v2 \
+  && chown dependabot:dependabot /opt/go_modules/bin \
+  && chown dependabot:dependabot /opt/dep/bin \
   && bash /opt/hex/helpers/build /opt/hex \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
   && bash /opt/python/helpers/build /opt/python \
