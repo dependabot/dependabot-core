@@ -1,3 +1,11 @@
+## v0.141.0, 12 April 2021
+
+- Dockerfile: create a `dependabot` user and drop privileges
+  This is a potentially BREAKING change for consumers of the `dependabot/dependabot-core` docker image.
+- Maven/Gradle: Add option to use Gitlab access token for authentication against maven repositories @gringostar
+- common: raise Dependabot::OutOfDisk on more out of space errors
+- Bump eslint from 7.23.0 to 7.24.0
+
 ## v0.140.3, 9 April 2021
 
 - fix(Go mod): detect when remote end hangs up
