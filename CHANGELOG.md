@@ -1,3 +1,11 @@
+## v0.141.1, 13 April 2021
+
+- Remove bundler/v1/.bundle
+- Remove helpers ignore
+- Remove python versions from ci image and split copy
+- build(deps): bump npm from 6.14.12 to 6.14.13 in /npm_and_yarn/helpers
+- fix(go mod): capture module mismatch error
+
 ## v0.141.0, 12 April 2021
 
 - Dockerfile: create a `dependabot` user and drop privileges
