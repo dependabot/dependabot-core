@@ -26,9 +26,9 @@ def create_pr(package_manager, source, commit, updated_deps, updated_files, cred
 end
 # rubocop:enable Metrics/ParameterLists
 
-def requirements(checker)
+def requirements(lockfile_only, checker)
   requirements =
-    if !checker.requirements_unlocked_or_can_be?
+    if lockfile_only || !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
       else :update_not_possible
       end
@@ -91,13 +91,13 @@ def checker_updated_dependencies(checker, requirements_to_unlock)
   )
 end
 
-def dependencies_updater(package_manager, files, dependencies, credentials)
+def dependencies_updater(package_manager, lockfile_only, files, dependencies, credentials)
   updated_deps = []
   dependencies.select(&:top_level?).each do |dep|
     checker = checker_init(package_manager, dep, files, credentials)
     next if checker_up_to_date(checker)
 
-    requirements_to_unlock = requirements(checker)
+    requirements_to_unlock = requirements(lockfile_only, checker)
     next if requirements_to_unlock == :update_not_possible
 
     updated_dep = checker_updated_dependencies(checker, requirements_to_unlock)
@@ -124,7 +124,8 @@ def pix4_dependabot(package_manager, project_data, credentials)
     source = source_init(file_path, project_data)
     files, commit = fetch_files_and_commit(package_manager, source, credentials)
     dependencies = fetch_dependencies(package_manager, files, source)
-    updated_files, updated_deps = dependencies_updater(package_manager, files, dependencies, credentials)
+    updated_files, updated_deps = dependencies_updater(package_manager, project_data["lockfile_only"], files,
+                                                       dependencies, credentials)
     next if updated_deps.empty?
 
     pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files, credentials)

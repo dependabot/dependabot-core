@@ -10,6 +10,8 @@ require "yaml"
 #   - repo i.e. Pix4D/test-dependabot-python
 #   - branch i.e master
 #   - dependency_dir i.e. /, ci/docker, ci/pipelines, project/requirements
+#   - lockfile_only i.e. Update only lockfiles. Defaults to true in case of Pip module
+#     and false in case of Docker module
 
 # REQUIRED DEPENDING ON MODULE:
 
