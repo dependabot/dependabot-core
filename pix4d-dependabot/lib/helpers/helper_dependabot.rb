@@ -39,10 +39,10 @@ def requirements(checker)
   requirements
 end
 
-def fetch_files_and_commit(package_manager, source, credentials_github)
+def fetch_files_and_commit(package_manager, source, credentials)
   # Fetch the dependency files
   fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).
-            new(source: source, credentials: credentials_github)
+            new(source: source, credentials: credentials)
 
   files = fetcher.files
   commit = fetcher.commit
@@ -67,10 +67,10 @@ def update_files(package_manager, dep, updated_deps, files, credentials)
   updater.updated_dependency_files
 end
 
-def checker_init(package_manager, dep, files, extra_credentials)
+def checker_init(package_manager, dep, files, credentials)
   # Get update details for the dependency
   Dependabot::UpdateCheckers.for_package_manager(package_manager).new(
-    dependency: dep, dependency_files: files, credentials: extra_credentials
+    dependency: dep, dependency_files: files, credentials: credentials
   )
 end
 
@@ -91,10 +91,10 @@ def checker_updated_dependencies(checker, requirements_to_unlock)
   )
 end
 
-def dependencies_updater(package_manager, files, dependencies, github_credentials, extra_credentials)
+def dependencies_updater(package_manager, files, dependencies, credentials)
   updated_deps = []
   dependencies.select(&:top_level?).each do |dep|
-    checker = checker_init(package_manager, dep, files, extra_credentials)
+    checker = checker_init(package_manager, dep, files, credentials)
     next if checker_up_to_date(checker)
 
     requirements_to_unlock = requirements(checker)
@@ -103,8 +103,7 @@ def dependencies_updater(package_manager, files, dependencies, github_credential
     updated_dep = checker_updated_dependencies(checker, requirements_to_unlock)
     next if updated_dep.first.version == updated_dep.first.previous_version
 
-    updated_files = update_files(package_manager, dep, updated_dep, files,
-                                 [github_credentials, extra_credentials.first])
+    updated_files = update_files(package_manager, dep, updated_dep, files, credentials)
     updated_files.each do |updated_file|
       files.map! { |file| file.name == updated_file.name ? updated_file : file }
     end
@@ -114,28 +113,28 @@ def dependencies_updater(package_manager, files, dependencies, github_credential
   [files, updated_deps.flatten(1)]
 end
 
-def pix4_dependabot(package_manager, project_data, github_credentials, extra_credentials)
-  input_files_path = recursive_path(project_data, github_credentials["password"])
+def pix4_dependabot(package_manager, project_data, credentials)
+  github_cred = credentials.select { |cred| cred["type"] == "git_source" }.first["password"]
+
+  input_files_path = recursive_path(project_data, github_cred)
 
   print "Working in #{project_data['repo']}\n"
   input_files_path.each do |file_path|
     print "  - Checking the files in #{file_path}\n"
     source = source_init(file_path, project_data)
-    files, commit = fetch_files_and_commit(package_manager, source, [github_credentials])
+    files, commit = fetch_files_and_commit(package_manager, source, credentials)
     dependencies = fetch_dependencies(package_manager, files, source)
-    updated_files, updated_deps = dependencies_updater(package_manager, files, dependencies, github_credentials,
-                                                       extra_credentials)
+    updated_files, updated_deps = dependencies_updater(package_manager, files, dependencies, credentials)
     next if updated_deps.empty?
 
-    pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files,
-                             [github_credentials])
+    pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files, credentials)
     next unless pull_request
 
     print "#{pull_request[:html_url]}\n\n"
 
     next unless project_data["module"] == "docker" && project_data["repo"] == "Pix4D/linux-image-build"
 
-    auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_credentials["password"])
+    auto_merge(pull_request[:number], pull_request[:head][:ref], project_data["repo"], github_cred)
   end
   "Success"
 end

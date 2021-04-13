@@ -34,6 +34,8 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
       "password" => nil
     }
   end
+  let(:credentials_docker) { [git_cred, docker_cred] }
+  let(:credentials_pip) { [git_cred, artifactory_cred] }
   let(:dependency_file) do
     Dependabot::DependencyFile.new(name: file_name, content: fixture_file, directory: dependency_dir)
   end
@@ -109,7 +111,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
         allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
         allow(self).to receive(:create_pr).and_return(pull_request)
 
-        actual = pix4_dependabot("docker", project_data, git_cred, docker_cred)
+        actual = pix4_dependabot("docker", project_data, credentials_docker)
         expect(actual).to equal("Success")
       end
     end
@@ -155,7 +157,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
         allow(self).to receive(:create_pr).and_return(pull_request)
         allow(self).to receive(:auto_merge).and_return("")
 
-        actual = pix4_dependabot("docker", project_data, fake_token, docker_cred)
+        actual = pix4_dependabot("docker", project_data, credentials_docker)
         expect(actual).to equal("Success")
       end
     end
@@ -226,7 +228,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
         allow(self).to receive(:checker_updated_dependencies).and_return([updated_dependency_instance])
         allow(self).to receive(:create_pr).and_return(pull_request)
 
-        actual = pix4_dependabot("pip", project_data, git_cred, artifactory_cred)
+        actual = pix4_dependabot("pip", project_data, credentials_pip)
         expect(actual).to equal("Success")
       end
     end
@@ -287,7 +289,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
                                                                          [updated_dependency_instance2])
         allow(self).to receive(:create_pr).and_return(pull_request)
 
-        actual = pix4_dependabot("pip", project_data, git_cred, artifactory_cred)
+        actual = pix4_dependabot("pip", project_data, credentials_pip)
         expect(actual).to equal("Success")
       end
     end
@@ -355,7 +357,7 @@ RSpec.describe "describe dependencies_updater function", :pix4d do
         [updated_dependency(dependency_name1, updated_version1, version1, "Pipfile")],
         [updated_dependency(dependency_name2, updated_version2, version2, "Pipfile")]
       )
-      updated_files, = dependencies_updater("pip", files, dependencies, {}, {})
+      updated_files, = dependencies_updater("pip", files, dependencies, [{}])
 
       expect(updated_files[0].name).to eq(expected_files[0].name)
       expect(updated_files[0].content).to eq(expected_files[0].content)
