@@ -26,6 +26,8 @@ def create_pr(package_manager, source, commit, updated_deps, updated_files, cred
 end
 # rubocop:enable Metrics/ParameterLists
 
+# READ this: https://github.com/dependabot/dependabot-core/issues/600#issuecomment-407808103
+# to understand why we need requirements_to_unlock and possible options
 def requirements(lockfile_only, checker)
   requirements =
     if lockfile_only || !checker.requirements_unlocked_or_can_be?
