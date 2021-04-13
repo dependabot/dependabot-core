@@ -184,6 +184,28 @@ module Dependabot
           "/pullrequests?api-version=5.0", content.to_json)
       end
 
+      def update_pull_request(pull_request_id:, status: nil, pr_name: nil, description: nil,
+                              completion_options: nil, merge_options: nil,
+                              auto_complete_setby_user_id: nil, target_branch: nil)
+        content = {
+          autoCompleteSetBy: ({ id: auto_complete_setby_user_id } unless
+                  auto_complete_setby_user_id.nil? || auto_complete_setby_user_id.strip.empty?),
+          title: pr_name,
+          description: truncate_pr_description(description),
+          status: status,
+          completionOptions: completion_options,
+          mergeOptions: merge_options,
+          targetRefName: ("refs/heads/" + target_branch unless target_branch.nil? || target_branch.strip.empty?)
+        }.compact
+
+        return if content.empty?
+
+        patch(source.api_endpoint +
+          source.organization + "/" + source.project +
+          "/_apis/git/repositories/" + source.unscoped_repo +
+          "/pullrequests/" + pull_request_id.to_s + "?api-version=5.0", content.to_json)
+      end
+
       def pull_request(pull_request_id)
         response = get(source.api_endpoint +
           source.organization + "/" + source.project +
@@ -251,6 +273,26 @@ module Dependabot
         response
       end
 
+      def patch(url, json)
+        response = Excon.patch(
+          url,
+          body: json,
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
+          idempotent: true,
+          **SharedHelpers.excon_defaults(
+            headers: auth_header.merge(
+              {
+                "Content-Type" => "application/json"
+              }
+            )
+          )
+        )
+        raise NotFound if response.status == 404
+
+        response
+      end
+
       private
 
       def retry_connection_failures
@@ -279,6 +321,8 @@ module Dependabot
       end
 
       def truncate_pr_description(pr_description)
+        return if pr_description.nil? || pr_description.empty?
+
         # Azure DevOps only support descriptions up to 4000 characters in UTF-16
         # encoding.
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html

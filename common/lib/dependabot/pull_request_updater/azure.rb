@@ -27,6 +27,21 @@ module Dependabot
         update_source_branch
       end
 
+      def update_pr_elements(elements = {})
+        return unless elements
+
+        azure_client_for_source.update_pull_request(
+          pull_request_id: pull_request_number,
+          status: elements[:status],
+          pr_name: elements[:pr_name],
+          description: elements[:description],
+          completion_options: elements[:completion_options],
+          merge_options: elements[:merge_options],
+          auto_complete_setby_user_id: elements[:auto_complete_setby_user_id],
+          target_branch: elements[:target_branch]
+        )
+      end
+
       private
 
       def azure_client_for_source

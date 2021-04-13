@@ -210,6 +210,60 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
+  describe "#update_pull_request" do
+    subject(:update_pull_request) do
+      client.update_pull_request(
+        pull_request_id: pull_request_id,
+        auto_complete_setby_user_id: auto_complete_setby_user_id,
+        pr_name: pr_name
+      )
+    end
+
+    let(:pull_request_id) { 1 }
+    let(:auto_complete_setby_user_id) { "id" }
+    let(:pr_name) { "Test PR" }
+    let(:update_pull_request_url) { repo_url + "/pullrequests/" + pull_request_id.to_s + "?api-version=5.0" }
+
+    it "returns nil when there are no parameters to update" do
+      response = client.update_pull_request(pull_request_id: pull_request_id)
+
+      expect(response).to be_nil
+    end
+
+    context "sends update PR request with updated parameter values" do
+      it "successfully updates the PR" do
+        stub_request(:patch, update_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 200)
+
+        update_pull_request
+
+        expect(WebMock).
+          to(
+            have_requested(:patch, update_pull_request_url).
+              with do |req|
+                pr_update_details = JSON.parse(req.body)
+                expect(pr_update_details).
+                  to eq(
+                    {
+                      "title" => pr_name,
+                      "autoCompleteSetBy" => { "id" => auto_complete_setby_user_id }
+                    }
+                  )
+              end
+          )
+      end
+
+      it "raises helpful error when response is 404" do
+        stub_request(:patch, update_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+
+        expect { update_pull_request }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
   describe "#get" do
     context "Using auth headers" do
       token = ":test_token"

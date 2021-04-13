@@ -166,4 +166,39 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         )
     end
   end
+
+  describe "#update_pr_elements" do
+    let(:update_pull_request_url) { repo_url + "/pullrequests/" + pull_request_number.to_s + "?api-version=5.0" }
+
+    context "returns nil" do
+      it "when elements hash is empty" do
+        expect(updater.update_pr_elements).to be_nil
+      end
+
+      it "when elements hash does not contain expected parameters for update" do
+        elements = { test_parameter: "test" }
+
+        expect(updater.update_pr_elements(elements)).to be_nil
+      end
+    end
+
+    it "updates the given pr elements" do
+      elements = { pr_name: "Test PR", auto_complete_setby_user_id: "id" }
+
+      stub_request(:patch, update_pull_request_url).
+        to_return(status: 200)
+
+      updater.update_pr_elements(elements)
+
+      expect(WebMock).
+        to(
+          have_requested(:patch, update_pull_request_url).
+              with(body:
+                {
+                  title: elements[:pr_name],
+                  autoCompleteSetBy: { id: elements[:auto_complete_setby_user_id] }
+                })
+        )
+    end
+  end
 end
