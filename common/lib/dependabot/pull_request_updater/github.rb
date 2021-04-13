@@ -132,7 +132,7 @@ module Dependabot
               sha: file.content
             }
           else
-            content = if file.deleted?
+            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
                         { sha: nil }
                       elsif file.binary?
                         sha = github_client_for_source.create_blob(

@@ -15,12 +15,13 @@ module Dependabot
         ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
 
         RESOLVABILITY_ERROR_REGEXES = [
-          # The checksum in go.sum does not match the dowloaded content
+          # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
           /go: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
+          /repository '.+' not found/,
           # (Private) module could not be fetched
           /go: .*: git fetch .*: exit status 128/.freeze,
           # (Private) module could not be found
@@ -193,8 +194,7 @@ module Dependabot
         end
 
         def in_repo_path(&block)
-          SharedHelpers.
-            in_a_temporary_repo_directory(directory, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               block.call
             end
@@ -290,6 +290,10 @@ module Dependabot
           if out_of_disk_regex
             error_message = filter_error_message(message: stderr, regex: out_of_disk_regex)
             raise Dependabot::OutOfDisk.new, error_message
+          end
+
+          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
           # We don't know what happened so we raise a generic error
