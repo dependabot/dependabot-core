@@ -1,5 +1,4 @@
-/.bundle/*
-!/.bundle/config
+/.bundle
 /.env
 /tmp
 /dependabot-*.gem
