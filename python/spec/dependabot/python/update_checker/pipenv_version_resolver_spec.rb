@@ -5,8 +5,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pipenv_version_resolver"
 
-namespace = Dependabot::Python::UpdateChecker
-RSpec.describe namespace::PipenvVersionResolver do
+RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
