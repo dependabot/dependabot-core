@@ -9,7 +9,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 # Everything from `make` onwards in apt-get install is only installed to ensure
 # Python support works with all packages (which may require specific libraries
 # at install time).
-
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -19,6 +18,7 @@ RUN apt-get update \
     bzr \
     mercurial \
     gnupg2 \
+    ca-certificates \
     curl \
     wget \
     file \
@@ -48,7 +48,8 @@ RUN apt-get update \
     libxmlsec1-dev \
     libgeos-dev \
     python3-enchant \
-  && locale-gen en_US.UTF-8
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
 
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
@@ -70,7 +71,8 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && gem update --system 3.2.14 \
   && gem install bundler -v 1.17.3 --no-document \
   && gem install bundler -v 2.2.15 --no-document \
-  && rm -Rf /var/lib/gems/2.6.0/cache/*
+  && rm -rf /var/lib/gems/2.6.0/cache/* \
+  && rm -rf /var/lib/apt/lists/*
 
 
 ### PYTHON
@@ -145,7 +147,19 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-tidy \
     php7.4-xml \
     php7.4-zip \
-    php7.4-zmq
+    php7.4-zmq \
+  && rm -rf /var/lib/apt/lists/*
+USER dependabot
+# Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
+# with historic data (we don't care about package files here)
+RUN mkdir /tmp/composer-cache \
+  && cd /tmp/composer-cache \
+  && echo '{"require":{"psr/log": "^1.1.3"}}' > composer.json \
+  && composer update --no-scripts --dry-run \
+  && cd /tmp \
+  && rm -rf /home/dependabot/.cache/composer/files \
+  && rm -rf /tmp/composer-cache
+USER root
 
 
 ### GO
@@ -181,7 +195,8 @@ RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
   && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
-  && mix local.hex --force
+  && mix local.hex --force \
+  && rm -rf /var/lib/apt/lists/*
 
 
 ### RUST
