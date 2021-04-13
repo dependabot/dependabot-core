@@ -367,3 +367,30 @@ RSpec.describe "describe dependencies_updater function", :pix4d do
     end
   end
 end
+
+RSpec.describe "describe lockfile_only_defaults function", :pix4d do
+  it "raises TypeError" do
+    expect do
+      lockfile_only_defaults("any",
+                             { "lockfile_only" => "wrong" })
+    end .to raise_error(TypeError, "lockfile_only key should be boolean type")
+  end
+  context "for any module" do
+    let(:package_manager) { "docker" }
+    it "returns correct default value" do
+      expect(lockfile_only_defaults(package_manager, {})).to be false
+    end
+    it "correctly replaces default value" do
+      expect(lockfile_only_defaults(package_manager, { "module" => "docker", "lockfile_only" => true })).to be true
+    end
+  end
+  context "for pip module" do
+    let(:package_manager) { "pip" }
+    it "returns correct default value" do
+      expect(lockfile_only_defaults(package_manager, { "module" => "pip" })).to be true
+    end
+    it "correctly replaces default value" do
+      expect(lockfile_only_defaults(package_manager, { "module" => "pip", "lockfile_only" => false })).to be false
+    end
+  end
+end

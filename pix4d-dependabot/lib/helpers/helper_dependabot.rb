@@ -115,8 +115,21 @@ def dependencies_updater(package_manager, lockfile_only, files, dependencies, cr
   [files, updated_deps.flatten(1)]
 end
 
+def lockfile_only_defaults(package_manager, project_data)
+  # if key lockfile_only in project_data exists return the value
+  if project_data.key?("lockfile_only")
+    return project_data["lockfile_only"] if [true, false].include? project_data["lockfile_only"]
+
+    raise TypeError, "lockfile_only key should be boolean type"
+  end
+
+  # otherwise set the default values depending on package_manager
+  package_manager == "pip"
+end
+
 def pix4_dependabot(package_manager, project_data, credentials)
   github_cred = credentials.select { |cred| cred["type"] == "git_source" }.first["password"]
+  lockfile_only = lockfile_only_defaults(package_manager, project_data)
 
   input_files_path = recursive_path(project_data, github_cred)
 
@@ -126,8 +139,7 @@ def pix4_dependabot(package_manager, project_data, credentials)
     source = source_init(file_path, project_data)
     files, commit = fetch_files_and_commit(package_manager, source, credentials)
     dependencies = fetch_dependencies(package_manager, files, source)
-    updated_files, updated_deps = dependencies_updater(package_manager, project_data["lockfile_only"], files,
-                                                       dependencies, credentials)
+    updated_files, updated_deps = dependencies_updater(package_manager, lockfile_only, files, dependencies, credentials)
     next if updated_deps.empty?
 
     pull_request = create_pr(package_manager, source, commit, updated_deps, updated_files, credentials)
