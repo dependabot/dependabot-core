@@ -91,6 +91,27 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
     end
 
+    context "with an invalid module path" do
+      let(:stderr) do
+        <<~STDERR
+          go get: github.com/etcd-io/bbolt@none updating to
+          	github.com/etcd-io/bbolt@v1.3.5: parsing go.mod:
+          	module declares its path as: go.etcd.io/bbolt
+          	        but was required as: github.com/etcd-io/bbolt
+        STDERR
+      end
+
+      before do
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+      end
+
+      it "raises a helpful error" do
+        expect { updated_files }.to raise_error(Dependabot::GoModulePathMismatch)
+      end
+    end
+
     context "with an indirect dependency from an unreachable repo" do
       let(:project_name) { "repo_not_found" }
       let(:dependency_name) { "github.com/go-openapi/spec" }
