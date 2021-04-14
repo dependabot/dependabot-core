@@ -71,7 +71,7 @@ module Dependabot
     end
   end
 
-  class PullRequestUpdatefailed < DependabotError
+  class PullRequestUpdateFailed < DependabotError
     attr_reader :pull_request_id
 
     def initialize(pull_request_id, msg = nil)

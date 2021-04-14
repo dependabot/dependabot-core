@@ -59,7 +59,12 @@ module Dependabot
         # 3) Delete temp branch
         update_branch(temp_branch_name, new_commit, OBJECT_ID_FOR_BRANCH_DELETE)
 
-        raise Dependabot::PullRequestUpdateFailed.new(pull_request_number, response.fetch('customMessage', nil)) unless response.fetch('success', false)
+        unless response.fetch(
+          "success", false
+        )
+          raise Dependabot::PullRequestUpdateFailed.new(pull_request_number,
+                                                        response.fetch("customMessage", nil))
+        end
       end
 
       def pull_request
