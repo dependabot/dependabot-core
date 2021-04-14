@@ -80,11 +80,11 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout 1.2.26 && cd - \
+RUN git clone https://github.com/pyenv/pyenv.git --branch 1.2.26 --single-branch --depth=1 /usr/local/.pyenv \
   && pyenv install 3.9.4 \
   && pyenv install 2.7.18 \
-  && pyenv global 3.9.4
+  && pyenv global 3.9.4 \
+  && rm -Rf /tmp/python-build*
 USER root
 
 
