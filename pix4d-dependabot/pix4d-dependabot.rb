@@ -10,6 +10,8 @@ require "yaml"
 #   - repo i.e. Pix4D/test-dependabot-python
 #   - branch i.e master
 #   - dependency_dir i.e. /, ci/docker, ci/pipelines, project/requirements
+#   - lockfile_only i.e. Update only lockfiles. Defaults to true in case of Pip module
+#     and false in case of Docker module
 
 # REQUIRED DEPENDING ON MODULE:
 
@@ -25,23 +27,21 @@ require "yaml"
 
 def create_extra_credentials(package_manager)
   if package_manager == "pip"
-    return [
-      {
-        "type" => "python_index",
-        "index-url" => ENV["EXTRA_INDEX_URL"],
-        "token" => "#{ENV['ARTIFACTORY_USERNAME']}:#{ENV['ARTIFACTORY_PASSWORD']}"
-      }
-    ]
+    return {
+      "type" => "python_index",
+      "index-url" => ENV["EXTRA_INDEX_URL"],
+      "token" => "#{ENV['ARTIFACTORY_USERNAME']}:#{ENV['ARTIFACTORY_PASSWORD']}"
+    }
   end
 
   return unless package_manager == "docker"
 
-  [{
+  {
     "type" => "docker_registry",
     "registry" => (ENV["DOCKER_REGISTRY"] || "registry.hub.docker.com"),
     "username" => (ENV["DOCKER_USER"] || nil),
     "password" => (ENV["DOCKER_PASS"] || nil)
-  }]
+  }
 end
 
 def main
@@ -72,9 +72,9 @@ def main
                       else
                         project_data["module"]
                       end
-    extra_credentials = create_extra_credentials(package_manager)
+    credentials = [credentials_github, create_extra_credentials(package_manager)]
 
-    pix4_dependabot(package_manager, project_data, credentials_github, extra_credentials)
+    pix4_dependabot(package_manager, project_data, credentials)
   end
 end
 
