@@ -39,7 +39,7 @@ module Dependabot
 
         case source_type
         when "git" then find_source_from_git_url
-        when "private_registry" then find_source_from_registry
+        when "registry" then find_source_from_registry
         else raise "Unexpected source type: #{source_type}"
         end
       end
