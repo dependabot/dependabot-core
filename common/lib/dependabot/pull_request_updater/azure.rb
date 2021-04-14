@@ -55,9 +55,11 @@ module Dependabot
         # 1) Push the file changes to a newly created temporary branch (from base commit)
         new_commit = create_temp_branch
         # 2) Update PR source branch to point to the temp branch head commit.
-        update_branch(source_branch_name, old_source_branch_commit, new_commit)
+        response = update_branch(source_branch_name, old_source_branch_commit, new_commit)
         # 3) Delete temp branch
         update_branch(temp_branch_name, new_commit, OBJECT_ID_FOR_BRANCH_DELETE)
+
+        raise Dependabot::PullRequestUpdateFailed.new(pull_request_number, response.fetch('customMessage', nil)) unless response.fetch('success', false)
       end
 
       def pull_request

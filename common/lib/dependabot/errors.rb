@@ -71,6 +71,15 @@ module Dependabot
     end
   end
 
+  class PullRequestUpdatefailed < DependabotError
+    attr_reader :pull_request_id
+
+    def initialize(pull_request_id, msg = nil)
+      @pull_request_id = pull_request_id
+      super(msg)
+    end
+  end
+
   #####################
   # File level errors #
   #####################
