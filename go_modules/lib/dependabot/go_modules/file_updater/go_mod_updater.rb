@@ -21,6 +21,7 @@ module Dependabot
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
+          /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
           /go: .*: git fetch .*: exit status 128/.freeze,
@@ -37,6 +38,7 @@ module Dependabot
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
+          /go get: \S+ updating to\n\s+\S+\sparsing\sgo.mod:\n\s+module declares its path as: \S+\n\s+but was required as: \S+/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m

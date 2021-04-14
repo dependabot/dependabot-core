@@ -447,5 +447,15 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(configured_git_credentials).to eq("https://x-access-token:fake-token@private.com\n")
       end
     end
+
+    context "when the host has run out of disk space" do
+      before do
+        allow(File).to receive(:open).
+          with(described_class::GIT_CONFIG_GLOBAL_PATH, anything).
+          and_raise(Errno::ENOSPC)
+      end
+
+      specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
+    end
   end
 end
