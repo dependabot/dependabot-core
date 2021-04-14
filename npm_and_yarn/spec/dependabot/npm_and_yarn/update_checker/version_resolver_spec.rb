@@ -69,7 +69,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.0.1",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }],
             package_manager: "npm_and_yarn"
           )
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^2.1.8",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "~1.8.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -226,7 +226,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "0.14.2",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.0.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }],
             package_manager: "npm_and_yarn"
           )
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "^2.1.8",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "~1.8.0",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -396,7 +396,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -414,7 +414,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "0.14.2",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -460,7 +460,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "2.5.20",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }],
             package_manager: "npm_and_yarn"
           )
@@ -488,7 +488,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.0.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }],
             package_manager: "npm_and_yarn"
           )
@@ -536,7 +536,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -589,7 +589,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -611,7 +611,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "^15.2.0",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -630,7 +630,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "^0.0.1",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -649,7 +649,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "package.json",
                   requirement: "^99.0.0",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -675,7 +675,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.0.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }],
             package_manager: "npm_and_yarn"
           )
@@ -723,7 +723,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -742,7 +742,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "~1.8.0",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -778,7 +778,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -796,7 +796,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                 file: "package.json",
                 requirement: "0.14.2",
                 groups: ["dependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -821,7 +821,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "2.5.20",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }],
           package_manager: "npm_and_yarn"
         )
@@ -868,7 +868,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -887,7 +887,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "0.14.2",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -943,7 +943,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "2.5.20",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }],
           package_manager: "npm_and_yarn"
         )
@@ -989,7 +989,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -1008,7 +1008,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "0.14.2",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1045,7 +1045,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -1068,7 +1068,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "2.5.20",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }],
           package_manager: "npm_and_yarn"
         )
@@ -1149,7 +1149,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -1166,7 +1166,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "package.json",
                   requirement: "^15.2.0",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
@@ -1180,7 +1180,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "package.json",
                   requirement: "^15.2.0",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
@@ -1202,7 +1202,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "^15.2.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -1219,7 +1219,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "package.json",
                   requirement: "^15.2.0",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
@@ -1233,7 +1233,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "package.json",
                   requirement: "^15.2.0",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
@@ -1255,9 +1255,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "packages/package1/package.json",
             requirement: "15.6.2",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
           }]
         )
+      end
+      let(:react_dom_registry_listing_url) do
+        "https://registry.yarnpkg.com/react-dom"
       end
 
       it "gets the right list of dependencies to update" do
@@ -1272,7 +1275,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "packages/package1/package.json",
                   requirement: "15.6.2",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
@@ -1286,7 +1289,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
                   file: "packages/package1/package.json",
                   requirement: "15.6.2",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               ),
               version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
@@ -1369,7 +1372,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             file: "package.json",
             requirement: "0.3.0",
             groups: ["dependencies"],
-            source: nil
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           }]
         )
       end
@@ -1407,7 +1410,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "0.3.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1439,7 +1442,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "15.3",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1471,12 +1474,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^15.4.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }, {
               file: "other/package.json",
               requirement: "< 15.0.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1510,7 +1513,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.1.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1542,7 +1545,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^1.1.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1574,7 +1577,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^0.7.1",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1606,7 +1609,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "0.3.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1644,7 +1647,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: "^0.2.0",
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
@@ -1662,7 +1665,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
               file: "package.json",
               requirement: nil,
               groups: ["dependencies"],
-              source: nil
+              source: { type: "registry", url: "https://registry.npmjs.org" }
             }]
           )
         end
