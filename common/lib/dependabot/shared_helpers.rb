@@ -157,6 +157,8 @@ module Dependabot
       backup_git_config_path = stash_global_git_config
       configure_git_to_use_https_with_credentials(credentials)
       yield
+    rescue Errno::ENOSPC => e
+      raise Dependabot::OutOfDisk, e.message
     ensure
       reset_global_git_config(backup_git_config_path)
     end
