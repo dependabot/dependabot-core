@@ -37,7 +37,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(6) }
+    its(:length) { is_expected.to eq(3) }
 
     describe "top level dependencies" do
       subject(:dependencies) do
@@ -144,9 +144,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         go_mod.sub("rsc.io/quote", "example.com/not-a-repo")
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -157,11 +156,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         go_mod.sub("rsc.io/quote", invalid_repo)
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls).to contain_exactly(invalid_repo)
-          end
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -172,11 +168,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         go_mod.sub("rsc.io/quote v1.4.0", "#{invalid_repo}/v2 v2.0.0")
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls).to contain_exactly(invalid_repo)
-          end
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -186,9 +179,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         go_mod.sub("github.com/mattn/go-colorable v0.0.9", "github.com/mattn/go-colorable v0.1234.4321")
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -197,10 +189,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       let(:go_mod_fixture_name) { "parent_module.mod" }
 
       it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to include("hmarr/404")
-          end
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -210,9 +199,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         go_mod.sub("rsc.io/quote v1.4.0", "rsc.io/quote v1.321.0")
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -223,11 +211,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
                    "github.com/hmarr/404 v0.0.0-20181216014959-b89dc648a159")
       end
 
-      it "raises the correct error" do
-        expect { parser.parse }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to include("hmarr/404")
-          end
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
       end
     end
 
@@ -277,6 +262,18 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("rsc.io/qr")
       end
+    end
+
+    describe "without any dependencies" do
+      let(:go_mod_content) do
+        fixture("projects", "no_dependencies", "go.mod")
+      end
+
+      subject(:dependencies) do
+        parser.parse
+      end
+
+      its(:length) { is_expected.to eq(0) }
     end
 
     context "that is not resolvable" do

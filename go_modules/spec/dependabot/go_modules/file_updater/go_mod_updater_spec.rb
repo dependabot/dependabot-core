@@ -88,6 +88,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_1.11" }
 
           it { is_expected.to_not include("go 1.") }
+          it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
         end
 
         context "for a go 1.12 go.mod" do
@@ -100,6 +101,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_1.13" }
 
           it { is_expected.to include("go 1.13") }
+        end
+
+        context "when a retract directive is present" do
+          let(:project_name) { "go_retracted" }
+
+          it { is_expected.to include("// reason for retraction") }
+          it { is_expected.to include("retract v1.0.5") }
         end
 
         describe "a dependency who's module path has changed (inc version)" do
@@ -149,10 +157,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:project_name) { "non_existent_dependency" }
 
             it "raises the correct error" do
-              error_class = Dependabot::DependencyFileNotResolvable
+              error_class = Dependabot::GitDependenciesNotReachable
               expect { updater.updated_go_sum_content }.
                 to raise_error(error_class) do |error|
                   expect(error.message).to include("hmarr/404")
+                  expect(error.dependency_urls).
+                    to eq(["github.com/hmarr/404"])
                 end
             end
           end
@@ -226,16 +236,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
 
-            # NOTE: We explitly don't want to raise a resolvability error from go mod tidy
-            it "does not raises a DependencyFileNotResolvable error" do
+            it "raises a DependencyFileNotResolvable error" do
+              error_class = Dependabot::DependencyFileNotResolvable
               expect { updater.updated_go_sum_content }.
-                to_not raise_error
-            end
-
-            it "updates the go.mod" do
-              expect(updater.updated_go_mod_content).to include(
-                %(github.com/googleapis/gnostic v0.5.1 // indirect\n)
-              )
+                to raise_error(error_class) do |error|
+                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
+              end
             end
           end
         end
@@ -427,6 +433,71 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
+
+    context "for a invalid pseudo version" do
+      let(:project_name) { "invalid_pseudo_version" }
+      let(:dependency_name) do
+        "rsc.io/quote"
+      end
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "go: github.com/openshift/api@v3.9.1-0.20190424152011-77b8897ec79a+incompatible: " \
+            "invalid pseudo-version:"
+          )
+        end
+      end
+    end
+
+    context "for an unknown revision version" do
+      let(:project_name) { "unknown_revision_version" }
+      let(:dependency_name) do
+        "github.com/deislabs/oras"
+      end
+      let(:dependency_version) { "v0.10.0" }
+      let(:dependency_previous_version) { "v0.9.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/deislabs/oras"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "go: github.com/deislabs/oras@v0.10.0 requires\n"\
+            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
+            "invalid version: unknown revision"
+          )
+        end
+      end
+    end
   end
 
   describe "#updated_go_sum_content" do
@@ -480,9 +551,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a monorepo" do
+    context "for a monorepo directory" do
       let(:project_name) { "monorepo" }
-      let(:directory) { "cmd" }
+      let(:directory) { "/cmd" }
 
       let(:dependency_name) { "rsc.io/qr" }
       let(:dependency_version) { "v0.2.0" }
@@ -500,6 +571,60 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
 
+      # updated and tidied
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
+      it { is_expected.not_to include(%(rsc.io/qr v0.1.0)) }
+      # module was not stubbed
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+    end
+
+    context "for a monorepo root" do
+      let(:project_name) { "monorepo" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      # updated and tidied
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
+      it { is_expected.not_to include(%(rsc.io/qr v0.1.0)) }
+      # module was not stubbed
+      it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
+    end
+
+    context "for an external path replacement" do
+      let(:project_name) { "substituted" }
+
+      let(:dependency_name) { "rsc.io/qr" }
+      let(:dependency_version) { "v0.2.0" }
+      let(:dependency_previous_version) { "v0.1.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v0.1.0",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/qr"
+          }
+        }]
+      end
+
+      # Update is applied, stubbed indirect dependencies are not culled
+      it { is_expected.to include(%(rsc.io/qr v0.2.0)) }
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
   end

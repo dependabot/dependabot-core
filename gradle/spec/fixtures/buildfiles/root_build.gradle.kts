@@ -8,6 +8,7 @@ plugins {
     id("com.github.johnrengelman.shadow")
     id("org.springframework.boot") version "2.0.5.RELEASE" apply false
     id("com.google.protobuf") version "0.8.4" apply false
+    kotlin("jvm") version "1.3.72"
 }
 
 buildscript {
@@ -15,7 +16,8 @@ buildscript {
 
     repositories {
         jcenter()
-        maven("https://dl.bintray.com/magnusja/maven")
+        maven(url = "https://dl.bintray.com/magnusja/maven")
+        maven("https://kotlin.bintray.com/kotlinx/")
         google()
     }
     dependencies {

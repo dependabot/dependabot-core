@@ -21,7 +21,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
   describe "#rewrite" do
     subject(:rewrite) { remover.rewrite(content) }
 
-    let(:content) { fixture("ruby", "gemfiles", "git_source") }
+    let(:content) do
+      bundler_project_dependency_file("git_source", filename: "Gemfile").content
+    end
 
     context "with a dependency that specifies a ref" do
       let(:dependency_name) { "business" }

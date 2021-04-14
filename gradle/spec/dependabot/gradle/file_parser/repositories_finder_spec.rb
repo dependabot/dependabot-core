@@ -103,6 +103,19 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "that use an assignment operator" do
+        let(:buildfile_fixture_name) { "custom_repos_build_assignment.gradle" }
+
+        it "includes the additional declarations" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://jcenter.bintray.com
+              https://hub.spigotmc.org/nexus/content/repositories/snapshots
+            )
+          )
+        end
+      end
+
       context "with kotlin" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
@@ -111,6 +124,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
             %w(
               https://jcenter.bintray.com
               https://dl.bintray.com/magnusja/maven
+              https://kotlin.bintray.com/kotlinx
               https://maven.google.com
             )
           )

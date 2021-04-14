@@ -36,6 +36,9 @@ module Dependabot
       ).freeze
 
       def parse
+        # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
+        raise Dependabot::UnexpectedExternalCode if @reject_external_code
+
         dependency_set = DependencySet.new
 
         dependency_set += pipenv_dependencies if pipfile

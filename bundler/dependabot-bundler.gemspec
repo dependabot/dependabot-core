@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   next unless File.directory?("lib")
 
   prefix = "/" + File.basename(File.expand_path(__dir__)) + "/"
-  Find.find("lib") do |path|
+  Find.find("lib", "helpers") do |path|
     if ignores.any? { |i| File.fnmatch(i, prefix + path, File::FNM_DOTMATCH) }
       Find.prune
     else

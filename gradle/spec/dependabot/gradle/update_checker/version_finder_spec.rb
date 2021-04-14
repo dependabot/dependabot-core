@@ -449,6 +449,59 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a kotlin plugin" do
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "1.4.10",
+          groups: %w(plugins kotlin),
+          source: nil
+        }]
+      end
+      let(:dependency_name) { "jvm" }
+      let(:dependency_version) { "1.4.10" }
+
+      let(:gradle_plugin_metadata_url) do
+        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+      end
+      let(:gradle_plugin_releases) do
+        fixture("gradle_plugin_metadata", "org_jetbrains_kotlin_jvm.xml")
+      end
+      let(:maven_metadata_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, gradle_plugin_metadata_url).
+          to_return(status: 200, body: gradle_plugin_releases)
+        stub_request(:get, maven_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("0.0.1-test-1"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+
+      describe "the last version" do
+        subject { versions.last }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.30-M1"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+    end
+
     context "with a custom repository" do
       let(:buildfile_fixture_name) { "custom_repos_build.gradle" }
 

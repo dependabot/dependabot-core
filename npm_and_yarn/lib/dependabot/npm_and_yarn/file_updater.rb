@@ -62,18 +62,16 @@ module Dependabot
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          begin
-            if dependencies.select(&:top_level?).any?
-              DependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            else
-              SubDependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            end
+          if dependencies.select(&:top_level?).any?
+            DependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
+          else
+            SubDependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
           end
       end
 
@@ -126,11 +124,11 @@ module Dependabot
       end
 
       def package_lock_changed?(package_lock)
-        package_lock.content != updated_package_lock_content(package_lock)
+        package_lock.content != updated_lockfile_content(package_lock)
       end
 
       def shrinkwrap_changed?(shrinkwrap)
-        shrinkwrap.content != updated_package_lock_content(shrinkwrap)
+        shrinkwrap.content != updated_lockfile_content(shrinkwrap)
       end
 
       def pnpm_lock_changed?(pnpm_lock)
@@ -163,7 +161,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: package_lock,
-            content: updated_package_lock_content(package_lock)
+            content: updated_lockfile_content(package_lock)
           )
         end
 
@@ -172,7 +170,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: shrinkwrap,
-            content: updated_shrinkwrap_content(shrinkwrap)
+            content: updated_lockfile_content(shrinkwrap)
           )
         end
 
@@ -246,25 +244,15 @@ module Dependabot
           )
       end
 
-      def updated_package_lock_content(package_lock)
-        @updated_package_lock_content ||= {}
-        @updated_package_lock_content[package_lock.name] ||=
-          npm_lockfile_updater.updated_lockfile_content(package_lock)
-      end
-
-      def updated_shrinkwrap_content(shrinkwrap)
-        @updated_shrinkwrap_content ||= {}
-        @updated_shrinkwrap_content[shrinkwrap.name] ||=
-          npm_lockfile_updater.updated_lockfile_content(shrinkwrap)
-      end
-
-      def npm_lockfile_updater
-        @npm_lockfile_updater ||=
+      def updated_lockfile_content(file)
+        @updated_lockfile_content ||= {}
+        @updated_lockfile_content[file.name] ||=
           NpmLockfileUpdater.new(
+            lockfile: file,
             dependencies: dependencies,
             dependency_files: dependency_files,
             credentials: credentials
-          )
+          ).updated_lockfile.content
       end
 
       def updated_package_json_content(file)

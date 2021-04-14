@@ -191,6 +191,43 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             end
           end
         end
+
+        context "with a kotlin plugin" do
+          let(:buildfile_fixture_name) { "root_build.gradle.kts" }
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "build.gradle.kts",
+              content: fixture("buildfiles", buildfile_fixture_name)
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "jvm",
+              version: "1.4.21-2",
+              requirements: [{
+                file: "build.gradle.kts",
+                requirement: "1.4.21-2",
+                groups: %w(plugins kotlin),
+                source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "build.gradle.kts",
+                requirement: "1.3.72",
+                groups: %w(plugins kotlin),
+                source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+                metadata: nil
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          its(:content) do
+            is_expected.to include(
+              'kotlin("jvm") version "1.4.21-2"'
+            )
+          end
+        end
       end
 
       context "with multiple buildfiles" do

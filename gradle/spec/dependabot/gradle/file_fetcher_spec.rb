@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_java_with_subdir.json"),
+          body: fixture("github", "contents_java.json"),
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, File.join(url, "build.gradle?ref=sha")).
@@ -47,9 +47,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           body: fixture("github", "contents_java_basic_buildfile.json"),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, File.join(url, "settings.gradle?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
     end
 
     it "fetches the buildfile" do
@@ -60,6 +57,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
     context "with a settings.gradle" do
       before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_java_with_settings.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, File.join(url, "settings.gradle?ref=sha")).
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -103,7 +107,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_kotlin_with_subdir.json"),
+            body: fixture("github", "contents_kotlin.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, File.join(url, "build.gradle.kts?ref=sha")).
@@ -126,6 +130,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
 
       context "with a settings.gradle.kts" do
         before do
+          stub_request(:get, url + "?ref=sha").
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_kotlin_with_settings.json"),
+              headers: { "content-type" => "application/json" }
+            )
           stub_request(:get, File.join(url, "settings.gradle.kts?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
@@ -157,7 +168,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_java_with_subdir.json"),
+          body: fixture("github", "contents_java.json"),
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, File.join(url, "build.gradle?ref=sha")).
@@ -170,9 +181,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           ),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, File.join(url, "settings.gradle?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(status: 404)
       stub_request(:get, File.join(url, "gradle/dependencies.gradle?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
@@ -194,7 +202,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_java_with_subdir.json"),
+            body: fixture("github", "contents_java.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(
@@ -215,6 +223,25 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       it "raises a DependencyFileNotFound error" do
         expect { file_fetcher_instance.files }.
           to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+  end
+
+  context "with no required manifest files" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: "[]",
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises dependency file not found" do
+      expect { file_fetcher_instance.files }.to raise_error do |error|
+        expect(error).to be_a(Dependabot::DependencyFileNotFound)
+        expect(error.file_path).to eq("/build.gradle(.kts)?")
       end
     end
   end

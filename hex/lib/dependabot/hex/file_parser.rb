@@ -15,6 +15,9 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       def parse
+        # TODO: git sourced dependency's mixfiles are evaluated. Provide guards before removing this.
+        raise ::Dependabot::UnexpectedExternalCode if @reject_external_code
+
         dependency_set = DependencySet.new
 
         dependency_details.each do |dep|

@@ -9,14 +9,6 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::NpmAndYarn::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:files) { [package_json, lockfile] }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", package_json_fixture_name)
-    )
-  end
-  let(:package_json_fixture_name) { "package.json" }
   let(:parser) do
     described_class.new(
       dependency_files: files,
@@ -47,22 +39,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
       context "with no lockfile" do
-        let(:package_json_fixture_name) { "exact_version_requirements.json" }
-        let(:files) { [package_json] }
+        let(:files) { project_dependency_files("npm6/exact_version_requirements") }
+
         its(:length) { is_expected.to eq(3) }
       end
 
       context "with a package-lock.json" do
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "package-lock.json",
-            content: lockfile_body
-          )
-        end
-        let(:lockfile_body) do
-          fixture("npm_lockfiles", npm_lock_fixture_name)
-        end
-        let(:npm_lock_fixture_name) { "package-lock.json" }
+        let(:files) { project_dependency_files("npm6/simple") }
 
         its(:length) { is_expected.to eq(2) }
 
@@ -87,8 +70,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a blank requirement" do
-          let(:package_json_fixture_name) { "blank_requirement.json" }
-          let(:npm_lock_fixture_name) { "blank_requirement.json" }
+          let(:files) { project_dependency_files("npm6/blank_requirement") }
 
           describe "the first dependency" do
             subject { top_level_dependencies.first }
@@ -110,27 +92,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an ignored hash requirement" do
-          let(:package_json_fixture_name) { "hash_requirement.json" }
-          let(:npm_lock_fixture_name) { "package-lock.json" }
+          let(:files) { project_dependency_files("npm6/hash_requirement") }
 
           its(:length) { is_expected.to eq(2) }
         end
 
         context "that contains an empty version string for a sub-dep" do
-          let(:npm_lock_fixture_name) { "empty_version.json" }
+          let(:files) { project_dependency_files("npm6/empty_version") }
 
           its(:length) { is_expected.to eq(2) }
         end
 
         context "that contains a version requirement string" do
-          let(:npm_lock_fixture_name) { "invalid_version_requirement.json" }
+          let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
+
           subject { dependencies.find { |d| d.name == "etag" } }
           it { is_expected.to eq(nil) }
         end
 
         context "that has URL versions (i.e., is from a bad version of npm)" do
-          let(:package_json_fixture_name) { "url_versions.json" }
-          let(:npm_lock_fixture_name) { "url_versions.json" }
+          let(:files) { project_dependency_files("npm6/url_versions") }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -154,8 +135,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only dev dependencies" do
-          let(:package_json_fixture_name) { "only_dev_dependencies.json" }
-          let(:npm_lock_fixture_name) { "only_dev_dependencies.json" }
+          let(:files) { project_dependency_files("npm6/only_dev_dependencies") }
 
           describe "the first dependency" do
             subject { top_level_dependencies.first }
@@ -177,8 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "when the dependency is specified as both dev and runtime" do
-          let(:package_json_fixture_name) { "duplicate.json" }
-          let(:files) { [package_json] }
+          let(:files) { project_dependency_files("npm6/duplicate") }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -207,10 +186,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a private-source dependency" do
-          let(:package_json_fixture_name) { "private_source.json" }
-          let(:npm_lock_fixture_name) { "private_source.json" }
+          let(:files) { project_dependency_files("npm6/private_source") }
 
-          its(:length) { is_expected.to eq(6) }
+          its(:length) { is_expected.to eq(7) }
 
           describe "the first private dependency" do
             subject { top_level_dependencies[1] }
@@ -269,6 +247,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   source: {
                     type: "private_registry",
                     url: "https://npm.pkg.github.com"
+                  }
+                }]
+              )
+            end
+          end
+
+          describe "the scoped gitlab dependency" do
+            subject { top_level_dependencies[6] }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("@dependabot/pack-core-4") }
+            its(:version) { is_expected.to eq("2.0.14") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^2.0.1",
+                  file: "package.json",
+                  groups: ["devDependencies"],
+                  source: {
+                    type: "private_registry",
+                    url: "https://gitlab.mydomain.com/api/v4/"\
+                         "packages/npm"
                   }
                 }]
               )
@@ -393,8 +393,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an optional dependency" do
-          let(:package_json_fixture_name) { "optional_dependencies.json" }
-          let(:npm_lock_fixture_name) { "optional_dependencies.json" }
+          let(:files) { project_dependency_files("npm6/optional_dependencies") }
 
           its(:length) { is_expected.to eq(2) }
 
@@ -418,15 +417,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a path-based dependency" do
-          let(:files) { [package_json, lockfile, path_dep] }
-          let(:package_json_fixture_name) { "path_dependency.json" }
-          let(:npm_lock_fixture_name) { "path_dependency.json" }
-          let(:path_dep) do
-            Dependabot::DependencyFile.new(
-              name: "deps/etag/package.json",
-              content: fixture("package_files", "etag.json"),
-              support_file: true
-            )
+          let(:files) do
+            project_dependency_files("npm6/path_dependency").tap do |files|
+              file = files.find { |f| f.name == "deps/etag/package.json" }
+              file.support_file = true
+            end
           end
 
           it "doesn't include the path-based dependency" do
@@ -436,9 +431,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git-url dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "git_dependency.json" }
-          let(:npm_lock_fixture_name) { "git_dependency.json" }
+          let(:files) { project_dependency_files("npm6/git_dependency") }
 
           its(:length) { is_expected.to eq(4) }
 
@@ -467,9 +460,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the lockfile has a branch for the version" do
-              let(:npm_lock_fixture_name) do
-                "git_dependency_branch_version.json"
-              end
+              let(:files) { project_dependency_files("npm6/git_dependency_branch_version") }
 
               it "is excluded" do
                 expect(top_level_dependencies.map(&:name)).
@@ -480,9 +471,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a github dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "github_dependency.json" }
-          let(:npm_lock_fixture_name) { "github_dependency.json" }
+          let(:files) { project_dependency_files("npm6/github_dependency") }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -512,9 +501,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "that specifies a semver requirement" do
-            let(:files) { [package_json, lockfile] }
-            let(:package_json_fixture_name) { "github_dependency_semver.json" }
-            let(:npm_lock_fixture_name) { "github_dependency_semver.json" }
+            let(:files) { project_dependency_files("npm6/github_dependency_semver") }
 
             before do
               git_url = "https://github.com/jonschlinkert/is-number.git"
@@ -580,9 +567,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "that doesn't specify a reference" do
-            let(:files) { [package_json, lockfile] }
-            let(:package_json_fixture_name) { "github_dependency_no_ref.json" }
-            let(:npm_lock_fixture_name) { "github_dependency_no_ref.json" }
+            let(:files) { project_dependency_files("npm6/github_dependency_no_ref") }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -613,9 +598,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "that is specified with its shortname" do
-            let(:files) { [package_json, lockfile] }
-            let(:package_json_fixture_name) { "github_shortname.json" }
-            let(:npm_lock_fixture_name) { "github_shortname.json" }
+            let(:files) { project_dependency_files("npm6/github_shortname") }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -647,7 +630,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only a package.json" do
-          let(:files) { [package_json] }
+          let(:project_name) { "npm6/simple" }
+          let(:files) { project_dependency_files(project_name).select { |f| f.name == "package.json" } }
 
           its(:length) { is_expected.to eq(2) }
 
@@ -670,7 +654,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "with a git dependency" do
-            let(:package_json_fixture_name) { "git_dependency.json" }
+            let(:project_name) { "npm6/git_dependency" }
             its(:length) { is_expected.to eq(4) }
 
             describe "the git dependency" do
@@ -697,7 +681,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the dependency also has a non-git source" do
-              let(:package_json_fixture_name) { "multiple_sources.json" }
+              let(:project_name) { "npm6/multiple_sources" }
 
               it "excludes the dependency" do
                 expect(dependencies.map(&:name)).to eq(["fetch-factory"])
@@ -706,23 +690,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "that does flat resolution" do
-            let(:package_json_fixture_name) { "flat.json" }
+            let(:project_name) { "npm6/flat_resolution" }
             its(:length) { is_expected.to eq(0) }
           end
         end
       end
 
       context "with an npm-shrinkwrap.json" do
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "npm-shrinkwrap.json",
-            content: lockfile_body
-          )
-        end
-        let(:lockfile_body) do
-          fixture("shrinkwraps", shrinkwrap_fixture_name)
-        end
-        let(:shrinkwrap_fixture_name) { "npm-shrinkwrap.json" }
+        let(:files) { project_dependency_files("npm4/shrinkwrap") }
 
         its(:length) { is_expected.to eq(2) }
 
@@ -747,7 +722,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "that has relative resolved paths" do
-          let(:shrinkwrap_fixture_name) { "relative.json" }
+          let(:files) { project_dependency_files("npm4/shrinkwrap_relative") }
 
           its(:length) { is_expected.to eq(2) }
 
@@ -774,16 +749,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
 
       context "with a yarn.lock" do
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "yarn.lock",
-            content: lockfile_body
-          )
-        end
-        let(:lockfile_body) do
-          fixture("yarn_lockfiles", yarn_lock_fixture_name)
-        end
-        let(:yarn_lock_fixture_name) { "yarn.lock" }
+        let(:files) { project_dependency_files("yarn/simple") }
 
         its(:length) { is_expected.to eq(2) }
 
@@ -808,8 +774,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "when a dist-tag is specified" do
-          let(:package_json_fixture_name) { "dist_tag.json" }
-          let(:yarn_lock_fixture_name) { "dist_tag.lock" }
+          let(:files) { project_dependency_files("yarn/dist_tag") }
 
           describe "the first dependency" do
             subject { top_level_dependencies.first }
@@ -831,8 +796,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only dev dependencies" do
-          let(:package_json_fixture_name) { "only_dev_dependencies.json" }
-          let(:yarn_lock_fixture_name) { "only_dev_dependencies.lock" }
+          let(:files) { project_dependency_files("yarn/only_dev_dependencies") }
 
           describe "the first dependency" do
             subject { top_level_dependencies.first }
@@ -854,7 +818,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an optional dependency" do
-          let(:package_json_fixture_name) { "optional_dependencies.json" }
+          let(:files) { project_dependency_files("yarn/optional_dependencies") }
 
           its(:length) { is_expected.to eq(2) }
 
@@ -878,8 +842,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a resolution" do
-          let(:package_json_fixture_name) { "resolutions.json" }
-          let(:yarn_lock_fixture_name) { "resolutions.lock" }
+          let(:files) { project_dependency_files("yarn/resolutions") }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -905,10 +868,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "that specifies a semver requirement" do
-          let(:package_json_fixture_name) do
-            "github_dependency_yarn_semver.json"
-          end
-          let(:yarn_lock_fixture_name) { "github_dependency_yarn_semver.lock" }
+          let(:files) { project_dependency_files("yarn/github_dependency_yarn_semver") }
 
           its(:length) { is_expected.to eq(1) }
 
@@ -936,8 +896,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "with #semver:" do
-            let(:package_json_fixture_name) { "github_dependency_semver.json" }
-            let(:yarn_lock_fixture_name) { "github_dependency_semver.lock" }
+            let(:files) { project_dependency_files("yarn/github_dependency_semver") }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -967,10 +926,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a private-source dependency" do
-          let(:package_json_fixture_name) { "private_source.json" }
-          let(:yarn_lock_fixture_name) { "private_source.lock" }
+          let(:files) { project_dependency_files("yarn/private_source") }
 
-          its(:length) { is_expected.to eq(6) }
+          its(:length) { is_expected.to eq(7) }
 
           describe "the second dependency" do
             subject { top_level_dependencies[1] }
@@ -1016,15 +974,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a path-based dependency" do
-          let(:files) { [package_json, lockfile, path_dep] }
-          let(:package_json_fixture_name) { "path_dependency.json" }
-          let(:yarn_lock_fixture_name) { "path_dependency.lock" }
-          let(:path_dep) do
-            Dependabot::DependencyFile.new(
-              name: "deps/etag/package.json",
-              content: fixture("package_files", "etag.json"),
-              support_file: true
-            )
+          let(:files) do
+            project_dependency_files("yarn/path_dependency").tap do |files|
+              file = files.find { |f| f.name == "deps/etag/package.json" }
+              file.support_file = true
+            end
           end
 
           it "doesn't include the path-based dependency" do
@@ -1034,9 +988,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a symlinked dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "symlinked_dependency.json" }
-          let(:yarn_lock_fixture_name) { "symlinked_dependency.lock" }
+          let(:files) { project_dependency_files("yarn/symlinked_dependency") }
 
           it "doesn't include the link dependency" do
             expect(top_level_dependencies.length).to eq(3)
@@ -1045,9 +997,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an aliased dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "aliased_dependency.json" }
-          let(:yarn_lock_fixture_name) { "aliased_dependency.lock" }
+          let(:files) { project_dependency_files("yarn/aliased_dependency") }
 
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
@@ -1057,9 +1007,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with an aliased dependency name (only supported by yarn)" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "aliased_dependency_name.json" }
-          let(:yarn_lock_fixture_name) { "aliased_dependency_name.lock" }
+          let(:files) { project_dependency_files("yarn/aliased_dependency_name") }
 
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
@@ -1069,9 +1017,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "git_dependency.json" }
-          let(:yarn_lock_fixture_name) { "git_dependency.lock" }
+          let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           its(:length) { is_expected.to eq(4) }
 
@@ -1100,9 +1046,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the lockfile entry's requirement is outdated" do
-              let(:yarn_lock_fixture_name) do
-                "git_dependency_outdated_req.lock"
-              end
+              let(:files) { project_dependency_files("yarn/git_dependency_outdated_req") }
 
               it { is_expected.to be_a(Dependabot::Dependency) }
               its(:name) { is_expected.to eq("is-number") }
@@ -1128,8 +1072,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "with a github dependency" do
-            let(:package_json_fixture_name) { "github_dependency_slash.json" }
-            let(:yarn_lock_fixture_name) { "github_dependency_slash.lock" }
+            let(:files) { project_dependency_files("yarn/github_dependency_slash") }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -1160,8 +1103,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "with auth details" do
-            let(:package_json_fixture_name) { "git_dependency_with_auth.json" }
-            let(:yarn_lock_fixture_name) { "git_dependency_with_auth.lock" }
+            let(:files) { project_dependency_files("yarn/git_dependency_with_auth") }
 
             describe "the git dependency" do
               subject { top_level_dependencies.last }
@@ -1190,10 +1132,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "specified with https and a colon (supported by npm)" do
-              let(:package_json_fixture_name) do
-                "git_dependency_with_auth_2.json"
-              end
-              let(:files) { [package_json] }
+              let(:files) { project_dependency_files("npm6/git_dependency_with_auth") }
 
               describe "the git dependency" do
                 subject { top_level_dependencies.last }
@@ -1220,9 +1159,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git source that comes from a sub-dependency" do
-          let(:files) { [package_json, lockfile] }
-          let(:package_json_fixture_name) { "git_dependency_from_subdep.json" }
-          let(:yarn_lock_fixture_name) { "git_dependency_from_subdep.lock" }
+          let(:files) { project_dependency_files("yarn/git_dependency_from_subdep") }
 
           describe "the chalk dependency" do
             subject { dependencies.find { |d| d.name == "chalk" } }
@@ -1243,26 +1180,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with workspaces" do
-          let(:package_json_fixture_name) { "workspaces.json" }
-          let(:yarn_lock_fixture_name) { "workspaces.lock" }
-          let(:files) { [package1, package_json, lockfile, other_package] }
-          let(:package1) do
-            Dependabot::DependencyFile.new(
-              name: "packages/package1/package.json",
-              content: fixture("package_files", "package1.json")
-            )
-          end
-          let(:other_package) do
-            Dependabot::DependencyFile.new(
-              name: "other_package/package.json",
-              content: fixture("package_files", "other_package.json")
-            )
-          end
-
+          let(:files) { project_dependency_files("yarn/workspaces") }
           its(:length) { is_expected.to eq(3) }
 
-          describe "the last dependency" do
-            subject { top_level_dependencies.last }
+          describe "the etag dependency" do
+            subject { top_level_dependencies.find { |d| d.name == "etag" } }
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("etag") }
@@ -1314,91 +1236,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with lerna.json" do
-          let(:files) do
-            [
-              package_json,
-              lerna_json,
-              package1,
-              package1_lock,
-              other_package_json,
-              other_package_lock
-            ]
-          end
-          let(:package_json_fixture_name) { "lerna.json" }
-          let(:lerna_json) do
-            Dependabot::DependencyFile.new(
-              name: "lerna.json",
-              content: fixture("lerna", "lerna.json")
-            )
-          end
-          let(:package1) do
-            Dependabot::DependencyFile.new(
-              name: "packages/package1/package.json",
-              content: fixture("package_files", "package1.json")
-            )
-          end
-          let(:package1_lock) do
-            Dependabot::DependencyFile.new(
-              name: "packages/package1/yarn.lock",
-              content: fixture("yarn_lockfiles", "package1.lock")
-            )
-          end
-          let(:other_package_json) do
-            Dependabot::DependencyFile.new(
-              name: "packages/other_package/package.json",
-              content:
-                fixture("package_files", "other_package.json")
-            )
-          end
-          let(:other_package_lock) do
-            Dependabot::DependencyFile.new(
-              name: "packages/other_package/yarn.lock",
-              content:
-                fixture("yarn_lockfiles", "other_package.lock")
+          let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
+          its(:length) { is_expected.to eq(5) }
+
+          it "parses the lerna dependency" do
+            dependency = top_level_dependencies.find { |d| d.name == "lerna" }
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("lerna")
+            expect(dependency.version).to eq("3.6.0")
+            expect(dependency.requirements).to match_array(
+              [{
+                requirement: "^3.6.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }]
             )
           end
 
-          its(:length) { is_expected.to eq(4) }
-
-          describe "the first dependency" do
-            subject { top_level_dependencies.first }
-
-            it { is_expected.to be_a(Dependabot::Dependency) }
-            its(:name) { is_expected.to eq("lerna") }
-            its(:version) { is_expected.to be_nil }
-            its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "^3.6.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }]
-              )
-            end
-          end
-
-          describe "the last dependency" do
-            subject { top_level_dependencies.last }
-
-            it { is_expected.to be_a(Dependabot::Dependency) }
-            its(:name) { is_expected.to eq("etag") }
-            its(:version) { is_expected.to eq("1.8.0") }
-            its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "^1.1.0",
-                  file: "packages/package1/package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }, {
-                  requirement: "^1.0.0",
-                  file: "packages/other_package/package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }]
-              )
-            end
+          it "parses the etag dependency" do
+            dependency = top_level_dependencies.find { |d| d.name == "etag" }
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("etag")
+            expect(dependency.version).to eq("1.8.0")
+            expect(dependency.requirements).to match_array(
+              [{
+                requirement: "^1.1.0",
+                file: "packages/package1/package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }, {
+                requirement: "^1.0.0",
+                file: "packages/other_package/package.json",
+                groups: ["devDependencies"],
+                source: nil
+              }]
+            )
           end
         end
       end
@@ -1408,33 +1281,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       subject(:subdependencies) { dependencies.reject(&:top_level?) }
 
       context "with a yarn.lock" do
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "yarn.lock",
-            content: lockfile_body
-          )
-        end
-        let(:lockfile_body) do
-          fixture("yarn_lockfiles", yarn_lock_fixture_name)
-        end
-        let(:package_json_fixture_name) { "no_lockfile_change.json" }
-        let(:yarn_lock_fixture_name) { "no_lockfile_change.lock" }
+        let(:files) { project_dependency_files("yarn/no_lockfile_change") }
 
         its(:length) { is_expected.to eq(389) }
       end
 
       context "with a package-lock.json" do
-        let(:lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "package-lock.json",
-            content: lockfile_body
-          )
-        end
-        let(:lockfile_body) do
-          fixture("npm_lockfiles", yarn_lock_fixture_name)
-        end
-        let(:package_json_fixture_name) { "blank_requirement.json" }
-        let(:yarn_lock_fixture_name) { "blank_requirement.json" }
+        let(:files) { project_dependency_files("npm6/blank_requirement") }
 
         its(:length) { is_expected.to eq(22) }
       end

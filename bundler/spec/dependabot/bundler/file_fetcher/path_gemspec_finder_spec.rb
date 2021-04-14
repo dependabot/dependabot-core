@@ -8,22 +8,17 @@ require "dependabot/bundler/file_fetcher/path_gemspec_finder"
 RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
   let(:finder) { described_class.new(gemfile: gemfile) }
 
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(content: gemfile_body, name: gemfile_name)
-  end
-  let(:gemfile_name) { "Gemfile" }
-  let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
+  let(:gemfile) { bundler_project_dependency_file("gemfile", filename: "Gemfile") }
 
   describe "#path_gemspec_paths" do
     subject(:path_gemspec_paths) { finder.path_gemspec_paths }
 
     context "when the file does not include any path gemspecs" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "Gemfile") }
       it { is_expected.to eq([]) }
     end
 
     context "with invalid Ruby in the Gemfile" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "invalid_ruby") }
+      let(:gemfile) { bundler_project_dependency_file("invalid_ruby", filename: "Gemfile") }
 
       it "raises a helpful error" do
         expect { finder.path_gemspec_paths }.to raise_error do |error|
@@ -34,11 +29,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
     end
 
     context "when the file does include a path gemspec" do
-      let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source") }
+      let(:gemfile) { bundler_project_dependency_file("path_source", filename: "Gemfile") }
       it { is_expected.to eq([Pathname.new("plugins/example")]) }
 
       context "whose path must be eval-ed" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_eval") }
+        let(:gemfile) { bundler_project_dependency_file("path_source_eval", filename: "Gemfile") }
 
         it "raises a helpful error" do
           expect { finder.path_gemspec_paths }.to raise_error do |error|
@@ -49,13 +44,15 @@ RSpec.describe Dependabot::Bundler::FileFetcher::PathGemspecFinder do
       end
 
       context "when this Gemfile is already in a nested directory" do
-        let(:gemfile_name) { "nested/Gemfile" }
+        let(:gemfile) do
+          bundler_project_dependency_file("nested_path_source", filename: "nested/Gemfile")
+        end
 
         it { is_expected.to eq([Pathname.new("nested/plugins/example")]) }
       end
 
       context "that is behind a conditional that is false" do
-        let(:gemfile_body) { fixture("ruby", "gemfiles", "path_source_if") }
+        let(:gemfile) { bundler_project_dependency_file("path_source_if", filename: "Gemfile") }
         it { is_expected.to eq([Pathname.new("plugins/example")]) }
       end
     end

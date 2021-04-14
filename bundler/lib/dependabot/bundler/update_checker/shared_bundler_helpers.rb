@@ -4,6 +4,7 @@ require "excon"
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -163,8 +164,8 @@ module Dependabot
 
         def inaccessible_git_dependencies
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            git_specs = SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            git_specs = NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "git_specs",
               args: {
                 dir: tmp_dir,
@@ -186,9 +187,11 @@ module Dependabot
         end
 
         def jfrog_source
-          in_a_native_bundler_context(error_handling: false) do |dir|
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+          return @jfrog_source unless defined?(@jfrog_source)
+
+          @jfrog_source = in_a_native_bundler_context(error_handling: false) do |dir|
+            NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "jfrog_source",
               args: {
                 dir: dir,

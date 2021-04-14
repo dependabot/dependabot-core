@@ -16,27 +16,35 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - bundler
-          - cargo
-          - common
-          - composer
-          - dep
-          - docker
-          - elm
-          - git_submodules
-          - github_actions
-          - go_modules
-          - gradle
-          - hex
-          - maven
-          - npm_and_yarn
-          - nuget
-          - omnibus
-          - python
-          - terraform
+        - { path: bundler, name: bundler1 }
+        - { path: bundler, name: bundler2 }
+        - { path: cargo, name: cargo }
+        - { path: common, name: common }
+        - { path: composer, name: composer }
+        - { path: dep, name: dep }
+        - { path: docker, name: docker }
+        - { path: elm, name: elm }
+        - { path: git_submodules, name: git_submodules }
+        - { path: github_actions, name: github_actions }
+        - { path: go_modules, name: go_modules }
+        - { path: gradle, name: gradle }
+        - { path: hex, name: hex }
+        - { path: maven, name: maven }
+        - { path: npm_and_yarn, name: npm_and_yarn }
+        - { path: nuget, name: nuget }
+        - { path: omnibus, name: omnibus }
+        - { path: python, name: python }
+        - { path: terraform, name: terraform }
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Free up disk space
+        run: |
+          sudo apt autoremove --purge && sudo apt -y clean
+          docker system prune -af --volumes
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          df -h
       - name: Prepare environment variables
         run: |
           echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
@@ -51,6 +59,9 @@ jobs:
           else
             echo "No Docker credentials, skipping login"
           fi
+      - name: Set test env credentials
+        run: |
+          echo "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Pull Docker base images & warm Docker cache
         run: |
           docker pull "$BASE_IMAGE"
@@ -87,14 +98,29 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
-      - name: Run Rubocop linting
+      - name: Run Python flake8 linting
+        if: matrix.suite.name == 'python'
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rubocop ."
+          docker run --rm "$CORE_CI_IMAGE" bash -c "pyenv exec flake8 python/helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics"
+      - name: Run Ruby Rubocop linting
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && bundle exec rubocop ."
       - name: Run js linting and tests
-        if: matrix.suite == 'npm_and_yarn'
+        if: matrix.suite.name == 'npm_and_yarn'
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn lint"
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && yarn test"
-      - name: Run ${{ matrix.suite }} tests with rspec
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && npm run lint"
+          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && npm test"
+      - name: Run bundler v1 native helper specs
+        if: matrix.suite.name == 'bundler1'
         run: |
-          docker run --env "CI=true" --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite }} && bundle exec rspec spec"
+          docker run --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/bundler/helpers/v1 && BUNDLER_VERSION=1 bundle install && BUNDLER_VERSION=1 bundle exec rspec spec"
+      - name: Run bundler v2 native helper specs
+        if: matrix.suite.name == 'bundler2'
+        run: |
+          docker run --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/bundler/helpers/v2 && BUNDLER_VERSION=2 bundle install && BUNDLER_VERSION=2 bundle exec rspec spec"
+      - name: Run ${{ matrix.suite.name }} tests with rspec
+        run: |
+          docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --env "SUITE_NAME=${{ matrix.suite.name }}" --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && bundle exec rspec spec"

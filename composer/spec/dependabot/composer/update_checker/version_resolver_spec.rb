@@ -16,14 +16,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:requirements_to_unlock) { :own }
   let(:dependency_files) { project_dependency_files(project_name) }
 
@@ -187,6 +180,51 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it "raises a Dependabot::OutOfMemory error" do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::OutOfMemory)
+      end
+    end
+
+    context "with a name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_name" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with a dependency name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_requirement" }
+      let(:dependency_name) { "monolog/Monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with an unresolvable path VCS source" do
+      let(:project_name) { "unreachable_path_vcs_source" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a platform extension that cannot be added" do
+      let(:project_name) { "unaddable_platform_req" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with an invalid version string" do
+      let(:project_name) { "invalid_version_string" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

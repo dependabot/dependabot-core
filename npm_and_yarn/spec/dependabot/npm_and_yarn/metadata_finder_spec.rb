@@ -110,7 +110,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there is a bitbucket link in the npm response" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_bitbucket.json")
+        fixture("npm_responses", "npm_response_bitbucket.json")
       end
 
       it { is_expected.to eq("https://bitbucket.org/jshttp/etag") }
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there's a link without the expected structure" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_string_link.json")
+        fixture("npm_responses", "npm_response_string_link.json")
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there's a link using GitHub shorthand" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_string_shorthand.json")
+        fixture("npm_responses", "npm_response_string_shorthand.json")
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there isn't a source link in the npm response" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_no_source.json")
+        fixture("npm_responses", "npm_response_no_source.json")
       end
 
       it { is_expected.to be_nil }
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       context "that is hosted on gemfury" do
         before do
-          body = fixture("gemfury_response_etag.json")
+          body = fixture("gemfury_responses", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
     context "when there is a homepage link in the npm response" do
       let(:npm_all_versions_response) do
-        fixture("npm_response_no_source.json")
+        fixture("npm_responses", "npm_response_no_source.json")
       end
       let(:npm_latest_version_response) { nil }
 

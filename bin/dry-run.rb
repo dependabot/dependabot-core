@@ -61,6 +61,11 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
+require "logger"
+require "dependabot/logger"
+require "stackprof"
+
+Dependabot.logger = Logger.new($stdout)
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
@@ -91,6 +96,7 @@ require "dependabot/terraform"
 
 $options = {
   credentials: [],
+  provider: "github",
   directory: "/",
   dependency_names: nil,
   branch: nil,
@@ -98,11 +104,13 @@ $options = {
   write: false,
   clone: false,
   lockfile_only: false,
+  reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
   security_advisories: [],
-  security_updates_only: false
+  security_updates_only: false,
+  pull_request: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -133,6 +141,10 @@ end
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
 
+  opts.on("--provider PROVIDER", "SCM provider e.g. github, azure, bitbucket") do |value|
+    $options[:provider] = value
+  end
+
   opts.on("--dir DIRECTORY", "Dependency file directory") do |value|
     $options[:directory] = value
   end
@@ -156,6 +168,10 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--lockfile-only", "Only update the lockfile") do |_value|
     $options[:lockfile_only] = true
+  end
+
+  opts.on("--reject-external-code", "Reject external code") do |_value|
+    $options[:reject_external_code] = true
   end
 
   opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
@@ -186,6 +202,16 @@ option_parse = OptionParser.new do |opts|
   opts.on("--security-updates-only",
           "Only update vulnerable dependencies") do |_value|
     $options[:security_updates_only] = true
+  end
+
+  opts.on("--profile",
+          "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`") do
+    $options[:profile] = true
+  end
+
+  opts.on("--pull-request",
+    "Output pull request information: title, description") do
+    $options[:pull_request] = true
   end
 end
 
@@ -258,9 +284,7 @@ def cached_dependency_files_read
   )
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
-  if File.exist?(cache_manifest_path)
-    cached_manifest = File.read(cache_manifest_path)
-  end
+  cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
   cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
 
   all_files_cached = cached_dependency_files&.all? do |file|
@@ -307,9 +331,7 @@ def cached_dependency_files_read
     end
     # Initialize a git repo so that changed files can be diffed
     if $options[:write]
-      if File.exist?(".gitignore")
-        FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
-      end
+      FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore")) if File.exist?(".gitignore")
       Dir.chdir(cache_dir) do
         system("git init . && git add . && git commit --allow-empty -m 'Init'")
       end
@@ -412,8 +434,10 @@ def handle_dependabot_error(error:, dependency:)
        "#{error_details.fetch(:'error-detail')}"
 end
 
-source = Dependabot::Source.new(
-  provider: "github",
+StackProf.start(raw: true) if $options[:profile]
+
+$source = Dependabot::Source.new(
+  provider: $options[:provider],
   repo: $repo_name,
   directory: $options[:directory],
   branch: $options[:branch],
@@ -428,7 +452,7 @@ if $options[:clone] || always_clone
 end
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-          new(source: source, credentials: $options[:credentials],
+          new(source: $source, credentials: $options[:credentials],
               repo_contents_path: $repo_contents_path)
 $files = if $options[:clone] || always_clone
            fetcher.clone_repo_contents
@@ -444,8 +468,9 @@ puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
   repo_contents_path: $repo_contents_path,
-  source: source,
-  credentials: $options[:credentials]
+  source: $source,
+  credentials: $options[:credentials],
+  reject_external_code: $options[:reject_external_code],
 )
 
 dependencies = cached_read("dependencies") { parser.parse }
@@ -509,29 +534,24 @@ def peer_dependencies_can_update?(checker, reqs_to_unlock)
 end
 
 def file_updater_for(dependencies)
-  Dependabot::FileUpdaters.for_package_manager($package_manager).new(
-    dependencies: dependencies,
-    dependency_files: $files,
-    repo_contents_path: $repo_contents_path,
-    credentials: $options[:credentials],
-    options: $options[:updater_options]
-  )
-end
-
-def generate_dependency_files_for(updated_dependencies)
-  if updated_dependencies.count == 1
-    updated_dependency = updated_dependencies.first
+  if dependencies.count == 1
+    updated_dependency = dependencies.first
     prev_v = updated_dependency.previous_version
     prev_v_msg = prev_v ? "from #{prev_v} " : ""
     puts " => updating #{updated_dependency.name} #{prev_v_msg}to " \
          "#{updated_dependency.version}"
   else
-    dependency_names = updated_dependencies.map(&:name)
+    dependency_names = dependencies.map(&:name)
     puts " => updating #{dependency_names.join(', ')}"
   end
 
-  updater = file_updater_for(updated_dependencies)
-  updater.updated_dependency_files
+  Dependabot::FileUpdaters.for_package_manager($package_manager).new(
+    dependencies: dependencies,
+    dependency_files: $files,
+    repo_contents_path: $repo_contents_path,
+    credentials: $options[:credentials],
+    options: $options[:updater_options],
+  )
 end
 
 def security_fix?(dependency)
@@ -631,7 +651,8 @@ dependencies.each do |dep|
     next
   end
 
-  updated_files = generate_dependency_files_for(updated_deps)
+  updater = file_updater_for(updated_deps)
+  updated_files = updater.updated_dependency_files
 
   # Currently unused but used to create pull requests (from the updater)
   updated_deps.reject do |d|
@@ -672,9 +693,25 @@ dependencies.each do |dep|
       end
     end
   end
+
+  if $options[:pull_request]
+    msg =  Dependabot::PullRequestCreator::MessageBuilder.new(
+      dependencies: updated_deps,
+      files: updated_files,
+      credentials: $options[:credentials],
+      source: $source,
+    ).message
+    puts "Pull Request Title: #{msg.pr_name}"
+    puts "--description--\n#{msg.pr_message}\n--/description--"
+    puts "--commit--\n#{msg.commit_message}\n--/commit--"
+  end
 rescue StandardError => e
   handle_dependabot_error(error: e, dependency: dep)
 end
+
+StackProf.stop if $options[:profile]
+StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
+
 # rubocop:enable Metrics/BlockLength
 
 # rubocop:enable Style/GlobalVars

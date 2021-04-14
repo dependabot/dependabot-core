@@ -10,11 +10,11 @@ module Dependabot
 
       class InternalServerError < StandardError; end
 
-      class ServiceNotAvailaible < StandardError; end
+      class ServiceNotAvailable < StandardError; end
 
       class BadGateway < StandardError; end
 
-      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailaible].freeze
+      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
       MAX_PR_DESCRIPTION_LENGTH = 3999
 
@@ -184,6 +184,28 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pullrequests?api-version=5.0", content.to_json)
       end
+
+      def pull_request(pull_request_id)
+        response = get(source.api_endpoint +
+          source.organization + "/" + source.project +
+          "/_apis/git/pullrequests/" + pull_request_id)
+
+        JSON.parse(response.body)
+      end
+
+      def update_ref(branch_name, old_commit, new_commit)
+        content = [
+          {
+            name: "refs/heads/" + branch_name,
+            oldObjectId: old_commit,
+            newObjectId: new_commit
+          }
+        ]
+
+        post(source.api_endpoint + source.organization + "/" + source.project +
+          "/_apis/git/repositories/" + source.unscoped_repo +
+          "/refs?api-version=5.0", content.to_json)
+      end
       # rubocop:enable Metrics/ParameterLists
 
       def get(url)
@@ -202,7 +224,7 @@ module Dependabot
 
           raise InternalServerError if response.status == 500
           raise BadGateway if response.status == 502
-          raise ServiceNotAvailaible if response.status == 503
+          raise ServiceNotAvailable if response.status == 503
         end
 
         raise NotFound if response.status == 404

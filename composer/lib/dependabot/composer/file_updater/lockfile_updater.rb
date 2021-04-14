@@ -7,6 +7,7 @@ require "dependabot/composer/file_updater"
 require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
+require "dependabot/composer/helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -448,13 +449,7 @@ module Dependabot
         end
 
         def composer_version
-          @composer_version ||=
-            begin
-              return "v2" unless parsed_lockfile["plugin-api-version"]
-
-              version = Version.new(parsed_lockfile["plugin-api-version"])
-              version.canonical_segments.first == 1 ? "v1" : "v2"
-            end
+          @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
         end
 
         def credentials_env

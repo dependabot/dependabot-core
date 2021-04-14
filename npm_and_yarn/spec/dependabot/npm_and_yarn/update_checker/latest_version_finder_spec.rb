@@ -31,14 +31,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
-  let(:dependency_files) { [package_json] }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", manifest_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "package.json" }
+  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
   let(:credentials) do
     [{
@@ -329,7 +322,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "for a dependency hosted on another registry" do
       before do
-        body = fixture("gemfury_response_etag.json")
+        body = fixture("gemfury_responses", "gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
@@ -371,7 +364,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it "raises a to Dependabot::PrivateSourceTimedOut error" do
           expect { version_finder.latest_version_from_registry }.
             to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
@@ -434,7 +427,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
       end
@@ -537,7 +530,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         context "without https" do
           before do
-            body = fixture("gemfury_response_etag.json")
+            body = fixture("gemfury_responses", "gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
@@ -584,34 +577,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
         context "with credentials in the .npmrc" do
-          let(:dependency_files) { [npmrc] }
-          let(:npmrc) do
-            Dependabot::DependencyFile.new(
-              name: ".npmrc",
-              content: fixture("npmrc", "auth_token")
-            )
-          end
+          let(:dependency_files) { project_dependency_files(project_name).select { |f| f.name == ".npmrc" } }
+          let(:project_name) { "npm6/npmrc_auth_token" }
 
           it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
           context "that require an environment variable" do
-            let(:npmrc) do
-              Dependabot::DependencyFile.new(
-                name: ".npmrc",
-                content: fixture("npmrc", "env_auth_token")
-              )
-            end
+            let(:project_name) { "npm6/npmrc_env_auth_token" }
 
             it "raises a PrivateSourceAuthenticationFailure error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { version_finder.latest_version_from_registry }.
                 to raise_error(error_class) do |error|
-                  expect(error.source).to eq("npm.fury.io/dependabot")
+                  expect(error.source).to eq("npm.fury.io/<redacted>")
                 end
             end
           end
