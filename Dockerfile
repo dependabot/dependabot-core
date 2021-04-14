@@ -224,6 +224,8 @@ RUN mkdir -p /opt/bundler/v1 \
   && bash /opt/composer/helpers/v2/build /opt/composer/v2
 
 # Allow further gem installs as the dependabot user
-ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-    BUNDLE_BIN=".bundle/bin" \
-    PATH=".bundle/bin:$PATH:/home/dependabot/.bundle/bin"
+ENV HOME=/home/dependabot
+WORKDIR $HOME
+ENV BUNDLE_PATH="$HOME/.bundle" \
+    BUNDLE_BIN="$HOME/.bundle/bin" \
+    PATH="$BUNDLE_BIN:$PATH"
