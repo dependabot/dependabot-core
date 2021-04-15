@@ -1,3 +1,12 @@
+## v0.142.0, 15 April 2021
+
+- Dockerfile: set WORKDIR to /home/dependabot to avoid permission errors when
+  consumers of the dependabot-core image run bundle install @baseballlover723
+- Dockerfile: Cache composer installs & install ca-certificates
+- Dockerfile: shallow clone pyenv
+- npm/yarn: Always use registry source when available
+- build(deps-dev): bump eslint-config-prettier in /npm_and_yarn/helpers
+
 ## v0.141.1, 13 April 2021
 
 - Remove bundler/v1/.bundle
