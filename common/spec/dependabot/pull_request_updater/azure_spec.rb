@@ -176,7 +176,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         stub_request(:post, branch_update_url).
           to_return(status: 200, body: fixture("azure", "update_ref_failed.json"))
 
-        expect { updater.update }.to raise_error(Dependabot::PullRequestUpdateFailed)
+        expect { updater.update }.to raise_error(Dependabot::PullRequestUpdater::Azure::PullRequestUpdateFailed)
       end
     end
   end

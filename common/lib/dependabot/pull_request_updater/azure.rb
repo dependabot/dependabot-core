@@ -6,6 +6,8 @@ require "securerandom"
 module Dependabot
   class PullRequestUpdater
     class Azure
+      class PullRequestUpdateFailed < Dependabot::DependabotError; end
+
       OBJECT_ID_FOR_BRANCH_DELETE = "0000000000000000000000000000000000000000"
 
       attr_reader :source, :files, :base_commit, :old_commit, :credentials,
@@ -59,10 +61,7 @@ module Dependabot
         # 3) Delete temp branch
         update_branch(temp_branch_name, new_commit, OBJECT_ID_FOR_BRANCH_DELETE)
 
-        unless response.fetch("success", false)
-          raise Dependabot::PullRequestUpdateFailed.new(pull_request_number,
-                                                        response.fetch("customMessage", nil))
-        end
+        raise PullRequestUpdateFailed, response.fetch("customMessage", nil) unless response.fetch("success", false)
       end
 
       def pull_request
