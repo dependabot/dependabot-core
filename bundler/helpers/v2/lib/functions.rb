@@ -10,106 +10,97 @@ require "functions/version_resolver"
 module Functions
   class NotImplementedError < StandardError; end
 
-  def self.parsed_gemfile(lockfile_name:, gemfile_name:, dir:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: [])
-    FileParser.new(lockfile_name: lockfile_name).
-      parsed_gemfile(gemfile_name: gemfile_name)
+  def self.parsed_gemfile(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
+    FileParser.new(lockfile_name: args.fetch(:lockfile_name)).
+      parsed_gemfile(gemfile_name: args.fetch(:gemfile_name))
   end
 
-  def self.parsed_gemspec(lockfile_name:, gemspec_name:, dir:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: [])
-    FileParser.new(lockfile_name: lockfile_name).
-      parsed_gemspec(gemspec_name: gemspec_name)
+  def self.parsed_gemspec(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
+    FileParser.new(lockfile_name: args.fetch(:lockfile_name)).
+      parsed_gemspec(gemspec_name: args.fetch(:gemspec_name))
   end
 
-  def self.vendor_cache_dir(dir:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: [])
+  def self.vendor_cache_dir(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
     Bundler.app_cache
   end
 
-  def self.update_lockfile(dir:, gemfile_name:, lockfile_name:,
-                           credentials:, dependencies:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.update_lockfile(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     LockfileUpdater.new(
-      gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name,
-      dependencies: dependencies
+      gemfile_name: args.fetch(:gemfile_name),
+      lockfile_name: args.fetch(:lockfile_name),
+      dependencies: args.fetch(:dependencies)
     ).run
   end
 
-  def self.force_update(dir:, dependency_name:, target_version:, gemfile_name:,
-                        lockfile_name:, credentials:,
-                        update_multiple_dependencies:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.force_update(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     ForceUpdater.new(
-      dependency_name: dependency_name,
-      target_version: target_version,
-      gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name,
-      update_multiple_dependencies: update_multiple_dependencies
+      dependency_name: args.fetch(:dependency_name),
+      target_version: args.fetch(:target_version),
+      gemfile_name: args.fetch(:gemfile_name),
+      lockfile_name: args.fetch(:lockfile_name),
+      update_multiple_dependencies: args.fetch(:update_multiple_dependencies)
     ).run
   end
 
-  def self.dependency_source_type(gemfile_name:, dependency_name:, dir:,
-                                  credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.dependency_source_type(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
     DependencySource.new(
-      gemfile_name: gemfile_name,
-      dependency_name: dependency_name
+      gemfile_name: args.fetch(:gemfile_name),
+      dependency_name: args.fetch(:dependency_name)
     ).type
   end
 
-  def self.depencency_source_latest_git_version(gemfile_name:, dependency_name:,
-                                                dir:, credentials:,
-                                                dependency_source_url:,
-                                                dependency_source_branch:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.depencency_source_latest_git_version(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     DependencySource.new(
-      gemfile_name: gemfile_name,
-      dependency_name: dependency_name
+      gemfile_name: args.fetch(:gemfile_name),
+      dependency_name: args.fetch(:dependency_name)
     ).latest_git_version(
-      dependency_source_url: dependency_source_url,
-      dependency_source_branch: dependency_source_branch
+      dependency_source_url: args.fetch(:dependency_source_url),
+      dependency_source_branch: args.fetch(:dependency_source_branch)
     )
   end
 
-  def self.private_registry_versions(gemfile_name:, dependency_name:, dir:,
-                                     credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.private_registry_versions(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
     DependencySource.new(
-      gemfile_name: gemfile_name,
-      dependency_name: dependency_name
+      gemfile_name: args.fetch(:gemfile_name),
+      dependency_name: args.fetch(:dependency_name)
     ).private_registry_versions
   end
 
-  def self.resolve_version(dependency_name:, dependency_requirements:,
-                           gemfile_name:, lockfile_name:,
-                           dir:, credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.resolve_version(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
     VersionResolver.new(
-      dependency_name: dependency_name,
-      dependency_requirements: dependency_requirements,
-      gemfile_name: gemfile_name,
-      lockfile_name: lockfile_name
+      dependency_name: args.fetch(:dependency_name),
+      dependency_requirements: args.fetch(:dependency_requirements),
+      gemfile_name: args.fetch(:gemfile_name),
+      lockfile_name: args.fetch(:lockfile_name)
     ).version_details
   end
 
-  def self.jfrog_source(dir:, gemfile_name:, credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.jfrog_source(**args)
+    # Set flags and credentials
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
-    Bundler::Definition.build(gemfile_name, nil, {}).
+    Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).
       send(:sources).
       rubygems_remotes.
       find { |uri| uri.host.include?("jfrog") }&.
       host
   end
 
-  def self.git_specs(dir:, gemfile_name:, credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
+  def self.git_specs(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
 
-    git_specs = Bundler::Definition.build(gemfile_name, nil, {}).dependencies.
+    git_specs = Bundler::Definition.build(args.fetch(:gemfile_name), nil, {}).dependencies.
                 select do |spec|
       spec.source.is_a?(Bundler::Source::Git)
     end
@@ -127,6 +118,17 @@ module Functions
       }
     end
   end
+
+  def self.conflicting_dependencies(**args)
+    set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: args.fetch(:credentials))
+    ConflictingDependencyResolver.new(
+      dependency_name: args.fetch(:dependency_name),
+      target_version: args.fetch(:target_version),
+      lockfile_name: args.fetch(:lockfile_name)
+    ).conflicting_dependencies
+  end
+
+  private
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:)
     dir = dir ? Pathname.new(dir) : dir
@@ -170,15 +172,5 @@ module Functions
   def self.git_source_credentials(credentials)
     credentials.
       select { |cred| cred["type"] == "git_source" }
-  end
-
-  def self.conflicting_dependencies(dir:, dependency_name:, target_version:,
-                                    lockfile_name:, credentials:)
-    set_bundler_flags_and_credentials(dir: dir, credentials: credentials)
-    ConflictingDependencyResolver.new(
-      dependency_name: dependency_name,
-      target_version: target_version,
-      lockfile_name: lockfile_name
-    ).conflicting_dependencies
   end
 end
