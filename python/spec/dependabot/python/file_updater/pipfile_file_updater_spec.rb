@@ -513,7 +513,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           let(:requirements_file) do
             Dependabot::DependencyFile.new(
               name: "runtime.txt",
-              content: "python-3.7.1"
+              content: fixture(
+                "requirements",
+                "version_not_specified_runtime.txt"
+              )
             )
           end
 

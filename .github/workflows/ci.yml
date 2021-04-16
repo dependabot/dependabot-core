@@ -38,19 +38,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Free up disk space
-        run: |
-          sudo apt autoremove --purge && sudo apt -y clean
-          docker system prune -af --volumes
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          df -h
       - name: Prepare environment variables
         run: |
           echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
           echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
           echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
           echo "CORE_CI_IMAGE=dependabot/dependabot-core-ci" >> $GITHUB_ENV
+          echo "CODE_DIR=/home/dependabot/dependabot-core" >> $GITHUB_ENV
       - name: Log in to Docker registry
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -59,68 +53,40 @@ jobs:
           else
             echo "No Docker credentials, skipping login"
           fi
-      - name: Set test env credentials
-        run: |
-          echo "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Pull Docker base images & warm Docker cache
-        run: |
-          docker pull "$BASE_IMAGE"
-          docker pull "$CORE_CI_IMAGE:core--$BRANCH_REF" ||
-            docker pull "$CORE_IMAGE:latest"
-          docker pull "$CORE_CI_IMAGE:ci--$BRANCH_REF" ||
-            "$CORE_CI_IMAGE:latest" || true
       - name: Build dependabot-core image
         run: |
           DOCKER_BUILDKIT=1 docker build \
             -t "$CORE_IMAGE:latest" \
-            -t "$CORE_CI_IMAGE:core--$BRANCH_REF" \
+            -t "$CORE_IMAGE:branch--$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
-            --cache-from "$CORE_CI_IMAGE:core--$BRANCH_REF" \
+            --cache-from "$CORE_IMAGE:branch--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
             .
       - name: Push dependabot-core image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
         run: |
-          docker push "$CORE_CI_IMAGE:core--$BRANCH_REF"
+          docker push "$CORE_IMAGE:branch--$BRANCH_REF"
       - name: Build dependabot-core-ci image
         run: |
-          rm .dockerignore
-          docker build \
+          DOCKER_BUILDKIT=1 docker build \
             -t "$CORE_CI_IMAGE:latest" \
-            -t "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
+            -t "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             -f Dockerfile.ci \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$CORE_CI_IMAGE:latest" \
-            --cache-from "$CORE_CI_IMAGE:ci--$BRANCH_REF" \
+            --cache-from "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             .
       - name: Push dependabot-core-ci image to Docker registry
         if: env.DOCKER_LOGGED_IN == 'true'
         run: |
           docker push "$CORE_CI_IMAGE:latest"
-          docker push "$CORE_CI_IMAGE:ci--$BRANCH_REF"
-      - name: Run Python flake8 linting
-        if: matrix.suite.name == 'python'
+          docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
+      - name: Run ${{ matrix.suite.name }} tests
         run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "pyenv exec flake8 python/helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics"
-      - name: Run Ruby Rubocop linting
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && bundle exec rubocop ."
-      - name: Run js linting and tests
-        if: matrix.suite.name == 'npm_and_yarn'
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && npm run lint"
-          docker run --rm "$CORE_CI_IMAGE" bash -c "cd /opt/npm_and_yarn && npm test"
-      - name: Run bundler v1 native helper specs
-        if: matrix.suite.name == 'bundler1'
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c \
-            "cd /home/dependabot/dependabot-core/bundler/helpers/v1 && BUNDLER_VERSION=1 bundle install && BUNDLER_VERSION=1 bundle exec rspec spec"
-      - name: Run bundler v2 native helper specs
-        if: matrix.suite.name == 'bundler2'
-        run: |
-          docker run --rm "$CORE_CI_IMAGE" bash -c \
-            "cd /home/dependabot/dependabot-core/bundler/helpers/v2 && BUNDLER_VERSION=2 bundle install && BUNDLER_VERSION=2 bundle exec rspec spec"
-      - name: Run ${{ matrix.suite.name }} tests with rspec
-        run: |
-          docker run --env "CI=true" --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" --env "SUITE_NAME=${{ matrix.suite.name }}" --rm "$CORE_CI_IMAGE" bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && bundle exec rspec spec"
+          docker run \
+            --env "CI=true" \
+            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            --env "SUITE_NAME=${{ matrix.suite.name }}" \
+            --rm "$CORE_CI_IMAGE" bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"

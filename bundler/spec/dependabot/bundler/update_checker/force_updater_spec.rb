@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
+      options: {}
     )
   end
   let(:dependency_files) { bundler_project_dependency_files("gemfile") }

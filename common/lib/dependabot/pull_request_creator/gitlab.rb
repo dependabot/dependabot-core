@@ -91,23 +91,26 @@ module Dependabot
         )
       end
 
+      # @param [DependencyFile] file
+      def file_action(file)
+        if file.operation == Dependabot::DependencyFile::Operation::DELETE
+          "delete"
+        elsif file.operation == Dependabot::DependencyFile::Operation::CREATE
+          "create"
+        else
+          "update"
+        end
+      end
+
       def create_commit
         return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
 
         actions = files.map do |file|
-          if file.type == "symlink"
-            {
-              action: "update",
-              file_path: file.symlink_target,
-              content: file.content
-            }
-          else
-            {
-              action: "update",
-              file_path: file.path,
-              content: file.content
-            }
-          end
+          {
+            action: file_action(file),
+            file_path: file.type == "symlink" ? file.symlink_target : file.path,
+            content: file.content
+          }
         end
 
         gitlab_client_for_source.create_commit(

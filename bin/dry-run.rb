@@ -673,7 +673,7 @@ dependencies.each do |dep|
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
       FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
-      if updated_file.deleted?
+      if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
         File.delete(path) if File.exist?(path)
       else
         File.write(path, updated_file.decoded_content)
@@ -682,7 +682,7 @@ dependencies.each do |dep|
   end
 
   updated_files.each do |updated_file|
-    if updated_file.deleted?
+    if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
       puts "deleted #{updated_file.name}"
     else
       original_file = $files.find { |f| f.name == updated_file.name }
@@ -700,6 +700,7 @@ dependencies.each do |dep|
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
+      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE,
     ).message
     puts "Pull Request Title: #{msg.pr_name}"
     puts "--description--\n#{msg.pr_message}\n--/description--"

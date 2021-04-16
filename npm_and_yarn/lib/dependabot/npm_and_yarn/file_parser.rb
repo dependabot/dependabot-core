@@ -252,10 +252,9 @@ module Dependabot
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
-        return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
         return if resolved_url.match?(/(?<!pkg\.)github/)
 
-        private_registry_source_for(resolved_url, name)
+        registry_source_for(resolved_url, name)
       end
 
       def requirement_for(requirement)
@@ -287,7 +286,7 @@ module Dependabot
         }
       end
 
-      def private_registry_source_for(resolved_url, name)
+      def registry_source_for(resolved_url, name)
         url =
           if resolved_url.include?("/~/")
             # Gemfury format
@@ -305,7 +304,7 @@ module Dependabot
           else resolved_url.split("/")[0..2].join("/")
           end
 
-        { type: "private_registry", url: url }
+        { type: "registry", url: url }
       end
 
       def url_for_relevant_cred(resolved_url)

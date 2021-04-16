@@ -120,14 +120,14 @@ end
 
 # Spec helper to provide GitHub credentials if set via an environment variable
 def github_credentials
-  if ENV["DEPENDABOT_TEST_ACCESS_TOKEN"].nil?
+  if ENV["DEPENDABOT_TEST_ACCESS_TOKEN"].nil? && ENV["LOCAL_GITHUB_ACCESS_TOKEN"].nil?
     []
   else
     [{
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"]
+      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
     }]
   end
 end

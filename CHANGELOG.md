@@ -1,3 +1,68 @@
+## v0.142.1, 16 April 2021
+
+- Update npm from 7.7.4 to 7.10.0
+- build(deps): bump flake8 from 3.9.0 to 3.9.1 in /python/helpers
+- Azure: Raise PullRequestUpdateFailed error when failing to update PR @milind009
+- Fix Dockerfile.development
+- build(deps): bump cython from 0.29.22 to 0.29.23 in /python/helpers
+
+## v0.142.0, 15 April 2021
+
+- Dockerfile: set WORKDIR to /home/dependabot to avoid permission errors when
+  consumers of the dependabot-core image run bundle install @baseballlover723
+- Dockerfile: Cache composer installs & install ca-certificates
+- Dockerfile: shallow clone pyenv
+- npm/yarn: Always use registry source when available
+- build(deps-dev): bump eslint-config-prettier in /npm_and_yarn/helpers
+
+## v0.141.1, 13 April 2021
+
+- Remove bundler/v1/.bundle
+- Remove helpers ignore
+- Remove python versions from ci image and split copy
+- build(deps): bump npm from 6.14.12 to 6.14.13 in /npm_and_yarn/helpers
+- fix(go mod): capture module mismatch error
+
+## v0.141.0, 12 April 2021
+
+- Dockerfile: create a `dependabot` user and drop privileges
+  This is a potentially BREAKING change for consumers of the `dependabot/dependabot-core` docker image.
+- Maven/Gradle: Add option to use Gitlab access token for authentication against maven repositories @gringostar
+- common: raise Dependabot::OutOfDisk on more out of space errors
+- Bump eslint from 7.23.0 to 7.24.0
+
+## v0.140.3, 9 April 2021
+
+- fix(Go mod): detect when remote end hangs up
+
+## v0.140.2, 8 April 2021
+
+- Go mod: Handle repo not found errors projects https://github.com/dependabot/dependabot-core/pull/3456
+
+## v0.140.1, 8 April 2021
+
+- Python: Disabled poetry experimental new installer @honnix
+- GitLab: Implement delete/create action in client @jerbob92
+
+## v0.140.0, 7 April 2021
+
+- Bundler: Detecting and using the correct major Bundler version is now enabled by default
+- Python: Add versions 3.8.9, 3.9.3 and 3.9.4
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- Bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.139.2, 6 April 2021
+
+- Cargo: fix error when upgrading to a version with a build annotation (e.g. `0.7.0+zstd.1.4.9`)
+- Maven: fix error when comparing string and integer versions
+- Generate alternatives for every git source (thanks @jerbob92)
+- CI: performance improvements
+- Bump phpstan/phpstan from 0.12.82 to 0.12.83 in /composer/helpers/v2
+- Bump phpstan/phpstan from 0.12.82 to 0.12.83 in /composer/helpers/v1
+- Bump composer/composer from 2.0.11 to 2.0.12 in /composer/helpers/v2
+- Bump composer/composer from 1.10.20 to 1.10.21 in /composer/helpers/v1
+- Bump @npmcli/arborist from 2.2.9 to 2.3.0 in /npm_and_yarn/helpers
+
 ## v0.139.1, 30 March 2021
 
 - Pull Requests: Fix github redirect for www.github.com links
