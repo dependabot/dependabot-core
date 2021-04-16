@@ -201,9 +201,11 @@ module Dependabot
           }
         ]
 
-        post(source.api_endpoint + source.organization + "/" + source.project +
-          "/_apis/git/repositories/" + source.unscoped_repo +
-          "/refs?api-version=5.0", content.to_json)
+        response = post(source.api_endpoint + source.organization + "/" + source.project +
+                        "/_apis/git/repositories/" + source.unscoped_repo +
+                        "/refs?api-version=5.0", content.to_json)
+
+        JSON.parse(response.body).fetch("value").first
       end
       # rubocop:enable Metrics/ParameterLists
 

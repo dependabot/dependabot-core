@@ -1,6 +1,6 @@
 pip==21.0.1
 pip-tools==6.0.1
-flake8==3.9.0
+flake8==3.9.1
 hashin==0.15.0
 pipenv==2020.11.15
 pipfile==0.0.2
@@ -8,4 +8,4 @@ poetry==1.1.5
 wheel==0.36.2
 
 # Some dependencies will only install if Cython is present
-Cython==0.29.22
+Cython==0.29.23

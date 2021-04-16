@@ -2,7 +2,9 @@ FROM dependabot/dependabot-core
 
 # Temporarily switch to root user in order to install packages
 USER root
-RUN apt-get install -y vim strace ltrace gdb
+RUN apt-get update \
+  && apt-get install -y vim strace ltrace gdb \
+  && rm -rf /var/lib/apt/lists/*
 USER dependabot
 
 RUN git config --global user.name dependabot-ci \
@@ -10,7 +12,7 @@ RUN git config --global user.name dependabot-ci \
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
-ARG CODE_DIR=/home/dependabot/dependabot-core
+ARG CODE_DIR=${HOME}/dependabot-core
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
