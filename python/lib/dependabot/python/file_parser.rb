@@ -17,7 +17,6 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/poetry_files_parser"
       require_relative "file_parser/setup_file_parser"
-      require_relative "file_parser/setup_cfg_file_parser"
 
       POETRY_DEPENDENCY_TYPES =
         %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
@@ -45,8 +44,7 @@ module Dependabot
         dependency_set += pipenv_dependencies if pipfile
         dependency_set += poetry_dependencies if using_poetry?
         dependency_set += requirement_dependencies if requirement_files.any?
-        dependency_set += setup_file_dependencies if setup_file
-        dependency_set += setup_cfg_file_dependencies if setup_cfg_file
+        dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
 
         dependency_set.dependencies
       end
@@ -135,13 +133,6 @@ module Dependabot
       def setup_file_dependencies
         @setup_file_dependencies ||=
           SetupFileParser.
-          new(dependency_files: dependency_files).
-          dependency_set
-      end
-
-      def setup_cfg_file_dependencies
-        @setup_cfg_file_dependencies ||=
-          SetupCfgFileParser.
           new(dependency_files: dependency_files).
           dependency_set
       end
