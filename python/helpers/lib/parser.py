@@ -173,4 +173,3 @@ def parse_setup(directory):
             exit(1)
 
     return json.dumps({"result": setup_packages})
-
