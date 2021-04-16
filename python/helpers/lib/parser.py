@@ -84,10 +84,12 @@ def parse_setup(directory):
 
     # Parse the setup.py and setup.cfg
     setup_py = "setup.py"
+    setup_py_path = os.path.join(directory, setup_py)
     setup_cfg = "setup.cfg"
+    setup_cfg_path = os.path.join(directory, setup_cfg)
     setup_packages = []
 
-    if os.path.isfile(os.path.join(directory, setup_py)):
+    if os.path.isfile(setup_py_path):
 
         def setup(*args, **kwargs):
             for arg in ["setup_requires", "install_requires", "tests_require"]:
@@ -122,7 +124,7 @@ def parse_setup(directory):
             )
             return io.StringIO(content)
 
-        content = open(directory + "/setup.py", "r").read()
+        content = open(setup_py_path, "r").read()
 
         # Remove `print`, `open`, `log` and import statements
         content = re.sub(r"print\s*\(", "noop(", content)
@@ -147,11 +149,9 @@ def parse_setup(directory):
         # Exec the setup.py
         exec(content) in globals(), locals()
 
-    if os.path.isfile(os.path.join(directory, setup_cfg)):
+    if os.path.isfile(setup_cfg_path):
         try:
-            config = setuptools.config.read_configuration(
-                os.path.join(directory, setup_cfg)
-            )
+            config = setuptools.config.read_configuration(setup_cfg_path)
 
             for req_type in [
                 "setup_requires",
