@@ -39,7 +39,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
   let(:dependency_file) do
     Dependabot::DependencyFile.new(name: file_name, content: fixture_file, directory: dependency_dir)
   end
-  let(:dependency_dir) { project_data["dependency_dir"] }
+  let(:dependency_dir) { project_data["dependency_dirs"].first }
   let(:repo) { project_data["repo"] }
   let(:branch) { project_data["branch"] }
 
@@ -98,7 +98,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
           "module" => "concourse",
           "repo" => "Pix4D/test_repo",
           "branch" => "master",
-          "dependency_dir" => "ci/pipelines/",
+          "dependency_dirs" => ["ci/pipelines/"],
           "lockfile_only" => false
         }
       end
@@ -123,7 +123,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
           "module" => "docker",
           "repo" => "Pix4D/test_repo",
           "branch" => "staging",
-          "dependency_dir" => "dockerfiles/"
+          "dependency_dirs" => ["dockerfiles/"]
         }
       end
       let(:github_sha) { "76abc" }
@@ -203,7 +203,7 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
         "module" => "pip",
         "repo" => "Pix4D/test_repo",
         "branch" => "master",
-        "dependency_dir" => "requirement"
+        "dependency_dirs" => ["requirement"]
       }
     end
     let(:pull_request) do

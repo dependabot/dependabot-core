@@ -8,11 +8,16 @@ RSpec.describe "recursive_path", :pix4d do
     it "returns the correct project_path" do
       project_data = {
         "module" => "concourse",
-        "repo" => "Pix4D/dependabot",
-        "branch" => "master",
-        "dependency_dir" => "ci/pipelines"
+        "dependency_dirs" => ["ci/pipelines"]
       }
       expect(recursive_path(project_data, "token")).to eq(["ci/pipelines"])
+    end
+    it "returns the correct project_path for multiple directories" do
+      project_data = {
+        "module" => "concourse",
+        "dependency_dirs" => ["ci/pipelines", "extra_pipelines/"]
+      }
+      expect(recursive_path(project_data, "token")).to eq(["ci/pipelines", "extra_pipelines/"])
     end
   end
 
@@ -23,8 +28,7 @@ RSpec.describe "recursive_path", :pix4d do
       {
         "module" => "docker",
         "repo" => project_path,
-        "branch" => "master",
-        "dependency_dir" => "dockerfiles"
+        "dependency_dirs" => ["dockerfiles"]
       }
     end
     let(:branch) { project_data["branch"] }
@@ -47,6 +51,7 @@ RSpec.describe "recursive_path", :pix4d do
           body: { "sha": github_sha, "tree": [
             { "path": "dockerfiles/folder-1/Dockerfile" },
             { "path": "dockerfiles/folder-2/Dockerfile" },
+            { "path": "second_folder/Dockerfile" },
             { "path": "dockerfiles/folder-2/code.py" },
             { "path": "ci/pipeline-template.ymls" }
           ] }.to_json,
@@ -57,6 +62,15 @@ RSpec.describe "recursive_path", :pix4d do
     it "returns the correct project_path" do
       expect(recursive_path(project_data, "token")).
         to eq(["dockerfiles/folder-1", "dockerfiles/folder-2"])
+    end
+    it "returns the correct project_path for multiple docker folders" do
+      input_data = {
+        "module" => "docker",
+        "repo" => project_path,
+        "dependency_dirs" => %w(dockerfiles second_folder)
+      }
+      expect(recursive_path(input_data, "token")).
+        to eq(["dockerfiles/folder-1", "dockerfiles/folder-2", "second_folder"])
     end
   end
 
@@ -69,7 +83,7 @@ RSpec.describe "recursive_path", :pix4d do
         "module" => "docker",
         "repo" => project_path,
         "branch" => "master",
-        "dependency_dir" => "dependency_dir"
+        "dependency_dirs" => ["dependency_dir"]
       }
     end
     before do
@@ -95,14 +109,14 @@ RSpec.describe "recursive_path", :pix4d do
         "repos/#{project_path}/git/trees/#{github_sha}?recursive=true"
     end
     let(:project_path) { "Pix4D/dependabot" }
-    let(:dependency_dir) { "dockerfiles" }
+    let(:dependency_dir) { ["dockerfiles"] }
     let(:github_sha) { "76abc" }
     let(:project_data) do
       {
         "module" => "docker",
         "repo" => project_path,
         "branch" => "master",
-        "dependency_dir" => dependency_dir
+        "dependency_dirs" => dependency_dir
       }
     end
 
