@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Clients::Azure do
     it "sends update branch request with old and new commit id" do
       stub_request(:post, update_ref_url).
         with(basic_auth: [username, password]).
-        to_return(status: 200)
+        to_return(status: 200, body: fixture("azure", "update_ref.json"))
 
       update_ref
 
