@@ -4,9 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "@types/node" # tested by update_config_spec.rb
-        versions: [">= 14.14.x, < 15.x.x"]
   - package-ecosystem: "npm"
     directory: "/monthly"
     schedule:
