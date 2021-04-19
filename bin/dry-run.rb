@@ -110,6 +110,7 @@ $options = {
   updater_options: {},
   security_advisories: [],
   security_updates_only: false,
+  ignore_conditions: [],
   pull_request: false
 }
 
@@ -136,6 +137,12 @@ unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
   #   "unaffected_versions":[],
   #   "affected_versions":["< 0.10.0"]}]
   $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
+end
+
+unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
+  # For example:
+  # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
+  $options[:ignore_conditions] = JSON.parse(ENV["IGNORE_CONDITIONS"])
 end
 
 option_parse = OptionParser.new do |opts|
@@ -490,15 +497,16 @@ def update_checker_for(dependency)
     credentials: $options[:credentials],
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
-    ignored_versions: ignore_conditions_for(dependency),
+    ignored_versions: ignored_versions_for(dependency),
     security_advisories: security_advisories
   )
 end
 
-# TODO: Parse from config file
-def ignore_conditions_for(_)
-  # Array of version requirements, e.g. ["4.x", "5.x"]
-  []
+def ignored_versions_for(dep)
+  # TODO: Parse from config file unless $options[:ignore_conditions]
+  $options[:ignore_conditions].
+    select { |ic| ic["dependency-name"] == dep.name }.
+    map { |ic| ic["version-requirement"] }
 end
 
 def security_advisories
