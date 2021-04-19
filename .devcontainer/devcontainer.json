@@ -86,6 +86,9 @@
     "-v", "${localWorkspaceFolder}/omnibus/dependabot-omnibus.gemspec:/home/dependabot/dependabot-core/omnibus/dependabot-omnibus.gemspec",
     "-v", "${localWorkspaceFolder}/omnibus/lib:/home/dependabot/dependabot-core/omnibus/lib",
     "-v", "${localWorkspaceFolder}/omnibus/spec:/home/dependabot/dependabot-core/omnibus/spec",
+    "-v", "node_modules_vol:/home/dependabot/dependabot-core/demo/common",
+    //"-v", "${localWorkspaceFolder}/demo1/common:/home/dependabot/dependabot-core/demo1/common",
+
 
     "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"
   ],

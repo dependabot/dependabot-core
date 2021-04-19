@@ -26,20 +26,25 @@ module Dependabot
       end
 
       def self.required_files_message
-        "Repo must contain a package.json."
+        "Repo must contain a package.json/rush.json."
+      end
+
+      def npmrc_content
+        npmrc.content
       end
 
       private
 
       def fetch_files
         fetched_files = []
-        fetched_files << package_json
+        fetched_files += root_manifest_files
         fetched_files << package_lock if package_lock && !ignore_package_lock?
         fetched_files << yarn_lock if yarn_lock
         fetched_files << shrinkwrap if shrinkwrap
         fetched_files << lerna_json if lerna_json
         fetched_files << npmrc if npmrc
         fetched_files << yarnrc if yarnrc
+        fetched_files += rush_files if rush_files
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
@@ -47,8 +52,12 @@ module Dependabot
         fetched_files.uniq
       end
 
+      def root_manifest_files
+        @root_manifest_files ||= fetch_root_manifest_files
+      end
+
       def package_json
-        @package_json ||= fetch_file_from_host("package.json")
+        @package_json ||= fetch_file_if_present("package.json")
       end
 
       def package_lock
@@ -106,12 +115,49 @@ module Dependabot
                         tap { |f| f.support_file = true }
       end
 
+      def rush_files
+        @rush_files ||= [*rush_configs, *rush_packages].compact
+      end
+
+      def rush_json
+        @rush_json ||= fetch_file_if_present("rush.json")&.
+                        tap { |f| f.support_file = true }
+      end
+
+      def rush_configs
+        @rush_configs ||= fetch_rush_configs
+      end
+
+      def fetch_rush_configs
+        [
+          fetch_file_if_present("common/config/rush/pnpm-lock.yaml"),
+          fetch_file_if_present("common/config/rush/shrinkwrap.yaml"),
+          fetch_file_if_present("common/config/rush/pnpmfile.js"),
+          fetch_file_if_present("common/config/rush/.npmrc"),
+          fetch_file_if_present("common/scripts/install-run-rush.js"),
+          fetch_file_if_present("common/scripts/install-run.js"),
+          fetch_file_if_present("common/config/pnpmfile-dependencies.json"),
+          fetch_file_if_present("common/config/rush/common-versions.json"),
+          fetch_file_if_present("common/config/rush/version-policies.json")
+        ].compact
+      end
+
+      def fetch_root_manifest_files
+        raise Dependabot::ManifestFileNotFound unless package_json || rush_json
+
+        [package_json, rush_json].compact
+      end
+
       def workspace_package_jsons
         @workspace_package_jsons ||= fetch_workspace_package_jsons
       end
 
       def lerna_packages
         @lerna_packages ||= fetch_lerna_packages
+      end
+
+      def rush_packages
+        @rush_packages ||= fetch_rush_packages
       end
 
       def path_dependencies(fetched_files)
@@ -252,6 +298,17 @@ module Dependabot
         dependency_files
       end
 
+      def fetch_rush_packages
+        return [] unless parsed_rush_json["projects"]
+
+        dependency_files = []
+        workspace_paths(parsed_rush_json["projects"]).each do |workspace|
+          dependency_files += fetch_rush_packages_from_path(workspace["projectFolder"])
+        end
+
+        dependency_files
+      end
+
       def fetch_lerna_packages_from_path(path, nested = false)
         dependency_files = []
 
@@ -279,6 +336,19 @@ module Dependabot
               end
           end
         end
+
+        dependency_files
+      end
+
+      def fetch_rush_packages_from_path(path, _nested = false)
+        puts "Fetching rush package Path: #{path}"
+
+        dependency_files = []
+        package_json_path = File.join(path, "package.json")
+
+        # Currently we fetch just the package.json
+        # TODO: Do we need nested lookup here? Do we need wildcard matching?
+        dependency_files << fetch_file_from_host(package_json_path)
 
         dependency_files
       end
@@ -317,6 +387,8 @@ module Dependabot
       end
 
       def parsed_package_json
+        return {} unless package_json
+
         JSON.parse(package_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
@@ -364,6 +436,14 @@ module Dependabot
         JSON.parse(lerna_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
+      end
+
+      def parsed_rush_json
+        return {} unless rush_json
+
+        JSON.parse(rush_json.content)
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, rush_json.path
       end
     end
   end

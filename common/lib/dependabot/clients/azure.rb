@@ -27,7 +27,6 @@ module Dependabot
           credentials.
           select { |cred| cred["type"] == "git_source" }.
           find { |cred| cred["host"] == source.hostname }
-
         new(source, credential)
       end
 
@@ -147,7 +146,7 @@ module Dependabot
               author: author_details,
               changes: files.map do |file|
                 {
-                  changeType: "edit",
+                  changeType: file_exists?(base_commit, file.path) ? "edit" : "add",
                   item: { path: file.path },
                   newContent: {
                     content: Base64.encode64(file.content),
@@ -169,6 +168,8 @@ module Dependabot
                               pr_description, labels, work_item = nil)
         pr_description = truncate_pr_description(pr_description)
 
+        puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
+        puts "PR name:#{pr_name}"
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
@@ -278,6 +279,21 @@ module Dependabot
         else
           { "Authorization" => "Bearer #{token}" }
         end
+      end
+
+      def file_exists?(commit, path)
+        # Get the file base and directory name
+        dir = File.dirname(path)
+        basename = File.basename(path)
+
+        # Fetch the contents for the dir and check if there exists any file that matches basename.
+        # We ignore any sub-dir paths by rejecting "tree" gitObjectType (which is what ADO uses to specify a directory.)
+        fetch_repo_contents(commit, dir).
+          reject { |f| f["gitObjectType"] == "tree" }.
+          one? { |f| f["relativePath"] == basename }
+      rescue Dependabot::Clients::Azure::NotFound
+        # ADO throws exception if dir not found. Return false
+        false
       end
 
       def truncate_pr_description(pr_description)

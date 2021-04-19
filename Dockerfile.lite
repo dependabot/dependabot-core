@@ -1,0 +1,75 @@
+FROM ubuntu:18.04
+
+### SYSTEM DEPENDENCIES
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LC_ALL="en_US.UTF-8" \
+    LANG="en_US.UTF-8"
+
+# Everything from `make` onwards in apt-get install is only installed to ensure
+# Python support works with all packages (which may require specific libraries
+# at install time).
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+      build-essential \
+      dirmngr \
+      git \
+      bzr \
+      mercurial \
+      gnupg2 \
+      curl \
+      wget \
+      file \
+      zlib1g-dev \
+      liblzma-dev \
+      tzdata \
+      zip \
+      unzip \
+      locales \
+      openssh-client \
+      software-properties-common \
+      make \
+      libpq-dev \
+      libssl-dev \
+      libbz2-dev \
+      libffi-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      libcurl4-openssl-dev \
+      llvm \
+      libncurses5-dev \
+      libncursesw5-dev \
+      libmysqlclient-dev \
+      xz-utils \
+      tk-dev \
+      libxml2-dev \
+      libxmlsec1-dev \
+      libgeos-dev \
+      python3-enchant \
+    && locale-gen en_US.UTF-8
+
+### RUBY
+
+# Install Ruby 2.6.6, update RubyGems, and install Bundler
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+RUN apt-add-repository ppa:brightbox/ruby-ng \
+  && apt-get update \
+  && apt-get install -y ruby2.6 ruby2.6-dev \
+  && gem update --system 3.2.14 \
+  && gem install bundler -v 1.17.3 --no-document
+
+### JAVASCRIPT
+
+# Install Node 14.0 and npm and yarn
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+  && apt-get install -y nodejs
+
+# Copy src for only the gems we need.
+COPY npm_and_yarn/ /opt/npm_and_yarn/
+COPY common/ /opt/common
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn

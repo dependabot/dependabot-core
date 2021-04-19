@@ -111,6 +111,8 @@ module Dependabot
     end
   end
 
+  class ManifestFileNotFound < DependabotError; end
+
   class DependencyFileNotEvaluatable < DependabotError; end
 
   class DependencyFileNotResolvable < DependabotError; end

@@ -55,6 +55,107 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         body: fixture("github", "package_lock_content.json"),
         headers: json_header
       )
+
+    stub_request(:get, File.join(url, "common/config/rush?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
+
+    stub_request(:get, File.join(url, "common/scripts?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
+
+    stub_request(:get, File.join(url, "common/config?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(status: 404)
+  end
+
+  context "for manifest files" do
+    before :each do
+      stub_request(:get, File.join(url, "rush.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "rush_json_content.json"),
+          headers: json_header
+        )
+    end
+
+    it "raises an error if no manifest file is found" do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "content_js_npm_without_manifest.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404,
+          body: fixture("github", "package_json_content.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "rush.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404,
+          body: fixture("github", "rush_json_content.json"),
+          headers: json_header
+        )
+
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::ManifestFileNotFound)
+    end
+
+    context "returns an array of manifest files" do
+      it "when only package.json or rush.json is found" do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_npm_with_rush.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("rush.json")
+      end
+
+      it "when both package.json and rush.json are found" do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_npm_with_rush_and_package_json.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("rush.json")
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("package.json")
+      end
+    end
   end
 
   context "with a .npmrc file" do

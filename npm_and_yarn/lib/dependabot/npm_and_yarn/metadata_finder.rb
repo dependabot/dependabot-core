@@ -206,9 +206,18 @@ module Dependabot
       end
 
       def registry_auth_headers
-        return {} unless auth_token
+        token = auth_token
+        return {} unless token
 
-        { "Authorization" => "Bearer #{auth_token}" }
+        if token.include?(":")
+          encoded_token = Base64.encode64(token).delete("\n")
+          { "Authorization" => "Basic #{encoded_token}" }
+        elsif Base64.decode64(token).ascii_only? &&
+              Base64.decode64(token).include?(":")
+          { "Authorization" => "Basic #{token.delete("\n")}" }
+        else
+          { "Authorization" => "Bearer #{token}" }
+        end
       end
 
       def dependency_registry
@@ -220,7 +229,7 @@ module Dependabot
       def auth_token
         credentials.
           select { |cred| cred["type"] == "npm_registry" }.
-          find { |cred| cred["registry"] == dependency_registry }&.
+          find { |cred| cred["registry"].start_with?(dependency_registry) }&.
           fetch("token", nil)
       end
 
