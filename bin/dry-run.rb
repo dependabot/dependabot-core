@@ -72,6 +72,7 @@ require "dependabot/file_parsers"
 require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
+require "dependabot/config/file_fetcher"
 
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -469,7 +470,11 @@ $files = if $options[:clone] || always_clone
              fetcher.files
            end
          end
-$config_file = fetcher.config_file
+
+$config_file = Dependabot::Config::FileFetcher.
+  new(source: $source, credentials: $options[:credentials],
+    repo_contents_path: $repo_contents_path).
+  config_file
 
 # Parse the dependency files
 puts "=> parsing dependency files"
@@ -507,7 +512,8 @@ def ignored_versions_for(dep)
   if $options[:ignore_conditions].any?
     $options[:ignore_conditions].
       select { |ic| ic["dependency-name"] == dep.name }.
-      map { |ic| ic["version-requirement"] }
+      map { |ic| ic["version-requirement"] }.
+      compact
   else
     config = $config_file.update_config($package_manager, directory: $options[:directory])
     config.ignored_versions_for(dep)
