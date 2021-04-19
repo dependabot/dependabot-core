@@ -463,6 +463,18 @@ fetcher_args = {
   credentials: $options[:credentials],
   repo_contents_path: $repo_contents_path
 }
+$config_file = begin
+  cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+  Dependabot::Config::File.parse(cfg_file.content)
+rescue Dependabot::DependencyFileNotFound
+  Dependabot::Config::File.new(updates: [])
+end
+$update_config = $config_file.update_config(
+  $package_manager,
+  directory: $options[:directory],
+  target_branch: $options[:branch]
+)
+
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
 $files = if $options[:clone] || always_clone
            fetcher.clone_repo_contents
@@ -472,16 +484,6 @@ $files = if $options[:clone] || always_clone
              fetcher.files
            end
          end
-
-$config_file = begin
-  cfg = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
-  Dependabot::Config::File.parse(cfg.content) if cfg
-end
-$update_config = $config_file.update_config(
-  $package_manager,
-  directory: $options[:directory],
-  target_branch: $options[:branch]
-)
 
 # Parse the dependency files
 puts "=> parsing dependency files"
