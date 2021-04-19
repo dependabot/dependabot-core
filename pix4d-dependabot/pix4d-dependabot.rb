@@ -8,8 +8,8 @@ require "yaml"
 # REPOSITORY_DATA list of dictionaries. Each dictionary should contain the following keys:
 #   - module i.e docker, concourse, pip
 #   - repo i.e. Pix4D/test-dependabot-python
-#   - branch i.e master
-#   - dependency_dir i.e. /, ci/docker, ci/pipelines, project/requirements
+#   - branch i.e master, staging
+#   - dependency_dirs i.e. ["/"", "ci/docker", "ci/pipelines/"", "project/requirements"]
 #   - lockfile_only i.e. Update only lockfiles. Defaults to true in case of Pip module
 #     and false in case of Docker module
 
@@ -64,7 +64,7 @@ def main
   input_data.each do |project_data|
     raise KeyError, "REPOSITORY_DATA items should not be empty" if project_data.keys.empty?
 
-    missing_keys = %w(module repo branch dependency_dir) - project_data.keys
+    missing_keys = %w(module repo branch dependency_dirs) - project_data.keys
     raise KeyError, "Each REPOSITORY_DATA item should contain 3 non empty keys" unless missing_keys.empty?
 
     package_manager = if project_data["module"] == "concourse"
