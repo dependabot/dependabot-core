@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
@@ -62,6 +63,13 @@ module Dependabot
 
       def files
         @files ||= fetch_files
+      end
+
+      def config_file
+        @config_file ||= begin
+          cfg = fetch_config_file
+          Dependabot::ConfigFile.parse(cfg.content) if cfg
+        end
       end
 
       def commit
@@ -148,6 +156,17 @@ module Dependabot
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
+      end
+
+      def fetch_config_file
+        github_dir = Pathname.new("/.github").relative_path_from(directory)
+        fetch_file_if_present("#{github_dir}/dependabot.yaml")
+      rescue Dependabot::DependencyFileNotFound
+        begin
+          fetch_file_if_present("#{github_dir}/dependabot.yml")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
       end
 
       def repo_contents(dir: ".", ignore_base_directory: false,
