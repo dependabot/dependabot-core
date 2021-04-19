@@ -4,6 +4,7 @@ require "dependabot/config/update_config"
 
 module Dependabot
   module Config
+    # Configuration for the repository, a parsed dependabot.yaml.
     class File
       attr_reader :updates, :registries
 
@@ -12,10 +13,13 @@ module Dependabot
         @registries = registries || []
       end
 
-      def update_config(package_manager, directory: nil)
+      def update_config(package_manager, directory: nil, target_branch: nil)
         dir = directory || "/"
         package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
-        cfg = updates.find { |u| u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir }
+        cfg = updates.find do |u|
+          u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
+            (target_branch.nil? || u[:"target-branch"] == target_branch)
+        end
         Dependabot::Config::UpdateConfig.new(cfg)
       end
 

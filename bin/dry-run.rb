@@ -477,6 +477,11 @@ $config_file = begin
   cfg = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
   Dependabot::Config::File.parse(cfg.content) if cfg
 end
+$update_config = $config_file.update_config(
+  $package_manager,
+  directory: $options[:directory],
+  target_branch: $options[:branch]
+)
 
 # Parse the dependency files
 puts "=> parsing dependency files"
@@ -517,8 +522,7 @@ def ignored_versions_for(dep)
       map { |ic| ic["version-requirement"] }.
       compact
   else
-    config = $config_file.update_config($package_manager, directory: $options[:directory])
-    config.ignored_versions_for(dep)
+    $update_config.ignored_versions_for(dep)
   end
 end
 
@@ -716,13 +720,12 @@ dependencies.each do |dep|
   end
 
   if $options[:pull_request]
-    config = $config_file.update_config($package_manager, directory: $options[:directory])
     msg = Dependabot::PullRequestCreator::MessageBuilder.new(
       dependencies: updated_deps,
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
-      commit_message_options: config.commit_message_options,
+      commit_message_options: $update_config.commit_message_options,
       github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
     ).message
     puts "Pull Request Title: #{msg.pr_name}"

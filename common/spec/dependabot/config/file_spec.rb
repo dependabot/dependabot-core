@@ -34,6 +34,12 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config.interval).to eq("monthly")
       end
 
+      it "matches target-branch" do
+        update_config = config.update_config("npm_and_yarn", directory: "/target", target_branch: "the-awesome-branch")
+        expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
+        expect(update_config.interval).to eq("daily")
+      end
+
       it "returns empty when not found" do
         update_config = config.update_config("bundler")
         expect(update_config).to be_a(Dependabot::Config::UpdateConfig)

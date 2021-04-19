@@ -6,23 +6,35 @@ require "dependabot/config/file"
 require "dependabot/config/update_config"
 
 RSpec.describe Dependabot::Config::UpdateConfig do
-  let(:config) { Dependabot::Config::File.parse(fixture("configfile", "npm-weekly.yml")) }
+  let(:data) { nil }
+  let(:config) { Dependabot::Config::UpdateConfig.new(data) }
 
   describe "#interval" do
-    it "returns normalized value" do
-      update_config = Dependabot::Config::UpdateConfig.new({ schedule: { interval: "WeeKLY" } })
-      expect(update_config.interval).
-        to eq(Dependabot::Config::UpdateConfig::Interval::WEEKLY)
+    subject(:interval) { config.interval }
+
+    it "returns nil if not specified" do
+      expect(interval).to be_nil
     end
 
-    it "raises on invalid value" do
-      update_config = Dependabot::Config::UpdateConfig.new({ schedule: { interval: "gibbous moon" } })
-      expect { update_config.interval }.
-        to raise_error(Dependabot::Config::InvalidConfigError)
+    context "with denormalized interval" do
+      let(:data) { { schedule: { interval: "WeeKLY" } } }
+
+      it "returns normalized value" do
+        expect(interval).to eq(Dependabot::Config::UpdateConfig::Interval::WEEKLY)
+      end
+    end
+
+    context "with invalid interval" do
+      let(:data) { { schedule: { interval: "gibbous moon" } } }
+      it "raises error" do
+        expect { interval }.
+          to raise_error(Dependabot::Config::InvalidConfigError)
+      end
     end
   end
 
   describe "#ignored_versions_for" do
+    subject(:ignored_versions) { config.ignored_versions_for(dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "@types/node",
@@ -32,14 +44,18 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       )
     end
 
-    it "returns versions when not defined" do
-      update_config = config.update_config("npm_and_yarn")
-      expect(update_config.ignored_versions_for(dependency)).to eq([">= 14.14.x, < 15.x.x"])
+    it "returns empty when not defined" do
+      expect(ignored_versions).to eq([])
     end
 
-    it "returns empty when not defined" do
-      update_config = config.update_config("npm_and_yarn", directory: "/monthly")
-      expect(update_config.ignored_versions_for(dependency)).to eq([])
+    context "with ignored versions" do
+      let(:data) do
+        { ignore: [{ "dependency-name": "@types/node", versions: [">= 14.14.x, < 15"] }] }
+      end
+
+      it "returns versions" do
+        expect(ignored_versions).to eq([">= 14.14.x, < 15"])
+      end
     end
   end
 
