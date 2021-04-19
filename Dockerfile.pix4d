@@ -14,6 +14,7 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
+  software-properties-common \
   git \
   make \
   build-essential \
@@ -33,17 +34,19 @@ RUN apt-get update \
   libffi-dev \
   liblzma-dev \
   locales \
-  && locale-gen en_US.UTF-8
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
 
 ### RUBY
 # Install Ruby 2.6.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN apt-get update && apt-get install -y software-properties-common \
-  && apt-add-repository ppa:brightbox/ruby-ng \
+RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y ruby2.6 ruby2.6-dev \
   && gem update --system 3.2.14 \
-  && gem install bundler -v 2.2.11 --no-document
+  && gem install bundler -v 2.2.15 --no-document \
+  && rm -rf /var/lib/gems/2.6.0/cache/* \
+  && rm -rf /var/lib/apt/lists/*
 
 ### PYTHON
 # Install Python 3.9 with pyenv. Using pyenv lets us support multiple Pythons
@@ -52,7 +55,8 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
   && cd /usr/local/.pyenv && git checkout 1.2.26 && cd -
 
-RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* }
+RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* } \
+  && rm -Rf /tmp/python-build*
 
 ENV BUNDLE_PATH="/home/dependabot/.bundle" \
   BUNDLE_BIN=".bundle/binstubs" \

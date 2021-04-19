@@ -12,7 +12,6 @@ from github import Github, GithubException
 
 COMMITER = "Pix4D-Janus"
 COMMITER_EMAIL = "platform_ci_team@pix4d.com"
-PR_MESSAGE = "Merge the upstream changes"
 MONITORED_REPO = "pix4d/dependabot-core"
 
 access_token = os.environ["REPOSITORY_ACCESS_TOKEN"]
@@ -40,12 +39,19 @@ if not changed_files:
     print("No files were changed.")
     sys.exit(0)
 
-correct_files = any([filename.startswith("docker/") for filename in changed_files])
+correct_files = any(
+    [
+        filename.startswith("docker/") or filename.startswith("Dockerfile")
+        for filename in changed_files
+    ]
+)
 
 if correct_files:
-    pr_title = "[changes-to-pix4d-dependabot] Merge the upstream changes"
+    pr_title = "[changes-to-pix4d-dependabot] Merge the upstream changes."
+    pr_message = "Merge the upstream changes. Check also if Pix4D Dockerfile needs to be updated."
 else:
     pr_title = "[no-changes-to-pix4d-dependabot] Merge the upstream changes"
+    pr_message = "Merge the upstream changes."
 
 repo.git.push("--set-upstream", "origin", branch_name)
 
@@ -56,7 +62,7 @@ pr = (
         title=pr_title,
         base="master",
         head=branch_name,
-        body=PR_MESSAGE,
+        body=pr_message,
     )
 )
 print(pr.html_url)
