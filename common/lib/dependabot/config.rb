@@ -60,6 +60,15 @@ module Dependabot
           flatten
       end
 
+      def commit_message_options
+        commit_message = @config[:"commit-message"] || {}
+        {
+          prefix: commit_message[:prefix],
+          prefix_development: commit_message[:"prefix-development"],
+          include_scope: commit_message[:include] == "scope"
+        }
+      end
+
       def interval
         return unless @config[:schedule]
         return unless @config[:schedule][:interval]
