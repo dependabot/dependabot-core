@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "@types/node"
+        versions: [">= 14.14.x, < 15.x.x"]
+  - package-ecosystem: "npm"
+    directory: "/monthly"
+    schedule:
+      interval: "monthly"

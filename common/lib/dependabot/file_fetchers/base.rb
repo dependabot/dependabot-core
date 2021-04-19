@@ -160,10 +160,10 @@ module Dependabot
 
       def fetch_config_file
         github_dir = Pathname.new("/.github").relative_path_from(directory)
-        fetch_file_if_present("#{github_dir}/dependabot.yaml")
+        fetch_file_from_host("#{github_dir}/dependabot.yaml")
       rescue Dependabot::DependencyFileNotFound
         begin
-          fetch_file_if_present("#{github_dir}/dependabot.yml")
+          fetch_file_from_host("#{github_dir}/dependabot.yml")
         rescue Dependabot::DependencyFileNotFound
           nil
         end

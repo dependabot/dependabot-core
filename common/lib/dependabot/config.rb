@@ -4,11 +4,17 @@ module Dependabot
   module ConfigFile
     class InvalidConfigError < StandardError; end
 
+    module Interval
+      DAILY = "daily"
+      WEEKLY = "weekly"
+      MONTHLY = "monthly"
+    end
+
     # Configuration for every ecosystem
     class Config
       attr_reader :updates, :registries
 
-      def initialize(updates:, registries:)
+      def initialize(updates:, registries: nil)
         @updates = updates || []
         @registries = registries || []
       end
@@ -17,10 +23,8 @@ module Dependabot
         dir = directory || "/"
         package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
         cfg = updates.find { |u| u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir }
-        return UpdateConfig.new(cfg)
+        UpdateConfig.new(cfg)
       end
-
-      private
 
       PACKAGE_MANAGER_LOOKUP = {
         "bundler" => "bundler",
@@ -37,7 +41,7 @@ module Dependabot
         "nuget" => "nuget",
         "npm" => "npm_and_yarn",
         "pip" => "pip",
-        "terraform" => "terraform",
+        "terraform" => "terraform"
       }.freeze
     end
 
@@ -54,6 +58,19 @@ module Dependabot
           select { |ic| ic[:"dependency-name"] == dep.name }. # FIXME: wildcard support
           map { |ic| ic[:versions] }.
           flatten
+      end
+
+      def interval
+        return unless @config[:schedule]
+        return unless @config[:schedule][:interval]
+
+        interval = @config[:schedule][:interval]
+        case interval.downcase
+        when Interval::DAILY, Interval::WEEKLY, Interval::MONTHLY
+          interval.downcase
+        else
+          raise InvalidConfigError, "unknown interval: #{interval}"
+        end
       end
     end
 

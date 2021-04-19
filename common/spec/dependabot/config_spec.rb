@@ -15,4 +15,67 @@ RSpec.describe Dependabot::ConfigFile do
         to raise_error(Dependabot::ConfigFile::InvalidConfigError)
     end
   end
+
+  describe "Config" do
+    let(:config) { Dependabot::ConfigFile.parse(fixture("configfile", "npm-weekly.yml")) }
+
+    describe "#update_config" do
+      it "maps package_manager to package-ecosystem" do
+        update_config = config.update_config("npm_and_yarn")
+        expect(update_config).to be_a(Dependabot::ConfigFile::UpdateConfig)
+        expect(update_config.interval).to eq("weekly")
+      end
+
+      it "matches directory" do
+        update_config = config.update_config("npm_and_yarn", directory: "/monthly")
+        expect(update_config).to be_a(Dependabot::ConfigFile::UpdateConfig)
+        expect(update_config.interval).to eq("monthly")
+      end
+
+      it "returns empty when not found" do
+        update_config = config.update_config("bundler")
+        expect(update_config).to be_a(Dependabot::ConfigFile::UpdateConfig)
+        expect(update_config.interval).to be_nil
+      end
+    end
+  end
+
+  describe "UpdateConfig" do
+    let(:config) { Dependabot::ConfigFile.parse(fixture("configfile", "npm-weekly.yml")) }
+
+    describe "#interval" do
+      it "returns normalized value" do
+        update_config = Dependabot::ConfigFile::UpdateConfig.new({ schedule: { interval: "WeeKLY" } })
+        expect(update_config.interval).
+          to eq(Dependabot::ConfigFile::Interval::WEEKLY)
+      end
+
+      it "raises on invalid value" do
+        update_config = Dependabot::ConfigFile::UpdateConfig.new({ schedule: { interval: "gibbous moon" } })
+        expect { update_config.interval }.
+          to raise_error(Dependabot::ConfigFile::InvalidConfigError)
+      end
+    end
+
+    describe "#ignored_versions_for" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@types/node",
+          requirements: [],
+          version: "12.12.6",
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "returns versions when not defined" do
+        update_config = config.update_config("npm_and_yarn")
+        expect(update_config.ignored_versions_for(dependency)).to eq([">= 14.14.x, < 15.x.x"])
+      end
+
+      it "returns empty when not defined" do
+        update_config = config.update_config("npm_and_yarn", directory: "/monthly")
+        expect(update_config.ignored_versions_for(dependency)).to eq([])
+      end
+    end
+  end
 end
