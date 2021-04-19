@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
       it { is_expected.to eq(true) }
     end
 
+    context "with only a setup.cfg" do
+      let(:filenames) { %w(setup.cfg) }
+      it { is_expected.to eq(true) }
+    end
+
     context "with only a requirements folder" do
       let(:filenames) { %w(requirements) }
       it { is_expected.to eq(true) }
@@ -208,6 +213,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
           to eq(["setup.py"])
+      end
+    end
+
+    context "with only a setup.cfg file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_setup_cfg.json")
+      end
+      before do
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_cfg_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the setup.cfg file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["setup.cfg"])
       end
     end
 
