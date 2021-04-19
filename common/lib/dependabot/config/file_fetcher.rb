@@ -18,7 +18,7 @@ module Dependabot
       def config_file
         @config_file ||= begin
           cfg = files.first
-          Dependabot::ConfigFile.parse(cfg.content) if cfg
+          Dependabot::Config::File.parse(cfg.content) if cfg
         end
       end
 

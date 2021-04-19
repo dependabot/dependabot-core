@@ -31,13 +31,13 @@ RSpec.describe Dependabot::Config::FileFetcher do
       repo_contents_path: nil
     )
   end
- 
+
   describe "#config_file" do
     subject(:config_file) { file_fetcher_instance.config_file }
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
-  
+
     let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
     before do
       stub_request(:get, url + ".github/dependabot.yml?ref=sha").
@@ -50,11 +50,11 @@ RSpec.describe Dependabot::Config::FileFetcher do
                   body: fixture("github", "configfile_content.json"),
                   headers: { "content-type" => "application/json" })
     end
-  
+
     it "fetches config file" do
-      expect(config_file).to be_a(Dependabot::ConfigFile::Config)
+      expect(config_file).to be_a(Dependabot::Config::File)
       expect(config_file.update_config("bundler")).
-        to be_a(Dependabot::ConfigFile::UpdateConfig)
+        to be_a(Dependabot::Config::UpdateConfig)
     end
   end
 end
